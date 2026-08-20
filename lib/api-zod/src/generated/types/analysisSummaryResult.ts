@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AnalysisSummaryConceptRow } from './analysisSummaryConceptRow';
+import type { AnalysisSummaryDayRow } from './analysisSummaryDayRow';
 import type { AnalysisSummaryDemoRow } from './analysisSummaryDemoRow';
 import type { AnalysisSummaryPlacementRow } from './analysisSummaryPlacementRow';
 import type { AnalysisSummaryTotals } from './analysisSummaryTotals';
@@ -19,6 +20,12 @@ export interface AnalysisSummaryResult {
   /** Actual date window covered by this result after applying the preset filter. */
   active_window: AnalysisSummaryWindow | null;
   totals: AnalysisSummaryTotals;
+  /** Per-day additive totals inside the active window, ascending by date. */
+  daily: AnalysisSummaryDayRow[];
+  /** Real measured totals for the equal-length window immediately preceding the active one; null when no preceding window applies (preset "all") or it holds no rows. */
+  prior_totals: AnalysisSummaryTotals | null;
+  /** The preceding window prior_totals covers; null whenever prior_totals is null. */
+  prior_window: AnalysisSummaryWindow | null;
   demographic_rows: AnalysisSummaryDemoRow[];
   placement_rows: AnalysisSummaryPlacementRow[];
   concept_rows: AnalysisSummaryConceptRow[];

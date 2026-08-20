@@ -16,7 +16,6 @@ export interface SmokeStep {
 
 export const IAP_SMOKE_STEPS: SmokeStep[] = [
   { label: "Login page layout e2e", script: "smoke:login-page-layout" },
-  { label: "Home screen + 5-section nav e2e", script: "smoke:metrix-iap-home-screen" },
   { label: "Forgot-password flow e2e", script: "smoke:forgot-password" },
   {
     label: "Register session-persistence e2e",
@@ -43,6 +42,7 @@ export const IAP_SMOKE_STEPS: SmokeStep[] = [
     label: "MetricHoverPopover + drill-down e2e",
     script: "smoke:metrix-iap-hover-popover",
   },
+  { label: "Manual import flow e2e", script: "smoke:metrix-iap-manual-import" },
 ];
 
 /**

@@ -39,6 +39,7 @@ import { RecommendationsView } from "../listen/RecommendationsView";
 import { AnalysisCommandCenter } from "../analysis/AnalysisCommandCenter";
 import { AdPerformanceView } from "../analysis/AdPerformanceView";
 import { IapLibraryView } from "../analysis/IapLibraryView";
+import { AnalysisDnaView } from "../analysis/AnalysisDnaView";
 import { AudienceView } from "../analysis/AudienceView";
 import { PlacementsView } from "../analysis/PlacementsView";
 import { BudgetView } from "../analysis/BudgetView";
@@ -61,7 +62,6 @@ import { MstCommandCenter } from "../mst/MstCommandCenter";
 import { ConceptMapView } from "../mst/ConceptMapView";
 import { MstSprintsView } from "../mst/MstSprintsView";
 import { CrossmapResultsView } from "../mst/CrossmapResultsView";
-import { MstPerformanceView } from "../mst/MstPerformanceView";
 import { MstDirectionView } from "../mst/MstDirectionView";
 import { GeneralView } from "../settings/GeneralView";
 import { AdAccountOverview } from "../AdAccountOverview";
@@ -76,6 +76,7 @@ const GATED_VIEWS: [string, React.ComponentType][] = [
   ["Analysis · Command Center", AnalysisCommandCenter],
   ["Analysis · Ad Performance", AdPerformanceView],
   ["Analysis · IAP Library", IapLibraryView],
+  ["Analysis · Creative DNA", AnalysisDnaView],
   ["Analysis · Audience", AudienceView],
   ["Analysis · Placements", PlacementsView],
   ["Analysis · Budget", BudgetView],
@@ -98,7 +99,6 @@ const GATED_VIEWS: [string, React.ComponentType][] = [
   ["MST · Concept Map", ConceptMapView],
   ["MST · Sprints", MstSprintsView],
   ["MST · Crossmap Results", CrossmapResultsView],
-  ["MST · Performance", MstPerformanceView],
   ["MST · Direction", MstDirectionView],
 ];
 
@@ -176,25 +176,25 @@ describe("Manager selected", () => {
 });
 
 describe("Unconfigured-state actions (SKOV Pet)", () => {
-  it("Connect data source checklist step explains the real OAuth flow and hands off to Integrations", () => {
+  it("Connect data source checklist step shows the gated live-Meta 'Coming soon' state, not a working OAuth flow", () => {
     select("ad_account", "skov_pet");
     renderView(SignalView);
     // The "Connect data source" checklist step is now the entry point — no
-    // separate action button. Clicking it opens ConnectMetaDialog inline.
+    // separate action button. Clicking it opens ConnectMetaDialog inline,
+    // which is gated: it must never hand off into a live OAuth flow.
     fireEvent.click(screen.getByRole("button", { name: /Connect data source/i }));
     const dialog = screen.getByRole("dialog");
-    expect(dialog.textContent).toContain("Authorize with Meta");
-    expect(dialog.textContent).toContain("read-only ads access");
-    // The real connection lives in Settings → Integrations; the dialog
-    // hands off — it never fakes a connection.
-    expect(screen.getByRole("button", { name: /Go to Integrations/i })).toBeTruthy();
+    expect(dialog.textContent).toContain("Coming soon");
+    expect(dialog.textContent).toMatch(/use manual import/i);
+    // It must never promise a working hand-off into live OAuth.
+    expect(screen.queryByRole("button", { name: /Go to Integrations/i })).toBeNull();
   });
 
-  it("cancelling the connect dialog leaves the account unconfigured", () => {
+  it("closing the connect dialog leaves the account unconfigured", () => {
     select("ad_account", "skov_pet");
     renderView(SignalView);
     fireEvent.click(screen.getByRole("button", { name: /Connect data source/i }));
-    fireEvent.click(screen.getByRole("button", { name: /^Cancel$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Got it$/i }));
     // Account must remain unconfigured — no performance data appears.
     expect(document.body.textContent).toContain("Connect data source");
     expect(document.body.textContent).not.toContain("Bookster");

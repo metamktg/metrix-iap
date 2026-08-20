@@ -24,8 +24,29 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { OBJECTIVE_OPTIONS } from "./cohortOptions";
+import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
 
 const SECTION = "Settings · 10";
+
+/**
+ * Build/data-source info — moved here from the sidebar footer so the
+ * global chrome stays clean (canvas parity); this is real, honest
+ * information (the running build tag and whether the seed is demo data),
+ * it just belongs in Settings rather than cluttering every screen's nav rail.
+ */
+function SystemInfoSection() {
+  return (
+    <SectionCard title="System" desc="Build and data source">
+      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+        <div className="space-y-0.5">
+          <div className="text-caption font-medium text-foreground/80 font-mono">METRIX IAP v2.0-rc</div>
+          <div className="text-label text-muted-foreground/60 font-mono">SAMPLE / DEMO DATA</div>
+        </div>
+        <DataSourceBadgeToggle />
+      </div>
+    </SectionCard>
+  );
+}
 
 /**
  * Account config only. This decides which terminal metric(s) this account
@@ -293,6 +314,7 @@ export function GeneralView() {
         <div className="px-6 py-5 space-y-5 max-w-3xl">
           <NotificationPrefsSections />
           <AgentWaitlistSection />
+          <SystemInfoSection />
         </div>
       </div>
     );
@@ -403,6 +425,8 @@ export function GeneralView() {
         <NotificationPrefsSections />
 
         <AgentWaitlistSection />
+
+        <SystemInfoSection />
 
         <div className={cn("text-label font-mono text-muted-foreground/80", "px-1")}>
           Account ID · {account.id}

@@ -202,16 +202,19 @@ export function Topbar() {
 
       <div className="w-px h-4 bg-border/50 shrink-0" />
 
-      {/* Task tray toggle */}
+      {/* Task tray toggle — Nocturne labeled pill; the count moves into the
+          label instead of a floating badge. */}
       <button
         aria-label={open ? "Close task tray" : "Open task tray"}
         title={open ? "Close task tray" : `Pending workflow actions${trayCount > 0 ? ` (${trayCount} items)` : ""}`}
         onClick={toggle}
         className={cn(
-          "relative w-7 h-7 rounded flex items-center justify-center transition-colors",
+          "relative h-7 px-2.5 rounded-md border flex items-center gap-1.5 transition-colors text-caption font-medium",
           open
-            ? "bg-primary/15 border border-primary/25 text-interactive hover:bg-primary/20"
-            : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+            ? "bg-primary/15 border-primary/25 text-interactive hover:bg-primary/20"
+            : trayCount > 0
+            ? "border-primary/40 text-interactive hover:bg-primary/10"
+            : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-white/5"
         )}
       >
         {open ? (
@@ -219,10 +222,9 @@ export function Topbar() {
         ) : (
           <PanelRightOpen className="w-3.5 h-3.5" />
         )}
-        {!open && trayCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground leading-none px-0.5">
-            {trayCount > 9 ? "9+" : trayCount}
-          </span>
+        <span className="hidden sm:inline">Tray</span>
+        {trayCount > 0 && (
+          <span className="tabular-nums font-semibold">{trayCount > 9 ? "9+" : trayCount}</span>
         )}
       </button>
 

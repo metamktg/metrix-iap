@@ -17,7 +17,8 @@ import {
   useShowMore, ShowMoreButton, SegmentGenderIcon, SectionInfoIcon,
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
-import { VariableStackChips, VariableChip, familyLabel } from "./strategyShared";
+import { VariableStackChips, VariableChip, familyLabel, pillarTier } from "./strategyShared";
+import { normalizeConfidence } from "@/lib/normalize";
 import {
   computeAvatarDna, mergeAvatarDna, columnIdForCell,
   type AvatarDna, type DnaVariable,
@@ -38,7 +39,7 @@ import {
 } from "lucide-react";
 import type {
   MSTMatrixColumn, MSTMatrixCell, ICPProfile, PlacementRow, AnalysisData,
-  AdRecord, ActiveHypothesis,
+  AdRecord, ActiveHypothesis, MessagePillar,
 } from "@/lib/data/seedTypes";
 import { cn } from "@workspace/command-deck/lib/utils";
 
@@ -80,12 +81,12 @@ interface ColumnPerf {
 
 /** Stable per-avatar accent so identity reads consistently regardless of sort order. */
 const AVATAR_ACCENTS = [
-  { icon: "text-blue-300", chip: "border-blue-400/30 bg-chart-1/10", rail: "before:bg-chart-1/70", bar: "bg-chart-1/70" },
-  { icon: "text-violet-300", chip: "border-violet-400/30 bg-violet-400/10", rail: "before:bg-violet-400/70", bar: "bg-violet-400/70" },
-  { icon: "text-amber-300", chip: "border-amber-400/30 bg-amber-400/10", rail: "before:bg-amber-400/70", bar: "bg-amber-400/70" },
-  { icon: "text-teal-300", chip: "border-teal-400/30 bg-teal-400/10", rail: "before:bg-teal-400/70", bar: "bg-teal-400/70" },
-  { icon: "text-fuchsia-300", chip: "border-fuchsia-400/30 bg-fuchsia-400/10", rail: "before:bg-fuchsia-400/70", bar: "bg-fuchsia-400/70" },
-  { icon: "text-sky-300", chip: "border-sky-400/30 bg-sky-400/10", rail: "before:bg-sky-400/70", bar: "bg-sky-400/70" },
+  { rail: "before:bg-chart-1/70", bar: "bg-chart-1/70" },
+  { rail: "before:bg-violet-400/70", bar: "bg-violet-400/70" },
+  { rail: "before:bg-amber-400/70", bar: "bg-amber-400/70" },
+  { rail: "before:bg-teal-400/70", bar: "bg-teal-400/70" },
+  { rail: "before:bg-fuchsia-400/70", bar: "bg-fuchsia-400/70" },
+  { rail: "before:bg-sky-400/70", bar: "bg-sky-400/70" },
 ] as const;
 
 function avatarAccent(index: number) {
@@ -244,6 +245,72 @@ function DnaChipStrip({ variables, label, testId }: { variables: DnaVariable[]; 
   );
 }
 
+// ─── DNA loci bars ────────────────────────────────────────────────────
+// Nocturne "gene loci" composition: each measured variable as a diverging
+// bar around the avatar's own spend-weighted average CPA. The percentage
+// is a real derivation ((avg − cpa) / avg — positive = cheaper than the
+// avatar's average), never an invented isolation score. Variables without
+// a CPA are listed but carry no bar.
+
+function DnaLociBars({ variables, testId }: { variables: DnaVariable[]; testId: string }) {
+  const measured = variables.filter((v) => v.cpa != null && v.spend > 0);
+  if (measured.length < 2) return null;
+  const totalSpend = measured.reduce((n, v) => n + v.spend, 0);
+  const avgCpa = measured.reduce((n, v) => n + (v.cpa as number) * v.spend, 0) / totalSpend;
+  if (!(avgCpa > 0)) return null;
+
+  const rows = measured
+    .map((v) => ({ v, lift: ((avgCpa - (v.cpa as number)) / avgCpa) * 100 }))
+    .sort((a, b) => b.lift - a.lift);
+  const maxAbs = Math.max(10, ...rows.map((r) => Math.abs(r.lift)));
+
+  return (
+    <div data-testid={testId} className="mt-3">
+      <div className="flex items-center gap-1 mb-1.5">
+        <Dna className="w-3.5 h-3.5 text-interactive/70" />
+        <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/60")}>
+          CPA vs avatar average
+        </span>
+      </div>
+      <div className="space-y-1.5">
+        {rows.map(({ v, lift }, idx) => {
+          const w = (Math.abs(lift) / maxAbs) * 50;
+          const good = lift >= 0;
+          return (
+            <div key={v.code} className="flex items-center gap-2">
+              <span className={cn(TYPE.label, "w-6 shrink-0 font-mono text-muted-foreground/40")}>
+                L{idx + 1}
+              </span>
+              <span className={cn(TYPE.caption, "w-28 shrink-0 font-mono truncate text-foreground/75")} title={v.code}>
+                {v.code}
+              </span>
+              <div className="relative flex-1 h-[5px]">
+                <div className="absolute inset-y-0 left-1/2 w-px bg-white/20" />
+                <div
+                  className={cn(
+                    "absolute inset-y-0 rounded-full",
+                    good ? "bg-primary/60" : "bg-red-400/45",
+                  )}
+                  style={good
+                    ? { left: "50%", width: `${w}%` }
+                    : { right: "50%", width: `${w}%` }}
+                />
+              </div>
+              <span className={cn(
+                TYPE.label,
+                "w-12 shrink-0 text-right tabular-nums",
+                good ? "text-emerald-400" : "text-red-300",
+              )}>
+                {lift > 0 ? "+" : ""}{lift.toFixed(0)}%
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Sort / filter bar ────────────────────────────────────────────────
 
 function SortFilterBar({
@@ -343,105 +410,99 @@ function AvatarCard({
   const spendPct = maxSpend > 0 ? (perf.spend / maxSpend) * 100 : 0;
   const hasPerf = perf.spend > 0 || perf.cpa != null;
   const accent = avatarAccent(accentIndex);
+  const flatName = col.name.replace(/\n/g, " ");
 
   return (
     <div
       ref={registerRef}
       className={cn(
-        "relative rounded-xl border bg-white/[0.02] transition-colors duration-500 scroll-mt-24",
+        "relative rounded-xl border bg-white/[0.02] p-4 transition-colors duration-500 scroll-mt-24",
         "before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:rounded-l-xl",
         accent.rail,
         flash ? "border-primary/70 bg-primary/[0.06]" : "border-border/40 hover:border-border/60"
       )}
     >
-      {/* Rank badge — reinforces that re-sorting actually reordered the grid */}
-      <span
-        className="absolute top-3 right-3.5 text-label font-mono font-semibold text-muted-foreground/35 tabular-nums"
-        aria-hidden="true"
-      >
-        #{rank}
-      </span>
-
       <button
         onClick={() => onClickAvatar(col, cells)}
-        className="group w-full text-left pl-5 pr-4 py-4 hover:bg-white/[0.03] transition-colors rounded-xl"
+        className="group w-full text-left -m-4 p-4 hover:bg-white/[0.03] transition-colors rounded-xl"
       >
-        {/* L1: identity — the primary visual anchor on the card */}
-        <div className="flex items-center gap-2.5 mb-3.5 pr-6">
-          <div className={cn("w-9 h-9 rounded-lg border flex items-center justify-center shrink-0", accent.chip)}>
-            <Users className={cn("w-5 h-5", accent.icon)} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-lg font-bold text-foreground leading-tight tracking-tight whitespace-pre-line">{col.name}</p>
-            <span className="inline-block mt-0.5 text-label font-mono text-muted-foreground/55">{col.icp}</span>
+        {/* Header — persona medallion + identity, matching IcpProfileCard's rank-line convention */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <PersonaAvatar name={flatName} />
+            <div className="min-w-0">
+              <p className={cn(TYPE.microLabel, "mb-0.5")}>AVATAR {String(rank).padStart(2, "0")}</p>
+              <p className="text-title font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
+              <span className="text-label font-mono text-muted-foreground/60">{col.icp}</span>
+            </div>
           </div>
         </div>
 
-        {/* L1: metric pills — the active sort metric is visually highlighted */}
-        {hasPerf && (
-          <div className="grid grid-cols-4 gap-1.5 mb-3">
-            <MetricPill label="Spend" value={fmtUSD(perf.spend, 0)} active={sortBy === "spend"} direction={SORT_DIRECTION.spend} />
-            <MetricPill label="CPA" value={perf.cpa != null ? fmtUSD(perf.cpa) : "—"} active={sortBy === "cpa"} direction={SORT_DIRECTION.cpa} />
-            <MetricPill label="Link CVR" value={perf.cvr != null ? fmtPct(perf.cvr) : "—"} active={sortBy === "cvr"} direction={SORT_DIRECTION.cvr} />
-            <MetricPill label="CPM" value={perf.cpm != null ? fmtUSD(perf.cpm) : "—"} active={sortBy === "cpm"} direction={SORT_DIRECTION.cpm} />
+        {/* Performance panel — pills + normalised spend bar, boxed like IcpProfileCard's Performance block */}
+        {(hasPerf || maxSpend > 0) && (
+          <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3 mt-3">
+            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">Performance</span>
+            {hasPerf && (
+              <div className="grid grid-cols-4 gap-1.5 mt-2">
+                <MetricPill label="Spend" value={fmtUSD(perf.spend, 0)} active={sortBy === "spend"} direction={SORT_DIRECTION.spend} />
+                <MetricPill label="CPA" value={perf.cpa != null ? fmtUSD(perf.cpa) : "—"} active={sortBy === "cpa"} direction={SORT_DIRECTION.cpa} />
+                <MetricPill label="Link CVR" value={perf.cvr != null ? fmtPct(perf.cvr) : "—"} active={sortBy === "cvr"} direction={SORT_DIRECTION.cvr} />
+                <MetricPill label="CPM" value={perf.cpm != null ? fmtUSD(perf.cpm) : "—"} active={sortBy === "cpm"} direction={SORT_DIRECTION.cpm} />
+              </div>
+            )}
+            {maxSpend > 0 && (
+              <div className={cn("flex items-center gap-2", hasPerf && "mt-2 pt-2 border-t border-border/15")}>
+                <div
+                  className="flex-1 h-[3px] rounded-full overflow-hidden"
+                  style={{ background: "rgba(255,255,255,0.04)" }}
+                >
+                  <div
+                    className={cn("h-full rounded-full", accent.bar)}
+                    style={{ width: `${Math.min(spendPct, 100)}%` }}
+                  />
+                </div>
+                <span className="text-label text-muted-foreground/40 tabular-nums shrink-0">
+                  {spendPct.toFixed(0)}% of top spend
+                </span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* L1: spend bar (normalised across all avatars) */}
-        {maxSpend > 0 && (
-          <div className="flex items-center gap-2 mb-3">
-            <div
-              className="flex-1 h-[3px] rounded-full overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.04)" }}
-            >
-              <div
-                className={cn("h-full rounded-full", accent.bar)}
-                style={{ width: `${Math.min(spendPct, 100)}%` }}
-              />
-            </div>
-            <span className="text-label text-muted-foreground/40 tabular-nums shrink-0">
-              {spendPct.toFixed(0)}% of top spend
-            </span>
-          </div>
-        )}
-
-        <p className="inline-flex items-center gap-1 text-caption font-medium text-muted-foreground/65 group-hover:text-interactive transition-colors">
+        <p className="inline-flex items-center gap-1 text-caption font-medium text-muted-foreground/65 group-hover:text-interactive transition-colors mt-3">
           {cells.length} angle{cells.length !== 1 ? "s" : ""} · tap for detail
           <ChevronRight className="w-3 h-3 opacity-0 -translate-x-0.5 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
         </p>
       </button>
 
-      {/* L2: Creative DNA — collapsed by default */}
+      {/* L2: Creative DNA — collapsed by default, styled like IcpProfileCard's accordions */}
       {dna && dna.variables.length > 0 && (
-        <div className={cn("border-t border-border/20", dnaOpen && "bg-white/[0.015]")}>
+        <div className="mt-3">
           <button
             type="button"
             onClick={() => setDnaOpen((o) => !o)}
-            className="w-full flex items-center justify-between pl-5 pr-4 py-2 hover:bg-white/[0.02] transition-colors"
+            className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
           >
-            <div className="flex items-center gap-1.5">
-              <Dna className={cn("w-3.5 h-3.5", accent.icon)} />
-              <span className="text-label font-bold text-muted-foreground/75 uppercase tracking-widest">
-                Creative DNA
-              </span>
-            </div>
-            <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground/40 transition-transform", dnaOpen && "rotate-180")} />
+            <Dna className="w-3.5 h-3.5" />
+            Creative DNA
+            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", dnaOpen && "rotate-180")} />
           </button>
           {dnaOpen && (
-            <div className="pl-5 pr-4 pb-3">
+            <div className="mt-2.5">
               <DnaChipStrip
                 variables={dna.variables}
                 label={`Measured · ${dna.measuredCellIds.length} angle${dna.measuredCellIds.length === 1 ? "" : "s"}`}
                 testId={`avatar-dna-${col.id}`}
               />
+              <DnaLociBars variables={dna.variables} testId={`avatar-dna-loci-${col.id}`} />
             </div>
           )}
         </div>
       )}
 
-      {/* ICP profile links */}
+      {/* ICP profile links — footer, matching IcpProfileCard's avatar back-links */}
       {matched.length > 0 && (
-        <div className="pl-5 pr-4 pb-3 pt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/20">
+        <div className="mt-3 pt-3 border-t border-border/20 flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/60">
             ICP profile{matched.length === 1 ? "" : "s"}
           </span>
@@ -518,11 +579,52 @@ function PlacementsAccordion({ rows }: { rows: PlacementRow[] }) {
   );
 }
 
+// ─── Persona avatar ───────────────────────────────────────────────────
+// Nocturne persona treatment: an initials medallion with a stable
+// per-identity hue (hashed from the name, so identity reads consistently
+// across sorts and sessions) — pure presentation, no data invented. Shared
+// by matrix-avatar cards and ICP-profile cards for one consistent identity
+// block across both views.
+
+function personaHue(name: string): number {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
+  return h;
+}
+
+function personaInitials(name: string): string {
+  return name
+    .replace(/^The\s+/i, "")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function PersonaAvatar({ name }: { name: string }) {
+  const h = personaHue(name);
+  return (
+    <span
+      aria-hidden="true"
+      data-testid="persona-avatar"
+      className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 font-semibold text-callout"
+      style={{
+        background: `linear-gradient(155deg, hsl(${h} 42% 24%), hsl(${(h + 40) % 360} 36% 14%))`,
+        color: `hsl(${h} 70% 82%)`,
+      }}
+    >
+      {personaInitials(name)}
+    </span>
+  );
+}
+
 // ─── ICP profile card ─────────────────────────────────────────────────
 
 function IcpProfileCard({
   profile, registerRef, flash, avatars, onAvatarClick, dna,
-  placementRows, avgCpa, avgCvr, hypotheses,
+  placementRows, avgCpa, avgCvr, hypotheses, rank,
 }: {
   profile: ICPProfile;
   registerRef?: (el: HTMLDivElement | null) => void;
@@ -534,9 +636,21 @@ function IcpProfileCard({
   avgCpa: number | null;
   avgCvr?: number | null;
   hypotheses?: ActiveHypothesis[];
+  /** 1-based position in the currently rendered profile list — drives the "ICP 01 · …" rank line. */
+  rank?: number;
 }) {
   const perf = profile.performance_data ?? null;
   const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
+  // Rank-line confidence suffix: recognized levels (high/medium/low/directional)
+  // read as "· high confidence"; unrecognized raw values (e.g. the legacy
+  // "validation_required" status string) read as-is with no redundant
+  // "confidence" suffix appended.
+  const rankConfidence = profile.confidence_level ? normalizeConfidence(profile.confidence_level) : null;
+  const rankConfidenceText = rankConfidence
+    ? rankConfidence.level === "unknown"
+      ? rankConfidence.label
+      : `${rankConfidence.label.toLowerCase()} confidence`
+    : null;
   const [theoryOpen, setTheoryOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
   const hasTheory = Boolean(
@@ -571,14 +685,37 @@ function IcpProfileCard({
         flash ? "border-primary/70 bg-primary/[0.06]" : "border-border/40"
       )}
     >
-      {/* Header */}
+      {/* Header — persona medallion + identity */}
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-title font-semibold text-foreground leading-tight">{profile.profile_name}</p>
-          <span className="text-label font-mono text-muted-foreground/60">{profile.profile_id}</span>
+        <div className="flex items-center gap-3 min-w-0">
+          <PersonaAvatar name={profile.profile_name} />
+          <div className="min-w-0">
+            {rank != null && (
+              <p className={cn(TYPE.microLabel, "mb-0.5")}>
+                ICP {String(rank).padStart(2, "0")}
+                {rankConfidenceText && ` · ${rankConfidenceText}`}
+              </p>
+            )}
+            <p className="text-title font-semibold text-foreground leading-tight">{profile.profile_name}</p>
+            <span className="text-label font-mono text-muted-foreground/60">{profile.profile_id}</span>
+          </div>
         </div>
         {profile.confidence_level && <ConfidenceBadge value={profile.confidence_level} />}
       </div>
+
+      {/* Pull-quote — the profile's own psychographic read, real data
+          (strategy.icp_profiles[].psychographic_profile), truncated with
+          the full sentence behind the reveal per the density rule. */}
+      {profile.psychographic_profile && (
+        <div className="mt-2.5">
+          <DetailReveal
+            label={`“${deriveLabel(profile.psychographic_profile, 90)}”`}
+            labelClassName={cn(TYPE.body, "italic text-muted-foreground/75 leading-relaxed")}
+            eyebrow="Psychographic read"
+            sections={[{ text: profile.psychographic_profile }]}
+          />
+        </div>
+      )}
 
       <div className="space-y-3 mt-3">
         {/* 1. Performance pills */}
@@ -763,7 +900,7 @@ function IcpProfileCard({
 // tile showing performance, confidence, best variable, and explore CTA.
 
 function AudienceSegmentTile({
-  seg, totals, derived, signal, bestVariableCode, onExplore,
+  seg, totals, derived, signal, bestVariableCode, onExplore, rank,
 }: {
   seg: SegmentId;
   totals: SegmentRawTotals;
@@ -771,18 +908,23 @@ function AudienceSegmentTile({
   signal: SegmentSignal;
   bestVariableCode: string | null;
   onExplore: () => void;
+  /** 1-based position in the rendered segment grid — drives the "SEGMENT 01" rank line. */
+  rank?: number;
 }) {
   const hasSpend = totals.spend != null && totals.spend > 0;
   return (
     <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-3">
-      {/* L1: identity + confidence badge */}
+      {/* Header — identity block matching Avatar/ICP rank-line convention + signal badge */}
       <div className="flex items-start justify-between gap-2">
-        <p className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <SegmentGenderIcon gender={seg.gender} />
-          <span className={cn(TYPE.title, "text-foreground leading-snug truncate")}>
-            {segmentLabel(seg)}
-          </span>
-        </p>
+          <div className="min-w-0">
+            {rank != null && (
+              <p className={cn(TYPE.microLabel, "mb-0.5")}>SEGMENT {String(rank).padStart(2, "0")}</p>
+            )}
+            <p className={cn(TYPE.title, "leading-snug truncate")}>{segmentLabel(seg)}</p>
+          </div>
+        </div>
         <TooltipProvider delayDuration={150}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -814,18 +956,21 @@ function AudienceSegmentTile({
         </TooltipProvider>
       </div>
 
-      {/* L1: 3 performance pills */}
+      {/* Performance panel — boxed like the Avatar/ICP cards' Performance block */}
       {hasSpend ? (
-        <div className="grid grid-cols-3 gap-2">
-          <MetricPill label="Spend" value={fmtUSD(totals.spend!, 0)} />
-          <MetricPill label="CPA" value={derived.cpa != null ? fmtUSD(derived.cpa) : "—"} />
-          <MetricPill label="Link CVR" value={derived.cvr != null ? fmtPct(derived.cvr) : "—"} />
+        <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
+          <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">Performance</span>
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            <MetricPill label="Spend" value={fmtUSD(totals.spend!, 0)} />
+            <MetricPill label="CPA" value={derived.cpa != null ? fmtUSD(derived.cpa) : "—"} />
+            <MetricPill label="Link CVR" value={derived.cvr != null ? fmtPct(derived.cvr) : "—"} />
+          </div>
         </div>
       ) : (
         <p className={cn(TYPE.caption, "text-muted-foreground/50")}>No spend data for this segment.</p>
       )}
 
-      {/* L1: best variable signal */}
+      {/* Best variable signal */}
       <div className="flex items-center gap-1.5 min-h-[1.25rem]">
         <span className={cn(TYPE.label, "text-muted-foreground/50 normal-case")}>Top variable</span>
         {bestVariableCode ? (
@@ -835,19 +980,21 @@ function AudienceSegmentTile({
         )}
       </div>
 
-      {/* Explore CTA */}
-      <button
-        type="button"
-        onClick={onExplore}
-        className={cn(
-          "mt-auto self-start inline-flex items-center gap-1",
-          TYPE.caption,
-          "font-medium text-interactive hover:text-primary/80 transition-colors",
-        )}
-      >
-        Explore segment
-        <ArrowDownRight className="w-3.5 h-3.5" />
-      </button>
+      {/* Explore CTA — footer, matching the Avatar/ICP footer link convention */}
+      <div className="mt-auto pt-3 border-t border-border/20">
+        <button
+          type="button"
+          onClick={onExplore}
+          className={cn(
+            "inline-flex items-center gap-1",
+            TYPE.caption,
+            "font-medium text-interactive hover:text-primary/80 transition-colors",
+          )}
+        >
+          Explore segment
+          <ArrowDownRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -1128,6 +1275,84 @@ function FoldedList<T>({
   );
 }
 
+// ─── Message → ICP coverage matrix ─────────────────────────────────────
+// Collapsible table: pillars × ICP profiles, cells marked proven/tested/
+// untested from the real message_pillars[].target_icps linkage + each
+// pillar's source_cells-derived evidence tier. Collapsed by default —
+// this is a cross-reference view, not primary-surface content.
+
+type CoverageLevel = "proven" | "tested" | "untested";
+
+const COVERAGE_STYLE: Record<CoverageLevel, string> = {
+  proven:   "bg-emerald-400/15 border-emerald-400/35 text-emerald-300",
+  tested:   "bg-accent/10 border-accent/25 text-foreground/80",
+  untested: "border-border/25 text-muted-foreground/35",
+};
+
+const COVERAGE_LABEL: Record<CoverageLevel, string> = {
+  proven: "Proven",
+  tested: "Tested",
+  untested: "—",
+};
+
+function CoverageMatrix({
+  rows, profiles,
+}: {
+  rows: { pillar: MessagePillar; cells: CoverageLevel[] }[];
+  profiles: ICPProfile[];
+}) {
+  if (rows.length === 0 || profiles.length === 0) return null;
+  return (
+    <SectionCard
+      title="Message → ICP coverage"
+      desc="Where each pillar is proven, tested, or never tried against a profile"
+      defaultOpen={false}
+    >
+      <div className="overflow-x-auto">
+        <table className="border-collapse w-full min-w-[560px]">
+          <thead>
+            <tr>
+              <th className={cn(TYPE.label, "text-left text-muted-foreground/50 font-semibold pb-2 pr-3")}>Pillar</th>
+              {profiles.map((profile) => (
+                <th
+                  key={profile.profile_id}
+                  className={cn(TYPE.label, "text-center text-muted-foreground/50 font-semibold pb-2 px-1.5")}
+                  title={profile.profile_name}
+                >
+                  {deriveLabel(profile.profile_name, 18)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ pillar, cells }) => (
+              <tr key={pillar.id}>
+                <td className={cn(TYPE.caption, "text-foreground/80 py-1 pr-3 max-w-[180px] truncate")} title={pillar.label}>
+                  {pillar.label}
+                </td>
+                {cells.map((level, i) => (
+                  <td key={i} className="py-1 px-1.5">
+                    <div
+                      className={cn(
+                        "rounded-md border text-center py-1.5",
+                        TYPE.label,
+                        "font-medium",
+                        COVERAGE_STYLE[level],
+                      )}
+                    >
+                      {COVERAGE_LABEL[level]}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </SectionCard>
+  );
+}
+
 // ─── Main view ────────────────────────────────────────────────────────
 
 export function AvatarsView() {
@@ -1312,6 +1537,27 @@ export function AvatarsView() {
     return result;
   }, [strategyData]);
 
+  // Message → ICP coverage matrix: for each pillar × ICP profile, "proven"
+  // when the pillar targets that profile (message_pillars[].target_icps)
+  // and the pillar's own evidence tier (real source_cells count) is high;
+  // "tested" when targeted at a lower tier; "untested" when the pillar
+  // never named that profile. No invented linkage — this is the exact
+  // real target_icps → profile_id relationship the seed already carries.
+  const coverageRows = useMemo(() => {
+    const pillars = strategyData?.message_pillars ?? [];
+    return pillars.map((p) => {
+      const targets = new Set(p.target_icps ?? []);
+      const tier = pillarTier(p.source_cells ?? []);
+      return {
+        pillar: p,
+        cells: icpProfiles.map((profile) => {
+          if (!targets.has(profile.profile_id)) return "untested" as const;
+          return tier === "high" ? "proven" as const : "tested" as const;
+        }),
+      };
+    });
+  }, [strategyData, icpProfiles]);
+
   // ─── Sorted / filtered lists ───────────────────────────────────────
 
   // Stable per-avatar identity index (original matrix order) so the accent color
@@ -1372,7 +1618,7 @@ export function AvatarsView() {
         if (!matrix && icpProfiles.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Avatars / ICP / PMF" tabs="strategy" />
+              <ModuleHeader section={SECTION} title="Avatars / ICP / PMF" accountName={acct.name} tabs="strategy" />
               <PendingState
                 title="No avatars yet"
                 message="Avatars are derived from the MST matrix and strategy ICP profiles once they exist for this account."
@@ -1404,6 +1650,7 @@ export function AvatarsView() {
             <ModuleHeader
               section={SECTION}
               title="Avatars / ICP / PMF"
+              accountName={acct.name}
               subtitle="Matrix avatars · ICP profiles · audience signal"
               tabs="strategy"
             />
@@ -1488,10 +1735,11 @@ export function AvatarsView() {
                           limit={5}
                           noun="profiles"
                           listClassName="space-y-3"
-                          renderItem={(p) => (
+                          renderItem={(p, i) => (
                             <IcpProfileCard
                               key={p.profile_id}
                               profile={p}
+                              rank={i + 1}
                               registerRef={(el) => { profileRefs.current[p.profile_id] = el; }}
                               flash={flashProfile === p.profile_id}
                               avatars={avatarsForProfile(p.profile_id)}
@@ -1511,6 +1759,11 @@ export function AvatarsView() {
                     </SectionCard>
                   )}
 
+                  {/* ── Message → ICP coverage — collapsible cross-reference table ── */}
+                  {viewMode === "profiles" && (
+                    <CoverageMatrix rows={coverageRows} profiles={icpProfiles} />
+                  )}
+
                   {/* ── Audience segments — hierarchical tile authority ── */}
                   {segmentList.length > 0 && (
                     <SectionCard
@@ -1522,12 +1775,13 @@ export function AvatarsView() {
                         limit={6}
                         noun="segments"
                         gridClassName="grid grid-cols-dashboard-2 gap-3"
-                        renderItem={(seg) => {
+                        renderItem={(seg, i) => {
                           const stats = segmentStats.get(segmentKey(seg))!;
                           return (
                             <AudienceSegmentTile
                               key={segmentKey(seg)}
                               seg={seg}
+                              rank={i + 1}
                               totals={stats.totals}
                               derived={stats.derived}
                               signal={stats.signal}

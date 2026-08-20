@@ -3,8 +3,8 @@
 // Covers:
 //   1. "Account Totals" SectionCard header is present (not a bare h2).
 //   2. At least one SectionInfoIcon (info icon) is visible.
-//   3. Zero-result event tiles have the opacity-60 class applied.
-//   4. "No actions yet" empty state renders when no recommendation cards exist.
+//   3. Zero-result event rows are dimmed (opacity-40) in the canvas table.
+//   4. No stray Next Best Action hero card renders when no recommendation cards exist.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot; bookster is a
@@ -178,8 +178,8 @@ async function main() {
       }
     });
 
-    // ── Test 3: zero-result event tiles have opacity-60 class ─────────────
-    await test("zero-result event tiles have opacity-60 class applied", async () => {
+    // ── Test 3: zero-result event rows are dimmed in the canvas table ─────
+    await test("zero-result event rows are dimmed in the Results-by-event table", async () => {
       const ctx = await browser.newContext({
         viewport: { width: 1440, height: 900 },
       });
@@ -188,23 +188,24 @@ async function main() {
         await mockApis(ctx);
         await gotoOverview(page);
 
-        // The bookster fixture has two zero-result events (Website trials started
-        // and onb_initiate_checkout). Each zero tile gets the opacity-60 class on
-        // its container div. Assert at least one such tile is present.
-        const zeroTiles = page.locator(".opacity-60");
-        const count = await zeroTiles.count();
+        // Since the Nocturne canvas replacement, Results by event renders as
+        // an .nc-table; zero-result events (the bookster fixture has two —
+        // Website trials started and onb_initiate_checkout) stay listed as
+        // rows dimmed with opacity-40. Assert at least one such row exists.
+        const zeroRows = page.locator(".nc-table tbody tr.opacity-40");
+        const count = await zeroRows.count();
         assert(
           count > 0,
-          `Expected at least one event tile with class "opacity-60" for zero-result events, found ${count}. Zero-value dimming may have been removed.`,
+          `Expected at least one dimmed (.opacity-40) zero-result row in the Results-by-event table, found ${count}. Zero-value dimming may have been removed.`,
         );
-        console.log(`       found ${count} zero-result tile(s) with opacity-60`);
+        console.log(`       found ${count} dimmed zero-result row(s)`);
       } finally {
         await ctx.close();
       }
     });
 
-    // ── Test 4: "No actions yet" empty state renders ─────────────────────
-    await test('"No actions yet" empty state renders when no recommendation cards exist', async () => {
+    // ── Test 4: no stray Next Best Action hero when nothing is pending ───
+    await test("Next Best Action hero does not render when no recommendation cards exist", async () => {
       const ctx = await browser.newContext({
         viewport: { width: 1440, height: 900 },
       });
@@ -213,17 +214,17 @@ async function main() {
         await mockApis(ctx);
         await gotoOverview(page);
 
-        // bookster has no optimization_loop recommendation_cards, so the
-        // "Current focus" section shows the "No actions yet" empty state.
-        const emptyState = page
-          .locator("text=No actions yet")
-          .first();
-        const visible = await emptyState.isVisible();
+        // bookster has no optimization_loop recommendation_cards, so
+        // NextBestActionCard must never show a stale or fabricated
+        // recommendation — it renders the honest dashed empty-state
+        // (data-testid="next-best-action-empty") instead of the hero card.
+        const hero = page.locator('[data-testid="next-best-action-card"]');
+        const count = await hero.count();
         assert(
-          visible,
-          '"No actions yet" empty state not found. The empty state for missing recommendation cards may have been removed.',
+          count === 0,
+          `Expected no Next Best Action hero card, found ${count}. It should render nothing when no recommendations are pending.`,
         );
-        console.log(`       "No actions yet" empty state is visible`);
+        console.log(`       Next Best Action hero correctly absent with no pending recommendations`);
       } finally {
         await ctx.close();
       }

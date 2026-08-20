@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ShieldCheck, KeyRound, Grid3x3,
-  Zap, ArrowRight, PanelRightClose, PanelRightOpen,
+  ArrowRight,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
@@ -16,72 +16,24 @@ import {
   getAdAccount, getAnalysisData, getMST,
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
+import { NextBestActionCard } from "@/components/deck/NextBestActionCard";
 import {
   ModuleHeader, SectionCard, SectionInfoIcon, CaveatNote, DetailReveal, deriveLabel,
   UnconfiguredState, PendingState, CrossLink, fmtUSD, fmtNum, eventLabel, resultTerm,
-  SkeletonTileRow, LoopChecklist, type LoopChecklistStep,
+  SkeletonTileRow,
+  OverviewHeaderControls, type ViewPreset,
 } from "./shared";
-import { useListWorkspaceReports } from "@workspace/api-client-react";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from "@/lib/data/metricsCatalog";
-import { useMetricSelection } from "@/hooks/useMetricSelection";
-import { MetricPickerButton } from "@/components/creative/MetricPicker";
+import { buildMetricCatalog, metricSourceFromCampaignSummary, metricSourceFromApiTotals, metricById } from "@/lib/data/metricsCatalog";
+import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { trendForMetric, sparkSeriesForMetric, sparkPoints } from "@/lib/data/summaryTrends";
+import { useKpiTileMetrics } from "@/hooks/useKpiTileMetrics";
 import { KpiTile } from "@/components/metrics/KpiTile";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { MetricHoverPopover } from "@/components/metrics/MetricHoverPopover";
 import { LoopCommandChain } from "@/components/loop/LoopCommandChain";
-import { useDragResize } from "@/hooks/useDragResize";
-
-const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
-
-// ─── Loop-panel collapse + resize persistence ─────────────────────────
-// The right-rail loop checklist is useful mid-setup but becomes visual
-// clutter once every account is configured and looping — let users hide
-// it (or resize it), remembered across sessions like the main nav sidebar.
-const LOOP_PANEL_STORAGE_KEY = "metrix_loop_panel_collapsed";
-const LOOP_PANEL_WIDTH_KEY = "metrix_loop_panel_width";
-const LOOP_PANEL_COLLAPSED_WIDTH = 36;
-const LOOP_PANEL_DEFAULT_WIDTH = 208;
-const LOOP_PANEL_MIN_WIDTH = 160;
-const LOOP_PANEL_MAX_WIDTH = 360;
-// Drag the panel narrower than this and releasing snaps it fully closed —
-// unlike the left nav, this panel can also grow past its default width.
-const LOOP_PANEL_COLLAPSE_SNAP_WIDTH = 110;
-
-function loadLoopPanelCollapsed(): boolean {
-  try {
-    return localStorage.getItem(LOOP_PANEL_STORAGE_KEY) === "1";
-  } catch {
-    return false; // default: expanded
-  }
-}
-
-function saveLoopPanelCollapsed(v: boolean) {
-  try {
-    localStorage.setItem(LOOP_PANEL_STORAGE_KEY, v ? "1" : "0");
-  } catch {
-    /* ignore */
-  }
-}
-
-function loadLoopPanelWidth(): number {
-  try {
-    const raw = Number(localStorage.getItem(LOOP_PANEL_WIDTH_KEY));
-    if (Number.isFinite(raw) && raw >= LOOP_PANEL_MIN_WIDTH && raw <= LOOP_PANEL_MAX_WIDTH) return raw;
-  } catch {
-    /* ignore */
-  }
-  return LOOP_PANEL_DEFAULT_WIDTH;
-}
-
-function saveLoopPanelWidth(v: number) {
-  try {
-    localStorage.setItem(LOOP_PANEL_WIDTH_KEY, String(v));
-  } catch {
-    /* ignore */
-  }
-}
 
 // ── Main export ─────────────────────────────────────────────────────────
 
@@ -109,58 +61,61 @@ export function AdAccountOverview() {
 
   // ── Hooks hoisted above early returns (Rules of Hooks) ──────────────
   const isRefetching = useMetrixIsRefetching();
-  const { data: reportsData } = useListWorkspaceReports(seed.manager_account.id);
   const cs = account?.iap?.campaign_summary ?? null;
+
+  // Nocturne trend layer: the date-preset pills window the tiles through
+  // the analysis-summary endpoint (real per-day rows + real prior-window
+  // totals). "all" keeps the seed's full-flight campaign summary; a preset
+  // switches BOTH the tile values and their deltas/sparklines to the same
+  // window so the pairing can never disagree.
+  const [preset, setPreset] = useState<ViewPreset>("all");
+  // "vs prior" / "Summary·Detailed" — the page-header cluster's real,
+  // visible effects: compareOn shows/hides each tile's already-computed
+  // trend-vs-prior line, detailOn expands the two control-read popovers
+  // below by default. Both start on, matching current default behavior.
+  const [compareOn, setCompareOn] = useState(true);
+  const [detailOn, setDetailOn] = useState(false);
+  const { data: summary, isFetching: summaryFetching } = useQuery({
+    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
+    enabled: !!adAccountId && account?.status === "configured",
+  });
+  const windowedTotals = preset !== "all" && summary ? summary.totals : null;
   const metricCatalog = useMemo(
-    () => (cs ? buildMetricCatalog(metricSourceFromCampaignSummary(cs)) : []),
-    [cs]
+    () => {
+      if (windowedTotals) return buildMetricCatalog(metricSourceFromApiTotals(windowedTotals));
+      return cs ? buildMetricCatalog(metricSourceFromCampaignSummary(cs)) : [];
+    },
+    [cs, windowedTotals]
   );
-  const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
-  const { selected: selectedMetricIds, toggle, move, replace, reset } = useMetricSelection(availableMetricIds);
-  const [openMetricId, setOpenMetricId] = useState<string | null>(null);
-  const [loopPanelCollapsed, setLoopPanelCollapsed] = useState(loadLoopPanelCollapsed);
-  const [loopPanelWidth, setLoopPanelWidth] = useState(loadLoopPanelWidth);
-  const [loopPanelDragWidth, setLoopPanelDragWidth] = useState<number | null>(null);
-  const toggleLoopPanel = () => {
-    setLoopPanelCollapsed((v) => {
-      const next = !v;
-      saveLoopPanelCollapsed(next);
-      return next;
-    });
+
+  // Format a raw prior value in the metric's own display format.
+  const formatLikeMetric = (metricId: string, v: number): string => {
+    if (metricId === "spend" || metricId === "cpa_blended" || metricId === "cpc" || metricId === "cpm") return fmtUSD(v);
+    if (metricId === "link_ctr" || metricId === "cvr") return `${v.toFixed(2)}%`;
+    return fmtNum(Math.round(v));
   };
 
-  // Resize handle on the panel's left edge — unlike the left nav, this
-  // panel can be dragged wider than its default, not just narrower.
-  // Dragging left grows it, dragging right shrinks it toward collapse.
-  const loopPanelWidthRef = { current: loopPanelWidth };
-  const handleLoopPanelPointerDown = useDragResize(
-    (dx) => {
-      const next = Math.min(
-        LOOP_PANEL_MAX_WIDTH,
-        Math.max(LOOP_PANEL_MIN_WIDTH - 40, loopPanelWidthRef.current - dx)
-      );
-      setLoopPanelDragWidth(next);
-    },
-    (wasDragged) => {
-      if (!wasDragged) return;
-      setLoopPanelDragWidth((finalWidth) => {
-        if (finalWidth == null) return null;
-        if (finalWidth < LOOP_PANEL_COLLAPSE_SNAP_WIDTH) {
-          setLoopPanelCollapsed(true);
-          saveLoopPanelCollapsed(true);
-        } else {
-          const clamped = Math.min(LOOP_PANEL_MAX_WIDTH, Math.max(LOOP_PANEL_MIN_WIDTH, finalWidth));
-          setLoopPanelWidth(clamped);
-          saveLoopPanelWidth(clamped);
-          if (loopPanelCollapsed) {
-            setLoopPanelCollapsed(false);
-            saveLoopPanelCollapsed(false);
-          }
-        }
-        return null;
-      });
-    }
-  );
+  // Per-metric trend + sparkline, from the same summary window as the values.
+  // "vs prior" off hides the trend/prior line entirely — the sparkline (not
+  // a prior-period comparison) still renders either way.
+  const tileTrendFor = (metricId: string) => {
+    if (!summary) return { trend: null, spark: null };
+    const series = sparkSeriesForMetric(metricId, summary.daily ?? []);
+    if (!compareOn) return { trend: null, spark: series ? sparkPoints(series) : null };
+    const t = trendForMetric(metricId, summary.totals, summary.prior_totals);
+    return {
+      trend: t
+        ? { deltaPct: t.deltaPct, improved: t.improved, priorFormatted: formatLikeMetric(metricId, t.prior) }
+        : null,
+      spark: series ? sparkPoints(series) : null,
+    };
+  };
+  const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
+  // Nocturne hero KPI row: a fixed 4-tile grid (Alex's product decision),
+  // each slot independently metric-selectable via its own dropdown — not
+  // the old variable-length "add/remove tiles" picker.
+  const { tileMetricIds, setTileMetric } = useKpiTileMetrics("account-overview", availableMetricIds, { tileCount: 4 });
+  const [openMetricId, setOpenMetricId] = useState<string | null>(null);
 
   // ── Early-exit states ───────────────────────────────────────────────
 
@@ -241,36 +196,27 @@ export function AdAccountOverview() {
   const libraryCount = new Set(lib.map((c) => c.cell_id)).size;
   const mstActive = mst?.status === "active";
 
-  const recCards = optLoop?.recommendation_cards ?? [];
-  const nextAction = [...recCards].sort(
-    (a, b) => (IMPACT_RANK[b.impact] ?? 0) - (IMPACT_RANK[a.impact] ?? 0)
-  )[0];
-
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
-
-  // ── Loop-checklist signals (same derivation as LoopCommandChain) ─────
-  const iap = account.iap;
-  const loopCellCount    = iap.analysis?.performance_by_cell?.length ?? 0;
-  const loopPillarCount  = iap.strategy?.message_pillars?.length ?? 0;
-  const loopBriefCount   = iap.brief_builder?.draft_briefs?.length ?? 0;
-  const loopReportCount  = (reportsData?.reports ?? []).filter((r) => r.ad_account_id === adAccountId).length;
-
-  const loopSteps: LoopChecklistStep[] = [
-    { label: "Data connected",       done: true,                    route: "/app/settings/general" },
-    { label: "Analysis run",         done: loopCellCount > 0,       route: "/app/analysis/overview" },
-    { label: "Strategy generated",   done: loopPillarCount > 0,     route: "/app/strategy/overview" },
-    { label: "Briefs generated",     done: loopBriefCount > 0,      route: "/app/creative/builder" },
-    { label: "Report created",       done: loopReportCount > 0,     route: "/app/reports/builder" },
-  ];
-  const allLoopComplete = loopSteps.every((s) => s.done);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       <ModuleHeader
         section="Ad Account · 01"
-        title={account.name}
+        title={`${account.name} · Account Overview`}
         subtitle="Command chain · focus · optimization"
-        right={<span className="text-label font-mono text-emerald-400/90 uppercase tracking-widest">Connected</span>}
+        right={
+          <OverviewHeaderControls
+            preset={preset}
+            onPresetChange={setPreset}
+            isFetching={summaryFetching}
+            availableWindow={summary?.available_window}
+            compareOn={compareOn}
+            onToggleCompare={() => setCompareOn((v) => !v)}
+            detailOn={detailOn}
+            onToggleDetail={() => setDetailOn((v) => !v)}
+            exportTo="/app/exports/analysis"
+          />
+        }
       />
 
       {/* ── IAP Loop Command Chain ────────────────────────────────────── */}
@@ -278,122 +224,108 @@ export function AdAccountOverview() {
         <LoopCommandChain accountId={account.id} account={account} managerId={seed.manager_account.id} />
       </div>
 
-      {/* ── Two-column body ────────────────────────────────────────── */}
+      {/* ── Main body ──────────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
-        {/* Left: scrollable main content */}
+        {/* Scrollable main content */}
         <div className="flex-1 min-w-0 overflow-y-auto px-6 py-3 space-y-3">
 
-          {/* Account Totals — metric accordions */}
-          <SectionCard
-            title="Account Totals"
-            right={<MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />}
-          >
-            {isRefetching ? (
-              <SkeletonTileRow count={selectedMetricIds.length || 4} />
+          {/* Next best action — Nocturne hero for the top pending
+              recommendation; renders nothing when none are pending. */}
+          <NextBestActionCard scopeId={account.id} cards={deckCards} />
+
+          {/* Account Totals — fixed 4-tile Nocturne hero row, each tile
+              independently metric-selectable via its own dropdown. */}
+          <SectionCard title="Account Totals">
+            {(isRefetching || (preset !== "all" && summaryFetching)) ? (
+              <SkeletonTileRow count={4} />
             ) : null}
-            <div className={cn("grid grid-cols-dashboard-4 gap-2", isRefetching && "hidden")}>
-              {selectedMetricIds.map((id) => {
+            <div className={cn("grid grid-cols-dashboard-4 gap-2", (isRefetching || (preset !== "all" && summaryFetching)) && "hidden")}>
+              {tileMetricIds.map((id, slotIdx) => {
                 const m = metricById(metricCatalog, id);
                 if (!m) return null;
                 return (
                   <MetricHoverPopover
-                    key={id}
+                    key={slotIdx}
                     metric={m}
                     cellRows={analysis?.performance_by_cell ?? []}
                     onDiagnose={() => setOpenMetricId(id)}
                   >
-                    <KpiTile
-                      metricId={id}
-                      catalog={metricCatalog}
-                      onSelect={(newId) => replace(id, newId)}
-                      onClick={() => setOpenMetricId(id)}
-                      hideInfo
-                    />
+                    {(() => {
+                      const { trend, spark } = tileTrendFor(id);
+                      return (
+                        <KpiTile
+                          metricId={id}
+                          catalog={metricCatalog}
+                          onSelect={(newId) => setTileMetric(slotIdx, newId)}
+                          onClick={() => setOpenMetricId(id)}
+                          hideInfo
+                          trend={trend}
+                          sparkPoints={spark}
+                        />
+                      );
+                    })()}
                   </MetricHoverPopover>
                 );
               })}
-              {selectedMetricIds.length === 0 && (
-                <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/50 border border-dashed border-border/40 rounded-xl px-4 py-5 text-center">
-                  No metrics selected — use "Customize" to add tiles.
-                </div>
-              )}
             </div>
           </SectionCard>
 
-          {/* Current Focus */}
-          <SectionCard
-            title="Current focus"
-            desc="Active sprint · top priority"
-            right={<SectionInfoIcon tip="Your active sprint and the top recommended action from the latest analysis." />}
-          >
-            <div className="grid grid-cols-dashboard-2 gap-3">
+          {/* Current sprint — MST status has no canvas equivalent on this
+              screen, so it stays as its own compact card. The "next
+              action" half that used to sit beside it read the exact same
+              optimization_loop.recommendation_cards as NextBestActionCard
+              above and has been removed as a duplicate surface. */}
+          {mstActive && (
+            <SectionCard
+              title="Current sprint"
+              desc="MST status"
+              right={<SectionInfoIcon tip="Whether a Matrix Sprint Test is active for this account, and how many matrix cells and library concepts it covers." />}
+            >
               <div className="rounded-xl border border-purple-400/20 bg-purple-400/[0.03] p-4 hover:border-purple-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Grid3x3 className="w-3.5 h-3.5 text-purple-300/80" />
-                  <span className="text-caption font-semibold text-foreground">Current sprint</span>
+                  <span className="text-caption font-semibold text-foreground">MST active</span>
                 </div>
-                {mstActive ? (
-                  <>
-                    <p className="text-body text-foreground/80 leading-relaxed">
-                      MST active · <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells · <span className="font-semibold text-foreground">{libraryCount}</span> library concepts
-                    </p>
-                    <button onClick={() => navigate("/app/mst")} className="mt-3 inline-flex items-center gap-1.5 text-caption font-semibold text-purple-300 hover:text-purple-200 transition-colors">
-                      Open MST <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </>
-                ) : (
-                  <p className="text-body text-muted-foreground/80 leading-relaxed">No active sprint — import data to begin.</p>
-                )}
+                <p className="text-body text-foreground/80 leading-relaxed">
+                  <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells · <span className="font-semibold text-foreground">{libraryCount}</span> library concepts
+                </p>
+                <button onClick={() => navigate("/app/mst")} className="mt-3 inline-flex items-center gap-1.5 text-caption font-semibold text-purple-300 hover:text-purple-200 transition-colors">
+                  Open MST <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
+            </SectionCard>
+          )}
 
-              <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 hover:border-primary/30 transition-colors">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Zap className="w-3.5 h-3.5 text-interactive/80" />
-                  <span className="text-caption font-semibold text-foreground">Next action</span>
-                </div>
-                {nextAction ? (
-                  <>
-                    <DetailReveal
-                      label={nextAction.title}
-                      labelClassName="text-body font-semibold text-foreground leading-snug"
-                      eyebrow="Next action"
-                      sections={[{ label: "Recommended action", text: nextAction.recommended_action }]}
-                    />
-                    <p className="text-label text-muted-foreground/75 mt-2.5">
-                      {recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the loop below ↓
-                    </p>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-start gap-1.5 py-1">
-                    <Zap className="w-4 h-4 text-interactive/30" />
-                    <p className="text-caption font-semibold text-muted-foreground/60">No actions yet</p>
-                    <p className="text-label text-muted-foreground/50 leading-snug">
-                      Run an analysis to surface optimisation actions.{" "}
-                      <CrossLink to="/app/analysis" label="Go to Analysis" />
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </SectionCard>
-
-          {/* Results by event */}
+          {/* Results by event — Nocturne canvas table */}
           <SectionCard title="Results by event" desc="Conversion volume by event" right={<SectionInfoIcon tip="Conversion volume split by event type for the selected date window." />}>
-            <div className="grid grid-cols-dashboard-4-sm gap-2">
-              {events.map(([key, e]) => {
-                const isZero = !e.results || e.results === 0;
-                return (
-                  <div key={key} className={cn("mx-kpi-tile px-3 py-2.5", isZero && "opacity-60")}>
-                    <div className="text-label font-semibold text-foreground/90 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
-                    <div className={cn("text-stat metric-num leading-none", isZero && "text-muted-foreground/45")}>{fmtNum(e.results)}</div>
-                    <div className="text-label text-muted-foreground mt-2 space-y-0.5">
-                      <div>Spend <span className="text-foreground/90 font-medium">{fmtUSD(e.spend)}</span></div>
-                      <div>Clicks <span className="text-foreground/60">{fmtNum(e.link_clicks)}</span></div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="overflow-x-auto">
+              <table className="nc-table">
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th className="text-right">Results</th>
+                    <th className="text-right">Spend</th>
+                    <th className="text-right">Cost / result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map(([key, e]) => {
+                    const isZero = !e.results || e.results === 0;
+                    const cpa = e.results > 0 ? e.spend / e.results : null;
+                    return (
+                      <tr key={key} className={cn(isZero && "opacity-40")}>
+                        <td><span className="font-medium text-foreground/90">{eventLabel(key)}</span></td>
+                        <td className="text-right tabular-nums text-foreground/85">{fmtNum(e.results)}</td>
+                        <td className="text-right tabular-nums text-muted-foreground/70">{fmtUSD(e.spend, 0)}</td>
+                        <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/35")}>
+                          {cpa != null ? fmtUSD(cpa) : "n/a"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </SectionCard>
 
@@ -411,10 +343,12 @@ export function AdAccountOverview() {
                   const read = resolveControlText(core.primary_control_read, core.primary_control);
                   return (
                     <DetailReveal
+                      key={String(detailOn)}
                       label={deriveLabel(read, 72)}
                       labelClassName="text-body text-foreground/80 leading-relaxed"
                       eyebrow="Primary control"
                       sections={[{ label: "Control read", text: read }]}
+                      defaultOpen={detailOn}
                     />
                   );
                 })()}
@@ -436,10 +370,12 @@ export function AdAccountOverview() {
                     const read = resolveControlText(core.registration_control_read, core.registration_control);
                     return (
                       <DetailReveal
+                        key={String(detailOn)}
                         label={deriveLabel(read, 72)}
                         labelClassName="text-body text-foreground/80 leading-relaxed"
                         eyebrow={`${term.Singular} control`}
                         sections={[{ label: "Control read", text: read }]}
+                        defaultOpen={detailOn}
                       />
                     );
                   })()}
@@ -478,62 +414,6 @@ export function AdAccountOverview() {
             )}
           </SectionCard>
         </div>
-
-        {/* Right: loop-progress checklist — collapsible + resizable (drag the left edge) to cut clutter once the loop is running steadily */}
-        {loopPanelCollapsed ? (
-          <div
-            className="w-9 shrink-0 border-l border-border/30 flex flex-col items-center pt-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
-            onClick={toggleLoopPanel}
-            role="button"
-            tabIndex={0}
-            aria-label="Show loop stages panel"
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleLoopPanel(); } }}
-          >
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); toggleLoopPanel(); }}
-              aria-label="Show loop stages panel"
-              title="Show loop stages"
-              className="p-1.5 rounded hover:bg-white/[0.06] transition-colors text-muted-foreground/50 hover:text-foreground/80"
-              tabIndex={-1}
-            >
-              <PanelRightOpen className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <div
-            className="relative shrink-0 border-l border-border/30 overflow-y-auto py-3 px-3 space-y-2"
-            style={{ width: loopPanelDragWidth ?? loopPanelWidth }}
-          >
-            {/* Slide-to-resize handle — drag to widen/narrow, or drag past the
-                snap threshold to collapse fully. */}
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Resize loop stages panel (drag to resize, or drag left to collapse)"
-              title="Drag to resize"
-              onPointerDown={handleLoopPanelPointerDown}
-              className="absolute top-0 left-0 h-full w-1.5 -ml-0.5 z-10 cursor-col-resize group/handle flex items-center justify-center"
-            >
-              <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />
-            </div>
-            <div className="flex items-center justify-between px-1 mb-1">
-              {!allLoopComplete ? (
-                <p className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-widest")}>Loop stages</p>
-              ) : <span />}
-              <button
-                type="button"
-                onClick={toggleLoopPanel}
-                aria-label="Hide loop stages panel"
-                title="Hide loop stages"
-                className="p-0.5 rounded hover:bg-white/[0.06] transition-colors text-muted-foreground/40 hover:text-foreground/80 shrink-0"
-              >
-                <PanelRightClose className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <LoopChecklist steps={loopSteps} allComplete={allLoopComplete} />
-          </div>
-        )}
       </div>
 
       <KpiDrilldownModal

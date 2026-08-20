@@ -73,7 +73,7 @@ import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { useListManualImports } from "@workspace/api-client-react";
-import { Plug, FileUp, Clock, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Circle, Loader2, CircleCheck, CircleX, Venus, Mars } from "lucide-react";
+import { Plug, FileUp, Clock, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Venus, Mars, AlignLeft, Download } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
@@ -326,6 +326,7 @@ const SECTION_TABS: Record<"analysis" | "strategy", { label: string; to: string 
     { label: "Overview",        to: "/app/analysis/overview" },
     { label: "Ad Performance",  to: "/app/analysis/performance" },
     { label: "IAP Library",     to: "/app/analysis/library" },
+    { label: "Creative DNA",    to: "/app/analysis/dna" },
     { label: "Audience",        to: "/app/analysis/audience" },
     { label: "Placements",      to: "/app/analysis/placements" },
     { label: "Budget",          to: "/app/analysis/budget" },
@@ -381,6 +382,7 @@ export function ModuleHeader({
   table,
   right,
   tabs,
+  accountName,
 }: {
   section: string;
   title: string;
@@ -388,24 +390,33 @@ export function ModuleHeader({
   table?: string;
   right?: React.ReactNode;
   tabs?: "analysis" | "strategy";
+  accountName?: string;
 }) {
   const sectionLabel = section.split(" · ")[0];
   // A stage's command-center hub sets title to the bare stage name (e.g.
   // title="Strategy" on the page whose section is "Strategy · 04"), which
   // would otherwise render the eyebrow and H1 as an exact duplicate. Fall
   // back to the full section string (surfacing the "· 04" stage position
-  // that's normally trimmed off) instead of inventing new copy.
+  // that's normally trimmed off) instead of inventing new copy. Keep this
+  // comparison against the bare `title`, not the account-prefixed H1 below —
+  // the account name belongs only in the H1, never duplicated into the eyebrow.
   const eyebrowText = sectionLabel.toLowerCase() === title.toLowerCase() ? section : sectionLabel;
+  const displayTitle = accountName ? `${accountName} · ${title}` : title;
   return (
     <div className="shrink-0">
       <div className={cn("px-6 py-4", !tabs && "border-b border-border/40")}>
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0 mx-section-header">
             <div className="flex items-center gap-1.5">
-              <span className="mx-section-header__eyebrow">{eyebrowText}</span>
+              {/* Nocturne breadcrumb eyebrow: view context · module. This is a
+                  single-workspace agency deployment, so the view is static. */}
+              <span className="mx-section-header__eyebrow">
+                <span className="text-muted-foreground/45">Agency view · </span>
+                {eyebrowText}
+              </span>
               {subtitle && <InfoTooltip content={subtitle} />}
             </div>
-            <h1 className="mx-section-header__title">{title}</h1>
+            <h1 className="mx-section-header__title">{displayTitle}</h1>
           </div>
           <div className="shrink-0 pt-0.5 flex items-center gap-2">
             {right}
@@ -650,6 +661,7 @@ export function DetailReveal({
   className,
   align = "start",
   testId,
+  defaultOpen,
 }: {
   /** Concise always-visible label (derive with deriveLabel — no new copy). */
   label: React.ReactNode;
@@ -663,13 +675,16 @@ export function DetailReveal({
   className?: string;
   align?: "start" | "center" | "end";
   testId?: string;
+  /** Opt-in initial open state (e.g. a page's own "Summary/Detailed" density
+   *  toggle). Unset preserves the default closed-until-clicked behavior. */
+  defaultOpen?: boolean;
 }) {
   const content = sections.filter((s) => (s.text ?? "").trim() || s.render);
   if (content.length === 0) {
     return <span className={cn(labelClassName ?? TYPE.body, "block min-w-0", className)}>{label}</span>;
   }
   return (
-    <Popover>
+    <Popover defaultOpen={defaultOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -1108,6 +1123,8 @@ export interface HubNavItem {
   label: string;
   desc: string;
   Icon: React.ComponentType<{ className?: string }>;
+  /** Canvas hub composition: the data lineage this view reads (mono caption, e.g. "analysis.concept_rollup[] · performance_by_cell[]"). */
+  lineage?: string;
 }
 
 export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; label?: string }) {
@@ -1129,6 +1146,9 @@ export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; 
             <div className="min-w-0 flex-1">
               <div className="text-title font-semibold text-foreground">{c.label}</div>
               <p className="text-caption text-muted-foreground/80 leading-relaxed mt-0.5">{c.desc}</p>
+              {c.lineage && (
+                <p className={cn(TYPE.microLabel, "text-muted-foreground/40 mt-1 truncate")} data-testid="hub-nav-lineage">{c.lineage}</p>
+              )}
             </div>
             <ArrowRight className="absolute right-3.5 top-4 w-3.5 h-3.5 text-muted-foreground/30 transition-all group-hover:text-interactive group-hover:translate-x-0.5" aria-hidden />
           </button>
@@ -1443,6 +1463,107 @@ export function DatePresetBar({
   );
 }
 
+// ─── Overview header control cluster ──────────────────────────────────
+// Canvas's page-chrome header row (date-range segmented control · vs-prior
+// compare · Summary/Detailed density · Export), rendered into ModuleHeader's
+// `right` slot on Account Overview / Manager Overview — the two screens the
+// canvas spec covers in detail. This intentionally does NOT include a Tray
+// button: Topbar already renders the one real Tray affordance app-wide, so
+// a second one here would duplicate it rather than reconcile it.
+export function OverviewHeaderControls({
+  preset,
+  onPresetChange,
+  isFetching,
+  compareOn,
+  onToggleCompare,
+  detailOn,
+  onToggleDetail,
+  exportTo,
+  availableWindow,
+}: {
+  preset: ViewPreset;
+  onPresetChange: (p: ViewPreset) => void;
+  isFetching?: boolean;
+  /** Omit both to hide the "vs prior" pill (nothing on the page to compare). */
+  compareOn?: boolean;
+  onToggleCompare?: () => void;
+  /** Omit both to hide the Summary/Detailed pill (no detail panels to fold). */
+  detailOn?: boolean;
+  onToggleDetail?: () => void;
+  /** Route the Export button opens — the real Exports command center for this scope. */
+  exportTo: string;
+  /** Actual data coverage for the active window, surfaced as a tooltip on the segmented control. */
+  availableWindow?: { start: string; end: string } | null;
+}) {
+  const [, navigate] = useLocation();
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <div
+        className="flex items-center rounded-md border border-border/40 overflow-hidden"
+        role="group"
+        aria-label="Date range"
+        title={availableWindow ? `Data: ${availableWindow.start} – ${availableWindow.end}` : undefined}
+      >
+        {VIEW_PRESETS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => onPresetChange(value)}
+            aria-pressed={preset === value}
+            className={cn(
+              "h-7 px-2.5 text-caption font-medium transition-colors",
+              preset === value
+                ? "bg-primary/18 text-interactive"
+                : "text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.04]"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {isFetching && <span className="text-caption text-muted-foreground/50 animate-pulse">loading…</span>}
+      {onToggleCompare && (
+        <button
+          type="button"
+          onClick={onToggleCompare}
+          aria-pressed={!!compareOn}
+          title="Compare each tile against the prior period of equal length"
+          className={cn(
+            "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
+            compareOn ? PILL_ACTIVE : PILL_INACTIVE
+          )}
+        >
+          <ArrowLeftRight className="w-3.5 h-3.5" />
+          vs prior
+        </button>
+      )}
+      {onToggleDetail && (
+        <button
+          type="button"
+          onClick={onToggleDetail}
+          aria-pressed={!!detailOn}
+          title={detailOn ? "Collapse this page's detail panels" : "Expand this page's detail panels"}
+          className={cn(
+            "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
+            detailOn ? PILL_ACTIVE : PILL_INACTIVE
+          )}
+        >
+          <AlignLeft className="w-3.5 h-3.5" />
+          {detailOn ? "Detailed" : "Summary"}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => navigate(exportTo)}
+        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] transition-colors"
+      >
+        <Download className="w-3.5 h-3.5" />
+        Export
+      </button>
+    </div>
+  );
+}
+
 // ─── Data-window picker bar ───────────────────────────────────────────
 // Replaces the old run-picker. Driven by actual ad_performance data via
 // getAccountAnalysisDataWindows — not by manual_analysis_runs metadata.
@@ -1586,7 +1707,8 @@ export function SectionCard({
         onClick={collapsible ? () => setOpen((v) => !v) : undefined}
       >
         <div className="flex-1 min-w-0 flex items-center gap-1.5">
-          <h3 className="text-title font-bold text-foreground leading-tight truncate">{title}</h3>
+          {/* Nocturne canvas card-title: 17px heading weight, sentence case */}
+          <h3 className="text-cardtitle font-semibold text-foreground leading-tight truncate">{title}</h3>
           {desc && (
             <span onClick={(e) => e.stopPropagation()} className="shrink-0">
               <InfoTooltip content={desc} />
@@ -1703,9 +1825,22 @@ export function PrerequisiteGate({
 }
 
 // ─── Loop hub (command-center stage strip) ─────────────────────────────
-// Every command center renders this row: the 6 loop stages, the current
-// one highlighted, each a link to that stage's command center. Locked
-// stages (prerequisite unmet) are visibly disabled, never hidden.
+// Every command center renders this row: the 6 loop stages (Listen,
+// Analysis, Strategy, Creative, MST, Reports), the current one highlighted,
+// each a link to that stage's command center. Locked stages (prerequisite
+// unmet) are visibly disabled, never hidden.
+//
+// Visual spec matches the Nocturne canvas's command-center stepper (a
+// different spec from the checkmark-based per-account rollup rendered on
+// Manager Overview via OverviewLoopHub.tsx — do not conflate the two): a numbered circle per
+// stage — the number is always shown, there is no checkmark glyph on this
+// stepper — filled solid for the current stage, filled dim for a stage
+// already completed, transparent-with-outline for anything not yet
+// reached, connected by a 1px line that lights up once a stage is behind
+// you. `running`/`error`/`locked` (states the canvas mock has no concept
+// of, since it doesn't model live execution) are layered on as a small
+// status dot on the circle and, for `locked`, a disabled/non-clickable
+// affordance — real signal preserved, structural fidelity kept.
 
 export type LoopStageStatus = "locked" | "none" | "running" | "success" | "error";
 
@@ -1716,48 +1851,64 @@ export interface LoopStageInfo {
   status: LoopStageStatus;
 }
 
-const STAGE_DOT: Record<LoopStageStatus, React.ComponentType<{ className?: string }>> = {
-  locked: Lock,
-  none: Circle,
-  running: Loader2,
-  success: CircleCheck,
-  error: CircleX,
-};
-
-const STAGE_DOT_CLASS: Record<LoopStageStatus, string> = {
-  locked: "text-muted-foreground/40",
-  none: "text-muted-foreground/50",
-  running: "text-amber-400 animate-spin",
-  success: "text-emerald-400",
-  error: "text-red-400",
-};
-
 export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; current?: string }) {
   const [, navigate] = useLocation();
   return (
-    <div className="flex items-center gap-1 flex-wrap px-6 py-3 border-b border-border/30 bg-white/[0.01]">
+    <div className="flex items-center flex-wrap px-6 py-4 border-b border-border/30 bg-white/[0.01]">
       {stages.map((s, i) => {
-        const Dot = STAGE_DOT[s.status];
         const isCurrent = s.id === current;
         const locked = s.status === "locked";
+        // A stage reads as "done" once it has real success output and isn't
+        // the one you're standing on — matches the canvas's done/current/
+        // future three-way split while deriving "done" from real status
+        // instead of screen position.
+        const done = !isCurrent && s.status === "success";
+        const flagged = !isCurrent && (s.status === "running" || s.status === "error");
         return (
-          <div key={s.id} className="flex items-center gap-1">
-            {i > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground/25 shrink-0 mx-0.5" />}
+          <div key={s.id} className="flex items-center flex-1 min-w-[104px]">
             <button
+              type="button"
               onClick={() => !locked && navigate(s.to)}
               disabled={locked}
-              className={cn(
-                "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-body font-medium transition-colors",
-                isCurrent
-                  ? "border-primary/40 bg-primary/10 text-interactive"
-                  : locked
-                    ? "border-border/25 text-muted-foreground/40 cursor-not-allowed"
-                    : "border-border/40 text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.03]"
-              )}
+              aria-current={isCurrent ? "step" : undefined}
+              title={locked ? `${s.label} — locked` : s.label}
+              className={cn("group flex items-center gap-1.5", locked ? "cursor-not-allowed" : "cursor-pointer")}
             >
-              <Dot className={cn("w-3 h-3 shrink-0", STAGE_DOT_CLASS[s.status])} />
-              {s.label}
+              <span
+                className={cn(
+                  "relative flex items-center justify-center w-[22px] h-[22px] shrink-0 rounded-full border text-label font-semibold tabular-nums transition-colors",
+                  isCurrent
+                    ? "bg-primary border-transparent text-primary-foreground"
+                    : done
+                      ? "bg-primary/25 border-transparent text-primary-foreground/90"
+                      : "bg-transparent text-muted-foreground/40 " +
+                        (locked ? "border-border/40" : "border-border/60 group-hover:border-border")
+                )}
+              >
+                {i + 1}
+                {flagged && (
+                  <span
+                    className={cn(
+                      "absolute -top-0.5 -right-0.5 w-[7px] h-[7px] rounded-full ring-2 ring-background",
+                      s.status === "running" ? "bg-amber-400 animate-pulse" : "bg-red-400"
+                    )}
+                  />
+                )}
+              </span>
+              <span
+                className={cn(
+                  "text-body whitespace-nowrap transition-colors",
+                  isCurrent
+                    ? "text-foreground font-medium"
+                    : locked
+                      ? "text-muted-foreground/35"
+                      : "text-muted-foreground/60 group-hover:text-foreground/80 font-normal"
+                )}
+              >
+                {s.label}
+              </span>
             </button>
+            <span className={cn("flex-1 h-px mx-2.5 min-w-[12px]", done ? "bg-primary/40" : "bg-border/30")} />
           </div>
         );
       })}
@@ -1772,7 +1923,7 @@ export interface StageStatusLike {
   mst: { unlocked: boolean };
 }
 
-/** Builds the 5-stage Analysis→Strategy→Creative→MST→Reports row every command center renders. */
+/** Builds the 6-stage Listen→Analysis→Strategy→Creative→MST→Reports row every command center renders. */
 export function buildLoopStages(s: StageStatusLike): LoopStageInfo[] {
   // Strategy (and downstream stages) unlock only when the analysis is
   // VALIDATED — status=success plus the server-side completeness check
@@ -1781,6 +1932,11 @@ export function buildLoopStages(s: StageStatusLike): LoopStageInfo[] {
   const analysisOk = s.analysis.status === "success" && s.analysis.validated !== false;
   const strategyOk = s.strategy.status === "success";
   return [
+    // Listen has no prerequisite and no discrete "done" state to reach —
+    // it's a continuous signal-monitoring surface (real data, ListenCommandCenter)
+    // rather than a completable pipeline step, so it's always reachable
+    // and never reports "success"/"locked".
+    { id: "listen", label: "Listen", to: "/app/listen", status: "none" },
     { id: "analysis", label: "Analysis", to: "/app/analysis", status: s.analysis.status as LoopStageStatus },
     { id: "strategy", label: "Strategy", to: "/app/strategy", status: analysisOk ? (s.strategy.status as LoopStageStatus) : "locked" },
     { id: "creative", label: "Creative", to: "/app/creative", status: strategyOk ? (s.briefs.status as LoopStageStatus) : "locked" },

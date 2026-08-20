@@ -1,10 +1,10 @@
 // ─── Analysis · Placements ────────────────────────────────────────────
-// Placement delivery signal across the account's analysis runs. Each
-// placement gets a data-rich row (spend, results, CPA, CTR, CPM) that
-// can be re-ranked by any KPI, plus paired spend-share vs result-share
-// bars that make efficiency mismatches visible at a glance. Click a
-// placement to open a detail dialog benchmarked against the account
-// average with the full V3 + C4E rows.
+// The canvas's analysis.placement composition: a placement breakdown of
+// horizontal bars scaled to the top placement on the active KPI (fill
+// graded against the account blend for cost metrics), plus the device
+// delivery grid shaded against the account average. Click a placement
+// to open a detail dialog benchmarked against the account average with
+// the full V3 + C4E rows.
 
 import { useMemo, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -18,12 +18,11 @@ import {
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
-import { SharePieChart } from "@/components/charts/SharePieChart";
-import { LayoutGrid, ChevronRight, BarChart2, PieChart } from "lucide-react";
-import type { ConversionTrackingSignal, PlacementRow } from "@/lib/data/seedTypes";
+import { LayoutGrid, ChevronRight, BarChart2 } from "lucide-react";
+import type { ConversionTrackingSignal, DeviceDeliveryRow, PlacementRow } from "@/lib/data/seedTypes";
 import { ConversionFunnelTable } from "./tables";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { RankSortBar, KpiStat, sortByRankMetric, useRankMetric, type RankMetric } from "./rankSort";
+import { RankSortBar, sortByRankMetric, useRankMetric, type RankMetric } from "./rankSort";
 import { TYPE } from "../typography";
 
 const SECTION = "Analysis · 03";
@@ -73,6 +72,101 @@ function buildRankMetrics(resultPlural: string): RankMetric<PlacementRollup>[] {
     { id: "cpc", label: "CPC", direction: "asc", value: (p) => p.cpc, format: (v) => fmtUSD(v) },
     { id: "impressions", label: "Impressions", direction: "desc", value: (p) => p.impressions, format: (v) => fmtNum(v) },
   ];
+}
+
+// ─── Device delivery grid — the canvas's shaded device matrix ─────────
+// Aggregates the real device_delivery_signal (delivery-based spend /
+// impressions / results per device) and shades each row's cells by how
+// its cost-per-result compares to the account blend — stronger accent =
+// cheaper than blend. Rendered only when at least one row carries real
+// numbers; the seed's per-device data covers the full flight window
+// (no per-day grain), so preset narrowing does not apply here. Collapsed
+// by default (canvas's dMatrix.open disclosure) — click the card to open.
+
+interface DeviceRollup {
+  device: string;
+  spend: number;
+  impressions: number;
+  results: number;
+  cpa: number | null;
+}
+
+function rollupDevices(rows: DeviceDeliveryRow[]): DeviceRollup[] {
+  const byDevice = new Map<string, { spend: number; impressions: number; results: number }>();
+  for (const r of rows) {
+    if (r.spend == null && r.impressions == null && r.results == null) continue;
+    const s = byDevice.get(r.device) ?? { spend: 0, impressions: 0, results: 0 };
+    s.spend += r.spend ?? 0;
+    s.impressions += r.impressions ?? 0;
+    s.results += r.results ?? 0;
+    byDevice.set(r.device, s);
+  }
+  return [...byDevice.entries()]
+    .map(([device, s]) => ({ device, ...s, cpa: s.results > 0 ? s.spend / s.results : null }))
+    .sort((a, b) => b.spend - a.spend);
+}
+
+function deviceLabel(device: string): string {
+  const s = device.replace(/_/g, " ");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function DeviceDeliveryCard({ rows }: { rows: DeviceDeliveryRow[] }) {
+  const devices = useMemo(() => rollupDevices(rows), [rows]);
+  if (devices.length === 0) return null;
+  const totSpend = devices.reduce((n, d) => n + d.spend, 0);
+  const totResults = devices.reduce((n, d) => n + d.results, 0);
+  const blendCpa = totResults > 0 ? totSpend / totResults : null;
+
+  // Canvas shading: strength grows as the device gets cheaper than the
+  // account blend; devices with no conversions stay unshaded.
+  const strengthFor = (d: DeviceRollup) => {
+    if (blendCpa == null || d.cpa == null || d.cpa <= 0) return 0;
+    const ratio = blendCpa / d.cpa;
+    return Math.min(1, Math.max(0, (ratio - 0.6) / 0.7));
+  };
+
+  return (
+    <SectionCard
+      title="Device delivery"
+      desc="Full window · shaded vs account blend"
+      table="device_delivery_signal"
+      defaultOpen={false}
+      right={<SectionInfoIcon tip="Real delivery spend, results, and cost per result by device across the full flight window. Stronger shading marks devices converting cheaper than the account blend." />}
+    >
+      <div className="overflow-x-auto">
+        <div className="grid gap-1 min-w-[620px]" style={{ gridTemplateColumns: "150px repeat(4, minmax(78px, 1fr))" }} data-testid="device-delivery-grid">
+          <span />
+          {["Cost / result", "Spend", "Results", "Impressions"].map((c) => (
+            <span key={c} className={cn(TYPE.label, "text-muted-foreground/60 text-center pb-1")}>{c}</span>
+          ))}
+          {devices.map((d) => {
+            const strength = strengthFor(d);
+            const cellStyle = {
+              background: `hsl(var(--primary) / ${(0.04 + strength * 0.22).toFixed(3)})`,
+            };
+            const cellCls = cn(
+              "rounded-md border px-2 py-2.5 text-center tabular-nums",
+              TYPE.body,
+              strength > 0.7 ? "border-primary/50" : "border-border/30",
+              strength > 0.5 ? "text-interactive font-medium" : "text-foreground/85",
+            );
+            return [
+              <span key={`${d.device}-label`} className={cn(TYPE.body, "flex items-center text-foreground/85")} data-testid={`device-row-${d.device}`}>
+                {deviceLabel(d.device)}
+              </span>,
+              <span key={`${d.device}-cpa`} className={cellCls} style={cellStyle} title={blendCpa != null && d.cpa != null ? `${((d.cpa / blendCpa - 1) * 100).toFixed(0)}% vs account blend` : undefined}>
+                {d.cpa != null ? fmtUSD(d.cpa) : "—"}
+              </span>,
+              <span key={`${d.device}-spend`} className={cellCls} style={cellStyle}>{fmtUSD(d.spend, 0)}</span>,
+              <span key={`${d.device}-results`} className={cellCls} style={cellStyle}>{fmtNum(d.results)}</span>,
+              <span key={`${d.device}-impressions`} className={cellCls} style={cellStyle}>{fmtNum(d.impressions)}</span>,
+            ];
+          })}
+        </div>
+      </div>
+    </SectionCard>
+  );
 }
 
 // ─── Placement detail dialog ──────────────────────────────────────────
@@ -255,7 +349,6 @@ export function PlacementsView() {
   const analysis = getAnalysisData(seed, adAccountId);
   const [selectedPlacement, setSelectedPlacement] = useState<string | null>(null);
   const [preset, setPreset] = useState<ViewPreset>("all");
-  const [showShareChart, setShowShareChart] = useState(false);
 
   const { data: presetData, isFetching: presetFetching } = useQuery({
     ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
@@ -298,7 +391,7 @@ export function PlacementsView() {
           if (!hasDelivery && !hasConversion) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="Placements" tabs="analysis" />
+                <ModuleHeader section={SECTION} title="Placements" accountName={acct.name} tabs="analysis" />
                 <PendingState
                   title="No placement signal"
                   message="Placement reads appear once delivery data exists for this account."
@@ -322,6 +415,7 @@ export function PlacementsView() {
                 <ModuleHeader
                   section={SECTION}
                   title="Placements"
+                  accountName={acct.name}
                   subtitle="Conversion-attributed placement signal · no delivery-based runs yet"
                   tabs="analysis"
                 />
@@ -354,13 +448,35 @@ export function PlacementsView() {
           // ── Delivery-based (V3 / C4E) ────────────────────────────────
           const totalSpend = rollup.reduce((n, s) => n + s.spend, 0);
           const totalResults = rollup.reduce((n, s) => n + s.results, 0);
+          const totalImpr = rollup.reduce((n, s) => n + s.impressions, 0);
+          const totalClicks = rollup.reduce((n, s) => n + s.linkClicks, 0);
           const best = ranked[0];
+
+          // Canvas bar grading: bars scale to the top placement on the
+          // active KPI; cost-metric fills grade against the account blend
+          // (accent = at-or-under blend, faded = under 2×, neutral above).
+          const lowerIsBetter = activeMetric.direction === "asc";
+          const blend =
+            activeMetric.id === "cpa" ? (totalResults > 0 ? totalSpend / totalResults : null)
+            : activeMetric.id === "cpm" ? (totalImpr > 0 ? (totalSpend / totalImpr) * 1000 : null)
+            : activeMetric.id === "cpc" ? (totalClicks > 0 ? totalSpend / totalClicks : null)
+            : null;
+          const metricValues = ranked.map((s) => activeMetric.value(s)).filter((v): v is number => v != null);
+          const maxMetric = metricValues.length > 0 ? Math.max(...metricValues) : null;
+          const barFill = (v: number) => {
+            if (!lowerIsBetter) return "bg-primary/70";
+            if (blend == null) return "bg-primary/70";
+            if (v <= blend) return "bg-primary/80";
+            if (v <= 2 * blend) return "bg-primary/40";
+            return "bg-white/[0.12]";
+          };
 
           return (
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
               <ModuleHeader
                 section={SECTION}
                 title="Placements"
+                accountName={acct.name}
                 subtitle="Delivery by placement · re-rank by KPI · click for breakdown"
                 tabs="analysis"
               />
@@ -395,97 +511,60 @@ export function PlacementsView() {
 
               <div className="px-6 py-5 space-y-4 max-w-5xl">
                 <SectionCard
-                  title="Spend by placement"
-                  desc="V3 + C4E combined · spend vs result share · click for breakdown"
+                  title="Placement breakdown"
+                  desc={`Ranked by ${activeMetric.label} · V3 + C4E combined`}
                   right={
                     <div className="flex items-center gap-2">
-                      <SectionInfoIcon tip="Ranks each placement by spend, results, or CPA so you can see where delivery is concentrated and spot efficiency mismatches." />
-                      {rollup.length > 1 && (
-                        <button
-                          onClick={() => setShowShareChart((v) => !v)}
-                          className={cn(
-                            "flex items-center gap-1.5 h-7 px-2.5 rounded-md text-label font-medium transition-colors border",
-                            showShareChart
-                              ? "border-primary/30 bg-primary/10 text-interactive"
-                              : "border-border/30 bg-white/[0.02] text-muted-foreground/55 hover:text-foreground/80"
-                          )}
-                          aria-pressed={showShareChart}
-                          title="Toggle spend share chart"
-                        >
-                          <PieChart className="w-3 h-3" />
-                          Share
-                        </button>
-                      )}
+                      <SectionInfoIcon tip="Each placement's bar is scaled to the top placement on the active KPI. Cost-metric fills grade against the account blend — accent means at or under blend. Click a placement for the full breakdown." />
                       <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} />
                     </div>
                   }
                 >
-                  {/* Spend share pie — disclosed on demand */}
-                  {showShareChart && rollup.length > 1 && (
-                    <div className="mb-4 pb-4 border-b border-border/20">
-                      <SharePieChart
-                        data={rollup.map((s) => ({ name: s.placement, value: s.spend }))}
-                        unit="usd"
-                        height={180}
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-1.5">
-                    {ranked.map((s, idx) => {
+                  <div className="flex flex-col gap-3.5">
+                    {ranked.map((s) => {
+                      const v = activeMetric.value(s);
                       const spendShare = totalSpend > 0 ? (s.spend / totalSpend) * 100 : 0;
-                      const resultShare = totalResults > 0 ? (s.results / totalResults) * 100 : 0;
-                      const efficiency =
-                        spendShare > 0 && totalResults > 0 ? resultShare / spendShare : null;
+                      const width = v != null && maxMetric != null && maxMetric > 0 ? (v / maxMetric) * 100 : 0;
                       return (
                         <button
                           key={s.placement}
                           onClick={() => setSelectedPlacement(s.placement)}
                           data-testid={`row-placement-${s.placement}`}
-                          className="w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01] hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995] transition-all duration-100 group"
+                          className="w-full text-left grid grid-cols-[minmax(120px,170px)_1fr_minmax(80px,110px)] items-center gap-3.5 group"
                         >
-                          <div className="flex items-center gap-3">
-                            <span className="w-5 shrink-0 text-label font-mono text-muted-foreground/40 tabular-nums">
-                              {idx + 1}
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className={cn(TYPE.body, "font-medium text-foreground/90 truncate group-hover:text-interactive transition-colors")}>
+                              {s.placement}
                             </span>
-                            <div className="min-w-0 w-44 shrink-0">
-                              <div className={cn(TYPE.body, "font-medium text-foreground/90 truncate")}>{s.placement}</div>
-                              {efficiency != null && (
-                                <div
-                                  className="font-mono mt-0.5 text-emerald-300/70 text-label font-bold"
-                                  title="Share of results ÷ share of spend"
-                                >
-                                  {efficiency.toFixed(1)}× efficiency
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 grid grid-cols-dashboard-5-kpi gap-x-3 gap-y-1 min-w-0">
-                              <KpiStat label="Spend" value={fmtUSD(s.spend, 0)} highlight={activeMetric.id === "spend"} />
-                              <KpiStat label={term.Plural} value={fmtNum(s.results)} highlight={activeMetric.id === "results"} />
-                              <KpiStat label="CPA" value={s.cpa != null ? fmtUSD(s.cpa) : "—"} highlight={activeMetric.id === "cpa"} />
-                              <KpiStat label="CTR" value={s.ctr != null ? fmtPct(s.ctr) : "—"} highlight={activeMetric.id === "ctr"} />
-                              <KpiStat label="CPM" value={s.cpm != null ? fmtUSD(s.cpm) : "—"} highlight={activeMetric.id === "cpm"} />
-                            </div>
-                            <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+                            <span className={cn(TYPE.label, "text-muted-foreground/50 tabular-nums")}>
+                              {spendShare.toFixed(1)}% of spend
+                            </span>
                           </div>
-                          {/* Compact dual-bar — spend blue, results green */}
-                          <div className="mt-2 ml-8 space-y-0.5">
-                            <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
-                              <div className="h-full bg-primary/45 rounded-full" style={{ width: `${Math.max(spendShare, s.spend > 0 ? 2 : 0)}%` }} />
-                            </div>
-                            <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
-                              <div className="h-full bg-emerald-400/55 rounded-full" style={{ width: `${Math.max(resultShare, s.results > 0 ? 2 : 0)}%` }} />
-                            </div>
+                          <div className="h-3 rounded bg-white/[0.04] overflow-hidden">
+                            {v != null && (
+                              <div
+                                className={cn("h-full rounded transition-all", barFill(v))}
+                                style={{ width: `${Math.max(width, 1.5)}%` }}
+                              />
+                            )}
+                          </div>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className={cn(TYPE.body, "font-medium tabular-nums text-foreground")}>
+                              {v != null ? activeMetric.format(v) : "—"}
+                            </span>
+                            <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
                           </div>
                         </button>
                       );
                     })}
                   </div>
-                  <p className="mt-3 text-label text-muted-foreground/45 flex items-center gap-1.5">
+                  <p className="mt-4 text-label text-muted-foreground/45 flex items-center gap-1.5">
                     <BarChart2 className="w-3.5 h-3.5 shrink-0" />
-                    {v3.length} V3 + {c4e.length} C4E rows · blue bar = spend share · green = result share · click for detail
+                    {v3.length} V3 + {c4e.length} C4E rows · bars scale to the top placement · click for detail
                   </p>
                 </SectionCard>
+
+                <DeviceDeliveryCard rows={analysis?.device_delivery_signal ?? []} />
 
                 {hasConversion && cts && <ConversionTrackingSections cts={cts} />}
               </div>

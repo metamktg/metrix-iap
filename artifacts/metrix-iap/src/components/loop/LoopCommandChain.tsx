@@ -1,8 +1,16 @@
 // @refresh reset
 // ─── IAP Loop · Command Chain ─────────────────────────────────────────
 //
-// SIX stage tiles — pure state at a glance, no data on face.
-// Stages: Data → Analysis → Strategy → Briefs → Report → Re-run
+// FIVE stage tiles — pure state at a glance, no data on face. Matches the
+// Nocturne canvas stepper spec exactly (22px circle + checkmark/number,
+// connecting line, no counter badge).
+// Stages: Data → Analysis → Strategy → Briefs → Report
+//
+// Re-running the loop is not its own stage — once every stage is complete,
+// the Analysis tile's Command Hub exposes "Re-run Analysis" (see the
+// Actions() branch for stage === "analysis"), so the click-to-open Command
+// Hub interaction that used to live on a standalone "Re-run" tile is fully
+// preserved without a 6th circle.
 //
 // Each tile is a clickable state light: icon + indicator + label only.
 //
@@ -58,7 +66,7 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
-type Stage = "data" | "analysis" | "strategy" | "briefs" | "report" | "rerun";
+type Stage = "data" | "analysis" | "strategy" | "briefs" | "report";
 
 // ── Route map ─────────────────────────────────────────────────────────────
 
@@ -88,10 +96,6 @@ const STAGE_ROUTES: Record<Stage, { label: string; path: string; desc: string }[
     { label: "New Report",    path: "/app/reports/new",     desc: "Generate a report" },
     { label: "Report History", path: "/app/reports/history", desc: "Past generations" },
   ],
-  rerun: [
-    { label: "Account Setup",  path: "/app/settings/account",     desc: "Uploads · source" },
-    { label: "Run Analysis",   path: "/app/settings/account",     desc: "Start next cycle" },
-  ],
 };
 
 // ── Stage config ──────────────────────────────────────────────────────────
@@ -102,10 +106,7 @@ const STAGE_CONFIG = {
   strategy: { icon: Layers,       label: "Strategy" },
   briefs:   { icon: FileText,     label: "Briefs"   },
   report:   { icon: FileBarChart, label: "Report"   },
-  rerun:    { icon: RotateCcw,    label: "Re-run"   },
 } as const;
-
-const TOTAL_STAGES = 5;
 
 const DATE_RANGES = [
   { id: "7d"  as const, label: "Last 7 days"  },
@@ -218,6 +219,8 @@ function DepBadge({
 
 function StageTile({
   stage,
+  stageNumber,
+  showLine,
   isComplete,
   isRunning,
   isStale,
@@ -229,6 +232,10 @@ function StageTile({
   onClick,
 }: {
   stage: Stage;
+  /** 1-based position in the chain — the circle's number until the stage completes. */
+  stageNumber: number;
+  /** Render the connecting line after this stage (all but the last). */
+  showLine: boolean;
   isComplete: boolean;
   isRunning: boolean;
   isStale: boolean;
@@ -239,91 +246,103 @@ function StageTile({
   elapsedSeconds?: number;
   onClick: () => void;
 }) {
-  const { icon: Icon, label } = STAGE_CONFIG[stage];
+  // Nocturne "Metrix v1" stepper anatomy: a 22px state circle (✓ once
+  // complete, the stage number otherwise), the stage label beside it, and
+  // a thin connecting line that reads progress at a glance. Every prior
+  // state survives the restyle: running (spinner + elapsed), failed,
+  // stale, locked, next, and the active/open command-hub highlight.
+  const { label } = STAGE_CONFIG[stage];
+
+  const circle = isRunning ? (
+    <Loader2 className="w-3 h-3 animate-spin" />
+  ) : isFailed ? (
+    <XCircle className="w-3 h-3" />
+  ) : isStale ? (
+    <RotateCcw className="w-3 h-3" />
+  ) : isComplete ? (
+    <CheckCircle2 className="w-3 h-3" />
+  ) : (
+    <span className="text-label font-semibold leading-none">{stageNumber}</span>
+  );
+
+  const circleCls = isLocked
+    ? "border-border/40 bg-transparent text-muted-foreground/40"
+    : isRunning
+    ? "border-transparent bg-amber-400/20 text-amber-400"
+    : isFailed
+    ? "border-transparent bg-red-400/20 text-red-400"
+    : isStale
+    ? "border-transparent bg-orange-400/20 text-orange-400"
+    : isComplete
+    ? "border-transparent bg-primary/25 text-interactive"
+    : isNext || isActive
+    ? "border-transparent bg-primary text-primary-foreground"
+    : "border-border/40 bg-transparent text-muted-foreground/55";
+
+  const labelCls = isLocked
+    ? "text-muted-foreground/40"
+    : isRunning
+    ? "text-amber-400/90"
+    : isFailed
+    ? "text-red-400/90"
+    : isStale
+    ? "text-orange-400/85"
+    : isNext || isActive
+    ? "text-foreground font-semibold"
+    : isComplete
+    ? "text-foreground/65"
+    : "text-muted-foreground/55";
 
   return (
-    <button
-      onClick={onClick}
-      disabled={isLocked}
-      className={cn(
-        "relative flex flex-col items-center justify-center gap-2 py-3 px-2 rounded-xl flex-1 min-w-0 overflow-hidden",
-        "border transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-        isLocked
-          ? "border-border/15 bg-transparent opacity-35 cursor-not-allowed"
-          : isActive
-          ? "border-primary/55 bg-primary/[0.15] shadow-sm shadow-primary/20 cursor-pointer"
-          : isRunning
-          ? "border-amber-400/55 bg-amber-400/[0.10] cursor-pointer"
-          : isFailed
-          ? "border-red-400/55 bg-red-400/[0.10] hover:border-red-400/70 hover:bg-red-400/[0.14] cursor-pointer"
-          : isStale
-          ? "border-orange-400/50 bg-orange-400/[0.08] hover:border-orange-400/65 hover:bg-orange-400/[0.12] cursor-pointer"
-          : isComplete
-          ? "border-emerald-400/40 bg-emerald-400/[0.07] hover:border-emerald-400/55 hover:bg-emerald-400/[0.12] cursor-pointer"
-          : isNext
-          ? "border-primary/40 bg-primary/[0.08] hover:border-primary/55 hover:bg-primary/[0.12] cursor-pointer"
-          : "border-border/30 hover:border-border/50 cursor-pointer",
-      )}
-    >
-      {/* Animated indeterminate progress bar — bottom edge, running only */}
-      {isRunning && (
+    <div className="flex items-center flex-1 min-w-0">
+      <button
+        onClick={onClick}
+        disabled={isLocked}
+        data-testid={`stage-tile-${stage}`}
+        data-state={
+          isRunning ? "running"
+            : isFailed ? "failed"
+            : isStale ? "stale"
+            : isLocked ? "locked"
+            : isComplete ? "complete"
+            : isNext ? "next"
+            : "idle"
+        }
+        className={cn(
+          "group/stage flex items-center gap-2 rounded-lg py-1.5 px-2 -my-1.5 shrink-0 transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-white/[0.03]",
+          isActive && "bg-primary/[0.08]",
+        )}
+      >
         <span
           aria-hidden="true"
-          className="absolute bottom-0 left-0 right-0 h-0.5 overflow-hidden"
+          className={cn(
+            "w-[22px] h-[22px] rounded-full border flex items-center justify-center shrink-0 transition-colors",
+            circleCls,
+          )}
         >
-          <span className="absolute inset-y-0 w-1/2 bg-amber-400/50 rounded-full animate-[progress-slide_1.4s_ease-in-out_infinite]" />
+          {circle}
         </span>
+        <span className={cn("text-caption whitespace-nowrap leading-none transition-colors", labelCls)}>
+          {isFailed ? "Failed" : label}
+        </span>
+        {isRunning && elapsedSeconds !== undefined && (
+          <span className="text-label font-mono tabular-nums text-amber-400/80 leading-none">
+            {fmtElapsed(elapsedSeconds)}
+          </span>
+        )}
+      </button>
+      {showLine && (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex-1 h-px min-w-[14px] mx-2 transition-colors",
+            isComplete ? "bg-primary/35" : "bg-border/30",
+          )}
+        />
       )}
-
-      {/* Icon + inline state indicator */}
-      <div className="relative flex items-center justify-center">
-        <Icon className={cn(
-          "w-4 h-4",
-          isLocked   ? "text-muted-foreground/45"
-            : isRunning  ? "text-amber-400"
-            : isFailed   ? "text-red-400"
-            : isStale    ? "text-orange-400"
-            : isComplete ? "text-emerald-400/90"
-            : isNext     ? "text-interactive"
-            : "text-muted-foreground/45",
-        )} />
-        {/* State overlay badge — top-right of icon */}
-        <span className="absolute -top-1 -right-1.5">
-          {isRunning ? (
-            <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
-          ) : isFailed ? (
-            <XCircle className="w-3.5 h-3.5 text-red-400" />
-          ) : isStale ? (
-            <RotateCcw className="w-3.5 h-3.5 text-orange-400" />
-          ) : isComplete ? (
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-          ) : isNext ? (
-            <span className="block w-2 h-2 rounded-full bg-primary animate-pulse" />
-          ) : null}
-        </span>
-      </div>
-
-      {/* Stage label — only text on the tile */}
-      <span className={cn(
-        "text-label font-bold uppercase tracking-[0.14em] leading-none",
-        isLocked   ? "text-muted-foreground/40"
-          : isRunning  ? "text-amber-400/90"
-          : isFailed   ? "text-red-400/90"
-          : isStale    ? "text-orange-400/85"
-          : isComplete ? "text-emerald-400/80"
-          : isNext     ? "text-interactive/85"
-          : "text-muted-foreground/55",
-      )}>
-        {isFailed ? "Failed" : label}
-      </span>
-
-      {/* Elapsed time — replaces label when running */}
-      {isRunning && elapsedSeconds !== undefined && (
-        <span className="text-label font-mono tabular-nums text-amber-400/80 leading-none -mt-1">
-          {fmtElapsed(elapsedSeconds)}
-        </span>
-      )}
-    </button>
+    </div>
   );
 }
 
@@ -624,25 +643,6 @@ function ReportIntelligence({
   );
 }
 
-// ── Re-run intelligence ───────────────────────────────────────────────────
-
-function RerunIntelligence({ allLoopComplete }: { allLoopComplete: boolean }) {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <DepBadge label="Full loop complete" satisfied={allLoopComplete} />
-        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/45" />
-        <span className="text-label text-data-caption">Next cycle</span>
-      </div>
-      {allLoopComplete && (
-        <div className="flex flex-wrap gap-1.5">
-          <StatPill value="Loop complete" />
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Command hub popup ─────────────────────────────────────────────────────
 
 function CommandHub({
@@ -677,7 +677,6 @@ function CommandHub({
   briefsLastRun,
   loopStatus,
   accountPlatform,
-  allLoopComplete,
   stagedImportCount,
   isLiveMeta,
   analysisStarting,
@@ -732,7 +731,6 @@ function CommandHub({
   briefsLastRun:   { status: string; finished_at?: string | null; error_message?: string | null; progress_pct?: number | null; progress_stage?: string | null } | null;
   loopStatus: { stage: string; window_start?: string | null; window_end?: string | null; generated_at?: string | null }[] | null;
   accountPlatform?: string;
-  allLoopComplete: boolean;
   stagedImportCount: number;
   isLiveMeta: boolean;
   analysisStarting: boolean;
@@ -770,8 +768,7 @@ function CommandHub({
     : stage === "analysis" ? analysisComplete
     : stage === "strategy" ? strategyComplete
     : stage === "briefs"   ? briefsComplete
-    : stage === "report"   ? reportComplete
-    : false; // "rerun" is never complete — the loop is cyclic
+    : reportComplete;
 
   const isStale = (stage === "strategy" && strategyIsStale)
     || (stage === "briefs" && briefsIsStale);
@@ -782,7 +779,6 @@ function CommandHub({
     : stage === "data"     ? "No data yet"
     : stage === "analysis" ? "Not run"
     : stage === "report"   ? (briefsComplete ? "Ready to generate" : "Needs briefs")
-    : stage === "rerun"    ? (allLoopComplete ? "Ready to re-run" : "Complete loop first")
     : stage === "strategy" ? (analysisComplete ? "Ready to generate" : "Needs analysis")
     : (strategyComplete ? "Ready to generate" : "Needs strategy");
 
@@ -792,7 +788,6 @@ function CommandHub({
     : (analysisComplete && stage === "strategy")
       || (strategyComplete && stage === "briefs")
       || (briefsComplete && stage === "report")
-      || (allLoopComplete && stage === "rerun")
     ? "text-interactive/90 bg-primary/[0.12] border-primary/35"
     : "text-muted-foreground/65 bg-white/[0.05] border-border/30";
 
@@ -969,7 +964,7 @@ function CommandHub({
       );
     }
 
-    if (stage === "analysis" || stage === "rerun") {
+    if (stage === "analysis") {
       if (pendingConfirm === "analysis") return (
         <div className="flex flex-col gap-2.5">
           {/* Last run context — shown when a prior run exists */}
@@ -1082,23 +1077,6 @@ function CommandHub({
               Cancel
             </button>
           </div>
-        </div>
-      );
-
-      if (stage === "rerun") return (
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => allLoopComplete && setPendingConfirm("analysis")}
-            disabled={!allLoopComplete}
-            className={cn(
-              "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
-              !allLoopComplete
-                ? "opacity-30 cursor-not-allowed mx-secondary-btn"
-                : "mx-primary-btn",
-            )}
-          >
-            <PlayCircle className="w-3.5 h-3.5" /> Re-run Analysis
-          </button>
         </div>
       );
 
@@ -1422,8 +1400,6 @@ function CommandHub({
               reportComplete={reportComplete}
               reportCount={reportCount}
             />
-          ) : stage === "rerun" ? (
-            <RerunIntelligence allLoopComplete={allLoopComplete} />
           ) : (
             <StageIntelligence
               stage={stage}
@@ -1463,7 +1439,7 @@ function CommandHub({
           <div className="grid grid-cols-2 gap-1">
             {routes.map((r) => {
               const isCurrent    = currentPath === r.path;
-              const isAccessible = isComplete || isRunning || (stage === "rerun" && allLoopComplete);
+              const isAccessible = isComplete || isRunning;
               return (
                 <button
                   key={r.path}
@@ -1569,8 +1545,6 @@ export function LoopCommandChain({
   const strategyComplete = pillarCount > 0;
   const briefsComplete   = briefCount > 0;
   const reportComplete   = reportCount > 0;
-  // rerun is the 6th tile — represents the next loop cycle; never "complete"
-  const allLoopComplete  = dataComplete && analysisComplete && strategyComplete && briefsComplete && reportComplete;
 
   const analysisRunning = analysisRun?.status === "running";
   const strategyRunning = strategyGen.isRunning;
@@ -1836,26 +1810,17 @@ export function LoopCommandChain({
     briefsRunning,
   });
 
-  const completeCount = [dataComplete, analysisComplete, strategyComplete, briefsComplete, reportComplete].filter(Boolean).length;
-  const anyRunning    = analysisRunning || strategyRunning || briefsRunning || reportGenerating;
+  const anyRunning = analysisRunning || strategyRunning || briefsRunning || reportGenerating;
 
   const toggle = (s: Stage) => setActiveStage((prev) => (prev === s ? null : s));
 
   return (
     <>
       <div className="mx-card p-2.5 flex flex-col gap-2">
-        {/* Header */}
+        {/* Header — canvas spec carries no counter badge; state reads
+            entirely off the 5 stage circles below. */}
         <div className="flex items-center justify-between">
           <span className="mx-section-label leading-none">IAP Loop</span>
-          <span className={cn(
-            "text-[9px] font-mono tabular-nums tracking-widest",
-            anyRunning          ? "text-amber-400/55"
-              : completeCount === TOTAL_STAGES ? "text-emerald-400/45"
-              : completeCount > 0   ? "text-interactive/40"
-              : "text-muted-foreground/22",
-          )}>
-            {anyRunning ? "●" : completeCount === TOTAL_STAGES ? "✓" : `${completeCount}/${TOTAL_STAGES}`}
-          </span>
         </div>
 
         {/* Running strip — persistent progress indicator whenever any stage is active */}
@@ -1948,10 +1913,18 @@ export function LoopCommandChain({
           );
         })()}
 
-        {/* Six tiles + causal connectors */}
-        <div className="flex items-center gap-0.5">
+        {/* Five stages — Nocturne numbered-circle stepper (canvas spec:
+            Data/Analysis/Strategy/Briefs/Report); each stage owns its
+            trailing connecting line (all but the last). Re-running the loop
+            is not its own stage circle — once Report is complete, clicking
+            back into the Analysis tile exposes "Re-run Analysis" (see
+            Actions() above), so the click-to-open Command Hub interaction
+            that used to live on the standalone "Re-run" tile is preserved. */}
+        <div className="flex items-center" data-testid="loop-stepper">
           <StageTile
             stage="data"
+            stageNumber={1}
+            showLine
             isComplete={dataComplete}
             isRunning={false}
             isStale={false}
@@ -1962,13 +1935,10 @@ export function LoopCommandChain({
             onClick={() => toggle("data")}
           />
 
-          <ArrowRight className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-colors",
-            dataComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
-          )} />
-
           <StageTile
             stage="analysis"
+            stageNumber={2}
+            showLine
             isComplete={analysisComplete}
             isRunning={analysisRunning}
             isStale={false}
@@ -1980,13 +1950,10 @@ export function LoopCommandChain({
             onClick={() => toggle("analysis")}
           />
 
-          <ArrowRight className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-colors",
-            analysisComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
-          )} />
-
           <StageTile
             stage="strategy"
+            stageNumber={3}
+            showLine
             isComplete={strategyComplete}
             isRunning={strategyRunning}
             isStale={strategyIsStale}
@@ -1998,13 +1965,10 @@ export function LoopCommandChain({
             onClick={() => toggle("strategy")}
           />
 
-          <ArrowRight className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-colors",
-            strategyComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
-          )} />
-
           <StageTile
             stage="briefs"
+            stageNumber={4}
+            showLine
             isComplete={briefsComplete}
             isRunning={briefsRunning}
             isStale={briefsIsStale}
@@ -2016,13 +1980,10 @@ export function LoopCommandChain({
             onClick={() => toggle("briefs")}
           />
 
-          <ArrowRight className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-colors",
-            briefsComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
-          )} />
-
           <StageTile
             stage="report"
+            stageNumber={5}
+            showLine={false}
             isComplete={reportComplete}
             isRunning={reportGenerating}
             isStale={false}
@@ -2031,23 +1992,6 @@ export function LoopCommandChain({
             isActive={activeStage === "report"}
             elapsedSeconds={0}
             onClick={() => toggle("report")}
-          />
-
-          <ArrowRight className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-colors",
-            allLoopComplete ? "text-interactive/20" : "text-muted-foreground/10",
-          )} />
-
-          <StageTile
-            stage="rerun"
-            isComplete={false}
-            isRunning={false}
-            isStale={false}
-            isNext={allLoopComplete && !anyRunning}
-            isLocked={!allLoopComplete}
-            isActive={activeStage === "rerun"}
-            elapsedSeconds={0}
-            onClick={() => toggle("rerun")}
           />
         </div>
       </div>
@@ -2085,7 +2029,6 @@ export function LoopCommandChain({
           briefsLastRun={briefsLastRun}
           loopStatus={loopStatus}
           accountPlatform={account.platform}
-          allLoopComplete={allLoopComplete}
           stagedImportCount={stagedImportCount}
           isLiveMeta={isLiveMeta}
           analysisStarting={startAnalysisMutation.isPending || analysisFiring}

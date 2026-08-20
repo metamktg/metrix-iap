@@ -13,8 +13,9 @@
 // Data wiring is unchanged; only the presentation layer is redesigned.
 
 import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import {
-  CheckCircle2, Plug, Plus, ArrowRight, ChevronDown, ChevronUp,
+  CheckCircle2, Plug, Plus, ArrowRight, ChevronDown, ChevronUp, Download,
 } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
@@ -86,9 +87,11 @@ function AccountBreakdownTable({ rows }: { rows: AccountTotals[] }) {
   );
 }
 
-// ─── Results by event — ranked list with contribution bars + CPA ──────────
-// Sorted by result count (most impactful first). Each row shows:
-// event name · result count · share of total · bar · spend · CPA
+// ─── Results by event — Nocturne canvas table ─────────────────────────
+// The canvas's Results-by-event composition: a clean four-column table
+// (Event | Results | Spend | Cost / result) with fading row rules and an
+// accent chevron on clickable rows. Sorted by result volume; zero-result
+// events stay listed (dimmed), never hidden or estimated.
 
 interface ResultEvent { spend: number; reach: number; impressions: number; results: number; clicks_all: number; link_clicks: number; }
 
@@ -104,104 +107,52 @@ function ResultsByEventList({
     [events],
   );
   const totalResults = sorted.reduce((s, [, e]) => s + e.results, 0);
-  const maxResults = sorted[0]?.[1]?.results ?? 1;
 
   if (sorted.length === 0) {
     return <p className={cn(TYPE.body, "text-muted-foreground/55 py-3 text-center")}>No result events recorded.</p>;
   }
 
   return (
-    <div className="space-y-0.5">
-      {/* Column header row */}
-      <div
-        className="grid items-center gap-3 px-2 pb-1.5 mb-0.5 border-b border-border/20"
-        style={{ gridTemplateColumns: "1fr 5.5rem 3.5rem 1fr 5.5rem 5rem" }}
-      >
-        {["Event", "Results", "Share", "", "Spend", "CPA"].map((h) => (
-          <span key={h} className="text-micro font-mono uppercase tracking-widest text-muted-foreground/35 text-right first:text-left">{h}</span>
-        ))}
-      </div>
-
-      {sorted.map(([key, e], idx) => {
-        const isZero = e.results === 0;
-        const isTop = idx === 0 && !isZero;
-        const share = totalResults > 0 ? (e.results / totalResults) * 100 : 0;
-        const barPct = maxResults > 0 ? (e.results / maxResults) * 100 : 0;
-        const cpa = e.results > 0 ? e.spend / e.results : null;
-
-        return (
-          <button
-            key={key}
-            onClick={() => onDiagnose(key)}
-            className={cn(
-              "w-full grid items-center gap-3 px-2 py-2 rounded-md transition-colors text-left group",
-              isZero ? "opacity-40 cursor-default" : "hover:bg-white/[0.04]",
-            )}
-            style={{ gridTemplateColumns: "1fr 5.5rem 3.5rem 1fr 5.5rem 5rem" }}
-            disabled={isZero}
-          >
-            {/* Event name */}
-            <div className="flex items-center gap-2 min-w-0">
-              {isTop && (
-                <div className="w-1 h-1 rounded-full bg-interactive shrink-0" />
-              )}
-              <span className={cn(
-                TYPE.body,
-                "truncate",
-                isTop ? "font-semibold text-foreground" : "font-medium text-foreground/80",
-                !isTop && "ml-3",
-              )}>
-                {eventLabel(key)}
-              </span>
-            </div>
-
-            {/* Result count */}
-            <div className={cn(
-              "tabular-nums font-semibold text-right text-title",
-              isZero ? "text-muted-foreground/30" : isTop ? "text-foreground" : "text-foreground/75",
-            )}>
-              {fmtNum(e.results)}
-            </div>
-
-            {/* Share % */}
-            <div className={cn("tabular-nums text-right", TYPE.caption, "text-muted-foreground/50")}>
-              {isZero ? "—" : `${share.toFixed(0)}%`}
-            </div>
-
-            {/* Contribution bar */}
-            <div className="flex items-center px-1">
-              <div className="h-1 bg-white/[0.05] rounded-full w-full overflow-hidden">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all",
-                    isTop ? "bg-interactive/65" : "bg-white/20",
-                  )}
-                  style={{ width: `${barPct}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Spend */}
-            <div className={cn("tabular-nums text-right", TYPE.caption, "text-muted-foreground/60")}>
-              {fmtUSD(e.spend, 0)}
-            </div>
-
-            {/* CPA */}
-            <div className={cn(
-              "tabular-nums text-right", TYPE.caption,
-              cpa != null ? "text-foreground/65" : "text-muted-foreground/30",
-            )}>
-              {cpa != null ? fmtUSD(cpa) : "—"}
-            </div>
-          </button>
-        );
-      })}
-
-      {/* Total footer */}
+    <div className="overflow-x-auto">
+      <table className="nc-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th className="text-right">Results</th>
+            <th className="text-right">Spend</th>
+            <th className="text-right">Cost / result</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map(([key, e]) => {
+            const isZero = e.results === 0;
+            const cpa = e.results > 0 ? e.spend / e.results : null;
+            return (
+              <tr
+                key={key}
+                onClick={isZero ? undefined : () => onDiagnose(key)}
+                className={cn(isZero ? "opacity-40" : "cursor-pointer")}
+              >
+                <td>
+                  <span className="inline-flex items-center gap-1.5 font-medium text-foreground/90">
+                    {eventLabel(key)}
+                    {!isZero && <span aria-hidden="true" className="text-interactive/70">›</span>}
+                  </span>
+                </td>
+                <td className="text-right tabular-nums text-foreground/85">{fmtNum(e.results)}</td>
+                <td className="text-right tabular-nums text-muted-foreground/70">{fmtUSD(e.spend, 0)}</td>
+                <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/35")}>
+                  {cpa != null ? fmtUSD(cpa) : "n/a"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
       {totalResults > 0 && (
-        <div className="flex items-center justify-between pt-1.5 border-t border-border/20 px-2 mt-1">
-          <span className={cn(TYPE.label, "text-muted-foreground/35 uppercase tracking-wide font-mono")}>All events</span>
-          <span className={cn(TYPE.body, "font-semibold tabular-nums text-foreground/60")}>{fmtNum(totalResults)}</span>
+        <div className="flex items-center justify-between pt-2 px-2.5">
+          <span className={cn(TYPE.label, "text-muted-foreground/45")}>All events</span>
+          <span className={cn(TYPE.body, "font-semibold tabular-nums text-foreground/70")}>{fmtNum(totalResults)}</span>
         </div>
       )}
     </div>
@@ -394,6 +345,7 @@ function RecommendationCardItem({
 const TILE_COUNT = 4;
 
 export function ManagerOverview() {
+  const [, navigate] = useLocation();
   const { manager, adAccounts, selectAdAccount } = useAccount();
   const seed = useMetrixSeed();
   const isRefetching = useMetrixIsRefetching();
@@ -494,9 +446,23 @@ export function ManagerOverview() {
         title={manager.name}
         subtitle="Blended performance · all ad accounts"
         right={
-          <span className={cn(TYPE.label, "font-mono text-muted-foreground/55 uppercase tracking-widest")}>
-            {data.configured_ad_accounts} configured · {data.unconfigured_ad_accounts} to set up
-          </span>
+          <div className="flex items-center gap-2.5">
+            <span className={cn(TYPE.label, "font-mono text-muted-foreground/55 uppercase tracking-widest")}>
+              {data.configured_ad_accounts} configured · {data.unconfigured_ad_accounts} to set up
+            </span>
+            {/* Manager scope has no windowed KPI-tile data source to drive a
+                real date-range/vs-prior/Summary control (unlike Account
+                Overview) — Export is the one control here with a genuine,
+                working destination, so it's the only addition to this header. */}
+            <button
+              type="button"
+              onClick={() => navigate("/app/exports")}
+              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export
+            </button>
+          </div>
         }
       />
 
@@ -507,7 +473,7 @@ export function ManagerOverview() {
         {/* ── Bottom-line metric tiles ───────────────────────────────── */}
         <div>
           <div className="flex items-center justify-between mb-2.5">
-            <h2 className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/50")}>
+            <h2 className="text-cardtitle font-semibold text-foreground leading-tight">
               Bottom-line totals
             </h2>
             <button

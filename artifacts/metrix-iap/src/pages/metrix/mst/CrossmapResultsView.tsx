@@ -91,7 +91,7 @@ export function CrossmapResultsView({
         if (!mst || mst.status !== "active" || !matrix || !analysis) {
           return (
             <div className="flex-1 flex flex-col">
-              {renderHeader && <ModuleHeader section={SECTION} title="Crossmap Results" />}
+              {renderHeader && <ModuleHeader section={SECTION} title="Crossmap Results" accountName={acct.name} />}
               <PendingState title="No crossmap yet" message={mst?.render_policy ?? "Crossmap results appear once the matrix and performance data both exist."} icon={GitMerge}
                 action={<CrossLink to="/app/mst/matrix" label="Open MST Matrix" />}
               />
@@ -145,6 +145,7 @@ export function CrossmapResultsView({
               <ModuleHeader
                 section={SECTION}
                 title="Crossmap Results"
+                accountName={acct.name}
                 subtitle="Planned cells × actual delivery"
                 right={
                   <RunScopePicker

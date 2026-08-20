@@ -3,6 +3,42 @@
    index.html sets class="dark" on <html>. */
 @import "@workspace/command-deck/styles.css";
 
+/* NOCTURNE PALETTE OVERRIDE
+   Command Deck ships a generic light-blurple app-shell dark theme.
+   The Metrix v1 canvas defines a literal palette instead: deep
+   saturated navy background (hex 0B1220) and a vivid blue accent
+   (hex 0A84FF). This block overrides the base channel triplets to
+   that exact palette, once, at the root. Every downstream --mx- and
+   --surface- alias below derives from these channels, so the whole
+   app re-themes from this one block. Border, destructive, input,
+   chart-2, chart-4, and accent already matched the canvas palette
+   and are left as-is. Values are the canvas hex tokens converted
+   to HSL. */
+.dark {
+  --background: 220 48.8% 8.4%;           /* canvas --color-bg #0B1220 */
+  --foreground: 216 100% 95.1%;           /* canvas --color-text #E6F0FF */
+  --card: 222 47.4% 11.2%;                /* canvas --color-surface #0F172A */
+  --card-foreground: 216 100% 95.1%;
+  --popover: 217 32.6% 17.5%;             /* canvas --color-neutral-800 #1E293B */
+  --popover-foreground: 216 100% 95.1%;
+  --primary: 210 100% 52%;                /* canvas --color-accent #0A84FF */
+  --primary-foreground: 216 100% 95.1%;
+  --secondary: 217 32.6% 17.5%;
+  --secondary-foreground: 216 27.5% 82.2%;
+  --muted: 216 35.7% 16.5%;               /* canvas --mx-edge-soft #1B2739 */
+  --muted-foreground: 217 10.7% 60%;      /* canvas --mx-dim, nudged up from the raw 56.1% blend so --mx-text-faint (85% alpha) clears WCAG AA */
+  --sidebar: 220 48.8% 8.4%;              /* canvas sidebar panel: var(--color-bg) */
+  --sidebar-foreground: 216 100% 95.1%;
+  --sidebar-border: 218 35.3% 26.7%;      /* canvas --mx-edge-strong #2C3E5C */
+  --sidebar-primary: 210 100% 52%;
+  --sidebar-primary-foreground: 220 48.8% 8.4%;
+  --sidebar-accent: 217 32.6% 17.5%;
+  --sidebar-accent-foreground: 216 100% 95.1%;
+  --sidebar-ring: 210 100% 52%;
+  --ring: 210 100% 52%;
+  --chart-1: 210 100% 52%;                /* was the blurple primary default */
+}
+
 /* App-specific token → utility mappings the design system does not provide. */
 @theme inline {
   /* Metrix brand colors */
@@ -586,6 +622,7 @@
   .text-stat    { font-size: 1.625rem;   line-height: 1.1; }  /* 26px */
   .text-bignum  { font-size: 1.75rem;    line-height: 1.1; }  /* 28px */
   .text-hero    { font-size: 2.5rem;     line-height: 1.0; }  /* 40px — oversized creative/display */
+  .text-cardtitle { font-size: 1.0625rem; line-height: 1.2; } /* 17px — Nocturne canvas card-title */
 
   /* ── Data text hierarchy — DS-derived steps, predictable contrast ──
        text-data-primary  foreground            — values, headings
@@ -896,4 +933,44 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ── Nocturne canvas table (Metrix v1 design handoff) ─────────────────
+ * The canvas's `.table` primitive translated to app tokens: uppercase dim
+ * column heads, row rules painted as row-level fading strips (the end-fade
+ * spans the row, not each cell), and a hover tint layered over the rule so
+ * it keeps painting. Use for every data table replaced by the canvas
+ * design (Results by event, event tables, register tables). */
+.nc-table { width: 100%; border-collapse: collapse; }
+.nc-table th {
+  text-align: left;
+  font-size: 0.6875rem; /* 11px — canvas th size; matches text-caption */
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground) / 0.75);
+  font-weight: 500;
+  padding: 8px 10px;
+  border-bottom: 1px solid transparent; /* layout only; the row paints the fading rule */
+}
+.nc-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid transparent;
+  font-size: 0.8125rem; /* 13px — canvas body size within tables */
+}
+.nc-table thead tr {
+  background: linear-gradient(to right,
+    transparent, hsl(var(--border)) 48px,
+    hsl(var(--border)) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
+}
+.nc-table tbody tr {
+  background: linear-gradient(to right,
+    transparent, hsl(var(--foreground) / 0.08) 48px,
+    hsl(var(--foreground) / 0.08) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
+}
+.nc-table tbody tr:hover {
+  background:
+    linear-gradient(hsl(var(--foreground) / 0.04), hsl(var(--foreground) / 0.04)) no-repeat 0 0 / 100% 100%,
+    linear-gradient(to right,
+      transparent, hsl(var(--foreground) / 0.08) 48px,
+      hsl(var(--foreground) / 0.08) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
 }

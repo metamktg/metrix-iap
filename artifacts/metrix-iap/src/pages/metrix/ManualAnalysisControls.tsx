@@ -1,9 +1,10 @@
 // @refresh reset
 // ─── Required-format panel + manual analysis controls ──────────────────
 // Two pieces used by the manual-import flow:
-//  - RequiredFormatPanel: shows the exact columns a "Performance export
-//    (CSV)" upload must contain, straight from the server-side spec, plus
-//    a downloadable sample CSV.
+//  - RequiredFormatPanel: shows the exact columns a "Performance export"
+//    upload must contain, straight from the server-side spec, plus
+//    a downloadable sample CSV. Accepted upload formats are CSV (preferred)
+//    or XLSX — same required columns either way, only the container differs.
 //  - AnalysisControls: lets the user pick a date range and explicitly
 //    kick off analysis of their staged CSVs. Analysis NEVER runs
 //    automatically on upload — this is the only trigger. Polls the latest
@@ -33,7 +34,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { guessedCreativeImports } from "./manualImportUtils";
 import { ImportConfidenceReport } from "./ImportConfidenceReport";
-import { InfoTooltip } from "./shared";
+import { InfoTooltip, DetailReveal } from "./shared";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   AlertDialog,
@@ -96,11 +97,14 @@ function RunAnalysisBtn({
 
 export type IapCsvClassKey = "demographic" | "device_placement" | "ad_summary" | "conversion_device";
 
+// Labels the required-columns panel by report, not by file format — the
+// same columns are required whether the export arrives as CSV (preferred)
+// or XLSX; only the container differs.
 const CSV_CLASS_TITLES: Record<IapCsvClassKey, string> = {
-  demographic: "Demographics CSV",
-  device_placement: "Placements CSV",
-  ad_summary: "Ad Summary CSV",
-  conversion_device: "Conversion Device CSV",
+  demographic: "Demographics",
+  device_placement: "Placements",
+  ad_summary: "Ad Summary",
+  conversion_device: "Conversion Device",
 };
 
 /**
@@ -210,6 +214,9 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
             <p className="text-caption text-muted-foreground/80">Loading format spec…</p>
           ) : (
             <>
+              <p className="text-label text-muted-foreground/70">
+                Upload as CSV (preferred) or XLSX — same required columns either way.
+              </p>
               <div className="rounded-md border border-border/30 p-2">
                 <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/80 mb-1">
                   Breakdown columns
@@ -263,7 +270,9 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
   );
 }
 
-const DATE_RANGES: { id: "7d" | "14d" | "30d" | "all"; label: string }[] = [
+export type AnalysisDateRange = "7d" | "14d" | "30d" | "all";
+
+export const DATE_RANGES: { id: AnalysisDateRange; label: string }[] = [
   { id: "7d", label: "Last 7 days" },
   { id: "14d", label: "Last 14 days" },
   { id: "30d", label: "Last 30 days" },
@@ -962,12 +971,31 @@ function ImportHistoryPanel({
 export function AnalysisControls({
   accountId,
   onDone,
+  onDateRangeChange,
+  detailsOpen,
 }: {
   accountId: string;
   /** Called once when the run status transitions to "success". */
   onDone?: () => void;
+  /** Mirrors the currently-selected "date range to analyze" up to the parent — e.g. so a readiness tile can show it without duplicating this component's own state. Fires on mount and on every change. */
+  onDateRangeChange?: (range: AnalysisDateRange) => void;
+  /** Omit (default) to render the date-range chooser and the two pre-run
+   *  warning boxes inline, always visible — the manual-upload wizard's
+   *  behavior. Pass a boolean to instead collapse them behind a
+   *  DetailReveal, defaulting open/closed to this value — the Analysis
+   *  Command Center's Summary/Detailed toggle. */
+  detailsOpen?: boolean;
 }) {
-  const [dateRange, setDateRange] = useState<"7d" | "14d" | "30d" | "all">("30d");
+  const [dateRange, setDateRangeState] = useState<AnalysisDateRange>("30d");
+  const setDateRange = (r: AnalysisDateRange) => {
+    setDateRangeState(r);
+    onDateRangeChange?.(r);
+  };
+  useEffect(() => {
+    onDateRangeChange?.(dateRange);
+    // Fire once on mount so a parent tile shows the real default immediately, not a guess.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [conversionExportConfirm, setConversionExportConfirm] = useState<{ message: string; files: string[] } | null>(null);
   const queryClient = useQueryClient();
@@ -1111,6 +1139,67 @@ export function AnalysisControls({
 
   const priorRuns = (runsData?.runs ?? []).filter((r) => r.status === "success");
 
+  // Grouped so both the wizard (always inline) and the Command Center
+  // (collapsed behind DetailReveal, see `detailsOpen`) render the exact
+  // same date-range grid + pre-run warnings — no duplicated markup.
+  const dateRangeGrid = (
+    <div className="grid grid-cols-2 gap-1.5">
+      {DATE_RANGES.map((r) => (
+        <button
+          key={r.id}
+          onClick={() => setDateRange(r.id)}
+          disabled={isRunning}
+          className={cn(
+            "h-8 px-2 rounded-md border text-caption font-medium transition-colors",
+            dateRange === r.id
+              ? "border-primary/40 bg-primary/[0.08] text-interactive"
+              : "border-border/40 bg-white/[0.02] text-muted-foreground/85 hover:bg-white/[0.04]",
+            isRunning && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          {r.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  // Spend coverage notice — shown when the Ad Summary export is absent
+  const spendWarningBox = !hasSummary && !isRunning && (
+    <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.05] p-3 space-y-1">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="text-caption font-semibold text-amber-200">Spend will be underreported without an Ad Summary export</div>
+          <p className="text-label text-amber-100/65 leading-relaxed">
+            Meta's demographic export only captures ~10–15% of actual spend — the rest is unattributable due to iOS
+            privacy limits. Upload an <strong className="text-amber-200/90">Ad Summary export</strong> (CSV or XLSX,
+            ad-level, no demographic/device breakdown) to unlock full spend totals.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Hard-block: at least one required report hasn't been staged yet
+  const missingCsvWarningBox = missingRequiredCsv && !isRunning && (
+    <div className="rounded-lg border border-red-400/35 bg-red-500/[0.07] p-3">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="text-caption font-semibold text-red-200">
+            Both reports are required before running analysis
+          </div>
+          <p className="text-label text-red-100/70 leading-relaxed">
+            Missing: {[!hasDemoCsv && "Demographics export", !hasPlacementCsv && "Placement export"]
+              .filter(Boolean)
+              .join(", ")}
+            . Upload {missingRequiredCsv && !hasDemoCsv && !hasPlacementCsv ? "them" : "it"} from this account's setup screen.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-3">
       {/* Existing-runs context strip */}
@@ -1136,47 +1225,38 @@ export function AnalysisControls({
           void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(accountId) });
         }}
       />
-      <div className="flex items-center gap-2">
-        <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
-        <span className="text-caption font-medium text-foreground">Date range to analyze</span>
-      </div>
-      <div className="grid grid-cols-2 gap-1.5">
-        {DATE_RANGES.map((r) => (
-          <button
-            key={r.id}
-            onClick={() => setDateRange(r.id)}
-            disabled={isRunning}
-            className={cn(
-              "h-8 px-2 rounded-md border text-caption font-medium transition-colors",
-              dateRange === r.id
-                ? "border-primary/40 bg-primary/[0.08] text-interactive"
-                : "border-border/40 bg-white/[0.02] text-muted-foreground/85 hover:bg-white/[0.04]",
-              isRunning && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            {r.label}
-          </button>
-        ))}
-      </div>
+
+      {detailsOpen === undefined ? (
+        <>
+          <div className="flex items-center gap-2">
+            <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
+            <span className="text-caption font-medium text-foreground">Date range to analyze</span>
+          </div>
+          {dateRangeGrid}
+          {spendWarningBox}
+          {missingCsvWarningBox}
+        </>
+      ) : (
+        // Command Center context: same controls, collapsed behind a
+        // disclosure by default so the card matches the mock's compact
+        // face. Nothing removed — remounted via `key` so the header's
+        // Summary/Detailed toggle can force it open or closed, same
+        // pattern as AdAccountOverview's control-read reveals.
+        <DetailReveal
+          key={String(detailsOpen)}
+          label={
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
+              Date range to analyze
+            </span>
+          }
+          labelClassName="text-caption font-medium text-foreground"
+          sections={[{ render: () => <div className="space-y-3">{dateRangeGrid}{spendWarningBox}{missingCsvWarningBox}</div> }]}
+          defaultOpen={detailsOpen}
+        />
+      )}
 
       <MappingHealthBanner imports={importsData?.imports ?? []} />
-
-      {/* Spend coverage notice — shown when Ad Summary CSV is absent */}
-      {!hasSummary && !isRunning && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.05] p-3 space-y-1">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="text-caption font-semibold text-amber-200">Spend will be underreported without Ad Summary CSV</div>
-              <p className="text-label text-amber-100/65 leading-relaxed">
-                Meta's demographic export only captures ~10–15% of actual spend — the rest is unattributable due to iOS
-                privacy limits. Upload an <strong className="text-amber-200/90">Ad Summary CSV</strong> (ad-level, no
-                demographic/device breakdown) to unlock full spend totals.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       <GuessedMatchesCallout
         accountId={accountId}
@@ -1185,26 +1265,6 @@ export function AnalysisControls({
       />
 
       {error && <p className="text-caption text-red-400">{error}</p>}
-
-      {/* Hard-block: at least one required report hasn't been staged yet */}
-      {missingRequiredCsv && !isRunning && (
-        <div className="rounded-lg border border-red-400/35 bg-red-500/[0.07] p-3">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="text-caption font-semibold text-red-200">
-                Both reports are required before running analysis
-              </div>
-              <p className="text-label text-red-100/70 leading-relaxed">
-                Missing: {[!hasDemoCsv && "Demographics export", !hasPlacementCsv && "Placement export"]
-                  .filter(Boolean)
-                  .join(", ")}
-                . Upload {missingRequiredCsv && !hasDemoCsv && !hasPlacementCsv ? "them" : "it"} from this account's setup screen.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Soft-block warning when required breakdown columns are missing */}
       {!missingRequiredCsv && hasRequiredMissing && !isRunning && !forceRunAcknowledged && (
@@ -1217,7 +1277,7 @@ export function AnalysisControls({
               </div>
               <p className="text-label text-red-100/70 leading-relaxed">
                 One or more required breakdown columns (e.g. Age, Placement) were not found in your
-                CSV. Fix the file and re-upload it, or run anyway and review the error.
+                file. Fix the file and re-upload it, or run anyway and review the error.
               </p>
             </div>
           </div>

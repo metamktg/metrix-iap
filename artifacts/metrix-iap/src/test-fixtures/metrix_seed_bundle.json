@@ -388,7 +388,7 @@
     "type": "manager_account",
     "overview_mode": "agency_blended",
     "configured_ad_accounts": 5,
-    "unconfigured_ad_accounts": 3,
+    "unconfigured_ad_accounts": 6,
     "bottom_line_totals": {
       "spend_usd": 22996.98,
       "impressions": 3569624,
@@ -19840,6 +19840,24 @@
       "creative_deconstructions": []
     },
     {
+      "id": "manual_9JGXU_AQJjxJ",
+      "name": "Fresh Import 1786839868960",
+      "status": "unconfigured",
+      "platform": "Meta Ads",
+      "objectives": [],
+      "overview_state": {
+        "title": "Analysis not run yet",
+        "description": "This ad account was created for manual report uploads. Upload exported Meta reports; performance and strategy data appears after the first analysis run processes them.",
+        "primary_action": "Upload Reports",
+        "secondary_action": "Connect Meta"
+      },
+      "iap": null,
+      "mst": {
+        "status": "not_available"
+      },
+      "creative_deconstructions": []
+    },
+    {
       "id": "manual_BwsYjC5ZRk0i",
       "name": "Gabri",
       "status": "configured",
@@ -31352,6 +31370,42 @@
       },
       "listen": {
         "signal_cards": []
+      },
+      "creative_deconstructions": []
+    },
+    {
+      "id": "manual_EzTJXI6vCoIJ",
+      "name": "Clean Import 1786839665219",
+      "status": "unconfigured",
+      "platform": "Meta Ads",
+      "objectives": [],
+      "overview_state": {
+        "title": "Analysis not run yet",
+        "description": "This ad account was created for manual report uploads. Upload exported Meta reports; performance and strategy data appears after the first analysis run processes them.",
+        "primary_action": "Upload Reports",
+        "secondary_action": "Connect Meta"
+      },
+      "iap": null,
+      "mst": {
+        "status": "not_available"
+      },
+      "creative_deconstructions": []
+    },
+    {
+      "id": "manual_FE6on6hWWB1y",
+      "name": "Failure Path 1786840099760",
+      "status": "unconfigured",
+      "platform": "Meta Ads",
+      "objectives": [],
+      "overview_state": {
+        "title": "Analysis not run yet",
+        "description": "This ad account was created for manual report uploads. Upload exported Meta reports; performance and strategy data appears after the first analysis run processes them.",
+        "primary_action": "Upload Reports",
+        "secondary_action": "Connect Meta"
+      },
+      "iap": null,
+      "mst": {
+        "status": "not_available"
       },
       "creative_deconstructions": []
     },

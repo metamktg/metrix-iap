@@ -39,6 +39,8 @@ import {
   type BreakdownRow,
 } from "@/lib/data/kpiBreakdown";
 import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
+import { useDeepDive } from "@/contexts/DeepDiveContext";
+import { buildSegmentModule, findDimension } from "@/lib/data/deepDive";
 
 const CHART_CONFIG: ChartConfig = { value: { label: "Value", color: "hsl(var(--interactive))" } };
 
@@ -145,10 +147,12 @@ function BreakdownBars({ rows }: { rows: BreakdownRow[] }) {
 
 // ─── Sortable table ───────────────────────────────────────────────────
 
-function BreakdownTable({ rows, metricLabel, showWindows }: {
+function BreakdownTable({ rows, metricLabel, showWindows, onDrillSegment }: {
   rows: BreakdownRow[];
   metricLabel: string;
   showWindows: boolean;
+  /** Present only when the deep-dive panel can take this segment (account scope + provider mounted). */
+  onDrillSegment?: (row: BreakdownRow) => void;
 }) {
   return (
     <div className="rounded-lg border border-border/40 overflow-hidden" data-testid="kpi-drilldown-table">
@@ -168,7 +172,19 @@ function BreakdownTable({ rows, metricLabel, showWindows }: {
           {rows.map((r) => (
             <tr key={r.key} className="border-b border-border/15 last:border-b-0">
               <td className={cn(TYPE.body, "px-3 py-1.5 text-foreground/85 font-medium max-w-[240px] truncate")} title={r.note ?? r.label}>
-                {r.label}
+                {onDrillSegment ? (
+                  <button
+                    type="button"
+                    onClick={() => onDrillSegment(r)}
+                    className="text-left truncate max-w-full text-interactive hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+                    data-testid={`kpi-drilldown-segment-${r.key}`}
+                    aria-label={`Open the deep dive for ${r.label}`}
+                  >
+                    {r.label}
+                  </button>
+                ) : (
+                  r.label
+                )}
               </td>
               <td className={cn(TYPE.body, "px-3 py-1.5 tabular-nums text-right", r.value == null ? "text-muted-foreground/40" : "text-foreground font-semibold")}>
                 {r.formatted}
@@ -357,6 +373,30 @@ export function KpiDrilldownModal({
     [scope, managerRows, accountRows, sortDir],
   );
 
+  // ── Deep-dive chaining (account scope) ──────────────────────────────
+  // When the deep-dive provider is mounted, table segments become entry
+  // points into the slide-over module stack: push the segment's full
+  // metric profile and hand the interaction over to the panel. The modal
+  // closes so the two overlays never stack. No provider → no affordance.
+  const deepDive = useDeepDive();
+  const drillDimension = scope === "account" ? findDimension(analysis, dimensionId) : null;
+  const onDrillSegment =
+    deepDive.enabled && analysis && drillDimension
+      ? (row: BreakdownRow) => {
+          deepDive.push(
+            buildSegmentModule({
+              analysis,
+              dimension: drillDimension,
+              segmentKey: row.key,
+              catalog,
+              scopedCellRows,
+              windowLabel,
+            }),
+          );
+          onClose();
+        }
+      : undefined;
+
   if (!metric) return null;
   const metricOptions = catalog.map((m) => ({ id: m.id, label: m.label }));
   const dimensionOptions = dimensions.map((d) => ({ id: d.id, label: d.label }));
@@ -460,7 +500,12 @@ export function KpiDrilldownModal({
             <div className="space-y-3">
               {view === "chart" && <BreakdownBars rows={rows} />}
               {view === "table" && (
-                <BreakdownTable rows={rows} metricLabel={metric.label} showWindows={scope === "manager"} />
+                <BreakdownTable
+                  rows={rows}
+                  metricLabel={metric.label}
+                  showWindows={scope === "manager"}
+                  onDrillSegment={onDrillSegment}
+                />
               )}
               {scope === "manager" && view === "chart" && (
                 <div className="space-y-0.5">

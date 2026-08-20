@@ -1,12 +1,14 @@
 // ─── Add Ad Account dialog ────────────────────────────────────────────
 // The single real entry point for adding an ad account to the workspace:
-//   1. Connect a live Meta ad account (hands off to Settings → Integrations
-//      where the real OAuth flow lives), or
-//   2. Create a manual-reports account (named account in an honest
-//      unconfigured state) and optionally stage report uploads for it.
+//   1. Create a manual-reports account (named account in an honest
+//      unconfigured state) and optionally stage report uploads for it —
+//      the priority path today, and the default/prominent option, or
+//   2. Connect a live Meta ad account — gated "Coming soon" for now. The
+//      real OAuth flow stays implemented server-side for a focused future
+//      effort to build a proper UI around; this dialog never hands off
+//      into it.
 
 import { useState } from "react";
-import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useCreateManualAdAccount,
@@ -46,7 +48,6 @@ export function AddAccountDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { selectAdAccount } = useAccount();
 
@@ -174,32 +175,14 @@ export function AddAccountDialog({
             </DialogHeader>
 
             <div className="space-y-2">
-              <button
-                onClick={() => {
-                  handleOpenChange(false);
-                  navigate("/app/settings/integrations");
-                }}
-                className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-border/40 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/[0.04] transition-colors text-left"
-              >
-                <div className="w-9 h-9 rounded-lg border border-primary/25 bg-primary/10 flex items-center justify-center shrink-0">
-                  <Plug className="w-4 h-4 text-interactive" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-title font-semibold text-foreground">Connect Meta Ad Account</div>
-                  <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">
-                    Authorize read-only access with Meta and link a live ad account. Data pulls
-                    run against the real Meta API.
-                  </p>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0 mt-0.5" />
-              </button>
-
+              {/* Manual upload — the priority path today, and the more prominent
+                  default while live Meta OAuth is gated below. */}
               <button
                 onClick={() => setStep("manual_name")}
-                className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-border/40 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/[0.04] transition-colors text-left"
+                className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-primary/30 bg-primary/[0.03] hover:border-primary/50 hover:bg-primary/[0.06] transition-colors text-left"
               >
-                <div className="w-9 h-9 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0">
-                  <FileUp className="w-4 h-4 text-muted-foreground/80" />
+                <div className="w-9 h-9 rounded-lg border border-primary/25 bg-primary/10 flex items-center justify-center shrink-0">
+                  <FileUp className="w-4 h-4 text-interactive" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-title font-semibold text-foreground">Upload manual reports</div>
@@ -209,6 +192,32 @@ export function AddAccountDialog({
                   </p>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0 mt-0.5" />
+              </button>
+
+              {/* Live Meta OAuth — gated. Real infrastructure exists server-side;
+                  the focused UI effort for it hasn't shipped yet. */}
+              <button
+                type="button"
+                disabled
+                aria-disabled="true"
+                title="Live Meta connection is coming soon — use manual upload above for now"
+                className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-border/30 bg-white/[0.01] opacity-70 cursor-not-allowed text-left"
+              >
+                <div className="w-9 h-9 rounded-lg border border-border/30 bg-white/[0.02] flex items-center justify-center shrink-0">
+                  <Plug className="w-4 h-4 text-muted-foreground/50" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="text-title font-semibold text-muted-foreground/70">Connect Meta Ad Account</div>
+                    <span className="text-label font-semibold uppercase tracking-widest border border-border/40 bg-white/[0.03] text-muted-foreground/60 px-1.5 py-0.5 rounded shrink-0">
+                      Coming soon
+                    </span>
+                  </div>
+                  <p className="text-caption text-muted-foreground/55 leading-relaxed mt-0.5">
+                    Direct OAuth connection to Meta is in active development. Use manual upload
+                    above in the meantime.
+                  </p>
+                </div>
               </button>
             </div>
           </>
@@ -287,10 +296,15 @@ export function AddAccountDialog({
 
             <ManualUploadPanel accountId={created.account_id} />
 
-            <div className="flex items-center justify-between pt-1">
-              <GhostBtn onClick={() => setStep("manual_name")}>
-                <ArrowLeft className="w-3.5 h-3.5" /> Back
-              </GhostBtn>
+            {/* No "Back" here by design: the account already exists at this
+                point (created above), and there is no rename endpoint — a
+                "Back" that returned to the name step would let the user hit
+                "Create account" again and silently spawn a second, duplicate
+                account while orphaning this one's staged uploads. Backing out
+                of an upload in progress is handled inside ManualUploadPanel's
+                own Review step ("Back to uploads"), which stays within this
+                same account. */}
+            <div className="flex items-center justify-end pt-1">
               <GhostBtn onClick={finish}>Done — open account</GhostBtn>
             </div>
           </>

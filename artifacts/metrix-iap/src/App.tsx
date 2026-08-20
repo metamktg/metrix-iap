@@ -12,6 +12,7 @@ import { AdminWaitlistPage } from "@/pages/admin/AdminWaitlistPage";
 import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TaskTrayProvider } from "@/contexts/TaskTrayContext";
+import { DeepDiveProvider } from "@/contexts/DeepDiveContext";
 import {
   RESET_PASSWORD_PATH,
   FORGOT_PASSWORD_PATH,
@@ -26,7 +27,6 @@ import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { ConceptRegistryProvider } from "@/lib/concept-registry-context";
 import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 import { Overview } from "@/pages/metrix/Overview";
-import { OverviewLoopPage } from "@/pages/metrix/OverviewLoopPage";
 import { OverviewUpdatesView } from "@/pages/metrix/OverviewUpdatesView";
 import { ListenCommandCenter } from "@/pages/metrix/listen/ListenCommandCenter";
 import { SignalView } from "@/pages/metrix/listen/SignalView";
@@ -36,6 +36,7 @@ import { AnalysisCommandCenter } from "@/pages/metrix/analysis/AnalysisCommandCe
 import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
 import { AdPerformanceView } from "@/pages/metrix/analysis/AdPerformanceView";
 import { IapLibraryView } from "@/pages/metrix/analysis/IapLibraryView";
+import { AnalysisDnaView } from "@/pages/metrix/analysis/AnalysisDnaView";
 import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
 import { PlacementsView } from "@/pages/metrix/analysis/PlacementsView";
 import { BudgetView } from "@/pages/metrix/analysis/BudgetView";
@@ -65,11 +66,9 @@ import { ExportsBriefView } from "@/pages/metrix/exports/ExportsBriefView";
 import { MstCommandCenter } from "@/pages/metrix/mst/MstCommandCenter";
 import { MstCrossMapView } from "@/pages/metrix/mst/MstCrossMapView";
 import { MstSprintsView } from "@/pages/metrix/mst/MstSprintsView";
-import { MstPerformanceView } from "@/pages/metrix/mst/MstPerformanceView";
 import { MstDirectionView } from "@/pages/metrix/mst/MstDirectionView";
 import { CreativeScanView as MstCreativeScanView } from "@/pages/metrix/mst/CreativeScanView";
 import { MetrixAgent } from "@/pages/MetrixAgent";
-import { HomeView } from "@/pages/metrix/HomeView";
 import { FindingsView } from "@/pages/metrix/analysis/FindingsView";
 import { ActionQueueView } from "@/pages/metrix/act/ActionQueueView";
 import { GeneralView } from "@/pages/metrix/settings/GeneralView";
@@ -99,7 +98,6 @@ export function Router() {
       {/* ── 01 Overview (adaptive: manager ↔ ad account) ──────────────── */}
       <Route path="/"               component={Overview} />
       <Route path="/app/account"    component={Overview} />
-      <Route path="/app/overview/loop"    component={OverviewLoopPage} />
       <Route path="/app/overview/updates" component={OverviewUpdatesView} />
 
       {/* ── 02 Listen ─────────────────────────────────────────────────── */}
@@ -112,6 +110,7 @@ export function Router() {
       <Route path="/app/analysis"            component={AnalysisCommandCenter} />
       <Route path="/app/analysis/performance" component={AdPerformanceView} />
       <Route path="/app/analysis/library"    component={IapLibraryView} />
+      <Route path="/app/analysis/dna"        component={AnalysisDnaView} />
       <Route path="/app/analysis/audience"   component={AudienceView} />
       <Route path="/app/analysis/placements" component={PlacementsView} />
       <Route path="/app/analysis/budget"     component={BudgetView} />
@@ -144,7 +143,6 @@ export function Router() {
       <Route path="/app/mst"                component={MstCommandCenter} />
       <Route path="/app/mst/cross-map"     component={MstCrossMapView} />
       <Route path="/app/mst/sprints"       component={MstSprintsView} />
-      <Route path="/app/mst/performance"   component={MstPerformanceView} />
       <Route path="/app/mst/direction"     component={MstDirectionView} />
       <Route path="/app/mst/creative-scan" component={MstCreativeScanView} />
 
@@ -154,9 +152,6 @@ export function Router() {
       <Route path="/app/exports/strategy"  component={ExportsStrategyView} />
       <Route path="/app/exports/reports"   component={ExportsReportsView} />
       <Route path="/app/exports/brief"     component={ExportsBriefView} />
-
-      {/* ── Home screen ───────────────────────────────────────────────── */}
-      <Route path="/app/home" component={HomeView} />
 
       {/* ── Analyze section ───────────────────────────────────────────── */}
       <Route path="/app/analyze/findings" component={FindingsView} />
@@ -251,9 +246,11 @@ export function AuthGate() {
           <DateRangeProvider>
             <AnalysisViewProvider>
               <TaskTrayProvider>
-                <AppShell>
-                  <Router />
-                </AppShell>
+                <DeepDiveProvider>
+                  <AppShell>
+                    <Router />
+                  </AppShell>
+                </DeepDiveProvider>
               </TaskTrayProvider>
             </AnalysisViewProvider>
           </DateRangeProvider>

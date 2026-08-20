@@ -124,15 +124,16 @@ function renderChain(account: AdAccount = makeCompleteAccount()) {
 // Find a stage tile <button> by its visible label ("Analysis" | "Strategy" | "Briefs").
 // The label is rendered in a <span> with uppercase tracking classes inside the button.
 function getStageTile(container: HTMLElement, label: string): HTMLElement | null {
-  const spans = Array.from(container.querySelectorAll<HTMLElement>("span"));
-  const labelSpan = spans.find(
-    (s) => s.textContent?.trim() === label && /uppercase/.test(s.className),
-  );
-  return labelSpan?.closest("button") ?? null;
+  // Stage tiles carry a stable data-testid (stage-tile-<stage>) since the
+  // Nocturne stepper restyle — resolve the label to its stage key.
+  const stage = label.toLowerCase() === "briefs" ? "briefs" : label.toLowerCase();
+  return container.querySelector<HTMLElement>(`[data-testid="stage-tile-${stage}"]`);
 }
 
 function isOrangeStale(tile: HTMLElement | null): boolean {
-  return !!tile && tile.className.includes("orange-400");
+  // The stale treatment lives on the tile's data-state since the Nocturne
+  // stepper restyle (color moved from the button to its inner circle).
+  return !!tile && tile.getAttribute("data-state") === "stale";
 }
 
 // ── Suite ─────────────────────────────────────────────────────────────────

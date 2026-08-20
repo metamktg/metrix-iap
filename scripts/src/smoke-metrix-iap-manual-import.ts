@@ -1,20 +1,13 @@
-// Smoke check: Metrix IAP Home screen + 5-section nav end-to-end (Playwright).
+// Smoke check: manual CSV import flow end-to-end (Playwright).
 //
-// Boots the metrix-iap Vite dev server on an isolated port, waits for it to
-// be ready, runs the Playwright spec at
-// tests/e2e/metrix-iap-home-screen.spec.ts, then tears the server down.
-// API responses (auth/me, seed, reports) are mocked inside the spec itself
-// so no running API server is required.
+// Boots the metrix-iap Vite dev server on a private port, waits for it
+// to be ready, runs the Playwright spec at
+// tests/e2e/metrix-iap-manual-import.spec.ts, then tears the server down.
+// API responses (auth/me, seed, reports, and the full manual-imports /
+// analysis-runs surface) are mocked inside the spec itself so no running
+// API server or Supabase is required.
 //
-// Assertions:
-//   1. Verdict headline (h1) is visible and non-empty on /app/home.
-//   2. Loop strip shows all 4 stages: Listen, Analyze, Act, Learn.
-//   3. KPI tiles row shows 4 tiles: Spend / Best CPA / Results / Concepts.
-//   4. "Next best actions" section heading is visible.
-//   5. Clicking "Analyze" in the sidebar navigates to /app/analyze.
-//   6. Clicking "Settings" in the sidebar navigates to /app/settings/account.
-//
-// Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-home-screen
+// Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-manual-import
 
 import { spawn, type ChildProcess } from "node:child_process";
 import path from "node:path";
@@ -33,8 +26,7 @@ function fail(message: string, extra?: string): never {
 
 // ── dev server ──────────────────────────────────────────────────────────────
 
-// Use a port that is unlikely to collide with other smoke-test workflows.
-const DEV_PORT = "15177";
+const DEV_PORT = "15194"; // private port; won't collide with any other workflow
 
 async function startDevServer(): Promise<ChildProcess> {
   return new Promise((resolve, reject) => {
@@ -57,7 +49,7 @@ async function startDevServer(): Promise<ChildProcess> {
     const onData = (chunk: Buffer) => {
       const line = chunk.toString();
       process.stdout.write(line);
-      // Vite prints "Local:" or "ready in" when the server is listening.
+      // Vite prints "Local:" or "ready in" when the dev server is up.
       if (!ready && /Local:|ready in|localhost/i.test(line)) {
         ready = true;
         resolve(child);
@@ -74,7 +66,6 @@ async function startDevServer(): Promise<ChildProcess> {
       }
     });
 
-    // Hard timeout.
     setTimeout(() => {
       if (!ready) {
         child.kill();
@@ -90,7 +81,7 @@ async function runTests(): Promise<void> {
   return new Promise((resolve, reject) => {
     const specPath = path.join(
       repoRoot,
-      "tests/e2e/metrix-iap-home-screen.spec.ts",
+      "tests/e2e/metrix-iap-manual-import.spec.ts",
     );
     const child = spawn("pnpm", ["exec", "tsx", specPath], {
       cwd: repoRoot,
@@ -118,7 +109,7 @@ async function runTests(): Promise<void> {
       } else {
         reject(
           new Error(
-            `Home screen e2e tests failed (exit ${code})\n--- output ---\n${output || "(no output)"}`,
+            `Manual-import e2e tests failed (exit ${code})\n--- output ---\n${output || "(no output)"}`,
           ),
         );
       }
@@ -130,7 +121,7 @@ async function runTests(): Promise<void> {
 
 async function main() {
   console.log(
-    "Starting @workspace/metrix-iap dev server for home-screen e2e tests...",
+    "Starting @workspace/metrix-iap dev server for manual-import e2e tests...",
   );
   const server = await startDevServer().catch((err) => {
     fail(
@@ -140,18 +131,18 @@ async function main() {
   });
 
   try {
-    // Brief pause so Vite finishes HMR setup before Playwright navigates.
+    // Brief pause so Vite finishes HMR setup.
     await new Promise((r) => setTimeout(r, 2000));
 
-    console.log("\nRunning Home screen + 5-section nav e2e tests...\n");
+    console.log("\nRunning manual-import e2e tests...\n");
     await runTests().catch((err) => {
-      fail("Home screen e2e tests failed", String(err?.message ?? err));
+      fail("Manual-import e2e tests failed", String(err?.message ?? err));
     });
   } finally {
     server.kill();
   }
 
-  console.log("\nPASS  Home screen + 5-section nav e2e tests passed.");
+  console.log("\nPASS  Manual-import e2e tests passed.");
   process.exit(0);
 }
 

@@ -801,6 +801,18 @@ export interface AnalysisSummaryConceptRow {
   link_clicks: number;
 }
 
+/**
+ * One calendar day of additive ad_performance totals inside the active window — feeds sparklines and daily trend reads.
+ */
+export interface AnalysisSummaryDayRow {
+  /** YYYY-MM-DD */
+  date: string;
+  spend: number;
+  impressions: number;
+  link_clicks: number;
+  results: number;
+}
+
 export interface AnalysisSummaryResult {
   preset: ViewPreset;
   /** Full date window available in stored rows for this account (min/max date_start). */
@@ -808,6 +820,12 @@ export interface AnalysisSummaryResult {
   /** Actual date window covered by this result after applying the preset filter. */
   active_window: AnalysisSummaryWindow | null;
   totals: AnalysisSummaryTotals;
+  /** Per-day additive totals inside the active window, ascending by date. */
+  daily: AnalysisSummaryDayRow[];
+  /** Real measured totals for the equal-length window immediately preceding the active one; null when no preceding window applies (preset "all") or it holds no rows. */
+  prior_totals: AnalysisSummaryTotals | null;
+  /** The preceding window prior_totals covers; null whenever prior_totals is null. */
+  prior_window: AnalysisSummaryWindow | null;
   demographic_rows: AnalysisSummaryDemoRow[];
   placement_rows: AnalysisSummaryPlacementRow[];
   concept_rows: AnalysisSummaryConceptRow[];

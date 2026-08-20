@@ -112,7 +112,7 @@ describe("PlacementsView · East Coast Art Studio (conversion-only)", () => {
     select("ecas");
     renderView();
     expect(screen.queryByText("Placement spend")).toBeNull();
-    expect(screen.queryByText("Spend by placement")).toBeNull();
+    expect(screen.queryByText("Placement breakdown")).toBeNull();
     expect(screen.queryByText("CPA")).toBeNull();
   });
 });
@@ -120,11 +120,11 @@ describe("PlacementsView · East Coast Art Studio (conversion-only)", () => {
 describe("PlacementsView · Bookster (delivery-based, unchanged)", () => {
   it("still renders the combined V3/C4E delivery rollup", () => {
     // The separate "V3 placement signal" / "C4E placement signal" sections
-    // were merged into a single combined rollup ("Spend by placement");
+    // were merged into a single combined rollup ("Placement breakdown");
     // the per-signal split now lives in the placement drill-down.
     select("bookster");
     renderView();
-    expect(screen.getByText("Spend by placement")).toBeTruthy();
+    expect(screen.getByText("Placement breakdown")).toBeTruthy();
     // Combined rollup renders one ranked row per placement.
     const rows = document.querySelectorAll('[data-testid^="row-placement-"]');
     expect(rows.length).toBeGreaterThan(0);

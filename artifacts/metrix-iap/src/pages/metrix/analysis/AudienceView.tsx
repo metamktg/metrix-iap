@@ -1,19 +1,27 @@
 // ─── Analysis · Audience Intelligence ─────────────────────────────────
-// Three differentiated views of the demographic conversion pocket signal:
+// Three real "segment by" grains over the same demographic conversion
+// pocket signal (segment-analytics.ts) — nothing here is estimated:
 //
-//   Intelligence Map — CVR × Link CTR scatter; bubbles sized by spend
-//     share, colored by CPA efficiency vs. the account median. Quadrant
-//     reference lines reveal Scale / Protect / Fix / Test strategy zones.
+//   Cluster — real age×gender segments grouped by efficiency profile
+//     (CPA × CVR) via a deterministic k-means pass (audience-clusters.ts).
+//     Cluster labels are mechanically built from each cluster's top-spend
+//     member segments — never an invented behavioral narrative.
 //
-//   Pocket Grid — audience pocket tiles (age × gender cards) with
-//     efficiency halo, spend share bar, KPI triad, and concept attribution
-//     chips. Sortable by any KPI via RankSortBar.
+//   Age — the same segments grouped by age bracket only (genders
+//     combined), a plain real regrouping of the same rows.
 //
-//   Ranked — KPI-ranked rows with proportional share bars (existing view).
+//   Ranked — the original full per-segment ranked list, preserved as-is
+//     (KPI stat rows, Explore → drilldown, low-signal flags).
 //
-// All three views open the full SegmentDrilldownModal for messaging
-// attribution on click. Data integrity rules from segment-analytics.ts are
-// unchanged — nothing is estimated.
+// There is deliberately no "Placement" grain: SegmentDrilldownData.placements
+// is a real field in segment-analytics.ts but is hardcoded
+// `{ available: false, entries: [] }` everywhere in this codebase — no
+// import populates it. Rather than ship a toggle option that always routes
+// to a pending state, it is omitted; Cluster/Age/Ranked are all fully real.
+//
+// Cluster and Age modes share one rendering path (PositioningMapCard,
+// ShareOfSpendCard, GroupDetailCard) over the common AudienceGroup<T> shape
+// from audience-clusters.ts, so the same honesty rules apply to both.
 
 import { useMemo, useState, useCallback } from "react";
 import {
@@ -27,25 +35,28 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   SkeletonTileRow, DatePresetBar, type ViewPreset, SegmentedToggle, SectionInfoIcon,
-  useShowMore, ShowMoreButton, SegmentGenderIcon,
+  useShowMore, ShowMoreButton, SegmentGenderIcon, DetailReveal,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import type { DemographicRow } from "@/lib/data/seedTypes";
 import { TYPE } from "../typography";
 import {
-  Users, Map, LayoutGrid, List, ArrowRight,
-  AlertTriangle, TrendingUp,
+  Users, Layers, Calendar as CalendarIcon, List, ArrowRight, AlertTriangle, TrendingUp,
 } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   scopeDemographicRows,
   listSegments, rowsForSegment,
   computeSegmentTotals, deriveSegmentMetrics,
-  assessSegmentSignal, segmentLabel,
+  assessSegmentSignal, segmentLabel, segmentKey,
   type SegmentId, type SegmentRawTotals,
   type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
+import {
+  buildAudienceClusters, groupSegmentsByAge, classifyQuadrant, QUADRANT_LABEL,
+  type AudienceGroup, type PositioningQuadrant,
+} from "@/lib/audience-clusters";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import {
   RankSortBar, KpiStat, sortByRankMetric, useRankMetric,
@@ -55,20 +66,13 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────
 
-type ViewMode = "map" | "pockets" | "ranked";
+type SegmentByMode = "cluster" | "age" | "ranked";
 
 interface SegmentEntry {
   seg: SegmentId;
   totals: SegmentRawTotals;
   derived: SegmentDerivedMetrics;
   signal: SegmentSignal;
-}
-
-interface ScatterPoint {
-  x: number;
-  y: number;
-  spendShare: number;
-  entry: SegmentEntry;
 }
 
 // ── Pure helpers ──────────────────────────────────────────────────────
@@ -97,11 +101,11 @@ const EFF_COLOR: Record<CpaEff, string> = {
   unknown:   "hsl(var(--chart-5))",
 };
 
-const EFF_LABEL: Record<CpaEff, string> = {
-  efficient: "Efficient",
-  average:   "On target",
-  costly:    "High CPA",
-  unknown:   "—",
+const QUADRANT_COLOR: Record<PositioningQuadrant, string> = {
+  scale:    "hsl(var(--chart-3))",
+  optimize: "hsl(var(--chart-1))",
+  explore:  "hsl(var(--chart-2))",
+  avoid:    "hsl(var(--chart-4))",
 };
 
 function buildRankMetrics(resultPlural: string): RankMetric<SegmentEntry>[] {
@@ -152,19 +156,19 @@ const AUDIENCE_RANK_GROUPS: MetricGroup[] = [
   { label: "Downstream intent", ids: ["atcRate", "costPerAtc", "checkoutRate"] },
 ];
 
-// ── View toggle ───────────────────────────────────────────────────────
+// ── Segment-by toggle ────────────────────────────────────────────────
 
-const VIEW_TABS: { id: ViewMode; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "map",     label: "Intelligence Map", Icon: Map },
-  { id: "pockets", label: "Pocket Grid",      Icon: LayoutGrid },
-  { id: "ranked",  label: "Ranked",           Icon: List },
+const SEGMENT_BY_TABS: { id: SegmentByMode; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: "cluster", label: "Cluster", Icon: Layers },
+  { id: "age",     label: "Age",     Icon: CalendarIcon },
+  { id: "ranked",  label: "Ranked",  Icon: List },
 ];
 
-function ViewToggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) => void }) {
+function SegmentByToggle({ mode, onChange }: { mode: SegmentByMode; onChange: (m: SegmentByMode) => void }) {
   return (
     <SegmentedToggle
-      ariaLabel="Audience view mode"
-      options={VIEW_TABS}
+      ariaLabel="Segment by"
+      options={SEGMENT_BY_TABS}
       active={mode}
       onChange={onChange}
       responsiveLabels
@@ -172,363 +176,364 @@ function ViewToggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode
   );
 }
 
-// ── Intelligence Map ──────────────────────────────────────────────────
-// Quadrant framing: X = Link CTR (ad engagement), Y = CVR (offer/landing fit).
-// Together they isolate WHERE in the funnel each audience pocket is strong.
+// ── Positioning map — real cost-per-result × real results, bubble = spend ─
+// Quadrant framing reuses this app's established scaling vocabulary
+// (scalingBuckets.ts: Scale / Optimize / Explore / Avoid) rather than a
+// second parallel vocabulary — see audience-clusters.ts classifyQuadrant.
 
-const QUADRANT_LABELS = [
-  { top: true,  right: true,  label: "Scale Now",   sub: "High intent · converts" },
-  { top: true,  right: false, label: "Niche",        sub: "Deep fit · tight reach" },
-  { top: false, right: true,  label: "Fix Funnel",   sub: "Clicks don't convert" },
-  { top: false, right: false, label: "Test More",    sub: "Low signal — cut or expand" },
-];
-
-function IntelligenceMapTab({
-  entries, totalSpend, medianCpa, onSelect, resultPlural, topSeg,
+function PositioningMapCard({
+  groups, resultPlural, groupNoun,
 }: {
-  entries: SegmentEntry[];
-  totalSpend: number;
-  medianCpa: number;
-  onSelect: (seg: SegmentId) => void;
+  groups: AudienceGroup<SegmentEntry>[];
   resultPlural: string;
-  topSeg?: SegmentEntry;
+  groupNoun: string;
 }) {
-  const plotData = entries
-    .filter((e) => e.derived.ctr != null && e.derived.cvr != null)
-    .map<ScatterPoint>((e) => ({
-      x: e.derived.ctr!,
-      y: e.derived.cvr!,
-      spendShare: totalSpend > 0 ? (e.totals.spend ?? 0) / totalSpend : 0,
-      entry: e,
-    }));
+  const plotted = groups.filter((g) => g.derived.cpa != null && g.totals.results != null);
 
-  const unplottable = entries.filter(
-    (e) => e.derived.ctr == null || e.derived.cvr == null
-  );
+  const medianCpa = numMedian(plotted.map((g) => g.derived.cpa!));
+  const medianResults = numMedian(plotted.map((g) => g.totals.results!));
+  const totalSpend = plotted.reduce((n, g) => n + (g.totals.spend ?? 0), 0);
 
-  const medCtr = numMedian(plotData.map((p) => p.x));
-  const medCvr = numMedian(plotData.map((p) => p.y));
+  type Point = { x: number; y: number; spendShare: number; group: AudienceGroup<SegmentEntry> };
+  const plotData: Point[] = plotted.map((g) => ({
+    x: g.derived.cpa!,
+    y: g.totals.results!,
+    spendShare: totalSpend > 0 ? (g.totals.spend ?? 0) / totalSpend : 0,
+    group: g,
+  }));
 
   const BubbleShape = useCallback(
-    (props: { cx?: number; cy?: number; payload?: ScatterPoint }) => {
+    (props: { cx?: number; cy?: number; payload?: Point }) => {
       const { cx = 0, cy = 0, payload } = props;
       if (!payload) return null;
-      const isTop =
-        topSeg != null &&
-        payload.entry.seg.age === topSeg.seg.age &&
-        payload.entry.seg.gender === topSeg.seg.gender;
-      const r = (isTop ? 9 : 7) + payload.spendShare * 28;
-      const eff = cpaEff(payload.entry.derived.cpa, medianCpa);
-      const fill = EFF_COLOR[eff];
-      const lbl = segmentLabel(payload.entry.seg);
-      const abbr =
-        lbl.split(" ")[0][0] + payload.entry.seg.age.split("-")[0];
+      const r = 8 + payload.spendShare * 30;
+      const q = classifyQuadrant(payload.x, payload.y, medianCpa, medianResults);
+      const fill = QUADRANT_COLOR[q];
       return (
-        <g
-          role="img"
-          aria-label={lbl}
-          onClick={() => onSelect(payload.entry.seg)}
-          style={{ cursor: "pointer" }}
-        >
-          <circle cx={cx} cy={cy} r={r + 5} fill={fill} fillOpacity={isTop ? 0.15 : 0.06} />
-          <circle
-            cx={cx} cy={cy} r={r}
-            fill={fill} fillOpacity={isTop ? 0.9 : 0.7}
-            stroke={isTop ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.13)"}
-            strokeWidth={isTop ? 2 : 1.5}
-          />
+        <g role="img" aria-label={payload.group.label} style={{ cursor: "default" }}>
+          <circle cx={cx} cy={cy} r={r + 4} fill={fill} fillOpacity={0.08} />
+          <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.72} stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />
           <text
             x={cx} y={cy + 0.5}
             textAnchor="middle" dominantBaseline="middle"
             fontSize={9} fontWeight={700}
-            fill="rgba(255,255,255,0.9)"
+            fill="rgba(255,255,255,0.92)"
             style={{ pointerEvents: "none" }}
           >
-            {abbr}
+            {payload.group.id}
           </text>
         </g>
       );
     },
-    [medianCpa, onSelect, topSeg]
+    [medianCpa, medianResults]
   );
 
-  function MapTooltip({ active, payload }: { active?: boolean; payload?: { payload: ScatterPoint }[] }) {
+  function MapTooltip({ active, payload }: { active?: boolean; payload?: { payload: Point }[] }) {
     if (!active || !payload?.length) return null;
     const pt = payload[0].payload;
-    const eff = cpaEff(pt.entry.derived.cpa, medianCpa);
+    const q = classifyQuadrant(pt.x, pt.y, medianCpa, medianResults);
     return (
-      <div className="rounded-lg border border-border/50 bg-surface px-3 py-2.5 elevation-floating min-w-[160px]">
-        <p className="flex items-center gap-1.5 mb-2">
-          <SegmentGenderIcon gender={pt.entry.seg.gender} />
-          <span className={cn(TYPE.title, "text-foreground")}>
-            {segmentLabel(pt.entry.seg)}
-          </span>
-        </p>
+      <div className="rounded-lg border border-border/50 bg-surface px-3 py-2.5 elevation-floating min-w-[170px]">
+        <p className={cn(TYPE.title, "text-foreground mb-2")}>{pt.group.label}</p>
         <div className={cn("space-y-1", TYPE.caption, "text-muted-foreground")}>
-          {[
-            ["Link CTR", fmtPct(pt.x)],
-            ["CVR", fmtPct(pt.y)],
-          ].map(([k, v]) => (
-            <div key={k} className="flex justify-between gap-3">
-              <span>{k}</span>
-              <span className="tabular-nums text-foreground/80">{v}</span>
-            </div>
-          ))}
           <div className="flex justify-between gap-3">
-            <span>CPA</span>
-            <span className="tabular-nums font-semibold" style={{ color: EFF_COLOR[eff] }}>
-              {pt.entry.derived.cpa != null ? fmtUSD(pt.entry.derived.cpa) : "—"}
-            </span>
+            <span>Cost per result</span>
+            <span className="tabular-nums text-foreground/80">{fmtUSD(pt.x)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span>{resultPlural}</span>
-            <span className="tabular-nums text-foreground/80">{fmtNum(pt.entry.totals.results)}</span>
+            <span className="tabular-nums text-foreground/80">{fmtNum(pt.y)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span>Spend</span>
-            <span className="tabular-nums text-foreground/80">{fmtUSD(pt.entry.totals.spend ?? 0, 0)}</span>
+            <span className="tabular-nums text-foreground/80">{fmtUSD(pt.group.totals.spend ?? 0, 0)}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span>Quadrant</span>
+            <span className="tabular-nums font-semibold" style={{ color: QUADRANT_COLOR[q] }}>
+              {QUADRANT_LABEL[q]}
+            </span>
           </div>
         </div>
       </div>
     );
   }
 
-  if (plotData.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground/50 gap-2">
-        <TrendingUp className="w-8 h-8" />
-        <p className={TYPE.body}>No segments have both CTR and CVR data to plot.</p>
-      </div>
-    );
-  }
+  return (
+    <SectionCard
+      title="Positioning map"
+      desc={`Cost per result vs. ${resultPlural.toLowerCase()} · bubble size = spend`}
+      right={<SectionInfoIcon tip={`Each bubble is one real ${groupNoun}. X = cost per result, Y = ${resultPlural.toLowerCase()}, bubble size = spend. Quadrant cutoffs are the real median across plotted ${groupNoun}s.`} />}
+    >
+      {plotData.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground/50 gap-2">
+          <TrendingUp className="w-8 h-8" />
+          <p className={TYPE.body}>Not enough real results data to plot {groupNoun}s.</p>
+        </div>
+      ) : (
+        <div className="relative w-full rounded-xl border border-border/20 bg-white/[0.01] overflow-hidden" style={{ height: 380 }}>
+          <div
+            className="absolute inset-0 pointer-events-none"
+            aria-hidden="true"
+            style={{ left: 60, right: 20, top: 10, bottom: 45 }}
+          >
+            {([
+              { top: true,  right: false, q: "scale" as const },
+              { top: true,  right: true,  q: "optimize" as const },
+              { top: false, right: false, q: "explore" as const },
+              { top: false, right: true,  q: "avoid" as const },
+            ]).map(({ top, right, q }) => (
+              <div
+                key={q}
+                className={cn(
+                  "absolute",
+                  top ? "top-1" : "bottom-6",
+                  right ? "right-2 text-right" : "left-2"
+                )}
+              >
+                <span className={cn(TYPE.label, "font-semibold")} style={{ color: `${QUADRANT_COLOR[q]}80` }}>
+                  {QUADRANT_LABEL[q].toUpperCase()}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ top: 10, right: 20, bottom: 45, left: 60 }}>
+              <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.10)" />
+              <XAxis
+                dataKey="x"
+                type="number"
+                domain={["auto", "auto"]}
+                tickFormatter={(v: number) => fmtUSD(v, 0)}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                tickLine={false}
+                label={{
+                  value: "Cost per result →",
+                  position: "insideBottom",
+                  offset: -30,
+                  fill: "hsl(var(--muted-foreground))",
+                  fontSize: 10,
+                }}
+              />
+              <YAxis
+                dataKey="y"
+                type="number"
+                domain={["auto", "auto"]}
+                tickFormatter={(v: number) => fmtNum(v)}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                tickLine={false}
+                label={{
+                  value: `${resultPlural} →`,
+                  angle: -90,
+                  position: "insideLeft",
+                  offset: 50,
+                  fill: "hsl(var(--muted-foreground))",
+                  fontSize: 10,
+                }}
+              />
+              {medianCpa > 0 && (
+                <ReferenceLine
+                  x={medianCpa}
+                  stroke="hsl(var(--chart-1) / 0.30)"
+                  strokeDasharray="4 3"
+                  label={{ value: "median", position: "insideTopRight", fill: "hsl(var(--chart-1) / 0.70)", fontSize: 9 }}
+                />
+              )}
+              {medianResults > 0 && (
+                <ReferenceLine
+                  y={medianResults}
+                  stroke="hsl(var(--chart-1) / 0.30)"
+                  strokeDasharray="4 3"
+                  label={{ value: "median", position: "insideTopRight", fill: "hsl(var(--chart-1) / 0.70)", fontSize: 9 }}
+                />
+              )}
+              <Tooltip content={<MapTooltip />} cursor={false} />
+              <Scatter data={plotData} shape={BubbleShape as any} />
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+// ── Share of spend vs. share of results ────────────────────────────────
+
+function ShareOfSpendCard({
+  groups, resultPlural, groupNoun,
+}: {
+  groups: AudienceGroup<SegmentEntry>[];
+  resultPlural: string;
+  groupNoun: string;
+}) {
+  const totalSpend = groups.reduce((n, g) => n + (g.totals.spend ?? 0), 0);
+  const totalResults = groups.reduce((n, g) => n + (g.totals.results ?? 0), 0);
+
+  const rows = groups
+    .map((g) => {
+      const spendShare = totalSpend > 0 ? ((g.totals.spend ?? 0) / totalSpend) * 100 : 0;
+      const resultShare = totalResults > 0 ? ((g.totals.results ?? 0) / totalResults) * 100 : 0;
+      return { g, spendShare, resultShare, gap: Math.round(resultShare - spendShare) };
+    })
+    .sort((a, b) => b.spendShare - a.spendShare);
 
   return (
-    <div className="space-y-3">
-      {/* CPA color legend */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-        {(["efficient", "average", "costly"] as CpaEff[]).map((eff) => (
-          <div key={eff} className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: EFF_COLOR[eff] }} />
-            <span className={cn(TYPE.label, "text-muted-foreground/70")}>
-              {eff === "efficient" ? "Below-median CPA" : eff === "costly" ? "Above-median CPA" : "Near-median CPA"}
-            </span>
-          </div>
-        ))}
-        <span className={cn(TYPE.label, "text-muted-foreground/65")}>· Bubble size = spend share</span>
-      </div>
-
-      {/* Chart + quadrant overlay */}
-      <div className="relative w-full rounded-xl border border-border/20 bg-white/[0.01] overflow-hidden" style={{ height: 460 }}>
-        {/* Quadrant labels */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{ left: 60, right: 20, top: 10, bottom: 50 }}
-        >
-          {QUADRANT_LABELS.map(({ top, right, label, sub }) => (
-            <div
-              key={label}
-              className={cn(
-                "absolute flex flex-col gap-0.5",
-                top ? "top-2" : "bottom-2",
-                right ? "right-2 items-end text-right" : "left-2 items-start"
-              )}
-            >
-              <span className={cn(TYPE.label, "font-semibold text-muted-foreground/40")}>{label}</span>
-              <span className={cn(TYPE.label, "text-muted-foreground/40 hidden sm:block")}>{sub}</span>
+    <SectionCard
+      title="Share of spend vs. share of result"
+      desc={`Share of spend against share of ${resultPlural.toLowerCase()} · gap in points`}
+      right={<SectionInfoIcon tip={`Each ${groupNoun}'s share of scoped spend next to its share of scoped ${resultPlural.toLowerCase()}. A positive gap returns more than its budget share; a negative gap takes more budget than it returns.`} />}
+    >
+      {totalSpend <= 0 ? (
+        <p className={cn(TYPE.body, "text-muted-foreground/50 py-6 text-center")}>No spend to allocate.</p>
+      ) : (
+        <div className="space-y-2.5" data-testid="share-of-spend-rows">
+          {rows.map(({ g, spendShare, resultShare, gap }) => (
+            <div key={g.id} className="rounded-lg px-2 py-1.5 -mx-2">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className={cn(TYPE.caption, "font-medium text-foreground/85 inline-flex items-center gap-1.5 min-w-0")}>
+                  <span className="shrink-0 font-mono text-muted-foreground/45">{g.id}</span>
+                  <span className="truncate">{g.label}</span>
+                </span>
+                <span className={cn(
+                  TYPE.label,
+                  "tabular-nums shrink-0",
+                  gap >= 3 ? "text-emerald-400" : gap <= -3 ? "text-amber-300" : "text-muted-foreground/45",
+                )}>
+                  {gap > 0 ? "+" : ""}{gap}pts
+                </span>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>Spend</span>
+                  <div className="flex-1 h-[3px] rounded-full bg-white/[0.04] overflow-hidden">
+                    <div className="h-full rounded-full bg-primary/60" style={{ width: `${Math.min(spendShare, 100)}%` }} />
+                  </div>
+                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
+                    {spendShare.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>{totalResults > 0 ? "Results" : "Results —"}</span>
+                  <div className="flex-1 h-[3px] rounded-full bg-white/[0.04] overflow-hidden">
+                    <div className="h-full rounded-full bg-chart-2/70" style={{ width: `${Math.min(resultShare, 100)}%` }} />
+                  </div>
+                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
+                    {totalResults > 0 ? `${resultShare.toFixed(0)}%` : "n/a"}
+                  </span>
+                </div>
+              </div>
             </div>
           ))}
         </div>
-
-        <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 10, right: 20, bottom: 50, left: 60 }}>
-            <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.10)" />
-            <XAxis
-              dataKey="x"
-              type="number"
-              domain={["auto", "auto"]}
-              tickFormatter={(v: number) => `${v.toFixed(1)}%`}
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-              axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
-              tickLine={false}
-              label={{
-                value: "Link CTR — ad engagement →",
-                position: "insideBottom",
-                offset: -30,
-                fill: "hsl(var(--muted-foreground))",
-                fontSize: 10,
-              }}
-            />
-            <YAxis
-              dataKey="y"
-              type="number"
-              domain={["auto", "auto"]}
-              tickFormatter={(v: number) => `${v.toFixed(1)}%`}
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-              axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
-              tickLine={false}
-              label={{
-                value: "CVR — conversion efficiency →",
-                angle: -90,
-                position: "insideLeft",
-                offset: 50,
-                fill: "hsl(var(--muted-foreground))",
-                fontSize: 10,
-              }}
-            />
-            {medCtr > 0 && (
-              <ReferenceLine
-                x={medCtr}
-                stroke="hsl(var(--chart-1) / 0.30)"
-                strokeDasharray="4 3"
-                label={{ value: "median", position: "insideTopRight", fill: "hsl(var(--chart-1) / 0.70)", fontSize: 9 }}
-              />
-            )}
-            {medCvr > 0 && (
-              <ReferenceLine
-                y={medCvr}
-                stroke="hsl(var(--chart-1) / 0.30)"
-                strokeDasharray="4 3"
-                label={{ value: "median", position: "insideTopRight", fill: "hsl(var(--chart-1) / 0.70)", fontSize: 9 }}
-              />
-            )}
-            <Tooltip content={<MapTooltip />} cursor={false} />
-            <Scatter data={plotData} shape={BubbleShape as any} />
-          </ScatterChart>
-        </ResponsiveContainer>
-      </div>
-
-      {unplottable.length > 0 && (
-        <p className={cn(TYPE.label, "text-muted-foreground/55")}>
-          {unplottable.length} segment{unplottable.length > 1 ? "s" : ""} omitted — missing CTR/CVR:{" "}
-          {unplottable.map((e) => segmentLabel(e.seg)).join(", ")}
-        </p>
       )}
+    </SectionCard>
+  );
+}
+
+// ── Group detail — collapsed by default, indexed against account average ─
+
+function GroupDetailRow({
+  group, accountDerived, onSelectMember, resultPlural,
+}: {
+  group: AudienceGroup<SegmentEntry>;
+  accountDerived: SegmentDerivedMetrics;
+  onSelectMember: (seg: SegmentId) => void;
+  resultPlural: string;
+}) {
+  const cpaIndex =
+    accountDerived.cpa != null && accountDerived.cpa > 0 && group.derived.cpa != null
+      ? Math.round((group.derived.cpa / accountDerived.cpa) * 100)
+      : null;
+  const cvrIndex =
+    accountDerived.cvr != null && accountDerived.cvr > 0 && group.derived.cvr != null
+      ? Math.round((group.derived.cvr / accountDerived.cvr) * 100)
+      : null;
+
+  return (
+    <div className="flex items-center justify-between gap-3 py-2.5 border-b border-border/10 last:border-0 flex-wrap">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={cn(TYPE.label, "font-mono text-muted-foreground/45 shrink-0")}>{group.id}</span>
+        <DetailReveal
+          label={group.label}
+          labelClassName={cn(TYPE.title, "text-foreground/90")}
+          eyebrow={`${group.members.length} member segment${group.members.length !== 1 ? "s" : ""}`}
+          sections={[{
+            render: () => (
+              <div className="space-y-1">
+                {group.members.map((m) => (
+                  <button
+                    key={segmentKey(m.seg)}
+                    type="button"
+                    onClick={() => onSelectMember(m.seg)}
+                    className={cn(
+                      "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md",
+                      "hover:bg-white/[0.05] transition-colors text-left"
+                    )}
+                  >
+                    <span className={cn(TYPE.body, "inline-flex items-center gap-1.5")}>
+                      <SegmentGenderIcon gender={m.seg.gender} />
+                      {segmentLabel(m.seg)}
+                    </span>
+                    <span className={cn(TYPE.label, "text-interactive inline-flex items-center gap-0.5")}>
+                      Explore <ArrowRight className="w-3 h-3" />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ),
+          }]}
+        />
+      </div>
+      <div className="flex items-center gap-4 shrink-0">
+        <KpiStat label="CPA index" value={cpaIndex != null ? `${cpaIndex}%` : "—"} />
+        <KpiStat label="CVR index" value={cvrIndex != null ? `${cvrIndex}%` : "—"} />
+        <KpiStat label="Spend" value={fmtUSD(group.totals.spend ?? 0, 0)} />
+        <KpiStat label={resultPlural} value={fmtNum(group.totals.results)} />
+      </div>
     </div>
   );
 }
 
-// ── Pocket Card — L1: efficiency stripe + name + CPA only ─────────────
-// Full KPI breakdown, spend share, and concept attribution are in the
-// SegmentDrilldownModal (L3) — opened by clicking any card.
-
-function PocketCard({
-  entry, medianCpa, onSelect,
+function GroupDetailCard({
+  title, groups, accountDerived, onSelectMember, resultPlural, groupNoun,
 }: {
-  entry: SegmentEntry;
-  medianCpa: number;
-  onSelect: (seg: SegmentId) => void;
+  title: string;
+  groups: AudienceGroup<SegmentEntry>[];
+  accountDerived: SegmentDerivedMetrics;
+  onSelectMember: (seg: SegmentId) => void;
+  resultPlural: string;
+  groupNoun: string;
 }) {
-  const eff = cpaEff(entry.derived.cpa, medianCpa);
-  const color = EFF_COLOR[eff];
-
   return (
-    <button
-      onClick={() => onSelect(entry.seg)}
-      data-testid={`row-audience-segment-${entry.seg.age}-${entry.seg.gender}`}
-      className={cn(
-        "w-full text-left rounded-xl border border-border/30",
-        "hover:border-primary/25 active:scale-[0.997]",
-        "transition-all duration-100 group overflow-hidden flex flex-col"
-      )}
-      style={{
-        background: `linear-gradient(135deg, ${color}10 0%, ${color}06 60%, rgba(255,255,255,0.01) 100%)`,
-      }}
+    <SectionCard
+      title={title}
+      desc={`${groups.length} ${groupNoun}${groups.length !== 1 ? "s" : ""}, indexed against the account average`}
+      defaultOpen={false}
+      right={<SectionInfoIcon tip="CPA/CVR index shows each group's rate relative to the real account-wide blended rate — 100% is the account average, under 100% CPA is cheaper than average, over 100% CVR is better than average." />}
     >
-      {/* Efficiency stripe — visual-only efficiency signal */}
-      <div
-        className="h-[3px] w-full shrink-0"
-        style={{ background: `linear-gradient(90deg, ${color}77 0%, ${color}22 100%)` }}
-      />
-
-      <div className="px-4 py-3 flex flex-col gap-1.5 flex-1">
-        {/* L1: name + efficiency label + low-signal flag */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="flex items-center gap-1.5 min-w-0">
-              <SegmentGenderIcon gender={entry.seg.gender} />
-              <span className={cn(TYPE.title, "text-foreground/90 truncate flex-1 min-w-0")}>
-                {segmentLabel(entry.seg)}
-              </span>
-            </span>
-            <div className="flex items-center gap-1.5">
-              <span className={cn(TYPE.label, "font-semibold")} style={{ color }}>
-                {EFF_LABEL[eff]}
-              </span>
-              {entry.signal.low && (
-                <span
-                  className={cn(TYPE.label, "text-amber-300/55 flex items-center gap-0.5")}
-                  title={entry.signal.reasons.join(" ")}
-                >
-                  <AlertTriangle className="w-3 h-3 inline" /> Low signal
-                </span>
-              )}
-            </div>
-          </div>
-          <span
-            className={cn(
-              TYPE.label, "font-semibold shrink-0",
-              "inline-flex items-center gap-1 h-6 px-2 rounded-md",
-              "opacity-50 group-hover:opacity-100 transition-opacity"
-            )}
-            style={{ background: `${color}18`, color }}
-          >
-            Explore <ArrowRight className="w-3 h-3" />
-          </span>
+      {groups.length === 0 ? (
+        <p className={cn(TYPE.body, "text-muted-foreground/50 py-4 text-center")}>No {groupNoun}s to show.</p>
+      ) : (
+        <div>
+          {groups.map((g) => (
+            <GroupDetailRow
+              key={g.id}
+              group={g}
+              accountDerived={accountDerived}
+              onSelectMember={onSelectMember}
+              resultPlural={resultPlural}
+            />
+          ))}
         </div>
-
-        {/* L1: single primary metric — CPA */}
-        {entry.derived.cpa != null && (
-          <div className="flex items-baseline gap-1.5">
-            <span className={cn(TYPE.body, "font-semibold tabular-nums text-foreground/80")}>
-              {fmtUSD(entry.derived.cpa)}
-            </span>
-            <span className={cn(TYPE.label, "text-muted-foreground/40")}>CPA</span>
-          </div>
-        )}
-      </div>
-    </button>
+      )}
+    </SectionCard>
   );
 }
 
-// ── Pocket Grid tab ───────────────────────────────────────────────────
-
-function PocketGridTab({
-  ranked, medianCpa, onSelect,
-  rankMetrics, activeMetric, onSelectMetric,
-}: {
-  ranked: SegmentEntry[];
-  medianCpa: number;
-  onSelect: (seg: SegmentId) => void;
-  rankMetrics: RankMetric<SegmentEntry>[];
-  activeMetric: RankMetric<SegmentEntry>;
-  onSelectMetric: (id: string) => void;
-}) {
-  const fold = useShowMore(ranked, 10);
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className={cn(TYPE.label, "text-muted-foreground/40")}>
-          {ranked.length} pocket{ranked.length !== 1 ? "s" : ""}
-        </p>
-        <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} groups={AUDIENCE_RANK_GROUPS} />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {fold.visible.map((e) => (
-          <PocketCard
-            key={`${e.seg.age}|${e.seg.gender}`}
-            entry={e}
-            medianCpa={medianCpa}
-            onSelect={onSelect}
-          />
-        ))}
-      </div>
-      <ShowMoreButton total={ranked.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="segments" />
-    </div>
-  );
-}
-
-// ── Ranked List tab ───────────────────────────────────────────────────
+// ── Ranked List tab — preserved from the prior full per-segment view ────
 
 function RankedListTab({
   ranked, activeMetric, onSelect, onSelectMetric, rankMetrics, resultPlural, medianCpa,
@@ -619,8 +624,9 @@ function RankedListTab({
 // ── Main export ───────────────────────────────────────────────────────
 
 const SECTION = "Analysis · 03";
-const VIEW_KEY = "metrix.audience.view.v1";
+const SEGMENT_BY_KEY = "metrix.audience.segmentBy.v2";
 const RANK_KEY = "metrix.audience.rank.v1";
+const SEGMENT_BY_IDS: SegmentByMode[] = ["cluster", "age", "ranked"];
 
 /** Adapt API demographic rows → DemographicRow[] for existing analysis helpers.
  * Note: demographic_performance does not store impressions — Impressions and
@@ -658,8 +664,11 @@ export function AudienceView() {
   const account = getAdAccount(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
   const [selectedSeg, setSelectedSeg] = useState<SegmentId | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    try { return (localStorage.getItem(VIEW_KEY) as ViewMode | null) ?? "pockets"; } catch { return "pockets"; }
+  const [mode, setMode] = useState<SegmentByMode>(() => {
+    try {
+      const stored = localStorage.getItem(SEGMENT_BY_KEY) as SegmentByMode | null;
+      return stored && SEGMENT_BY_IDS.includes(stored) ? stored : "cluster";
+    } catch { return "cluster"; }
   });
   const [preset, setPreset] = useState<ViewPreset>("all");
 
@@ -668,9 +677,9 @@ export function AudienceView() {
     enabled: preset !== "all" && !!adAccountId,
   });
 
-  const handleViewMode = useCallback((m: ViewMode) => {
-    setViewMode(m);
-    try { localStorage.setItem(VIEW_KEY, m); } catch { /* storage blocked */ }
+  const handleMode = useCallback((m: SegmentByMode) => {
+    setMode(m);
+    try { localStorage.setItem(SEGMENT_BY_KEY, m); } catch { /* storage blocked */ }
   }, []);
 
   // When a preset is active and data has loaded, use the API rows; otherwise seed rows.
@@ -706,14 +715,11 @@ export function AudienceView() {
   const activeMetric = rankMetrics.find((m) => m.id === activeId) ?? rankMetrics[0];
   const ranked = useMemo(() => sortByRankMetric(entries, activeMetric), [entries, activeMetric]);
 
-  const totalSpend = entries.reduce((n, e) => n + (e.totals.spend ?? 0), 0);
   const best = ranked[0];
 
   // Suppress the winner highlight when the active metric has no data for any
-  // segment (all values are null). In that case ranked[0] is arbitrary — its
-  // position reflects insertion order, not metric leadership — so topSeg is
-  // left undefined so IntelligenceMapTab renders no bubble as the winner and
-  // the Prime tile falls back to "—".
+  // segment (all values are null) — ranked[0] would be an arbitrary
+  // insertion-order pick, not a real leader.
   const topSeg = useMemo(() => {
     if (!best) return undefined;
     if (activeMetric.value(best) == null) return undefined;
@@ -723,10 +729,12 @@ export function AudienceView() {
   // Header KPI tiles: two independently swappable slots, resolved from the
   // account-wide (spend-weighted) totals so a rate metric like CVR/CTR/CPM
   // shows the real blended reading, never an average-of-averages.
-  const accountWideMetrics = useMemo(() => {
-    const t = computeSegmentTotals(scopedRows);
-    return buildResolvedAudienceMetrics(t, deriveSegmentMetrics(t), term.Plural);
-  }, [scopedRows, term.Plural]);
+  const accountTotals = useMemo(() => computeSegmentTotals(scopedRows), [scopedRows]);
+  const accountDerived = useMemo(() => deriveSegmentMetrics(accountTotals), [accountTotals]);
+  const accountWideMetrics = useMemo(
+    () => buildResolvedAudienceMetrics(accountTotals, accountDerived, term.Plural),
+    [accountTotals, accountDerived, term.Plural]
+  );
   const tileIds = accountWideMetrics.map((m) => m.id);
   const { activeId: tile1Id, select: selectTile1 } = useRankMetric(`${RANK_KEY}.tile1`, tileIds, "spend");
   const { activeId: tile2Id, select: selectTile2 } = useRankMetric(`${RANK_KEY}.tile2`, tileIds, "results");
@@ -734,6 +742,15 @@ export function AudienceView() {
   const medianCpa = useMemo(() => {
     return numMedian(entries.filter((e) => e.derived.cpa != null).map((e) => e.derived.cpa!));
   }, [entries]);
+
+  // Cluster and Age are both real regroupings of the same segments —
+  // clustering excludes segments with no results (null CPA) rather than
+  // guessing them into a group; the age grouping has no such gap since it
+  // doesn't depend on a rate metric.
+  const clusterGroups = useMemo(() => buildAudienceClusters(entries), [entries]);
+  const ageGroups = useMemo(() => groupSegmentsByAge(entries), [entries]);
+  const activeGroups = mode === "cluster" ? clusterGroups : mode === "age" ? ageGroups : [];
+  const groupNoun = mode === "cluster" ? "cluster" : "age group";
 
   return (
     <>
@@ -745,7 +762,7 @@ export function AudienceView() {
           if (rows.length === 0) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="Audience" tabs="analysis" />
+                <ModuleHeader section={SECTION} title="Audience" accountName={acct.name} tabs="analysis" />
                 <PendingState
                   title="No demographic signal"
                   message="Audience intelligence appears once demographic result data exists."
@@ -761,7 +778,8 @@ export function AudienceView() {
               <ModuleHeader
                 section={SECTION}
                 title="Audience"
-                subtitle="Audience intelligence: who converts, where the funnel holds, and what creative each pocket responds to."
+                accountName={acct.name}
+                subtitle={`${clusterGroups.length} real behavioral cluster${clusterGroups.length !== 1 ? "s" : ""}, derived from the demographic breakdown — not declared targeting.`}
                 tabs="analysis"
               />
               <>
@@ -776,7 +794,7 @@ export function AudienceView() {
                     <div className="px-6 pt-5"><SkeletonTileRow count={4} /></div>
                   ) : (
                     <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-                      <MetricTile label="Pockets" value={fmtNum(entries.length)} />
+                      <MetricTile label="Segments" value={fmtNum(entries.length)} />
                       <MetricPickerTile
                         options={accountWideMetrics}
                         groups={AUDIENCE_RANK_GROUPS}
@@ -802,34 +820,17 @@ export function AudienceView() {
                     </div>
                   )}
 
-                  <div className="px-6 py-5 space-y-5 max-w-5xl">
-                    <div className="flex items-center justify-end gap-3">
-                      <ViewToggle mode={viewMode} onChange={handleViewMode} />
+                  <div className="px-6 py-5 space-y-4 max-w-6xl">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <p className={cn(TYPE.label, "text-muted-foreground/40")}>
+                        {mode === "ranked"
+                          ? `${ranked.length} segment${ranked.length !== 1 ? "s" : ""}`
+                          : `${activeGroups.length} ${groupNoun}${activeGroups.length !== 1 ? "s" : ""} · ${entries.length} real segments`}
+                      </p>
+                      <SegmentByToggle mode={mode} onChange={handleMode} />
                     </div>
 
-                    {viewMode === "map" && (
-                      <IntelligenceMapTab
-                        entries={entries}
-                        totalSpend={totalSpend}
-                        medianCpa={medianCpa}
-                        onSelect={setSelectedSeg}
-                        resultPlural={term.Plural}
-                        topSeg={topSeg}
-                      />
-                    )}
-
-                    {viewMode === "pockets" && (
-                      <PocketGridTab
-                        ranked={ranked}
-                        medianCpa={medianCpa}
-                        onSelect={setSelectedSeg}
-                        rankMetrics={rankMetrics}
-                        activeMetric={activeMetric}
-                        onSelectMetric={select}
-                      />
-                    )}
-
-                    {viewMode === "ranked" && (
+                    {mode === "ranked" ? (
                       <RankedListTab
                         ranked={ranked}
                         activeMetric={activeMetric}
@@ -839,6 +840,21 @@ export function AudienceView() {
                         resultPlural={term.Plural}
                         medianCpa={medianCpa}
                       />
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <PositioningMapCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} />
+                          <ShareOfSpendCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} />
+                        </div>
+                        <GroupDetailCard
+                          title={mode === "cluster" ? "Cluster detail" : "Age detail"}
+                          groups={activeGroups}
+                          accountDerived={accountDerived}
+                          onSelectMember={setSelectedSeg}
+                          resultPlural={term.Plural}
+                          groupNoun={groupNoun}
+                        />
+                      </>
                     )}
                   </div>
                 </>

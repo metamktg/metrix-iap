@@ -1,5 +1,5 @@
 // ─── DNA family card hierarchy tests ──────────────────────────────────
-// Guards the DNA family card grid in IapLibraryView (Creative DNA tab):
+// Guards the DNA family card grid in IapLibraryView (Variable performance tab):
 //
 //  1. All seven DNA families present in the fixture render as cards, each
 //     with the correct data-testid ("dna-family-{family}").
@@ -136,11 +136,11 @@ function renderLibrary() {
   );
 }
 
-/** Navigate to the "Creative DNA" (variables) tab. */
+/** Navigate to the "Variable performance" (variables) tab. */
 async function switchToVariablesTab(user: ReturnType<typeof userEvent.setup>) {
-  // Tab labels: "Creative DNA" — use a case-insensitive text match so the
-  // test doesn't break if a count badge is appended to the button label.
-  const dnaTabBtn = screen.getByRole("button", { name: /creative dna/i });
+  // Tab labels: "Variable performance" — use a case-insensitive text match so
+  // the test doesn't break if a count badge is appended to the button label.
+  const dnaTabBtn = screen.getByRole("button", { name: /variable performance/i });
   await user.click(dnaTabBtn);
 }
 
@@ -153,11 +153,11 @@ beforeEach(() => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// 1. All seven DNA family cards are present in the Creative DNA tab
+// 1. All seven DNA family cards are present in the Variable performance tab
 // ─────────────────────────────────────────────────────────────────────────
 
 describe("DNA family card grid — presence", () => {
-  it("renders one card per fixture family after switching to the Creative DNA tab", async () => {
+  it("renders one card per fixture family after switching to the Variable performance tab", async () => {
     const user = userEvent.setup();
     selectBookster();
     renderLibrary();

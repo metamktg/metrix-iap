@@ -512,6 +512,31 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
   "link_clicks": zod.number()
 }))
 }),
+  "daily": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "spend": zod.number(),
+  "impressions": zod.number(),
+  "link_clicks": zod.number(),
+  "results": zod.number()
+}).describe('One calendar day of additive ad_performance totals inside the active window — feeds sparklines and daily trend reads.')).describe('Per-day additive totals inside the active window, ascending by date.'),
+  "prior_totals": zod.object({
+  "total_spend_usd": zod.number(),
+  "total_impressions": zod.number(),
+  "total_link_clicks": zod.number(),
+  "overall_link_ctr_pct": zod.number().nullable(),
+  "bottom_line_totals": zod.record(zod.string(), zod.object({
+  "spend": zod.number(),
+  "reach": zod.number(),
+  "impressions": zod.number(),
+  "results": zod.number(),
+  "clicks_all": zod.number(),
+  "link_clicks": zod.number()
+}))
+}).nullable().describe('Real measured totals for the equal-length window immediately preceding the active one; null when no preceding window applies (preset \"all\") or it holds no rows.'),
+  "prior_window": zod.object({
+  "start": zod.string().describe('Start date (YYYY-MM-DD)'),
+  "end": zod.string().describe('End date (YYYY-MM-DD)')
+}).nullable().describe('The preceding window prior_totals covers; null whenever prior_totals is null.'),
   "demographic_rows": zod.array(zod.object({
   "age": zod.string(),
   "gender": zod.string(),
@@ -577,6 +602,31 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
   "link_clicks": zod.number()
 }))
 }),
+  "daily": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "spend": zod.number(),
+  "impressions": zod.number(),
+  "link_clicks": zod.number(),
+  "results": zod.number()
+}).describe('One calendar day of additive ad_performance totals inside the active window — feeds sparklines and daily trend reads.')).describe('Per-day additive totals inside the active window, ascending by date.'),
+  "prior_totals": zod.object({
+  "total_spend_usd": zod.number(),
+  "total_impressions": zod.number(),
+  "total_link_clicks": zod.number(),
+  "overall_link_ctr_pct": zod.number().nullable(),
+  "bottom_line_totals": zod.record(zod.string(), zod.object({
+  "spend": zod.number(),
+  "reach": zod.number(),
+  "impressions": zod.number(),
+  "results": zod.number(),
+  "clicks_all": zod.number(),
+  "link_clicks": zod.number()
+}))
+}).nullable().describe('Real measured totals for the equal-length window immediately preceding the active one; null when no preceding window applies (preset \"all\") or it holds no rows.'),
+  "prior_window": zod.object({
+  "start": zod.string().describe('Start date (YYYY-MM-DD)'),
+  "end": zod.string().describe('End date (YYYY-MM-DD)')
+}).nullable().describe('The preceding window prior_totals covers; null whenever prior_totals is null.'),
   "demographic_rows": zod.array(zod.object({
   "age": zod.string(),
   "gender": zod.string(),
@@ -664,6 +714,31 @@ export const GetAnalysisSummaryResponse = zod.object({
   "link_clicks": zod.number()
 }))
 }),
+  "daily": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "spend": zod.number(),
+  "impressions": zod.number(),
+  "link_clicks": zod.number(),
+  "results": zod.number()
+}).describe('One calendar day of additive ad_performance totals inside the active window — feeds sparklines and daily trend reads.')).describe('Per-day additive totals inside the active window, ascending by date.'),
+  "prior_totals": zod.object({
+  "total_spend_usd": zod.number(),
+  "total_impressions": zod.number(),
+  "total_link_clicks": zod.number(),
+  "overall_link_ctr_pct": zod.number().nullable(),
+  "bottom_line_totals": zod.record(zod.string(), zod.object({
+  "spend": zod.number(),
+  "reach": zod.number(),
+  "impressions": zod.number(),
+  "results": zod.number(),
+  "clicks_all": zod.number(),
+  "link_clicks": zod.number()
+}))
+}).nullable().describe('Real measured totals for the equal-length window immediately preceding the active one; null when no preceding window applies (preset \"all\") or it holds no rows.'),
+  "prior_window": zod.object({
+  "start": zod.string().describe('Start date (YYYY-MM-DD)'),
+  "end": zod.string().describe('End date (YYYY-MM-DD)')
+}).nullable().describe('The preceding window prior_totals covers; null whenever prior_totals is null.'),
   "demographic_rows": zod.array(zod.object({
   "age": zod.string(),
   "gender": zod.string(),

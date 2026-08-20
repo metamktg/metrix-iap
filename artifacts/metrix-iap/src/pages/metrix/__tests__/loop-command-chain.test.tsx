@@ -3,8 +3,8 @@
 // Guards correct stage state rendering in LoopCommandChain for:
 //   1. Configured account with full data (all stages complete)
 //   2. Configured account with no analysis run yet (analysis next, rest locked)
-//   3. Strategy stage running (running ≠ locked; counter "●"; hub label "Running")
-//   4. Analysis stage running (tile in running state; counter "●")
+//   3. Strategy stage running (running ≠ locked; tile data-state "running"; hub label "Running")
+//   4. Analysis stage running (tile data-state "running")
 //
 // Also confirms the hooks-violation fix (hoisted useState/useMemo in
 // AdAccountOverview above the early-return guards) does not regress under
@@ -196,11 +196,16 @@ describe("LoopCommandChain — configured account with full data (Bookster)", ()
     expect(screen.getByText("IAP Loop")).toBeTruthy();
   });
 
-  it("shows all 5 stages complete (✓ counter) when reports also exist", () => {
+  it("shows all 5 stage tiles complete when reports also exist", () => {
+    // The header counter badge is gone (canvas spec has none) — completion
+    // reads entirely off each stage tile's own data-state attribute.
     mockReportCount = 1;
     selectAccount("bookster");
     const { container } = renderOverview();
-    expect(container.textContent).toContain("✓");
+    for (const stage of ["data", "analysis", "strategy", "briefs", "report"]) {
+      const tile = container.querySelector(`[data-testid="stage-tile-${stage}"]`);
+      expect(tile?.getAttribute("data-state")).toBe("complete");
+    }
   });
 
   it("Analysis stage tile is not locked (not disabled)", () => {
@@ -240,15 +245,20 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     expect(screen.getByText("IAP Loop")).toBeTruthy();
   });
 
-  it("shows 1/5 complete counter — Data stage is complete for a live Meta account", () => {
+  it("Data stage is complete for a live Meta account, the rest are not", () => {
     // fresh_account inherits platform "Meta Ads" from Bookster.
     // isLiveMeta recognises "meta ads" as a live Meta connection, so the
     // Data stage is complete (source connected) even without an analysis run.
-    // Counter: 1/5 (Data done; Analysis/Strategy/Briefs/Report still pending).
+    // Analysis/Strategy/Briefs/Report all still pending.
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
     const { container } = renderOverview(seed);
-    expect(container.textContent).toContain("1/5");
+    const dataTile = container.querySelector('[data-testid="stage-tile-data"]');
+    expect(dataTile?.getAttribute("data-state")).toBe("complete");
+    for (const stage of ["analysis", "strategy", "briefs", "report"]) {
+      const tile = container.querySelector(`[data-testid="stage-tile-${stage}"]`);
+      expect(tile?.getAttribute("data-state")).not.toBe("complete");
+    }
   });
 
   it("Data stage tile is not locked — data is the entry point", () => {
@@ -311,8 +321,8 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
 describe("LoopCommandChain — Strategy stage running", () => {
   // When a strategy generation run is in flight, useGenerationRun returns
   // isRunning: true for kind === "strategy".  The tile must not be disabled
-  // (running ≠ locked), the header counter must show "●" (anyRunning), and
-  // opening the Command Hub must show the "Running" status label.
+  // (running ≠ locked), the tile carries data-state="running", and opening
+  // the Command Hub must show the "Running" status label.
   //
   // Note: when isRunning, StageTile appends an elapsed-time "0:00" span inside
   // the button, so its accessible name becomes "Strategy0:00" rather than the
@@ -328,11 +338,14 @@ describe("LoopCommandChain — Strategy stage running", () => {
     expect(isDisabled(strategyTile)).toBe(false);
   });
 
-  it("counter shows '●' while strategy is running", () => {
+  it("Strategy tile carries data-state=\"running\" while strategy is running", () => {
+    // The header counter badge is gone (canvas spec has none) — running
+    // state reads off the tile's own data-state attribute instead.
     mockStrategyRunning = true;
     selectAccount("bookster");
     const { container } = renderOverview();
-    expect(container.textContent).toContain("●");
+    const strategyTile = container.querySelector('[data-testid="stage-tile-strategy"]');
+    expect(strategyTile?.getAttribute("data-state")).toBe("running");
   });
 
   it("Command Hub status label reads 'Running' when strategy is running", () => {
@@ -363,7 +376,7 @@ describe("LoopCommandChain — Strategy stage running", () => {
 describe("LoopCommandChain — Analysis stage running", () => {
   // When an analysis run is in flight, useGetLatestAnalysisRun returns
   // { run: { status: "running" } }.  The Analysis tile must not be disabled
-  // (analysis is never locked), the counter must show "●" (anyRunning), and
+  // (analysis is never locked), the tile carries data-state="running", and
   // opening the hub must show the "Running" status label.
   //
   // Note: when isRunning, StageTile appends an elapsed-time "0:00" span, so
@@ -380,11 +393,14 @@ describe("LoopCommandChain — Analysis stage running", () => {
     expect(isDisabled(analysisTile)).toBe(false);
   });
 
-  it("counter shows '●' while analysis is running", () => {
+  it("Analysis tile carries data-state=\"running\" while analysis is running", () => {
+    // The header counter badge is gone (canvas spec has none) — running
+    // state reads off the tile's own data-state attribute instead.
     mockAnalysisRunStatus = "running";
     selectAccount("bookster");
     const { container } = renderOverview();
-    expect(container.textContent).toContain("●");
+    const analysisTile = container.querySelector('[data-testid="stage-tile-analysis"]');
+    expect(analysisTile?.getAttribute("data-state")).toBe("running");
   });
 
   it("Command Hub status label reads 'Running' when analysis is running", () => {

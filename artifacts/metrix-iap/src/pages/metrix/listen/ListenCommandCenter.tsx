@@ -18,9 +18,9 @@ import { Radio, CheckCircle2, Circle, AlertTriangle, Bell, Activity, Lightbulb }
 const SECTION = "Listen · 02";
 
 const LISTEN_CHILDREN = [
-  { to: "/app/listen/alerts", label: "Alerts", desc: "High-impact signals worth acting on now.", Icon: Bell },
-  { to: "/app/listen/signal", label: "Signal", desc: "The full signal feed for this scope.", Icon: Activity },
-  { to: "/app/listen/recommendations", label: "Recommendations", desc: "Suggested next actions from what's been heard.", Icon: Lightbulb },
+  { to: "/app/listen/alerts", label: "Alerts", desc: "High-impact signals worth acting on now.", Icon: Bell, lineage: "iap.data_quality[]" },
+  { to: "/app/listen/signal", label: "Signal", desc: "The full signal feed for this scope.", Icon: Activity, lineage: "campaign_summary · ad_performance[]" },
+  { to: "/app/listen/recommendations", label: "Recommendations", desc: "Suggested next actions from what's been heard.", Icon: Lightbulb, lineage: "optimization_loop · pending until run" },
 ];
 
 export function ListenCommandCenter() {
@@ -114,6 +114,7 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
       <ModuleHeader
         section={SECTION}
         title="Listen"
+        accountName={account?.name}
         subtitle="What's going on in this account — alerts, signal, and what to do next."
       />
       <div className="px-6 pt-5 grid grid-cols-2 gap-3">

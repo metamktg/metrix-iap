@@ -170,6 +170,7 @@ export function AnalysisHistoryView() {
           <ModuleHeader
             section={SECTION}
             title="History"
+            accountName={account!.name}
             subtitle="All analysis runs for this account — each run is a distinct data snapshot."
             table="manual_analysis_runs"
           />

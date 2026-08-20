@@ -27,7 +27,7 @@ export function ExportsStrategyView() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Strategy JSON" />
+              <ModuleHeader section={SECTION} title="Strategy JSON" accountName={acct.name} />
               <PendingState title="No strategy data yet" message="Generate strategy first — there's nothing to export yet." icon={FileJson} />
             </div>
           );
@@ -43,6 +43,7 @@ export function ExportsStrategyView() {
             <ModuleHeader
               section={SECTION}
               title="Strategy JSON"
+              accountName={acct.name}
               subtitle="Message pillars and active hypotheses, as shown in Strategy."
               table="message_pillars, active_hypotheses"
             />

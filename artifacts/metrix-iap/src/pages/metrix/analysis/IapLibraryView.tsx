@@ -38,6 +38,8 @@ import {
 } from "../shared";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { RunScopePicker } from "@/components/analysis/RunSelector";
+import { BreakdownExplorer } from "@/components/analysis/BreakdownExplorer";
+import { listBreakdownDimensions } from "@/lib/data/kpiBreakdown";
 import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { ConceptFamilyView } from "@/components/creative/ConceptFamilyView";
@@ -68,7 +70,7 @@ import {
 
 const SECTION = "Analysis · 03";
 
-type Tab = "cells" | "top" | "variables" | "review";
+type Tab = "cells" | "copy" | "top" | "variables" | "breakdown" | "review";
 
 const VARIABLE_FIELDS: { key: keyof CellPerformanceRow; label: string }[] = [
   { key: "hook_variable",       label: "Hook" },
@@ -248,7 +250,7 @@ export function IapLibraryView() {
           if (!a) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="IAP Library" tabs="analysis" />
+                <ModuleHeader section={SECTION} title="IAP Library" accountName={acct.name} tabs="analysis" />
                 <PendingState
                   title="Analysis pending"
                   message="No analysis data available for this account yet."
@@ -267,10 +269,22 @@ export function IapLibraryView() {
           const topCells     = filterByRun(filterRows(a.top_checkout_cells));
           const topVariables = filterRows(a.top_checkout_variables);
 
+          // Ad copy tab: real cells that carry a mapped MST library primary
+          // message. Real text only — cells without a library mapping (or
+          // whose mapping has no primary_message) never appear here rather
+          // than showing an empty quote.
+          const copyCells = uniqueCellRows(cells).filter(
+            (row) => !!libraryCellById(mst, row.cell_id)?.primary_message
+          );
+
           const TABS: { id: Tab; label: string; count: number }[] = [
             { id: "cells",     label: "Creative cells",   count: cells.length },
+            { id: "copy",      label: "Ad copy",          count: copyCells.length },
             { id: "top",       label: "Top performers",   count: topCells.length + topVariables.length },
-            { id: "variables", label: "Creative DNA",     count: variables.length },
+            { id: "variables", label: "Variable performance", count: variables.length },
+            // Breakdown: dimension × metric × chart cross-tab (Nocturne
+            // "Metrix v1" design). Count = dimensions actually backed by rows.
+            { id: "breakdown", label: "Breakdown",        count: listBreakdownDimensions(a).length },
             {
               id: "review",
               label: "Review queue",
@@ -334,6 +348,7 @@ export function IapLibraryView() {
               <ModuleHeader
                 section={SECTION}
                 title="IAP Library"
+                accountName={acct.name}
                 subtitle="Cell & variable performance · by metric selection"
                 tabs="analysis"
                 right={
@@ -833,6 +848,98 @@ export function IapLibraryView() {
                   </>
                 )}
 
+                {/* ── Ad copy tab ──────────────────────────────────────
+                    Real MST library primary text per cell, read against
+                    the same result the cell's performance rows produced.
+                    A cell's performance CPA (spend-weighted across its
+                    metric-filtered rows) ranks it into a real Top 25% /
+                    Mid 50% / Bottom 25% tier within this same set — never
+                    a fabricated grade. */}
+                {tab === "copy" && (
+                  copyCells.length === 0 ? (
+                    <PendingState
+                      title="No ad copy in selection"
+                      message="No creative cell in the current metric selection has mapped primary text yet."
+                      action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
+                    />
+                  ) : (() => {
+                    const conceptAngleByCellId = new Map<string, { conceptName: string; angleLabel: string }>();
+                    for (const g of conceptGroups) {
+                      for (const ag of g.angles) {
+                        for (const c of ag.cells) {
+                          if (!conceptAngleByCellId.has(c.cell_id)) {
+                            conceptAngleByCellId.set(c.cell_id, { conceptName: g.conceptName, angleLabel: ag.angleLabel });
+                          }
+                        }
+                      }
+                    }
+
+                    const copyStats = copyCells.map((row) => ({ row, stats: aggStatsForCell(row.cell_id, cells) }));
+                    const rankedCpas = copyStats
+                      .map(({ stats }) => stats.cpa)
+                      .filter((v): v is number => v != null)
+                      .sort((a, b) => a - b);
+                    const p25 = rankedCpas[Math.floor(rankedCpas.length * 0.25)] ?? rankedCpas[rankedCpas.length - 1];
+                    const p75 = rankedCpas[Math.floor(rankedCpas.length * 0.75)] ?? rankedCpas[rankedCpas.length - 1];
+                    const tierFor = (cpa: number | null): { label: string; cls: string } => {
+                      if (cpa == null || rankedCpas.length < 2) {
+                        return { label: "Unranked", cls: "bg-white/[0.05] text-muted-foreground/55 border-border/30" };
+                      }
+                      if (cpa <= p25) return { label: "Top 25%", cls: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25" };
+                      if (cpa >= p75) return { label: "Bottom 25%", cls: "bg-amber-400/10 text-amber-400 border-amber-400/25" };
+                      return { label: "Mid 50%", cls: "bg-white/[0.05] text-muted-foreground/70 border-border/30" };
+                    };
+
+                    return (
+                      <div className="space-y-4">
+                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">Text assets</p>
+                          <h3 className="text-title font-semibold text-foreground mb-1">Meta ad copy, read against the same result</h3>
+                          <p className="text-caption text-muted-foreground/70 leading-relaxed">
+                            Primary text for every cell in scope, so a copy pattern can be judged next to what it actually cost.
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-dashboard-4-xl gap-3">
+                          {copyStats.map(({ row, stats }) => {
+                            const lib = libraryCellById(mst, row.cell_id);
+                            const tier = tierFor(stats.cpa ?? null);
+                            const ctx = conceptAngleByCellId.get(row.cell_id);
+                            const conceptLabel = ctx?.conceptName ?? lib?.book2_concept_name ?? row.book2_concept_name;
+                            return (
+                              <button
+                                key={row.cell_id}
+                                type="button"
+                                onClick={() => setDetail(row)}
+                                data-testid={`ad-copy-card-${row.cell_id}`}
+                                className="rounded-xl border border-border/40 bg-white/[0.02] hover:border-primary/30 hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors p-3.5 text-left flex flex-col gap-2.5 focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-label font-mono text-interactive/80">{row.cell_id}</span>
+                                  <span className={cn("text-micro font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border shrink-0", tier.cls)}>
+                                    {tier.label}
+                                  </span>
+                                </div>
+                                <p className="text-body italic text-foreground/90 leading-relaxed">
+                                  &ldquo;{lib?.primary_message}&rdquo;
+                                </p>
+                                <div className="mt-auto pt-2 border-t border-border/20 flex items-baseline justify-between gap-2 text-label text-muted-foreground/55">
+                                  <span className="truncate">
+                                    {conceptLabel}
+                                    {ctx?.angleLabel ? ` · ${ctx.angleLabel}` : ""}
+                                  </span>
+                                  <span className="tabular-nums shrink-0">
+                                    {stats.cpa != null ? fmtUSD(stats.cpa) : "—"} · {fmtNum(stats.results ?? 0)}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
+
                 {/* ── Top performers tab ── */}
                 {tab === "top" && (
                   <div className="space-y-5">
@@ -940,6 +1047,17 @@ export function IapLibraryView() {
                   ) : (
                     <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />
                   )
+                )}
+
+                {/* ── Breakdown tab (dimension × metric × chart cross-tab) ── */}
+                {tab === "breakdown" && (
+                  <BreakdownExplorer
+                    analysis={a}
+                    catalog={tileCatalog}
+                    scopedCellRows={libCells}
+                    scopeNarrowed={!runSelection.allTime}
+                    windowLabel={runSelection.allTime ? undefined : "active run selection"}
+                  />
                 )}
 
                 {/* ── Review queue tab (sub-80% deconstructed creatives) ── */}

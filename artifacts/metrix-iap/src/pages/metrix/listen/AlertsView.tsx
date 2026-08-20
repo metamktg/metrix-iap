@@ -49,6 +49,7 @@ export function AlertsView() {
             <ModuleHeader
               section={SECTION}
               title="Alerts"
+              accountName={acct.name}
               subtitle="High-impact signals · data caveats"
             />
             <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />

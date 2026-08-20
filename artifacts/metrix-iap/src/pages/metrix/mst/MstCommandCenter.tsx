@@ -12,16 +12,15 @@ import {
   ModuleHeader, ModuleScopeGate, PrerequisiteGate,
   StageLoopHub, buildLoopStages, HubNavGrid,
 } from "../shared";
-import { Network, Grid3x3, TrendingUp, Compass, Library } from "lucide-react";
+import { Network, Grid3x3, Compass, Library } from "lucide-react";
 
 const SECTION = "MST · 06";
 
 const CHILDREN = [
-  { to: "/app/mst/cross-map", label: "Cross-Map", Icon: Network, desc: "Concepts mapped to strategy pillars, and planned cells crossmapped to observed performance." },
-  { to: "/app/mst/sprints", label: "Sprints", Icon: Grid3x3, desc: "The 4×4 test matrix for this account." },
-  { to: "/app/mst/creative-scan", label: "Creative Scan", Icon: Library, desc: "Scanned local creative library: message system, variable stack, and mapping confidence per concept." },
-  { to: "/app/mst/performance", label: "Performance", Icon: TrendingUp, desc: "Universal vs avatar-specific winners." },
-  { to: "/app/mst/direction", label: "Direction", Icon: Compass, desc: "The Optimization Loop — next-sprint priorities." },
+  { to: "/app/mst/cross-map", label: "Cross-Map", Icon: Network, desc: "Concepts mapped to strategy pillars, and planned cells crossmapped to observed performance.", lineage: "mst.local_book2_library[] · performance_by_cell[]" },
+  { to: "/app/mst/sprints", label: "Sprints", Icon: Grid3x3, desc: "The 4×4 test matrix for this account.", lineage: "mst.historical_matrix_4x4 · concept_rollup[]" },
+  { to: "/app/mst/creative-scan", label: "Creative Scan", Icon: Library, desc: "Scanned local creative library: message system, variable stack, and mapping confidence per concept.", lineage: "mst.local_book2_library[]" },
+  { to: "/app/mst/direction", label: "Direction", Icon: Compass, desc: "The Optimization Loop — next-sprint priorities.", lineage: "optimization_loop" },
 ];
 
 export function MstCommandCenter() {
@@ -39,6 +38,7 @@ export function MstCommandCenter() {
             <ModuleHeader
               section={SECTION}
               title="MST"
+              accountName={acct.name}
               subtitle="Matrix Sprint Test results for this account's briefed creative."
             />
             <StageLoopHub stages={buildLoopStages(status)} current="mst" />

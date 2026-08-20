@@ -45,14 +45,14 @@
 //      (total_spend_usd = null, empty performance_by_cell), opening the modal
 //      renders the empty state (data-testid="kpi-drilldown-empty") and no table.
 //   18. SegmentDrilldownModal via VariableDrilldownModal: opening from the
-//      Creative DNA "hook" family card (HK_Problem carrier cell C2E) renders ≥1 segment row
+//      Variable performance "hook" family card (HK_Problem carrier cell C2E) renders ≥1 segment row
 //      inside VariableDrilldownModal and the SegmentDrilldownModal description
 //      includes "scoped to" — catches regressions where cellIds is silently
 //      dropped to null at VariableDrilldownModal.tsx line 266.
 //   19. KpiDrilldownModal cell breakdown: selecting the "cell" dimension and
 //      Table view lists cell ids (a known cell_id from the seed appears).
 //   20. DNA family card → VariableDrilldownModal: navigating to
-//      /app/analysis/library?account=bookster, switching to the "Creative DNA"
+//      /app/analysis/library?account=bookster, switching to the "Variable performance"
 //      tab, and clicking the "concept" DNA family card (data-testid=
 //      "dna-family-concept") opens VariableDrilldownModal
 //      (data-testid="title-variable-drilldown" is visible). Catches regressions
@@ -327,10 +327,10 @@ async function main() {
         const page = await ctx.newPage();
         try {
           // Pre-seed localStorage so the CPA tile is selected before the app
-          // initialises — useMetricSelection reads this key on first render.
+          // initialises — useKpiTileMetrics reads this key on first render.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["cpa_blended"]),
             );
           });
@@ -406,7 +406,7 @@ async function main() {
           // the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["result:Mobile app installs"]),
             );
           });
@@ -618,7 +618,7 @@ async function main() {
           // Select the CPA tile before the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["cpa_blended"]),
             );
           });
@@ -885,7 +885,7 @@ async function main() {
           // Select the result-event tile before the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["result:Mobile app installs"]),
             );
           });
@@ -1157,7 +1157,7 @@ async function main() {
           // Select the result-event tile before the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["result:Mobile app installs"]),
             );
           });
@@ -1495,7 +1495,7 @@ async function main() {
           // so the tile is selected before the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["cpa_blended"]),
             );
           });
@@ -1653,7 +1653,7 @@ async function main() {
           // is present before the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["reach"]),
             );
           });
@@ -1763,7 +1763,7 @@ async function main() {
           // "Clicks (all)" is not a default tile — inject via localStorage.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["clicks_all"]),
             );
           });
@@ -1949,7 +1949,7 @@ async function main() {
       },
     );
     // ── Test 18: SegmentGridModal via VariableDrilldownModal concept path ────
-    // Opens VariableDrilldownModal via the IAP Library's Creative DNA tab:
+    // Opens VariableDrilldownModal via the IAP Library's Variable performance tab:
     // clicking the "hook" family card opens the drill-down for the family's
     // top variable HK_Problem (lowest CPA in the fixture's hook family).
     // HK_Problem's carrier cell is C2E, which has demographic rows in the
@@ -1984,7 +1984,7 @@ async function main() {
         try {
           await mockApis(ctx);
 
-          // Navigate to the IAP Library — the Creative DNA tab renders family
+          // Navigate to the IAP Library — the Variable performance tab renders family
           // cards from rollupDnaFamilies(); the "hook" family card's top
           // variable is HK_Problem whose carrier cell C2E has demographic rows.
           await page.goto(`${BASE}/app/analysis/library?account=${ACCOUNT}`, {
@@ -1993,13 +1993,13 @@ async function main() {
 
           // Wait for the library shell to render past the loading state.
           await page
-            .getByText("Creative DNA", { exact: false })
+            .getByText("Variable performance", { exact: false })
             .first()
             .waitFor({ state: "visible", timeout: 20_000 });
 
-          // Click the "Creative DNA" tab to activate the variables panel.
+          // Click the "Variable performance" tab to activate the variables panel.
           await page
-            .getByRole("button", { name: /Creative DNA/i })
+            .getByRole("button", { name: /Variable performance/i })
             .first()
             .click();
 
@@ -2170,7 +2170,7 @@ async function main() {
     // open-state wiring regression would leave the modal unmounted;
     // title-variable-drilldown would never appear.
     await test(
-      "DNA family card (Creative DNA tab) opens VariableDrilldownModal when clicked",
+      "DNA family card (Variable performance tab) opens VariableDrilldownModal when clicked",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -2187,13 +2187,13 @@ async function main() {
 
           // Wait for the library shell to render past the loading state.
           await page
-            .getByText("Creative DNA", { exact: false })
+            .getByText("Variable performance", { exact: false })
             .first()
             .waitFor({ state: "visible", timeout: 20_000 });
 
-          // Click the "Creative DNA" tab to activate the variables panel.
+          // Click the "Variable performance" tab to activate the variables panel.
           await page
-            .getByRole("button", { name: /Creative DNA/i })
+            .getByRole("button", { name: /Variable performance/i })
             .first()
             .click();
 

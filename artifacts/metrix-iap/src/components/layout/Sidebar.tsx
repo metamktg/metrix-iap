@@ -18,7 +18,6 @@ import {
   Zap,
   Settings2,
 } from "lucide-react";
-import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
 import { navTree, sectionLandingRoute } from "@/navigation/navTree";
 import { useNavBadges } from "@/navigation/useNavBadges";
 import { useAuth } from "@/contexts/AuthContext";
@@ -384,12 +383,12 @@ function ExpandableSection({
       {/* Single row: icon + label navigates to landing; chevron toggles list */}
       <div
         className={cn(
-          "flex items-center rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all select-none",
+          "flex items-center rounded-lg text-[13px] tracking-[-0.005em] transition-all select-none",
           landingActive
-            ? "mx-nav-active"
+            ? "mx-nav-active font-medium"
             : sectionActive
-              ? "text-foreground bg-white/[0.03]"
-              : "text-foreground/70 hover:text-foreground hover:bg-primary/10"
+              ? "text-foreground bg-primary/[0.09] font-medium"
+              : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10"
         )}
       >
         {/* Icon + label: navigates to landing page */}
@@ -411,8 +410,8 @@ function ExpandableSection({
           <NavIcon
             name={section.icon}
             className={cn(
-              "w-3.5 h-3.5 shrink-0",
-              landingActive ? "text-white" : sectionActive ? "text-foreground/80" : "text-muted-foreground/70"
+              "w-4 h-4 shrink-0",
+              landingActive ? "text-white" : sectionActive ? "text-interactive" : "text-muted-foreground/70"
             )}
           />
           <span className="flex-1 text-left truncate">{section.label}</span>
@@ -488,17 +487,17 @@ function LeafSection({
         onClick={(e) => navigate(to, e)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all",
+          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-all",
           active
-            ? "mx-nav-active"
-            : "text-foreground/70 hover:text-foreground hover:bg-primary/10",
+            ? "mx-nav-active font-medium"
+            : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10",
           section.placeholder && "opacity-60"
         )}
       >
         <NavIcon
           name={section.icon}
           className={cn(
-            "w-3.5 h-3.5 shrink-0",
+            "w-4 h-4 shrink-0",
             active ? "text-white" : "text-muted-foreground/70"
           )}
         />
@@ -641,21 +640,7 @@ export function Sidebar() {
                 alt="Metrix"
                 className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
               />
-              <span className="text-[14px] font-semibold tracking-tight text-foreground/90">metrix</span>
-              {/* IAP badge — hover reveals the tagline */}
-              <span className="relative group ml-0.5">
-                <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none cursor-default select-none">
-                  IAP
-                </span>
-                <span className={cn(
-                  "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5",
-                  "rounded-lg bg-[hsl(222_61%_10%)] border border-border/50 shadow-xl",
-                  "text-[10px] text-muted-foreground/70 whitespace-nowrap italic",
-                  "opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-50"
-                )}>
-                  Not more data. Better decisions.
-                </span>
-              </span>
+              <span className="text-[16px] font-semibold tracking-tight text-foreground/90">metrix</span>
               {/* Collapse button — right-aligned in logo row */}
               <button
                 onClick={toggleCollapse}
@@ -698,6 +683,13 @@ export function Sidebar() {
           </ol>
         ) : (
           <ol className="space-y-0.5 list-none p-0 m-0">
+            {/* Real interaction hint: a section header click navigates to
+                that section's own command-center landing route. */}
+            <li aria-hidden="true" className="px-2 pb-1.5">
+              <p className="text-[10px] leading-snug text-muted-foreground/45">
+                Click a section for its command center
+              </p>
+            </li>
             {visibleTree.map((section) =>
               section.children?.length ? (
                 <ExpandableSection
@@ -735,20 +727,31 @@ export function Sidebar() {
         <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />
       </div>
 
-      {/* Footer — data source badge + version only */}
+      {/* Footer — signed-in user, data source badge + version */}
       <div className={cn(
         "border-t border-border/40 shrink-0",
         collapsed ? "py-3 flex flex-col items-center gap-2" : "px-3 py-3 space-y-2"
       )}>
-        {!collapsed && <DataSourceBadgeToggle />}
-        {!collapsed && (
-          <div className="space-y-0.5">
-            <div className="text-[9px] text-muted-foreground/50 font-mono tracking-wider">
-              METRIX IAP v2.0-rc
-            </div>
-            <div className="text-[9px] text-muted-foreground/50 font-mono">
-              SAMPLE / DEMO DATA
-            </div>
+        {user && (
+          <div
+            className={cn("flex items-center gap-2 min-w-0", collapsed && "justify-center")}
+            data-testid="sidebar-user-footer"
+            title={user.email}
+          >
+            <span
+              aria-hidden="true"
+              className="flex items-center justify-center w-6 h-6 rounded-full shrink-0 bg-primary/15 border border-primary/25 text-interactive text-label font-bold leading-none"
+            >
+              {user.email.slice(0, 2).toUpperCase()}
+            </span>
+            {!collapsed && (
+              <div className="min-w-0">
+                <p className="text-caption font-medium text-foreground/85 truncate leading-tight">{user.email}</p>
+                <p className="text-label text-muted-foreground/55 leading-tight">
+                  {user.role === "admin" ? "Agency (internal)" : "Member"}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

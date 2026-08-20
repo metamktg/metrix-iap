@@ -83,12 +83,6 @@ export const navTree: NavSection[] = [
     dataSource: "core_reanalysis_read, campaign_summary",
     children: [
       {
-        id: "overview-loop",
-        label: "IAP Loop",
-        to: "/app/overview/loop",
-        dataSource: "stage_status (per account)",
-      },
-      {
         id: "overview-updates",
         label: "Updates",
         to: "/app/overview/updates",
@@ -142,6 +136,12 @@ export const navTree: NavSection[] = [
         label: "IAP Library",
         to: "/app/analysis/library",
         dataSource: "performance_by_cell, v3_variable_performance",
+      },
+      {
+        id: "analysis-dna",
+        label: "Creative DNA",
+        to: "/app/analysis/dna",
+        dataSource: "v3_variable_performance, variable_combinations",
       },
       {
         id: "analysis-audience",
@@ -273,12 +273,6 @@ export const navTree: NavSection[] = [
         label: "Creative Scan",
         to: "/app/mst/creative-scan",
         dataSource: "local_book2_library",
-      },
-      {
-        id: "mst-performance",
-        label: "Performance",
-        to: "/app/mst/performance",
-        dataSource: "historical_matrix_4x4, performance_by_cell",
       },
       {
         id: "mst-direction",
