@@ -21,7 +21,7 @@ const SOURCE: MetricSource = {
   clicksAll: 30_000,
   linkClicks: 20_000,
   linkCtrPct: 2,
-  resultEvents: [{ key: "Website purchases", label: "Purchases", results: 640 }],
+  resultEvents: [{ key: "Website purchases", label: "Purchases", results: 640, spend: 1280 }],
   isMultiEvent: false,
 };
 const catalog = buildMetricCatalog(SOURCE);

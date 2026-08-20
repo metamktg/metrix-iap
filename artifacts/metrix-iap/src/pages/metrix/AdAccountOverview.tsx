@@ -275,23 +275,26 @@ export function AdAccountOverview() {
               screen, so it stays as its own compact card. The "next
               action" half that used to sit beside it read the exact same
               optimization_loop.recommendation_cards as NextBestActionCard
-              above and has been removed as a duplicate surface. */}
+              above and has been removed as a duplicate surface. Kept
+              visually quiet (small pad, muted border/bg, lighter type) so
+              it doesn't compete with the KPI tiles / Results-by-event
+              flow around it — the real MST data is unchanged. */}
           {mstActive && (
             <SectionCard
               title="Current sprint"
               desc="MST status"
               right={<SectionInfoIcon tip="Whether a Matrix Sprint Test is active for this account, and how many matrix cells and library concepts it covers." />}
             >
-              <div className="rounded-xl border border-purple-400/20 bg-purple-400/[0.03] p-4 hover:border-purple-400/30 transition-colors">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Grid3x3 className="w-3.5 h-3.5 text-purple-300/80" />
-                  <span className="text-caption font-semibold text-foreground">MST active</span>
+              <div className="rounded-lg border border-border/30 bg-white/[0.015] p-2.5 hover:border-border/50 transition-colors">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Grid3x3 className="w-3 h-3 text-purple-300/60" />
+                  <span className="text-caption font-medium text-foreground/75">MST active</span>
                 </div>
-                <p className="text-body text-foreground/80 leading-relaxed">
-                  <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells · <span className="font-semibold text-foreground">{libraryCount}</span> library concepts
+                <p className="text-caption text-muted-foreground/70 leading-relaxed">
+                  <span className="font-medium text-foreground/75">{matrixCellCount}</span> matrix cells · <span className="font-medium text-foreground/75">{libraryCount}</span> library concepts
                 </p>
-                <button onClick={() => navigate("/app/mst")} className="mt-3 inline-flex items-center gap-1.5 text-caption font-semibold text-purple-300 hover:text-purple-200 transition-colors">
-                  Open MST <ArrowRight className="w-3.5 h-3.5" />
+                <button onClick={() => navigate("/app/mst")} className="mt-2 inline-flex items-center gap-1 text-caption font-medium text-purple-300/75 hover:text-purple-200 transition-colors">
+                  Open MST <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
             </SectionCard>

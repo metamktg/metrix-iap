@@ -288,16 +288,16 @@ export function ProvenanceBadge({ provenance }: { provenance?: string }) {
 export function GenerationErrorNote({ message, onRetry }: { message: string | null; onRetry?: () => void }) {
   if (!message) return null;
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2">
-      <AlertTriangle className="w-3.5 h-3.5 text-amber-300 mt-0.5 shrink-0" />
+    <div className="flex items-start gap-2 rounded-lg border border-status-warning/25 bg-status-warning/10 px-3 py-2">
+      <AlertTriangle className="w-3.5 h-3.5 text-status-warning mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-caption text-amber-200/90 leading-relaxed">
+        <p className="text-caption text-status-warning/90 leading-relaxed">
           Last generation run failed: {message}
         </p>
         {onRetry && (
           <button
             onClick={onRetry}
-            className="mt-1.5 text-caption font-medium text-amber-200 hover:text-amber-100 underline underline-offset-2 transition-colors"
+            className="mt-1.5 text-caption font-medium text-status-warning hover:text-status-warning/80 underline underline-offset-2 transition-colors"
           >
             Retry
           </button>

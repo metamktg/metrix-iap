@@ -5,13 +5,14 @@
 // (ROAS, purchase value, unique clicks) intentionally left out because no
 // underlying field exists anywhere in the bundle.
 
-import { fmtUSD, fmtNum, fmtPct, eventLabel } from "@/pages/metrix/shared";
+import { fmtUSD, fmtNum, fmtPct, eventLabel, costPerResultLabel } from "@/pages/metrix/shared";
 import type { CampaignSummary, CellPerformanceRow, ManagerBottomLineTotals, SeedResultEventTotals } from "./seedTypes";
 
 export interface MetricResultEvent {
   key: string;
   label: string;
   results: number;
+  spend: number;
 }
 
 /** Normalized numeric source both overview scopes can build a catalog from. */
@@ -48,7 +49,7 @@ export function metricSourceFromCampaignSummary(cs: CampaignSummary): MetricSour
     clicksAll: accountLevelDeliveryTotal(events, (e) => e.clicks_all),
     linkClicks: cs.total_link_clicks,
     linkCtrPct: cs.overall_link_ctr_pct,
-    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results })),
+    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results, spend: e.spend })),
     isMultiEvent: events.length > 1,
   };
 }
@@ -71,7 +72,7 @@ export function metricSourceFromApiTotals(t: ApiTotalsLike): MetricSource {
     clicksAll: accountLevelDeliveryTotal(events, (e) => e.clicks_all),
     linkClicks: t.total_link_clicks,
     linkCtrPct: t.overall_link_ctr_pct,
-    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results })),
+    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results, spend: e.spend })),
     isMultiEvent: events.length > 1,
   };
 }
@@ -85,7 +86,7 @@ export function metricSourceFromManagerTotals(totals: ManagerBottomLineTotals): 
     clicksAll: accountLevelDeliveryTotal(events, (e) => e.clicks_all),
     linkClicks: totals.link_clicks,
     linkCtrPct: totals.link_ctr_pct,
-    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results })),
+    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results, spend: e.spend })),
     isMultiEvent: events.length > 1,
   };
 }
@@ -113,6 +114,11 @@ export function resultMetricId(eventKey: string): string {
   return `result:${eventKey}`;
 }
 
+/** Cost-per-result metric id for one real event type — e.g. "cost:Website purchases". */
+export function resultCostMetricId(eventKey: string): string {
+  return `cost:${eventKey}`;
+}
+
 export interface MetricDef {
   id: string;
   label: string;
@@ -125,6 +131,8 @@ export interface MetricDef {
   eventKey?: string;
   /** Optional tile subtitle (caveats, derivations). */
   sub?: string;
+  /** True for derived ratios that should be omitted entirely (not shown as "—") when the source can't compute them. */
+  hideWhenNull?: boolean;
 }
 
 /**
@@ -163,13 +171,16 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
     { id: "clicks_all", label: "Clicks (all)", value: source.clicksAll, formatted: fmtNum(source.clicksAll), isResultEvent: false, ...(deliverySub ? { sub: deliverySub } : {}) },
     { id: "link_clicks", label: "Link clicks", value: source.linkClicks, formatted: fmtNum(source.linkClicks), isResultEvent: false },
     { id: "link_ctr", label: "Link CTR", value: source.linkCtrPct, formatted: fmtPct(source.linkCtrPct), isResultEvent: false },
-    { id: "ctr_all", label: "CTR (all)", value: ctrAll, formatted: fmtPct(ctrAll), isResultEvent: false, sub: "clicks (all) ÷ impressions" },
-    { id: "cpc", label: "CPC", value: cpc, formatted: cpc != null ? fmtUSD(cpc) : "—", isResultEvent: false, sub: "spend ÷ link clicks" },
-    { id: "cpm", label: "CPM", value: cpm, formatted: cpm != null ? fmtUSD(cpm) : "—", isResultEvent: false, sub: "spend ÷ impressions × 1,000" },
+    { id: "ctr_all", label: "CTR (all)", value: ctrAll, formatted: fmtPct(ctrAll), isResultEvent: false, sub: "clicks (all) ÷ impressions", hideWhenNull: true },
+    { id: "cpc", label: "CPC", value: cpc, formatted: cpc != null ? fmtUSD(cpc) : "—", isResultEvent: false, sub: "spend ÷ link clicks", hideWhenNull: true },
+    { id: "cpm", label: "CPM", value: cpm, formatted: cpm != null ? fmtUSD(cpm) : "—", isResultEvent: false, sub: "spend ÷ impressions × 1,000", hideWhenNull: true },
     { id: "cpa_blended", label: "CPA (blended)", value: cpaBlended, formatted: cpaBlended != null ? fmtUSD(cpaBlended) : "—", isResultEvent: false, sub: "spend ÷ all results" },
-    { id: "cvr", label: "CVR", value: cvr, formatted: cvr != null ? fmtPct(cvr) : "—", isResultEvent: false, sub: "results ÷ link clicks" },
+    { id: "cvr", label: "CVR", value: cvr, formatted: cvr != null ? fmtPct(cvr) : "—", isResultEvent: false, sub: "results ÷ link clicks", hideWhenNull: true },
   ];
 
+  // ── Per-objective cost metrics — one "Cost per X" per real event type ──
+  // this account reports (never a fixed Purchase/Lead/etc. list); omitted
+  // entirely when the event has zero results (no division by zero).
   for (const e of source.resultEvents) {
     catalog.push({
       id: resultMetricId(e.key),
@@ -179,14 +190,24 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
       isResultEvent: true,
       eventKey: e.key,
     });
+    const costPerResult = e.spend != null && e.results > 0 ? e.spend / e.results : null;
+    catalog.push({
+      id: resultCostMetricId(e.key),
+      label: costPerResultLabel(e.key),
+      value: costPerResult,
+      formatted: costPerResult != null ? fmtUSD(costPerResult) : "—",
+      isResultEvent: true,
+      eventKey: e.key,
+      sub: `spend ÷ ${e.label.toLowerCase()}`,
+      hideWhenNull: true,
+    });
   }
 
   // Hide derived metrics the source can't compute — no blank "—" entries in
   // dropdowns for ratios we chose to add. Base source metrics keep their
   // long-standing "—" behavior (diagnostic modal renders their honest
   // empty state when a value is null).
-  const derivedIds = new Set(["ctr_all", "cpc", "cpm", "cvr"]);
-  return catalog.filter((m) => m.value != null || !derivedIds.has(m.id));
+  return catalog.filter((m) => m.value != null || !m.hideWhenNull);
 }
 
 export function metricById(catalog: MetricDef[], id: string): MetricDef | null {

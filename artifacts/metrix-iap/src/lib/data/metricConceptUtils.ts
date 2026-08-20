@@ -9,6 +9,7 @@ import type { MetricDef } from "./metricsCatalog";
 // ── Internal helpers ─────────────────────────────────────────────────
 
 export function conceptMetricValue(row: CellPerformanceRow, metric: MetricDef): number {
+  if (metric.id.startsWith("cost:")) return row.CPA_result ?? 0;
   if (metric.isResultEvent) return row.Results;
   switch (metric.id) {
     case "spend":
@@ -41,6 +42,7 @@ export interface ConceptDriver {
 }
 
 export function formatConceptMetricValue(value: number, metric: MetricDef): string {
+  if (metric.id.startsWith("cost:")) return fmtUSD(value);
   if (metric.isResultEvent) return fmtNum(value);
   switch (metric.id) {
     case "spend":
@@ -61,6 +63,11 @@ export function formatConceptMetricValue(value: number, metric: MetricDef): stri
 /** Metrics that are already rates/ratios — summing per-row values would double count; recompute from totals instead. */
 export const RATE_METRIC_IDS = new Set(["link_ctr", "cpa_blended"]);
 
+/** True for a rate/ratio metric id, including the dynamic per-event "cost:<key>" ids. */
+function isRateMetric(metricId: string): boolean {
+  return RATE_METRIC_IDS.has(metricId) || metricId.startsWith("cost:");
+}
+
 /** All cell ids that back a metric — the FULL population, not just the top-N shown in the concepts list. */
 export function allCellIdsForMetric(rows: CellPerformanceRow[], metric: MetricDef): string[] {
   const scoped = metric.isResultEvent ? rows.filter((r) => r["Result type"] === metric.eventKey) : rows;
@@ -69,7 +76,7 @@ export function allCellIdsForMetric(rows: CellPerformanceRow[], metric: MetricDe
 
 export function topConceptsForMetric(rows: CellPerformanceRow[], metric: MetricDef, max = 5): ConceptDriver[] {
   const scoped = metric.isResultEvent ? rows.filter((r) => r["Result type"] === metric.eventKey) : rows;
-  const isRate = RATE_METRIC_IDS.has(metric.id);
+  const isRate = isRateMetric(metric.id);
   const map = new Map<string, {
     cellId: string;
     name: string;
@@ -103,7 +110,7 @@ export function topConceptsForMetric(rows: CellPerformanceRow[], metric: MetricD
   return Array.from(map.values())
     .map((c) => {
       let value = c.raw;
-      if (metric.id === "cpa_blended") value = c.results > 0 ? c.spend / c.results : 0;
+      if (metric.id === "cpa_blended" || metric.id.startsWith("cost:")) value = c.results > 0 ? c.spend / c.results : 0;
       if (metric.id === "link_ctr") value = c.impressions > 0 ? (c.linkClicks / c.impressions) * 100 : 0;
       return {
         cellId: c.cellId,
@@ -115,6 +122,6 @@ export function topConceptsForMetric(rows: CellPerformanceRow[], metric: MetricD
         results: c.results,
       };
     })
-    .sort((a, b) => (metric.id === "cpa_blended" ? a.value - b.value : b.value - a.value) || b.spend - a.spend)
+    .sort((a, b) => (metric.id === "cpa_blended" || metric.id.startsWith("cost:") ? a.value - b.value : b.value - a.value) || b.spend - a.spend)
     .slice(0, max);
 }
