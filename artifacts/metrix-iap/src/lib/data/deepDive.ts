@@ -364,6 +364,123 @@ export function buildCellDeepDiveModule(input: CellDeepDiveInput): DeepDiveModul
   };
 }
 
+// ─── Concept group module builder ──────────────────────────────────────
+// Concept Map groups performance_by_cell rows by book2_concept_name — a
+// concept spans multiple creative cells, so it doesn't fit the single-cell
+// shape buildCellDeepDiveModule expects. This reuses the same block
+// vocabulary (stats/ranked/variables/note/actions) instead of a bespoke
+// panel: the ranked block lists the concept's own cells by spend, each
+// chaining into buildCellDeepDiveModule so the breadcrumb trail keeps
+// working exactly like it does from the Sprints matrix and Crossmap.
+
+function cellVariableCodes(row: CellPerformanceRow): string[] {
+  return [
+    row.hook_variable, row.tone_variable, row.framework_variable, row.concept_variable,
+    row.pain_proof_variable, row.proof_variable, row.cta_variable,
+    row.funnel_stage_variable, row.awareness_variable,
+  ].filter((c): c is string => Boolean(c));
+}
+
+export interface ConceptGroupDeepDiveInput extends CardAssemblyOpts {
+  name: string;
+  cellIds: string[];
+  /** Cell rows for this concept, already scoped to the active run selection. */
+  cellRows: CellPerformanceRow[];
+  spend: number;
+  results: number;
+  pillars: MessagePillar[];
+  analysis: AnalysisData | null;
+  mst: MST | null;
+  /** Opens the avatar × placement segment grid for every cell in the group. */
+  onOpenGroupSegments?: () => void;
+  /** Opens the segment grid scoped to one cell, wired into that cell's own drill. */
+  onOpenCellSegments?: (cellId: string) => void;
+}
+
+export function buildConceptGroupDeepDiveModule(input: ConceptGroupDeepDiveInput): DeepDiveModule {
+  const {
+    name, cellIds, cellRows, spend, results, pillars, analysis, mst,
+    onOpenGroupSegments, onOpenCellSegments, ...cardOpts
+  } = input;
+
+  const blocks: DeepDiveBlock[] = [
+    {
+      kind: "stats",
+      title: "Performance",
+      stats: [
+        { metricId: "spend", label: "Spend", value: fmtUSD(spend, 0) },
+        { metricId: "results", label: "Results", value: fmtNum(results) },
+        {
+          metricId: "cpa",
+          label: "Cost / result",
+          value: results > 0 ? fmtUSD(spend / results) : "n/a",
+          ...(results > 0 ? {} : { note: "No completed results to divide spend by." }),
+        },
+        { metricId: "cells", label: "Creative cells", value: String(cellIds.length) },
+      ],
+    },
+  ];
+
+  // Per-cell spend/results within this concept — ranked, each drillable
+  // into its own cell module (the same builder MST tiles use).
+  const perCell = new Map<string, { spend: number; results: number }>();
+  for (const r of cellRows) {
+    const agg = perCell.get(r.cell_id) ?? { spend: 0, results: 0 };
+    agg.spend += r["Amount spent (USD)"];
+    agg.results += r.Results;
+    perCell.set(r.cell_id, agg);
+  }
+  const rankedRows: DeepDiveRankedRow[] = cellIds
+    .map((cellId) => {
+      const agg = perCell.get(cellId) ?? null;
+      return {
+        key: cellId,
+        label: cellId,
+        value: agg?.spend ?? null,
+        formatted: agg ? fmtUSD(agg.spend, 0) : "n/a",
+        spend: agg?.spend ?? null,
+        results: agg?.results ?? null,
+        note: agg ? undefined : "No performance rows for this cell in the current scope.",
+        drill: () =>
+          buildCellDeepDiveModule({
+            cellId,
+            analysis,
+            mst,
+            ...cardOpts,
+            onOpenSegments: onOpenCellSegments ? () => onOpenCellSegments(cellId) : undefined,
+          }),
+      };
+    })
+    .sort((a, b) => (b.value ?? -1) - (a.value ?? -1));
+  blocks.push({ kind: "ranked", title: "Cells in this concept", metricLabel: "Spend", rows: rankedRows });
+
+  const codes = Array.from(new Set(cellRows.flatMap(cellVariableCodes)));
+  if (codes.length > 0) blocks.push({ kind: "variables", title: "Variable stack", codes });
+
+  if (pillars.length > 0) {
+    for (const p of pillars) {
+      const text = [p.plain_descriptor ? `"${p.plain_descriptor}"` : null, p.why_it_matters].filter(Boolean).join(" — ");
+      if (text) blocks.push({ kind: "note", title: `Pillar · ${p.label}`, text });
+    }
+  } else {
+    blocks.push({ kind: "note", text: "No strategy pillar references this concept's cells yet." });
+  }
+
+  const actions: DeepDiveAction[] = [];
+  if (onOpenGroupSegments) actions.push({ kind: "callback", id: "segments", label: "Avatar × placement", onClick: onOpenGroupSegments });
+  if (cellIds[0]) actions.push({ kind: "link", id: "library", label: "Open in IAP Library", href: `/app/analysis/library?focus=${cellIds[0]}` });
+  actions.push({ kind: "link", id: "hypotheses", label: "Open Hypothesis Queue", href: "/app/strategy/hypotheses" });
+  blocks.push({ kind: "actions", actions });
+
+  return {
+    id: `concept:${name}`,
+    kicker: `Concept · ${cellIds.join(", ")}`,
+    title: name,
+    subtitle: pillars.length > 0 ? `${pillars.length} pillar${pillars.length !== 1 ? "s" : ""} linked` : "No pillar linked yet",
+    blocks,
+  };
+}
+
 // ─── Message pillar module builder ─────────────────────────────────────
 // Replaces the always-inline, always-expanded pillar prose on the
 // Communications page: the card face keeps only a scannable summary, and

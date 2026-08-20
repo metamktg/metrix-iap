@@ -1,27 +1,29 @@
 // ─── Analysis · Concept Map ───────────────────────────────────────────
 // Groups creative cells by concept and maps them onto strategy pillars.
-// Shows which concepts feed which pillars, with drill-down and
-// cross-links into the Hypothesis Queue and Brief Builder.
+// Shows which concepts feed which pillars, ranked by Spend/Results/CPA
+// and filterable by pillar-link status, with drill-down (right-panel deep
+// dive, chaining into individual cells) and cross-links into the
+// Hypothesis Queue and Brief Builder.
 
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getAnalysisData, getStrategyData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData, getStrategyData, getCreativeLinkContext, getMST } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
-  CrossLink, fmtUSD, fmtNum, eventLabel, useShowMore, ShowMoreButton,
+  CrossLink, fmtUSD, fmtNum, useShowMore, ShowMoreButton, SegmentedToggle,
 } from "../shared";
-import { VariableCodeChips } from "../analysis/tables";
-import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
+import { TYPE } from "../typography";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { RunScopePicker, type RunSelectorValue } from "@/components/analysis/RunSelector";
 import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
-import { getMST } from "@/lib/data/metrixSeedAdapter";
-import { CreativeCard } from "@/components/creative/CreativeCard";
-import { cardFromCell } from "@/lib/creative-assembly";
-import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
+import { RankSortBar, useRankMetric, sortByRankMetric, rankBarPct, type RankMetric } from "../analysis/rankSort";
+import { useDeepDive } from "@/contexts/DeepDiveContext";
+import { buildConceptGroupDeepDiveModule } from "@/lib/data/deepDive";
+import { SegmentGridModal } from "@/components/creative/SegmentGridModal";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Network, Layers } from "lucide-react";
-import type { CellPerformanceRow } from "@/lib/data/seedTypes";
+import type { CellPerformanceRow, MessagePillar } from "@/lib/data/seedTypes";
 
 const SECTION = "MST · 06";
 
@@ -30,8 +32,19 @@ interface ConceptGroup {
   cells: CellPerformanceRow[];
   spend: number;
   results: number;
+  cpa: number | null;
   cellIds: string[];
 }
+
+const CONCEPT_SORT_KEY = "metrix.concept-map.sort.v1";
+
+const CONCEPT_METRICS: RankMetric<ConceptGroup>[] = [
+  { id: "spend",   label: "Spend",   direction: "desc", value: (g) => g.spend,   format: (v) => fmtUSD(v, 0) },
+  { id: "results", label: "Results", direction: "desc", value: (g) => g.results, format: fmtNum },
+  { id: "cpa",     label: "CPA",     direction: "asc",  value: (g) => g.cpa,     format: (v) => fmtUSD(v) },
+];
+
+type LinkFilter = "all" | "linked" | "unlinked";
 
 export function ConceptMapView({
   renderHeader = true,
@@ -47,8 +60,9 @@ export function ConceptMapView({
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const [detail, setDetail] = useState<ConceptGroup | null>(null);
-  const [segmentsOpen, setSegmentsOpen] = useState(false);
+  const deepDive = useDeepDive();
+  const [linkFilter, setLinkFilter] = useState<LinkFilter>("all");
+  const [segmentsFor, setSegmentsFor] = useState<{ cellIds: string[]; title: string } | null>(null);
   const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
   const controlled = runScope !== undefined && onRunScopeChange !== undefined;
   // When controlled, the parent owns persistence — the local hook is inert
@@ -59,6 +73,8 @@ export function ConceptMapView({
   const runSelection = controlled ? runScope! : localRunSelection;
   const setRunSelection = controlled ? onRunScopeChange! : setLocalRunSelection;
   const { filterByRun } = useCellRunScope(getAnalysisData(seed, adAccountId), runSelection);
+  const { activeId: sortId, select: setSortId } = useRankMetric(CONCEPT_SORT_KEY, CONCEPT_METRICS.map((m) => m.id), "spend");
+  const activeSort = CONCEPT_METRICS.find((m) => m.id === sortId) ?? CONCEPT_METRICS[0];
 
   return (
     <ModuleScopeGate section={SECTION} title="Concept Map" account={account} renderHeader={renderHeader}>
@@ -66,6 +82,8 @@ export function ConceptMapView({
         const acct = account!;
         const a = getAnalysisData(seed, adAccountId);
         const strategy = getStrategyData(seed, adAccountId);
+        const mst = getMST(seed, adAccountId);
+        const cardOpts = getCreativeLinkContext(seed, adAccountId);
 
         if (!a || a.performance_by_cell.length === 0) {
           return (
@@ -84,7 +102,7 @@ export function ConceptMapView({
         const groupsMap = new Map<string, ConceptGroup>();
         for (const r of rowsInRange) {
           const g = groupsMap.get(r.book2_concept_name) ?? {
-            name: r.book2_concept_name, cells: [], spend: 0, results: 0, cellIds: [],
+            name: r.book2_concept_name, cells: [], spend: 0, results: 0, cpa: null, cellIds: [],
           };
           g.cells.push(r);
           g.spend += r["Amount spent (USD)"];
@@ -92,14 +110,40 @@ export function ConceptMapView({
           if (!g.cellIds.includes(r.cell_id)) g.cellIds.push(r.cell_id);
           groupsMap.set(r.book2_concept_name, g);
         }
-        const groups = Array.from(groupsMap.values()).sort((x, y) => y.spend - x.spend);
-        const maxSpend = Math.max(...groups.map((g) => g.spend), 1);
+        const groups = Array.from(groupsMap.values());
+        for (const g of groups) g.cpa = g.results > 0 ? g.spend / g.results : null;
 
         const pillars = strategy?.message_pillars ?? [];
         const pillarsForGroup = (g: ConceptGroup) =>
           pillars.filter((p) => p.source_cells.some((c) => g.cellIds.includes(c)));
 
         const linkedConcepts = groups.filter((g) => pillarsForGroup(g).length > 0).length;
+
+        const filtered = groups.filter((g) => {
+          if (linkFilter === "all") return true;
+          const linked = pillarsForGroup(g).length > 0;
+          return linkFilter === "linked" ? linked : !linked;
+        });
+        const sorted = sortByRankMetric(filtered, activeSort);
+        const barValues = filtered.map(activeSort.value);
+
+        const openGroup = (g: ConceptGroup) => {
+          deepDive.push(
+            buildConceptGroupDeepDiveModule({
+              name: g.name,
+              cellIds: g.cellIds,
+              cellRows: g.cells,
+              spend: g.spend,
+              results: g.results,
+              pillars: pillarsForGroup(g),
+              analysis: a,
+              mst,
+              ...cardOpts,
+              onOpenGroupSegments: () => setSegmentsFor({ cellIds: g.cellIds, title: g.name }),
+              onOpenCellSegments: (cellId) => setSegmentsFor({ cellIds: [cellId], title: cellId }),
+            }),
+          );
+        };
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -132,83 +176,36 @@ export function ConceptMapView({
               <MetricTile label="Concepts feeding pillars" value={String(linkedConcepts)} />
             </div>
 
+            <div className="px-6 pt-4 flex items-center justify-between gap-3 flex-wrap">
+              <SegmentedToggle<LinkFilter>
+                ariaLabel="Filter concepts by pillar link"
+                active={linkFilter}
+                onChange={setLinkFilter}
+                options={[
+                  { id: "all", label: "All" },
+                  { id: "linked", label: "Linked" },
+                  { id: "unlinked", label: "Unlinked" },
+                ]}
+              />
+              <RankSortBar metrics={CONCEPT_METRICS} activeId={sortId} onSelect={setSortId} />
+            </div>
+
             <ConceptGroupList
-              groups={groups}
-              maxSpend={maxSpend}
+              groups={sorted}
+              barValues={barValues}
+              activeMetric={activeSort}
               pillarsForGroup={pillarsForGroup}
-              onSelect={setDetail}
+              onSelect={openGroup}
             />
 
-            {detail && (
-              <InfoDrawer
-                kicker={`Concept · ${detail.cellIds.join(", ")}`}
-                title={detail.name}
-                onClose={() => setDetail(null)}
-                footer={
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <SegmentDrilldownButton onClick={() => setSegmentsOpen(true)} />
-                    <CrossLink to={`/app/analysis/library?focus=${detail.cellIds[0]}`} label="Open in IAP Library" />
-                    <CrossLink to="/app/strategy/hypotheses" label="Open Hypothesis Queue" />
-                  </div>
-                }
-              >
-                <div className="grid grid-cols-2 gap-3">
-                  <MetricTile label="Spend" value={fmtUSD(detail.spend, 0)} />
-                  <MetricTile label="Results" value={fmtNum(detail.results)} />
-                </div>
-                <DrawerField label="Result breakdown">
-                  <div className="space-y-1.5">
-                    {detail.cells.map((r) => (
-                      <div key={r.cell_id + r["Result type"]} className="flex items-center justify-between gap-2">
-                        <span className="text-label text-muted-foreground/60">{r.cell_id} · {eventLabel(r["Result type"])}</span>
-                        <span className="text-caption text-foreground/80 tabular-nums">{fmtNum(r.Results)} · {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"} CPA</span>
-                      </div>
-                    ))}
-                  </div>
-                </DrawerField>
-                <DrawerField label="Variable codes">
-                  <div className="space-y-2">
-                    {detail.cells.filter((r, i, arr) => arr.findIndex((x) => x.cell_id === r.cell_id) === i).map((r) => (
-                      <div key={r.cell_id}>
-                        <span className="text-label font-mono text-muted-foreground/70">{r.cell_id}</span>
-                        <VariableCodeChips row={r} />
-                      </div>
-                    ))}
-                  </div>
-                </DrawerField>
-                {(getStrategyData(seed, adAccountId)?.message_pillars ?? [])
-                  .filter((p) => p.source_cells.some((c) => detail.cellIds.includes(c)))
-                  .map((p) => (
-                    <DrawerField key={p.id} label={`Pillar · ${p.label}`}>
-                      <p className="italic text-interactive/80">"{p.plain_descriptor}"</p>
-                      <p className="mt-1 text-caption text-muted-foreground/70">{p.why_it_matters}</p>
-                    </DrawerField>
-                  ))}
-                <DrawerField label="Creatives">
-                  <div className="grid grid-cols-2 gap-2">
-                    {detail.cellIds.map((cid) => (
-                      <CreativeCard
-                        key={cid}
-                        data={cardFromCell(cid, {
-                          perfRows: a.performance_by_cell,
-                          mst: getMST(seed, adAccountId),
-                          ...getCreativeLinkContext(seed, adAccountId),
-                        })}
-                      />
-                    ))}
-                  </div>
-                </DrawerField>
-              </InfoDrawer>
-            )}
-
-            {detail && (
+            {segmentsFor && (
               <SegmentGridModal
-                open={segmentsOpen}
-                onClose={() => setSegmentsOpen(false)}
-                kicker={`Concept · ${detail.cellIds.join(", ")}`}
-                title={detail.name}
+                open
+                onClose={() => setSegmentsFor(null)}
+                kicker={`Concept · ${segmentsFor.cellIds.join(", ")}`}
+                title={segmentsFor.title}
                 analysis={a}
-                cellIds={detail.cellIds}
+                cellIds={segmentsFor.cellIds}
               />
             )}
           </div>
@@ -220,49 +217,61 @@ export function ConceptMapView({
 
 function ConceptGroupList({
   groups,
-  maxSpend,
+  barValues,
+  activeMetric,
   pillarsForGroup,
   onSelect,
 }: {
   groups: ConceptGroup[];
-  maxSpend: number;
-  pillarsForGroup: (g: ConceptGroup) => { id: string; label: string }[];
+  barValues: (number | null)[];
+  activeMetric: RankMetric<ConceptGroup>;
+  pillarsForGroup: (g: ConceptGroup) => MessagePillar[];
   onSelect: (g: ConceptGroup) => void;
 }) {
   const fold = useShowMore(groups, 6);
+  if (groups.length === 0) {
+    return (
+      <div className="px-6 py-8">
+        <p className={cn(TYPE.body, "text-muted-foreground/50 text-center")}>No concepts match this filter.</p>
+      </div>
+    );
+  }
   return (
     <div className="px-6 py-5 grid grid-cols-dashboard-2 gap-3 max-w-5xl">
       {fold.visible.map((g) => {
         const linked = pillarsForGroup(g);
+        const pct = rankBarPct(activeMetric.value(g), barValues, activeMetric.direction);
         return (
           <button
             key={g.name}
             onClick={() => onSelect(g)}
-            className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+            className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 transition-all hover:border-primary/35 hover:bg-primary/[0.04] hover:-translate-y-px"
+            data-testid={`concept-group-${g.name}`}
           >
-            <div className="flex items-center gap-1.5 mb-1.5">
+            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
               {g.cellIds.map((c) => (
-                <span key={c} className="text-label font-mono text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none">{c}</span>
+                <span key={c} className={cn(TYPE.label, "font-mono text-muted-foreground/70 border border-border/30 px-1 py-0.5 rounded leading-none")}>{c}</span>
               ))}
             </div>
-            <p className="text-title font-semibold text-foreground leading-tight">{g.name}</p>
+            <p className={cn(TYPE.title, "leading-tight")}>{g.name}</p>
 
-            <div className="mt-3 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-              <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max((g.spend / maxSpend) * 100, 3)}%` }} />
+            <div className="mt-3 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "hsl(var(--chart-1) / 0.65)" }} />
             </div>
-            <div className="flex items-center justify-between mt-1.5 text-label text-muted-foreground/60 tabular-nums">
+            <div className={cn("flex items-center justify-between mt-1.5", TYPE.label, "text-muted-foreground/60 tabular-nums")}>
               <span>{fmtUSD(g.spend, 0)} spend</span>
               <span>{fmtNum(g.results)} results</span>
+              <span>{g.cpa != null ? fmtUSD(g.cpa) : "—"} CPA</span>
             </div>
 
             <div className="mt-3 pt-3 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
               <Layers className="w-3.5 h-3.5 text-interactive/50" />
               {linked.length ? (
                 linked.map((p) => (
-                  <span key={p.id} className="text-label text-interactive/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded leading-none">{p.label}</span>
+                  <span key={p.id} className={cn(TYPE.label, "text-interactive/85 border border-primary/25 bg-primary/[0.08] px-1.5 py-0.5 rounded leading-none")}>{p.label}</span>
                 ))
               ) : (
-                <span className="text-label text-muted-foreground/60">No pillar linked yet</span>
+                <span className={cn(TYPE.label, "text-muted-foreground/60")}>No pillar linked yet</span>
               )}
             </div>
           </button>
