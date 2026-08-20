@@ -26,6 +26,7 @@ import { DemographicTable } from "../analysis/tables";
 import {
   VariableStackChips, pillarTier,
   PersonaAvatar, StatGrid, AccordionToggle, DnaChipStrip, FoldedGrid, FoldedList,
+  HypothesisLabel, HypothesisStatusBadge,
 } from "./strategyShared";
 import { normalizeConfidence } from "@/lib/normalize";
 import {
@@ -39,13 +40,16 @@ import {
   segmentLabel, segmentKey, scopeDemographicRows,
   type SegmentId, type SegmentRawTotals, type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
+import { RunScopePicker } from "@/components/analysis/RunSelector";
+import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
+import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
 import {
   Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass,
-  ArrowUpRight, MapPin, Search,
+  ArrowUpRight, MapPin, Search, AlertTriangle,
 } from "lucide-react";
 import type {
   MSTMatrixColumn, ICPProfile, PlacementRow, AnalysisData,
-  ActiveHypothesis, MessagePillar,
+  ActiveHypothesis, MessagePillar, CellPerformanceRow,
 } from "@/lib/data/seedTypes";
 import { cn } from "@workspace/command-deck/lib/utils";
 
@@ -62,6 +66,31 @@ const SORT_DIRECTION: Record<SortKey, "asc" | "desc"> = {
   spend: "desc", cpa: "asc", cvr: "desc", confidence: "desc",
 };
 const CONF_ORDER: Record<string, number> = { high: 0, medium: 1, directional: 2, low: 3 };
+
+// ─── Run-scoped per-ICP performance ────────────────────────────────────
+// An ICP's precomputed performance_data isn't itself run-scoped — it's
+// re-derived here from the real cell-level rows belonging to that ICP's
+// matched avatar columns, once a run scope narrows performance_by_cell.
+// A profile with no matched avatars (or no cell rows in the selected
+// scope) carries no honest cell-level attribution, so it keeps its
+// precomputed all-time figure rather than fabricating a scoped number.
+function computeProfilePerf(
+  cellIds: string[],
+  rows: CellPerformanceRow[],
+): { spend: number; cpa: number | null; cvr_link_pct: number | null } | null {
+  if (cellIds.length === 0) return null;
+  const idSet = new Set(cellIds);
+  const matched = rows.filter((r) => idSet.has(r.cell_id));
+  if (matched.length === 0) return null;
+  const spend = matched.reduce((s, r) => s + r["Amount spent (USD)"], 0);
+  const results = matched.reduce((s, r) => s + r.Results, 0);
+  const linkClicks = matched.reduce((s, r) => s + r["Link clicks"], 0);
+  return {
+    spend,
+    cpa: results > 0 ? spend / results : null,
+    cvr_link_pct: linkClicks > 0 ? (results / linkClicks) * 100 : null,
+  };
+}
 
 // ─── Sort / search bar ─────────────────────────────────────────────────
 
@@ -224,21 +253,22 @@ function ProfileDetailFold({
                     </p>
                     <div className="space-y-1.5">
                       {hypotheses.map((h) => (
-                        <div key={h.id} className="rounded-lg border border-border/25 bg-card/30 px-3 py-2">
-                          {h.isolated_variable && (
-                            <span className="inline-block text-label font-mono text-interactive/70 border border-primary/25 px-1.5 py-0.5 rounded mb-1">
-                              {h.isolated_variable}
-                            </span>
+                        <div key={h.id} className="rounded-lg border border-border/25 bg-card/30 px-3 py-2 flex flex-col gap-1.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <HypothesisLabel label={h.label} isolated={h.isolated_variable} />
+                            <span className="shrink-0"><HypothesisStatusBadge status={h.status} /></span>
+                          </div>
+                          {h.expected_impact && (
+                            <p className={cn(TYPE.label, "text-muted-foreground/60")}>
+                              Expected impact <span className="text-foreground/75 font-medium normal-case">{h.expected_impact}</span>
+                            </p>
                           )}
-                          <DetailReveal
-                            label={deriveLabel(h.test_variant!, 64)}
-                            labelClassName={TYPE.body}
-                            eyebrow="Test variant"
-                            sections={[
-                              { text: h.test_variant! },
-                              ...(h.success_criteria ? [{ label: "Success criteria", text: h.success_criteria }] : []),
-                            ]}
-                          />
+                          {h.risk && (
+                            <div className="flex items-start gap-1.5 pt-1.5 border-t border-border/15">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-0.5" />
+                              <p className="text-caption text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -272,7 +302,7 @@ function ProfileDetailFold({
 
 function IcpProfileCard({
   profile, registerRef, flash, avatars, onAvatarClick, dna,
-  placementRows, avgCpa, avgCvr, hypotheses, rank,
+  placementRows, avgCpa, avgCvr, hypotheses, rank, perf,
 }: {
   profile: ICPProfile;
   registerRef?: (el: HTMLDivElement | null) => void;
@@ -285,8 +315,10 @@ function IcpProfileCard({
   avgCvr?: number | null;
   hypotheses?: ActiveHypothesis[];
   rank?: number;
+  /** Run-scoped performance (falls back to profile.performance_data when
+   *  the selected scope can't be honestly attributed to this ICP's cells). */
+  perf: ICPProfile["performance_data"];
 }) {
-  const perf = profile.performance_data ?? null;
   const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
   const rankConfidence = profile.confidence_level ? normalizeConfidence(profile.confidence_level) : null;
   const rankConfidenceText = rankConfidence
@@ -685,33 +717,89 @@ export function AvatarsView() {
   const icpProfiles = strategyData?.icp_profiles ?? [];
   const term = resultTerm(account);
 
+  // ── Analysis-run scope (compact header dropdown) ──────────────────────
+  // Cell-level rows (performance_by_cell, demographic_registration_signal)
+  // carry cell_id and can be honestly rescoped to the selected run(s); ICP
+  // performance is then re-derived from whichever of those cells belong to
+  // that profile's matched avatar columns. Placement rows carry no cell
+  // linkage and stay account-wide, same as elsewhere in the app.
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
+  const [runSelection, setRunSelection] = usePersistedRunScope(
+    "strategy-avatars", adAccountId, analysisRunsData?.runs,
+  );
+  const { filterByRun } = useCellRunScope(analysis, runSelection);
+
+  const cellRows = useMemo(() => filterByRun(analysis?.performance_by_cell ?? []), [analysis, filterByRun]);
+  const scopedDemoRows = useMemo(() => filterByRun(analysis?.demographic_registration_signal ?? []), [analysis, filterByRun]);
+  const scopedAnalysis = useMemo(
+    () => (analysis ? { ...analysis, performance_by_cell: cellRows, demographic_registration_signal: scopedDemoRows } : analysis),
+    [analysis, cellRows, scopedDemoRows],
+  );
+
   const dnaByColumn = useMemo(
-    () => (matrix ? new Map(matrix.columns.map((col) => [col.id, computeAvatarDna(col.id, matrix, analysis, mst)])) : new Map<string, AvatarDna>()),
-    [matrix, analysis, mst],
+    () => (matrix ? new Map(matrix.columns.map((col) => [col.id, computeAvatarDna(col.id, matrix, scopedAnalysis, mst)])) : new Map<string, AvatarDna>()),
+    [matrix, scopedAnalysis, mst],
+  );
+
+  const cellIdsByColumn = useMemo(() => {
+    const map = new Map<string, string[]>();
+    if (matrix) {
+      for (const cell of matrix.cells) {
+        const list = map.get(cell.column_id) ?? [];
+        list.push(cell.cell_id);
+        map.set(cell.column_id, list);
+      }
+    }
+    return map;
+  }, [matrix]);
+
+  const avatarsForProfile = useCallback(
+    (profileId: string): MSTMatrixColumn[] =>
+      matrix ? matrix.columns.filter((col) => (col.matched_profile_ids ?? []).includes(profileId)) : [],
+    [matrix],
+  );
+
+  // Run-scoped performance for one ICP: re-derived from the cell rows of
+  // its matched avatar columns when a specific run is selected. Falls back
+  // to the profile's precomputed all-time figure whenever no honest
+  // cell-level attribution exists (all time, or no matched avatars/cells
+  // with data in the selected scope) — never fabricated, never hidden.
+  const perfForProfile = useCallback(
+    (profile: ICPProfile): ICPProfile["performance_data"] => {
+      if (runSelection.allTime) return profile.performance_data ?? null;
+      const cellIds = avatarsForProfile(profile.profile_id).flatMap((col) => cellIdsByColumn.get(col.id) ?? []);
+      const computed = computeProfilePerf(cellIds, cellRows);
+      if (!computed) return profile.performance_data ?? null;
+      return { ...computed, confidence: profile.performance_data?.confidence ?? null };
+    },
+    [runSelection.allTime, avatarsForProfile, cellIdsByColumn, cellRows],
   );
 
   const avgCpa = useMemo(() => {
-    const vals = icpProfiles.map((p) => p.performance_data?.cpa).filter((v): v is number => v != null && v > 0);
+    const vals = icpProfiles.map((p) => perfForProfile(p)?.cpa).filter((v): v is number => v != null && v > 0);
     return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-  }, [icpProfiles]);
+  }, [icpProfiles, perfForProfile]);
 
   const avgCvr = useMemo(() => {
-    const vals = icpProfiles.map((p) => p.performance_data?.cvr_link_pct).filter((v): v is number => v != null && v > 0);
+    const vals = icpProfiles.map((p) => perfForProfile(p)?.cvr_link_pct).filter((v): v is number => v != null && v > 0);
     return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-  }, [icpProfiles]);
+  }, [icpProfiles, perfForProfile]);
 
   const placementRows = useMemo(
     () => [...(analysis?.v3_placement_signal ?? [])].sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]),
     [analysis],
   );
 
-  const segmentList = useMemo(() => (analysis ? listSegments(analysis.demographic_registration_signal ?? []) : []), [analysis]);
+  const segmentList = useMemo(
+    () => (scopedAnalysis ? listSegments(scopedAnalysis.demographic_registration_signal ?? []) : []),
+    [scopedAnalysis],
+  );
 
   const segmentStats = useMemo(() => {
-    if (!analysis || segmentList.length === 0) {
+    if (!scopedAnalysis || segmentList.length === 0) {
       return new Map<string, { totals: SegmentRawTotals; derived: SegmentDerivedMetrics; signal: SegmentSignal; bestVariableCode: string | null }>();
     }
-    const allRows = analysis.demographic_registration_signal ?? [];
+    const allRows = scopedAnalysis.demographic_registration_signal ?? [];
     const scoped = scopeDemographicRows(allRows, null);
     const scopedTotals = computeSegmentTotals(scoped);
     const result = new Map<string, { totals: SegmentRawTotals; derived: SegmentDerivedMetrics; signal: SegmentSignal; bestVariableCode: string | null }>();
@@ -720,12 +808,12 @@ export function AvatarsView() {
       const totals = computeSegmentTotals(segRows);
       const derived = deriveSegmentMetrics(totals);
       const signal = assessSegmentSignal(totals, scopedTotals);
-      const attribution = computeSegmentAttribution(analysis, mst, seg, null);
+      const attribution = computeSegmentAttribution(scopedAnalysis, mst, seg, null);
       const bestVariableCode = attribution.available && attribution.variables.length > 0 ? attribution.variables[0].code : null;
       result.set(segmentKey(seg), { totals, derived, signal, bestVariableCode });
     }
     return result;
-  }, [analysis, mst, segmentList]);
+  }, [scopedAnalysis, mst, segmentList]);
 
   const hypothesesByProfile = useMemo(() => {
     const hyps = strategyData?.active_hypotheses ?? [];
@@ -761,8 +849,8 @@ export function AvatarsView() {
     return icpProfiles
       .filter((p) => !q || p.profile_name.toLowerCase().includes(q))
       .sort((a, b) => {
-        const pa = a.performance_data;
-        const pb = b.performance_data;
+        const pa = perfForProfile(a);
+        const pb = perfForProfile(b);
         switch (sortBy) {
           case "spend": return (pb?.spend ?? 0) - (pa?.spend ?? 0);
           case "cpa": return (pa?.cpa ?? Infinity) - (pb?.cpa ?? Infinity);
@@ -774,7 +862,7 @@ export function AvatarsView() {
           }
         }
       });
-  }, [icpProfiles, searchQuery, sortBy]);
+  }, [icpProfiles, searchQuery, sortBy, perfForProfile]);
 
   // Cross-page deep link from an avatar's "ICP profile" link on /app/mst
   // (?focus=<profileId>) — scroll to and flash that card once rendered.
@@ -805,8 +893,6 @@ export function AvatarsView() {
           );
         }
 
-        const avatarsForProfile = (profileId: string): MSTMatrixColumn[] =>
-          matrix ? matrix.columns.filter((col) => (col.matched_profile_ids ?? []).includes(profileId)) : [];
         const dnaForProfile = (profileId: string): DnaVariable[] =>
           mergeAvatarDna(avatarsForProfile(profileId).map((col) => dnaByColumn.get(col.id)).filter((d): d is AvatarDna => d != null));
 
@@ -818,6 +904,13 @@ export function AvatarsView() {
               accountName={acct.name}
               subtitle="ICP profiles · message-pillar coverage · audience signal"
               tabs="strategy"
+              right={
+                <RunScopePicker
+                  runs={analysisRunsData?.runs ?? []}
+                  value={runSelection}
+                  onChange={setRunSelection}
+                />
+              }
             />
 
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
@@ -844,6 +937,7 @@ export function AvatarsView() {
                         <IcpProfileCard
                           key={p.profile_id}
                           profile={p}
+                          perf={perfForProfile(p)}
                           rank={i + 1}
                           registerRef={(el) => { profileRefs.current[p.profile_id] = el; }}
                           flash={flashProfile === p.profile_id}
@@ -889,12 +983,12 @@ export function AvatarsView() {
                 </SectionCard>
               )}
 
-              <CombosPanel analysis={analysis} resultNoun={term.singular} />
+              <CombosPanel analysis={scopedAnalysis} resultNoun={term.singular} />
 
-              {analysis && (analysis.demographic_registration_signal ?? []).length > 0 && (
+              {scopedAnalysis && (scopedAnalysis.demographic_registration_signal ?? []).length > 0 && (
                 <SectionCard title="Audience signal" desc="Age × gender · CVR heatmap · click row to explore">
                   <DemographicTable
-                    rows={analysis.demographic_registration_signal ?? []}
+                    rows={scopedAnalysis.demographic_registration_signal ?? []}
                     heatmap={true}
                     onSegmentClick={(seg) => setAudienceSegment(seg)}
                   />
@@ -902,12 +996,12 @@ export function AvatarsView() {
               )}
             </div>
 
-            {analysis && (
+            {scopedAnalysis && (
               <SegmentDrilldownModal
                 open={audienceSegment != null}
                 onClose={() => setAudienceSegment(null)}
                 segment={audienceSegment}
-                analysis={analysis}
+                analysis={scopedAnalysis}
                 cellIds={null}
                 kicker="Audience signal"
               />
