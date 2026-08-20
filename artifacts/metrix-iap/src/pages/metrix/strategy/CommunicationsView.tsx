@@ -5,28 +5,31 @@
 //      high-evidence pillars claim visual dominance instantly (emerald / amber / neutral)
 //   2. ACTIONABILITY FIRST: "What works" (variable signals) leads the body —
 //      these are the actual creative levers. "Who responds" is context.
-//   3. PROGRESSIVE DISCLOSURE: pillar title + descriptor always visible;
-//      "Why it matters" shows one line + expands; hypotheses collapse to a badge strip
+//   3. PROGRESSIVE DISCLOSURE: the card face is a scannable summary only
+//      (title, descriptor, confidence bar, variable chips, ICP chips) —
+//      the full prose ("why it matters", message resonance, funnel/
+//      execution/placement/scaling detail, every testing hypothesis)
+//      lives one click away in the deep-dive slide-over panel (same
+//      right-side panel the MST tiles use — see lib/data/deepDive.ts's
+//      buildPillarDeepDiveModule), never inline on the page.
 //   4. SCANNABILITY: index number + main title + confidence bar readable in 300 ms
 //      without drilling in. Cards lay out on a responsive grid (canvas parity),
 //      not a single-column list.
 
-import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
-  SectionCard, SectionInfoIcon, ConfidenceBadge, deriveLabel, useShowMore, ShowMoreButton,
+  SectionCard, SectionInfoIcon, ConfidenceBadge, useShowMore, ShowMoreButton,
 } from "../shared";
 import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
-import {
-  VariableStackChips, IcpChips, HypothesisLabel,
-  HypothesisStatusBadge, pillarHasDetails, PillarDetailsFold, pillarTier,
-} from "./strategyShared";
-import type { StrategyData } from "@/lib/data/seedTypes";
-import { MessageSquare, Users, Lightbulb, FlaskConical, ChevronDown } from "lucide-react";
+import { VariableStackChips, IcpChips, pillarTier } from "./strategyShared";
+import { useDeepDive } from "@/contexts/DeepDiveContext";
+import { buildPillarDeepDiveModule } from "@/lib/data/deepDive";
+import type { MessagePillar, StrategyData } from "@/lib/data/seedTypes";
+import { MessageSquare, Users, ArrowRight } from "lucide-react";
 
 const SECTION = "Strategy · 04";
 
@@ -80,94 +83,111 @@ function ConfidenceBar({ cells }: { cells: string[] }) {
   );
 }
 
-// ─── "Why it matters" — 1-line visible, full text expandable ─────────────────
+// ─── Pillar card — scannable summary only ─────────────────────────────────────
+// Full prose ("why it matters", message resonance, funnel/execution/
+// placement/scaling sections, and every testing hypothesis) lives behind
+// the deep-dive panel now — the card face keeps only what reads in
+// ~300ms: title, descriptor, confidence, the variable levers, and who
+// responds. Clicking anywhere on the card pushes the pillar's full module
+// into the same right slide-over the MST tiles use.
 
-function WhyBlock({
-  whyText,
-  resonance,
-}: {
-  whyText: string | undefined;
-  resonance: string | undefined;
-}) {
-  const [open, setOpen] = useState(false);
-  if (!whyText) return null;
-  const preview = deriveLabel(whyText, 100);
-  const isTruncated = preview.length < whyText.length || Boolean(resonance);
+function PillarCard({ pillar, index, strategy }: { pillar: MessagePillar; index: number; strategy: StrategyData }) {
+  const deepDive = useDeepDive();
+  const targetIcps = pillar.target_icps ?? [];
+  const matchedProfiles = targetIcps
+    .map((id) => strategy.icp_profiles?.find((pr) => pr.profile_id === id))
+    .filter((pr): pr is NonNullable<typeof pr> => Boolean(pr));
+  const hypotheses = strategy.active_hypotheses.filter((h) => h.pillar_id === pillar.id);
+  const bestConfidence = matchedProfiles.map((pr) => pr.confidence_level).find(Boolean);
+  const tier = pillarTier(pillar.source_cells ?? []);
+
+  const open = () => {
+    if (!deepDive.enabled) return;
+    deepDive.push(buildPillarDeepDiveModule({ pillar, hypotheses, profiles: strategy.icp_profiles }));
+  };
+
   return (
-    <div>
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <Lightbulb className="w-3 h-3 text-amber-300/60 shrink-0" />
-        <span className={cn(TYPE.label, "text-muted-foreground/60")}>Why it matters</span>
-      </div>
-      <p className={cn(TYPE.body, "text-foreground/75 leading-relaxed", !open && "line-clamp-2")}>
-        {whyText}
-      </p>
-      {resonance && open && (
-        <div className="mt-2 rounded-lg bg-white/[0.025] border border-border/20 p-2.5">
-          <p className={cn(TYPE.label, "text-muted-foreground/50 mb-0.5")}>Message resonance</p>
-          <p className={cn(TYPE.body, "text-foreground/70 leading-relaxed")}>{resonance}</p>
-        </div>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }}
+      aria-label={`Open the deep dive for ${pillar.label}`}
+      data-testid={`pillar-card-${pillar.id}`}
+      className={cn(
+        "text-left rounded-xl border border-border/40 bg-white/[0.02] overflow-hidden flex flex-col h-full cursor-pointer",
+        "transition-colors hover:border-border/60 hover:bg-white/[0.03]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+        TIER_ACCENT[tier]
       )}
-      {isTruncated && (
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className={cn(
-            TYPE.label,
-            "inline-flex items-center gap-1 mt-1.5 text-interactive/70 hover:text-interactive transition-colors"
-          )}
-        >
-          <ChevronDown className={cn("w-3 h-3 transition-transform shrink-0", open && "rotate-180")} />
-          {open ? "Show less" : "Read more"}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ─── Hypothesis badge strip ───────────────────────────────────────────────────
-
-function HypothesesStrip({
-  hypotheses,
-}: {
-  hypotheses: Array<{ id: string; label: string; status: string; isolated_variable?: string | null }>;
-}) {
-  const [open, setOpen] = useState(false);
-  if (hypotheses.length === 0) return null;
-  const preview = hypotheses.slice(0, 3);
-  const rest = hypotheses.slice(3);
-  return (
-    <div className="pt-3 border-t border-border/20">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex items-center gap-1.5 mb-2 group"
-      >
-        <FlaskConical className="w-3 h-3 text-interactive/60 shrink-0" />
-        <span className={cn(TYPE.label, "text-muted-foreground/60 group-hover:text-muted-foreground/80 transition-colors")}>
-          {hypotheses.length} testing hypothes{hypotheses.length !== 1 ? "es" : "is"}
+    >
+      {/* ── Pillar header ── */}
+      <div className="px-4 pt-4 pb-3 flex items-start gap-3 border-b border-border/15">
+        {/* Index number */}
+        <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 mt-0.5 w-5 text-right shrink-0")}>
+          {String(index + 1).padStart(2, "0")}
         </span>
-        <ChevronDown className={cn("w-3 h-3 text-muted-foreground/40 transition-transform shrink-0", open && "rotate-180")} />
-      </button>
 
-      {/* Preview: first 3 always visible when open or as badge strip */}
-      {open && (
-        <div className="space-y-2">
-          {(rest.length > 0 ? hypotheses : preview).map((h) => (
-            <div key={h.id} className="flex items-start gap-2 pl-0.5">
-              <HypothesisStatusBadge status={h.status} />
-              <HypothesisLabel label={h.label} isolated={h.isolated_variable} />
-            </div>
-          ))}
-          {!open && rest.length > 0 && (
-            <p className={cn(TYPE.label, "text-muted-foreground/40 pl-0.5")}>
-              +{rest.length} more
+        {/* Title block */}
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-bold text-foreground leading-snug line-clamp-2">
+            {pillar.label}
+          </p>
+          {pillar.plain_descriptor && (
+            <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-1 leading-relaxed line-clamp-2")}>
+              {pillar.plain_descriptor}
             </p>
           )}
         </div>
-      )}
+      </div>
+
+      {/* ── Body — summary only, full detail lives in the deep-dive panel ── */}
+      <div className="px-4 py-3.5 space-y-3.5 flex-1 flex flex-col">
+
+        {/* Confidence — bar-with-fill, same real source_cells-derived tier. */}
+        <ConfidenceBar cells={pillar.source_cells ?? []} />
+
+        {/* What works — variable signals — LEADS because it's the actionable creative lever */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-2">
+            <MessageSquare className="w-3 h-3 text-interactive/70 shrink-0" />
+            <span className={cn(TYPE.label, "text-muted-foreground/65 font-semibold uppercase tracking-wide text-label")}>
+              What works
+            </span>
+          </div>
+          <VariableStackChips stack={pillar.variable_stack} />
+        </div>
+
+        {/* Who responds — ICP context */}
+        {(matchedProfiles.length > 0 || targetIcps.length > 0) && (
+          <div>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-1.5">
+                <Users className="w-3 h-3 text-interactive/60 shrink-0" />
+                <span className={cn(TYPE.label, "text-muted-foreground/55 font-semibold uppercase tracking-wide text-label")}>
+                  Who responds
+                </span>
+              </div>
+              {bestConfidence && <ConfidenceBadge value={bestConfidence} />}
+            </div>
+            {targetIcps.length > 0 ? (
+              <IcpChips ids={targetIcps} profiles={strategy.icp_profiles} maxVisible={3} />
+            ) : (
+              <p className={cn(TYPE.caption, "text-muted-foreground/40 italic")}>No ICP linked yet</p>
+            )}
+          </div>
+        )}
+
+        {/* Footer — hint that there's more, never the prose itself */}
+        <div className="mt-auto pt-3 border-t border-border/20 flex items-center justify-between gap-2">
+          <span className={cn(TYPE.label, "text-muted-foreground/50")}>
+            {hypotheses.length > 0 ? `${hypotheses.length} testing hypothes${hypotheses.length !== 1 ? "es" : "is"}` : "No hypotheses yet"}
+          </span>
+          <span className={cn(TYPE.label, "inline-flex items-center gap-1 text-interactive/70")}>
+            Full detail <ArrowRight className="w-3 h-3" aria-hidden />
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -179,101 +199,9 @@ function PillarList({ strategy }: { strategy: StrategyData }) {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
-        {fold.visible.map((p, i) => {
-          const targetIcps = p.target_icps ?? [];
-          const matchedProfiles = targetIcps
-            .map((id) => strategy.icp_profiles?.find((pr) => pr.profile_id === id))
-            .filter((pr): pr is NonNullable<typeof pr> => Boolean(pr));
-          const hypotheses = strategy.active_hypotheses.filter((h) => h.pillar_id === p.id);
-          const bestConfidence = matchedProfiles.map((pr) => pr.confidence_level).find(Boolean);
-          const messageResonance = matchedProfiles.map((pr) => pr.message_resonance).find(Boolean);
-          const tier = pillarTier(p.source_cells ?? []);
-
-          return (
-            <div
-              key={p.id}
-              className={cn(
-                "rounded-xl border border-border/40 bg-white/[0.02] overflow-hidden flex flex-col h-full",
-                TIER_ACCENT[tier]
-              )}
-            >
-              {/* ── Pillar header ── */}
-              <div className="px-4 pt-4 pb-3 flex items-start gap-3 border-b border-border/15">
-                {/* Index number */}
-                <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 mt-0.5 w-5 text-right shrink-0")}>
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-
-                {/* Title block */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-base font-bold text-foreground leading-snug line-clamp-2">
-                    {p.label}
-                  </p>
-                  {p.plain_descriptor && (
-                    <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-1 leading-relaxed line-clamp-2")}>
-                      {p.plain_descriptor}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* ── Body ── */}
-              <div className="px-4 py-3.5 space-y-4 flex-1 flex flex-col">
-
-                {/* Confidence — bar-with-fill, replaces the categorical badge that
-                    used to sit in the header; same real source_cells-derived tier. */}
-                <ConfidenceBar cells={p.source_cells ?? []} />
-
-                {/* What works — variable signals — LEADS because it's the actionable creative lever */}
-                <div>
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <MessageSquare className="w-3 h-3 text-interactive/70 shrink-0" />
-                    <span className={cn(TYPE.label, "text-muted-foreground/65 font-semibold uppercase tracking-wide text-label")}>
-                      What works
-                    </span>
-                  </div>
-                  <VariableStackChips stack={p.variable_stack} />
-                </div>
-
-                {/* Who responds — ICP context */}
-                {(matchedProfiles.length > 0 || targetIcps.length > 0) && (
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <Users className="w-3 h-3 text-interactive/60 shrink-0" />
-                        <span className={cn(TYPE.label, "text-muted-foreground/55 font-semibold uppercase tracking-wide text-label")}>
-                          Who responds
-                        </span>
-                      </div>
-                      {bestConfidence && <ConfidenceBadge value={bestConfidence} />}
-                    </div>
-                    {targetIcps.length > 0 ? (
-                      <IcpChips ids={targetIcps} profiles={strategy.icp_profiles} maxVisible={3} />
-                    ) : (
-                      <p className={cn(TYPE.caption, "text-muted-foreground/40 italic")}>No ICP linked yet</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Why it matters — strategic rationale, 1 line visible + expand */}
-                <WhyBlock
-                  whyText={p.why_it_matters}
-                  resonance={messageResonance}
-                />
-
-                {/* Pillar detail sections — folded behind "Pillar details" */}
-                {pillarHasDetails(p) && (
-                  <div className="pt-1 border-t border-border/15">
-                    <PillarDetailsFold pillar={p} profiles={strategy.icp_profiles} />
-                  </div>
-                )}
-
-                {/* Hypothesis strip — badge only, progressive disclosure */}
-                <HypothesesStrip hypotheses={hypotheses} />
-              </div>
-            </div>
-          );
-        })}
+        {fold.visible.map((p, i) => (
+          <PillarCard key={p.id} pillar={p} index={i} strategy={strategy} />
+        ))}
       </div>
       <ShowMoreButton
         total={strategy.message_pillars.length}

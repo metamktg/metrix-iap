@@ -7,15 +7,16 @@ import { useState } from "react";
 import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS, resolveInlineVariableCodes } from "@/lib/variable-registry";
-import { ConfidenceBadge, DetailReveal, deriveLabel } from "../shared";
+import { ConfidenceBadge, DetailReveal, deriveLabel, useShowMore, ShowMoreButton } from "../shared";
 import {
   parseHierarchyRef, formatHierarchyRef, fmtMetric, extractVariableCodes, compactIcpName,
   type HierarchyRef,
 } from "@/lib/normalize";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
-import { Funnel, Wrench, LayoutGrid, TrendingUp, Users, ArrowUpRight, Ban, FlaskConical, Search, Sparkles, ChevronDown } from "lucide-react";
+import { Funnel, Wrench, LayoutGrid, TrendingUp, Users, ArrowUpRight, Ban, FlaskConical, Search, Sparkles, ChevronDown, Dna } from "lucide-react";
 import type { MessagePillar, ICPProfile, VariableCombination, ScalingPlaybook } from "@/lib/data/seedTypes";
+import type { DnaVariable } from "@/lib/creative-dna";
 
 // ─── Variable families ────────────────────────────────────────────────
 
@@ -525,6 +526,208 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
           />
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Persona identity ──────────────────────────────────────────────────
+// Canvas "Strategy · ICP" card treatment: an initials medallion with a
+// stable per-identity hue (hashed from the name, so identity reads
+// consistently across sorts, sessions and — now that avatar tiles and ICP
+// cards live on separate pages — across routes too). Pure presentation,
+// no data invented. Shared by the MST matrix-avatar cards and the
+// Strategy ICP profile cards for one consistent identity block.
+
+export function personaHue(name: string): number {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
+  return h;
+}
+
+export function personaInitials(name: string): string {
+  return name
+    .replace(/^The\s+/i, "")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+export function PersonaAvatar({ name, size = 48 }: { name: string; size?: number }) {
+  const h = personaHue(name);
+  return (
+    <span
+      aria-hidden="true"
+      data-testid="persona-avatar"
+      className="flex items-center justify-center rounded-full shrink-0 font-semibold text-callout"
+      style={{
+        width: size,
+        height: size,
+        background: `linear-gradient(155deg, hsl(${h} 42% 24%), hsl(${(h + 40) % 360} 36% 14%))`,
+        color: `hsl(${h} 70% 82%)`,
+      }}
+    >
+      {personaInitials(name)}
+    </span>
+  );
+}
+
+// ─── Stat grid ───────────────────────────────────────────────────────
+// Canvas card-face metric treatment: a hairline-divided grid of small
+// kicker+value cells (not the old boxed "Performance panel" + pill list).
+// One real fix in one place — every avatar/ICP/segment card composes the
+// same grid instead of each hand-rolling its own metric block.
+
+export interface StatCell {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}
+
+export function StatGrid({ cells, cols }: { cells: StatCell[]; cols?: number }) {
+  if (cells.length === 0) return null;
+  return (
+    <div
+      className="grid gap-px rounded-lg border border-border/35 bg-border/25 overflow-hidden"
+      style={{ gridTemplateColumns: `repeat(${cols ?? cells.length}, minmax(0, 1fr))` }}
+    >
+      {cells.map((c, i) => (
+        <div key={i} className="bg-card px-2 py-1.5 text-center min-w-0">
+          <div className={cn(TYPE.microLabel, "text-muted-foreground/45 truncate")}>{c.label}</div>
+          <div className={cn("text-body font-semibold tabular-nums mt-0.5 truncate", c.valueClassName ?? "text-foreground/90")}>
+            {c.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Disclosure toggle ─────────────────────────────────────────────────
+// Canvas convention: chevron + label, rotating open. Every fold on the
+// Avatar/ICP surfaces (creative DNA, placements, copy approach, profile
+// theory, message→ICP coverage) composes from this one trigger instead of
+// each accordion hand-rolling its own button markup.
+
+export function AccordionToggle({
+  label, open, onToggle, icon: Icon,
+}: {
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+  icon?: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
+    >
+      {Icon && <Icon className="w-3.5 h-3.5" />}
+      {label}
+      <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} aria-hidden />
+    </button>
+  );
+}
+
+// ─── DNA chip strip ───────────────────────────────────────────────────
+// Shared by MST matrix-avatar cards (their own measured variables) and
+// Strategy ICP profile cards (variables merged in from the avatars that
+// target that profile) — one rendering for "which variables moved this
+// identity's results."
+
+export function DnaChipStrip({ variables, label, testId }: { variables: DnaVariable[]; label: string; testId: string }) {
+  const [expanded, setExpanded] = useState(false);
+  if (variables.length === 0) return null;
+  const visible = expanded ? variables : variables.slice(0, 3);
+  const overflow = variables.length - 3;
+  return (
+    <div data-testid={testId}>
+      <div className="flex items-center gap-1 mb-1.5">
+        <Dna className="w-3.5 h-3.5 text-interactive/70" />
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{label}</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+        {visible.map((v) => (
+          <VariableChip key={v.code} code={v.code} showCode={false} />
+        ))}
+        {!expanded && overflow > 0 && (
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="rounded-full border border-border/40 bg-white/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
+          >
+            +{overflow} more
+          </button>
+        )}
+        {expanded && variables.length > 3 && (
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className="rounded-full border border-border/40 bg-white/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
+          >
+            − less
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Folded grid / list wrappers ──────────────────────────────────────
+// Cognitive-load cap for unbounded card lists: first `limit` items visible
+// until an explicit "Show all …" toggle. Shared by every card grid across
+// the Avatars/ICP and MST-overview surfaces.
+
+export function FoldedGrid<T>({
+  items, limit, noun, gridClassName, renderItem,
+}: {
+  items: T[];
+  limit: number;
+  noun: string;
+  gridClassName: string;
+  renderItem: (item: T, index: number) => React.ReactNode;
+}) {
+  const fold = useShowMore(items, limit);
+  return (
+    <>
+      <div className={gridClassName}>
+        {fold.visible.map((item, i) => renderItem(item, i))}
+      </div>
+      <ShowMoreButton
+        total={items.length}
+        hiddenCount={fold.hiddenCount}
+        expanded={fold.expanded}
+        onToggle={fold.toggle}
+        noun={noun}
+      />
+    </>
+  );
+}
+
+export function FoldedList<T>({
+  items, limit, noun, listClassName, renderItem,
+}: {
+  items: T[];
+  limit: number;
+  noun: string;
+  listClassName: string;
+  renderItem: (item: T, index: number) => React.ReactNode;
+}) {
+  const fold = useShowMore(items, limit);
+  return (
+    <div className={listClassName}>
+      {fold.visible.map((item, i) => renderItem(item, i))}
+      <ShowMoreButton
+        total={items.length}
+        hiddenCount={fold.hiddenCount}
+        expanded={fold.expanded}
+        onToggle={fold.toggle}
+        noun={noun}
+      />
     </div>
   );
 }

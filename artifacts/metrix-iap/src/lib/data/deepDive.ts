@@ -14,8 +14,9 @@
 // offered because the import's aggregates are pre-bucketed per dimension
 // (a placement-within-concept number does not exist in this data).
 
-import type { AnalysisData, CellPerformanceRow } from "./seedTypes";
+import type { ActiveHypothesis, AnalysisData, CellPerformanceRow, ICPProfile, MessagePillar, MST, MSTMatrixCell } from "./seedTypes";
 import type { MetricDef } from "./metricsCatalog";
+import type { TrayItemInput } from "./trayStore";
 import {
   buildAccountBreakdown,
   dimensionMetricRestriction,
@@ -25,6 +26,10 @@ import {
   type BreakdownRow,
   type BreakdownDimension,
 } from "./kpiBreakdown";
+import { cardFromCell, cardFromMatrixCell } from "../creative-assembly";
+import type { CardAssemblyOpts } from "../creative-assembly";
+import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
+import { pillarTier, pillarHasDetails } from "@/pages/metrix/strategy/strategyShared";
 
 // ─── Module shape ─────────────────────────────────────────────────────
 
@@ -45,10 +50,45 @@ export interface DeepDiveRankedRow extends BreakdownRow {
   current?: boolean;
 }
 
+/** One step of a real, backed conversion path (never a fabricated zero step). */
+export interface DeepDiveFunnelStep {
+  label: string;
+  value: number;
+  formatted: string;
+  /** % of the immediately preceding step; null for the first step or when the prior step's total was 0. */
+  pctOfPrior: number | null;
+}
+
+/** Actions rendered by the panel chrome, not hand-rolled per caller — the
+ *  panel imports the one real component for each kind (AddToTrayButton,
+ *  AdsManagerButton, CrossLink, SegmentDrilldownButton). */
+export type DeepDiveAction =
+  | { kind: "tray"; id: string; scopeId: string; item: TrayItemInput }
+  | { kind: "ads_manager"; id: string; metaAdId: string | null; adAccountId: string | null }
+  | { kind: "link"; id: string; label: string; href: string }
+  | { kind: "callback"; id: string; label: string; onClick: () => void };
+
+/** Flattened hypothesis for the deep-dive panel's hypotheses block. */
+export interface DeepDiveHypothesisItem {
+  id: string;
+  label: string;
+  status: string;
+  isolated?: string | null;
+}
+
 export type DeepDiveBlock =
   | { kind: "stats"; title: string; stats: DeepDiveStat[] }
   | { kind: "ranked"; title: string; metricLabel: string; rows: DeepDiveRankedRow[] }
-  | { kind: "note"; text: string };
+  | { kind: "variables"; title: string; codes: string[] }
+  | { kind: "funnel"; title: string; steps: DeepDiveFunnelStep[] }
+  | { kind: "actions"; actions: DeepDiveAction[] }
+  /** Full pillar detail sections (funnel/execution/placement/scaling/target
+   *  ICPs) — renders via the existing PillarDetailSections component, not a
+   *  re-implementation of it. */
+  | { kind: "pillar_details"; pillar: MessagePillar; profiles?: ICPProfile[] }
+  | { kind: "hypotheses"; title: string; items: DeepDiveHypothesisItem[] }
+  /** Optional heading above the prose — omitted renders a bare paragraph. */
+  | { kind: "note"; title?: string; text: string };
 
 export interface DeepDiveModule {
   /** Stable id for breadcrumb keys (dimension + segment). */
@@ -153,4 +193,251 @@ export function buildSegmentModule(input: SegmentModuleInput): DeepDiveModule {
 /** Resolve a dimension descriptor by id from the account's live dimension list. */
 export function findDimension(analysis: AnalysisData | null | undefined, dimensionId: string): BreakdownDimension | null {
   return listBreakdownDimensions(analysis).find((d) => d.id === dimensionId) ?? null;
+}
+
+// ─── MST cell module builder ───────────────────────────────────────────
+// Replaces the old TilePerformanceModal pop-up: every MST tile (Sprints
+// matrix, Crossmap Results) pushes this module instead of opening a
+// separate dialog. Same honesty rules as the modal it replaces — cells
+// that never ran get an explicit "not run" note instead of fabricated
+// zeros, and the ecommerce-only downstream funnel (add-to-cart/checkout/
+// purchase) only appears when the source export actually carries it for
+// this cell; otherwise the funnel stops at the last real step with a
+// note, never a guessed one. ROAS is never computed — no purchase-value
+// field exists anywhere in the seed schema, so it always renders n/a
+// with an honest reason rather than being silently omitted.
+
+export interface CellDeepDiveInput extends CardAssemblyOpts {
+  cellId: string;
+  /** Planned matrix cell, when the tile came from the 4×4 matrix. */
+  matrixCell?: MSTMatrixCell | null;
+  analysis: AnalysisData | null;
+  mst: MST | null;
+  /** Ad account id used as the task-tray scope; omitted hides "Add to Tray". */
+  trayScopeId?: string | null;
+  /** Wires the "Avatar × placement" segment drill-down; omitted hides the action. */
+  onOpenSegments?: () => void;
+}
+
+const DOWNSTREAM_FUNNEL_FIELDS: Array<{ key: "adds_to_cart" | "checkouts_initiated" | "purchases"; label: string }> = [
+  { key: "adds_to_cart", label: "Adds to cart" },
+  { key: "checkouts_initiated", label: "Checkouts initiated" },
+  { key: "purchases", label: "Purchases" },
+];
+
+export function buildCellDeepDiveModule(input: CellDeepDiveInput): DeepDiveModule {
+  const { cellId, matrixCell, analysis, mst, trayScopeId, onOpenSegments, ...cardOpts } = input;
+  const perf = (analysis?.performance_by_cell ?? []).filter((r) => r.cell_id === cellId);
+  const ran = perf.length > 0;
+
+  const card = matrixCell
+    ? cardFromMatrixCell(matrixCell, { ...cardOpts, perfRows: analysis?.performance_by_cell, mst })
+    : cardFromCell(cellId, { ...cardOpts, perfRows: analysis?.performance_by_cell, mst });
+
+  const blocks: DeepDiveBlock[] = [];
+
+  if (!ran) {
+    blocks.push({
+      kind: "note",
+      text:
+        `This tile never ran — no performance rows exist for ${cellId} in this import. It's a planned matrix ` +
+        `cell without observed spend; numbers appear here once it runs.`,
+    });
+  } else {
+    const totals = {
+      spend: perf.reduce((n, r) => n + r["Amount spent (USD)"], 0),
+      results: perf.reduce((n, r) => n + r.Results, 0),
+      impressions: perf.reduce((n, r) => n + r.Impressions, 0),
+      linkClicks: perf.reduce((n, r) => n + r["Link clicks"], 0),
+      reach: perf.reduce((n, r) => Math.max(n, r.Reach), 0),
+    };
+
+    blocks.push({
+      kind: "stats",
+      title: "Performance",
+      stats: [
+        { metricId: "spend", label: "Spend", value: fmtUSD(totals.spend, 0) },
+        {
+          metricId: "results",
+          label: "Results",
+          value: fmtNum(totals.results),
+          note: perf.length > 1 ? `${perf.length} result types` : perf[0]?.["Result type"],
+        },
+        {
+          metricId: "cpa",
+          label: "Cost / result",
+          value: totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "n/a",
+          ...(totals.results > 0 ? {} : { note: "No completed results to divide spend by." }),
+        },
+        { metricId: "reach", label: "Reach", value: fmtNum(totals.reach) },
+        {
+          metricId: "roas",
+          label: "ROAS",
+          value: "n/a",
+          note: "No purchase-value field exists anywhere in this account's data — ROAS is never fabricated as a number.",
+        },
+        {
+          metricId: "mapping_confidence",
+          label: "Mapping confidence",
+          value: card.mappingConfidence ?? "n/a",
+          ...(card.mappingConfidence ? {} : { note: "No QA mapping confidence recorded for this cell's creative match." }),
+        },
+      ],
+    });
+
+    // Step-conversion path: impressions → link clicks are always real once
+    // the cell ran; downstream ecommerce steps only append while the
+    // source export actually carries the field for at least one row —
+    // the moment one is missing, later steps stop rather than guess.
+    const steps: DeepDiveFunnelStep[] = [
+      { label: "Impressions", value: totals.impressions, formatted: fmtNum(totals.impressions), pctOfPrior: null },
+      {
+        label: "Link clicks",
+        value: totals.linkClicks,
+        formatted: fmtNum(totals.linkClicks),
+        pctOfPrior: totals.impressions > 0 ? (totals.linkClicks / totals.impressions) * 100 : null,
+      },
+    ];
+    let priorValue = totals.linkClicks;
+    let omittedNote: string | null = null;
+    for (const { key, label } of DOWNSTREAM_FUNNEL_FIELDS) {
+      const backed = perf.filter((r) => r[key] != null);
+      if (backed.length === 0) {
+        omittedNote =
+          "Downstream funnel steps (add-to-cart / checkout / purchase) aren't in this import for this cell — " +
+          "shown only when the source export actually carries them, never fabricated as zero.";
+        break;
+      }
+      const value = backed.reduce((n, r) => n + (r[key] ?? 0), 0);
+      steps.push({
+        label,
+        value,
+        formatted: fmtNum(value),
+        pctOfPrior: priorValue > 0 ? (value / priorValue) * 100 : null,
+      });
+      priorValue = value;
+    }
+    blocks.push({ kind: "funnel", title: "Conversion path", steps });
+    if (omittedNote) blocks.push({ kind: "note", text: omittedNote });
+  }
+
+  // Variable stack — the row's own HK_/TN_/FW_/CN_/PR_/CTA_/ST_/AW_/HP_
+  // codes, reusing the same extraction the hypothesis chips use rather
+  // than hand-rolling a second parser.
+  if (card.tags.length > 0) {
+    blocks.push({ kind: "variables", title: "Variable stack", codes: card.tags });
+  }
+
+  if (card.iapRead) blocks.push({ kind: "note", text: card.iapRead });
+  if (matrixCell?.plain_text?.primary) blocks.push({ kind: "note", text: matrixCell.plain_text.primary });
+
+  // Actions — same real affordances the tile/old modal supported, plus
+  // Add to Tray (the app's standard actionable-item affordance).
+  const actions: DeepDiveAction[] = [
+    { kind: "ads_manager", id: "ads-manager", metaAdId: card.metaAdId ?? null, adAccountId: card.adAccountId ?? null },
+  ];
+  if (trayScopeId) {
+    actions.push({
+      kind: "tray",
+      id: "tray",
+      scopeId: trayScopeId,
+      item: { id: `mst-cell:${cellId}`, kind: "signal", title: card.title, sub: cellId, href: "/app/analysis/library?focus=" + cellId },
+    });
+  }
+  if (ran && onOpenSegments) {
+    actions.push({ kind: "callback", id: "segments", label: "Avatar × placement", onClick: onOpenSegments });
+  }
+  actions.push({ kind: "link", id: "library", label: "Open in IAP Library", href: `/app/analysis/library?focus=${cellId}` });
+  blocks.push({ kind: "actions", actions });
+
+  const diagNote =
+    matrixCell?.diagonal_role === "diag_down" ? " · Primary diagonal ↘"
+    : matrixCell?.diagonal_role === "diag_up" ? " · Counter diagonal ↗"
+    : "";
+
+  return {
+    id: `cell:${cellId}`,
+    kicker: `MST tile · ${cellId}${diagNote}`,
+    title: card.title,
+    subtitle: matrixCell ? `${matrixCell.column_label} × ${matrixCell.row_shared_variable}` : undefined,
+    blocks,
+  };
+}
+
+// ─── Message pillar module builder ─────────────────────────────────────
+// Replaces the always-inline, always-expanded pillar prose on the
+// Communications page: the card face keeps only a scannable summary, and
+// this module carries the full detail (why it matters, message
+// resonance, funnel/execution/placement/scaling sections, target ICPs,
+// and every testing hypothesis) into the same slide-over the MST tiles
+// use. Pure data in, pure data out — reuses pillarTier/pillarHasDetails
+// rather than re-deriving the evidence tier a second time.
+
+const PILLAR_TIER_LABEL: Record<"high" | "medium" | "low", string> = {
+  high: "High evidence",
+  medium: "Some evidence",
+  low: "Low evidence",
+};
+
+export interface PillarDeepDiveInput {
+  pillar: MessagePillar;
+  /** Active hypotheses already filtered to this pillar (pillar_id match). */
+  hypotheses: ActiveHypothesis[];
+  profiles?: ICPProfile[];
+}
+
+export function buildPillarDeepDiveModule(input: PillarDeepDiveInput): DeepDiveModule {
+  const { pillar, hypotheses, profiles } = input;
+  const sourceCells = pillar.source_cells ?? [];
+  const targetIcps = pillar.target_icps ?? [];
+  const tier = pillarTier(sourceCells);
+  const matchedProfiles = targetIcps
+    .map((id) => profiles?.find((pr) => pr.profile_id === id))
+    .filter((pr): pr is ICPProfile => Boolean(pr));
+  const messageResonance = matchedProfiles.map((pr) => pr.message_resonance).find(Boolean);
+
+  const blocks: DeepDiveBlock[] = [
+    {
+      kind: "stats",
+      title: "Evidence",
+      stats: [
+        {
+          metricId: "confidence",
+          label: "Confidence",
+          value: PILLAR_TIER_LABEL[tier],
+          note: `${sourceCells.length} source cell${sourceCells.length !== 1 ? "s" : ""} behind this pillar`,
+        },
+        { metricId: "hypotheses", label: "Hypotheses", value: String(hypotheses.length) },
+        { metricId: "targets", label: "Target ICPs", value: String(targetIcps.length) },
+      ],
+    },
+  ];
+
+  const variableCodes = Object.values(pillar.variable_stack ?? {}).filter((v): v is string => Boolean(v));
+  if (variableCodes.length > 0) {
+    blocks.push({ kind: "variables", title: "What works", codes: variableCodes });
+  }
+
+  if (pillar.why_it_matters) blocks.push({ kind: "note", title: "Why it matters", text: pillar.why_it_matters });
+  if (messageResonance) blocks.push({ kind: "note", title: "Message resonance", text: messageResonance });
+
+  if (pillarHasDetails(pillar)) {
+    blocks.push({ kind: "pillar_details", pillar, profiles });
+  }
+
+  if (hypotheses.length > 0) {
+    blocks.push({
+      kind: "hypotheses",
+      title: `${hypotheses.length} testing hypothes${hypotheses.length !== 1 ? "es" : "is"}`,
+      items: hypotheses.map((h) => ({ id: h.id, label: h.label, status: h.status, isolated: h.isolated_variable ?? null })),
+    });
+  }
+
+  return {
+    id: `pillar:${pillar.id}`,
+    kicker: "Message pillar",
+    title: pillar.label,
+    subtitle: pillar.plain_descriptor || undefined,
+    blocks,
+  };
 }
