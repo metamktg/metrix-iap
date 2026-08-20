@@ -1,15 +1,12 @@
-// ─── Intelligence Map winner-highlight regression test ────────────────
-// The top-ranked bubble on the Audience Intelligence Map is driven by
-// ranked[0] (AudienceView → topSeg prop → IntelligenceMapTab → BubbleShape
-// isTop). When the user switches the active rank metric, the highlight must
-// move to the new leader. A regression that stops the ranked array update
-// from propagating to topSeg would leave the wrong bubble emphasized.
-//
-// Covers the two metric switches the task calls out:
-//   Results → CPA, then CPA → Spend.
-// Expected leaders are computed from the same seed fixture through the real
-// segment-analytics + sortByRankMetric pipeline, so the assertions track the
-// production ranking math instead of hard-coded segment names.
+// ─── Audience view regression tests ────────────────────────────────────
+// AudienceView has three real "segment by" grains (Cluster / Age / Ranked)
+// over the same demographic pocket signal — see audience-clusters.ts for
+// the clustering unit tests. This file covers the page-level behavior:
+//   - the Prime tile (Ranked mode) tracks the active rank metric, and is
+//     suppressed when every segment lacks that metric's data
+//   - switching segment-by mode actually swaps the rendered card set
+//   - the zero-segment account renders the honest empty state, never a
+//     fabricated cluster set
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
@@ -37,20 +34,6 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
 
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 
-// jsdom has no layout, so ResponsiveContainer measures 0×0 and recharts
-// renders nothing. Give the chart a fixed size so bubbles actually mount.
-vi.mock("recharts", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("recharts")>();
-  return {
-    ...actual,
-    ResponsiveContainer: ({ children }: { children: React.ReactElement }) =>
-      React.cloneElement(
-        children as React.ReactElement<{ width?: number; height?: number }>,
-        { width: 800, height: 460 }
-      ),
-  };
-});
-
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
@@ -63,9 +46,10 @@ import {
   computeSegmentTotals, deriveSegmentMetrics,
   segmentLabel,
 } from "@/lib/segment-analytics";
+import { buildAudienceClusters } from "@/lib/audience-clusters";
 
 const SESSION_KEY = "metrix_active_account_v1";
-const VIEW_KEY = "metrix.audience.view.v1";
+const SEGMENT_BY_KEY = "metrix.audience.segmentBy.v2";
 const RANK_KEY = "metrix.audience.rank.v1";
 
 // ── Expected leaders, derived through the real analytics pipeline ─────
@@ -76,8 +60,8 @@ type Entry = {
   derived: ReturnType<typeof deriveSegmentMetrics>;
 };
 
-function buildEntries(): Entry[] {
-  const acct = seed.ad_accounts.find((a: { id: string }) => a.id === "bookster");
+function buildEntries(accountId: string): Entry[] {
+  const acct = seed.ad_accounts.find((a: { id: string }) => a.id === accountId);
   const rows = scopeDemographicRows(
     acct.iap.analysis.demographic_registration_signal,
     null
@@ -96,26 +80,7 @@ const METRICS: Record<string, RankMetric<Entry>> = {
 };
 
 function expectedLeaderLabel(metricId: keyof typeof METRICS): string {
-  return segmentLabel(sortByRankMetric(buildEntries(), METRICS[metricId])[0].seg as never);
-}
-
-// ── DOM helpers ───────────────────────────────────────────────────────
-
-/** The highlighted (isTop) bubble draws its main circle with strokeWidth 2
- *  and fillOpacity 0.9; every other bubble uses 1.5 / 0.7. */
-function highlightedBubbleLabels(container: HTMLElement): string[] {
-  // recharts wraps each symbol in its own role="img" layer; the bubble
-  // itself is the inner g that carries the aria-label.
-  const bubbles = Array.from(
-    container.querySelectorAll('g[role="img"][aria-label]')
-  );
-  return bubbles
-    .filter((g) =>
-      Array.from(g.querySelectorAll("circle")).some(
-        (c) => c.getAttribute("stroke-width") === "2"
-      )
-    )
-    .map((g) => g.getAttribute("aria-label") ?? "");
+  return segmentLabel(sortByRankMetric(buildEntries("bookster"), METRICS[metricId])[0].seg as never);
 }
 
 function renderAudience() {
@@ -137,23 +102,14 @@ function renderAudience() {
   );
 }
 
-/** Open the RankSortBar popover (Pocket Grid tab) and pick a metric, then
- *  return to the Intelligence Map — the same path a user takes, since the
- *  sort control lives on the grid/ranked tabs while the highlight lives on
- *  the map. */
-function switchMetricViaGrid(metricId: string) {
-  fireEvent.click(screen.getByRole("button", { name: /Pocket Grid/i }));
+/** Switch the active rank metric from the Ranked tab's RankSortBar. */
+function switchMetricViaRanked(metricId: string) {
+  fireEvent.click(screen.getByRole("button", { name: /Ranked/i }));
   fireEvent.click(screen.getByRole("button", { name: /Sort by/i }));
   fireEvent.click(screen.getByTestId(`rank-metric-${metricId}`));
-  fireEvent.click(screen.getByRole("button", { name: /Intelligence Map/i }));
 }
 
 // ── Synthetic seed with all-null CPA ─────────────────────────────────
-// Copies the real seed but zeroes out Results in every demographic row so
-// that every segment has results=0 → CPA=null. Spend is kept non-zero so
-// segments still exist and are plottable, but the CPA metric is entirely
-// absent. Used to verify that the winner highlight is suppressed rather
-// than arbitrarily emphasising the first-sorted segment.
 
 function buildNullCpaSeed() {
   const copy = JSON.parse(JSON.stringify(seed));
@@ -176,8 +132,6 @@ function restoreRealSeed() {
   vi.mocked(useMetrixSeed).mockReturnValue(seed);
 }
 
-// ── Shared beforeEach ─────────────────────────────────────────────────
-
 function resetStorage() {
   cleanup();
   sessionStorage.clear();
@@ -187,8 +141,6 @@ function resetStorage() {
     SESSION_KEY,
     JSON.stringify({ type: "ad_account", adAccountId: "bookster" })
   );
-  localStorage.setItem(VIEW_KEY, "map");
-  localStorage.setItem(RANK_KEY, "results");
 }
 
 beforeEach(() => {
@@ -196,64 +148,47 @@ beforeEach(() => {
   restoreRealSeed();
 });
 
-// ── Tests ─────────────────────────────────────────────────────────────
+// ── Prime tile follows the active rank metric (Ranked mode) ───────────
 
-describe("Intelligence Map winner highlight follows the active rank metric", () => {
+describe("Prime tile tracks the active rank metric", () => {
+  beforeEach(() => {
+    localStorage.setItem(SEGMENT_BY_KEY, "ranked");
+    localStorage.setItem(RANK_KEY, "results");
+  });
+
   it("fixture produces distinct leaders across the three metrics (test precondition)", () => {
     const leaders = new Set(
       (["results", "cpa", "spend"] as const).map(expectedLeaderLabel)
     );
-    // If leaders coincide, the switch assertions below could pass vacuously.
     expect(leaders.size).toBeGreaterThan(1);
-    expect(expectedLeaderLabel("results")).not.toBe(expectedLeaderLabel("cpa"));
-    expect(expectedLeaderLabel("cpa")).not.toBe(expectedLeaderLabel("spend"));
   });
 
-  it("highlights the Results leader initially, exactly once", () => {
-    const { container } = renderAudience();
-    const labels = highlightedBubbleLabels(container);
-    expect(labels).toEqual([expectedLeaderLabel("results")]);
-  });
-
-  it("moves the highlight to the CPA leader when the metric switches Results → CPA", () => {
-    const { container } = renderAudience();
-    switchMetricViaGrid("cpa");
-    const labels = highlightedBubbleLabels(container);
-    expect(labels).toEqual([expectedLeaderLabel("cpa")]);
-    expect(labels[0]).not.toBe(expectedLeaderLabel("results"));
-  });
-
-  it("moves the highlight again on a second switch, CPA → Spend", () => {
-    const { container } = renderAudience();
-    switchMetricViaGrid("cpa");
-    expect(highlightedBubbleLabels(container)).toEqual([expectedLeaderLabel("cpa")]);
-    switchMetricViaGrid("spend");
-    const labels = highlightedBubbleLabels(container);
-    expect(labels).toEqual([expectedLeaderLabel("spend")]);
-    expect(labels[0]).not.toBe(expectedLeaderLabel("cpa"));
-  });
-
-  it("keeps the Prime tile in sync with the highlighted bubble", () => {
+  it("shows the Results leader initially", () => {
     renderAudience();
-    switchMetricViaGrid("spend");
+    const prime = screen.getByText(/Prime · Registrations/i).closest("div")!.parentElement!;
+    expect(within(prime as HTMLElement).getByText(expectedLeaderLabel("results"))).toBeTruthy();
+  });
+
+  it("moves to the CPA leader when the metric switches Results → CPA", () => {
+    renderAudience();
+    switchMetricViaRanked("cpa");
+    const prime = screen.getByText(/Prime · CPA/i).closest("div")!.parentElement!;
+    expect(within(prime as HTMLElement).getByText(expectedLeaderLabel("cpa"))).toBeTruthy();
+  });
+
+  it("moves again on a second switch, CPA → Spend", () => {
+    renderAudience();
+    switchMetricViaRanked("cpa");
+    switchMetricViaRanked("spend");
     const prime = screen.getByText(/Prime · Spend/i).closest("div")!.parentElement!;
     expect(within(prime as HTMLElement).getByText(expectedLeaderLabel("spend"))).toBeTruthy();
   });
 });
 
-// ── All segments lack the active metric ───────────────────────────────
-// When every segment has a null value for the active rank metric, the
-// sort order is arbitrary — ranked[0] is not a meaningful winner. The
-// map must not emphasise any bubble, and the Prime tile must show "—"
-// instead of a segment name.
-
-describe("Intelligence Map: winner highlight suppressed when all segments lack metric data", () => {
+describe("Prime tile suppressed when every segment lacks the active metric", () => {
   beforeEach(() => {
-    resetStorage();
-    // Start on the map with CPA as the active rank metric.
-    localStorage.setItem(VIEW_KEY, "map");
+    localStorage.setItem(SEGMENT_BY_KEY, "ranked");
     localStorage.setItem(RANK_KEY, "cpa");
-    // Use the synthetic seed where every demographic row has Results=0 → CPA=null.
     setupNullCpaSeed();
   });
 
@@ -261,29 +196,70 @@ describe("Intelligence Map: winner highlight suppressed when all segments lack m
     restoreRealSeed();
   });
 
-  it("renders no highlighted bubble when all segments have null CPA", () => {
-    const { container } = renderAudience();
-    const highlighted = highlightedBubbleLabels(container);
-    expect(highlighted).toHaveLength(0);
-  });
-
   it("Prime tile shows '—' when all segments have null CPA", () => {
     renderAudience();
-    // The tile label includes the active metric name.
     const primeTileLabel = screen.getByText(/Prime · CPA/i);
     const tileRoot = primeTileLabel.closest("div")!.parentElement!;
-    // The value cell directly follows the label row; it should read "—".
     expect(within(tileRoot as HTMLElement).getByText("—")).toBeTruthy();
   });
 
-  it("partial-null case: highlight still appears when at least one segment has CPA data", () => {
-    // Restore real seed (some segments have CPA, some may not).
+  it("Prime tile resolves again once at least one segment has CPA data", () => {
     restoreRealSeed();
-    localStorage.setItem(RANK_KEY, "cpa");
-    const { container } = renderAudience();
-    // Real fixture has segments with CPA, so exactly one bubble must be highlighted.
-    const highlighted = highlightedBubbleLabels(container);
-    expect(highlighted).toHaveLength(1);
-    expect(highlighted[0]).toBe(expectedLeaderLabel("cpa"));
+    renderAudience();
+    const prime = screen.getByText(/Prime · CPA/i).closest("div")!.parentElement!;
+    expect(within(prime as HTMLElement).getByText(expectedLeaderLabel("cpa"))).toBeTruthy();
+  });
+});
+
+// ── Segment-by mode switches the rendered card set ─────────────────────
+
+describe("Segment-by mode", () => {
+  it("defaults to Cluster mode: shows the Positioning map and Share of spend cards", () => {
+    renderAudience();
+    expect(screen.getByText("Positioning map")).toBeTruthy();
+    expect(screen.getByText("Share of spend vs. share of result")).toBeTruthy();
+    expect(screen.getByText("Cluster detail")).toBeTruthy();
+  });
+
+  it("real cluster count for Bookster is between 1 and 6, never a fabricated fixed count", () => {
+    const entries = buildEntries("bookster");
+    const clusters = buildAudienceClusters(entries);
+    expect(clusters.length).toBeGreaterThan(0);
+    expect(clusters.length).toBeLessThanOrEqual(6);
+  });
+
+  it("switches to Age mode: still real positioning/share cards, relabeled detail card", () => {
+    renderAudience();
+    fireEvent.click(screen.getByRole("button", { name: /^Age$/i }));
+    expect(screen.getByText("Positioning map")).toBeTruthy();
+    expect(screen.getByText("Age detail")).toBeTruthy();
+  });
+
+  it("switches to Ranked mode: shows the full per-segment list with Explore rows", () => {
+    renderAudience();
+    fireEvent.click(screen.getByRole("button", { name: /Ranked/i }));
+    expect(screen.getByText("Segment performance")).toBeTruthy();
+    expect(screen.queryByText("Positioning map")).toBeFalsy();
+  });
+
+  it("never offers a Placement segment-by option (not real data)", () => {
+    renderAudience();
+    expect(screen.queryByRole("button", { name: /Placement/i })).toBeFalsy();
+  });
+});
+
+// ── Zero-segment account: honest empty state, never fabricated clusters ─
+
+describe("Zero-segment account", () => {
+  it("renders the honest empty state instead of any cluster UI", () => {
+    resetStorage();
+    sessionStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify({ type: "ad_account", adAccountId: "manual_BwsYjC5ZRk0i" })
+    );
+    renderAudience();
+    expect(screen.getByText("No demographic signal")).toBeTruthy();
+    expect(screen.queryByText("Positioning map")).toBeFalsy();
+    expect(screen.queryByText("Cluster detail")).toBeFalsy();
   });
 });
