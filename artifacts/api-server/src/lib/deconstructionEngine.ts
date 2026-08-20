@@ -1054,7 +1054,24 @@ export async function startCreativeDeconstruction(
         // can tell "threw before we counted it" from "threw after".
         let counted = false;
         try {
-          const adNames: string[] = Array.isArray(imp["ad_names"]) ? imp["ad_names"].map(String) : [];
+          // Re-read ad_names for this one import right before classifying it,
+          // rather than trusting the batch snapshot fetched at run start: the
+          // upload UI lets a user correct an import's mapping (PATCH
+          // /manual-imports/:importId) while a multi-file batch is still
+          // in flight, and this run can take minutes. Falls back to the
+          // batch snapshot if the re-read fails — never blocks the batch.
+          let adNamesRaw: unknown = imp["ad_names"];
+          try {
+            const { data: freshImport } = await supabase
+              .from("manual_imports")
+              .select("ad_names")
+              .eq("id", importId)
+              .limit(1);
+            if (freshImport?.[0]) adNamesRaw = freshImport[0]["ad_names"];
+          } catch (refreshErr) {
+            logger.warn({ accountId, runId, importId, err: refreshErr }, "Could not refresh ad_names before classification, using batch snapshot");
+          }
+          const adNames: string[] = Array.isArray(adNamesRaw) ? adNamesRaw.map(String) : [];
           const adRows = adNames.map((n) => adByName.get(n)).filter((a): a is Row => Boolean(a));
           const mediaType = supportedImageMediaType(imp["content_type"] as string | null, filename);
 
