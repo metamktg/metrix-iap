@@ -262,7 +262,7 @@ export function KpiTile({
 
 export function KpiTileRow({
   viewKey, catalog, tileCount = 4, primaryFirst = true,
-  isRefetching = false, disclosures, onTileClick,
+  isRefetching = false, disclosures, onTileClick, trendFor,
 }: {
   viewKey: string;
   catalog: MetricDef[];
@@ -273,23 +273,30 @@ export function KpiTileRow({
   /** Extra ⓘ-hover disclosure content per metric id. */
   disclosures?: Record<string, React.ReactNode>;
   onTileClick?: (metricId: string) => void;
+  /** Nocturne trend layer lookup (e.g. a "vs prior" header toggle) — omit for tiles with no trend. */
+  trendFor?: (metricId: string) => { trend: KpiTileTrend | null; spark: string | null };
 }) {
   const availableIds = useMemo(() => catalog.map((m) => m.id), [catalog]);
   const { tileMetricIds, setTileMetric } = useKpiTileMetrics(viewKey, availableIds, { tileCount });
   return (
     <>
-      {tileMetricIds.map((metricId, slotIdx) => (
-        <KpiTile
-          key={slotIdx}
-          metricId={metricId}
-          catalog={catalog}
-          isRefetching={isRefetching}
-          variant={primaryFirst && slotIdx === 0 ? "primary" : "default"}
-          onSelect={(id) => setTileMetric(slotIdx, id)}
-          onClick={onTileClick ? () => onTileClick(metricId) : undefined}
-          disclosure={disclosures?.[metricId]}
-        />
-      ))}
+      {tileMetricIds.map((metricId, slotIdx) => {
+        const { trend, spark } = trendFor?.(metricId) ?? { trend: null, spark: null };
+        return (
+          <KpiTile
+            key={slotIdx}
+            metricId={metricId}
+            catalog={catalog}
+            isRefetching={isRefetching}
+            variant={primaryFirst && slotIdx === 0 ? "primary" : "default"}
+            onSelect={(id) => setTileMetric(slotIdx, id)}
+            onClick={onTileClick ? () => onTileClick(metricId) : undefined}
+            disclosure={disclosures?.[metricId]}
+            trend={trend}
+            sparkPoints={spark}
+          />
+        );
+      })}
     </>
   );
 }
