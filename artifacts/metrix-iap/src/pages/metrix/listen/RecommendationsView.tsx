@@ -67,6 +67,7 @@ export function RecommendationsView() {
             <ModuleHeader
               section={SECTION}
               title="Recommendations"
+              accountName={acct.name}
               subtitle="Optimization loop · approval adds a manual task"
             />
             <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />

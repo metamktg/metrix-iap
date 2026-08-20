@@ -653,7 +653,7 @@ export function EngagementFunnelView() {
         if (demoRows.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Engagement Funnel" tabs="analysis" />
+              <ModuleHeader section={SECTION} title="Engagement Funnel" accountName={acct.name} tabs="analysis" />
               <PendingState
                 title="No engagement data"
                 message="Stage demographic performance CSVs and run analysis to see the engagement funnel."
@@ -669,6 +669,7 @@ export function EngagementFunnelView() {
             <ModuleHeader
               section={SECTION}
               title="Engagement Funnel"
+              accountName={acct.name}
               subtitle="Upstream engagement quality — reach, frequency, CTR all vs link — through to purchase. Sortable by any stage, any dimension."
               tabs="analysis"
             />

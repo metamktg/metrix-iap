@@ -90,7 +90,8 @@ export function AnalysisCommandCenter() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title={`${acct.name} · Analysis`}
+              title="Analysis"
+              accountName={acct.name}
               subtitle="Analyze this account's staged uploads for a chosen window. Never runs automatically — every child page reads a different slice of the same result."
               right={
                 <OverviewHeaderControls

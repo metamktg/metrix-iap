@@ -29,6 +29,7 @@ export function CreativeImportExportView() {
           <ModuleHeader
             section={SECTION}
             title="Import & Export"
+            accountName={account!.name}
             subtitle="Staged creative asset uploads for this account."
             table="manual_imports"
           />

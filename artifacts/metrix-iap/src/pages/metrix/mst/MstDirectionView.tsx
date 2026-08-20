@@ -33,6 +33,7 @@ export function MstDirectionView() {
           <ModuleHeader
             section={SECTION}
             title="Direction"
+            accountName={account!.name}
             subtitle="The Optimization Loop — turns MST results into re-weighted variables and next-sprint priorities."
           />
           <div className="px-6 py-5 space-y-4 max-w-3xl">

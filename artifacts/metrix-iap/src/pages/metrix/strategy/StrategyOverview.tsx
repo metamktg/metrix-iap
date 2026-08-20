@@ -347,7 +347,7 @@ export function StrategyOverview() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Overview" tabs="strategy" />
+              <ModuleHeader section={SECTION} title="Overview" accountName={acct.name} tabs="strategy" />
               <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass}
                 action={!hasAnalysis ? <CrossLink to="/app/analysis/overview" label="Review Analysis first" /> : undefined}
               />
@@ -436,6 +436,7 @@ export function StrategyOverview() {
             <ModuleHeader
               section={SECTION}
               title="Overview"
+              accountName={acct.name}
               subtitle="Pillar coverage · hypothesis breakdown · variable map"
               tabs="strategy"
               right={

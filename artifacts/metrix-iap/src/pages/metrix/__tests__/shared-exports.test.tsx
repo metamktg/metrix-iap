@@ -273,6 +273,21 @@ describe("shared.tsx display components — render checks (no context)", () => {
     expect(container.firstChild).not.toBeNull();
   });
 
+  it("ModuleHeader prefixes the H1 with accountName but keeps the eyebrow-dedup comparison on the bare title", () => {
+    // Regression for the account-name-prefix feature: a stage's command-center
+    // hub sets title to the bare stage name ("Strategy") while section carries
+    // the stage position ("Strategy · 04") — the eyebrow must still collapse to
+    // the full section string once accountName is added, and the account name
+    // must never leak into the eyebrow line, only the H1.
+    const { container } = render(
+      <shared.ModuleHeader section="Strategy · 04" title="Strategy" accountName="Bookster" />
+    );
+    expect(container.querySelector("h1")?.textContent).toBe("Bookster · Strategy");
+    expect(container.querySelector(".mx-section-header__eyebrow")?.textContent).toBe(
+      "Agency view · Strategy · 04"
+    );
+  });
+
   it("ModuleTabs renders non-empty output", () => {
     const { container } = render(
       <shared.ModuleTabs

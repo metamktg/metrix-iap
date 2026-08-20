@@ -131,7 +131,7 @@ export function CreativeBriefBuilderView() {
         if (!detail) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Brief Builder" subtitle="Draft briefs · production workspace" />
+              <ModuleHeader section={SECTION} title="Brief Builder" accountName={acct.name} subtitle="Draft briefs · production workspace" />
               <PendingState title="No briefs yet" message="Generate briefs from the Creative command center first." icon={FileText} action={<CrossLink to="/app/creative" label="Go to Creative" />} />
             </div>
           );
@@ -160,6 +160,7 @@ export function CreativeBriefBuilderView() {
             <ModuleHeader
               section={SECTION}
               title="Brief Builder"
+              accountName={acct.name}
               subtitle="Draft briefs · production workspace"
               table="brief_builder.draft_briefs"
               right={<CrossLink to="/app/creative" label="Back to Creative" />}

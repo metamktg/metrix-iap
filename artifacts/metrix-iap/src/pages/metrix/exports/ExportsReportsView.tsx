@@ -27,7 +27,7 @@ export function ExportsReportsView() {
         if (!reportBuilder) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Reports" />
+              <ModuleHeader section={SECTION} title="Reports" accountName={acct.name} />
               <PendingState title="No report configuration yet" message="Set up reporting for this account first." icon={FileText} />
             </div>
           );
@@ -38,6 +38,7 @@ export function ExportsReportsView() {
             <ModuleHeader
               section={SECTION}
               title="Reports"
+              accountName={acct.name}
               subtitle="Reports already export as real files — download them from Report History."
               table="export_formats, report_history"
             />

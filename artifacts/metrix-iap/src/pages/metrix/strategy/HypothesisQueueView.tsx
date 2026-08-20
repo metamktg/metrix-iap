@@ -153,7 +153,7 @@ export function HypothesisQueueView() {
         if (!s) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Hypothesis Queue" tabs="strategy" />
+              <ModuleHeader section={SECTION} title="Hypothesis Queue" accountName={acct.name} tabs="strategy" />
               <PendingState title="Strategy pending" message="No strategy has been derived for this account yet."
                 action={<CrossLink to="/app/strategy/overview" label="Go to Strategy Overview" />}
               />
@@ -177,6 +177,7 @@ export function HypothesisQueueView() {
             <ModuleHeader
               section={SECTION}
               title="Hypothesis Queue"
+              accountName={acct.name}
               subtitle="Queued for validation or briefing"
               tabs="strategy"
             />

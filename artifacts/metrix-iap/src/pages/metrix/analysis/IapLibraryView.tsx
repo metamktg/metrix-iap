@@ -250,7 +250,7 @@ export function IapLibraryView() {
           if (!a) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="IAP Library" tabs="analysis" />
+                <ModuleHeader section={SECTION} title="IAP Library" accountName={acct.name} tabs="analysis" />
                 <PendingState
                   title="Analysis pending"
                   message="No analysis data available for this account yet."
@@ -348,6 +348,7 @@ export function IapLibraryView() {
               <ModuleHeader
                 section={SECTION}
                 title="IAP Library"
+                accountName={acct.name}
                 subtitle="Cell & variable performance · by metric selection"
                 tabs="analysis"
                 right={

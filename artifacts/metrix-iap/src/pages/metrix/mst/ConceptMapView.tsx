@@ -70,7 +70,7 @@ export function ConceptMapView({
         if (!a || a.performance_by_cell.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              {renderHeader && <ModuleHeader section={SECTION} title="Concept Map" />}
+              {renderHeader && <ModuleHeader section={SECTION} title="Concept Map" accountName={acct.name} />}
               <PendingState title="No concepts yet" message="Concepts appear once cell-level analysis is available." icon={Network}
                 action={<CrossLink to="/app/analysis/library" label="Open IAP Library" />}
               />
@@ -107,6 +107,7 @@ export function ConceptMapView({
               <ModuleHeader
                 section={SECTION}
                 title="Concept Map"
+                accountName={acct.name}
                 subtitle="Concepts mapped to pillars"
                 right={
                   <RunScopePicker

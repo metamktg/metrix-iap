@@ -300,7 +300,7 @@ export function CommunicationsView() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Communications" />
+              <ModuleHeader section={SECTION} title="Communications" accountName={account!.name} />
               <PendingState
                 title="No communications data yet"
                 message="Communications derive from generated message pillars — generate strategy first."
@@ -315,6 +315,7 @@ export function CommunicationsView() {
             <ModuleHeader
               section={SECTION}
               title="Communications"
+              accountName={account!.name}
               subtitle="Who responds, to what, and why — per message pillar."
               table="message_pillars, historical_matrix_4x4"
             />

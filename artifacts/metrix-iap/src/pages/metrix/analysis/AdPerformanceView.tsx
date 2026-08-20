@@ -865,7 +865,7 @@ export function AdPerformanceView() {
         if (!summary || !a) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title={`${acct.name} · Ad Performance`} />
+              <ModuleHeader section={SECTION} title="Ad Performance" accountName={acct.name} />
               <PendingState title="No analysis yet" message="Analysis appears once performance data is connected or imported." icon={LineChart} />
             </div>
           );
@@ -954,7 +954,8 @@ export function AdPerformanceView() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title={`${acct.name} · Ad Performance`}
+              title="Ad Performance"
+              accountName={acct.name}
               subtitle="What the account's performance data says, and where to drill in."
               table="campaign_summary, performance_by_cell"
               right={

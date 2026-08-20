@@ -40,6 +40,7 @@ export function ExportsCommandCenter() {
             <ModuleHeader
               section={SECTION}
               title="Exports"
+              accountName={acct.name}
               subtitle="Take this account's analysis, strategy, briefs, and reports out of Metrix."
             />
             <StageLoopHub stages={buildLoopStages(status)} current="reports" />

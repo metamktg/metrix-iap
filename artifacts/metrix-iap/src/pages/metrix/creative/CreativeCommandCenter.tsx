@@ -87,6 +87,7 @@ export function CreativeCommandCenter() {
             <ModuleHeader
               section={SECTION}
               title="Creative"
+              accountName={acct.name}
               subtitle="Generate briefs from strategy, then open any brief in its own workspace to assign, export, or hand off for production."
               table="draft_briefs, message_pillars"
               right={<ProvenanceBadge provenance={bb?.provenance} />}

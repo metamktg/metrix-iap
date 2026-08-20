@@ -114,6 +114,7 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
       <ModuleHeader
         section={SECTION}
         title="Listen"
+        accountName={account?.name}
         subtitle="What's going on in this account — alerts, signal, and what to do next."
       />
       <div className="px-6 pt-5 grid grid-cols-2 gap-3">

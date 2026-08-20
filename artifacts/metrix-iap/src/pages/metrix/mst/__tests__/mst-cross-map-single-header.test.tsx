@@ -72,7 +72,7 @@ describe("MstCrossMapView single-header regression", () => {
     renderView();
     fireEvent.click(screen.getByRole("button", { name: /Crossmap Results/i }));
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Crossmap Results");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Bookster · Crossmap Results");
   });
 
   it("shows only one heading even in the unconfigured/no-account state", () => {

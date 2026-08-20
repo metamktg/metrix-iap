@@ -27,7 +27,7 @@ export function ExportsAnalysisView() {
         if (!analysis || analysis.performance_by_cell.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Analysis" />
+              <ModuleHeader section={SECTION} title="Analysis" accountName={acct.name} />
               <PendingState title="No analysis data yet" message="Run analysis first — there's nothing to export yet." icon={BarChart3} />
             </div>
           );
@@ -43,6 +43,7 @@ export function ExportsAnalysisView() {
             <ModuleHeader
               section={SECTION}
               title="Analysis"
+              accountName={acct.name}
               subtitle="Performance-by-cell and variable-performance data, as shown in Analysis."
               table="performance_by_cell, v3_variable_performance"
             />

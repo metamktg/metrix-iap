@@ -66,6 +66,7 @@ export function CreativeScanView() {
             <ModuleHeader
               section={SECTION}
               title="Creative Scan"
+              accountName={acct.name}
               subtitle="Pre-launch QA · upload & map staging"
               table="loop_status → creative_scan"
             />

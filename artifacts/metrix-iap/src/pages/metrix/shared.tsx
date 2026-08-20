@@ -382,6 +382,7 @@ export function ModuleHeader({
   table,
   right,
   tabs,
+  accountName,
 }: {
   section: string;
   title: string;
@@ -389,14 +390,18 @@ export function ModuleHeader({
   table?: string;
   right?: React.ReactNode;
   tabs?: "analysis" | "strategy";
+  accountName?: string;
 }) {
   const sectionLabel = section.split(" · ")[0];
   // A stage's command-center hub sets title to the bare stage name (e.g.
   // title="Strategy" on the page whose section is "Strategy · 04"), which
   // would otherwise render the eyebrow and H1 as an exact duplicate. Fall
   // back to the full section string (surfacing the "· 04" stage position
-  // that's normally trimmed off) instead of inventing new copy.
+  // that's normally trimmed off) instead of inventing new copy. Keep this
+  // comparison against the bare `title`, not the account-prefixed H1 below —
+  // the account name belongs only in the H1, never duplicated into the eyebrow.
   const eyebrowText = sectionLabel.toLowerCase() === title.toLowerCase() ? section : sectionLabel;
+  const displayTitle = accountName ? `${accountName} · ${title}` : title;
   return (
     <div className="shrink-0">
       <div className={cn("px-6 py-4", !tabs && "border-b border-border/40")}>
@@ -411,7 +416,7 @@ export function ModuleHeader({
               </span>
               {subtitle && <InfoTooltip content={subtitle} />}
             </div>
-            <h1 className="mx-section-header__title">{title}</h1>
+            <h1 className="mx-section-header__title">{displayTitle}</h1>
           </div>
           <div className="shrink-0 pt-0.5 flex items-center gap-2">
             {right}
