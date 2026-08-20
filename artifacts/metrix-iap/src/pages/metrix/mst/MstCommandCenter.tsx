@@ -32,10 +32,13 @@ import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import { useLocation } from "wouter";
+import { RunScopePicker } from "@/components/analysis/RunSelector";
+import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
+import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
 import {
   Network, Grid3x3, Compass, Library, Dna, ChevronRight, ArrowDownRight, ArrowUp, ArrowDown,
 } from "lucide-react";
-import type { MSTMatrixColumn, MSTMatrixCell, ICPProfile, AnalysisData, AdRecord } from "@/lib/data/seedTypes";
+import type { MSTMatrixColumn, MSTMatrixCell, ICPProfile, AdRecord, CellPerformanceRow } from "@/lib/data/seedTypes";
 import { cn } from "@workspace/command-deck/lib/utils";
 
 const SECTION = "MST · 06";
@@ -63,23 +66,25 @@ interface ColumnPerf {
   spend: number;
   results: number;
   cpa: number | null;
-  /** link clicks ÷ impressions × 100 */
+  /** Real Link CVR: results ÷ link clicks × 100 — same definition as
+   *  ICP performance_data.cvr_link_pct (results ARE aggregated here, so
+   *  this is never approximated as click-through rate). */
   cvr: number | null;
   /** upper-funnel reach efficiency: spend ÷ impressions × 1000 */
   cpm: number | null;
 }
 
-function computeColumnPerf(columnId: string, columnIds: string[], analysis: AnalysisData | null | undefined): ColumnPerf {
-  const rows = (analysis?.performance_by_cell ?? []).filter((r) => columnIdForCell(r.cell_id, columnIds) === columnId);
-  if (rows.length === 0) return { spend: 0, results: 0, cpa: null, cvr: null, cpm: null };
-  const spend = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
-  const results = rows.reduce((s, r) => s + r.Results, 0);
-  const impressions = rows.reduce((s, r) => s + r.Impressions, 0);
-  const linkClicks = rows.reduce((s, r) => s + r["Link clicks"], 0);
+function computeColumnPerf(columnId: string, columnIds: string[], rows: CellPerformanceRow[]): ColumnPerf {
+  const matched = rows.filter((r) => columnIdForCell(r.cell_id, columnIds) === columnId);
+  if (matched.length === 0) return { spend: 0, results: 0, cpa: null, cvr: null, cpm: null };
+  const spend = matched.reduce((s, r) => s + r["Amount spent (USD)"], 0);
+  const results = matched.reduce((s, r) => s + r.Results, 0);
+  const impressions = matched.reduce((s, r) => s + r.Impressions, 0);
+  const linkClicks = matched.reduce((s, r) => s + r["Link clicks"], 0);
   return {
     spend, results,
     cpa: results > 0 ? spend / results : null,
-    cvr: impressions > 0 ? (linkClicks / impressions) * 100 : null,
+    cvr: linkClicks > 0 ? (results / linkClicks) * 100 : null,
     cpm: impressions > 0 ? (spend / impressions) * 1000 : null,
   };
 }
@@ -320,10 +325,9 @@ function AvatarSortBar({ sortBy, onSort }: { sortBy: SortKey; onSort: (k: SortKe
 // ─── Drawer ad list ─────────────────────────────────────────────────────
 
 function DrawerAdList({
-  matchedAds, cellPerf,
+  matchedAds,
 }: {
   matchedAds: Array<AdRecord & { cell_id: string }>;
-  cellPerf: Map<string, { spend: number; results: number }>;
 }) {
   const [showAll, setShowAll] = useState(false);
   if (matchedAds.length === 0) {
@@ -333,12 +337,18 @@ function DrawerAdList({
   return (
     <div className="space-y-2">
       {visible.map((ad, i) => {
-        const perf = cellPerf.get(ad.cell_id);
+        // Each ad's own real per-ad aggregate — never the cell-level rollup,
+        // which would show the same number on every ad sharing a cell.
+        const perf = ad.performance;
         return (
-          <div key={ad.ad_name + i} className="flex items-start justify-between gap-2 border-b border-border/15 pb-1.5 last:border-0 last:pb-0">
+          <div
+            key={ad.ad_name + i}
+            data-testid={`drawer-ad-row-${i}`}
+            className="flex items-start justify-between gap-2 border-b border-border/15 pb-1.5 last:border-0 last:pb-0"
+          >
             <div className="min-w-0">
               <p className="text-body font-medium text-foreground/85 truncate" title={ad.ad_name}>{ad.ad_name}</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 {ad.cell && (
                   <TooltipProvider delayDuration={150}>
                     <Tooltip>
@@ -355,6 +365,16 @@ function DrawerAdList({
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
+                )}
+                {ad.variation && (
+                  <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55" title="Variation">
+                    Var {ad.variation}
+                  </span>
+                )}
+                {ad.test_id && (
+                  <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55" title="Test ID">
+                    {ad.test_id}
+                  </span>
                 )}
                 {ad.concept && <span className="text-label text-muted-foreground/55">{ad.concept}</span>}
               </div>
@@ -404,16 +424,32 @@ export function MstCommandCenter() {
   const icpProfiles = strategyData?.icp_profiles ?? [];
   const term = resultTerm(account);
 
+  // ── Analysis-run scope (compact header dropdown) ──────────────────────
+  // Avatar-tile KPIs (spend, CPA, Link CVR, CPM) are aggregated straight
+  // from performance_by_cell — scoping the source rows to the selected
+  // run(s) before aggregating means every tile respects the selection,
+  // not just a cosmetic picker.
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
+  const [runSelection, setRunSelection] = usePersistedRunScope(
+    "mst-command-center", adAccountId, analysisRunsData?.runs,
+  );
+  const { filterByRun } = useCellRunScope(analysis, runSelection);
+  const cellRows = useMemo(() => filterByRun(analysis?.performance_by_cell ?? []), [analysis, filterByRun]);
+  const scopedAnalysis = useMemo(
+    () => (analysis ? { ...analysis, performance_by_cell: cellRows } : analysis),
+    [analysis, cellRows],
+  );
+
   const columnIds = useMemo(() => matrix?.columns.map((c) => c.id) ?? [], [matrix]);
 
   const dnaByColumn = useMemo(
-    () => (matrix ? new Map(matrix.columns.map((col) => [col.id, computeAvatarDna(col.id, matrix, analysis, mst)])) : new Map<string, AvatarDna>()),
-    [matrix, analysis, mst],
+    () => (matrix ? new Map(matrix.columns.map((col) => [col.id, computeAvatarDna(col.id, matrix, scopedAnalysis, mst)])) : new Map<string, AvatarDna>()),
+    [matrix, scopedAnalysis, mst],
   );
 
   const perfByColumn = useMemo(
-    () => (matrix ? new Map(matrix.columns.map((col) => [col.id, computeColumnPerf(col.id, columnIds, analysis)])) : new Map<string, ColumnPerf>()),
-    [matrix, columnIds, analysis],
+    () => (matrix ? new Map(matrix.columns.map((col) => [col.id, computeColumnPerf(col.id, columnIds, cellRows)])) : new Map<string, ColumnPerf>()),
+    [matrix, columnIds, cellRows],
   );
 
   const maxSpend = useMemo(() => {
@@ -493,6 +529,13 @@ export function MstCommandCenter() {
               title="MST"
               accountName={acct.name}
               subtitle="Matrix Sprint Test results for this account's briefed creative."
+              right={
+                <RunScopePicker
+                  runs={analysisRunsData?.runs ?? []}
+                  value={runSelection}
+                  onChange={setRunSelection}
+                />
+              }
             />
             <StageLoopHub stages={buildLoopStages(status)} current="mst" />
 
@@ -593,18 +636,9 @@ export function MstCommandCenter() {
                   const matchedAds: Array<AdRecord & { cell_id: string }> = detail.cells.flatMap((c) =>
                     (adsByCell.get(c.cell_id) ?? []).map((ad) => ({ ...ad, cell_id: c.cell_id })),
                   );
-                  const cellPerf = new Map(
-                    detail.cells.map((c) => {
-                      const rows = (analysis?.performance_by_cell ?? []).filter((r) => r.cell_id === c.cell_id);
-                      return [c.cell_id, {
-                        spend: rows.reduce((s, r) => s + r["Amount spent (USD)"], 0),
-                        results: rows.reduce((s, r) => s + r.Results, 0),
-                      }];
-                    }),
-                  );
                   return (
                     <DrawerField label={matchedAds.length > 0 ? `Matched ads (${matchedAds.length})` : "Matched ads"}>
-                      <DrawerAdList matchedAds={matchedAds} cellPerf={cellPerf} />
+                      <DrawerAdList matchedAds={matchedAds} />
                     </DrawerField>
                   );
                 })()}
@@ -646,13 +680,13 @@ export function MstCommandCenter() {
               </InfoDrawer>
             )}
 
-            {detail && analysis && (
+            {detail && scopedAnalysis && (
               <SegmentGridModal
                 open={segmentsOpen}
                 onClose={() => setSegmentsOpen(false)}
                 kicker={`Avatar · ${detail.column.icp}`}
                 title={detail.column.name.replace(/\n/g, " ")}
-                analysis={analysis}
+                analysis={scopedAnalysis}
                 cellIds={detail.cells.map((c) => c.cell_id)}
               />
             )}
