@@ -32,7 +32,7 @@ const SECTION = "MST · 06";
 
 interface CrossmapEnrichedRow {
   cell: MSTMatrixCell;
-  perf: { "Amount spent (USD)": number; Results: number; "Result type": string; CPA_result: number | null; CTR_link_pct: number | null }[];
+  perf: { "Amount spent (USD)": number; Results: number; "Result type": string; CPA_result: number | null; CTR_link_pct: number | null; Impressions: number; "Link clicks": number }[];
   spend: number;
   results: number;
   ran: boolean;
@@ -121,9 +121,12 @@ export function CrossmapResultsView({
           const spend = perf.reduce((n, r) => n + r["Amount spent (USD)"], 0);
           const results = perf.reduce((n, r) => n + r.Results, 0);
           const cpa = results > 0 ? spend / results : null;
-          const avgCtr = perf.length > 0
-            ? perf.reduce((n, r) => n + (r.CTR_link_pct ?? 0), 0) / perf.length
-            : null;
+          // Ratio metric: recomputed from summed link clicks ÷ summed
+          // impressions across the cell's rows — never averaged per-row
+          // rates, which skews toward low-impression rows (see kpiBreakdown.ts).
+          const impressions = perf.reduce((n, r) => n + r.Impressions, 0);
+          const linkClicks = perf.reduce((n, r) => n + r["Link clicks"], 0);
+          const avgCtr = impressions > 0 ? (linkClicks / impressions) * 100 : null;
           return { cell, perf, spend, results, ran: perf.length > 0, cpa, avgCtr };
         });
 

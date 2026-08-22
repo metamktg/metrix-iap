@@ -8,7 +8,7 @@
 // invention), and zero-conversion columns read "no conv.".
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup, within, screen } from "@testing-library/react";
+import { render, cleanup, within, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
@@ -122,5 +122,38 @@ describe("MST sprints canvas composition (Bookster)", () => {
     // First row is BOOK0's cheapest measured concept: C2 at $7.09.
     expect(rows[0]!.textContent).toContain("BOOK0 · C2");
     expect(rows[0]!.textContent).toContain("$7.09");
+  });
+
+  it("selecting a scaling tier dims non-matching cells without removing them from the DOM", () => {
+    renderFor("bookster");
+    // BOOK0: C2 is scale_now, C1/C4 are optimize, C3 is avoid_combinations.
+    fireEvent.click(screen.getByRole("button", { name: "Scale" }));
+
+    const scaleCell = screen.getByTestId("matrix-cell-C2A");
+    const optimizeCell = screen.getByTestId("matrix-cell-C1A");
+    const avoidCell = screen.getByTestId("matrix-cell-C3A");
+
+    // The matching tier's cells stay fully visible...
+    expect(scaleCell.className).not.toMatch(/opacity-30/);
+    // ...while non-matching tiers dim (visual only)...
+    expect(optimizeCell.className).toMatch(/opacity-30/);
+    expect(avoidCell.className).toMatch(/opacity-30/);
+    // ...but every cell — dimmed or not — stays in the DOM with its real
+    // tier tag and cell id intact. Dimming is a visual filter, never a
+    // real one: all 16 cells remain queryable regardless of tier.
+    expect(within(optimizeCell).getByText("Optimize")).toBeTruthy();
+    expect(within(avoidCell).getByText("Avoid")).toBeTruthy();
+    expect(within(scaleCell).getByText("Scale")).toBeTruthy();
+    expect(screen.getAllByTestId(/^matrix-cell-C\d[A-D]$/)).toHaveLength(16);
+
+    // Switching tiers changes which column is undimmed.
+    fireEvent.click(screen.getByRole("button", { name: "Avoid" }));
+    expect(screen.getByTestId("matrix-cell-C3A").className).not.toMatch(/opacity-30/);
+    expect(screen.getByTestId("matrix-cell-C2A").className).toMatch(/opacity-30/);
+
+    // "All" clears dimming entirely.
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    expect(screen.getByTestId("matrix-cell-C1A").className).not.toMatch(/opacity-30/);
+    expect(screen.getByTestId("matrix-cell-C3A").className).not.toMatch(/opacity-30/);
   });
 });
