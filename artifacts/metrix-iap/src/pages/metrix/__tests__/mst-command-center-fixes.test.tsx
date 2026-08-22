@@ -226,3 +226,29 @@ describe("MstCommandCenter — per-ad drawer shows real per-ad numbers (item 3)"
     if (adOne.variation) expect(within(rowOne).getByText(`Var ${adOne.variation}`)).toBeTruthy();
   });
 });
+
+// AdRecord.performance is documented as a full-window aggregate — it has no
+// run identity, so it can never narrow the way the tile's cell-level Spend/
+// CPA/CVR/CPM do. Once a run scope is active, the drawer must disclose that
+// its per-ad figures are still full-window, on a different time base than
+// the tile above. The all-time/no-scope view has no such mismatch to
+// disclose, so the note must not appear there.
+describe("MstCommandCenter — per-ad drawer discloses its full-window time base under an active run scope", () => {
+  const CAVEAT_TEXT =
+    "Per-ad Spend and Results below are full-window totals, not scoped to the run selection above.";
+
+  it("shows the caveat once the page is scoped to a specific run", () => {
+    renderMst();
+    fireEvent.click(screen.getByTestId("button-run-scope"));
+    fireEvent.click(screen.getByTestId("option-run-run_2"));
+
+    fireEvent.click(screen.getByText("CN_ICP_Achiever"));
+    expect(screen.getByText(CAVEAT_TEXT)).toBeTruthy();
+  });
+
+  it("stays hidden in the default All-time view, where tile and per-ad figures already share one time base", () => {
+    renderMst();
+    fireEvent.click(screen.getByText("CN_ICP_Achiever"));
+    expect(screen.queryByText(CAVEAT_TEXT)).toBeNull();
+  });
+});
