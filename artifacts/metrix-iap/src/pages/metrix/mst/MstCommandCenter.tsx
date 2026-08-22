@@ -18,7 +18,7 @@ import {
   ModuleHeader, ModuleScopeGate, PrerequisiteGate,
   StageLoopHub, buildLoopStages, HubNavGrid,
   MetricTile, SectionCard, resultTerm, fmtUSD, fmtPct, fmtNum,
-  useFocusParam,
+  useFocusParam, CaveatNote,
 } from "../shared";
 import {
   PersonaAvatar, StatGrid, AccordionToggle, FoldedGrid, DnaChipStrip,
@@ -326,8 +326,16 @@ function AvatarSortBar({ sortBy, onSort }: { sortBy: SortKey; onSort: (k: SortKe
 
 function DrawerAdList({
   matchedAds,
+  runScopeActive,
 }: {
   matchedAds: Array<AdRecord & { cell_id: string }>;
+  /** True when the page's RunScopePicker is narrowed to specific run(s)
+   *  (not "All time"). AdRecord.performance is a full-window aggregate with
+   *  no run identity to scope by — unlike the tile above (whose Spend/CPA/
+   *  CVR/CPM DO narrow to the selection), these per-ad figures can never
+   *  follow it. Surface that honestly rather than let the two numbers
+   *  silently disagree on their time base. */
+  runScopeActive: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
   if (matchedAds.length === 0) {
@@ -336,6 +344,12 @@ function DrawerAdList({
   const visible = showAll ? matchedAds : matchedAds.slice(0, 8);
   return (
     <div className="space-y-2">
+      {runScopeActive && (
+        <CaveatNote
+          text="Per-ad Spend and Results below are full-window totals, not scoped to the run selection above."
+          defaultExpanded
+        />
+      )}
       {visible.map((ad, i) => {
         // Each ad's own real per-ad aggregate — never the cell-level rollup,
         // which would show the same number on every ad sharing a cell.
@@ -638,7 +652,7 @@ export function MstCommandCenter() {
                   );
                   return (
                     <DrawerField label={matchedAds.length > 0 ? `Matched ads (${matchedAds.length})` : "Matched ads"}>
-                      <DrawerAdList matchedAds={matchedAds} />
+                      <DrawerAdList matchedAds={matchedAds} runScopeActive={!runSelection.allTime} />
                     </DrawerField>
                   );
                 })()}
