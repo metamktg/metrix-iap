@@ -151,7 +151,7 @@ function VerdictBanner({
       >
         {/* Eyebrow */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-label font-bold uppercase tracking-widest text-primary/80">
+          <span className="text-label font-bold uppercase tracking-widest text-interactive/80">
             AI Verdict
           </span>
           {runType && (
@@ -249,7 +249,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
           <div
             className={cn(
               "text-title font-semibold tabular-nums leading-none",
-              score.cpa != null ? "text-primary" : "text-muted-foreground",
+              score.cpa != null ? "text-interactive" : "text-muted-foreground",
             )}
           >
             {score.cpa != null ? fmtUSD(score.cpa, score.cpa < 100 ? 2 : 0) : "—"}
@@ -467,7 +467,7 @@ export function FindingsView() {
                   <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
                     <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Total spend</span>
                     <span
-                      className="text-display font-semibold tabular-nums leading-none text-primary"
+                      className="text-display font-semibold tabular-nums leading-none text-interactive"
                     >
                       {execSummary.total_spend != null ? fmtMetric("usd_total", execSummary.total_spend) : "—"}
                     </span>
@@ -475,7 +475,7 @@ export function FindingsView() {
                   <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
                     <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Total results</span>
                     <span
-                      className="text-display font-semibold tabular-nums leading-none text-primary"
+                      className="text-display font-semibold tabular-nums leading-none text-interactive"
                     >
                       {execSummary.total_results != null ? fmtNum(execSummary.total_results) : "—"}
                     </span>
@@ -484,7 +484,7 @@ export function FindingsView() {
                     <div key={book} className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
                       <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Blended CPA · {book}</span>
                       <span
-                        className="text-display font-semibold tabular-nums leading-none text-primary"
+                        className="text-display font-semibold tabular-nums leading-none text-interactive"
                       >
                         {fmtUSD(cpa, cpa < 100 ? 2 : 0)}
                       </span>
