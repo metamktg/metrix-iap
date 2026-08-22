@@ -125,22 +125,78 @@ const STORAGE_KEY = "metrix_date_range_v1";
 
 type PersistMap = Record<string, DateRangeState>;
 
-function loadPersist(): PersistMap {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as PersistMap;
-  } catch {
-    /* ignore */
-  }
-  return {};
-}
-
 const DEFAULT_STATE: DateRangeState = {
   preset: "all",
   customStart: null,
   customEnd: null,
   compare: false,
 };
+
+// Every currently-valid preset, derived from PRESET_LABELS so this stays in
+// sync automatically on any future DateRangePreset rename -- no hand-rolled
+// list to remember to update alongside the type.
+const VALID_PRESETS: ReadonlySet<string> = new Set(Object.keys(PRESET_LABELS));
+
+// One-time migration for this session's date-range unification, which
+// renamed the "30d" preset to "28d" to match the pre-existing 28d system
+// used elsewhere in the app. A browser's sessionStorage can still carry a
+// "30d" value saved before that rename; map it forward so the user's actual
+// prior selection survives the deploy instead of silently resetting.
+const LEGACY_PRESET_MIGRATIONS: Readonly<Record<string, DateRangePreset>> = {
+  "30d": "28d",
+};
+
+/**
+ * Validates and normalizes one persisted scope entry. Returns null when the
+ * entry is malformed or carries a preset value that is neither a current
+ * DateRangePreset nor a known legacy alias -- loadPersist drops the entry
+ * entirely in that case, so the provider's own `persist[scopeKey] ??
+ * DEFAULT_STATE` fallback applies for just that scope (never the whole
+ * persisted map). This keeps the loader robust to ANY future preset enum
+ * rename, not just the 30d -> 28d one it was written for.
+ */
+function sanitizePersistedState(value: unknown): DateRangeState | null {
+  if (!value || typeof value !== "object") return null;
+  const entry = value as Record<string, unknown>;
+  const rawPreset = entry.preset;
+
+  let preset: DateRangePreset | undefined;
+  if (typeof rawPreset === "string") {
+    if (VALID_PRESETS.has(rawPreset)) {
+      preset = rawPreset as DateRangePreset;
+    } else if (rawPreset in LEGACY_PRESET_MIGRATIONS) {
+      preset = LEGACY_PRESET_MIGRATIONS[rawPreset];
+    }
+  }
+  if (!preset) return null;
+
+  return {
+    preset,
+    customStart: typeof entry.customStart === "string" ? entry.customStart : null,
+    customEnd: typeof entry.customEnd === "string" ? entry.customEnd : null,
+    compare: entry.compare === true,
+  };
+}
+
+function loadPersist(): PersistMap {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+
+    const result: PersistMap = {};
+    for (const [scopeKey, value] of Object.entries(parsed as Record<string, unknown>)) {
+      const sanitized = sanitizePersistedState(value);
+      // An unrecognized/malformed entry is dropped rather than kept as-is --
+      // that scope then reads as unset and falls back to DEFAULT_STATE.
+      if (sanitized) result[scopeKey] = sanitized;
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
 
 // ─── Provider ─────────────────────────────────────────────────────────
 
