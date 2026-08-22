@@ -575,30 +575,27 @@ function SmartCsvUpload({
 
     // Classify from the file's own headers first (matches how the server
     // itself tells the classes apart) rather than guessing by which slot is
-    // still empty. The "wrong slot" server message is kept only as a
-    // fallback for the rare case the header sniff and server disagree.
-    const order: CsvKind[] = [
-      sniffedKind,
-      ...SMART_CSV_SLOTS.map((s) => s.kind).filter((k) => k !== sniffedKind),
-    ];
-    const tried = new Set<CsvKind>();
-    let kind = order[0]!;
-    for (let attempt = 0; attempt < order.length; attempt++) {
-      tried.add(kind);
-      try {
-        return await stageAs(kind);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "";
-        const corrected = correctionTargetKind(msg);
-        const next = (corrected && !tried.has(corrected)) ? corrected : order.find((k2) => !tried.has(k2));
-        if (next) {
-          kind = next;
-          continue;
-        }
-        throw err;
+    // still empty. The "wrong slot" server message is kept only as a single
+    // fallback retry for the rare case the header sniff and server disagree
+    // — NOT an exhaustive cycle through every remaining slot. Once the
+    // server has told us definitively which class the file's headers match,
+    // that redirect IS the classification; if the redirected slot's own
+    // attempt then also fails, that failure is the real, useful reason (a
+    // genuine data/format problem with a file we now know is correctly
+    // classified) and must reach the user directly — cycling on to try
+    // unrelated slots afterwards only replaces that real reason with a
+    // stale, confusing "wrong slot" message left over from a slot the file
+    // was never actually meant for.
+    try {
+      return await stageAs(sniffedKind);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      const corrected = correctionTargetKind(msg);
+      if (corrected && corrected !== sniffedKind) {
+        return await stageAs(corrected);
       }
+      throw err;
     }
-    throw new Error("Could not determine which slot this file belongs in.");
   };
 
   const handleFiles = async (files: FileList | null) => {
