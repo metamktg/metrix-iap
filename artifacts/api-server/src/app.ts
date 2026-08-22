@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { getAppBaseUrl } from "./lib/appUrl";
 
 const app: Express = express();
 
@@ -28,7 +29,17 @@ app.use(
     },
   }),
 );
-app.use(cors());
+// All first-party clients (IAP app, marketing site) reach the API through
+// the same-origin /api path route, so cross-origin access is not part of
+// normal operation. In production, CORS is restricted to the app's own
+// origin; dev stays permissive for local tooling.
+app.use(
+  cors(
+    process.env.NODE_ENV === "production"
+      ? { origin: new URL(getAppBaseUrl()).origin }
+      : undefined,
+  ),
+);
 app.use(cookieParser());
 // Manual report uploads carry base64 file content (75 MB decoded max for
 // CSV/report imports; base64 inflates that by ~33%), so this path gets a

@@ -31,7 +31,7 @@ import {
 } from "@/lib/data/metricsCatalog";
 import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState, FlowCrumb, LoopAction, useFromParam,
-  MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam,
+  MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam, useTabParam,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
   StaleFocusNotice, PILL_ACTIVE, PILL_INACTIVE,
   SectionInfoIcon,
@@ -71,6 +71,7 @@ import {
 const SECTION = "Analysis · 03";
 
 type Tab = "cells" | "copy" | "top" | "variables" | "breakdown" | "review";
+const TAB_IDS: readonly Tab[] = ["cells", "copy", "top", "variables", "breakdown", "review"];
 
 const VARIABLE_FIELDS: { key: keyof CellPerformanceRow; label: string }[] = [
   { key: "hook_variable",       label: "Hook" },
@@ -96,7 +97,7 @@ export function IapLibraryView() {
   const isAdmin = cachedUser?.role === "admin";
   const syncMutation = useSyncCreativeLinks();
   const [syncResult, setSyncResult] = useState<{ linked: number; total: number } | null>(null);
-  const [tab, setTab] = useState<Tab>("cells");
+  const [tab, setTab] = useTabParam<Tab>("cells", TAB_IDS);
   const focus = useFocusParam();
   const [detail, setDetail] = useState<CellPerformanceRow | null>(null);
 

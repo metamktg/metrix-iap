@@ -89,13 +89,10 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
   };
 });
 
-vi.mock("wouter", async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    useLocation: () => ["/app/analysis/library", vi.fn()],
-  };
-});
+// Real wouter (no mock): IapLibraryView's tab state now round-trips through
+// the URL (?tab=, via useTabParam in shared.tsx), so navigation must actually
+// update history for tab switches to take effect. beforeEach below points
+// window.history at the library route directly instead of stubbing useLocation.
 
 // ── Component imports (after vi.mock hoisting) ────────────────────────────
 
@@ -149,7 +146,8 @@ async function switchToVariablesTab(user: ReturnType<typeof userEvent.setup>) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
-  window.history.replaceState({}, "", "/");
+  localStorage.clear();
+  window.history.replaceState({}, "", "/app/analysis/library");
 });
 
 // ─────────────────────────────────────────────────────────────────────────

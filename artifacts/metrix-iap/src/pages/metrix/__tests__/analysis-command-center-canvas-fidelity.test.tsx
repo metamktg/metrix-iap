@@ -97,6 +97,7 @@ function renderCC() {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
   mockRuns = [];
   mockImports = [];

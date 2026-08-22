@@ -134,6 +134,7 @@ function renderView(View: React.ComponentType) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 

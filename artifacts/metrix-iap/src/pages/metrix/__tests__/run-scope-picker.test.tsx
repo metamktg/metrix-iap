@@ -109,6 +109,7 @@ function renderScoped(runScope: RunSelectorValue) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
 });
 
 describe("RunScopePicker 3-run cap", () => {

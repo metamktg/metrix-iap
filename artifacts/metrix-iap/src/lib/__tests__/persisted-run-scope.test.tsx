@@ -20,6 +20,7 @@ const RUNS = [mkRun("run-a"), mkRun("run-b")];
 
 beforeEach(() => {
   sessionStorage.clear();
+  localStorage.clear();
 });
 
 describe("usePersistedRunScope", () => {
