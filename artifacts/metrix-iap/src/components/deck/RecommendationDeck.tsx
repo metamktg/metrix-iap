@@ -52,6 +52,20 @@ const IMPACT_STYLE: Record<string, string> = {
   setup: "bg-primary/10 text-interactive border-primary/20",
 };
 
+// Single source of truth for how impact tiers rank against each other —
+// shared by every surface that sorts DeckCard-shaped recommendations by
+// impact (NextBestActionCard, ActionQueueView, …) so they can never
+// silently diverge on what "impact" means as an absolute rank.
+export const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
+
+/**
+ * Numeric priority for sorting by impact, highest first. Case-insensitive;
+ * an unrecognized value ranks with "setup" (0).
+ */
+export function impactRank(impact: string): number {
+  return IMPACT_RANK[String(impact).toLowerCase()] ?? 0;
+}
+
 const SCOPE_STYLE: Record<string, string> = {
   creative: "bg-amber-500/10 text-amber-300 border-amber-500/20",
   funnel: "bg-teal-500/10 text-teal-300 border-teal-500/20",
