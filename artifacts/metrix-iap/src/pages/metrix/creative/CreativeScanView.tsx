@@ -10,7 +10,7 @@ import { useMemo } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ModuleScopeGate, SectionCard, CaveatNote, CrossLink, SectionInfoIcon, fmtNum } from "../shared";
+import { ModuleHeader, ModuleScopeGate, SectionCard, CaveatNote, CrossLink, SectionInfoIcon, MetricTile, fmtNum } from "../shared";
 import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { ScanSearch } from "lucide-react";
@@ -23,29 +23,6 @@ const SECTION = "Creative · 05";
 // alignment, claim clearance). Descriptive column heads only — results
 // exist solely once a scan has actually run.
 const SCAN_CHECKS = ["Naming convention", "Aspect ratio", "Safe zone", "Variable tag", "Claim cleared"];
-
-function ScanStatCard({ label, value, note, tone = "default" }: {
-  label: string;
-  value: string;
-  note: string;
-  tone?: "default" | "dim" | "warn";
-}) {
-  return (
-    <div className={cn(
-      "rounded-xl border p-4",
-      tone === "warn" ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-border/50 bg-white/[0.02]",
-    )}>
-      <div className={cn(TYPE.label, "font-semibold uppercase tracking-[0.14em] text-interactive/75 mb-1")}>{label}</div>
-      <div className={cn(
-        "text-bignum font-medium leading-none",
-        tone === "warn" ? "text-amber-300" : tone === "dim" ? "text-muted-foreground/60" : "text-foreground",
-      )}>
-        {value}
-      </div>
-      <div className={cn(TYPE.caption, "text-muted-foreground/60 mt-1.5")}>{note}</div>
-    </div>
-  );
-}
 
 export function CreativeScanView() {
   const seed = useMetrixSeed();
@@ -73,11 +50,11 @@ export function CreativeScanView() {
             <div className="px-6 py-5 space-y-4 max-w-4xl">
               {/* Canvas scan-stats strip — honest zero state until the
                   automated pass exists and has run. */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="scan-stats">
-                <ScanStatCard label="Assets scanned" value="0" note="Scan not yet run" />
-                <ScanStatCard label="Library assets" value={fmtNum(libraryCount)} note="Awaiting first scan" tone="dim" />
-                <ScanStatCard label="Blocking" value="—" note="No results yet" tone="dim" />
-                <ScanStatCard label="Requires" value="Scan engine" note="Automated pass planned — not yet built" tone="warn" />
+              <div className="grid grid-cols-dashboard-4 gap-3" data-testid="scan-stats">
+                <MetricTile label="Assets scanned" value="0" sub="Scan not yet run" />
+                <MetricTile label="Library assets" value={fmtNum(libraryCount)} sub="Awaiting first scan" />
+                <MetricTile label="Blocking" value="—" sub="No results yet" />
+                <MetricTile label="Requires" value="Scan engine" sub="Automated pass planned — not yet built" />
               </div>
 
               {/* Pre-launch check grid shell: shows what the scan checks;
