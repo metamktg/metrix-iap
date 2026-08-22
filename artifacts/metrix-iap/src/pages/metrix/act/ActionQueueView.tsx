@@ -204,7 +204,7 @@ function QueueCard({
           </span>
           <ConfidenceBadge value={card.confidence} />
           {impactLabel && (
-            <span className="ml-auto text-caption text-primary font-semibold tabular-nums">
+            <span className="ml-auto text-caption text-interactive font-semibold tabular-nums">
               {impactLabel}
             </span>
           )}
