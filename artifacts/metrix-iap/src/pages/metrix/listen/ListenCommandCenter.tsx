@@ -12,7 +12,8 @@
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { getAdAccounts, getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, MetricTile, PendingState, HubNavGrid } from "../shared";
+import { useStageStatus } from "@/hooks/useStageStatus";
+import { ModuleHeader, MetricTile, PendingState, HubNavGrid, SectionCard, StageLoopHub, buildLoopStages } from "../shared";
 import { Radio, CheckCircle2, Circle, AlertTriangle, Bell, Activity, Lightbulb } from "lucide-react";
 
 const SECTION = "Listen · 02";
@@ -60,38 +61,42 @@ export function ListenCommandCenter() {
       </div>
 
       <div className="px-6 py-5 space-y-4 max-w-3xl">
-        {needsAttention.length === 0 ? (
-          <PendingState title="Nothing needs attention" message="No account has high-impact signals right now." icon={Radio} />
-        ) : (
-          <div className="space-y-2.5">
-            {needsAttention.map((r) => (
-              <button
-                key={r.account.id}
-                onClick={() => selectAdAccount(r.account.id)}
-                className="w-full flex items-center gap-3 rounded-xl border border-red-400/20 bg-red-400/[0.03] p-4 text-left hover:border-red-400/35 transition-colors"
-              >
-                <AlertTriangle className="w-4 h-4 text-red-300/80 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-title font-semibold text-foreground">{r.account.name}</div>
-                  <div className="text-label text-muted-foreground/70 mt-0.5">{r.highImpact} high-impact signal{r.highImpact === 1 ? "" : "s"}</div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
+        <SectionCard
+          title="Needs attention"
+          desc="Accounts with high-impact signals right now, ranked by count."
+        >
+          {needsAttention.length === 0 ? (
+            <PendingState title="Nothing needs attention" message="No account has high-impact signals right now." icon={Radio} />
+          ) : (
+            <div className="flex flex-col">
+              {needsAttention.map((r) => (
+                <button
+                  key={r.account.id}
+                  onClick={() => selectAdAccount(r.account.id)}
+                  className="w-full flex items-center gap-3 py-2.5 border-t border-border/25 first:border-0 text-left hover:bg-status-danger/[0.04] transition-colors"
+                >
+                  <AlertTriangle className="w-4 h-4 text-status-danger shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-body font-medium text-foreground/90 truncate">{r.account.name}</div>
+                    <div className="text-label text-muted-foreground/60">{r.highImpact} high-impact signal{r.highImpact === 1 ? "" : "s"}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </SectionCard>
 
-        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-          <div className="text-caption font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">Connection status</div>
-          <div className="space-y-1.5">
+        <SectionCard title="Connection status" desc="Which accounts are currently connected.">
+          <div className="flex flex-col">
             {accounts.map((a) => (
-              <div key={a.id} className="flex items-center gap-2.5 py-1">
-                {a.status === "configured" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />}
+              <div key={a.id} className="flex items-center gap-2.5 py-2 border-t border-border/25 first:border-0">
+                {a.status === "configured" ? <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" /> : <Circle className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />}
                 <span className="text-body text-foreground/85 flex-1">{a.name}</span>
                 <span className="text-label text-muted-foreground/60">{a.status === "configured" ? "Connected" : "Not connected"}</span>
               </div>
             ))}
           </div>
-        </div>
+        </SectionCard>
 
         <HubNavGrid items={LISTEN_CHILDREN} label="Explore Listen" />
       </div>
@@ -106,6 +111,7 @@ export function ListenCommandCenter() {
 function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
   const seed = useMetrixSeed();
   const account = getAdAccount(seed, adAccountId);
+  const status = useStageStatus(adAccountId);
   const signals = account?.status === "configured" ? getListenSignals(seed, adAccountId) : [];
   const highImpact = signals.filter((s) => s.impact === "high").length;
 
@@ -117,6 +123,7 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
         accountName={account?.name}
         subtitle="What's going on in this account — alerts, signal, and what to do next."
       />
+      <StageLoopHub stages={buildLoopStages(status)} current="listen" />
       <div className="px-6 pt-5 grid grid-cols-2 gap-3">
         <MetricTile label="High-impact signals" value={String(highImpact)} />
         <MetricTile label="Total signals" value={String(signals.length)} />
@@ -126,8 +133,8 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
         {highImpact === 0 ? (
           <PendingState title="Nothing needs attention" message="No high-impact signals right now for this account." icon={Radio} />
         ) : (
-          <div className="rounded-xl border border-red-400/20 bg-red-400/[0.03] p-4 flex items-center gap-3">
-            <AlertTriangle className="w-4 h-4 text-red-300/80 shrink-0" />
+          <div className="rounded-xl border border-status-danger/20 bg-status-danger/[0.03] p-4 flex items-center gap-3">
+            <AlertTriangle className="w-4 h-4 text-status-danger shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-title font-semibold text-foreground">{highImpact} high-impact signal{highImpact === 1 ? "" : "s"}</div>
               <div className="text-label text-muted-foreground/70 mt-0.5">Review in Alerts for details and recommended actions.</div>
