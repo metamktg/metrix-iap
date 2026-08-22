@@ -25,6 +25,7 @@ import {
   fmtUSD, fmtNum, eventLabel, SkeletonTileRow,
 } from "./shared";
 import { AddAccountDialog } from "./AddAccountDialog";
+import { OnboardingWizard } from "./OnboardingWizard";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   buildMetricCatalog, metricSourceFromManagerTotals, metricById, resultMetricId,
@@ -405,7 +406,10 @@ export function ManagerOverview() {
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
 
-  // ── Onboarding empty state ────────────────────────────────────────────
+  // ── Onboarding: guided first-run wizard ───────────────────────────────
+  // Purely a display-state fork on adAccounts.length; nothing is persisted,
+  // so the moment an account exists the normal dashboard below renders on
+  // its own.
 
   if (adAccounts.length === 0) {
     return (
@@ -415,24 +419,7 @@ export function ManagerOverview() {
           title={manager.name}
           subtitle="No ad accounts yet. Add your first account to unlock the intelligence platform."
         />
-        <div className="flex-1 flex items-center justify-center px-6 py-12">
-          <div className="max-w-md w-full text-center space-y-5">
-            <div className="w-12 h-12 rounded-xl border border-primary/25 bg-primary/10 flex items-center justify-center mx-auto">
-              <Plug className="w-5 h-5 text-interactive" />
-            </div>
-            <div className="space-y-1.5">
-              <h2 className={HEADING.h2}>Add your first ad account</h2>
-              <p className={cn(TYPE.body, "text-muted-foreground/70")}>Connect Meta or upload reports.</p>
-            </div>
-            <button
-              onClick={() => setAddOpen(true)}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-interactive text-body font-medium hover:bg-primary/25 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" /> Add Ad Account
-            </button>
-          </div>
-        </div>
-        <AddAccountDialog open={addOpen} onOpenChange={setAddOpen} />
+        <OnboardingWizard managerName={manager.name} />
       </div>
     );
   }
