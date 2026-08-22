@@ -775,10 +775,8 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
       <span
         className={cn(
           "inline-block mr-1.5 px-1 py-px rounded text-label font-semibold uppercase tracking-wide border",
-          p.tier === "missing" && p.isRequired
+          p.isRequired && p.tier === "missing"
             ? "bg-red-500/15 border-red-400/40 text-red-300"
-            : p.tier === "missing"
-            ? "bg-red-500/10 border-red-400/30 text-red-300"
             : "bg-status-warning/10 border-status-warning/30 text-status-warning"
         )}
       >
