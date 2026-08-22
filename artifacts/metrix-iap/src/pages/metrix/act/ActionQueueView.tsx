@@ -78,7 +78,7 @@ function InlineDrawer({
   onClose: () => void;
 }) {
   return (
-    <div className="mt-2 rounded-xl border border-[hsl(var(--border-default))] bg-[var(--void-navy-3)] p-4 space-y-3 text-left">
+    <div className="mt-2 rounded-xl border border-[hsl(var(--border-default))] bg-secondary p-4 space-y-3 text-left">
       {/* Close handle */}
       <div className="flex items-center justify-between">
         <span className="text-label font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
@@ -178,7 +178,7 @@ function QueueCard({
           ? "border-emerald-400/25 bg-emerald-400/[0.04]"
           : isDismissed
           ? "border-[hsl(var(--border))] bg-white/[0.01] opacity-50"
-          : "border-[hsl(var(--border))] bg-[var(--void-navy-3)]"
+          : "border-[hsl(var(--border))] bg-secondary"
       )}
     >
       {/* Card header — clickable to expand */}
@@ -204,7 +204,7 @@ function QueueCard({
           </span>
           <ConfidenceBadge value={card.confidence} />
           {impactLabel && (
-            <span className="ml-auto text-caption text-[var(--meta-blue-highlight)] font-semibold tabular-nums">
+            <span className="ml-auto text-caption text-primary font-semibold tabular-nums">
               {impactLabel}
             </span>
           )}
