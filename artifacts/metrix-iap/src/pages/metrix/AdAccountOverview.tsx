@@ -184,7 +184,12 @@ export function AdAccountOverview() {
   const resolveControlText = (text: string, id: string) => {
     const name = resolveConceptName(id);
     if (name === id) return text;
-    return text.replace(id, name);
+    // Global replacement via split/join — a plain `.replace(id, name)` only
+    // swaps the first match, so a cell id mentioned twice in the same
+    // generated sentence would leave the raw code showing the second time.
+    // split/join sidesteps building a regex from a string that could
+    // theoretically contain regex-special characters.
+    return text.split(id).join(name);
   };
   const primaryControlName = resolveConceptName(core.primary_control);
   const registrationControlName = core.registration_control ? resolveConceptName(core.registration_control) : null;

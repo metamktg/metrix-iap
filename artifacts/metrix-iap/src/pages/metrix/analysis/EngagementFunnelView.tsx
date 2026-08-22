@@ -801,7 +801,7 @@ export function EngagementFunnelView() {
                         <span className="font-medium text-foreground/80">Intent conversion: </span>
                         {fmtRate(pct(summaryTiles.ctrLink, summaryTiles.ctrAll), 0)} of all clicks become link clicks.
                         {summaryTiles.ctrLink != null && summaryTiles.ctrAll != null && summaryTiles.ctrAll > 0 && summaryTiles.ctrLink / summaryTiles.ctrAll < 0.4 && (
-                          <span className="text-amber-400/70 ml-1">Low ratio — check for high engagement creative that doesn't drive off-platform intent.</span>
+                          <span className="text-status-warning/70 ml-1">Low ratio — check for high engagement creative that doesn't drive off-platform intent.</span>
                         )}
                       </div>
                     )}

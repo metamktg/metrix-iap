@@ -522,17 +522,17 @@ export function IapLibraryView() {
                   <>
                     {/* Unmapped warning banner */}
                     {unmappedCellIds.size > 0 && (
-                      <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-400/25 bg-amber-400/[0.04]">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-px" strokeWidth={1.5} />
+                      <div className="flex items-start gap-2.5 p-3 rounded-lg border border-status-warning/25 bg-status-warning/[0.04]">
+                        <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-px" strokeWidth={1.5} />
                         <div className="flex-1 min-w-0 space-y-1">
-                          <p className="text-caption font-medium text-amber-300/90">
+                          <p className="text-caption font-medium text-status-warning/90">
                             {unmappedCellIds.size} creative {unmappedCellIds.size === 1 ? "cell" : "cells"} not fully mapped to IAP library
                           </p>
                           <p className="text-label text-muted-foreground/70">Missing library entry — assets may be incomplete.</p>
                         </div>
                         <button
                           onClick={() => setCreativeLibraryOpen(true)}
-                          className="shrink-0 flex items-center gap-1 text-label font-medium text-amber-300 hover:text-amber-200 border border-amber-400/25 bg-amber-400/[0.06] hover:bg-amber-400/10 px-2.5 py-1.5 rounded transition-colors"
+                          className="shrink-0 flex items-center gap-1 text-label font-medium text-status-warning border border-status-warning/35 bg-status-warning/10 hover:bg-status-warning/20 px-2.5 py-1.5 rounded transition-colors"
                         >
                           <Images className="w-3.5 h-3.5" />
                           Add creatives
