@@ -46,6 +46,14 @@ export function pillarTier(cells: string[]): "high" | "medium" | "low" {
   return "low";
 }
 
+// ─── Confidence ordinal ranking ────────────────────────────────────────
+// The one ordinal ranking for ICP/hypothesis `confidence_level` strings —
+// lower is higher confidence. Shared by the Avatars profile sort (highest
+// confidence first) and Communications' "best confidence among a pillar's
+// matched ICPs" pick, so both surfaces agree on what "best" means instead
+// of each inventing (or accidentally not inventing) its own order.
+export const CONF_ORDER: Record<string, number> = { high: 0, medium: 1, directional: 2, low: 3 };
+
 /** One readable chip per variable code, colored by family prefix. Styled info tooltip on hover. */
 export function VariableChip({ code, showCode = false, className }: { code: string; showCode?: boolean; className?: string }) {
   const prefix = getVariablePrefix(code);
