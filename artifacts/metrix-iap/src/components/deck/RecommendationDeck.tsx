@@ -153,7 +153,7 @@ function DetailDrawer({
               <div>
                 <button
                   onClick={() => onSegments(card)}
-                  className="inline-flex items-center gap-1.5 text-caption font-medium text-interactive border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-2.5 py-1.5 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-caption font-medium text-interactive border border-primary/30 hover:bg-primary/10 active:bg-primary/20 rounded-md px-2.5 py-1.5 transition-colors"
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
                   Avatar × placement drill-down

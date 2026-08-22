@@ -28,7 +28,7 @@ import { ChartContainer, type ChartConfig } from "@workspace/command-deck/compon
 import { Switch } from "@workspace/command-deck/components/ui/switch";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { getGetAnalysisSummaryByDateRangeQueryOptions } from "@workspace/api-client-react";
-import { TYPE } from "@/pages/metrix/typography";
+import { TYPE, DIALOG } from "@/pages/metrix/typography";
 import type { AdAccount, AnalysisData, CellPerformanceRow } from "@/lib/data/seedTypes";
 import { metricById, type MetricDef } from "@/lib/data/metricsCatalog";
 import {
@@ -412,7 +412,7 @@ export function KpiDrilldownModal({
           <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
             {scope === "manager" ? "Metric breakdown · by ad account" : "Metric breakdown"}
           </div>
-          <DialogTitle className="text-callout font-semibold text-foreground">{metric.label}</DialogTitle>
+          <DialogTitle className={DIALOG.title}>{metric.label}</DialogTitle>
           <DialogDescription className="text-caption text-muted-foreground/70 leading-relaxed">
             {scope === "manager"
               ? "The selected metric per configured ad account. Blended ratios are computed from summed numerators and denominators — never averaged."

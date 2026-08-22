@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@workspace/command-deck/components/ui/dialog";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { DIALOG } from "./typography";
 import {
   Plug,
   FileUp,
@@ -167,7 +168,7 @@ export function AddAccountDialog({
                   <Plus className="w-4 h-4 text-interactive" />
                 </div>
               </div>
-              <DialogTitle className="text-base">Add Ad Account</DialogTitle>
+              <DialogTitle className={DIALOG.title}>Add Ad Account</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
                 Bring a new ad account into Metrix. Connect it live through Meta, or create a
                 manual account and upload exported reports.
@@ -231,7 +232,7 @@ export function AddAccountDialog({
                   <FileUp className="w-4 h-4 text-interactive" />
                 </div>
               </div>
-              <DialogTitle className="text-base">Name the ad account</DialogTitle>
+              <DialogTitle className={DIALOG.title}>Name the ad account</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
                 Use the client or brand name. The account starts unconfigured — performance data
                 appears only after uploaded reports are processed by an analysis run.
@@ -286,7 +287,7 @@ export function AddAccountDialog({
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 </div>
               </div>
-              <DialogTitle className="text-base">{created.name} created</DialogTitle>
+              <DialogTitle className={DIALOG.title}>{created.name} created</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
                 Stage exported reports now, or skip and upload later from the account's setup
                 screen. Uploads are stored for the analysis pipeline — nothing is parsed at
@@ -313,7 +314,7 @@ export function AddAccountDialog({
         {step === "manual_uploads" && created && confirmingClose && (
           <>
             <DialogHeader>
-              <DialogTitle className="text-base">Leave without completing?</DialogTitle>
+              <DialogTitle className={DIALOG.title}>Leave without completing?</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
                 You have staged files that haven't been reviewed yet. You can come back to
                 review and run analysis from the account's setup screen.

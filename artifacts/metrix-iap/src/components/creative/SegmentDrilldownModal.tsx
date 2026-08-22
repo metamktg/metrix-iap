@@ -39,7 +39,7 @@ import {
 import { useSegmentMetricSelection } from "@/hooks/useSegmentMetricSelection";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 import { fmtUSD, fmtNum, fmtPct } from "@/pages/metrix/shared";
-import { TYPE } from "@/pages/metrix/typography";
+import { TYPE, DIALOG } from "@/pages/metrix/typography";
 import type { AnalysisData } from "@/lib/data/seedTypes";
 
 // ─── Metric picker (segment-scoped, capped) ───────────────────────────
@@ -703,7 +703,7 @@ export function SegmentDrilldownModal({
               </button>
             )}
             <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">{kicker}</div>
-            <DialogTitle className="text-callout font-semibold text-foreground" data-testid="title-segment-drilldown">
+            <DialogTitle className={DIALOG.title} data-testid="title-segment-drilldown">
               {comparing ? `${label} vs ${compareLabel}` : `${label} — what's driving results`}
             </DialogTitle>
             <DialogDescription className="text-caption text-muted-foreground/70 leading-relaxed">

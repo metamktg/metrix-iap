@@ -171,9 +171,9 @@ export function AnalysisCommandCenter() {
                   <div className="flex flex-col">
                     {recentRuns.map((r) => (
                       <div key={r.id} className="flex items-center gap-2.5 py-2 border-t border-border/25 first:border-0 min-w-0">
-                        {r.status === "running" && <Loader2 className="w-4 h-4 text-amber-400 animate-spin shrink-0" />}
-                        {r.status === "success" && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
-                        {r.status === "error" && <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
+                        {r.status === "running" && <Loader2 className="w-4 h-4 text-status-warning animate-spin shrink-0" />}
+                        {r.status === "success" && <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" />}
+                        {r.status === "error" && <XCircle className="w-4 h-4 text-status-danger shrink-0" />}
                         <span className="flex-1 min-w-0">
                           <span className="block text-body text-foreground/85 truncate">
                             {r.status === "success" && r.date_start && r.date_end
@@ -185,7 +185,19 @@ export function AnalysisCommandCenter() {
                             {r.started_at ? new Date(r.started_at).toLocaleString() : r.id}
                           </span>
                         </span>
-                        <span className="mx-inline-badge shrink-0 capitalize">{r.status}</span>
+                        <span
+                          className={`mx-inline-badge shrink-0 capitalize ${
+                            r.status === "success"
+                              ? "mx-inline-badge--success"
+                              : r.status === "error"
+                              ? "mx-inline-badge--danger"
+                              : r.status === "running"
+                              ? "mx-inline-badge--warning"
+                              : ""
+                          }`}
+                        >
+                          {r.status}
+                        </span>
                       </div>
                     ))}
                   </div>

@@ -157,9 +157,9 @@ export function CreativeCommandCenter() {
                 ) : (
                   <div className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2.5">
                     <div className="flex items-center gap-2 min-w-0">
-                      {run.status === "running" && <Loader2 className="w-4 h-4 text-amber-400 animate-spin shrink-0" />}
-                      {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
-                      {run.status === "error" && <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
+                      {run.status === "running" && <Loader2 className="w-4 h-4 text-status-warning animate-spin shrink-0" />}
+                      {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" />}
+                      {run.status === "error" && <XCircle className="w-4 h-4 text-status-danger shrink-0" />}
                       <div className="min-w-0">
                         <p className="text-body font-medium text-foreground/90 capitalize truncate">
                           {run.status}
