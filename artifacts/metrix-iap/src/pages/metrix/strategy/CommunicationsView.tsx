@@ -137,7 +137,7 @@ function PillarCard({ pillar, index, strategy }: { pillar: MessagePillar; index:
 
         {/* Title block */}
         <div className="flex-1 min-w-0">
-          <p className="text-base font-bold text-foreground leading-snug line-clamp-2">
+          <p className={cn(TYPE.title, "leading-snug line-clamp-2")}>
             {pillar.label}
           </p>
           {pillar.plain_descriptor && (
