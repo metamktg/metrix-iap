@@ -289,9 +289,7 @@
     background:
       var(--mx-fade-y) right / 1px 100% no-repeat,
       linear-gradient(180deg, hsl(var(--sidebar) / 0.92), hsl(var(--background) / 0.96));
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.05),
-      12px 0 40px rgba(0, 0, 0, 0.35);
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(22px);
   }
 
@@ -314,23 +312,10 @@
     border-radius: 14px;
     background: linear-gradient(180deg, hsl(var(--card) / 0.78), hsl(var(--background) / 0.84));
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.045),
-      inset 0 0 0 1px rgba(255,255,255,0.015),
       0 18px 50px rgba(0, 0, 0, 0.34),
       0 0 38px hsl(var(--primary) / 0.08);
     backdrop-filter: blur(18px);
     transition: transform var(--mx-fast), border-color var(--mx-fast), box-shadow var(--mx-fast), background var(--mx-fast);
-  }
-
-  .mx-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at 18% 0%, hsl(var(--accent) / 0.18), transparent 34%),
-      linear-gradient(90deg, rgba(255,255,255,0.035), transparent 40%);
-    opacity: 0.5;
-    pointer-events: none;
   }
 
   .mx-card:hover {
@@ -338,7 +323,6 @@
     border-color: var(--mx-border-medium);
     background: linear-gradient(180deg, hsl(var(--popover) / 0.86), hsl(var(--background) / 0.9));
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.07),
       0 22px 64px rgba(0, 0, 0, 0.44),
       0 0 42px hsl(var(--primary) / 0.16);
   }
@@ -348,9 +332,7 @@
     color: hsl(var(--primary-foreground)) !important;
     background: linear-gradient(135deg, hsl(var(--primary) / 0.96), hsl(var(--accent) / 0.72)) !important;
     border: 1px solid hsl(var(--accent) / 0.58);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.24),
-      0 0 24px hsl(var(--primary) / 0.42);
+    box-shadow: 0 0 24px hsl(var(--primary) / 0.42);
   }
 
   /* Section label — small uppercase, wide tracking, accent-tinted */
@@ -373,17 +355,13 @@
     color: hsl(var(--primary-foreground));
     font-weight: 700;
     background: linear-gradient(135deg, hsl(var(--primary)) 0%, color-mix(in srgb, hsl(var(--primary)) 82%, hsl(var(--background))) 56%, hsl(var(--accent)) 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.22),
-      0 0 24px hsl(var(--primary) / 0.42);
+    box-shadow: 0 0 24px hsl(var(--primary) / 0.42);
     transition: transform var(--mx-fast), box-shadow var(--mx-fast), filter var(--mx-fast);
   }
   .mx-primary-btn:hover {
     transform: translateY(-1px);
     filter: brightness(1.06);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.26),
-      0 0 32px hsl(var(--primary) / 0.55);
+    box-shadow: 0 0 32px hsl(var(--primary) / 0.55);
   }
 
   /* Secondary button — dark glass with primary-tinted border */
@@ -419,43 +397,15 @@
     border: 1px solid var(--mx-border-medium);
     border-radius: 14px;
     background: linear-gradient(180deg, hsl(var(--card) / 0.72), hsl(var(--background) / 0.80));
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.05),
-      inset 0 0 0 1px rgba(255,255,255,0.01),
-      0 8px 24px rgba(0, 0, 0, 0.28);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
     backdrop-filter: blur(18px);
     transition: transform var(--mx-fast), border-color var(--mx-fast), box-shadow var(--mx-fast);
-  }
-
-  /* Subtle 1px top highlight — replaces the loud blue→cyan gradient bar */
-  .mx-kpi-tile::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 14px 14px 0 0;
-    z-index: 1;
-  }
-
-  /* Minimal inner corner lift — no cyan glow */
-  .mx-kpi-tile::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, transparent 55%);
-    pointer-events: none;
-    z-index: 0;
   }
 
   .mx-kpi-tile:hover {
     transform: translateY(-1px);
     border-color: var(--mx-border-sharp);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.07),
-      0 14px 40px rgba(0, 0, 0, 0.36);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.36);
   }
 
   /* ── Hero card — lead/section-lead cards with stronger presence ─────
@@ -468,29 +418,14 @@
     border-top-color: var(--mx-edge-strong);
     border-radius: 14px;
     background: linear-gradient(160deg, hsl(var(--card) / 0.78), hsl(var(--background) / 0.86));
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.05),
-      inset 0 0 0 1px rgba(255,255,255,0.015),
-      0 10px 32px rgba(0, 0, 0, 0.32);
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.32);
     backdrop-filter: blur(22px);
     transition: transform var(--mx-fast), border-color var(--mx-fast), box-shadow var(--mx-fast);
-  }
-
-  .mx-card-hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at 12% 0%, hsl(var(--accent) / 0.22), transparent 38%),
-      linear-gradient(90deg, rgba(255,255,255,0.04), transparent 45%);
-    opacity: 0.65;
-    pointer-events: none;
   }
 
   .mx-card-hero:hover {
     border-color: var(--mx-border-sharp);
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.09),
       0 26px 72px rgba(0, 0, 0, 0.5),
       0 0 60px hsl(var(--primary) / 0.22);
   }
