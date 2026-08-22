@@ -197,9 +197,9 @@ function VerdictBanner({
 
       {/* Critical alert strip */}
       {criticalAlert && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-4 py-3">
-          <AlertTriangle className="w-4 h-4 text-amber-400/80 shrink-0 mt-0.5" />
-          <p className="text-body text-amber-400/90 leading-relaxed">{criticalAlert}</p>
+        <div className="flex items-start gap-2.5 rounded-lg border border-status-warning/20 bg-status-warning/[0.04] px-4 py-3">
+          <AlertTriangle className="w-4 h-4 text-status-warning/80 shrink-0 mt-0.5" />
+          <p className="text-body text-status-warning/90 leading-relaxed">{criticalAlert}</p>
         </div>
       )}
     </div>
@@ -323,12 +323,12 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
       <div className="rounded-xl border border-[hsl(var(--border))] bg-[var(--void-navy-3)] overflow-hidden divide-y divide-white/[0.04]">
         {fold.visible.map((p, i) => (
           <div key={i} className="flex items-start gap-3 px-4 py-3">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400/60 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-3.5 h-3.5 text-status-warning/60 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <p className="text-body font-medium text-foreground/80 truncate">{p.campaign}</p>
               <p className="text-caption text-muted-foreground/55 leading-snug mt-0.5">{p.diagnosis}</p>
             </div>
-            <span className="shrink-0 text-caption font-mono tabular-nums text-amber-400/70">
+            <span className="shrink-0 text-caption font-mono tabular-nums text-status-warning/70">
               {fmtUSD(p.wasted_spend ?? p.spend, 0)}
             </span>
           </div>

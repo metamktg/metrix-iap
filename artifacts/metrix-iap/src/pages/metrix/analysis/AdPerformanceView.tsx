@@ -156,12 +156,12 @@ function SignalHeadlineCard({ tier, flag }: { tier: SignalTier; flag: DataQualit
       data-testid={`signal-headline-${tier}`}
       className={cn(
         "rounded-lg border px-3.5 py-3 flex flex-col gap-1.5 min-h-[92px]",
-        flag && isActNow ? "border-amber-400/30 bg-amber-400/[0.04]" : "border-border/40 bg-white/[0.015]",
+        flag && isActNow ? "border-status-warning/30 bg-status-warning/[0.04]" : "border-border/40 bg-white/[0.015]",
       )}
     >
       <div className="flex items-center gap-1.5">
-        <Icon className={cn("w-3.5 h-3.5 shrink-0", flag && isActNow ? "text-amber-400/80" : "text-muted-foreground/50")} />
-        <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", flag && isActNow ? "text-amber-400/85" : "text-muted-foreground/60")}>
+        <Icon className={cn("w-3.5 h-3.5 shrink-0", flag && isActNow ? "text-status-warning/80" : "text-muted-foreground/50")} />
+        <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", flag && isActNow ? "text-status-warning/85" : "text-muted-foreground/60")}>
           {TIER_LABEL[tier]}
         </span>
       </div>
@@ -244,16 +244,16 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
               key={globalIndex}
               className={cn(
                 "rounded-lg border px-3.5 py-3 flex flex-col gap-2",
-                isActNow ? "border-amber-400/30 bg-amber-400/[0.04]" : "border-border/40 bg-white/[0.015]",
+                isActNow ? "border-status-warning/30 bg-status-warning/[0.04]" : "border-border/40 bg-white/[0.015]",
               )}
             >
               <div className="flex items-center gap-1.5">
                 {isActNow
-                  ? <AlertTriangle className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
+                  ? <AlertTriangle className="w-3.5 h-3.5 text-status-warning/80 shrink-0" />
                   : tier === "watch"
                     ? <Eye className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
                     : <Search className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />}
-                <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", isActNow ? "text-amber-400/85" : "text-muted-foreground/60")}>
+                <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", isActNow ? "text-status-warning/85" : "text-muted-foreground/60")}>
                   {TIER_LABEL[tier]}
                 </span>
                 {/* Real spend-affected badge — never a fabricated confidence percentage. */}
@@ -794,7 +794,7 @@ function CostPerResultCard({ adAccountId, accountConfigured }: { adAccountId: st
             <div className="flex flex-col items-center gap-1.5 w-16">
               <span className={cn(TYPE.caption, "font-semibold text-foreground tabular-nums")}>{fmtUSD(trend.current)}</span>
               <div
-                className={cn("w-8 rounded-t", trend.improved ? "bg-emerald-400/70" : "bg-amber-400/70")}
+                className={cn("w-8 rounded-t", trend.improved ? "bg-emerald-400/70" : "bg-status-warning/70")}
                 style={{ height: `${barHeightPx(trend.current, maxVal)}px` }}
               />
               <span className={cn(TYPE.microLabel, "text-muted-foreground/55")}>Current window</span>
@@ -902,7 +902,12 @@ export function AdPerformanceView() {
         const resolveControlText = (text: string, id: string) => {
           const name = resolveConceptName(id);
           if (name === id) return text;
-          return text.replace(id, name);
+          // Global replacement via split/join — a plain `.replace(id, name)`
+          // only swaps the first match, so a cell id mentioned twice in the
+          // same generated sentence would leave the raw code showing the
+          // second time. split/join sidesteps building a regex from a
+          // string that could theoretically contain regex-special characters.
+          return text.split(id).join(name);
         };
 
         // Featured modules get a full card (icon, description, stat); the

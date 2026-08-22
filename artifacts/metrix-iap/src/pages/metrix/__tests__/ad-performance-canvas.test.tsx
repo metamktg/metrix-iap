@@ -300,6 +300,12 @@ describe("what moved cost per result", () => {
     expect(within(chart).getByText("Prior window")).toBeTruthy();
     expect(within(chart).getByText("Current window")).toBeTruthy();
     expect(screen.queryByText(/audience mix|creative refresh|placement shift|bid strategy/i)).toBeNull();
+
+    // Cost per result got worse ($12 → $14) — the current-window bar must use
+    // the real --status-warning token, never a raw amber-* Tailwind class.
+    const currentBar = within(chart).getByText("Current window").parentElement?.querySelector('[class*="rounded-t"]');
+    expect(currentBar?.className).toMatch(/status-warning/);
+    expect(currentBar?.className).not.toMatch(/amber-/);
   });
 });
 
@@ -381,6 +387,21 @@ describe("curated signal headline row", () => {
     for (const tier of ["act_now", "watch", "investigate"]) {
       const card = within(row).getByTestId(`signal-headline-${tier}`);
       expect(card.textContent).not.toMatch(/no .* signals this run/i);
+    }
+  });
+
+  it("uses the real --status-warning token for Act now styling, never a raw amber-* Tailwind class", () => {
+    renderFor("bookster");
+    const row = screen.getByTestId("signal-headline-row");
+    const actNowCard = within(row).getByTestId("signal-headline-act_now");
+    expect(actNowCard.className).toMatch(/status-warning/);
+    expect(actNowCard.className).not.toMatch(/amber-/);
+    // Same honesty check on the full filterable list's Act now cards.
+    const strip = screen.getByTestId("signal-cards");
+    fireEvent.click(screen.getByRole("button", { name: /^Act now/ }));
+    for (const card of within(strip).getAllByText("Act now")) {
+      const cardEl = card.closest('[class*="rounded-lg"]')!;
+      expect(cardEl.className).not.toMatch(/amber-/);
     }
   });
 });

@@ -1099,7 +1099,7 @@ export function ModuleScopeGate({
   if (account.status !== "configured") {
     return (
       <div className="flex-1 flex flex-col">
-        {renderHeader && <ModuleHeader section={section} title={title} />}
+        {renderHeader && <ModuleHeader section={section} title={title} accountName={account.name} />}
         <UnconfiguredState account={account} />
       </div>
     );

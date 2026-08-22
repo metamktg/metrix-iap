@@ -134,11 +134,11 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
               key={r.metric_key}
               className={cn(
                 "flex items-center gap-2 rounded px-2 py-1.5 text-caption",
-                r.flagged ? "bg-amber-400/[0.06] border border-amber-400/20" : "bg-white/[0.02] border border-border/20"
+                r.flagged ? "bg-status-warning/[0.06] border border-status-warning/20" : "bg-white/[0.02] border border-border/20"
               )}
             >
               {r.flagged
-                ? <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                ? <AlertTriangle className="w-3 h-3 text-status-warning shrink-0" />
                 : <CheckCircle2 className="w-3 h-3 text-emerald-400/60 shrink-0" />}
               <span className="font-medium text-foreground/80">
                 {r.metric_key === "spend" ? "Spend" : r.metric_key === "results" ? "Results" : r.metric_key}
