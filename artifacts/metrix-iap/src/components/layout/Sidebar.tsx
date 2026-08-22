@@ -1,6 +1,5 @@
 import { useLocation } from "wouter";
 import { useState, useRef, useCallback, useEffect, useId } from "react";
-import { createPortal } from "react-dom";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   ChevronDown,
@@ -120,8 +119,39 @@ function isSectionActive(section: NavSection, location: string): boolean {
 
 function navigate(href: string, e: React.MouseEvent) {
   e.preventDefault();
+  navigateTo(href);
+}
+
+function navigateTo(href: string) {
   window.history.pushState({}, "", href);
   window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+// ─── Single-click vs double-click dispatch ─────────────────────────────
+// Nav click model (Metrix v1 design handoff): a single click on an
+// expandable section toggles its children open/closed (accordion); a
+// double click within ~220ms instead navigates straight to that section's
+// Command Center. The first click's toggle is deferred behind the window
+// so a fast second click can still cancel it and navigate instead.
+const DOUBLE_CLICK_MS = 220;
+
+function useSingleOrDoubleClick(onSingle: () => void, onDouble: () => void) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
+  return useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+      onDouble();
+      return;
+    }
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      onSingle();
+    }, DOUBLE_CLICK_MS);
+  }, [onSingle, onDouble]);
 }
 
 // ─── Child row (used in both expanded sidebar and hover flyout) ─────────
@@ -174,152 +204,49 @@ function ChildRow({
   );
 }
 
-// ─── Hover flyout (collapsed mode) ────────────────────────────────────
-// Rendered via createPortal to document.body so it escapes the sidebar's
-// overflow-hidden / overflow-y-auto ancestors and paints outside the rail.
-
-function HoverFlyout({
-  section,
-  badgeCounts,
-  top,
-  left,
-  onMouseEnter,
-  onMouseLeave,
-  onClose,
-}: {
-  section: NavSection;
-  badgeCounts: Record<string, number | null>;
-  top: number;
-  left: number;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
-  onClose: () => void;
-}) {
-  const children = section.children ?? [];
-
-  // Handle leaf sections (no children) — these show a tooltip, not a flyout,
-  // so this component is only rendered when hasChildren is true.
-  const panel = (
-    <div
-      style={{ position: "fixed", top, left, zIndex: 9999 }}
-      className={cn(
-        "w-48 rounded-lg shadow-xl",
-        "bg-surface-sidebar border border-border/50",
-        "py-1",
-      )}
-      role="dialog"
-      aria-label={`${section.label} pages`}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      {/* Section title */}
-      <div className="px-3 py-1.5 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 border-b border-border/30 mb-0.5">
-        {section.label}
-      </div>
-      <ul
-        className="list-none p-0 m-0 px-1 space-y-0.5 pt-0.5"
-        aria-label={`${section.label} pages`}
-      >
-        {children.map(child => (
-          <ChildRow
-            key={child.id}
-            child={child}
-            count={child.badgeKey ? badgeCounts[child.badgeKey] ?? null : null}
-            onNavigate={onClose}
-          />
-        ))}
-      </ul>
-    </div>
-  );
-
-  return createPortal(panel, document.body);
-}
-
-// ─── Collapsed icon item with hover flyout ─────────────────────────────
+// ─── Collapsed icon item ────────────────────────────────────────────────
+// No flyout/hover behavior (Metrix v1 design handoff: "that was tried and
+// removed for being unreliable on a scrolling rail"). Clicking an
+// expandable section's icon reopens the full rail on that section instead;
+// clicking a leaf section's icon navigates directly, same as expanded mode.
 
 const COLLAPSED_DIVIDER_AFTER = new Set(["overview", "analysis", "mst", "exports"]);
 
 function CollapsedItem({
   section,
   badgeCounts,
+  onExpandToSection,
 }: {
   section: NavSection;
   badgeCounts: Record<string, number | null>;
+  onExpandToSection: (sectionId: string) => void;
 }) {
   const [location] = useLocation();
-  const [hovered, setHovered] = useState(false);
-  const [flyoutPos, setFlyoutPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const liRef = useRef<HTMLLIElement>(null);
   const active = isSectionActive(section, location);
   const landing = sectionLandingRoute(section) ?? section.to ?? "#";
   const badgeCount = section.badgeKey ? badgeCounts[section.badgeKey] ?? null : null;
   const hasChildren = (section.children?.length ?? 0) > 0;
 
-  const scheduleClose = useCallback(() => {
-    closeTimer.current = setTimeout(() => setHovered(false), 150);
-  }, []);
-
-  const cancelClose = useCallback(() => {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  }, []);
-
-  const handleIconEnter = useCallback(() => {
-    cancelClose();
-    if (liRef.current) {
-      const rect = liRef.current.getBoundingClientRect();
-      // Estimate flyout height: header (32px) + each child (34px) + padding (12px)
-      const estHeight = 32 + (section.children?.length ?? 0) * 34 + 12;
-      const rawTop = rect.top;
-      // Clamp so the flyout doesn't overflow the bottom of the viewport
-      const clampedTop = Math.min(rawTop, window.innerHeight - estHeight - 8);
-      setFlyoutPos({ top: Math.max(8, clampedTop), left: rect.right + 6 });
-    }
-    setHovered(true);
-  }, [cancelClose, section.children?.length]);
-
-  const handleIconLeave = useCallback(() => {
-    if (hasChildren) {
-      scheduleClose();
-    } else {
-      setHovered(false);
-    }
-  }, [hasChildren, scheduleClose]);
-
-  // Escape key closes the flyout
-  useEffect(() => {
-    if (!hovered) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setHovered(false);
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [hovered]);
-
   return (
     <>
-      <li
-        ref={liRef}
-        className="relative"
-        onMouseEnter={handleIconEnter}
-        onMouseLeave={handleIconLeave}
-      >
+      <li className="relative">
         <a
           href={landing}
           onClick={(e) => {
+            if (hasChildren) {
+              e.preventDefault();
+              onExpandToSection(section.id);
+              return;
+            }
             navigate(landing, e);
-            setHovered(false);
           }}
           aria-current={active ? "page" : undefined}
           aria-label={section.label}
-          title={!hasChildren ? section.label : undefined}
+          title={section.label}
           className={cn(
             "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all relative overflow-hidden",
             active
-              ? "bg-primary/25 text-interactive border border-primary/35 shadow-sm shadow-primary/20"
+              ? "bg-primary/20 text-interactive border border-primary/30"
               : "text-foreground/45 hover:text-foreground/90 hover:bg-white/[0.07]",
             section.placeholder && "opacity-50"
           )}
@@ -327,25 +254,13 @@ function CollapsedItem({
           {active && (
             <span className="absolute left-0 top-2 bottom-2 w-[3px] bg-primary rounded-r-full" />
           )}
-          <NavIcon name={section.icon} className={cn("w-4 h-4 transition-transform", active && "scale-105")} />
+          <NavIcon name={section.icon} className="w-4 h-4" />
           {badgeCount != null && badgeCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[7px] font-bold text-white flex items-center justify-center leading-none">
               {badgeCount > 9 ? "9+" : badgeCount}
             </span>
           )}
         </a>
-
-        {hovered && hasChildren && (
-          <HoverFlyout
-            section={section}
-            badgeCounts={badgeCounts}
-            top={flyoutPos.top}
-            left={flyoutPos.left}
-            onMouseEnter={cancelClose}
-            onMouseLeave={scheduleClose}
-            onClose={() => setHovered(false)}
-          />
-        )}
       </li>
 
       {COLLAPSED_DIVIDER_AFTER.has(section.id) && (
@@ -378,12 +293,28 @@ function ExpandableSection({
   const controlsId = useId();
   const children = section.children ?? [];
 
+  // Single click toggles the accordion; double click (within 220ms)
+  // navigates to the section's Command Center instead.
+  const handleClick = useSingleOrDoubleClick(
+    onToggle,
+    () => {
+      if (landing) navigateTo(landing);
+    },
+  );
+
   return (
     <li>
-      {/* Single row: icon + label navigates to landing; chevron toggles list */}
-      <div
+      {/* One row: single click toggles the child list, double click navigates
+          to the section's Command Center (Metrix v1 design handoff). */}
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={controlsId}
+        aria-current={landingActive ? "page" : undefined}
+        onClick={handleClick}
+        title={landing ? `Click to expand · double-click to open ${section.label}` : undefined}
         className={cn(
-          "flex items-center rounded-lg text-[13px] tracking-[-0.005em] transition-all select-none",
+          "w-full flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-all select-none",
           landingActive
             ? "mx-nav-active font-medium"
             : sectionActive
@@ -391,51 +322,23 @@ function ExpandableSection({
               : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10"
         )}
       >
-        {/* Icon + label: navigates to landing page */}
-        <a
-          href={landing ?? "#"}
-          aria-current={landingActive ? "page" : undefined}
-          onClick={(e) => {
-            if (!landing) {
-              e.preventDefault();
-              onToggle();
-              return;
-            }
-            navigate(landing, e);
-            // Ensure this section stays open when navigated to
-            if (!open) onToggle();
-          }}
-          className="flex-1 min-w-0 flex items-center gap-2 pl-2.5 pr-1 h-9"
-        >
-          <NavIcon
-            name={section.icon}
-            className={cn(
-              "w-4 h-4 shrink-0",
-              landingActive ? "text-white" : sectionActive ? "text-interactive" : "text-muted-foreground/70"
-            )}
-          />
-          <span className="flex-1 text-left truncate">{section.label}</span>
-        </a>
-
-        {/* Chevron-only toggle — expands/collapses child list without navigating */}
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={controlsId}
-          aria-label={`${open ? "Collapse" : "Expand"} ${section.label} section`}
-          onClick={onToggle}
+        <NavIcon
+          name={section.icon}
           className={cn(
-            "shrink-0 h-9 w-7 flex items-center justify-center rounded transition-colors",
-            landingActive
-              ? "text-white/70 hover:text-white"
-              : "text-muted-foreground/40 hover:text-muted-foreground"
+            "w-4 h-4 shrink-0",
+            landingActive ? "text-white" : sectionActive ? "text-interactive" : "text-muted-foreground/70"
           )}
-        >
-          <ChevronDown
-            className={cn("w-3 h-3 transition-transform duration-200", open && "rotate-180")}
-          />
-        </button>
-      </div>
+        />
+        <span className="flex-1 text-left truncate">{section.label}</span>
+        <ChevronDown
+          aria-hidden="true"
+          className={cn(
+            "w-3 h-3 shrink-0 transition-transform duration-200",
+            open && "rotate-180",
+            landingActive ? "text-white/70" : "text-muted-foreground/40"
+          )}
+        />
+      </button>
 
       {/* Animated child list — grid 0fr→1fr trick animates height:auto cleanly */}
       <div
@@ -597,6 +500,14 @@ export function Sidebar() {
     setOpenSectionId(prev => (prev === id ? null : id));
   }
 
+  // Collapsed rail: clicking an expandable section's icon reopens the full
+  // rail on that section (no flyout/hover).
+  function handleExpandToSection(id: string) {
+    setCollapsed(false);
+    saveCollapsed(false);
+    setOpenSectionId(id);
+  }
+
   return (
     <aside
       data-collapsed={collapsed}
@@ -678,6 +589,7 @@ export function Sidebar() {
                 key={section.id}
                 section={section}
                 badgeCounts={badgeCounts}
+                onExpandToSection={handleExpandToSection}
               />
             ))}
           </ol>
