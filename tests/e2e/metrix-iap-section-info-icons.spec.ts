@@ -123,6 +123,35 @@ async function mockApis(ctx: BrowserContext): Promise<void> {
         body: JSON.stringify({ windows: [] }),
       }),
   );
+
+  // Analysis runs — empty list. MST Command Center calls useListAnalysisRuns;
+  // without this mock the Vite dev server answers the unmatched request with
+  // index.html and the page crashes reading `.runs`.
+  await page.route("**/api/metrix/accounts/*/analysis-runs", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ runs: [] }),
+    }),
+  );
+
+  // Stage status — the loop-gating source of truth every command center
+  // reads (Analysis -> Strategy -> Creative -> MST). Without this mocked,
+  // useStageStatus's query has no data and mst.unlocked defaults to false,
+  // so MST Command Center renders its "Generate briefs first" gate instead
+  // of the real page content.
+  await page.route("**/api/metrix/accounts/*/stage-status", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        analysis: { status: "success", last_run_at: null, date_range: "all", validated: true, progress_pct: 100, progress_stage: "" },
+        strategy: { status: "success", last_run_at: null },
+        briefs: { status: "success", last_run_at: null, count: 10 },
+        mst: { unlocked: true },
+      }),
+    }),
+  );
 }
 
 /**
@@ -346,9 +375,12 @@ async function main() {
       },
     );
 
-    // Test 6: Avatars / ICP — "Matrix avatars" SectionInfoIcon (default view mode).
+    // Test 6: MST Command Center — "Matrix avatars" SectionInfoIcon.
+    // This section moved from the Avatars/ICP page to MST Command Center
+    // (see MstCommandCenter.tsx's top-of-file note); route/heading updated
+    // to match.
     await test(
-      'AvatarsView · "Matrix avatars" SectionInfoIcon shows correct tooltip',
+      'MstCommandCenter · "Matrix avatars" SectionInfoIcon shows correct tooltip',
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -358,13 +390,13 @@ async function main() {
           await mockApis(ctx);
           await gotoAndWait(
             page,
-            `${BASE}/app/strategy/avatars?account=${ACCOUNT}`,
+            `${BASE}/app/mst?account=${ACCOUNT}`,
             "Matrix avatars",
           );
           await assertTooltip(
             page,
             "Audience avatars from the MST matrix, each with its measured performance, creative DNA, and linked ICP profiles.",
-            "Avatars / ICP · Matrix avatars SectionInfoIcon",
+            "MST Command Center · Matrix avatars SectionInfoIcon",
           );
         } finally {
           await ctx.close();

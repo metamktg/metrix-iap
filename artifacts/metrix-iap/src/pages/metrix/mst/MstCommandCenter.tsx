@@ -17,7 +17,7 @@ import { useStageStatus } from "@/hooks/useStageStatus";
 import {
   ModuleHeader, ModuleScopeGate, PrerequisiteGate,
   StageLoopHub, buildLoopStages, HubNavGrid,
-  MetricTile, SectionCard, resultTerm, fmtUSD, fmtPct, fmtNum,
+  MetricTile, SectionCard, SectionInfoIcon, resultTerm, fmtUSD, fmtPct, fmtNum,
   useFocusParam, CaveatNote,
 } from "../shared";
 import {
@@ -575,7 +575,7 @@ export function MstCommandCenter() {
                         <SectionCard
                           title="Matrix avatars"
                           desc={`Sorted by ${SORT_LABEL[sortBy]} · tap any card for detail`}
-                          right={<AvatarSortBar sortBy={sortBy} onSort={setSortBy} />}
+                          right={<><SectionInfoIcon tip="Audience avatars from the MST matrix, each with its measured performance, creative DNA, and linked ICP profiles." /><AvatarSortBar sortBy={sortBy} onSort={setSortBy} /></>}
                         >
                           <FoldedGrid
                             items={sortedColumns}
