@@ -14,6 +14,9 @@ at. Nothing here is a specification. Read these for *why* decisions were made; r
 | [`METRIX_IAP_Output_Consistency_Audit_Phase1.md`](METRIX_IAP_Output_Consistency_Audit_Phase1.md) | Every seed-bundle field checked against every page, Agency and Ad Account views: which fields are dead, which are Agency-only/Ad-Account-only, and priority order for closing the gaps. |
 | [`METRIX_Onboarding_Flow_Audit_Phase1.md`](METRIX_Onboarding_Flow_Audit_Phase1.md) | New-user journey traced end to end: what works, the mislabeled "Soon" badges fixed this pass, and the open items (guided-setup copy the backend assembles but the UI drops, and a cited but missing "Onboarding cold-start" spec). |
 | [`METRIX_Platform_Gap_Audit_Phase1.md`](METRIX_Platform_Gap_Audit_Phase1.md) | Cross-system gap audit (Replit/GitHub/Supabase), checked live against the production database via the Supabase MCP connection: the `icp_profiles` schema-drift fix applied this pass, advisor findings confirmed as by-design rather than gaps, and the higher-lift plan for Optimization Loop + MST layers 2-7. |
+| [`IAP_INFRASTRUCTURE_AUDIT_2026-07.md`](IAP_INFRASTRUCTURE_AUDIT_2026-07.md) | Infrastructure & UX audit: platform snapshot, five ranked bottlenecks (monolithic seed bundle, no code splitting, in-process jobs on autoscale, whole-bundle refetch, repo weight), progressive-disclosure gaps, and a sequenced P0-P3 roadmap. |
+| [`IAP_ROADMAP_SPEC_BRIEFS_2026-07.md`](IAP_ROADMAP_SPEC_BRIEFS_2026-07.md) | Companion per-item technical specs for the roadmap above (P0-P3), each with current-state references, implementation requirements, and validation gates. |
+| [`IAP_SPEC_SYNTHESIS_v1.0.md`](IAP_SPEC_SYNTHESIS_v1.0.md) | Modular system prompt for synthesizing a roadmap brief into a production-ready spec or PR. Not one of the six canonical IAP-chain prompts in `../prompts/`. |
 
 ## The one rule worth carrying forward
 
