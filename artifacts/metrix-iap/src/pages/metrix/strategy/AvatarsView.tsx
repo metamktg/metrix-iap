@@ -24,7 +24,7 @@ import {
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
 import {
-  VariableStackChips, pillarTier,
+  VariableStackChips, pillarTier, CONF_ORDER,
   PersonaAvatar, StatGrid, AccordionToggle, DnaChipStrip, FoldedGrid, FoldedList,
   HypothesisLabel, HypothesisStatusBadge,
 } from "./strategyShared";
@@ -62,7 +62,6 @@ type SortKey = "spend" | "cpa" | "cvr" | "confidence";
 const SORT_LABEL: Record<SortKey, string> = {
   spend: "Spend", cpa: "CPA", cvr: "Link CVR", confidence: "Confidence",
 };
-const CONF_ORDER: Record<string, number> = { high: 0, medium: 1, directional: 2, low: 3 };
 
 // ─── Run-scoped per-ICP performance ────────────────────────────────────
 // An ICP's precomputed performance_data isn't itself run-scoped — it's
