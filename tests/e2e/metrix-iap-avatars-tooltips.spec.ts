@@ -1,29 +1,35 @@
-// End-to-end Playwright tests for Avatars page (Strategy · 04) tooltips.
+// End-to-end Playwright tests for Avatars page (Strategy · 04) tooltips,
+// plus the avatar-tile detail drawer that now lives on MST Command Center
+// (/app/mst — the matrix-avatar tile grid moved there; see
+// MstCommandCenter.tsx's top-of-file note).
 //
 // Covers:
 //   1. Audience segment "low signal / signal ✓" badge — hover shows the
 //      rationale tooltip, sr-only rationale text is present in the DOM, and
 //      the badge is a plain <span> (no nested-interactive violation).
-//   2. ICP card "Account placements" accordion button — hover shows its
-//      tooltip AND clicking still toggles the placement rows open/closed.
-//   3. Avatar detail drawer matched-ads cell-code chips — chips are plain
-//      <span>s with sr-only "matrix cell" text, hover shows the tooltip,
-//      and chips contain no interactive descendants.
+//   2. ICP card "Profile detail" toggle reveals placements; the
+//      "Account placements" label inside carries a hover-tooltip disclosure
+//      (this data is account-wide, not scoped to the individual profile)
+//      with sr-only text for screen readers.
+//   3. MST Command Center avatar-tile detail drawer matched-ads cell-code
+//      chips — chips are plain <span>s with sr-only "matrix cell" text,
+//      hover shows the tooltip, and chips contain no interactive
+//      descendants.
 //
 // A regression (broken Tooltip wiring, badge turned into a button, sr-only
 // text removed) would silently hide the signal rationale — this catches it.
 //
 // Keyboard-focus coverage & decision (task: keyboard tooltips):
-//   4. The placements accordion button is reached via Tab and its tooltip
-//      opens on keyboard focus (Radix opens tooltips on focus for focusable
-//      triggers).
+//   4. The "Profile detail" toggle button is reachable via Tab, and
+//      Enter/Space still opens and closes it.
 //   5. DECISION: the signal badge and cell-code chips stay plain,
 //      NON-focusable <span>s (no tabindex=0). They are static/informational
 //      content, not interactive controls; adding tab stops to static text
 //      degrades keyboard navigation (WAI-ARIA: don't put tabindex on
 //      non-interactive elements), and screen-reader users already get the
 //      full rationale via the always-present sr-only text. A test asserts
-//      the spans have no tabindex so a future change is deliberate.
+//      the spans have no tabindex so a future change is deliberate. The
+//      "Account placements" disclosure label follows the same decision.
 //
 // Run: tsx tests/e2e/metrix-iap-avatars-tooltips.spec.ts
 //   or via: pnpm --filter @workspace/scripts run smoke:metrix-iap-avatars-tooltips
@@ -120,6 +126,35 @@ async function mockApis(ctx: BrowserContext): Promise<void> {
         contentType: "application/json",
         body: JSON.stringify({ windows: [] }),
       }),
+  );
+
+  // Analysis runs — empty list. MST Command Center calls useListAnalysisRuns;
+  // without this mock the Vite dev server answers the unmatched request with
+  // index.html and the page crashes reading `.runs`.
+  await page.route("**/api/metrix/accounts/*/analysis-runs", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ runs: [] }),
+    }),
+  );
+
+  // Stage status — the loop-gating source of truth every command center
+  // reads (Analysis -> Strategy -> Creative -> MST). Without this mocked,
+  // useStageStatus's query has no data and mst.unlocked defaults to false,
+  // so MST Command Center renders its "Generate briefs first" gate instead
+  // of the real page content.
+  await page.route("**/api/metrix/accounts/*/stage-status", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        analysis: { status: "success", last_run_at: null, date_range: "all", validated: true, progress_pct: 100, progress_stage: "" },
+        strategy: { status: "success", last_run_at: null },
+        briefs: { status: "success", last_run_at: null, count: 10 },
+        mst: { unlocked: true },
+      }),
+    }),
   );
 }
 
@@ -260,9 +295,10 @@ async function main() {
       },
     );
 
-    // Test 2: placements accordion — tooltip on hover AND still toggles.
+    // Test 2: "Profile detail" toggle reveals placements; the "Account
+    // placements" label inside carries a hover-tooltip disclosure.
     await test(
-      "Account placements accordion: hover tooltip + toggle still works",
+      "Profile detail toggle reveals placements; Account placements label discloses account-wide scope",
       async () => {
         const { ctx, page } = await newAvatarsPage(
           browser,
@@ -270,52 +306,63 @@ async function main() {
           "Audience segments",
         );
         try {
-          // Switch to Profiles view where ICP cards (and the accordion) live.
-          await page.getByRole("button", { name: "Profiles" }).click();
-          const accordion = page
-            .getByRole("button", { name: /Account placements/ })
-            .first();
-          await accordion.waitFor({ state: "visible", timeout: 10_000 });
+          const label = () =>
+            page.locator("span").filter({ hasText: /^Account placements/ });
+
+          // Closed by default: the placements section (inside the fold)
+          // hasn't rendered yet.
+          const closedCount = await label().count();
+          assert(
+            closedCount === 0,
+            `expected the Account placements label to be absent before opening Profile detail, found ${closedCount}`,
+          );
+
+          const toggle = page.getByRole("button", { name: /Profile detail/ }).first();
+          await toggle.waitFor({ state: "visible", timeout: 10_000 });
+          await toggle.click();
+
+          const openLabel = label().first();
+          await openLabel.waitFor({ state: "visible", timeout: 10_000 });
+
+          // Structural checks: plain span, not inside/containing a button.
+          const info = await openLabel.evaluate((el) => ({
+            tag: el.tagName,
+            insideInteractive: !!el.closest("button, a, [role='button']"),
+            containsInteractive: !!el.querySelector(
+              "button, a, [role='button'], input",
+            ),
+            srOnlyText:
+              el.querySelector(".sr-only")?.textContent?.trim() ?? null,
+          }));
+          assert(info.tag === "SPAN", `label must be a <span>, got <${info.tag}>`);
+          assert(
+            !info.insideInteractive,
+            "label must not be nested inside an interactive element",
+          );
+          assert(
+            !info.containsInteractive,
+            "label must not contain interactive elements",
+          );
+          assert(
+            info.srOnlyText != null && info.srOnlyText.length > 0,
+            "label must contain non-empty sr-only disclosure text",
+          );
 
           await hoverAndExpect(
             page,
-            accordion,
+            openLabel,
             "Account-level placement signal — no per-profile breakdown available.",
-            "placements accordion button",
+            "Account placements label",
           );
 
-          // Toggle open: placement rows appear inside the accordion's
-          // wrapper (the bookster fixture's top placement rows include a
-          // "facebook"/"instagram" Platform label).
-          const rowCount = () =>
-            accordion.evaluate((el) => {
-              // Radix Tooltip renders no wrapper element with asChild, so the
-              // accordion's container is the button's direct parent <div>;
-              // the row list renders as a sibling `.mt-2` div inside it.
-              const wrapper = el.parentElement;
-              return wrapper
-                ? wrapper.querySelectorAll(":scope > .mt-2 > div").length
-                : -1;
-            });
-
-          const before = await rowCount();
-          assert(before === 0, `expected 0 placement rows before opening, got ${before}`);
-
-          await accordion.click();
+          // Toggle closed again — the label (and the rest of the fold)
+          // disappears.
+          await toggle.click();
           await page.waitForTimeout(300);
-          const after = await rowCount();
+          const closedAgainCount = await label().count();
           assert(
-            after > 0,
-            "clicking the placements accordion did not reveal any placement rows",
-          );
-
-          // Toggle closed again.
-          await accordion.click();
-          await page.waitForTimeout(300);
-          const closed = await rowCount();
-          assert(
-            closed === 0,
-            `clicking the placements accordion again did not collapse it (${closed} rows remain)`,
+            closedAgainCount === 0,
+            `clicking Profile detail again did not collapse the placements section (${closedAgainCount} labels remain)`,
           );
         } finally {
           await ctx.close();
@@ -324,20 +371,27 @@ async function main() {
     );
 
     // Test 3: drawer matched-ads cell-code chips — plain spans + sr-only + hover tooltip.
+    // The avatar tile + its detail drawer live on MST Command Center now.
     await test(
       "Drawer matched-ads cell-code chips: plain spans, sr-only text, hover tooltip",
       async () => {
-        const { ctx, page } = await newAvatarsPage(
-          browser,
-          ACCOUNT,
-          "Audience segments",
-        );
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
         try {
-          // Open the first avatar card's detail drawer.
+          await mockApis(ctx);
+          await page.goto(`${BASE}/app/mst?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
           await page
-            .getByRole("button", { name: /tap for detail/ })
+            .locator("h3, h2, span, p")
+            .filter({ hasText: /Matrix avatars/i })
             .first()
-            .click();
+            .waitFor({ state: "visible", timeout: 25_000 });
+
+          // Open the first avatar tile's detail drawer.
+          await page.locator("button.group.w-full").first().click();
           await page
             .locator("text=/Matched ads/")
             .first()
@@ -395,10 +449,10 @@ async function main() {
       },
     );
 
-    // Test 4: keyboard focus — Tab reaches the placements accordion button
-    // and its tooltip opens on focus (no mouse involved).
+    // Test 4: keyboard focus — Tab reaches the "Profile detail" toggle
+    // button, and Enter opens/closes it (no mouse involved).
     await test(
-      "Account placements accordion: tooltip opens on keyboard focus (Tab)",
+      "Profile detail toggle: reachable via Tab, Enter opens and closes it",
       async () => {
         const { ctx, page } = await newAvatarsPage(
           browser,
@@ -406,18 +460,15 @@ async function main() {
           "Audience segments",
         );
         try {
-          await page.getByRole("button", { name: "Profiles" }).click();
-          const accordion = page
-            .getByRole("button", { name: /Account placements/ })
-            .first();
-          await accordion.waitFor({ state: "visible", timeout: 10_000 });
-          await accordion.scrollIntoViewIfNeeded();
+          const toggle = page.getByRole("button", { name: /Profile detail/ }).first();
+          await toggle.waitFor({ state: "visible", timeout: 10_000 });
+          await toggle.scrollIntoViewIfNeeded();
 
           // The page has a long tab order, so instead of tabbing from the top
           // of the document, focus the focusable element immediately BEFORE
-          // the accordion in DOM/tab order, then press Tab once. This still
-          // verifies the accordion is reachable via a real keyboard Tab.
-          const hasPrev = await accordion.evaluate((el) => {
+          // the toggle in DOM/tab order, then press Tab once. This still
+          // verifies the toggle is reachable via a real keyboard Tab.
+          const hasPrev = await toggle.evaluate((el) => {
             const focusables = Array.from(
               document.querySelectorAll<HTMLElement>(
                 "button, a[href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
@@ -428,47 +479,35 @@ async function main() {
             focusables[idx - 1]!.focus();
             return true;
           });
-          assert(hasPrev, "could not find a focusable element before the accordion");
+          assert(hasPrev, "could not find a focusable element before the Profile detail toggle");
           await page.keyboard.press("Tab");
-          const reached = await accordion.evaluate(
+          const reached = await toggle.evaluate(
             (el) => el === document.activeElement,
           );
           assert(
             reached,
-            "pressing Tab from the preceding focusable did not land on the placements accordion button",
+            "pressing Tab from the preceding focusable did not land on the Profile detail toggle",
           );
 
-          // Radix opens tooltips immediately on keyboard focus.
-          await page.waitForTimeout(400);
-          const tooltips = page.locator('[role="tooltip"]');
-          const count = await tooltips.count();
-          assert(
-            count > 0,
-            "no [role=tooltip] appeared after keyboard-focusing the placements accordion",
-          );
-          let text = "";
-          for (let i = 0; i < count; i++) {
-            text += (await tooltips.nth(i).textContent()) ?? "";
-          }
-          assert(
-            text.includes(
-              "Account-level placement signal — no per-profile breakdown available.",
-            ),
-            `focus tooltip text "${text}" did not contain the expected placements copy`,
-          );
+          const label = () =>
+            page.locator("span").filter({ hasText: /^Account placements/ });
 
-          // Enter still toggles the accordion open while focused.
+          // Enter opens the fold while focused.
           await page.keyboard.press("Enter");
           await page.waitForTimeout(300);
-          const rows = await accordion.evaluate((el) => {
-            const wrapper = el.parentElement;
-            return wrapper
-              ? wrapper.querySelectorAll(":scope > .mt-2 > div").length
-              : -1;
-          });
+          const openCount = await label().count();
           assert(
-            rows > 0,
-            "pressing Enter on the focused placements accordion did not open it",
+            openCount > 0,
+            "pressing Enter on the focused Profile detail toggle did not open it",
+          );
+
+          // Enter again closes it.
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(300);
+          const closedCount = await label().count();
+          assert(
+            closedCount === 0,
+            `pressing Enter again did not collapse the Profile detail toggle (${closedCount} labels remain)`,
           );
         } finally {
           await ctx.close();
