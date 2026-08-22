@@ -43,7 +43,9 @@ export function ExportsCommandCenter() {
               accountName={acct.name}
               subtitle="Take this account's analysis, strategy, briefs, and reports out of Metrix."
             />
-            <StageLoopHub stages={buildLoopStages(status)} current="reports" />
+            {/* No `current`: Exports isn't one of the 6 loop stages, so no
+                stage should read as "active" while viewing this page. */}
+            <StageLoopHub stages={buildLoopStages(status)} />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
               {/* Execution card: verb title + input-metric tiles — canvas's
