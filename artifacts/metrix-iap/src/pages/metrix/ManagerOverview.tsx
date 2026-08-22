@@ -421,7 +421,7 @@ export function ManagerOverview() {
               <Plug className="w-5 h-5 text-interactive" />
             </div>
             <div className="space-y-1.5">
-              <h2 className="text-base font-semibold text-foreground">Add your first ad account</h2>
+              <h2 className={HEADING.h2}>Add your first ad account</h2>
               <p className={cn(TYPE.body, "text-muted-foreground/70")}>Connect Meta or upload reports.</p>
             </div>
             <button

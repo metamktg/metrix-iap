@@ -592,13 +592,13 @@ function RankedListTab({
                 <span className={cn(TYPE.title, "font-bold tabular-nums text-foreground/80 shrink-0 mr-1")}>
                   {v != null ? activeMetric.format(v) : "—"}
                 </span>
-                <span className="shrink-0 inline-flex items-center gap-1 h-6 px-2.5 rounded-md text-label font-semibold bg-gradient-to-r from-violet-500 to-blue-500 text-white opacity-55 group-hover:opacity-100 transition-opacity shadow-sm shadow-violet-900/30">
+                <span className="shrink-0 inline-flex items-center gap-1 h-6 px-2.5 rounded-md text-label font-semibold bg-primary/15 text-interactive opacity-55 group-hover:opacity-100 transition-opacity">
                   Explore <ArrowRight className="w-3.5 h-3.5" />
                 </span>
               </div>
               <div className="ml-6 h-[6px] rounded-full bg-white/[0.05] overflow-hidden mb-2.5">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-primary/45 to-primary/65 group-hover:from-primary/60 group-hover:to-primary/80 transition-colors"
+                  className="h-full rounded-full bg-primary/60"
                   style={{ width: `${barPct}%` }}
                 />
               </div>

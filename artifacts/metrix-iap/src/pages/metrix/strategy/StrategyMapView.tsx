@@ -416,7 +416,7 @@ function FooterPanel({
           {combinations.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <h3 className="text-base font-semibold text-foreground">Variable combinations</h3>
+                <h3 className={TYPE.title}>Variable combinations</h3>
                 <InfoTooltip content="Validated variable stacks with their real CPA / CVR reads and the engine's recommendation." />
               </div>
               <VariableCombinationsGrid combinations={combinations} />
@@ -425,7 +425,7 @@ function FooterPanel({
           {playbookHasContent(playbook) && (
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <h3 className="text-base font-semibold text-foreground">Scaling playbook</h3>
+                <h3 className={TYPE.title}>Scaling playbook</h3>
                 <InfoTooltip content="Where the analysis says to push, tune, prove, look next — and what to stay away from." />
               </div>
               <ScalingPlaybookLanes playbook={playbook!} />
