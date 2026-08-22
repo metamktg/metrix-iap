@@ -660,26 +660,26 @@ function CombosPanel({ analysis, resultNoun }: { analysis: AnalysisData | null |
     <SectionCard title="Creative combos" desc="Concept × placement × platform · ranked by CPA · top 10">
       <div className="rounded-xl border border-border/40 overflow-hidden bg-card/40">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+          <table className="nc-table">
             <thead className="sticky top-0 bg-surface-table z-10">
-              <tr className="border-b border-border/40">
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Concept</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Placement</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Platform</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">Spend</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">Results</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">CPA</th>
+              <tr>
+                <th>Concept</th>
+                <th>Placement</th>
+                <th>Platform</th>
+                <th className="text-right">Spend</th>
+                <th className="text-right">Results</th>
+                <th className="text-right">CPA</th>
               </tr>
             </thead>
             <tbody>
               {visible.map((r) => (
-                <tr key={r.rowKey} className="border-b border-border/20 hover:bg-primary/[0.04]">
-                  <td className="px-3 py-2 text-body text-foreground/85 font-medium max-w-[160px] truncate">{r.concept}</td>
-                  <td className="px-3 py-2 text-body text-foreground/70 max-w-[140px] truncate">{r.placement}</td>
-                  <td className="px-3 py-2 text-body text-muted-foreground/60 capitalize">{r.platform}</td>
-                  <td className="px-3 py-2 text-right text-body tabular-nums text-foreground/70">{fmtUSD(r.spend, 0)}</td>
-                  <td className="px-3 py-2 text-right text-body tabular-nums text-foreground/70">{fmtNum(r.results)} {resultNoun}</td>
-                  <td className="px-3 py-2 text-right text-body font-semibold tabular-nums text-foreground/85">{r.cpa != null ? fmtUSD(r.cpa) : "—"}</td>
+                <tr key={r.rowKey}>
+                  <td className="text-foreground/85 font-medium max-w-[160px] truncate">{r.concept}</td>
+                  <td className="text-foreground/70 max-w-[140px] truncate">{r.placement}</td>
+                  <td className="text-muted-foreground/60 capitalize">{r.platform}</td>
+                  <td className="text-right tabular-nums text-foreground/70">{fmtUSD(r.spend, 0)}</td>
+                  <td className="text-right tabular-nums text-foreground/70">{fmtNum(r.results)} {resultNoun}</td>
+                  <td className="text-right font-semibold tabular-nums text-foreground/85">{r.cpa != null ? fmtUSD(r.cpa) : "—"}</td>
                 </tr>
               ))}
             </tbody>

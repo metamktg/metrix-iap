@@ -22,7 +22,9 @@ import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel, PILL_ACTIVE, PIL
 import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
-  return <th className={cn("text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-2.5 py-2", right ? "text-right" : "text-left")}>{children}</th>;
+  // Font-size/uppercase/tracking/color/weight/padding all come from the
+  // .nc-table CSS on the parent <table> — this only adds alignment.
+  return <th className={right ? "text-right" : undefined}>{children}</th>;
 }
 
 // ─── Column sorting ───────────────────────────────────────────────────
@@ -138,7 +140,9 @@ export function SortableTh({
 }
 
 export function Td({ children, right, className, style }: { children: React.ReactNode; right?: boolean; className?: string; style?: React.CSSProperties }) {
-  return <td style={style} className={cn("px-2.5 py-2 text-body text-foreground/85 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
+  // Font-size/padding come from the .nc-table CSS on the parent <table>;
+  // color/alignment/passthrough stay here since nc-table doesn't set them.
+  return <td style={style} className={cn("text-foreground/85 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
 }
 
 /** Binary spend/CPA-intensity overlay toggle, shared by CellTable and VariableTable. */
@@ -201,7 +205,7 @@ function TableShellInner({ children, scrollRef }: { children: React.ReactNode; s
   return (
     <div className="rounded-xl border border-border/40 overflow-hidden bg-white/[0.015]">
       <div ref={scrollRef} className="overflow-x-auto max-h-[520px] overflow-y-auto">
-        <table className="w-full border-collapse">{children}</table>
+        <table className="nc-table">{children}</table>
       </div>
     </div>
   );
@@ -272,10 +276,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
     return (
       <tr
         key={r.cell_id + r["Result type"]}
-        className={cn(
-          "border-b border-border/30 hover:bg-white/[0.04]",
-          onRowClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
-        )}
+        className={cn(onRowClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
         onClick={onRowClick ? () => onRowClick(r) : undefined}
         role={onRowClick ? "button" : undefined}
         tabIndex={onRowClick ? 0 : undefined}
@@ -303,7 +304,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
 
   const thead = (
     <thead className="sticky top-0 bg-surface-table z-10">
-      <tr className="border-b border-border/40">
+      <tr>
         <SortableTh sortKey="concept" sort={sort} onToggle={toggle} onReset={reset}>Cell / concept</SortableTh>
         <Th>Result type</Th>
         <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
@@ -384,10 +385,7 @@ export function VariableTable({
     return (
       <tr
         key={r.variable_id + r["Result type"] + i}
-        className={cn(
-          "border-b border-border/30 hover:bg-white/[0.04]",
-          onRowClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
-        )}
+        className={cn(onRowClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
         onClick={onRowClick ? () => onRowClick(r) : undefined}
         role={onRowClick ? "button" : undefined}
         tabIndex={onRowClick ? 0 : undefined}
@@ -426,7 +424,7 @@ export function VariableTable({
 
   const thead = (
     <thead className="sticky top-0 bg-surface-table z-10">
-      <tr className="border-b border-border/40">
+      <tr>
         <SortableTh sortKey="variable" sort={sort} onToggle={toggle} onReset={reset}>Variable</SortableTh>
         <SortableTh sortKey="family" sort={sort} onToggle={toggle} onReset={reset}>Family</SortableTh>
         <Th>Result type</Th>
@@ -505,7 +503,7 @@ export function DemographicTable({
       )}
       <TableShell>
         <thead className="sticky top-0 bg-surface-table z-10">
-          <tr className="border-b border-border/40">
+          <tr>
             <SortableTh sortKey="cell" sort={sort} onToggle={toggle} onReset={reset}>Cell</SortableTh>
             <SortableTh sortKey="age" sort={sort} onToggle={toggle} onReset={reset}>Age</SortableTh>
             <SortableTh sortKey="gender" sort={sort} onToggle={toggle} onReset={reset}>Gender</SortableTh>
@@ -522,10 +520,7 @@ export function DemographicTable({
             return (
               <tr
                 key={r.cell_id + r.Age + r.Gender + i}
-                className={cn(
-                  "border-b border-border/30 hover:bg-white/[0.04]",
-                  onSegmentClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
-                )}
+                className={cn(onSegmentClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
                 onClick={onSegmentClick ? () => onSegmentClick({ age: r.Age, gender: r.Gender }) : undefined}
                 role={onSegmentClick ? "button" : undefined}
                 tabIndex={onSegmentClick ? 0 : undefined}
@@ -567,7 +562,7 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
   return (
     <TableShell>
       <thead className="sticky top-0 bg-surface-table z-10">
-        <tr className="border-b border-border/40">
+        <tr>
           <SortableTh sortKey="placement" sort={sort} onToggle={toggle} onReset={reset}>Placement</SortableTh>
           <SortableTh sortKey="platform" sort={sort} onToggle={toggle} onReset={reset}>Platform</SortableTh>
           <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
@@ -577,7 +572,7 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
       </thead>
       <tbody>
         {sorted.map((r, i) => (
-          <tr key={r.Placement + r.Platform + i} className="border-b border-border/30 hover:bg-white/[0.04] active:bg-white/[0.06]">
+          <tr key={r.Placement + r.Platform + i}>
             <Td className="font-medium text-foreground">{r.Placement}</Td>
             <Td className="capitalize">{r.Platform}</Td>
             <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
@@ -608,7 +603,7 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
   return (
     <TableShell>
       <thead className="sticky top-0 bg-surface-table z-10">
-        <tr className="border-b border-border/40">
+        <tr>
           <Th>{labelHeader}</Th>
           <SortableTh right sortKey="link_clicks" sort={sort} onToggle={toggle} onReset={reset}>Link clicks</SortableTh>
           <SortableTh right sortKey="adds_to_cart" sort={sort} onToggle={toggle} onReset={reset}>Adds to cart</SortableTh>
@@ -619,7 +614,7 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
       </thead>
       <tbody>
         {sorted.map((r, i) => (
-          <tr key={r.label + i} className="border-b border-border/20 hover:bg-white/[0.02] active:bg-white/[0.04]">
+          <tr key={r.label + i}>
             <Td className="font-medium text-foreground capitalize">{r.label}</Td>
             <Td right>{r.link_clicks != null ? fmtNum(r.link_clicks) : "—"}</Td>
             <Td right>{r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"}</Td>

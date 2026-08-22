@@ -240,7 +240,7 @@ export function CrossmapResultsView({
 
               <TableShell>
                 <thead className="sticky top-0 bg-surface-table z-10">
-                  <tr className="border-b border-border/40">
+                  <tr>
                     <Th>Matrix cell</Th>
                     <Th>Concept</Th>
                     <Th>Diagonal</Th>
@@ -332,7 +332,7 @@ function CrossmapRows({
             <tr
               key={cell.cell_id}
               onClick={() => onSelectCell(cell)}
-              className="border-b border-border/30 cursor-pointer hover:bg-white/[0.04]"
+              className="cursor-pointer"
             >
               <Td><span className="font-mono text-caption text-muted-foreground/75">{cell.cell_id}</span></Td>
               <Td>
@@ -359,7 +359,7 @@ function CrossmapRows({
             <tr
               key={cell.cell_id + r["Result type"]}
               onClick={() => onSelectCell(cell)}
-              className="border-b border-border/30 cursor-pointer hover:bg-white/[0.04]"
+              className="cursor-pointer"
             >
               <Td>{i === 0 ? <span className="font-mono text-caption text-foreground/85">{cell.cell_id}</span> : null}</Td>
               <Td>
