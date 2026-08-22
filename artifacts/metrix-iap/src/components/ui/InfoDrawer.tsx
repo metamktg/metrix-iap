@@ -8,6 +8,7 @@ import { X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { HEADING } from "@/pages/metrix/typography";
 
 export function InfoDrawer({
   kicker,
@@ -62,7 +63,7 @@ export function InfoDrawer({
         <div className="flex items-start gap-3 px-6 py-5 border-b border-border/40 shrink-0 bg-white/[0.01]">
           <div className="flex-1 min-w-0">
             <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest mb-1.5 leading-none">{kicker}</div>
-            <p className="text-base font-bold text-foreground leading-snug">{title}</p>
+            <h2 className={HEADING.h2}>{title}</h2>
           </div>
           <button
             onClick={onClose}
