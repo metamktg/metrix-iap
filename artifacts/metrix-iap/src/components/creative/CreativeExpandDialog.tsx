@@ -7,6 +7,7 @@
 
 import { useState, useMemo } from "react";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { TYPE } from "@/pages/metrix/typography";
 import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle, TrendingDown } from "lucide-react";
 import { Dialog, DialogContent } from "@workspace/command-deck/components/ui/dialog";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
@@ -94,7 +95,7 @@ function ExpandVisualInner({ data, className }: { data: CreativeCardData; classN
       <span className="text-hero font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
         {data.conceptCode}
       </span>
-      <span className="flex items-center gap-1.5 text-[9px] font-mono uppercase tracking-widest text-white/35">
+      <span className={cn(TYPE.microLabel, "flex items-center gap-1.5 text-white/35")}>
         <ImageOff className="w-3.5 h-3.5" /> No asset in import
       </span>
     </div>
@@ -113,7 +114,7 @@ function LocalTagChips({ codes }: { codes: string[] }) {
         <span
           key={c + i}
           title={c}
-          className={cn("text-[9px] font-medium border px-1.5 py-0.5 rounded leading-none", PREFIX_COLORS[getVariablePrefix(c)])}
+          className={cn("text-micro font-medium border px-1.5 py-0.5 rounded leading-none", PREFIX_COLORS[getVariablePrefix(c)])}
         >
           {resolveVariableLabel(c)}
         </span>
@@ -175,7 +176,7 @@ function MetricToggle({ options, value, onChange }: {
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex rounded border border-border/30 overflow-hidden text-[9px]">
+    <div className="flex rounded border border-border/30 overflow-hidden text-micro">
       {options.map((o) => (
         <button
           key={o.value}
@@ -218,7 +219,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
       {(data.primaryText || data.secondaryText || data.cta) && (
         <div className="space-y-2">
-          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Copy</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>Copy</p>
           {data.primaryText && <p className="text-body text-foreground/85 leading-relaxed">{data.primaryText}</p>}
           {data.secondaryText && <p className="text-caption text-muted-foreground/60 leading-relaxed">{data.secondaryText}</p>}
           {data.cta && (
@@ -231,14 +232,14 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
       {data.iapRead && (
         <div className="space-y-1.5">
-          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">IAP read</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>IAP read</p>
           <p className="text-caption text-foreground/80 leading-relaxed">{data.iapRead}</p>
         </div>
       )}
 
       {(data.qaMappingStatus || data.mappingConfidence) && (
         <div className="space-y-1.5">
-          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">QA mapping</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>QA mapping</p>
           <div className="flex items-center gap-1.5 flex-wrap">
             {data.qaMappingStatus && (
               <span
@@ -261,7 +262,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
       {data.tags.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Variable stack</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>Variable stack</p>
           <LocalTagChips codes={data.tags} />
         </div>
       )}
@@ -424,7 +425,7 @@ function DemographicsTab({
                   F {metric === "spend" ? usd(fSpend) : num(fRes)}
                 </span>
                 {isActive && (
-                  <span className="ml-auto text-[9px] font-mono uppercase tracking-wider text-interactive/70">
+                  <span className="ml-auto text-micro font-mono uppercase tracking-wider text-interactive/70">
                     Selected ↑
                   </span>
                 )}
@@ -505,7 +506,7 @@ function DemographicsTab({
         </div>
       )}
 
-      <p className="text-[9px] text-muted-foreground/40 pt-1">
+      <p className={cn(TYPE.caption, "text-muted-foreground/40 pt-1")}>
         Click an age group to inspect its segment KPIs. Bar width = proportion of highest group.
       </p>
     </div>
@@ -553,7 +554,7 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Account-level placements</p>
+        <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>Account-level placements</p>
         <MetricToggle
           options={[{ value: "spend", label: "Spend" }, { value: "cpa", label: "CPA" }]}
           value={metric}
@@ -571,7 +572,7 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
               <div className="flex items-center justify-between text-label">
                 <div className="min-w-0">
                   <span className="font-medium text-foreground/80">{b.Placement}</span>
-                  <span className="ml-1.5 text-[9px] text-muted-foreground/50 capitalize">{b.Platform}</span>
+                  <span className={cn(TYPE.caption, "ml-1.5 text-muted-foreground/50 capitalize")}>{b.Platform}</span>
                 </div>
                 <span className="tabular-nums text-muted-foreground/60 shrink-0 ml-2">
                   {metric === "spend" ? usd(b["Amount spent (USD)"]) : cpa != null ? usd(cpa) : "—"}
@@ -583,7 +584,7 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
                   style={{ width: `${barW}%` }}
                 />
               </div>
-              <div className="text-[9px] text-muted-foreground/45">
+              <div className={cn(TYPE.caption, "text-muted-foreground/45")}>
                 {num(b.Results)} results · {usd(b["Amount spent (USD)"])} spend
               </div>
             </div>
@@ -591,7 +592,7 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
         })}
       </div>
 
-      <p className="text-[9px] text-muted-foreground/40 pt-2 border-t border-border/20">
+      <p className={cn(TYPE.caption, "text-muted-foreground/40 pt-2 border-t border-border/20")}>
         Placement signal is account-level — not scoped to this creative cell.
       </p>
     </div>
@@ -618,7 +619,7 @@ function FunnelTab({ perfRow }: { perfRow: CellPerformanceRow | null }) {
       </div>
       <FunnelStepsChart steps={steps} />
       {!hasAnyFunnel && (
-        <p className="text-[9px] text-muted-foreground/40 pt-1 border-t border-border/20">
+        <p className={cn(TYPE.caption, "text-muted-foreground/40 pt-1 border-t border-border/20")}>
           Adds to cart, checkouts, and purchases are only available when the source export includes conversion-event columns.
         </p>
       )}
@@ -675,7 +676,7 @@ export function CreativeExpandDialog({
             <ExpandVisual data={data} className="absolute inset-0" />
 
             {unmapped && (
-              <div className="absolute top-3 left-3 flex items-center gap-1 bg-amber-500/20 border border-amber-400/30 text-amber-300 text-[9px] font-semibold px-2 py-1 rounded-full backdrop-blur-sm">
+              <div className="absolute top-3 left-3 flex items-center gap-1 bg-amber-500/20 border border-amber-400/30 text-amber-300 text-micro font-semibold px-2 py-1 rounded-full backdrop-blur-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                 Unmapped
               </div>
@@ -695,7 +696,7 @@ export function CreativeExpandDialog({
 
             {/* Header */}
             <div className="px-5 pt-4 pb-3 border-b border-border/30 shrink-0">
-              <div className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-widest mb-0.5">
+              <div className={cn(TYPE.microLabel, "text-muted-foreground/50 mb-0.5")}>
                 Creative · {data.conceptCode}
               </div>
               <p className="text-sm font-semibold text-foreground leading-tight">{data.title}</p>
