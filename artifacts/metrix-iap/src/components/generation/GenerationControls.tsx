@@ -233,7 +233,7 @@ export function GenerateButton({
     <button
       onClick={onClick}
       disabled={isRunning}
-      className="inline-flex items-center gap-1.5 text-body font-medium text-interactive border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-60"
+      className="inline-flex items-center gap-1.5 text-body font-medium text-interactive border border-primary/30 hover:bg-primary/10 active:bg-primary/20 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-60"
     >
       {isRunning ? (
         <Loader2 className="w-3.5 h-3.5 animate-spin" />

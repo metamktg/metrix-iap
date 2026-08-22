@@ -1299,7 +1299,7 @@ function CreativeUploadSection({
               <button
                 onClick={() => void handleAutoMapAll()}
                 disabled={autoMapping}
-                className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 text-label font-medium text-interactive hover:bg-primary/20 active:bg-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {autoMapping ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1730,7 +1730,7 @@ function CreativeDeconstructSection({
         <button
           onClick={() => void startBackfill()}
           disabled={isRunning || pending.length === 0}
-          className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 text-label font-medium text-interactive hover:bg-primary/20 active:bg-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           data-testid="deconstruct-all"
         >
           {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
