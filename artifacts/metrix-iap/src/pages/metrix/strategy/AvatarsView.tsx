@@ -37,7 +37,7 @@ import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownMod
 import {
   listSegments, computeSegmentTotals, deriveSegmentMetrics,
   assessSegmentSignal, computeSegmentAttribution,
-  segmentLabel, segmentKey, scopeDemographicRows,
+  segmentLabel, segmentKey, scopeDemographicRows, LOW_SIGNAL_SPEND_SHARE,
   type SegmentId, type SegmentRawTotals, type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
 import { RunScopePicker } from "@/components/analysis/RunSelector";
@@ -61,9 +61,6 @@ type SortKey = "spend" | "cpa" | "cvr" | "confidence";
 
 const SORT_LABEL: Record<SortKey, string> = {
   spend: "Spend", cpa: "CPA", cvr: "Link CVR", confidence: "Confidence",
-};
-const SORT_DIRECTION: Record<SortKey, "asc" | "desc"> = {
-  spend: "desc", cpa: "asc", cvr: "desc", confidence: "desc",
 };
 const CONF_ORDER: Record<string, number> = { high: 0, medium: 1, directional: 2, low: 3 };
 
@@ -90,6 +87,32 @@ function computeProfilePerf(
     cpa: results > 0 ? spend / results : null,
     cvr_link_pct: linkClicks > 0 ? (results / linkClicks) * 100 : null,
   };
+}
+
+// perfForProfile's result, always defined (never the bare precomputed
+// performance_data shape) so a card can tell WHY it's showing what it's
+// showing, not just what the numbers are:
+//   - allTimeFallback: a run scope is active, but this profile has no
+//     honest cell-level attribution in it (no matched avatar columns, or
+//     none of their cells have rows in scope) — spend/cpa/cvr_link_pct
+//     AND confidence below are all the all-time figures, unscoped.
+//   - scoped + !confidenceRecomputed: spend/cpa/cvr_link_pct are honestly
+//     re-derived from this run's cells, but confidence is still the
+//     all-time grade carried over as-is — no honest scoped grade exists,
+//     so it must not be presented as if it graded the scoped numbers.
+//   - scoped + confidenceRecomputed: the scoped spend is too thin a
+//     slice of this profile's all-time spend to trust the all-time grade
+//     (same LOW_SIGNAL_SPEND_SHARE threshold segment tiles use for "low
+//     signal"), so confidence was honestly downgraded to "low" for real,
+//     not carried over.
+interface ScopedProfilePerf {
+  spend?: number | null;
+  cpa?: number | null;
+  cvr_link_pct?: number | null;
+  confidence?: string | null;
+  scoped: boolean;
+  confidenceRecomputed: boolean;
+  allTimeFallback: boolean;
 }
 
 // ─── Sort / search bar ─────────────────────────────────────────────────
@@ -316,10 +339,12 @@ function IcpProfileCard({
   hypotheses?: ActiveHypothesis[];
   rank?: number;
   /** Run-scoped performance (falls back to profile.performance_data when
-   *  the selected scope can't be honestly attributed to this ICP's cells). */
-  perf: ICPProfile["performance_data"];
+   *  the selected scope can't be honestly attributed to this ICP's cells) —
+   *  carries scoped/confidenceRecomputed/allTimeFallback so the card can
+   *  disclose exactly which figures below are (or aren't) run-scoped. */
+  perf: ScopedProfilePerf;
 }) {
-  const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
+  const hasPerf = perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null;
   const rankConfidence = profile.confidence_level ? normalizeConfidence(profile.confidence_level) : null;
   const rankConfidenceText = rankConfidence
     ? rankConfidence.level === "unknown" ? rankConfidence.label : `${rankConfidence.label.toLowerCase()} confidence`
@@ -388,17 +413,35 @@ function IcpProfileCard({
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <span className={cn(TYPE.microLabel, "text-muted-foreground/60")}>Performance</span>
-              {perf?.confidence && <ConfidenceBadge value={perf.confidence} />}
+              <div className="flex items-center gap-1.5">
+                {perf.confidence && <ConfidenceBadge value={perf.confidence} />}
+                {perf.scoped && !perf.confidenceRecomputed && (
+                  <span
+                    className={cn(TYPE.label, "text-muted-foreground/40 normal-case")}
+                    title="A run scope is active. Spend/CPA/Link CVR above are honestly re-derived for this scope, but this confidence grade is this profile's all-time grade — it wasn't re-derived for the scoped numbers."
+                  >
+                    all-time
+                  </span>
+                )}
+              </div>
             </div>
+            {perf.allTimeFallback && (
+              <p
+                className={cn(TYPE.label, "text-muted-foreground/40 normal-case mb-1.5")}
+                title="A run scope is active, but this profile has no matched avatar columns (or no cell-level rows) within it, so every figure below — Spend, CPA, Link CVR, and confidence — is this profile's all-time data, not scoped to the current run."
+              >
+                All-time figures · no matched avatars in this scope
+              </p>
+            )}
             <StatGrid
               cols={3}
               cells={[
-                { label: "Spend", value: perf?.spend != null ? fmtUSD(perf.spend, 0) : "—" },
-                { label: "CPA", value: perf?.cpa != null ? fmtUSD(perf.cpa) : "—", valueClassName: cpaColor(perf?.cpa ?? null) },
-                { label: "Link CVR", value: perf?.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—", valueClassName: cvrColor(perf?.cvr_link_pct ?? null) },
+                { label: "Spend", value: perf.spend != null ? fmtUSD(perf.spend, 0) : "—" },
+                { label: "CPA", value: perf.cpa != null ? fmtUSD(perf.cpa) : "—", valueClassName: cpaColor(perf.cpa ?? null) },
+                { label: "Link CVR", value: perf.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—", valueClassName: cvrColor(perf.cvr_link_pct ?? null) },
               ]}
             />
-            {perf?.cpa != null && avgCpa != null && avgCpa > 0 && (
+            {perf.cpa != null && avgCpa != null && avgCpa > 0 && (
               <div className="mt-2">
                 <div className="flex items-center justify-between text-label text-muted-foreground/40 mb-1">
                   <span>best</span>
@@ -764,13 +807,38 @@ export function AvatarsView() {
   // to the profile's precomputed all-time figure whenever no honest
   // cell-level attribution exists (all time, or no matched avatars/cells
   // with data in the selected scope) — never fabricated, never hidden.
+  // The returned confidence is likewise never presented as if it graded
+  // numbers it wasn't computed from — see ScopedProfilePerf above.
   const perfForProfile = useCallback(
-    (profile: ICPProfile): ICPProfile["performance_data"] => {
-      if (runSelection.allTime) return profile.performance_data ?? null;
+    (profile: ICPProfile): ScopedProfilePerf => {
+      const allTime = profile.performance_data ?? null;
+      if (runSelection.allTime) {
+        return { ...allTime, scoped: false, confidenceRecomputed: false, allTimeFallback: false };
+      }
       const cellIds = avatarsForProfile(profile.profile_id).flatMap((col) => cellIdsByColumn.get(col.id) ?? []);
       const computed = computeProfilePerf(cellIds, cellRows);
-      if (!computed) return profile.performance_data ?? null;
-      return { ...computed, confidence: profile.performance_data?.confidence ?? null };
+      if (!computed) {
+        return { ...allTime, scoped: false, confidenceRecomputed: false, allTimeFallback: true };
+      }
+      // The scoped spend/cpa/cvr above are real, but the all-time
+      // confidence grade wasn't computed from them. When the scoped slice
+      // is a thin fraction of this profile's own all-time spend, the
+      // all-time grade is actively misleading (e.g. "high" confidence
+      // dressed on a near-empty subset) — honestly downgrade it using the
+      // same low-signal spend-share threshold audience segments already
+      // use. Otherwise there's no honest way to re-derive a grade for the
+      // subset, so keep the original grade but never silently imply it
+      // describes the scoped numbers — the card surfaces that caveat.
+      const allTimeSpend = allTime?.spend ?? null;
+      const narrowSample = allTimeSpend != null && allTimeSpend > 0 && computed.spend > 0
+        && computed.spend / allTimeSpend < LOW_SIGNAL_SPEND_SHARE;
+      return {
+        ...computed,
+        confidence: narrowSample ? "low (narrow scoped sample)" : allTime?.confidence ?? null,
+        scoped: true,
+        confidenceRecomputed: narrowSample,
+        allTimeFallback: false,
+      };
     },
     [runSelection.allTime, avatarsForProfile, cellIdsByColumn, cellRows],
   );
@@ -856,8 +924,12 @@ export function AvatarsView() {
           case "cpa": return (pa?.cpa ?? Infinity) - (pb?.cpa ?? Infinity);
           case "cvr": return (pb?.cvr_link_pct ?? -1) - (pa?.cvr_link_pct ?? -1);
           case "confidence": {
-            const ca = CONF_ORDER[pa?.confidence?.toLowerCase() ?? ""] ?? 99;
-            const cb = CONF_ORDER[pb?.confidence?.toLowerCase() ?? ""] ?? 99;
+            // normalizeConfidence, not a raw string match: perfForProfile can
+            // return a recomputed "low (narrow scoped sample)" grade (see
+            // ScopedProfilePerf) whose LEVEL — not the full qualifier-bearing
+            // string — is what CONF_ORDER ranks by.
+            const ca = CONF_ORDER[normalizeConfidence(pa?.confidence).level] ?? 99;
+            const cb = CONF_ORDER[normalizeConfidence(pb?.confidence).level] ?? 99;
             return ca - cb;
           }
         }
