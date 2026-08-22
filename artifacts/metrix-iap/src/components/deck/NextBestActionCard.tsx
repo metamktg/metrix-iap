@@ -20,9 +20,7 @@ import { TYPE } from "@/pages/metrix/typography";
 import { DetailReveal } from "@/pages/metrix/shared";
 import { useDecisions, getDecision, setDecision } from "@/lib/data/decisionStore";
 import { addToTray } from "@/lib/data/trayStore";
-import type { DeckCard } from "./RecommendationDeck";
-
-const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
+import { impactRank, type DeckCard } from "./RecommendationDeck";
 
 const IMPACT_BADGE: Record<string, string> = {
   high: "border-red-400/25 bg-red-400/10 text-red-300",
@@ -52,7 +50,7 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
 
   const pending = cards
     .filter((c) => getDecision(scopeId, c.id) === "pending")
-    .sort((a, b) => (IMPACT_RANK[b.impact] ?? 0) - (IMPACT_RANK[a.impact] ?? 0));
+    .sort((a, b) => impactRank(b.impact) - impactRank(a.impact));
   const card = pending[0] ?? null;
 
   const approve = useCallback(() => {

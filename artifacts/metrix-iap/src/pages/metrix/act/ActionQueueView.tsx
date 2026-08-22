@@ -16,6 +16,7 @@ import {
 } from "@/lib/data/decisionStore";
 import { addToTray, removeFromTray } from "@/lib/data/trayStore";
 import { ConfidenceBadge, DenseText, UnconfiguredState } from "@/pages/metrix/shared";
+import { impactRank } from "@/components/deck/RecommendationDeck";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
 import {
   Check,
@@ -29,12 +30,9 @@ import {
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
-
-const IMPACT_RANK: Record<string, number> = { high: 4, medium: 3, low: 2, setup: 1 };
-
-function impactRank(card: RecommendationCard): number {
-  return IMPACT_RANK[String(card.impact).toLowerCase()] ?? 0;
-}
+// Impact ranking (for sorting cards highest-impact first) comes from the
+// shared `impactRank` in RecommendationDeck — the same source NextBestActionCard
+// uses — so the two surfaces can never silently disagree on priority.
 
 function actionVerb(recommended_action: string): { label: string; cls: string } {
   const a = recommended_action.toLowerCase();
@@ -341,7 +339,7 @@ export function ActionQueueView() {
   const allCards = useMemo(
     () =>
       [...(optLoop?.recommendation_cards ?? [])].sort(
-        (a, b) => impactRank(b) - impactRank(a)
+        (a, b) => impactRank(String(b.impact)) - impactRank(String(a.impact))
       ),
     [optLoop]
   );
