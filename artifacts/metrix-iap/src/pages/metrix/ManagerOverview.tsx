@@ -34,7 +34,7 @@ import { useKpiTileMetrics } from "@/hooks/useKpiTileMetrics";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 import { OverviewLoopSummary } from "./OverviewLoopHub";
-import { TYPE } from "./typography";
+import { TYPE, HEADING } from "./typography";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -473,7 +473,7 @@ export function ManagerOverview() {
         {/* ── Bottom-line metric tiles ───────────────────────────────── */}
         <div>
           <div className="flex items-center justify-between mb-2.5">
-            <h2 className="text-cardtitle font-semibold text-foreground leading-tight">
+            <h2 className={HEADING.h2}>
               Bottom-line totals
             </h2>
             <button
