@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@workspace/command-deck/components/ui/dialog";
+import { DIALOG } from "@/pages/metrix/typography";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
@@ -155,7 +156,7 @@ export function CellCreativeUploadDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-xs">
         <DialogHeader>
-          <DialogTitle className="text-sm font-semibold">
+          <DialogTitle className={DIALOG.title}>
             Upload creative · <span className="font-mono text-interactive">{cellId}</span>
           </DialogTitle>
         </DialogHeader>

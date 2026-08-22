@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Info } from "lucide-react";
 import type { AnalysisData, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { MetricDef } from "@/lib/data/metricsCatalog";
+import { DIALOG } from "@/pages/metrix/typography";
 
 function usd(n: number | null | undefined, digits = 2): string {
   if (n == null) return "—";
@@ -217,7 +218,7 @@ export function SegmentGridModal({
       <DialogContent className="max-w-3xl bg-surface-deep border-border/50">
         <DialogHeader className="text-left space-y-1">
           <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">{kicker}</div>
-          <DialogTitle className="text-callout font-semibold text-foreground">{title} — avatar × placement</DialogTitle>
+          <DialogTitle className={DIALOG.title}>{title} — avatar × placement</DialogTitle>
           <DialogDescription className="text-caption text-muted-foreground/70 leading-relaxed">
             Avatar rows and placement columns are real marginals from this import, broken out by{" "}
             <span className="text-foreground/80 font-medium">{metricLabel}</span>. Meta's export does not break

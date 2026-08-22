@@ -4,7 +4,7 @@
 // ad-account grants are all set before the invite is sent, and the account
 // is provisioned immediately (no separate "accept invite" flow exists).
 
-import { TYPE } from "../typography";
+import { TYPE, DIALOG } from "../typography";
 import { useState, type FormEvent } from "react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -218,7 +218,7 @@ function AddMemberDialog({
           <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center mb-1">
             <UserPlus className="w-4 h-4 text-interactive" />
           </div>
-          <DialogTitle className="text-base">Add member</DialogTitle>
+          <DialogTitle className={DIALOG.title}>Add member</DialogTitle>
           <DialogDescription className="text-body leading-relaxed">
             Set permissions and account access, then send the invite — the account is provisioned
             immediately with a temp password.
