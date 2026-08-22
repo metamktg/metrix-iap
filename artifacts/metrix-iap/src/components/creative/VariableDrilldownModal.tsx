@@ -18,6 +18,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { getMST, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import { cardFromCell } from "@/lib/creative-assembly";
 import { CreativeCard } from "@/components/creative/CreativeCard";
+import { DIALOG } from "@/pages/metrix/typography";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import { computeVariableDrilldown } from "@/lib/variable-drilldown";
 import { segmentLabel, type SegmentId } from "@/lib/segment-analytics";
@@ -94,7 +95,7 @@ export function VariableDrilldownModal({
             <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
               Variable drill-down{data.family ? ` · ${familyLabel(data.family)}` : ""}
             </div>
-            <DialogTitle className="text-callout font-semibold text-foreground flex items-center gap-2 flex-wrap" data-testid="title-variable-drilldown">
+            <DialogTitle className={cn(DIALOG.title, "flex items-center gap-2 flex-wrap")} data-testid="title-variable-drilldown">
               {readableVariables(code)}
               <span className="text-[9px] font-mono font-normal text-muted-foreground/60 border border-border/30 px-1.5 py-0.5 rounded">{code}</span>
             </DialogTitle>

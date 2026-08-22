@@ -23,7 +23,7 @@ import type { ConversionTrackingSignal, DeviceDeliveryRow, PlacementRow } from "
 import { ConversionFunnelTable } from "./tables";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { RankSortBar, sortByRankMetric, useRankMetric, type RankMetric } from "./rankSort";
-import { TYPE } from "../typography";
+import { TYPE, DIALOG } from "../typography";
 
 const SECTION = "Analysis · 03";
 const RANK_STORAGE_KEY = "metrix.placements.rank.v1";
@@ -250,7 +250,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
           <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
             Placement detail
           </div>
-          <DialogTitle className="text-callout font-semibold text-foreground">{placement}</DialogTitle>
+          <DialogTitle className={DIALOG.title}>{placement}</DialogTitle>
           <DialogDescription className="text-caption text-muted-foreground/70 leading-relaxed">
             {v3.length > 0 && `${v3.length} V3 row${v3.length !== 1 ? "s" : ""}`}
             {v3.length > 0 && c4e.length > 0 && " · "}

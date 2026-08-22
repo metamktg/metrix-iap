@@ -39,3 +39,15 @@ export const TYPE = {
    *  text-data-label = DS muted-foreground — crisp secondary text, solid step. */
   caption: "text-caption leading-relaxed text-data-label",
 } as const;
+
+// ─── Dialog title ────────────────────────────────────────────────────
+// The one size every <DialogTitle> in the app should use, overriding the
+// shared Dialog component's own default (text-lg/18px, command-deck's
+// dialog.tsx). Formalizes what was already the majority convention —
+// PlacementsView, KpiDrilldownModal, SegmentDrilldownModal,
+// VariableDrilldownModal, and SegmentGridModal all independently arrived
+// at this exact class combo; a handful of other dialogs used raw
+// text-base (16px) or text-sm (14px) instead. One size for one role.
+export const DIALOG = {
+  title: "text-callout font-semibold text-foreground",
+} as const;

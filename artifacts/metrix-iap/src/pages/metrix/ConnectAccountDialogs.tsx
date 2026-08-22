@@ -42,6 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@workspace/command-deck/components/ui/alert-dialog";
+import { DIALOG } from "./typography";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 import {
   Command,
@@ -153,7 +154,7 @@ export function ConnectMetaDialog({
               Coming soon
             </span>
           </div>
-          <DialogTitle className="text-base">Live Meta connection</DialogTitle>
+          <DialogTitle className={DIALOG.title}>Live Meta connection</DialogTitle>
           <DialogDescription className="text-body leading-relaxed">
             Direct OAuth connection to Meta for{" "}
             <span className="text-foreground/80 font-medium">{account.name}</span> is in active
@@ -1972,7 +1973,7 @@ export function CreativeLibraryDialog({
                   <Images className="w-4 h-4 text-interactive" />
                 </div>
               </div>
-              <DialogTitle className="text-base">Upload Creatives</DialogTitle>
+              <DialogTitle className={DIALOG.title}>Upload Creatives</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
                 Add creative files to{" "}
                 <span className="text-foreground/80 font-medium">{account.name}</span> after the fact —
@@ -2112,7 +2113,7 @@ export function ManualImportDialog({
                   <FileUp className="w-4 h-4 text-interactive" />
                 </div>
               </div>
-              <DialogTitle className="text-base">Add Manual Import</DialogTitle>
+              <DialogTitle className={DIALOG.title}>Add Manual Import</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
                 Upload the two required exports for{" "}
                 <span className="text-foreground/80 font-medium">{account.name}</span>, plus any
