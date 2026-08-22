@@ -15,7 +15,7 @@ import {
   type DateRangePreset,
 } from "@/contexts/DateRangeContext";
 
-const PRESET_ORDER: DateRangePreset[] = ["7d", "14d", "30d", "60d", "90d", "all"];
+const PRESET_ORDER: DateRangePreset[] = ["7d", "14d", "28d", "60d", "90d", "all"];
 
 export function DateRangePicker() {
   const {
