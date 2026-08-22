@@ -51,6 +51,7 @@ describe("DateRangeContext — unrecognized persisted preset values", () => {
   beforeEach(() => {
     cleanup();
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   it("migrates a legacy '30d' preset (pre-unification) to '28d' instead of dropping the user's selection", () => {

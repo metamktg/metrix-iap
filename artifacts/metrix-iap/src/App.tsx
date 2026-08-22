@@ -1,3 +1,4 @@
+import { lazy, Suspense, type ComponentType } from "react";
 import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@workspace/command-deck/components/ui/toaster";
@@ -26,56 +27,69 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { ConceptRegistryProvider } from "@/lib/concept-registry-context";
 import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
-import { Overview } from "@/pages/metrix/Overview";
-import { OverviewUpdatesView } from "@/pages/metrix/OverviewUpdatesView";
-import { ListenCommandCenter } from "@/pages/metrix/listen/ListenCommandCenter";
-import { SignalView } from "@/pages/metrix/listen/SignalView";
-import { AlertsView } from "@/pages/metrix/listen/AlertsView";
-import { RecommendationsView } from "@/pages/metrix/listen/RecommendationsView";
-import { AnalysisCommandCenter } from "@/pages/metrix/analysis/AnalysisCommandCenter";
-import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
-import { AdPerformanceView } from "@/pages/metrix/analysis/AdPerformanceView";
-import { IapLibraryView } from "@/pages/metrix/analysis/IapLibraryView";
-import { AnalysisDnaView } from "@/pages/metrix/analysis/AnalysisDnaView";
-import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
-import { PlacementsView } from "@/pages/metrix/analysis/PlacementsView";
-import { BudgetView } from "@/pages/metrix/analysis/BudgetView";
-import { AnalysisHistoryView } from "@/pages/metrix/analysis/AnalysisHistoryView";
-import { EngagementFunnelView } from "@/pages/metrix/analysis/EngagementFunnelView";
-import { StrategyCommandCenter } from "@/pages/metrix/strategy/StrategyCommandCenter";
-import { StrategyOverview } from "@/pages/metrix/strategy/StrategyOverview";
-import { StrategyMapView } from "@/pages/metrix/strategy/StrategyMapView";
-import { AvatarsView } from "@/pages/metrix/strategy/AvatarsView";
-import { CommunicationsView } from "@/pages/metrix/strategy/CommunicationsView";
-import { HypothesisQueueView } from "@/pages/metrix/strategy/HypothesisQueueView";
-import { StrategyHistoryView } from "@/pages/metrix/strategy/StrategyHistoryView";
-import { CreativeCommandCenter } from "@/pages/metrix/creative/CreativeCommandCenter";
-import { CreativeLibraryView } from "@/pages/metrix/creative/CreativeLibraryView";
-import { CreativeBriefBuilderView } from "@/pages/metrix/creative/CreativeBriefBuilderView";
-import { CreativeScanView } from "@/pages/metrix/creative/CreativeScanView";
-import { CreativeImportExportView } from "@/pages/metrix/creative/CreativeImportExportView";
-import { ReportsCommandCenter } from "@/pages/metrix/reports/ReportsCommandCenter";
-import { ReportBuilderView } from "@/pages/metrix/reports/ReportBuilderView";
-import { ReportHistoryView } from "@/pages/metrix/reports/ReportHistoryView";
-import { ReportConfigurationView } from "@/pages/metrix/reports/ReportConfigurationView";
-import { ExportsCommandCenter } from "@/pages/metrix/exports/ExportsCommandCenter";
-import { ExportsAnalysisView } from "@/pages/metrix/exports/ExportsAnalysisView";
-import { ExportsStrategyView } from "@/pages/metrix/exports/ExportsStrategyView";
-import { ExportsReportsView } from "@/pages/metrix/exports/ExportsReportsView";
-import { ExportsBriefView } from "@/pages/metrix/exports/ExportsBriefView";
-import { MstCommandCenter } from "@/pages/metrix/mst/MstCommandCenter";
-import { MstCrossMapView } from "@/pages/metrix/mst/MstCrossMapView";
-import { MstSprintsView } from "@/pages/metrix/mst/MstSprintsView";
-import { MstDirectionView } from "@/pages/metrix/mst/MstDirectionView";
-import { CreativeScanView as MstCreativeScanView } from "@/pages/metrix/mst/CreativeScanView";
-import { MetrixAgent } from "@/pages/MetrixAgent";
-import { FindingsView } from "@/pages/metrix/analysis/FindingsView";
-import { ActionQueueView } from "@/pages/metrix/act/ActionQueueView";
-import { GeneralView } from "@/pages/metrix/settings/GeneralView";
-import { SecurityView } from "@/pages/metrix/settings/SecurityView";
-import { IntegrationsView } from "@/pages/metrix/settings/IntegrationsView";
-import { UsersPermissionsView } from "@/pages/metrix/settings/UsersPermissionsView";
-import { BillingView } from "@/pages/metrix/settings/BillingView";
+
+// ─── Code-split route views ────────────────────────────────────────────
+// In-app views load as per-section chunks so the entry bundle (login page,
+// etc.) stays small — pre-auth screens above remain eager since they ARE
+// the entry surface. Views keep their named exports; only the router
+// defers their chunks.
+function lazyView<K extends string>(
+  load: () => Promise<{ [P in K]: ComponentType }>,
+  name: K,
+) {
+  return lazy(async () => ({ default: (await load())[name] }));
+}
+
+const Overview = lazyView(() => import("@/pages/metrix/Overview"), "Overview");
+const OverviewUpdatesView = lazyView(() => import("@/pages/metrix/OverviewUpdatesView"), "OverviewUpdatesView");
+const ListenCommandCenter = lazyView(() => import("@/pages/metrix/listen/ListenCommandCenter"), "ListenCommandCenter");
+const SignalView = lazyView(() => import("@/pages/metrix/listen/SignalView"), "SignalView");
+const AlertsView = lazyView(() => import("@/pages/metrix/listen/AlertsView"), "AlertsView");
+const RecommendationsView = lazyView(() => import("@/pages/metrix/listen/RecommendationsView"), "RecommendationsView");
+const AnalysisCommandCenter = lazyView(() => import("@/pages/metrix/analysis/AnalysisCommandCenter"), "AnalysisCommandCenter");
+const AnalysisOverview = lazyView(() => import("@/pages/metrix/analysis/AnalysisOverview"), "AnalysisOverview");
+const AdPerformanceView = lazyView(() => import("@/pages/metrix/analysis/AdPerformanceView"), "AdPerformanceView");
+const IapLibraryView = lazyView(() => import("@/pages/metrix/analysis/IapLibraryView"), "IapLibraryView");
+const AnalysisDnaView = lazyView(() => import("@/pages/metrix/analysis/AnalysisDnaView"), "AnalysisDnaView");
+const AudienceView = lazyView(() => import("@/pages/metrix/analysis/AudienceView"), "AudienceView");
+const PlacementsView = lazyView(() => import("@/pages/metrix/analysis/PlacementsView"), "PlacementsView");
+const BudgetView = lazyView(() => import("@/pages/metrix/analysis/BudgetView"), "BudgetView");
+const AnalysisHistoryView = lazyView(() => import("@/pages/metrix/analysis/AnalysisHistoryView"), "AnalysisHistoryView");
+const EngagementFunnelView = lazyView(() => import("@/pages/metrix/analysis/EngagementFunnelView"), "EngagementFunnelView");
+const StrategyCommandCenter = lazyView(() => import("@/pages/metrix/strategy/StrategyCommandCenter"), "StrategyCommandCenter");
+const StrategyOverview = lazyView(() => import("@/pages/metrix/strategy/StrategyOverview"), "StrategyOverview");
+const StrategyMapView = lazyView(() => import("@/pages/metrix/strategy/StrategyMapView"), "StrategyMapView");
+const AvatarsView = lazyView(() => import("@/pages/metrix/strategy/AvatarsView"), "AvatarsView");
+const CommunicationsView = lazyView(() => import("@/pages/metrix/strategy/CommunicationsView"), "CommunicationsView");
+const HypothesisQueueView = lazyView(() => import("@/pages/metrix/strategy/HypothesisQueueView"), "HypothesisQueueView");
+const StrategyHistoryView = lazyView(() => import("@/pages/metrix/strategy/StrategyHistoryView"), "StrategyHistoryView");
+const CreativeCommandCenter = lazyView(() => import("@/pages/metrix/creative/CreativeCommandCenter"), "CreativeCommandCenter");
+const CreativeLibraryView = lazyView(() => import("@/pages/metrix/creative/CreativeLibraryView"), "CreativeLibraryView");
+const CreativeBriefBuilderView = lazyView(() => import("@/pages/metrix/creative/CreativeBriefBuilderView"), "CreativeBriefBuilderView");
+const CreativeScanView = lazyView(() => import("@/pages/metrix/creative/CreativeScanView"), "CreativeScanView");
+const CreativeImportExportView = lazyView(() => import("@/pages/metrix/creative/CreativeImportExportView"), "CreativeImportExportView");
+const ReportsCommandCenter = lazyView(() => import("@/pages/metrix/reports/ReportsCommandCenter"), "ReportsCommandCenter");
+const ReportBuilderView = lazyView(() => import("@/pages/metrix/reports/ReportBuilderView"), "ReportBuilderView");
+const ReportHistoryView = lazyView(() => import("@/pages/metrix/reports/ReportHistoryView"), "ReportHistoryView");
+const ReportConfigurationView = lazyView(() => import("@/pages/metrix/reports/ReportConfigurationView"), "ReportConfigurationView");
+const ExportsCommandCenter = lazyView(() => import("@/pages/metrix/exports/ExportsCommandCenter"), "ExportsCommandCenter");
+const ExportsAnalysisView = lazyView(() => import("@/pages/metrix/exports/ExportsAnalysisView"), "ExportsAnalysisView");
+const ExportsStrategyView = lazyView(() => import("@/pages/metrix/exports/ExportsStrategyView"), "ExportsStrategyView");
+const ExportsReportsView = lazyView(() => import("@/pages/metrix/exports/ExportsReportsView"), "ExportsReportsView");
+const ExportsBriefView = lazyView(() => import("@/pages/metrix/exports/ExportsBriefView"), "ExportsBriefView");
+const MstCommandCenter = lazyView(() => import("@/pages/metrix/mst/MstCommandCenter"), "MstCommandCenter");
+const MstCrossMapView = lazyView(() => import("@/pages/metrix/mst/MstCrossMapView"), "MstCrossMapView");
+const MstSprintsView = lazyView(() => import("@/pages/metrix/mst/MstSprintsView"), "MstSprintsView");
+const MstDirectionView = lazyView(() => import("@/pages/metrix/mst/MstDirectionView"), "MstDirectionView");
+const MstCreativeScanView = lazyView(() => import("@/pages/metrix/mst/CreativeScanView"), "CreativeScanView");
+const MetrixAgent = lazyView(() => import("@/pages/MetrixAgent"), "MetrixAgent");
+const FindingsView = lazyView(() => import("@/pages/metrix/analysis/FindingsView"), "FindingsView");
+const ActionQueueView = lazyView(() => import("@/pages/metrix/act/ActionQueueView"), "ActionQueueView");
+const GeneralView = lazyView(() => import("@/pages/metrix/settings/GeneralView"), "GeneralView");
+const SecurityView = lazyView(() => import("@/pages/metrix/settings/SecurityView"), "SecurityView");
+const IntegrationsView = lazyView(() => import("@/pages/metrix/settings/IntegrationsView"), "IntegrationsView");
+const UsersPermissionsView = lazyView(() => import("@/pages/metrix/settings/UsersPermissionsView"), "UsersPermissionsView");
+const BillingView = lazyView(() => import("@/pages/metrix/settings/BillingView"), "BillingView");
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
@@ -92,8 +106,20 @@ function NotFound() {
   );
 }
 
+// Shown in the content area (inside AppShell chrome) while a route chunk
+// downloads — matches the app's standard spinner treatment (see AuthGate's
+// full-page loading state above).
+function RouteFallback() {
+  return (
+    <div className="flex-1 flex items-center justify-center py-24" data-testid="route-loading">
+      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
 export function Router() {
   return (
+    <Suspense fallback={<RouteFallback />}>
     <Switch>
       {/* ── 01 Overview (adaptive: manager ↔ ad account) ──────────────── */}
       <Route path="/"               component={Overview} />
@@ -194,6 +220,7 @@ export function Router() {
       {/* ── 404 ───────────────────────────────────────────────────────── */}
       <Route component={NotFound} />
     </Switch>
+    </Suspense>
   );
 }
 

@@ -38,6 +38,7 @@ describe("DateRangeContext — stale persisted window fallback", () => {
   beforeEach(() => {
     cleanup();
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   it("falls back to full bounds when the persisted custom range is fully outside the data window", async () => {

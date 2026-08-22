@@ -171,6 +171,7 @@ function openAndConfirm() {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
   activeSeed = baseSeed;
   mockMutateAsync = vi.fn();

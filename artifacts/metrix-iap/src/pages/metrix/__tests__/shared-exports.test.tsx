@@ -86,6 +86,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "BackLink",
   "FlowCrumb",
   "useFocusParam",
+  "useTabParam",
   "useStaleFocus",
   "StaleFocusNotice",
   "MetricSelectionBar",

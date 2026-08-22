@@ -62,8 +62,8 @@ describe("seed sanity", () => {
 });
 
 describe("IAP Library ?focus=<cell_id>", () => {
-  it("opens the drill-down drawer on the focused cell", () => {
-    const { container } = renderAt(
+  it("opens the drill-down drawer on the focused cell", async () => {
+    const { container } = await renderAt(
       `/app/analysis/library?focus=${cell.cell_id}`
     );
     const header = drawerHeader(container);
@@ -72,13 +72,13 @@ describe("IAP Library ?focus=<cell_id>", () => {
     within(header!).getByText(cell.book2_concept_name);
   });
 
-  it("does not open a drawer without a focus param", () => {
-    const { container } = renderAt("/app/analysis/library");
+  it("does not open a drawer without a focus param", async () => {
+    const { container } = await renderAt("/app/analysis/library");
     expect(drawerHeader(container)).toBeNull();
   });
 
-  it("does not open a drawer for an unknown focus id", () => {
-    const { container } = renderAt(
+  it("does not open a drawer for an unknown focus id", async () => {
+    const { container } = await renderAt(
       "/app/analysis/library?focus=__no_such_cell__"
     );
     expect(drawerHeader(container)).toBeNull();
@@ -90,21 +90,21 @@ describe("Creative Brief Builder ?focus=<brief id>", () => {
   // always on the left and ?focus selects which brief's workspace shows
   // on the right — no drawer/close button to find, so these assert on
   // the page content directly.
-  it("renders the focused brief's own workspace", () => {
-    const { container } = renderAt(`/app/creative/builder?focus=${brief.id}`);
+  it("renders the focused brief's own workspace", async () => {
+    const { container } = await renderAt(`/app/creative/builder?focus=${brief.id}`);
     expect(container.textContent).toContain(brief.asset_type);
     expect(container.textContent).toContain(brief.human_direction);
   });
 
-  it("selects the first brief without a focus param (canvas default)", () => {
-    const { container } = renderAt("/app/creative/builder");
+  it("selects the first brief without a focus param (canvas default)", async () => {
+    const { container } = await renderAt("/app/creative/builder");
     const detail = container.querySelector('[data-testid="brief-detail"]');
     expect(detail).not.toBeNull();
     expect(container.querySelector('[data-testid="brief-list"]')).not.toBeNull();
   });
 
-  it("falls back to the first brief for an unknown focus id", () => {
-    const { container } = renderAt(
+  it("falls back to the first brief for an unknown focus id", async () => {
+    const { container } = await renderAt(
       "/app/creative/builder?focus=__no_such_brief__"
     );
     expect(container.querySelector('[data-testid="brief-detail"]')).not.toBeNull();
@@ -112,8 +112,8 @@ describe("Creative Brief Builder ?focus=<brief id>", () => {
 });
 
 describe("Hypothesis Queue ?focus=<hypothesis id>", () => {
-  it("opens the drill-down drawer on the focused hypothesis", () => {
-    const { container } = renderAt(
+  it("opens the drill-down drawer on the focused hypothesis", async () => {
+    const { container } = await renderAt(
       `/app/strategy/hypotheses?focus=${hypothesis.id}`
     );
     const header = drawerHeader(container);
@@ -122,13 +122,13 @@ describe("Hypothesis Queue ?focus=<hypothesis id>", () => {
     within(header!).getByText(hypothesis.label);
   });
 
-  it("does not open a drawer without a focus param", () => {
-    const { container } = renderAt("/app/strategy/hypotheses");
+  it("does not open a drawer without a focus param", async () => {
+    const { container } = await renderAt("/app/strategy/hypotheses");
     expect(drawerHeader(container)).toBeNull();
   });
 
-  it("does not open a drawer for an unknown focus id", () => {
-    const { container } = renderAt(
+  it("does not open a drawer for an unknown focus id", async () => {
+    const { container } = await renderAt(
       "/app/strategy/hypotheses?focus=__no_such_hypothesis__"
     );
     expect(drawerHeader(container)).toBeNull();
@@ -136,21 +136,21 @@ describe("Hypothesis Queue ?focus=<hypothesis id>", () => {
 });
 
 describe("Listen Signal ?focus=<signal id>", () => {
-  it("opens the drill-down drawer on the focused signal", () => {
-    const { container } = renderAt(`/app/listen/signal?focus=${signal.id}`);
+  it("opens the drill-down drawer on the focused signal", async () => {
+    const { container } = await renderAt(`/app/listen/signal?focus=${signal.id}`);
     const header = drawerHeader(container);
     expect(header).not.toBeNull();
     within(header!).getByText("Signal");
     within(header!).getByText(signal.title);
   });
 
-  it("does not open a drawer without a focus param", () => {
-    const { container } = renderAt("/app/listen/signal");
+  it("does not open a drawer without a focus param", async () => {
+    const { container } = await renderAt("/app/listen/signal");
     expect(drawerHeader(container)).toBeNull();
   });
 
-  it("does not open a drawer for an unknown focus id", () => {
-    const { container } = renderAt(
+  it("does not open a drawer for an unknown focus id", async () => {
+    const { container } = await renderAt(
       "/app/listen/signal?focus=__no_such_signal__"
     );
     expect(drawerHeader(container)).toBeNull();
@@ -164,8 +164,8 @@ describe("Listen Signal ?focus=<signal id>", () => {
 // refactor might introduce from being silently consumed.
 
 describe("focus param name", () => {
-  it("ignores a differently-named query param", () => {
-    const { container } = renderAt(
+  it("ignores a differently-named query param", async () => {
+    const { container } = await renderAt(
       `/app/analysis/library?highlight=${cell.cell_id}`
     );
     expect(drawerHeader(container)).toBeNull();

@@ -1080,21 +1080,38 @@ export function AnalysisControls({
     initialRunIdRef.current = run?.id ?? null;
   }, [latest, run?.id]);
 
-  // Toast once when a NEW run (started this session) transitions to success.
+  // Toast once when a NEW run (started this session) settles — success or
+  // error — so the outcome surfaces even if the user has navigated away
+  // from this screen while it was polling.
   useEffect(() => {
-    if (run?.status !== "success" || !run.id || toastedRunIdRef.current === run.id) return;
+    if (
+      (run?.status !== "success" && run?.status !== "error") ||
+      !run.id ||
+      toastedRunIdRef.current === run.id
+    ) {
+      return;
+    }
     toastedRunIdRef.current = run.id;
     // Don't toast for the run that was already complete when the dialog opened.
     if (run.id === initialRunIdRef.current) return;
-    toast({
-      title: "Analysis complete",
-      description:
-        run.date_start && run.date_end
-          ? `Data covers ${run.date_start} → ${run.date_end}.`
-          : "Performance data is ready to review.",
-      duration: 4000,
-    });
-  }, [run?.status, run?.id, run?.date_start, run?.date_end, toast]);
+    if (run.status === "success") {
+      toast({
+        title: "Analysis complete",
+        description:
+          run.date_start && run.date_end
+            ? `Data covers ${run.date_start} → ${run.date_end}.`
+            : "Performance data is ready to review.",
+        duration: 4000,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Analysis failed",
+        description: run.error_message ?? "The run ended with an error.",
+        duration: 6000,
+      });
+    }
+  }, [run?.status, run?.id, run?.date_start, run?.date_end, run?.error_message, toast]);
 
   // Fire onDone once when a NEW run (started this session) transitions to success.
   useEffect(() => {

@@ -67,7 +67,7 @@
 //   Codeless sentences fall back to deriveLabel. Inside <button> queue cards:
 //   <HypothesisCodeChipsRow> + a line-clamp-1 caption, drawer keeps prose.
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
@@ -1289,6 +1289,36 @@ export function FlowCrumb({ from, fromCell, fromHyp }: FromParams) {
       <span className="text-label text-muted-foreground/50">This page</span>
     </div>
   );
+}
+
+// ─── Tab URL param (?tab=<id>) ─────────────────────────────────────────
+// In-module tab state lives in the URL (same convention as ?focus= below)
+// so a copied link or refresh reproduces the exact tab. Tab switches use
+// replace-navigation: Back never walks through tab clicks. The default tab
+// keeps a clean URL (param removed). Pass `validIds` when the tab set is
+// static so an unrecognized/stale value falls back to the default instead
+// of being trusted as-is; omit it when the call site validates dynamically.
+
+export function useTabParam<T extends string = string>(
+  defaultTab: T,
+  validIds?: readonly T[],
+): [T, (id: T) => void] {
+  const search = useSearch();
+  const [pathname, navigate] = useLocation();
+  const raw = new URLSearchParams(search).get("tab");
+  const isValid = raw != null && (!validIds || (validIds as readonly string[]).includes(raw));
+  const tab = isValid ? (raw as T) : defaultTab;
+  const setTab = useCallback(
+    (id: T) => {
+      const params = new URLSearchParams(search);
+      if (id === defaultTab) params.delete("tab");
+      else params.set("tab", id);
+      const qs = params.toString();
+      navigate(qs ? `${pathname}?${qs}` : pathname, { replace: true });
+    },
+    [search, pathname, navigate, defaultTab],
+  );
+  return [tab, setTab];
 }
 
 // ─── Focus deep-link param (?focus=<id>) ──────────────────────────────

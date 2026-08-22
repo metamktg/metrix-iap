@@ -153,6 +153,7 @@ const FALLBACK = "Generating strategy from validated analysis…";
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
   mockGenRunData = null;
   selectBookster();

@@ -79,6 +79,7 @@ function renderView() {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
   vi.mocked(useGetMetaConnection).mockReturnValue({
     data: { connected: false },

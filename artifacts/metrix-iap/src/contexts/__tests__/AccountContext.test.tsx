@@ -76,6 +76,7 @@ beforeEach(() => {
   mockLocation = "/";
   mockNavigate.mockClear();
   sessionStorage.clear();
+  localStorage.clear();
   // writeUrlAccountParam uses window.history.replaceState, so clear any
   // ?account= param left by a previous test before the next useState init runs.
   window.history.replaceState(null, "", "/");

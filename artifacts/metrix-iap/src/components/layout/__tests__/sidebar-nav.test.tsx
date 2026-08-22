@@ -120,6 +120,7 @@ function openDropdown(trigger: Element) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   localStorage.removeItem(SIDEBAR_KEY);
   window.history.replaceState({}, "", "/");
 });
@@ -421,7 +422,9 @@ describe("Inline account picker", () => {
 
     expect(window.location.pathname).toBe("/");
     expect(screen.queryByText("No ad account selected")).toBeNull();
-    expect(JSON.parse(sessionStorage.getItem(SESSION_KEY)!)).toEqual({
+    // Persistence now writes to localStorage (survives new tabs); sessionStorage
+    // is only a read fallback for pre-migration sessions.
+    expect(JSON.parse(localStorage.getItem(SESSION_KEY)!)).toEqual({
       type: "ad_account",
       adAccountId: configured.id,
     });
@@ -443,6 +446,6 @@ describe("Inline account picker", () => {
     const configured = seed.ad_accounts.find((a: { status: string }) => a.status === "configured");
     fireEvent.click(within(menu).getByText(configured.name));
     expect(screen.queryByText("Switch ad account")).toBeNull();
-    expect(JSON.parse(sessionStorage.getItem(SESSION_KEY)!).adAccountId).toBe(configured.id);
+    expect(JSON.parse(localStorage.getItem(SESSION_KEY)!).adAccountId).toBe(configured.id);
   });
 });

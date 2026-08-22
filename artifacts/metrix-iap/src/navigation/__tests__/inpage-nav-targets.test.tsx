@@ -119,8 +119,8 @@ describe("scanner sanity", () => {
 
 describe("every hardcoded in-page navigation target resolves", () => {
   for (const { to, sources } of targets) {
-    it(`${to} (used in ${sources.join(", ")}) does not hit the 404 page`, () => {
-      const { container } = renderAt(to);
+    it(`${to} (used in ${sources.join(", ")}) does not hit the 404 page`, async () => {
+      const { container } = await renderAt(to);
       expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
       expect(container.textContent?.trim().length).toBeGreaterThan(0);
     });

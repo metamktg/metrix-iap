@@ -133,6 +133,7 @@ const segmentsCount = (text: string | null) => {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 

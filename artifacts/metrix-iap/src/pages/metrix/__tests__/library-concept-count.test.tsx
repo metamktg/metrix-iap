@@ -84,6 +84,7 @@ if (RAW_ROW_COUNT <= DISTINCT_CONCEPT_COUNT) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 

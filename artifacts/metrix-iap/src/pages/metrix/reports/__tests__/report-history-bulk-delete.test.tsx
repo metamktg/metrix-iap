@@ -122,6 +122,7 @@ beforeEach(() => {
 
   // Scope the app to the Bookster ad account, like a user who picked it.
   sessionStorage.clear();
+  localStorage.clear();
   sessionStorage.setItem(
     SESSION_KEY,
     JSON.stringify({ type: "ad_account", adAccountId: "bookster" }),
