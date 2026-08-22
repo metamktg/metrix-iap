@@ -15,7 +15,7 @@ import { getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
 export type DateRangePreset =
   | "7d"
   | "14d"
-  | "30d"
+  | "28d"
   | "60d"
   | "90d"
   | "all"
@@ -24,7 +24,7 @@ export type DateRangePreset =
 export const PRESET_LABELS: Record<DateRangePreset, string> = {
   "7d": "Last 7 days",
   "14d": "Last 14 days",
-  "30d": "Last 30 days",
+  "28d": "Last 28 days",
   "60d": "Last 60 days",
   "90d": "Last 90 days",
   all: "All available data",
@@ -34,7 +34,7 @@ export const PRESET_LABELS: Record<DateRangePreset, string> = {
 const PRESET_DAYS: Partial<Record<DateRangePreset, number>> = {
   "7d": 7,
   "14d": 14,
-  "30d": 30,
+  "28d": 28,
   "60d": 60,
   "90d": 90,
 };
@@ -239,7 +239,7 @@ export function DateRangeProvider({ children }: { children: React.ReactNode }) {
       if (start > end) return bounds;
       return { start, end };
     }
-    const days = PRESET_DAYS[state.preset] ?? 30;
+    const days = PRESET_DAYS[state.preset] ?? 28;
     // Anchor presets to the end of the available data window.
     const start = isoMax(addDays(bounds.end, -(days - 1)), bounds.start);
     return { start, end: bounds.end };
