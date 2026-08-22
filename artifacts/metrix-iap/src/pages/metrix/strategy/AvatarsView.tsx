@@ -52,6 +52,7 @@ import type {
   ActiveHypothesis, MessagePillar, CellPerformanceRow,
 } from "@/lib/data/seedTypes";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 
 const SECTION = "Strategy · 04";
 
@@ -171,9 +172,19 @@ function PlacementsList({ rows }: { rows: PlacementRow[] }) {
     <div>
       <div className="flex items-center gap-1.5 mb-1.5">
         <MapPin className="w-3.5 h-3.5 text-muted-foreground/60" />
-        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">
-          Account placements
-        </span>
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70 cursor-default">
+                Account placements
+                <span className="sr-only"> — Account-level placement signal — no per-profile breakdown available.</span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[240px]">
+              <p className="text-caption leading-relaxed">Account-level placement signal — no per-profile breakdown available.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       <div className="space-y-1.5">
         {top3.map((r, i) => (
@@ -490,16 +501,27 @@ function AudienceSegmentTile({
             <p className={cn(TYPE.title, "leading-snug truncate")}>{segmentLabel(seg)}</p>
           </div>
         </div>
-        <span
-          className={cn(
-            "shrink-0 rounded border px-1.5 py-0.5",
-            TYPE.label,
-            signal.low ? "border-amber-400/30 bg-amber-400/[0.08] text-amber-400" : "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-400",
-          )}
-          title={signal.low ? signal.reasons.join(" ") : "Sufficient spend and impressions for a reliable read."}
-        >
-          {signal.low ? "low signal" : "signal ✓"}
-        </span>
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className={cn(
+                  "shrink-0 rounded border px-1.5 py-0.5 cursor-default",
+                  TYPE.label,
+                  signal.low ? "border-amber-400/30 bg-amber-400/[0.08] text-amber-400" : "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-400",
+                )}
+              >
+                {signal.low ? "low signal" : "signal ✓"}
+                <span className="sr-only">{` — ${signal.low ? signal.reasons.join(" ") : "Sufficient spend and impressions for a reliable read."}`}</span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[240px]">
+              <p className="text-caption leading-relaxed">
+                {signal.low ? signal.reasons.join(" ") : "Sufficient spend and impressions for a reliable read."}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {hasSpend ? (
