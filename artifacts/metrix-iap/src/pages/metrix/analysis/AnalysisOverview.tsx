@@ -664,18 +664,18 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse">
+      <table className="nc-table">
         <thead>
-          <tr className="border-b border-border/30">
-            <th className="text-left px-2 py-1.5 text-label font-mono uppercase tracking-widest text-muted-foreground/60 whitespace-nowrap">Variable</th>
-            <th className="text-left px-2 py-1.5 text-label font-mono uppercase tracking-widest text-muted-foreground/60">Family</th>
+          <tr>
+            <th className="whitespace-nowrap">Variable</th>
+            <th>Family</th>
             {cols.map((c) => {
               const active = sortKey === c.key;
               const dir = VAR_SORT_DIRECTION[c.key];
               return (
                 <th
                   key={c.key}
-                  className="text-right px-2 py-1.5"
+                  className="text-right"
                   aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
                 >
                   <button
@@ -700,16 +700,13 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
         </thead>
         <tbody>
           {sorted.map((r, i) => (
-            <tr
-              key={r.variable_id + i}
-              className="border-b border-border/15 hover:bg-white/[0.02] transition-colors"
-            >
-              <td className="px-2 py-1.5 text-body font-medium text-foreground/90 whitespace-nowrap">{readableVariables(r.variable_id)}</td>
-              <td className="px-2 py-1.5 text-caption text-muted-foreground/70 capitalize">{r.variable_family}</td>
-              <td className="px-2 py-1.5 text-right text-body font-mono tabular-nums text-foreground/85">{fmtUSD(r["Amount spent (USD)"], 0)}</td>
-              <td className="px-2 py-1.5 text-right text-body font-mono tabular-nums text-foreground/85">{fmtNum(r.Results)}</td>
-              <td className="px-2 py-1.5 text-right text-body font-mono tabular-nums text-foreground/85">{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</td>
-              <td className="px-2 py-1.5 text-right text-body font-mono tabular-nums text-foreground/85">{fmtPct(r.CTR_link_pct)}</td>
+            <tr key={r.variable_id + i}>
+              <td className="font-medium text-foreground/90 whitespace-nowrap">{readableVariables(r.variable_id)}</td>
+              <td className="text-muted-foreground/70 capitalize">{r.variable_family}</td>
+              <td className="text-right font-mono tabular-nums text-foreground/85">{fmtUSD(r["Amount spent (USD)"], 0)}</td>
+              <td className="text-right font-mono tabular-nums text-foreground/85">{fmtNum(r.Results)}</td>
+              <td className="text-right font-mono tabular-nums text-foreground/85">{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</td>
+              <td className="text-right font-mono tabular-nums text-foreground/85">{fmtPct(r.CTR_link_pct)}</td>
             </tr>
           ))}
         </tbody>

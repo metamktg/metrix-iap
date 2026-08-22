@@ -15,7 +15,7 @@ import {
   setDecision,
 } from "@/lib/data/decisionStore";
 import { addToTray, removeFromTray } from "@/lib/data/trayStore";
-import { ConfidenceBadge, DenseText, UnconfiguredState } from "@/pages/metrix/shared";
+import { ConfidenceBadge, DenseText, ModuleHeader, UnconfiguredState } from "@/pages/metrix/shared";
 import { impactRank } from "@/components/deck/RecommendationDeck";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
 import {
@@ -294,6 +294,13 @@ function QueueCard({
   );
 }
 
+// ─── Section eyebrow ───────────────────────────────────────────────────
+// Not one of the six numbered loop stages (see App.tsx's un-numbered
+// "Act section" comment) — reached only via the "Open full queue"
+// cross-link from Account Overview, so the eyebrow is the bare label.
+
+const SECTION = "Act";
+
 // ─── Empty state ──────────────────────────────────────────────────────
 
 function EmptyQueue({ reason }: { reason: "no-loop" | "all-done" }) {
@@ -359,13 +366,8 @@ export function ActionQueueView() {
 
   if (account.status !== "configured" || !account.iap) {
     return (
-      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto px-6 py-6">
-        <h1
-          className="text-2xl font-semibold text-foreground mb-6 max-w-[680px] leading-[1.22]"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          Set up {account.name} to get started.
-        </h1>
+      <div className="flex-1 flex flex-col">
+        <ModuleHeader section={SECTION} title="Action Queue" accountName={account.name} />
         <UnconfiguredState account={account} />
       </div>
     );
@@ -382,26 +384,20 @@ export function ActionQueueView() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <ModuleHeader
+        section={SECTION}
+        title="Action Queue"
+        accountName={account.name}
+        subtitle="Recommendation cards from the optimization loop, sorted by impact — approve into the Task Tray or dismiss."
+      />
       <div className="px-6 py-6 space-y-5 max-w-[860px] w-full mx-auto">
 
-        {/* ── Page header ─────────────────────────────────────────────── */}
-        <div className="space-y-1">
-          <h1
-            className="text-foreground leading-[1.22]"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(20px, 1.8vw, 26px)",
-              fontWeight: 600,
-            }}
-          >
-            Action Queue
-          </h1>
-          <p className="text-title text-muted-foreground/65 max-w-[520px] leading-relaxed">
-            {allCards.length > 0
-              ? `${allCards.length} recommendation${allCards.length !== 1 ? "s" : ""} from the optimization loop, sorted by impact. Add items to your Task Tray to implement later.`
-              : "Optimization loop recommendations appear here after analysis runs."}
-          </p>
-        </div>
+        {/* ── Descriptive line ────────────────────────────────────────── */}
+        <p className="text-title text-muted-foreground/65 max-w-[520px] leading-relaxed">
+          {allCards.length > 0
+            ? `${allCards.length} recommendation${allCards.length !== 1 ? "s" : ""} from the optimization loop, sorted by impact. Add items to your Task Tray to implement later.`
+            : "Optimization loop recommendations appear here after analysis runs."}
+        </p>
 
         {/* ── Tabs ────────────────────────────────────────────────────── */}
         {allCards.length > 0 && (
