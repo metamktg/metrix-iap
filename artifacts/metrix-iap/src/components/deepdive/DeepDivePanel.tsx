@@ -13,7 +13,16 @@ import { ArrowLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
 import { useDeepDive } from "@/contexts/DeepDiveContext";
-import type { DeepDiveBlock, DeepDiveRankedRow, DeepDiveStat } from "@/lib/data/deepDive";
+import { CrossLink } from "@/pages/metrix/shared";
+import {
+  HypothesisCodeChipsRow, HypothesisLabel, HypothesisStatusBadge, PillarDetailSections,
+} from "@/pages/metrix/strategy/strategyShared";
+import { AddToTrayButton } from "@/components/tray/AddToTrayButton";
+import { AdsManagerButton } from "@/components/creative/AdsManagerLink";
+import { SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
+import type {
+  DeepDiveAction, DeepDiveBlock, DeepDiveFunnelStep, DeepDiveHypothesisItem, DeepDiveRankedRow, DeepDiveStat,
+} from "@/lib/data/deepDive";
 
 // ─── Blocks ───────────────────────────────────────────────────────────
 
@@ -118,18 +127,109 @@ function RankedBlock({
   );
 }
 
-function NoteBlock({ text }: { text: string }) {
+function NoteBlock({ title, text }: { title?: string; text: string }) {
   return (
-    <p className={cn(TYPE.caption, "rounded-lg border border-border/30 bg-white/[0.02] p-3")} data-testid="deep-dive-note">
-      {text}
-    </p>
+    <section>
+      {title && <h4 className={cn(TYPE.microLabel, "mb-2")}>{title}</h4>}
+      <p className={cn(TYPE.caption, "rounded-lg border border-border/30 bg-white/[0.02] p-3")} data-testid="deep-dive-note">
+        {text}
+      </p>
+    </section>
+  );
+}
+
+// Funnel/execution/placement/scaling sections + target ICPs — reuses the
+// exact component the pillar cards already fold behind "Pillar details",
+// not a re-implementation of it.
+function PillarDetailsBlock({ pillar, profiles }: { pillar: Extract<DeepDiveBlock, { kind: "pillar_details" }>["pillar"]; profiles?: Extract<DeepDiveBlock, { kind: "pillar_details" }>["profiles"] }) {
+  return (
+    <section>
+      <h4 className={cn(TYPE.microLabel, "mb-2")}>Pillar details</h4>
+      <PillarDetailSections pillar={pillar} profiles={profiles} />
+    </section>
+  );
+}
+
+function HypothesesBlock({ title, items }: { title: string; items: DeepDiveHypothesisItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <section>
+      <h4 className={cn(TYPE.microLabel, "mb-2")}>{title}</h4>
+      <div className="space-y-2" data-testid="deep-dive-hypotheses">
+        {items.map((h) => (
+          <div key={h.id} className="flex items-start gap-2">
+            <HypothesisStatusBadge status={h.status} />
+            <HypothesisLabel label={h.label} isolated={h.isolated} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// Variable stack — reuses the exact hypothesis-chip renderer (extracts
+// HK_/TN_/FW_/CN_/PR_/CTA_/ST_/AW_/HP_ codes + colors by family prefix)
+// rather than a second hand-rolled parser.
+function VariablesBlock({ title, codes }: { title: string; codes: string[] }) {
+  if (codes.length === 0) return null;
+  return (
+    <section data-testid="deep-dive-variables">
+      <h4 className={cn(TYPE.microLabel, "mb-2")}>{title}</h4>
+      <HypothesisCodeChipsRow label={codes.join(" ")} />
+    </section>
+  );
+}
+
+// Step-conversion path — only ever renders steps the caller backed with
+// real data; DeepDiveFunnelStep never carries a fabricated zero.
+function FunnelBlock({ title, steps }: { title: string; steps: DeepDiveFunnelStep[] }) {
+  if (steps.length === 0) return null;
+  return (
+    <section>
+      <h4 className={cn(TYPE.microLabel, "mb-2")}>{title}</h4>
+      <div className="rounded-lg border border-border/40 overflow-hidden divide-y divide-border/25" data-testid="deep-dive-funnel">
+        {steps.map((s) => (
+          <div key={s.label} className="flex items-center justify-between gap-3 px-3 py-2">
+            <span className={cn(TYPE.body, "text-foreground/80")}>{s.label}</span>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className={cn(TYPE.body, "tabular-nums font-semibold text-foreground")}>{s.formatted}</span>
+              <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/50 w-20 text-right")}>
+                {s.pctOfPrior != null ? `${s.pctOfPrior.toFixed(1)}% of prior` : ""}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// Action row — the panel owns the one real renderer per action kind so
+// every caller gets the same live components (tray reactivity, Ads
+// Manager enable/disable, in-app navigation) instead of re-implementing them.
+function ActionsBlock({ actions }: { actions: DeepDiveAction[] }) {
+  if (actions.length === 0) return null;
+  return (
+    <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-border/20" data-testid="deep-dive-actions">
+      {actions.map((a) => {
+        if (a.kind === "tray") return <AddToTrayButton key={a.id} scopeId={a.scopeId} item={a.item} />;
+        if (a.kind === "ads_manager") return <AdsManagerButton key={a.id} metaAdId={a.metaAdId} adAccountId={a.adAccountId} />;
+        if (a.kind === "callback") return <SegmentDrilldownButton key={a.id} onClick={a.onClick} label={a.label} />;
+        return <CrossLink key={a.id} to={a.href} label={a.label} />;
+      })}
+    </div>
   );
 }
 
 function Block({ block, onDrill }: { block: DeepDiveBlock; onDrill: (row: DeepDiveRankedRow) => void }) {
   if (block.kind === "stats") return <StatsBlock title={block.title} stats={block.stats} />;
   if (block.kind === "ranked") return <RankedBlock title={block.title} metricLabel={block.metricLabel} rows={block.rows} onDrill={onDrill} />;
-  return <NoteBlock text={block.text} />;
+  if (block.kind === "variables") return <VariablesBlock title={block.title} codes={block.codes} />;
+  if (block.kind === "funnel") return <FunnelBlock title={block.title} steps={block.steps} />;
+  if (block.kind === "actions") return <ActionsBlock actions={block.actions} />;
+  if (block.kind === "pillar_details") return <PillarDetailsBlock pillar={block.pillar} profiles={block.profiles} />;
+  if (block.kind === "hypotheses") return <HypothesesBlock title={block.title} items={block.items} />;
+  return <NoteBlock title={block.title} text={block.text} />;
 }
 
 // ─── Panel ────────────────────────────────────────────────────────────

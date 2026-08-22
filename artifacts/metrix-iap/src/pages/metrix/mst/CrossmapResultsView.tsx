@@ -16,7 +16,9 @@ import {
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { RunScopePicker, ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
 import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
-import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
+import { useDeepDive } from "@/contexts/DeepDiveContext";
+import { buildCellDeepDiveModule } from "@/lib/data/deepDive";
+import { SegmentGridModal } from "@/components/creative/SegmentGridModal";
 import { TableShell, Th, Td } from "../analysis/tables";
 import { RankSortBar, useRankMetric, type RankMetric } from "../analysis/rankSort";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -60,7 +62,8 @@ export function CrossmapResultsView({
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const [activeCell, setActiveCell] = useState<MSTMatrixCell | null>(null);
+  const deepDive = useDeepDive();
+  const [segmentsFor, setSegmentsFor] = useState<{ cellId: string; title: string } | null>(null);
   const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
   const controlled = runScope !== undefined && onRunScopeChange !== undefined;
   // When controlled, the parent owns persistence — the local hook is inert
@@ -204,7 +207,19 @@ export function CrossmapResultsView({
                   maxPerfResults={maxPerfResults}
                   minPerfCpa={minPerfCpa}
                   maxPerfCpa={maxPerfCpa}
-                  onSelectCell={setActiveCell}
+                  onSelectCell={(cell) => {
+                    deepDive.push(
+                      buildCellDeepDiveModule({
+                        cellId: cell.cell_id,
+                        matrixCell: cell,
+                        analysis,
+                        mst,
+                        ...getCreativeLinkContext(seed, adAccountId),
+                        trayScopeId: adAccountId,
+                        onOpenSegments: () => setSegmentsFor({ cellId: cell.cell_id, title: cell.plain_text.headline ?? cell.cell_id }),
+                      }),
+                    );
+                  }}
                 />
               </TableShell>
 
@@ -214,15 +229,14 @@ export function CrossmapResultsView({
               </div>
             </div>
 
-            {activeCell && (
-              <TilePerformanceModal
+            {segmentsFor && analysis && (
+              <SegmentGridModal
                 open
-                onClose={() => setActiveCell(null)}
-                cellId={activeCell.cell_id}
-                matrixCell={activeCell}
+                onClose={() => setSegmentsFor(null)}
+                kicker={`MST tile · ${segmentsFor.cellId}`}
+                title={segmentsFor.title}
                 analysis={analysis}
-                mst={mst}
-                {...getCreativeLinkContext(seed, adAccountId)}
+                cellIds={[segmentsFor.cellId]}
               />
             )}
           </div>

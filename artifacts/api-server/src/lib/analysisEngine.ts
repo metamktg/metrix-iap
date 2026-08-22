@@ -271,9 +271,35 @@ async function synthesizeRunFromReportPulls(accountId: string): Promise<ManualAn
   };
 }
 
-/** Latest run for an account, with dead 'running' rows honestly flipped to error.
- * Falls back to synthesizing a run from report_pulls when no manual run exists
- * (live-Meta accounts store their analysis results there instead). */
+function isStaleRunningRow(row: Record<string, any>): boolean {
+  return (
+    row["status"] === "running" &&
+    Date.now() - new Date(row["started_at"]).getTime() > STALE_ANALYSIS_RUN_MS
+  );
+}
+
+/** Flips a dead 'running' row to 'error' and clears its (necessarily partial)
+ * outputs. Shared by listAnalysisRuns and getLatestAnalysisRun so a stale run
+ * reads the same honest status everywhere, not just wherever happens to hit
+ * it first. */
+async function flipStaleRunToError(row: Record<string, any>): Promise<Record<string, any>> {
+  const supabase = getSupabase();
+  const { data: updated, error: updErr } = await supabase
+    .from("manual_analysis_runs")
+    .update({
+      status: "error",
+      error_message: "The analysis run did not finish (server restarted or timed out). Try again.",
+      finished_at: new Date().toISOString(),
+    })
+    .eq("id", row["id"])
+    .eq("status", "running")
+    .select("*");
+  if (updErr) throw new Error(updErr.message);
+  await deleteRunOutputs(String(row["id"]));
+  return updated?.[0] ?? { ...row, status: "error" };
+}
+
+/** All runs for an account, with dead 'running' rows honestly flipped to error. */
 export async function listAnalysisRuns(accountId: string): Promise<ManualAnalysisRun[]> {
   const supabase = getSupabase();
   const { data, error } = await supabase
@@ -283,9 +309,15 @@ export async function listAnalysisRuns(accountId: string): Promise<ManualAnalysi
     .order("started_at", { ascending: false })
     .limit(50);
   if (error) throw new Error(error.message);
-  return (data ?? []).map(runShape);
+  const rows = await Promise.all(
+    (data ?? []).map((row) => (isStaleRunningRow(row) ? flipStaleRunToError(row) : row)),
+  );
+  return rows.map(runShape);
 }
 
+/** Latest run for an account, with a dead 'running' row honestly flipped to error.
+ * Falls back to synthesizing a run from report_pulls when no manual run exists
+ * (live-Meta accounts store their analysis results there instead). */
 export async function getLatestAnalysisRun(accountId: string): Promise<ManualAnalysisRun | null> {
   const supabase = getSupabase();
   const { data, error } = await supabase
@@ -300,22 +332,8 @@ export async function getLatestAnalysisRun(accountId: string): Promise<ManualAna
     // No manual run — check if this is a live-Meta account with report_pulls.
     return synthesizeRunFromReportPulls(accountId);
   }
-  if (row["status"] === "running" && Date.now() - new Date(row["started_at"]).getTime() > STALE_ANALYSIS_RUN_MS) {
-    const { data: updated, error: updErr } = await supabase
-      .from("manual_analysis_runs")
-      .update({
-        status: "error",
-        error_message: "The analysis run did not finish (server restarted or timed out). Try again.",
-        finished_at: new Date().toISOString(),
-      })
-      .eq("id", row["id"])
-      .eq("status", "running")
-      .select("*");
-    if (updErr) throw new Error(updErr.message);
-    await deleteRunOutputs(String(row["id"]));
-    return runShape(updated?.[0] ?? { ...row, status: "error" });
-  }
-  return runShape(row);
+  const finalRow = isStaleRunningRow(row) ? await flipStaleRunToError(row) : row;
+  return runShape(finalRow);
 }
 
 // ─── Post-run completeness verification ────────────────────────────────
@@ -1183,6 +1201,30 @@ export async function startManualAnalysis(
       if (unknownResultTypeRows > 0) {
         allCsvWarnings.push(
           `[Result type] ${unknownResultTypeRows} ad/day row(s) had no result type in any export — recorded as "unknown" rather than a real conversion event.`,
+        );
+      }
+      // Spend/impressions can still be genuinely absent after the summary/demo
+      // fallback chain above (e.g. an ad/day present only in a device-breakdown
+      // placement row with no matching summary or demo row). Every downstream
+      // total (buildTotals, buildDailySeries, the summary-by-preset/date-range
+      // aggregators) coalesces a null value to 0 when summing, which is correct
+      // arithmetic but indistinguishable from "measured $0" unless the gap is
+      // surfaced here — so it's counted and warned about explicitly rather than
+      // silently understating headline spend/impressions totals.
+      let unknownSpendRows = 0;
+      let unknownImpressionRows = 0;
+      for (const b of adBuckets.values()) {
+        if (b.spend === null) unknownSpendRows += 1;
+        if (b.impressions === null) unknownImpressionRows += 1;
+      }
+      if (unknownSpendRows > 0) {
+        allCsvWarnings.push(
+          `[Spend] ${unknownSpendRows} ad/day row(s) had no spend in any export — treated as 0 in totals, which may understate Total Spend.`,
+        );
+      }
+      if (unknownImpressionRows > 0) {
+        allCsvWarnings.push(
+          `[Impressions] ${unknownImpressionRows} ad/day row(s) had no impressions in any export — treated as 0 in totals, which may understate Total Impressions.`,
         );
       }
 

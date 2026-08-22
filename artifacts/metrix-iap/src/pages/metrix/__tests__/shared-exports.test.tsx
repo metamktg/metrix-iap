@@ -60,6 +60,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "fmtPct",
   "EVENT_LABEL",
   "eventLabel",
+  "costPerResultLabel",
   "resultTerm",
   "ConfidenceBadge",
   "SegmentGenderIcon",
