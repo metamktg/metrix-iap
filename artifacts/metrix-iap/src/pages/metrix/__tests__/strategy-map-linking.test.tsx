@@ -103,6 +103,7 @@ function unattachedSection(container: HTMLElement) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 

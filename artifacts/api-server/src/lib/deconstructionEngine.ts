@@ -734,9 +734,35 @@ async function computeFiling(
       .in("ad_name", adNames);
     adCell = (ads ?? []).map((a: Row) => a["cell"]).find((c: unknown) => c) ?? null;
   }
+
+  // `brief_ref_position` is supplied explicitly by the initial classification
+  // run (see startCreativeDeconstruction below), but `creative_deconstructions`
+  // never persists it as a column — only `brief_ref`/`brief_variables` are
+  // stored (scripts/src/metrix-supabase/schema.sql). A caller working from a
+  // row fetched back from the table (e.g. reviewDeconstruction's bypass path,
+  // via `select('*')`) therefore sees it undefined even when the row DOES
+  // carry a `brief_ref`. Re-derive the brief's matrix position from the
+  // linked brief in that case, using the same extraction the initial
+  // classification's brief lookup uses (`findBrief` below), so alignment
+  // still prefers the brief's real cell over minting a new column.
+  let briefRefPosition = dec["brief_ref_position"] as string | null | undefined;
+  const briefRef = dec["brief_ref"];
+  if (!briefRefPosition && briefRef) {
+    const { data: briefRows } = await supabase
+      .from("imported_creative_briefs")
+      .select("payload")
+      .eq("account_id", accountId)
+      .eq("brief_id", String(briefRef))
+      .limit(1);
+    const payload = (briefRows?.[0]?.["payload"] ?? {}) as Row;
+    briefRefPosition = String(
+      (payload["testing_framework"] as Row | undefined)?.["matrix_position"] ?? payload["matrix_position"] ?? "",
+    );
+  }
+
   const cellId = alignCellId({
     adCell,
-    briefCell: briefCellCode(dec["brief_ref_position"] as string | undefined) ?? null,
+    briefCell: briefCellCode(briefRefPosition) ?? null,
     // Exclude this import's own prior entry: the atomic swap removes it in
     // the same transaction, so it must not force a fresh column.
     existingCellIds: rows.map((r: Row) => String(r["cell_id"])),

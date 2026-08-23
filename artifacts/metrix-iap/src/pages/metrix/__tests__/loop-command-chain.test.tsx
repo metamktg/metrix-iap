@@ -176,6 +176,7 @@ function seedWithNoAnalysisAccount() {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
   activeSeed = baseSeed;
   mockStrategyRunning = false;

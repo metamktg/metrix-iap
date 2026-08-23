@@ -96,6 +96,7 @@ function renderCreative() {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
   mockGenRunData = null;
   selectBookster();

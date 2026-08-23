@@ -392,44 +392,55 @@ export function BreakdownTable({
   return (
     <div className="space-y-2">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-separate border-spacing-0">
+        <table className="nc-table">
           <thead>
             <tr>
-              <th className="pb-2 pr-4 text-label font-semibold uppercase tracking-wide text-muted-foreground/55 sticky left-0 bg-transparent">
-                Segment
-              </th>
+              <th className="sticky left-0 bg-transparent">Segment</th>
               {cols.map((col) => (
-                <th key={col.id} className="pb-2 px-3 whitespace-nowrap">
+                <th key={col.id} className="whitespace-nowrap">
                   <SortableHeader col={col} activeId={sortId} direction={activeMetric.direction} onSort={onSort} />
                 </th>
               ))}
-              <th className="pb-2 px-3 text-label font-semibold uppercase tracking-wide text-muted-foreground/55">
-                Bar
-              </th>
+              <th>Bar</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/20">
+          <tbody>
             {sorted.map((row, i) => {
               const v = activeMetric.value(row);
               const bar = rankBarPct(v, allVals, activeMetric.direction);
               const isTop = i === 0;
               return (
-                <tr key={row.label} className={cn("group", isTop && "bg-white/[0.015]")}>
-                  <td className="py-2 pr-4 sticky left-0">
-                    <span className="text-body font-medium text-foreground/90 whitespace-nowrap">{row.label}</span>
+                <tr
+                  key={row.label}
+                  className="group"
+                  // The nc-table row background is itself the fading rule that
+                  // paints the bottom border — a bare Tailwind bg-* utility can't
+                  // out-specificity that class rule, so the top-row tint is
+                  // layered into the same multi-background shorthand (mirroring
+                  // how .nc-table tbody tr:hover layers a solid tint under its
+                  // own fading rule) via inline style, which the cascade always
+                  // honors over the class.
+                  style={isTop ? {
+                    background:
+                      "linear-gradient(rgba(255,255,255,0.015), rgba(255,255,255,0.015)) no-repeat 0 0 / 100% 100%, " +
+                      "linear-gradient(to right, transparent, hsl(var(--foreground) / 0.08) 48px, hsl(var(--foreground) / 0.08) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px",
+                  } : undefined}
+                >
+                  <td className="sticky left-0 bg-transparent">
+                    <span className="font-medium text-foreground/90 whitespace-nowrap">{row.label}</span>
                   </td>
                   {cols.map((col) => {
                     const val = col.value(row);
                     return (
                       <td key={col.id} className={cn(
-                        "py-2 px-3 text-body tabular-nums whitespace-nowrap",
+                        "tabular-nums whitespace-nowrap",
                         col.id === sortId ? "font-semibold text-interactive" : "text-foreground/70"
                       )}>
                         {val != null ? col.format(val) : <span className="text-muted-foreground/30">—</span>}
                       </td>
                     );
                   })}
-                  <td className="py-2 px-3 w-32">
+                  <td className="w-32">
                     <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden w-full">
                       <div
                         className="h-full bg-interactive/50 rounded-full transition-all"
@@ -801,7 +812,7 @@ export function EngagementFunnelView() {
                         <span className="font-medium text-foreground/80">Intent conversion: </span>
                         {fmtRate(pct(summaryTiles.ctrLink, summaryTiles.ctrAll), 0)} of all clicks become link clicks.
                         {summaryTiles.ctrLink != null && summaryTiles.ctrAll != null && summaryTiles.ctrAll > 0 && summaryTiles.ctrLink / summaryTiles.ctrAll < 0.4 && (
-                          <span className="text-amber-400/70 ml-1">Low ratio — check for high engagement creative that doesn't drive off-platform intent.</span>
+                          <span className="text-status-warning/70 ml-1">Low ratio — check for high engagement creative that doesn't drive off-platform intent.</span>
                         )}
                       </div>
                     )}

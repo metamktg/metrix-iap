@@ -73,6 +73,7 @@ function renderView(node: React.ReactElement) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 

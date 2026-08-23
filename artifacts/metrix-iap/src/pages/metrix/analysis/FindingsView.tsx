@@ -147,11 +147,11 @@ function VerdictBanner({
     <div className="space-y-3">
       {/* Main banner */}
       <div
-        className="rounded-xl border border-[var(--meta-blue-highlight)]/20 bg-primary/5 px-5 py-4 space-y-2"
+        className="rounded-xl border border-primary/20 bg-primary/5 px-5 py-4 space-y-2"
       >
         {/* Eyebrow */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-label font-bold uppercase tracking-widest text-[var(--meta-blue-highlight)]/80">
+          <span className="text-label font-bold uppercase tracking-widest text-interactive/80">
             AI Verdict
           </span>
           {runType && (
@@ -197,9 +197,9 @@ function VerdictBanner({
 
       {/* Critical alert strip */}
       {criticalAlert && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-4 py-3">
-          <AlertTriangle className="w-4 h-4 text-amber-400/80 shrink-0 mt-0.5" />
-          <p className="text-body text-amber-400/90 leading-relaxed">{criticalAlert}</p>
+        <div className="flex items-start gap-2.5 rounded-lg border border-status-warning/20 bg-status-warning/[0.04] px-4 py-3">
+          <AlertTriangle className="w-4 h-4 text-status-warning/80 shrink-0 mt-0.5" />
+          <p className="text-body text-status-warning/90 leading-relaxed">{criticalAlert}</p>
         </div>
       )}
     </div>
@@ -219,7 +219,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
     <div
       className={cn(
         "flex flex-col rounded-xl border p-4 gap-3 transition-colors",
-        "bg-[var(--void-navy-3)] border-[hsl(var(--border))] hover:border-[hsl(var(--border-default))]"
+        "bg-secondary border-[hsl(var(--border))] hover:border-[hsl(var(--border-default))]"
       )}
     >
       {/* Header row: concept code + tier badge + confidence */}
@@ -247,14 +247,10 @@ function ConceptCard({ score }: { score: ConceptScore }) {
         <div>
           <div className="text-label uppercase tracking-widest text-muted-foreground/45 font-semibold mb-0.5">CPA</div>
           <div
-            className="text-title font-semibold tabular-nums leading-none"
-            style={{
-              background: score.cpa != null ? "var(--grad-meta)" : undefined,
-              WebkitBackgroundClip: score.cpa != null ? "text" : undefined,
-              WebkitTextFillColor: score.cpa != null ? "transparent" : undefined,
-              backgroundClip: score.cpa != null ? "text" : undefined,
-              color: score.cpa == null ? "var(--muted-foreground)" : undefined,
-            }}
+            className={cn(
+              "text-title font-semibold tabular-nums leading-none",
+              score.cpa != null ? "text-interactive" : "text-muted-foreground",
+            )}
           >
             {score.cpa != null ? fmtUSD(score.cpa, score.cpa < 100 ? 2 : 0) : "—"}
           </div>
@@ -320,15 +316,15 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
           {fmtUSD(totalWasted, 0)} flagged spend
         </span>
       </div>
-      <div className="rounded-xl border border-[hsl(var(--border))] bg-[var(--void-navy-3)] overflow-hidden divide-y divide-white/[0.04]">
+      <div className="rounded-xl border border-[hsl(var(--border))] bg-secondary overflow-hidden divide-y divide-white/[0.04]">
         {fold.visible.map((p, i) => (
           <div key={i} className="flex items-start gap-3 px-4 py-3">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400/60 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-3.5 h-3.5 text-status-warning/60 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <p className="text-body font-medium text-foreground/80 truncate">{p.campaign}</p>
               <p className="text-caption text-muted-foreground/55 leading-snug mt-0.5">{p.diagnosis}</p>
             </div>
-            <span className="shrink-0 text-caption font-mono tabular-nums text-amber-400/70">
+            <span className="shrink-0 text-caption font-mono tabular-nums text-status-warning/70">
               {fmtUSD(p.wasted_spend ?? p.spend, 0)}
             </span>
           </div>
@@ -471,8 +467,7 @@ export function FindingsView() {
                   <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
                     <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Total spend</span>
                     <span
-                      className="text-display font-semibold tabular-nums leading-none"
-                      style={{ background: "var(--grad-meta)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                      className="text-display font-semibold tabular-nums leading-none text-interactive"
                     >
                       {execSummary.total_spend != null ? fmtMetric("usd_total", execSummary.total_spend) : "—"}
                     </span>
@@ -480,8 +475,7 @@ export function FindingsView() {
                   <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
                     <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Total results</span>
                     <span
-                      className="text-display font-semibold tabular-nums leading-none"
-                      style={{ background: "var(--grad-meta)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                      className="text-display font-semibold tabular-nums leading-none text-interactive"
                     >
                       {execSummary.total_results != null ? fmtNum(execSummary.total_results) : "—"}
                     </span>
@@ -490,8 +484,7 @@ export function FindingsView() {
                     <div key={book} className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
                       <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Blended CPA · {book}</span>
                       <span
-                        className="text-display font-semibold tabular-nums leading-none"
-                        style={{ background: "var(--grad-meta)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                        className="text-display font-semibold tabular-nums leading-none text-interactive"
                       >
                         {fmtUSD(cpa, cpa < 100 ? 2 : 0)}
                       </span>

@@ -15,7 +15,8 @@ import {
   setDecision,
 } from "@/lib/data/decisionStore";
 import { addToTray, removeFromTray } from "@/lib/data/trayStore";
-import { ConfidenceBadge, DenseText, UnconfiguredState } from "@/pages/metrix/shared";
+import { ConfidenceBadge, DenseText, ModuleHeader, UnconfiguredState } from "@/pages/metrix/shared";
+import { impactRank } from "@/components/deck/RecommendationDeck";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
 import {
   Check,
@@ -29,12 +30,9 @@ import {
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
-
-const IMPACT_RANK: Record<string, number> = { high: 4, medium: 3, low: 2, setup: 1 };
-
-function impactRank(card: RecommendationCard): number {
-  return IMPACT_RANK[String(card.impact).toLowerCase()] ?? 0;
-}
+// Impact ranking (for sorting cards highest-impact first) comes from the
+// shared `impactRank` in RecommendationDeck — the same source NextBestActionCard
+// uses — so the two surfaces can never silently disagree on priority.
 
 function actionVerb(recommended_action: string): { label: string; cls: string } {
   const a = recommended_action.toLowerCase();
@@ -80,7 +78,7 @@ function InlineDrawer({
   onClose: () => void;
 }) {
   return (
-    <div className="mt-2 rounded-xl border border-[hsl(var(--border-default))] bg-[var(--void-navy-3)] p-4 space-y-3 text-left">
+    <div className="mt-2 rounded-xl border border-[hsl(var(--border-default))] bg-secondary p-4 space-y-3 text-left">
       {/* Close handle */}
       <div className="flex items-center justify-between">
         <span className="text-label font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
@@ -180,7 +178,7 @@ function QueueCard({
           ? "border-emerald-400/25 bg-emerald-400/[0.04]"
           : isDismissed
           ? "border-[hsl(var(--border))] bg-white/[0.01] opacity-50"
-          : "border-[hsl(var(--border))] bg-[var(--void-navy-3)]"
+          : "border-[hsl(var(--border))] bg-secondary"
       )}
     >
       {/* Card header — clickable to expand */}
@@ -206,7 +204,7 @@ function QueueCard({
           </span>
           <ConfidenceBadge value={card.confidence} />
           {impactLabel && (
-            <span className="ml-auto text-caption text-[var(--meta-blue-highlight)] font-semibold tabular-nums">
+            <span className="ml-auto text-caption text-interactive font-semibold tabular-nums">
               {impactLabel}
             </span>
           )}
@@ -296,6 +294,13 @@ function QueueCard({
   );
 }
 
+// ─── Section eyebrow ───────────────────────────────────────────────────
+// Not one of the six numbered loop stages (see App.tsx's un-numbered
+// "Act section" comment) — reached only via the "Open full queue"
+// cross-link from Account Overview, so the eyebrow is the bare label.
+
+const SECTION = "Act";
+
 // ─── Empty state ──────────────────────────────────────────────────────
 
 function EmptyQueue({ reason }: { reason: "no-loop" | "all-done" }) {
@@ -341,7 +346,7 @@ export function ActionQueueView() {
   const allCards = useMemo(
     () =>
       [...(optLoop?.recommendation_cards ?? [])].sort(
-        (a, b) => impactRank(b) - impactRank(a)
+        (a, b) => impactRank(String(b.impact)) - impactRank(String(a.impact))
       ),
     [optLoop]
   );
@@ -361,13 +366,8 @@ export function ActionQueueView() {
 
   if (account.status !== "configured" || !account.iap) {
     return (
-      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto px-6 py-6">
-        <h1
-          className="text-2xl font-semibold text-foreground mb-6 max-w-[680px] leading-[1.22]"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          Set up {account.name} to get started.
-        </h1>
+      <div className="flex-1 flex flex-col">
+        <ModuleHeader section={SECTION} title="Action Queue" accountName={account.name} />
         <UnconfiguredState account={account} />
       </div>
     );
@@ -384,26 +384,20 @@ export function ActionQueueView() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <ModuleHeader
+        section={SECTION}
+        title="Action Queue"
+        accountName={account.name}
+        subtitle="Recommendation cards from the optimization loop, sorted by impact — approve into the Task Tray or dismiss."
+      />
       <div className="px-6 py-6 space-y-5 max-w-[860px] w-full mx-auto">
 
-        {/* ── Page header ─────────────────────────────────────────────── */}
-        <div className="space-y-1">
-          <h1
-            className="text-foreground leading-[1.22]"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(20px, 1.8vw, 26px)",
-              fontWeight: 600,
-            }}
-          >
-            Action Queue
-          </h1>
-          <p className="text-title text-muted-foreground/65 max-w-[520px] leading-relaxed">
-            {allCards.length > 0
-              ? `${allCards.length} recommendation${allCards.length !== 1 ? "s" : ""} from the optimization loop, sorted by impact. Add items to your Task Tray to implement later.`
-              : "Optimization loop recommendations appear here after analysis runs."}
-          </p>
-        </div>
+        {/* ── Descriptive line ────────────────────────────────────────── */}
+        <p className="text-title text-muted-foreground/65 max-w-[520px] leading-relaxed">
+          {allCards.length > 0
+            ? `${allCards.length} recommendation${allCards.length !== 1 ? "s" : ""} from the optimization loop, sorted by impact. Add items to your Task Tray to implement later.`
+            : "Optimization loop recommendations appear here after analysis runs."}
+        </p>
 
         {/* ── Tabs ────────────────────────────────────────────────────── */}
         {allCards.length > 0 && (

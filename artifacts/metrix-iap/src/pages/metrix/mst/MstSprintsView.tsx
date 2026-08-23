@@ -19,7 +19,7 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, CaveatNote, PendingState, CrossLink,
-  SectionCard, SectionInfoIcon, ConfidenceBadge, fmtUSD, fmtPct,
+  SectionCard, SectionInfoIcon, ConfidenceBadge, SegmentedToggle, fmtUSD, fmtPct,
 } from "../shared";
 import { TYPE } from "../typography";
 import { useDeepDive } from "@/contexts/DeepDiveContext";
@@ -31,6 +31,10 @@ import { Grid3x3 } from "lucide-react";
 import type { ConceptRollupRow, MSTMatrix, MSTMatrixCell, ScalingPlaybook } from "@/lib/data/seedTypes";
 
 const SECTION = "MST · 06";
+
+/** Display order for the tier filter — worst-to-best playbook priority,
+ *  matching the order bucketForConcept checks lists in. */
+const TIER_ORDER: ScalingBucket[] = ["scale_now", "optimize", "validate", "explore", "avoid"];
 
 const ROW_COLOR: Record<string, string> = {
   "var(--green)": "border-emerald-400/30 bg-emerald-400/[0.04]",
@@ -92,13 +96,17 @@ function buildColumnPerf(
 
 // ─── Canvas matrix grid ────────────────────────────────────────────────
 
-export function MatrixGrid({ matrix, columnPerf = {}, onCellClick }: {
+export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = "all" }: {
   matrix: MSTMatrix;
   /** Column-level rollup overlay — absent columns render position-only. */
   columnPerf?: Record<string, ColumnPerf>;
   onCellClick?: (cell: MSTMatrixCell) => void;
+  /** Scaling-playbook tier filter — non-matching columns dim rather than
+   *  disappear, so the 4×4 grid structure never breaks. */
+  activeTier?: ScalingBucket | "all";
 }) {
   const cellOf = (col: string, row: string) => matrix.cells.find((c) => c.column_id === col && c.row_id === row);
+  const dimmedCol = (colId: string) => activeTier !== "all" && (columnPerf[colId]?.bucket ?? null) !== activeTier;
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[720px]">
@@ -107,7 +115,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick }: {
           {matrix.columns.map((c) => {
             const perf = columnPerf[c.id];
             return (
-              <div key={c.id} className="p-2 text-center">
+              <div key={c.id} className={cn("p-2 text-center transition-opacity", dimmedCol(c.id) && "opacity-30")}>
                 <div className="text-body font-semibold text-foreground leading-tight whitespace-pre-line">{c.name}</div>
                 <div className="text-micro font-mono text-muted-foreground/40 mt-1">
                   {c.id}
@@ -150,12 +158,13 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick }: {
                     aria-label={clickable ? `Open performance for ${cell!.cell_id}` : undefined}
                     data-testid={cell ? `matrix-cell-${cell.cell_id}` : undefined}
                     className={cn(
-                      "m-0.5 p-2.5 rounded-lg border text-left min-h-[112px] flex flex-col gap-1.5",
+                      "m-0.5 p-2.5 rounded-lg border text-left min-h-[112px] flex flex-col gap-1.5 transition-opacity",
                       isScale ? "border-primary/50 bg-primary/[0.06]" : "bg-white/[0.02]",
                       !isScale && diag === "diag_down" && "border-primary/40 ring-1 ring-primary/15",
                       !isScale && diag === "diag_up" && "border-teal-400/40 ring-1 ring-teal-400/15",
                       !isScale && !diag && "border-border/40",
-                      clickable && "cursor-pointer hover:bg-white/[0.05] hover:border-primary/40 transition-colors"
+                      clickable && "cursor-pointer hover:bg-white/[0.05] hover:border-primary/40 transition-colors",
+                      dimmedCol(col.id) && "opacity-30"
                     )}
                   >
                     {cell ? (
@@ -267,6 +276,7 @@ export function MstSprintsView() {
   const account = getAdAccount(seed, adAccountId);
   const deepDive = useDeepDive();
   const [segmentsFor, setSegmentsFor] = useState<{ cellId: string; title: string } | null>(null);
+  const [tierFilter, setTierFilter] = useState<ScalingBucket | "all">("all");
 
   return (
     <ModuleScopeGate section={SECTION} title="Sprints" account={account}>
@@ -292,6 +302,11 @@ export function MstSprintsView() {
         const windowLabel = summary?.window_start && summary?.window_end
           ? `${summary.window_start} → ${summary.window_end}`
           : null;
+        // Only offer tiers actually present on this matrix's columns — never
+        // a filter pill for a playbook bucket nothing here is classified into.
+        const availableTiers = TIER_ORDER.filter((t) =>
+          Object.values(columnPerf).some((p) => p.bucket === t)
+        );
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -330,9 +345,33 @@ export function MstSprintsView() {
               </div>
 
               <CaveatNote text={mst.render_policy} />
+
+              {availableTiers.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/40")}>
+                    Filter by tier
+                  </span>
+                  <SegmentedToggle<ScalingBucket | "all">
+                    ariaLabel="Filter matrix by scaling-playbook tier"
+                    options={[
+                      { id: "all", label: "All" },
+                      ...availableTiers.map((t) => ({ id: t, label: BUCKET_LABEL[t] })),
+                    ]}
+                    active={tierFilter}
+                    onChange={setTierFilter}
+                  />
+                  {tierFilter !== "all" && (
+                    <span className="text-caption text-muted-foreground/50">
+                      Other columns dim — click a cell for its detail regardless of tier
+                    </span>
+                  )}
+                </div>
+              )}
+
               <MatrixGrid
                 matrix={matrix}
                 columnPerf={columnPerf}
+                activeTier={tierFilter}
                 onCellClick={(cell) => {
                   deepDive.push(
                     buildCellDeepDiveModule({

@@ -75,8 +75,8 @@ describe("every navTree path resolves to a real page", () => {
   });
 
   for (const { label, to } of navPaths) {
-    it(`${label} (${to}) does not hit the 404 page`, () => {
-      const { container } = renderAt(to);
+    it(`${label} (${to}) does not hit the 404 page`, async () => {
+      const { container } = await renderAt(to);
       expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
       expect(container.textContent?.trim().length).toBeGreaterThan(0);
     });
@@ -85,8 +85,8 @@ describe("every navTree path resolves to a real page", () => {
 
 describe("legacy redirects land on their new targets", () => {
   for (const [from, target] of legacyRedirects) {
-    it(`${from} → ${target}`, () => {
-      const { container, location } = renderAt(from);
+    it(`${from} → ${target}`, async () => {
+      const { container, location } = await renderAt(from);
       expect(location.history.at(-1)).toBe(target);
       expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
     });
@@ -97,8 +97,8 @@ describe("legacy redirects land on their new targets", () => {
 // user opening that link (old email, bookmark) must be redirected to a real
 // in-app destination — never fall through to the 404 page.
 describe("a signed-in user visiting /forgot-password is redirected", () => {
-  it("/forgot-password → /app/settings/security?focus=password, not the 404 page", () => {
-    const { container, location } = renderAuthedAt("/forgot-password");
+  it("/forgot-password → /app/settings/security?focus=password, not the 404 page", async () => {
+    const { container, location } = await renderAuthedAt("/forgot-password");
     expect(location.history.at(-1)).toBe("/app/settings/security?focus=password");
     expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
     expect(container.textContent?.trim().length).toBeGreaterThan(0);
@@ -106,8 +106,8 @@ describe("a signed-in user visiting /forgot-password is redirected", () => {
 });
 
 describe("unknown paths still 404", () => {
-  it("a bogus path renders the NotFound page", () => {
-    const { container } = renderAt("/this-is-definitely-not-a-real-route");
+  it("a bogus path renders the NotFound page", async () => {
+    const { container } = await renderAt("/this-is-definitely-not-a-real-route");
     expect(container.textContent).toContain(NOT_FOUND_TEXT);
   });
 });

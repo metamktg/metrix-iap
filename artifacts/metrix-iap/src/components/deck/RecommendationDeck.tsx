@@ -52,6 +52,20 @@ const IMPACT_STYLE: Record<string, string> = {
   setup: "bg-primary/10 text-interactive border-primary/20",
 };
 
+// Single source of truth for how impact tiers rank against each other —
+// shared by every surface that sorts DeckCard-shaped recommendations by
+// impact (NextBestActionCard, ActionQueueView, …) so they can never
+// silently diverge on what "impact" means as an absolute rank.
+export const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
+
+/**
+ * Numeric priority for sorting by impact, highest first. Case-insensitive;
+ * an unrecognized value ranks with "setup" (0).
+ */
+export function impactRank(impact: string): number {
+  return IMPACT_RANK[String(impact).toLowerCase()] ?? 0;
+}
+
 const SCOPE_STYLE: Record<string, string> = {
   creative: "bg-amber-500/10 text-amber-300 border-amber-500/20",
   funnel: "bg-teal-500/10 text-teal-300 border-teal-500/20",
@@ -139,7 +153,7 @@ function DetailDrawer({
               <div>
                 <button
                   onClick={() => onSegments(card)}
-                  className="inline-flex items-center gap-1.5 text-caption font-medium text-interactive border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-2.5 py-1.5 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-caption font-medium text-interactive border border-primary/30 hover:bg-primary/10 active:bg-primary/20 rounded-md px-2.5 py-1.5 transition-colors"
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
                   Avatar × placement drill-down

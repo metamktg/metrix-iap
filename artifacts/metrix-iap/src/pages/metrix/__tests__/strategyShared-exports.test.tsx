@@ -56,6 +56,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof strategyShared> = [
   "playbookHasContent",
   "ScalingPlaybookLanes",
   "pillarTier",
+  "CONF_ORDER",
   "personaHue",
   "personaInitials",
   "PersonaAvatar",

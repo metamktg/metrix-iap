@@ -176,7 +176,7 @@ vi.mock("../videoKeyframes", () => ({
   extractVideoKeyframes: vi.fn((bytes: Buffer, filename: string) => keyframeImpl(bytes, filename)),
 }));
 
-import { startCreativeDeconstruction } from "../deconstructionEngine";
+import { startCreativeDeconstruction, reviewDeconstruction } from "../deconstructionEngine";
 
 const ACCOUNT = "acct_1";
 
@@ -387,5 +387,70 @@ describe("video creatives classify via keyframes", () => {
     const dec = db["creative_deconstructions"]!.filter((r) => r["manual_import_id"] === "imp-bad");
     expect(dec).toHaveLength(1);
     expect(dec[0]!["status"]).toBe("unsupported");
+  });
+});
+
+// ─── reviewDeconstruction "bypass" cell alignment ──────────────────────
+// Regression guard: `creative_deconstructions` only ever persists `brief_ref`
+// (never `brief_ref_position` — the table has no such column, see
+// scripts/src/metrix-supabase/schema.sql). The initial classification run
+// supplies `brief_ref_position` inline, but reviewDeconstruction's "bypass"
+// path works from a row fetched back via `select('*')`, so that field is
+// always undefined there even when `brief_ref` IS populated. Without
+// re-deriving the position from the linked brief, cell alignment falls
+// through past the brief-based candidate and mints a spurious new grid
+// column instead of aligning to the cell the linked brief actually specifies.
+describe('reviewDeconstruction "bypass" aligns to the linked brief\'s cell', () => {
+  it("an ad with no `cell` yet, but a dec row with a `brief_ref`, aligns to the brief's matrix position — not a new column", async () => {
+    // Historical grid already has one column filed, so a "mint a new column"
+    // fallback would produce C2A — distinguishable from the brief's actual
+    // C3B position, proving the fix (not a coincidence) drives the result.
+    db["library_cells"]!.push({
+      id: "cell-existing",
+      account_id: ACCOUNT,
+      cell_id: "C1A",
+      row_index: 1,
+      payload: { cell_id: "C1A", source: "deconstructed", deconstruction_of: "imp-other" },
+    });
+    // The mapped ad has no `cell` yet (e.g. never ran, or ran before naming
+    // convention capture) — forces alignment past the ad-cell candidate.
+    db["ads"]!.push({ ad_name: "ad_1", cell: null, concept: null });
+    // The linked brief carries the real matrix position.
+    db["imported_creative_briefs"]!.push({
+      account_id: ACCOUNT,
+      brief_id: "brief-1",
+      source: "generated",
+      payload: { testing_framework: { matrix_position: "C3B_HeroAngle" } },
+    });
+    // The classification row persists brief_ref (as the real table does) but
+    // — crucially — no brief_ref_position column/value.
+    db["creative_deconstructions"]!.push({
+      id: "dec-1",
+      account_id: ACCOUNT,
+      manual_import_id: "imp-1",
+      generation_run_id: "run-old",
+      filename: "imp-1.png",
+      ad_names: ["ad_1"],
+      status: "needs_review",
+      variables: [{ family: "concept", code: "CN_UGC", confidence: 0.6 }],
+      overall_confidence: 0.6,
+      detected_copy: null,
+      brief_ref: "brief-1",
+      brief_variables: ["CN_UGC"],
+      cell_id: null,
+      overridden_by: null,
+      overridden_at: null,
+      model: "test-model",
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = await reviewDeconstruction(ACCOUNT, "dec-1", "bypass", "tester");
+
+    expect(result.cell_id).toBe("C3B");
+    expect(result.status).toBe("user_overridden");
+    const cells = db["library_cells"]!.filter((r) => r["payload"]?.["deconstruction_of"] === "imp-1");
+    expect(cells).toHaveLength(1);
+    expect(cells[0]!["cell_id"]).toBe("C3B");
   });
 });

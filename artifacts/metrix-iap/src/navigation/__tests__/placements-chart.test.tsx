@@ -33,8 +33,8 @@ beforeEach(() => {
 });
 
 describe("Placements view renders real placement data from the seed fixture", () => {
-  it("renders at least one placement row button", () => {
-    const { container } = renderAt(PLACEMENTS_PATH);
+  it("renders at least one placement row button", async () => {
+    const { container } = await renderAt(PLACEMENTS_PATH);
     // Each placement in the ranked list gets a button with this testid.
     // If rollupPlacements() returns nothing, no buttons are rendered and
     // the assertion fails loudly — catching the "empty chart" regression.
@@ -44,16 +44,16 @@ describe("Placements view renders real placement data from the seed fixture", ()
     expect(placementButtons.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders the 'Feed' placement label — present in both v3 and c4e signals", () => {
-    renderAt(PLACEMENTS_PATH);
+  it("renders the 'Feed' placement label — present in both v3 and c4e signals", async () => {
+    await renderAt(PLACEMENTS_PATH);
     // "Feed" appears in both v3_placement_signal and c4e_placement_signal in
     // the seed fixture. If either signal stops being read, the rollup may
     // drop it — this assertion fails before the user ever sees a blank chart.
     expect(screen.getAllByText("Feed").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders at least three distinct placement labels", () => {
-    const { container } = renderAt(PLACEMENTS_PATH);
+  it("renders at least three distinct placement labels", async () => {
+    const { container } = await renderAt(PLACEMENTS_PATH);
     const buttons = container.querySelectorAll("[data-testid^='row-placement-']");
     // The seed fixture has 18+ distinct placements. Requiring at least 3
     // means a near-empty rollup (e.g. only one row survived a bad filter)

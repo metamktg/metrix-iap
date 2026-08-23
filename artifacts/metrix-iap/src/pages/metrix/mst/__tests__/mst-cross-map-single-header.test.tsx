@@ -58,6 +58,7 @@ function renderView() {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
   sessionStorage.setItem(SESSION_KEY, JSON.stringify({ type: "ad_account", adAccountId: "bookster" }));
 });

@@ -182,7 +182,7 @@ function PasswordSection() {
       id="password"
       className={cn(
         "rounded-xl transition-shadow duration-500",
-        highlighted && "ring-2 ring-primary/60 shadow-[0_0_24px_hsl(var(--primary)/0.25)]",
+        highlighted && "ring-2 ring-primary/70 ring-offset-1 ring-offset-background",
       )}
       data-testid="section-password"
     >

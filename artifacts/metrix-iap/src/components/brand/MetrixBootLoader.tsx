@@ -1,12 +1,9 @@
 // ─── Metrix boot loader ────────────────────────────────────────────────
-// Branded "command deck powering up" full-screen loading state, recreated
-// natively in CSS from the motion reference at
-// artifacts/metrix-loading-video/src/components/video/.
-// Pure CSS for the glow/ring/progress fill (see index.css "mx-boot-*") —
-// no framer-motion at boot so the loader stays lightweight. Reduced-motion
-// users get static frames via the global prefers-reduced-motion override,
-// and the callout rotation itself is frozen on its first line via
-// useReducedMotion() below.
+// Full-screen loading state: static logo, rotating callout line, and a
+// progress-fill bar (see index.css "mx-boot-*") — no framer-motion at boot
+// so the loader stays lightweight. Reduced-motion users get static frames
+// via the global prefers-reduced-motion override, and the callout rotation
+// itself is frozen on its first line via useReducedMotion() below.
 
 import { useEffect, useState } from "react";
 
@@ -90,8 +87,7 @@ export function MetrixBootLoader() {
             the glow scales with it. Tight box (no extra top padding) keeps
             the whole stack optically centered on screen. */}
         <div className="relative w-28 h-28 shrink-0 grid place-items-center">
-          <span className="mx-boot-core-glow" aria-hidden="true" />
-          <BrandLogo className="w-20 h-20 mx-boot-logo-pulse relative" />
+          <BrandLogo className="w-20 h-20 relative" />
         </div>
 
         {/* Fixed height, so swapping between one- and two-line callouts can

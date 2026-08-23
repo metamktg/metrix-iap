@@ -134,6 +134,7 @@ function renderView(View: React.ComponentType) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 
@@ -151,6 +152,19 @@ describe("SKOV Pet selected", () => {
       select("ad_account", "skov_pet");
       const { container } = renderView(View);
       expect(container.textContent).toContain("Connect data source");
+    });
+  }
+
+  for (const [name, View] of GATED_VIEWS) {
+    it(`${name} names the account in the gate-rendered header, not just once it's configured`, () => {
+      // Regression: ModuleScopeGate's unconfigured branch used to render
+      // ModuleHeader with no accountName at all — a freshly added account
+      // (every account starts "unconfigured") showed a generic header with
+      // no account context until its first successful analysis run.
+      select("ad_account", "skov_pet");
+      const { container } = renderView(View);
+      const heading = container.querySelector("h1");
+      expect(heading?.textContent).toContain("SKOV Pet");
     });
   }
 });

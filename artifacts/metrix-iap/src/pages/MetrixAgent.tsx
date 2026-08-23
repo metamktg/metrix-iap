@@ -3,9 +3,11 @@
 // waitlist — emails are stored in Postgres via the API.
 
 import { useState } from "react";
-import { cn } from "@workspace/command-deck/lib/utils";
 import { useJoinAgentWaitlist } from "@workspace/api-client-react";
 import { Clock, Brain, Database, Zap, ArrowRight, Mail, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { ModuleHeader } from "@/pages/metrix/shared";
+
+const SECTION = "Metrix Agent · 07";
 
 // ─── Status row ────────────────────────────────────────────────────────
 
@@ -112,29 +114,19 @@ export function MetrixAgent() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-border/40">
-        <span className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest block mb-1">
-          Metrix Agent · 07
-        </span>
-        <h1 className="text-lg font-semibold text-foreground leading-tight">Metrix Agent</h1>
-        <p className="text-body text-muted-foreground/60 mt-0.5">
-          A source-backed AI operator for Metrix workflows. Coming soon.
-        </p>
-      </div>
+      <ModuleHeader
+        section={SECTION}
+        title="Metrix Agent"
+        subtitle="A source-backed AI operator for Metrix workflows. Coming soon."
+      />
 
       {/* Body */}
       <div className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-lg space-y-6">
 
           {/* Hero card */}
-          <div className={cn(
-            "relative p-6 rounded-2xl border overflow-hidden",
-            "border-border/40 bg-white/[0.02]",
-          )}>
-            {/* Subtle glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent pointer-events-none" />
-
-            <div className="relative space-y-4">
+          <div className="p-6 rounded-2xl border border-border/40 bg-white/[0.02]">
+            <div className="space-y-4">
               {/* Icon + badge */}
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl border border-primary/30 bg-primary/10 flex items-center justify-center">
@@ -146,12 +138,9 @@ export function MetrixAgent() {
               </div>
 
               {/* Copy */}
-              <div>
-                <h2 className="text-xl font-semibold text-foreground leading-tight">Metrix Agent</h2>
-                <p className="text-title text-foreground/70 mt-2 leading-relaxed">
-                  Your source-backed operator layer for summarizing account state, surfacing next actions, and explaining why each recommendation exists.
-                </p>
-              </div>
+              <p className="text-title text-foreground/70 leading-relaxed">
+                Your source-backed operator layer for summarizing account state, surfacing next actions, and explaining why each recommendation exists.
+              </p>
 
               {/* Capability bullets */}
               <div className="space-y-1.5 pt-1">

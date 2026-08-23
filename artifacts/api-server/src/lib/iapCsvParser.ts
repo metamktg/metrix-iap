@@ -270,6 +270,25 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   const columnMappings: Record<string, ColumnMatch> = {};
   const missingColumns: string[] = [];
 
+  // ── Duplicate header names ────────────────────────────────────────────
+  // Every column resolution below picks the FIRST occurrence of a header
+  // string (via findIndex). A duplicated header name — Meta's own pivot
+  // exporter has been observed to emit "Result value type" twice — silently
+  // drops the LATER occurrence's column, but with no visible index the drop
+  // reads as if that data never existed. Surface it once, up front.
+  {
+    const seen = new Set<string>();
+    const duplicated = new Set<string>();
+    for (const h of headerStrings) {
+      if (h === "") continue;
+      if (seen.has(h)) duplicated.add(h);
+      seen.add(h);
+    }
+    for (const h of duplicated) {
+      warnings.push(`Column "${h}" appears more than once in the header row — only the first occurrence is used.`);
+    }
+  }
+
   // Single authoritative summary map: canonical → entry. Using a Map (not an
   // array) guarantees exactly one entry per canonical column even when a column
   // passes through multiple resolution stages (e.g. initially "missing" then
@@ -515,12 +534,23 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     }
   }
 
-  // ── Build exact-lookup colIndex for optional metrics ─────────────────
-  const colIndex = new Map<string, number>();
-  rawHeader.forEach((h, idx) => colIndex.set(h.trim(), idx));
-
-  // Optional metrics: use simple exact match (they are truly optional)
-  const optionalMetricsPresent = OPTIONAL_METRICS.filter((col) => colIndex.has(col));
+  // ── Resolve optional metrics through the same alias cascade as breakdown
+  // and creative-metadata columns below (exact → currency → case-insensitive
+  // → alias). A prior exact-string-only lookup here silently dropped any
+  // optional metric whose header used an aliased/renamed form — e.g. a
+  // client export with 216 "Adds of payment info" events under a column
+  // name not byte-identical to the canonical, with no warning that they'd
+  // been dropped.
+  const optionalMetricIdx = new Map<string, number>(); // canonical → rawHeader index
+  const optionalMetricsPresent: string[] = [];
+  for (const col of OPTIONAL_METRICS) {
+    const match = findColumnInHeader(headerStrings, col);
+    if (!match) continue;
+    const idx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
+    if (idx < 0) continue;
+    optionalMetricsPresent.push(col);
+    optionalMetricIdx.set(col, idx);
+  }
 
   // Creative metadata columns (only for ad_summary): use same resolution cascade
   // as breakdown columns so aliases like "body text" → "Ad creative body text" work.
@@ -614,7 +644,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
 
     const extra: Record<string, number | string | null> = {};
     for (const col of optionalMetricsPresent) {
-      const idx = colIndex.get(col);
+      const idx = optionalMetricIdx.get(col);
       extra[slugifyColumn(col)] = parseNumericCell(idx !== undefined ? cells[idx] : undefined);
     }
 

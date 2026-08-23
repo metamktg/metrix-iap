@@ -1,7 +1,7 @@
 // Shared memoryLocation render harness for navigation route tests.
 // Test files must mock "@/contexts/MetrixDataContext" (see nav-routes.test.tsx)
 // BEFORE importing this module, since it pulls in the real App Router.
-import { render } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router as WouterRouter } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
@@ -29,6 +29,7 @@ export const AUTH_GATE_PATHS = PRE_LOGIN_ROUTE_PATHS;
 
 export function seedAccountSession() {
   sessionStorage.clear();
+  localStorage.clear();
   sessionStorage.setItem(
     SESSION_KEY,
     JSON.stringify({ type: "ad_account", adAccountId: "bookster" })
@@ -36,7 +37,26 @@ export function seedAccountSession() {
   window.history.replaceState({}, "", "/");
 }
 
-export function renderAt(initialPath: string) {
+// Route views are code-split (React.lazy + Suspense — see App.tsx's Router),
+// so the first render paints the RouteFallback spinner while the chunk
+// resolves. Every render helper below awaits this before returning, so
+// callers can keep asserting on `container` synchronously-looking code
+// (just add `await`) without racing the lazy import.
+async function waitForRouteReady(container: HTMLElement): Promise<void> {
+  // A cold first import of a route chunk in the test transform pipeline can
+  // take longer than testing-library's 1s default, so give this a longer
+  // budget than a typical assertion-level waitFor.
+  await waitFor(
+    () => {
+      if (container.querySelector('[data-testid="route-loading"]')) {
+        throw new Error("route chunk still loading");
+      }
+    },
+    { timeout: 5000 }
+  );
+}
+
+export async function renderAt(initialPath: string) {
   const location = memoryLocation({ path: initialPath, record: true });
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, enabled: false } },
@@ -60,6 +80,7 @@ export function renderAt(initialPath: string) {
       </WouterRouter>
     </QueryClientProvider>
   );
+  await waitForRouteReady(result.container);
   return { ...result, location };
 }
 
@@ -68,7 +89,7 @@ export function renderAt(initialPath: string) {
 // any network. This simulates a logged-in visitor opening a pre-login link
 // (e.g. /forgot-password from an old email) — AuthGate must route them to
 // a sensible in-app destination, never the 404 page.
-export function renderAuthedAt(
+export async function renderAuthedAt(
   initialPath: string,
   user: AuthUser = {
     email: "user@example.com",
@@ -93,6 +114,7 @@ export function renderAuthedAt(
       </WouterRouter>
     </QueryClientProvider>
   );
+  await waitForRouteReady(result.container);
   return { ...result, location };
 }
 

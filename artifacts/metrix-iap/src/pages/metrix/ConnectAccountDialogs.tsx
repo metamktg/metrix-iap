@@ -42,6 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@workspace/command-deck/components/ui/alert-dialog";
+import { DIALOG } from "./typography";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 import {
   Command,
@@ -153,7 +154,7 @@ export function ConnectMetaDialog({
               Coming soon
             </span>
           </div>
-          <DialogTitle className="text-base">Live Meta connection</DialogTitle>
+          <DialogTitle className={DIALOG.title}>Live Meta connection</DialogTitle>
           <DialogDescription className="text-body leading-relaxed">
             Direct OAuth connection to Meta for{" "}
             <span className="text-foreground/80 font-medium">{account.name}</span> is in active
@@ -574,30 +575,27 @@ function SmartCsvUpload({
 
     // Classify from the file's own headers first (matches how the server
     // itself tells the classes apart) rather than guessing by which slot is
-    // still empty. The "wrong slot" server message is kept only as a
-    // fallback for the rare case the header sniff and server disagree.
-    const order: CsvKind[] = [
-      sniffedKind,
-      ...SMART_CSV_SLOTS.map((s) => s.kind).filter((k) => k !== sniffedKind),
-    ];
-    const tried = new Set<CsvKind>();
-    let kind = order[0]!;
-    for (let attempt = 0; attempt < order.length; attempt++) {
-      tried.add(kind);
-      try {
-        return await stageAs(kind);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "";
-        const corrected = correctionTargetKind(msg);
-        const next = (corrected && !tried.has(corrected)) ? corrected : order.find((k2) => !tried.has(k2));
-        if (next) {
-          kind = next;
-          continue;
-        }
-        throw err;
+    // still empty. The "wrong slot" server message is kept only as a single
+    // fallback retry for the rare case the header sniff and server disagree
+    // — NOT an exhaustive cycle through every remaining slot. Once the
+    // server has told us definitively which class the file's headers match,
+    // that redirect IS the classification; if the redirected slot's own
+    // attempt then also fails, that failure is the real, useful reason (a
+    // genuine data/format problem with a file we now know is correctly
+    // classified) and must reach the user directly — cycling on to try
+    // unrelated slots afterwards only replaces that real reason with a
+    // stale, confusing "wrong slot" message left over from a slot the file
+    // was never actually meant for.
+    try {
+      return await stageAs(sniffedKind);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      const corrected = correctionTargetKind(msg);
+      if (corrected && corrected !== sniffedKind) {
+        return await stageAs(corrected);
       }
+      throw err;
     }
-    throw new Error("Could not determine which slot this file belongs in.");
   };
 
   const handleFiles = async (files: FileList | null) => {
@@ -1299,7 +1297,7 @@ function CreativeUploadSection({
               <button
                 onClick={() => void handleAutoMapAll()}
                 disabled={autoMapping}
-                className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 text-label font-medium text-interactive hover:bg-primary/20 active:bg-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {autoMapping ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1730,7 +1728,7 @@ function CreativeDeconstructSection({
         <button
           onClick={() => void startBackfill()}
           disabled={isRunning || pending.length === 0}
-          className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 text-label font-medium text-interactive hover:bg-primary/20 active:bg-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           data-testid="deconstruct-all"
         >
           {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
@@ -1972,7 +1970,7 @@ export function CreativeLibraryDialog({
                   <Images className="w-4 h-4 text-interactive" />
                 </div>
               </div>
-              <DialogTitle className="text-base">Upload Creatives</DialogTitle>
+              <DialogTitle className={DIALOG.title}>Upload Creatives</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
                 Add creative files to{" "}
                 <span className="text-foreground/80 font-medium">{account.name}</span> after the fact —
@@ -2112,7 +2110,7 @@ export function ManualImportDialog({
                   <FileUp className="w-4 h-4 text-interactive" />
                 </div>
               </div>
-              <DialogTitle className="text-base">Add Manual Import</DialogTitle>
+              <DialogTitle className={DIALOG.title}>Add Manual Import</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
                 Upload the two required exports for{" "}
                 <span className="text-foreground/80 font-medium">{account.name}</span>, plus any

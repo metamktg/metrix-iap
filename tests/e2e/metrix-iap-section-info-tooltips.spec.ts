@@ -146,10 +146,12 @@ async function assertSectionTooltip(
   expectedTip: string,
   timeoutMs = 8_000,
 ): Promise<void> {
-  // The SectionCard renders as <section> containing an <h3> with the title.
+  // The SectionCard renders as <section> containing an <h2> with the title
+  // (the H1-H6 typography pass promoted this from <h3> to fix a systemic
+  // h1->h3 heading-level skip -- see typography.ts's HEADING doc).
   const card = page
     .locator("section")
-    .filter({ has: page.locator("h3", { hasText: cardTitle }) })
+    .filter({ has: page.locator("h2", { hasText: cardTitle }) })
     .first();
 
   await card.waitFor({ state: "visible", timeout: timeoutMs });

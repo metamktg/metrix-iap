@@ -67,7 +67,7 @@
 //   Codeless sentences fall back to deriveLabel. Inside <button> queue cards:
 //   <HypothesisCodeChipsRow> + a line-clamp-1 caption, drawer keeps prose.
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
@@ -80,7 +80,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@works
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 import { resolveVariableLabel } from "@/lib/variable-registry";
 import { normalizeConfidence } from "@/lib/normalize";
-import { TYPE } from "./typography";
+import { TYPE, HEADING } from "./typography";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
 // ─── Section info icon ────────────────────────────────────────────────
@@ -898,7 +898,7 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
           <div className="w-12 h-12 rounded-2xl border border-border/40 bg-white/[0.03] flex items-center justify-center mx-auto mb-3">
             <Plug className="w-5 h-5 text-muted-foreground/60" />
           </div>
-          <h2 className="text-base font-semibold text-foreground">{s?.title ?? "Get started with " + account.name}</h2>
+          <h2 className={HEADING.h2}>{s?.title ?? "Get started with " + account.name}</h2>
           <p className="text-caption text-muted-foreground/60 leading-relaxed">
             {s?.description ?? (isManual
               ? "Upload your Meta CSV exports, then run analysis to see performance data."
@@ -1099,7 +1099,7 @@ export function ModuleScopeGate({
   if (account.status !== "configured") {
     return (
       <div className="flex-1 flex flex-col">
-        {renderHeader && <ModuleHeader section={section} title={title} />}
+        {renderHeader && <ModuleHeader section={section} title={title} accountName={account.name} />}
         <UnconfiguredState account={account} />
       </div>
     );
@@ -1289,6 +1289,36 @@ export function FlowCrumb({ from, fromCell, fromHyp }: FromParams) {
       <span className="text-label text-muted-foreground/50">This page</span>
     </div>
   );
+}
+
+// ─── Tab URL param (?tab=<id>) ─────────────────────────────────────────
+// In-module tab state lives in the URL (same convention as ?focus= below)
+// so a copied link or refresh reproduces the exact tab. Tab switches use
+// replace-navigation: Back never walks through tab clicks. The default tab
+// keeps a clean URL (param removed). Pass `validIds` when the tab set is
+// static so an unrecognized/stale value falls back to the default instead
+// of being trusted as-is; omit it when the call site validates dynamically.
+
+export function useTabParam<T extends string = string>(
+  defaultTab: T,
+  validIds?: readonly T[],
+): [T, (id: T) => void] {
+  const search = useSearch();
+  const [pathname, navigate] = useLocation();
+  const raw = new URLSearchParams(search).get("tab");
+  const isValid = raw != null && (!validIds || (validIds as readonly string[]).includes(raw));
+  const tab = isValid ? (raw as T) : defaultTab;
+  const setTab = useCallback(
+    (id: T) => {
+      const params = new URLSearchParams(search);
+      if (id === defaultTab) params.delete("tab");
+      else params.set("tab", id);
+      const qs = params.toString();
+      navigate(qs ? `${pathname}?${qs}` : pathname, { replace: true });
+    },
+    [search, pathname, navigate, defaultTab],
+  );
+  return [tab, setTab];
 }
 
 // ─── Focus deep-link param (?focus=<id>) ──────────────────────────────
@@ -1724,8 +1754,9 @@ export function SectionCard({
         onClick={collapsible ? () => setOpen((v) => !v) : undefined}
       >
         <div className="flex-1 min-w-0 flex items-center gap-1.5">
-          {/* Nocturne canvas card-title: 17px heading weight, sentence case */}
-          <h3 className="text-cardtitle font-semibold text-foreground leading-tight truncate">{title}</h3>
+          {/* H2: the first real content heading under the page's H1
+              (ModuleHeader) — see typography.ts's H1–H6 hierarchy doc. */}
+          <h2 className={cn(HEADING.h2, "truncate")}>{title}</h2>
           {desc && (
             <span onClick={(e) => e.stopPropagation()} className="shrink-0">
               <InfoTooltip content={desc} />

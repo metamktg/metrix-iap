@@ -129,6 +129,7 @@ function makeArchivedModel(): ReportModel {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
   mutateMock.mockClear();
   downloadMock.mockClear();

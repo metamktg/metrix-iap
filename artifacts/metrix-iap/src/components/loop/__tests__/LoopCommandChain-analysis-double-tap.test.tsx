@@ -153,6 +153,7 @@ function seedWithManualAccount() {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
   activeSeed = baseSeed;
   mockMutateAsync = vi.fn(() => new Promise(() => {})); // never resolves by default

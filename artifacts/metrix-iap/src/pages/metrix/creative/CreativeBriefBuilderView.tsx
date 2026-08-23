@@ -19,7 +19,7 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState,
   CrossLink, useFocusParam, FlowCrumb, useFromParam, SectionCard, ConfidenceBadge,
 } from "../shared";
-import { TYPE } from "../typography";
+import { TYPE, HEADING } from "../typography";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromCell } from "@/lib/creative-assembly";
 import { FileText, Sparkles, Download, Mail, ChevronDown, ClipboardCheck } from "lucide-react";
@@ -239,7 +239,7 @@ export function CreativeBriefBuilderView() {
                       />
                     </span>
                   </div>
-                  <h3 className="text-cardtitle font-semibold text-foreground">{pillarLabel}</h3>
+                  <h2 className={HEADING.h2}>{pillarLabel}</h2>
 
                   <FieldPanel label="Why this brief exists">
                     <p className={cn(TYPE.body, "text-foreground/85 leading-relaxed")}>

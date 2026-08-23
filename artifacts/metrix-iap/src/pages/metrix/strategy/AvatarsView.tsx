@@ -24,8 +24,9 @@ import {
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
 import {
-  VariableStackChips, pillarTier,
+  VariableStackChips, pillarTier, CONF_ORDER,
   PersonaAvatar, StatGrid, AccordionToggle, DnaChipStrip, FoldedGrid, FoldedList,
+  HypothesisLabel, HypothesisStatusBadge,
 } from "./strategyShared";
 import { normalizeConfidence } from "@/lib/normalize";
 import {
@@ -36,18 +37,22 @@ import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownMod
 import {
   listSegments, computeSegmentTotals, deriveSegmentMetrics,
   assessSegmentSignal, computeSegmentAttribution,
-  segmentLabel, segmentKey, scopeDemographicRows,
+  segmentLabel, segmentKey, scopeDemographicRows, LOW_SIGNAL_SPEND_SHARE,
   type SegmentId, type SegmentRawTotals, type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
+import { RunScopePicker } from "@/components/analysis/RunSelector";
+import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
+import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
 import {
   Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass,
-  ArrowUpRight, MapPin, Search,
+  ArrowUpRight, MapPin, Search, AlertTriangle,
 } from "lucide-react";
 import type {
   MSTMatrixColumn, ICPProfile, PlacementRow, AnalysisData,
-  ActiveHypothesis, MessagePillar,
+  ActiveHypothesis, MessagePillar, CellPerformanceRow,
 } from "@/lib/data/seedTypes";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 
 const SECTION = "Strategy · 04";
 
@@ -58,10 +63,57 @@ type SortKey = "spend" | "cpa" | "cvr" | "confidence";
 const SORT_LABEL: Record<SortKey, string> = {
   spend: "Spend", cpa: "CPA", cvr: "Link CVR", confidence: "Confidence",
 };
-const SORT_DIRECTION: Record<SortKey, "asc" | "desc"> = {
-  spend: "desc", cpa: "asc", cvr: "desc", confidence: "desc",
-};
-const CONF_ORDER: Record<string, number> = { high: 0, medium: 1, directional: 2, low: 3 };
+
+// ─── Run-scoped per-ICP performance ────────────────────────────────────
+// An ICP's precomputed performance_data isn't itself run-scoped — it's
+// re-derived here from the real cell-level rows belonging to that ICP's
+// matched avatar columns, once a run scope narrows performance_by_cell.
+// A profile with no matched avatars (or no cell rows in the selected
+// scope) carries no honest cell-level attribution, so it keeps its
+// precomputed all-time figure rather than fabricating a scoped number.
+function computeProfilePerf(
+  cellIds: string[],
+  rows: CellPerformanceRow[],
+): { spend: number; cpa: number | null; cvr_link_pct: number | null } | null {
+  if (cellIds.length === 0) return null;
+  const idSet = new Set(cellIds);
+  const matched = rows.filter((r) => idSet.has(r.cell_id));
+  if (matched.length === 0) return null;
+  const spend = matched.reduce((s, r) => s + r["Amount spent (USD)"], 0);
+  const results = matched.reduce((s, r) => s + r.Results, 0);
+  const linkClicks = matched.reduce((s, r) => s + r["Link clicks"], 0);
+  return {
+    spend,
+    cpa: results > 0 ? spend / results : null,
+    cvr_link_pct: linkClicks > 0 ? (results / linkClicks) * 100 : null,
+  };
+}
+
+// perfForProfile's result, always defined (never the bare precomputed
+// performance_data shape) so a card can tell WHY it's showing what it's
+// showing, not just what the numbers are:
+//   - allTimeFallback: a run scope is active, but this profile has no
+//     honest cell-level attribution in it (no matched avatar columns, or
+//     none of their cells have rows in scope) — spend/cpa/cvr_link_pct
+//     AND confidence below are all the all-time figures, unscoped.
+//   - scoped + !confidenceRecomputed: spend/cpa/cvr_link_pct are honestly
+//     re-derived from this run's cells, but confidence is still the
+//     all-time grade carried over as-is — no honest scoped grade exists,
+//     so it must not be presented as if it graded the scoped numbers.
+//   - scoped + confidenceRecomputed: the scoped spend is too thin a
+//     slice of this profile's all-time spend to trust the all-time grade
+//     (same LOW_SIGNAL_SPEND_SHARE threshold segment tiles use for "low
+//     signal"), so confidence was honestly downgraded to "low" for real,
+//     not carried over.
+interface ScopedProfilePerf {
+  spend?: number | null;
+  cpa?: number | null;
+  cvr_link_pct?: number | null;
+  confidence?: string | null;
+  scoped: boolean;
+  confidenceRecomputed: boolean;
+  allTimeFallback: boolean;
+}
 
 // ─── Sort / search bar ─────────────────────────────────────────────────
 
@@ -142,9 +194,19 @@ function PlacementsList({ rows }: { rows: PlacementRow[] }) {
     <div>
       <div className="flex items-center gap-1.5 mb-1.5">
         <MapPin className="w-3.5 h-3.5 text-muted-foreground/60" />
-        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">
-          Account placements
-        </span>
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70 cursor-default">
+                Account placements
+                <span className="sr-only"> — Account-level placement signal — no per-profile breakdown available.</span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[240px]">
+              <p className="text-caption leading-relaxed">Account-level placement signal — no per-profile breakdown available.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       <div className="space-y-1.5">
         {top3.map((r, i) => (
@@ -224,21 +286,22 @@ function ProfileDetailFold({
                     </p>
                     <div className="space-y-1.5">
                       {hypotheses.map((h) => (
-                        <div key={h.id} className="rounded-lg border border-border/25 bg-card/30 px-3 py-2">
-                          {h.isolated_variable && (
-                            <span className="inline-block text-label font-mono text-interactive/70 border border-primary/25 px-1.5 py-0.5 rounded mb-1">
-                              {h.isolated_variable}
-                            </span>
+                        <div key={h.id} className="rounded-lg border border-border/25 bg-card/30 px-3 py-2 flex flex-col gap-1.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <HypothesisLabel label={h.label} isolated={h.isolated_variable} />
+                            <span className="shrink-0"><HypothesisStatusBadge status={h.status} /></span>
+                          </div>
+                          {h.expected_impact && (
+                            <p className={cn(TYPE.label, "text-muted-foreground/60")}>
+                              Expected impact <span className="text-foreground/75 font-medium normal-case">{h.expected_impact}</span>
+                            </p>
                           )}
-                          <DetailReveal
-                            label={deriveLabel(h.test_variant!, 64)}
-                            labelClassName={TYPE.body}
-                            eyebrow="Test variant"
-                            sections={[
-                              { text: h.test_variant! },
-                              ...(h.success_criteria ? [{ label: "Success criteria", text: h.success_criteria }] : []),
-                            ]}
-                          />
+                          {h.risk && (
+                            <div className="flex items-start gap-1.5 pt-1.5 border-t border-border/15">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-0.5" />
+                              <p className="text-caption text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -272,7 +335,7 @@ function ProfileDetailFold({
 
 function IcpProfileCard({
   profile, registerRef, flash, avatars, onAvatarClick, dna,
-  placementRows, avgCpa, avgCvr, hypotheses, rank,
+  placementRows, avgCpa, avgCvr, hypotheses, rank, perf,
 }: {
   profile: ICPProfile;
   registerRef?: (el: HTMLDivElement | null) => void;
@@ -285,9 +348,13 @@ function IcpProfileCard({
   avgCvr?: number | null;
   hypotheses?: ActiveHypothesis[];
   rank?: number;
+  /** Run-scoped performance (falls back to profile.performance_data when
+   *  the selected scope can't be honestly attributed to this ICP's cells) —
+   *  carries scoped/confidenceRecomputed/allTimeFallback so the card can
+   *  disclose exactly which figures below are (or aren't) run-scoped. */
+  perf: ScopedProfilePerf;
 }) {
-  const perf = profile.performance_data ?? null;
-  const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
+  const hasPerf = perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null;
   const rankConfidence = profile.confidence_level ? normalizeConfidence(profile.confidence_level) : null;
   const rankConfidenceText = rankConfidence
     ? rankConfidence.level === "unknown" ? rankConfidence.label : `${rankConfidence.label.toLowerCase()} confidence`
@@ -356,17 +423,35 @@ function IcpProfileCard({
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <span className={cn(TYPE.microLabel, "text-muted-foreground/60")}>Performance</span>
-              {perf?.confidence && <ConfidenceBadge value={perf.confidence} />}
+              <div className="flex items-center gap-1.5">
+                {perf.confidence && <ConfidenceBadge value={perf.confidence} />}
+                {perf.scoped && !perf.confidenceRecomputed && (
+                  <span
+                    className={cn(TYPE.label, "text-muted-foreground/40 normal-case")}
+                    title="A run scope is active. Spend/CPA/Link CVR above are honestly re-derived for this scope, but this confidence grade is this profile's all-time grade — it wasn't re-derived for the scoped numbers."
+                  >
+                    all-time
+                  </span>
+                )}
+              </div>
             </div>
+            {perf.allTimeFallback && (
+              <p
+                className={cn(TYPE.label, "text-muted-foreground/40 normal-case mb-1.5")}
+                title="A run scope is active, but this profile has no matched avatar columns (or no cell-level rows) within it, so every figure below — Spend, CPA, Link CVR, and confidence — is this profile's all-time data, not scoped to the current run."
+              >
+                All-time figures · no matched avatars in this scope
+              </p>
+            )}
             <StatGrid
               cols={3}
               cells={[
-                { label: "Spend", value: perf?.spend != null ? fmtUSD(perf.spend, 0) : "—" },
-                { label: "CPA", value: perf?.cpa != null ? fmtUSD(perf.cpa) : "—", valueClassName: cpaColor(perf?.cpa ?? null) },
-                { label: "Link CVR", value: perf?.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—", valueClassName: cvrColor(perf?.cvr_link_pct ?? null) },
+                { label: "Spend", value: perf.spend != null ? fmtUSD(perf.spend, 0) : "—" },
+                { label: "CPA", value: perf.cpa != null ? fmtUSD(perf.cpa) : "—", valueClassName: cpaColor(perf.cpa ?? null) },
+                { label: "Link CVR", value: perf.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—", valueClassName: cvrColor(perf.cvr_link_pct ?? null) },
               ]}
             />
-            {perf?.cpa != null && avgCpa != null && avgCpa > 0 && (
+            {perf.cpa != null && avgCpa != null && avgCpa > 0 && (
               <div className="mt-2">
                 <div className="flex items-center justify-between text-label text-muted-foreground/40 mb-1">
                   <span>best</span>
@@ -458,16 +543,27 @@ function AudienceSegmentTile({
             <p className={cn(TYPE.title, "leading-snug truncate")}>{segmentLabel(seg)}</p>
           </div>
         </div>
-        <span
-          className={cn(
-            "shrink-0 rounded border px-1.5 py-0.5",
-            TYPE.label,
-            signal.low ? "border-amber-400/30 bg-amber-400/[0.08] text-amber-400" : "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-400",
-          )}
-          title={signal.low ? signal.reasons.join(" ") : "Sufficient spend and impressions for a reliable read."}
-        >
-          {signal.low ? "low signal" : "signal ✓"}
-        </span>
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className={cn(
+                  "shrink-0 rounded border px-1.5 py-0.5 cursor-default",
+                  TYPE.label,
+                  signal.low ? "border-amber-400/30 bg-amber-400/[0.08] text-amber-400" : "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-400",
+                )}
+              >
+                {signal.low ? "low signal" : "signal ✓"}
+                <span className="sr-only">{` — ${signal.low ? signal.reasons.join(" ") : "Sufficient spend and impressions for a reliable read."}`}</span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[240px]">
+              <p className="text-caption leading-relaxed">
+                {signal.low ? signal.reasons.join(" ") : "Sufficient spend and impressions for a reliable read."}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {hasSpend ? (
@@ -564,26 +660,26 @@ function CombosPanel({ analysis, resultNoun }: { analysis: AnalysisData | null |
     <SectionCard title="Creative combos" desc="Concept × placement × platform · ranked by CPA · top 10">
       <div className="rounded-xl border border-border/40 overflow-hidden bg-card/40">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+          <table className="nc-table">
             <thead className="sticky top-0 bg-surface-table z-10">
-              <tr className="border-b border-border/40">
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Concept</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Placement</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Platform</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">Spend</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">Results</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">CPA</th>
+              <tr>
+                <th>Concept</th>
+                <th>Placement</th>
+                <th>Platform</th>
+                <th className="text-right">Spend</th>
+                <th className="text-right">Results</th>
+                <th className="text-right">CPA</th>
               </tr>
             </thead>
             <tbody>
               {visible.map((r) => (
-                <tr key={r.rowKey} className="border-b border-border/20 hover:bg-primary/[0.04]">
-                  <td className="px-3 py-2 text-body text-foreground/85 font-medium max-w-[160px] truncate">{r.concept}</td>
-                  <td className="px-3 py-2 text-body text-foreground/70 max-w-[140px] truncate">{r.placement}</td>
-                  <td className="px-3 py-2 text-body text-muted-foreground/60 capitalize">{r.platform}</td>
-                  <td className="px-3 py-2 text-right text-body tabular-nums text-foreground/70">{fmtUSD(r.spend, 0)}</td>
-                  <td className="px-3 py-2 text-right text-body tabular-nums text-foreground/70">{fmtNum(r.results)} {resultNoun}</td>
-                  <td className="px-3 py-2 text-right text-body font-semibold tabular-nums text-foreground/85">{r.cpa != null ? fmtUSD(r.cpa) : "—"}</td>
+                <tr key={r.rowKey}>
+                  <td className="text-foreground/85 font-medium max-w-[160px] truncate">{r.concept}</td>
+                  <td className="text-foreground/70 max-w-[140px] truncate">{r.placement}</td>
+                  <td className="text-muted-foreground/60 capitalize">{r.platform}</td>
+                  <td className="text-right tabular-nums text-foreground/70">{fmtUSD(r.spend, 0)}</td>
+                  <td className="text-right tabular-nums text-foreground/70">{fmtNum(r.results)} {resultNoun}</td>
+                  <td className="text-right font-semibold tabular-nums text-foreground/85">{r.cpa != null ? fmtUSD(r.cpa) : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -685,33 +781,114 @@ export function AvatarsView() {
   const icpProfiles = strategyData?.icp_profiles ?? [];
   const term = resultTerm(account);
 
+  // ── Analysis-run scope (compact header dropdown) ──────────────────────
+  // Cell-level rows (performance_by_cell, demographic_registration_signal)
+  // carry cell_id and can be honestly rescoped to the selected run(s); ICP
+  // performance is then re-derived from whichever of those cells belong to
+  // that profile's matched avatar columns. Placement rows carry no cell
+  // linkage and stay account-wide, same as elsewhere in the app.
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
+  const [runSelection, setRunSelection] = usePersistedRunScope(
+    "strategy-avatars", adAccountId, analysisRunsData?.runs,
+  );
+  const { filterByRun } = useCellRunScope(analysis, runSelection);
+
+  const cellRows = useMemo(() => filterByRun(analysis?.performance_by_cell ?? []), [analysis, filterByRun]);
+  const scopedDemoRows = useMemo(() => filterByRun(analysis?.demographic_registration_signal ?? []), [analysis, filterByRun]);
+  const scopedAnalysis = useMemo(
+    () => (analysis ? { ...analysis, performance_by_cell: cellRows, demographic_registration_signal: scopedDemoRows } : analysis),
+    [analysis, cellRows, scopedDemoRows],
+  );
+
   const dnaByColumn = useMemo(
-    () => (matrix ? new Map(matrix.columns.map((col) => [col.id, computeAvatarDna(col.id, matrix, analysis, mst)])) : new Map<string, AvatarDna>()),
-    [matrix, analysis, mst],
+    () => (matrix ? new Map(matrix.columns.map((col) => [col.id, computeAvatarDna(col.id, matrix, scopedAnalysis, mst)])) : new Map<string, AvatarDna>()),
+    [matrix, scopedAnalysis, mst],
+  );
+
+  const cellIdsByColumn = useMemo(() => {
+    const map = new Map<string, string[]>();
+    if (matrix) {
+      for (const cell of matrix.cells) {
+        const list = map.get(cell.column_id) ?? [];
+        list.push(cell.cell_id);
+        map.set(cell.column_id, list);
+      }
+    }
+    return map;
+  }, [matrix]);
+
+  const avatarsForProfile = useCallback(
+    (profileId: string): MSTMatrixColumn[] =>
+      matrix ? matrix.columns.filter((col) => (col.matched_profile_ids ?? []).includes(profileId)) : [],
+    [matrix],
+  );
+
+  // Run-scoped performance for one ICP: re-derived from the cell rows of
+  // its matched avatar columns when a specific run is selected. Falls back
+  // to the profile's precomputed all-time figure whenever no honest
+  // cell-level attribution exists (all time, or no matched avatars/cells
+  // with data in the selected scope) — never fabricated, never hidden.
+  // The returned confidence is likewise never presented as if it graded
+  // numbers it wasn't computed from — see ScopedProfilePerf above.
+  const perfForProfile = useCallback(
+    (profile: ICPProfile): ScopedProfilePerf => {
+      const allTime = profile.performance_data ?? null;
+      if (runSelection.allTime) {
+        return { ...allTime, scoped: false, confidenceRecomputed: false, allTimeFallback: false };
+      }
+      const cellIds = avatarsForProfile(profile.profile_id).flatMap((col) => cellIdsByColumn.get(col.id) ?? []);
+      const computed = computeProfilePerf(cellIds, cellRows);
+      if (!computed) {
+        return { ...allTime, scoped: false, confidenceRecomputed: false, allTimeFallback: true };
+      }
+      // The scoped spend/cpa/cvr above are real, but the all-time
+      // confidence grade wasn't computed from them. When the scoped slice
+      // is a thin fraction of this profile's own all-time spend, the
+      // all-time grade is actively misleading (e.g. "high" confidence
+      // dressed on a near-empty subset) — honestly downgrade it using the
+      // same low-signal spend-share threshold audience segments already
+      // use. Otherwise there's no honest way to re-derive a grade for the
+      // subset, so keep the original grade but never silently imply it
+      // describes the scoped numbers — the card surfaces that caveat.
+      const allTimeSpend = allTime?.spend ?? null;
+      const narrowSample = allTimeSpend != null && allTimeSpend > 0 && computed.spend > 0
+        && computed.spend / allTimeSpend < LOW_SIGNAL_SPEND_SHARE;
+      return {
+        ...computed,
+        confidence: narrowSample ? "low (narrow scoped sample)" : allTime?.confidence ?? null,
+        scoped: true,
+        confidenceRecomputed: narrowSample,
+        allTimeFallback: false,
+      };
+    },
+    [runSelection.allTime, avatarsForProfile, cellIdsByColumn, cellRows],
   );
 
   const avgCpa = useMemo(() => {
-    const vals = icpProfiles.map((p) => p.performance_data?.cpa).filter((v): v is number => v != null && v > 0);
+    const vals = icpProfiles.map((p) => perfForProfile(p)?.cpa).filter((v): v is number => v != null && v > 0);
     return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-  }, [icpProfiles]);
+  }, [icpProfiles, perfForProfile]);
 
   const avgCvr = useMemo(() => {
-    const vals = icpProfiles.map((p) => p.performance_data?.cvr_link_pct).filter((v): v is number => v != null && v > 0);
+    const vals = icpProfiles.map((p) => perfForProfile(p)?.cvr_link_pct).filter((v): v is number => v != null && v > 0);
     return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-  }, [icpProfiles]);
+  }, [icpProfiles, perfForProfile]);
 
   const placementRows = useMemo(
     () => [...(analysis?.v3_placement_signal ?? [])].sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]),
     [analysis],
   );
 
-  const segmentList = useMemo(() => (analysis ? listSegments(analysis.demographic_registration_signal ?? []) : []), [analysis]);
+  const segmentList = useMemo(
+    () => (scopedAnalysis ? listSegments(scopedAnalysis.demographic_registration_signal ?? []) : []),
+    [scopedAnalysis],
+  );
 
   const segmentStats = useMemo(() => {
-    if (!analysis || segmentList.length === 0) {
+    if (!scopedAnalysis || segmentList.length === 0) {
       return new Map<string, { totals: SegmentRawTotals; derived: SegmentDerivedMetrics; signal: SegmentSignal; bestVariableCode: string | null }>();
     }
-    const allRows = analysis.demographic_registration_signal ?? [];
+    const allRows = scopedAnalysis.demographic_registration_signal ?? [];
     const scoped = scopeDemographicRows(allRows, null);
     const scopedTotals = computeSegmentTotals(scoped);
     const result = new Map<string, { totals: SegmentRawTotals; derived: SegmentDerivedMetrics; signal: SegmentSignal; bestVariableCode: string | null }>();
@@ -720,12 +897,12 @@ export function AvatarsView() {
       const totals = computeSegmentTotals(segRows);
       const derived = deriveSegmentMetrics(totals);
       const signal = assessSegmentSignal(totals, scopedTotals);
-      const attribution = computeSegmentAttribution(analysis, mst, seg, null);
+      const attribution = computeSegmentAttribution(scopedAnalysis, mst, seg, null);
       const bestVariableCode = attribution.available && attribution.variables.length > 0 ? attribution.variables[0].code : null;
       result.set(segmentKey(seg), { totals, derived, signal, bestVariableCode });
     }
     return result;
-  }, [analysis, mst, segmentList]);
+  }, [scopedAnalysis, mst, segmentList]);
 
   const hypothesesByProfile = useMemo(() => {
     const hyps = strategyData?.active_hypotheses ?? [];
@@ -761,20 +938,24 @@ export function AvatarsView() {
     return icpProfiles
       .filter((p) => !q || p.profile_name.toLowerCase().includes(q))
       .sort((a, b) => {
-        const pa = a.performance_data;
-        const pb = b.performance_data;
+        const pa = perfForProfile(a);
+        const pb = perfForProfile(b);
         switch (sortBy) {
           case "spend": return (pb?.spend ?? 0) - (pa?.spend ?? 0);
           case "cpa": return (pa?.cpa ?? Infinity) - (pb?.cpa ?? Infinity);
           case "cvr": return (pb?.cvr_link_pct ?? -1) - (pa?.cvr_link_pct ?? -1);
           case "confidence": {
-            const ca = CONF_ORDER[pa?.confidence?.toLowerCase() ?? ""] ?? 99;
-            const cb = CONF_ORDER[pb?.confidence?.toLowerCase() ?? ""] ?? 99;
+            // normalizeConfidence, not a raw string match: perfForProfile can
+            // return a recomputed "low (narrow scoped sample)" grade (see
+            // ScopedProfilePerf) whose LEVEL — not the full qualifier-bearing
+            // string — is what CONF_ORDER ranks by.
+            const ca = CONF_ORDER[normalizeConfidence(pa?.confidence).level] ?? 99;
+            const cb = CONF_ORDER[normalizeConfidence(pb?.confidence).level] ?? 99;
             return ca - cb;
           }
         }
       });
-  }, [icpProfiles, searchQuery, sortBy]);
+  }, [icpProfiles, searchQuery, sortBy, perfForProfile]);
 
   // Cross-page deep link from an avatar's "ICP profile" link on /app/mst
   // (?focus=<profileId>) — scroll to and flash that card once rendered.
@@ -805,8 +986,6 @@ export function AvatarsView() {
           );
         }
 
-        const avatarsForProfile = (profileId: string): MSTMatrixColumn[] =>
-          matrix ? matrix.columns.filter((col) => (col.matched_profile_ids ?? []).includes(profileId)) : [];
         const dnaForProfile = (profileId: string): DnaVariable[] =>
           mergeAvatarDna(avatarsForProfile(profileId).map((col) => dnaByColumn.get(col.id)).filter((d): d is AvatarDna => d != null));
 
@@ -818,6 +997,13 @@ export function AvatarsView() {
               accountName={acct.name}
               subtitle="ICP profiles · message-pillar coverage · audience signal"
               tabs="strategy"
+              right={
+                <RunScopePicker
+                  runs={analysisRunsData?.runs ?? []}
+                  value={runSelection}
+                  onChange={setRunSelection}
+                />
+              }
             />
 
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
@@ -844,6 +1030,7 @@ export function AvatarsView() {
                         <IcpProfileCard
                           key={p.profile_id}
                           profile={p}
+                          perf={perfForProfile(p)}
                           rank={i + 1}
                           registerRef={(el) => { profileRefs.current[p.profile_id] = el; }}
                           flash={flashProfile === p.profile_id}
@@ -889,12 +1076,12 @@ export function AvatarsView() {
                 </SectionCard>
               )}
 
-              <CombosPanel analysis={analysis} resultNoun={term.singular} />
+              <CombosPanel analysis={scopedAnalysis} resultNoun={term.singular} />
 
-              {analysis && (analysis.demographic_registration_signal ?? []).length > 0 && (
+              {scopedAnalysis && (scopedAnalysis.demographic_registration_signal ?? []).length > 0 && (
                 <SectionCard title="Audience signal" desc="Age × gender · CVR heatmap · click row to explore">
                   <DemographicTable
-                    rows={analysis.demographic_registration_signal ?? []}
+                    rows={scopedAnalysis.demographic_registration_signal ?? []}
                     heatmap={true}
                     onSegmentClick={(seg) => setAudienceSegment(seg)}
                   />
@@ -902,12 +1089,12 @@ export function AvatarsView() {
               )}
             </div>
 
-            {analysis && (
+            {scopedAnalysis && (
               <SegmentDrilldownModal
                 open={audienceSegment != null}
                 onClose={() => setAudienceSegment(null)}
                 segment={audienceSegment}
-                analysis={analysis}
+                analysis={scopedAnalysis}
                 cellIds={null}
                 kicker="Audience signal"
               />

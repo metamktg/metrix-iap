@@ -25,7 +25,7 @@ import {
 } from "../shared";
 import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { VariableStackChips, IcpChips, pillarTier } from "./strategyShared";
+import { VariableStackChips, IcpChips, pillarTier, CONF_ORDER } from "./strategyShared";
 import { useDeepDive } from "@/contexts/DeepDiveContext";
 import { buildPillarDeepDiveModule } from "@/lib/data/deepDive";
 import type { MessagePillar, StrategyData } from "@/lib/data/seedTypes";
@@ -98,7 +98,14 @@ function PillarCard({ pillar, index, strategy }: { pillar: MessagePillar; index:
     .map((id) => strategy.icp_profiles?.find((pr) => pr.profile_id === id))
     .filter((pr): pr is NonNullable<typeof pr> => Boolean(pr));
   const hypotheses = strategy.active_hypotheses.filter((h) => h.pillar_id === pillar.id);
-  const bestConfidence = matchedProfiles.map((pr) => pr.confidence_level).find(Boolean);
+  // Highest-confidence match by rank, not array order — target_icps
+  // preserves generation order, not confidence-tier order, so a plain
+  // "first truthy" pick could surface a low-confidence ICP even when one
+  // of the pillar's own matched profiles is high-confidence.
+  const bestConfidence = matchedProfiles
+    .map((pr) => pr.confidence_level)
+    .filter((c): c is string => Boolean(c))
+    .sort((a, b) => (CONF_ORDER[a.toLowerCase()] ?? 99) - (CONF_ORDER[b.toLowerCase()] ?? 99))[0];
   const tier = pillarTier(pillar.source_cells ?? []);
 
   const open = () => {
@@ -130,7 +137,7 @@ function PillarCard({ pillar, index, strategy }: { pillar: MessagePillar; index:
 
         {/* Title block */}
         <div className="flex-1 min-w-0">
-          <p className="text-base font-bold text-foreground leading-snug line-clamp-2">
+          <p className={cn(TYPE.title, "leading-snug line-clamp-2")}>
             {pillar.label}
           </p>
           {pillar.plain_descriptor && (

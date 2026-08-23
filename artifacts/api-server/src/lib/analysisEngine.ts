@@ -199,7 +199,11 @@ const runShape = (r: Row): ManualAnalysisRun => {
 
 async function accountExists(accountId: string): Promise<Row | null> {
   const supabase = getSupabase();
-  const { data, error } = await supabase.from("ad_accounts").select("id, name, cohort, objectives").eq("id", accountId).limit(1);
+  const { data, error } = await supabase
+    .from("ad_accounts")
+    .select("id, name, cohort, objectives, source_status")
+    .eq("id", accountId)
+    .limit(1);
   if (error) throw new Error(error.message);
   return data && data.length > 0 ? data[0]! : null;
 }
@@ -743,6 +747,232 @@ function derivedRates(spend: number | null, impressions: number | null, linkClic
 }
 
 /**
+ * Merges the three ad-level sources — the required demographic
+ * (`scopedDemo`) and device/placement (`scopedPlacement`) exports plus the
+ * optional ad_summary export (`scopedSummary`) — into one ad_performance
+ * bucket per (campaign, ad, date). Priority for spend/results/resultType/
+ * linkClicks/clicksAll: ad_summary > demo > null (ad_summary isn't
+ * privacy-limited the way the demo export can be). Extracted out of
+ * startManualAnalysis (rather than left inline) so this merge/dedupe logic
+ * — especially the blank-Campaign-name ad_summary handling below — can be
+ * unit tested without a live Supabase connection.
+ *
+ * ad_summary's "Campaign name" breakdown is required to be present as a
+ * column but its VALUES are tolerated blank (see iapCsvSpec.ts's ad_summary
+ * requiredBreakdownColumns comment) — some accounts/date ranges export it
+ * empty for every row. When that happens, every summaryAdBuckets key would
+ * otherwise collapse to campaign="", which can never match the real
+ * campaign name adBuckets/demoAdBuckets key on. summaryAdBucketsByAdDate
+ * indexes those blank-campaign buckets by [adName, date] only (ad_name
+ * stays part of the key, so two different ads never collide) as a fallback
+ * match path — used both to let the supplement loop still find/apply them,
+ * and to recognize a blank-campaign summary row as already covered by an
+ * existing placement bucket instead of inserting it as a second, distinct
+ * ad_performance row for the same ad/day.
+ */
+export function mergeAdPerformanceBuckets(
+  scopedDemo: IapCsvRow[],
+  scopedPlacement: IapCsvRow[],
+  scopedSummary: IapCsvRow[],
+): {
+  adBuckets: Map<string, AggBucket & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>;
+  adCreativeMetadata: Map<string, Record<string, string>>;
+  unknownResultTypeRows: number;
+} {
+  // ── Ad-level supplementary aggregation from demo export ────────────
+  // The demographic export reliably carries spend/results/result_type per
+  // ad; the device/placement export is often impression-only (especially
+  // Meta's "Impression device" breakdown). Build a per-(campaign, ad, date)
+  // roll-up from the demo CSV so we can fill in spend and result_type when
+  // the placement export has no financial data.
+  const demoAdBuckets = new Map<
+    string,
+    AggBucket & { campaign: string; adSet: string; adName: string; date: string }
+  >();
+  for (const row of scopedDemo) {
+    const campaign = row.breakdowns["Campaign name"]!;
+    const adSet = row.breakdowns["Ad set name"] ?? "";
+    const adName = row.breakdowns["Ad name"]!;
+    const date = row.breakdowns["Day"]!;
+    const key = [campaign, adName, date].join("\u0001");
+    if (!demoAdBuckets.has(key)) {
+      demoAdBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, date });
+    }
+    accumulate(demoAdBuckets.get(key)!, row);
+  }
+
+  // ── Ad-level aggregation from ad_summary export (full spend) ────────
+  // The ad_summary export has one row per ad per day and carries spend
+  // unaffected by iOS privacy limits (unlike the demographic export which
+  // only shows demographically-attributable spend). When present, it becomes
+  // the primary spend source for ad_performance rows.
+  const summaryAdBuckets = new Map<
+    string,
+    AggBucket & { campaign: string; adSet: string; adName: string; date: string }
+  >();
+  // Secondary index for blank-Campaign-name summary buckets only — see the
+  // function-level comment above. Populated in lockstep with summaryAdBuckets
+  // so both maps hold the SAME bucket object (accumulate() below still only
+  // ever mutates the one object per ad/day, whichever map it's looked up from).
+  const summaryAdBucketsByAdDate = new Map<
+    string,
+    AggBucket & { campaign: string; adSet: string; adName: string; date: string }
+  >();
+  // Creative metadata: collect the most-recently-seen metadata per ad name.
+  // Same ad can appear across multiple rows (different dates) — metadata should
+  // be consistent, so we just take the first non-empty value per column.
+  const adCreativeMetadata = new Map<string, Record<string, string>>();
+  for (const row of scopedSummary) {
+    const campaign = row.breakdowns["Campaign name"] ?? "";
+    const adSet = row.breakdowns["Ad set name"] ?? "";
+    const adName = row.breakdowns["Ad name"]!;
+    const date = row.breakdowns["Day"]!;
+    const key = [campaign, adName, date].join("\u0001");
+    if (!summaryAdBuckets.has(key)) {
+      const bucket = { ...emptyBucket(), campaign, adSet, adName, date };
+      summaryAdBuckets.set(key, bucket);
+      if (campaign === "") {
+        summaryAdBucketsByAdDate.set([adName, date].join("\u0001"), bucket);
+      }
+    }
+    accumulate(summaryAdBuckets.get(key)!, row);
+    // Collect creative metadata (merge, keeping first non-empty value per column)
+    if (row.creativeMetadata && Object.keys(row.creativeMetadata).length > 0) {
+      const existing = adCreativeMetadata.get(adName) ?? {};
+      for (const [col, val] of Object.entries(row.creativeMetadata)) {
+        if (!existing[col] && val) existing[col] = val;
+      }
+      adCreativeMetadata.set(adName, existing);
+    }
+  }
+
+  // ── Ad-level rows (ad_performance): aggregate the placement export
+  // across its device/platform/placement dimensions to a per-ad/day row.
+  // Spend/results/resultType are filled from the demo aggregation when
+  // the placement export is an impression-only device-breakdown export.
+  const adBuckets = new Map<string, AggBucket & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>();
+  for (const row of scopedPlacement) {
+    const campaign = row.breakdowns["Campaign name"]!;
+    const adSet = row.breakdowns["Ad set name"] ?? "";
+    const adName = row.breakdowns["Ad name"]!;
+    const date = row.breakdowns["Day"]!;
+    const key = [campaign, adName, date].join("\u0001");
+    if (!adBuckets.has(key)) {
+      adBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, resultType: "", date });
+    }
+    accumulate(adBuckets.get(key)!, row);
+  }
+  // ad/date combos (regardless of campaign) already covered by the placement
+  // export above — used below only for the blank-campaign summary fallback,
+  // so a blank-Campaign-name ad_summary row for an ad/date already present
+  // here is recognized as a supplement, not inserted as a second row.
+  const placementAdDateKeys = new Set(
+    Array.from(adBuckets.values()).map((b) => [b.adName, b.date].join("\u0001")),
+  );
+  // Supplement from the ad_summary (preferred) then demo aggregation:
+  // fill spend/results/resultType for any ad bucket the placement export
+  // left financially empty. Priority: summary > demo > null.
+  let unknownResultTypeRows = 0;
+  for (const b of adBuckets.values()) {
+    const adKey = [b.campaign, b.adName, b.date].join("\u0001");
+    const adDateKey = [b.adName, b.date].join("\u0001");
+    // Exact [campaign, adName, date] match first; fall back to the
+    // ad-date-only index for a blank-Campaign-name summary bucket that can
+    // never carry the real campaign name to match adKey directly.
+    const summary = summaryAdBuckets.get(adKey) ?? summaryAdBucketsByAdDate.get(adDateKey);
+    const demo = demoAdBuckets.get(adKey);
+    const preferred = summary ?? demo;
+    if (preferred) {
+      if (b.spend === null) b.spend = preferred.spend;
+      if (b.results === null) b.results = preferred.results;
+      if (!b.resultType) b.resultType = preferred.resultType ?? "";
+      if (b.linkClicks === null) b.linkClicks = preferred.linkClicks;
+      if (b.clicksAll === null) b.clicksAll = preferred.clicksAll;
+    }
+    // Use a stable fallback only when result type is genuinely absent from
+    // all exports — avoids the misleading "Results" column-header literal.
+    // Surfaced as a csv_warning below rather than masked silently: an
+    // "unknown" result type is a real data-quality gap, not a normal value.
+    if (!b.resultType) {
+      b.resultType = "unknown";
+      unknownResultTypeRows += 1;
+    }
+  }
+  // Surface summary-only ad/days (in ad_summary but absent from placement).
+  // A blank-campaign summary bucket whose ad/date IS already in adBuckets
+  // (under the real campaign name, via placementAdDateKeys) was already
+  // folded into that row by the supplement loop above — skip it here so it
+  // isn't ALSO inserted as a second, distinct ad_performance row.
+  for (const [key, sum] of summaryAdBuckets) {
+    const alreadyCovered =
+      adBuckets.has(key) ||
+      (sum.campaign === "" && placementAdDateKeys.has([sum.adName, sum.date].join("\u0001")));
+    if (!alreadyCovered) {
+      if (!sum.resultType) unknownResultTypeRows += 1;
+      adBuckets.set(key, { ...sum, resultType: sum.resultType ?? "unknown" });
+    }
+  }
+  // Also surface demo-only ad/days (ads present in demo but absent from
+  // both placement and ad_summary) so no spend rows are silently dropped.
+  for (const [key, demo] of demoAdBuckets) {
+    if (!adBuckets.has(key)) {
+      if (!demo.resultType) unknownResultTypeRows += 1;
+      adBuckets.set(key, { ...demo, resultType: demo.resultType ?? "unknown" });
+    }
+  }
+  return { adBuckets, adCreativeMetadata, unknownResultTypeRows };
+}
+
+/**
+ * Builds one variable_performance row's `payload` for a single raw-token
+ * aggregate (variable_family: "raw_token" — see the Stage 2 variable-level
+ * comment at its call site in startManualAnalysis). Extracted out of the
+ * varRows .map() there so the CTR/CVR field mapping below can be unit
+ * tested without a live Supabase connection.
+ *
+ * Impressions is hardcoded to 0 above because true CTR (link clicks /
+ * impressions) is not computable at the token level — tokens are derived
+ * from ad_name substrings, not tied to a single ad's impression count. The
+ * only ratio actually computable here is results-per-link-click (CVR), so
+ * CTR_link_pct must NOT receive that CVR value — it must reflect "not
+ * computable", matching how every other writer of this exact field name
+ * behaves on a zero/absent denominator: `derivedRates()` in this file
+ * returns `ctr_link_pct: null` when impressions is null/0, and
+ * `pctOf()` in scripts/src/metrix-supabase/import.ts returns null on a
+ * zero denominator. Result_per_link_click_pct is the correct, dedicated
+ * home for the CVR value — it must not be dropped, just not duplicated
+ * onto the CTR field.
+ */
+export function variablePerformancePayload(
+  token: string,
+  v: { spend: number; results: number; linkClicks: number; adCount: number },
+  accountResultType: string,
+): Record<string, unknown> {
+  const cpa = v.results > 0 ? v.spend / v.results : null;
+  const cvrLinkPct = v.linkClicks > 0 && v.results > 0 ? (v.results / v.linkClicks) * 100 : null;
+  return {
+    // Payload must match VariablePerformanceRow (client seedTypes) so
+    // report export, top-checkout rollups, and other consumers can read
+    // these rows without a transform.
+    variable_family: "raw_token",
+    variable_id: token,
+    "Result type": accountResultType,
+    "Amount spent (USD)": v.spend,
+    // Reach / Impressions / Clicks (all) are not available at the token
+    // level — set to 0 so numeric consumers don't receive undefined.
+    Reach: 0,
+    Impressions: 0,
+    "Clicks (all)": 0,
+    "Link clicks": v.linkClicks,
+    Results: v.results,
+    unique_ads: v.adCount,
+    CPA_result: cpa,
+    CTR_link_pct: null,
+    Result_per_link_click_pct: cvrLinkPct ?? 0,
+  };
+}
+
+/**
  * Syncs all staged creative asset imports for an account to their mapped
  * ad names. For each creative_asset import with a non-empty ad_names list,
  * issues an UPDATE against the ads table so the file URL lands on the matched
@@ -853,6 +1083,16 @@ export async function startManualAnalysis(
 ): Promise<string> {
   const account = await accountExists(accountId);
   if (!account) throw new AnalysisError("Ad account not found.", 404);
+  // The full-refresh deletes below assume this account's performance and
+  // signal rows are owned exclusively by manual analysis. Imported accounts
+  // (offline importer) and live Meta accounts own their rows elsewhere —
+  // running a manual analysis against them would destroy that data.
+  if (account["source_status"] !== "manual_reports") {
+    throw new AnalysisError(
+      "Manual analysis is only available for manual-report accounts. This account's data is managed by its own import pipeline.",
+      422,
+    );
+  }
 
   const supabase = getSupabase();
   // status='staged' is load-bearing, not an optimization: a prior successful
@@ -1087,117 +1327,14 @@ export async function startManualAnalysis(
       const dateStart = scopedDates.reduce((min, d) => (d < min ? d : min), scopedDates[0]!);
       const dateEnd = scopedDates.reduce((max, d) => (d > max ? d : max), scopedDates[0]!);
 
-      // ── Ad-level supplementary aggregation from demo export ────────────
-      // The demographic export reliably carries spend/results/result_type per
-      // ad; the device/placement export is often impression-only (especially
-      // Meta's "Impression device" breakdown). Build a per-(campaign, ad, date)
-      // roll-up from the demo CSV so we can fill in spend and result_type when
-      // the placement export has no financial data.
-      const demoAdBuckets = new Map<
-        string,
-        AggBucket & { campaign: string; adSet: string; adName: string; date: string }
-      >();
-      for (const row of scopedDemo) {
-        const campaign = row.breakdowns["Campaign name"]!;
-        const adSet = row.breakdowns["Ad set name"] ?? "";
-        const adName = row.breakdowns["Ad name"]!;
-        const date = row.breakdowns["Day"]!;
-        const key = [campaign, adName, date].join("\u0001");
-        if (!demoAdBuckets.has(key)) {
-          demoAdBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, date });
-        }
-        accumulate(demoAdBuckets.get(key)!, row);
-      }
-
-      // ── Ad-level aggregation from ad_summary export (full spend) ────────
-      // The ad_summary export has one row per ad per day and carries spend
-      // unaffected by iOS privacy limits (unlike the demographic export which
-      // only shows demographically-attributable spend). When present, it becomes
-      // the primary spend source for ad_performance rows.
-      const summaryAdBuckets = new Map<
-        string,
-        AggBucket & { campaign: string; adSet: string; adName: string; date: string }
-      >();
-      // Creative metadata: collect the most-recently-seen metadata per ad name.
-      // Same ad can appear across multiple rows (different dates) — metadata should
-      // be consistent, so we just take the first non-empty value per column.
-      const adCreativeMetadata = new Map<string, Record<string, string>>();
-      for (const row of scopedSummary) {
-        const campaign = row.breakdowns["Campaign name"] ?? "";
-        const adSet = row.breakdowns["Ad set name"] ?? "";
-        const adName = row.breakdowns["Ad name"]!;
-        const date = row.breakdowns["Day"]!;
-        const key = [campaign, adName, date].join("\u0001");
-        if (!summaryAdBuckets.has(key)) {
-          summaryAdBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, date });
-        }
-        accumulate(summaryAdBuckets.get(key)!, row);
-        // Collect creative metadata (merge, keeping first non-empty value per column)
-        if (row.creativeMetadata && Object.keys(row.creativeMetadata).length > 0) {
-          const existing = adCreativeMetadata.get(adName) ?? {};
-          for (const [col, val] of Object.entries(row.creativeMetadata)) {
-            if (!existing[col] && val) existing[col] = val;
-          }
-          adCreativeMetadata.set(adName, existing);
-        }
-      }
-
-      // ── Ad-level rows (ad_performance): aggregate the placement export
-      // across its device/platform/placement dimensions to a per-ad/day row.
-      // Spend/results/resultType are filled from the demo aggregation when
-      // the placement export is an impression-only device-breakdown export.
-      const adBuckets = new Map<string, AggBucket & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>();
-      for (const row of scopedPlacement) {
-        const campaign = row.breakdowns["Campaign name"]!;
-        const adSet = row.breakdowns["Ad set name"] ?? "";
-        const adName = row.breakdowns["Ad name"]!;
-        const date = row.breakdowns["Day"]!;
-        const key = [campaign, adName, date].join("\u0001");
-        if (!adBuckets.has(key)) {
-          adBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, resultType: "", date });
-        }
-        accumulate(adBuckets.get(key)!, row);
-      }
-      // Supplement from the ad_summary (preferred) then demo aggregation:
-      // fill spend/results/resultType for any ad bucket the placement export
-      // left financially empty. Priority: summary > demo > null.
-      let unknownResultTypeRows = 0;
-      for (const b of adBuckets.values()) {
-        const adKey = [b.campaign, b.adName, b.date].join("\u0001");
-        const summary = summaryAdBuckets.get(adKey);
-        const demo = demoAdBuckets.get(adKey);
-        const preferred = summary ?? demo;
-        if (preferred) {
-          if (b.spend === null) b.spend = preferred.spend;
-          if (b.results === null) b.results = preferred.results;
-          if (!b.resultType) b.resultType = preferred.resultType ?? "";
-          if (b.linkClicks === null) b.linkClicks = preferred.linkClicks;
-          if (b.clicksAll === null) b.clicksAll = preferred.clicksAll;
-        }
-        // Use a stable fallback only when result type is genuinely absent from
-        // all exports — avoids the misleading "Results" column-header literal.
-        // Surfaced as a csv_warning below rather than masked silently: an
-        // "unknown" result type is a real data-quality gap, not a normal value.
-        if (!b.resultType) {
-          b.resultType = "unknown";
-          unknownResultTypeRows += 1;
-        }
-      }
-      // Surface summary-only ad/days (in ad_summary but absent from placement).
-      for (const [key, sum] of summaryAdBuckets) {
-        if (!adBuckets.has(key)) {
-          if (!sum.resultType) unknownResultTypeRows += 1;
-          adBuckets.set(key, { ...sum, resultType: sum.resultType ?? "unknown" });
-        }
-      }
-      // Also surface demo-only ad/days (ads present in demo but absent from
-      // both placement and ad_summary) so no spend rows are silently dropped.
-      for (const [key, demo] of demoAdBuckets) {
-        if (!adBuckets.has(key)) {
-          if (!demo.resultType) unknownResultTypeRows += 1;
-          adBuckets.set(key, { ...demo, resultType: demo.resultType ?? "unknown" });
-        }
-      }
+      // Merge the three ad-level sources into one bucket per (campaign, ad,
+      // date) — see mergeAdPerformanceBuckets for the full priority/dedupe
+      // rules, including the blank-Campaign-name ad_summary handling.
+      const { adBuckets, adCreativeMetadata, unknownResultTypeRows } = mergeAdPerformanceBuckets(
+        scopedDemo,
+        scopedPlacement,
+        scopedSummary,
+      );
       if (unknownResultTypeRows > 0) {
         allCsvWarnings.push(
           `[Result type] ${unknownResultTypeRows} ad/day row(s) had no result type in any export — recorded as "unknown" rather than a real conversion event.`,
@@ -1292,6 +1429,31 @@ export async function startManualAnalysis(
         allCsvWarnings.push(
           `[Impression device] Only ${Math.round(deviceCoveragePct * 100)}% of rows in this export carried a device breakdown — the remaining rows are excluded from device-level metrics but still count toward placement/platform/spend totals.`,
         );
+      }
+
+      // ── Window-level signal buckets (whole selected window, no daily
+      // grain): these feed the importer-shaped signal tables the Analysis
+      // UI (Audience / Placements) and the strategy evidence pack read.
+      // Without them a manual account's analysis would populate totals but
+      // leave those surfaces permanently empty (see demographic_signal /
+      // placement_signal writes below).
+      const demoWindowBuckets = new Map<string, AggBucket & { gender: string; age: string }>();
+      for (const row of scopedDemo) {
+        const gender = row.breakdowns["Gender"]!;
+        const age = row.breakdowns["Age"]!;
+        const key = [gender, age].join("");
+        if (!demoWindowBuckets.has(key)) demoWindowBuckets.set(key, { ...emptyBucket(), gender, age });
+        accumulate(demoWindowBuckets.get(key)!, row);
+      }
+      const placementWindowBuckets = new Map<string, AggBucket & { placement: string; platform: string }>();
+      for (const row of scopedPlacement) {
+        const placement = row.breakdowns["Placement"]!;
+        const platform = row.breakdowns["Platform"]!;
+        const key = [placement, platform].join("");
+        if (!placementWindowBuckets.has(key)) {
+          placementWindowBuckets.set(key, { ...emptyBucket(), placement, platform });
+        }
+        accumulate(placementWindowBuckets.get(key)!, row);
       }
 
       // Full refresh of this manual account's output rows within the
@@ -1538,40 +1700,16 @@ export async function startManualAnalysis(
         // and retains full history across runs, same reasoning as concept_performance
         // above — a full account wipe here used to destroy every prior run's rollup.
 
-        const varRows = Array.from(varPerfMap.entries()).map(([token, v]) => {
-          const cpa = v.results > 0 ? v.spend / v.results : null;
-          const cvrLinkPct =
-            v.linkClicks > 0 && v.results > 0 ? (v.results / v.linkClicks) * 100 : null;
-          return {
-            account_id: accountId,
-            manual_analysis_run_id: runId,
-            variable_family: "raw_token",
-            variable_id: token,
-            result_type: accountResultType,
-            date_start: dateStart,
-            date_end: dateEnd,
-            payload: {
-              // Payload must match VariablePerformanceRow (client seedTypes) so
-              // report export, top-checkout rollups, and other consumers can read
-              // these rows without a transform.
-              variable_family: "raw_token",
-              variable_id: token,
-              "Result type": accountResultType,
-              "Amount spent (USD)": v.spend,
-              // Reach / Impressions / Clicks (all) are not available at the token
-              // level — set to 0 so numeric consumers don't receive undefined.
-              Reach: 0,
-              Impressions: 0,
-              "Clicks (all)": 0,
-              "Link clicks": v.linkClicks,
-              Results: v.results,
-              unique_ads: v.adCount,
-              CPA_result: cpa,
-              CTR_link_pct: cvrLinkPct ?? 0,
-              Result_per_link_click_pct: cvrLinkPct ?? 0,
-            },
-          };
-        });
+        const varRows = Array.from(varPerfMap.entries()).map(([token, v]) => ({
+          account_id: accountId,
+          manual_analysis_run_id: runId,
+          variable_family: "raw_token",
+          variable_id: token,
+          result_type: accountResultType,
+          date_start: dateStart,
+          date_end: dateEnd,
+          payload: variablePerformancePayload(token, v, accountResultType),
+        }));
         await insertChunked("variable_performance", varRows);
       }
 
@@ -1735,6 +1873,102 @@ export async function startManualAnalysis(
       }));
 
       await insertChunked("device_performance", [...deviceRowsOut, ...convDeviceRowsOut]);
+
+      // ── Signal tables (what the Analysis UI + strategy evidence read) ──
+      // Full per-account refresh: the source guard above ensures this
+      // account's signal rows are owned exclusively by manual analysis, and
+      // a full replace keeps row_index unique-constraint collisions with a
+      // previous run impossible (demographic_signal/placement_signal are
+      // ACCOUNT-grain window buckets, not date-scoped like the *_performance
+      // tables above). Payload shapes mirror the offline importer
+      // (DemographicRow / PlacementRow in seedTypes.ts) so every existing
+      // render path and the strategy evidence pack work unchanged.
+      await updateProgress(runId, 92, "Writing audience/placement signal");
+      const pctOr = (numerator: number | null, denominator: number | null): number | null =>
+        numerator !== null && denominator !== null && denominator > 0
+          ? (numerator / denominator) * 100
+          : null;
+      const cpaOr = (spend: number | null, results: number | null): number | null =>
+        spend !== null && results !== null && results > 0 ? spend / results : null;
+
+      const delDemoSignal = await supabase.from("demographic_signal").delete().eq("account_id", accountId);
+      if (delDemoSignal.error) throw new Error(delDemoSignal.error.message);
+      const delPlacementSignal = await supabase
+        .from("placement_signal")
+        .delete()
+        .eq("account_id", accountId)
+        .eq("signal_scope", "v3");
+      if (delPlacementSignal.error) throw new Error(delPlacementSignal.error.message);
+
+      const MANUAL_DEMO_AD_NAME = "All ads (manual demographic upload)";
+      const demoSignalRows = Array.from(demoWindowBuckets.values())
+        .sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0))
+        .map((b, i) => ({
+          account_id: accountId,
+          cell_id: "ACCOUNT",
+          ad_name: MANUAL_DEMO_AD_NAME,
+          age: b.age,
+          gender: b.gender,
+          date_start: dateStart,
+          date_end: dateEnd,
+          row_index: i,
+          payload: {
+            cell_id: "ACCOUNT",
+            "Ad name": MANUAL_DEMO_AD_NAME,
+            Age: b.age,
+            Gender: b.gender,
+            "Result type": b.resultType,
+            "Amount spent (USD)": b.spend,
+            Reach: b.reach,
+            Impressions: b.impressions,
+            Results: b.results,
+            "Clicks (all)": b.clicksAll,
+            "Link clicks": b.linkClicks,
+            CPA_result: cpaOr(b.spend, b.results),
+            CTR_link_pct: pctOr(b.linkClicks, b.impressions),
+            Result_per_link_click_pct: pctOr(b.results, b.linkClicks),
+          },
+        }));
+      await insertChunked("demographic_signal", demoSignalRows);
+
+      const placementSignalRows = Array.from(placementWindowBuckets.values())
+        .sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0))
+        .map((b, i) => ({
+          account_id: accountId,
+          signal_scope: "v3",
+          placement: b.placement,
+          platform: b.platform,
+          date_start: dateStart,
+          date_end: dateEnd,
+          row_index: i,
+          payload: {
+            Placement: b.placement,
+            Platform: b.platform,
+            "Amount spent (USD)": b.spend,
+            Impressions: b.impressions,
+            "Link clicks": b.linkClicks,
+            Results: b.results,
+            CPA: cpaOr(b.spend, b.results),
+            CTR_link_pct: pctOr(b.linkClicks, b.impressions),
+          },
+        }));
+      await insertChunked("placement_signal", placementSignalRows);
+
+      // Register the loop stage so the account's IAP loop status reflects
+      // that its Analysis Core equivalent has really run.
+      const loopUpsert = await supabase.from("iap_runs").upsert(
+        {
+          account_id: accountId,
+          stage: "analysis_core",
+          status: "complete",
+          window_start: dateStart,
+          window_end: dateEnd,
+          generated_at: new Date().toISOString(),
+          note: `Manual analysis run ${runId}.`,
+        },
+        { onConflict: "account_id,stage" },
+      );
+      if (loopUpsert.error) throw new Error(loopUpsert.error.message);
 
       const totalRows = adRows.length + demographicRows.length + placementRowsOut.length + platformRowsOut.length + deviceRowsOut.length + convDeviceRowsOut.length;
 

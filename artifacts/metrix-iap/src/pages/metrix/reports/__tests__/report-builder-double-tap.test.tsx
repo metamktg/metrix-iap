@@ -102,6 +102,7 @@ function renderView() {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
   mockMutate = vi.fn(); // never resolves — mutation is in-flight
 });

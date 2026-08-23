@@ -3,42 +3,6 @@
    index.html sets class="dark" on <html>. */
 @import "@workspace/command-deck/styles.css";
 
-/* NOCTURNE PALETTE OVERRIDE
-   Command Deck ships a generic light-blurple app-shell dark theme.
-   The Metrix v1 canvas defines a literal palette instead: deep
-   saturated navy background (hex 0B1220) and a vivid blue accent
-   (hex 0A84FF). This block overrides the base channel triplets to
-   that exact palette, once, at the root. Every downstream --mx- and
-   --surface- alias below derives from these channels, so the whole
-   app re-themes from this one block. Border, destructive, input,
-   chart-2, chart-4, and accent already matched the canvas palette
-   and are left as-is. Values are the canvas hex tokens converted
-   to HSL. */
-.dark {
-  --background: 220 48.8% 8.4%;           /* canvas --color-bg #0B1220 */
-  --foreground: 216 100% 95.1%;           /* canvas --color-text #E6F0FF */
-  --card: 222 47.4% 11.2%;                /* canvas --color-surface #0F172A */
-  --card-foreground: 216 100% 95.1%;
-  --popover: 217 32.6% 17.5%;             /* canvas --color-neutral-800 #1E293B */
-  --popover-foreground: 216 100% 95.1%;
-  --primary: 210 100% 52%;                /* canvas --color-accent #0A84FF */
-  --primary-foreground: 216 100% 95.1%;
-  --secondary: 217 32.6% 17.5%;
-  --secondary-foreground: 216 27.5% 82.2%;
-  --muted: 216 35.7% 16.5%;               /* canvas --mx-edge-soft #1B2739 */
-  --muted-foreground: 217 10.7% 60%;      /* canvas --mx-dim, nudged up from the raw 56.1% blend so --mx-text-faint (85% alpha) clears WCAG AA */
-  --sidebar: 220 48.8% 8.4%;              /* canvas sidebar panel: var(--color-bg) */
-  --sidebar-foreground: 216 100% 95.1%;
-  --sidebar-border: 218 35.3% 26.7%;      /* canvas --mx-edge-strong #2C3E5C */
-  --sidebar-primary: 210 100% 52%;
-  --sidebar-primary-foreground: 220 48.8% 8.4%;
-  --sidebar-accent: 217 32.6% 17.5%;
-  --sidebar-accent-foreground: 216 100% 95.1%;
-  --sidebar-ring: 210 100% 52%;
-  --ring: 210 100% 52%;
-  --chart-1: 210 100% 52%;                /* was the blurple primary default */
-}
-
 /* App-specific token → utility mappings the design system does not provide. */
 @theme inline {
   /* Metrix brand colors */
@@ -132,9 +96,6 @@
   --mx-danger: hsl(var(--destructive));
   --mx-warning: hsl(var(--chart-4));
 
-  --mx-shadow-blue: 0 0 28px hsl(var(--primary) / 0.28);
-  --mx-shadow-cyan: 0 0 36px hsl(var(--accent) / 0.24);
-
   /* ── Nocturne tonal edge system (Metrix v1 design handoff) ──
      Three edge weights plus the signature long rules that fade to
      transparent at the ends instead of stopping hard at a corner.
@@ -186,21 +147,6 @@
   /* Display face follows the design system's sans (Inter). */
   --font-display: var(--app-font-sans);
 
-  /* ── Void Navy token set — derived from DS background/primary ────── */
-  --void-navy:           hsl(var(--background));
-  --void-navy-2:         hsl(var(--muted));
-  --void-navy-3:         hsl(var(--secondary));
-  --meta-blue-deep:      color-mix(in srgb, hsl(var(--primary)) 25%, hsl(var(--background)));
-  --meta-blue-mid:       color-mix(in srgb, hsl(var(--primary)) 50%, hsl(var(--background)));
-  --meta-blue-light:     color-mix(in srgb, hsl(var(--primary)) 75%, hsl(var(--background)));
-  --meta-blue-highlight: hsl(var(--primary));
-  --grad-meta:           linear-gradient(135deg, var(--meta-blue-deep) 0%, var(--meta-blue-mid) 35%, var(--meta-blue-light) 70%, var(--meta-blue-highlight) 100%);
-  --grad-meta-vertical:  linear-gradient(180deg, var(--meta-blue-highlight) 0%, var(--meta-blue-light) 40%, var(--meta-blue-mid) 75%, var(--meta-blue-deep) 100%);
-  --grad-hero:
-    radial-gradient(ellipse at 30% 20%, hsl(var(--primary) / 0.13) 0%, transparent 55%),
-    radial-gradient(ellipse at 70% 80%, hsl(var(--primary) / 0.2) 0%, transparent 60%),
-    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
-
   --shadow-2xs: 0 1px 2px 0 rgba(0,0,0,0.4);
   --shadow-xs: 0 1px 3px 0 rgba(0,0,0,0.5);
   --shadow-sm: 0 2px 4px -1px rgba(0,0,0,0.5), 0 1px 2px -1px rgba(0,0,0,0.4);
@@ -234,26 +180,10 @@
     stroke-width: 1.5;
   }
 
-  /* Layered dark command-center background — Void Navy */
+  /* Nocturne page ground — flat, no gradient or overlay. */
   body {
-    background: var(--void-navy);
+    background: hsl(var(--background));
     color: var(--mx-text-main);
-  }
-
-  /* Faint precision grid overlay, masked toward center */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: radial-gradient(circle at center, black 0%, transparent 76%);
-    -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 76%);
-    opacity: 0.35;
-    z-index: 0;
   }
 
   /* Scrollbar styling for dark interface */
@@ -274,12 +204,9 @@
 }
 
 @layer components {
-  /* App shell background — layered cockpit gradient (DS-derived) */
+  /* App shell background — Nocturne flat ground, no gradient. */
   .mx-app-bg {
-    background:
-      radial-gradient(circle at 52% 8%, hsl(var(--primary) / 0.14), transparent 32%),
-      radial-gradient(circle at 86% 18%, hsl(var(--accent) / 0.08), transparent 26%),
-      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 48%, hsl(var(--background)) 100%);
+    background: hsl(var(--background));
   }
 
   /* Sidebar — dark glass panel. The right edge is a Nocturne fading rule
@@ -288,69 +215,38 @@
   .mx-sidebar {
     background:
       var(--mx-fade-y) right / 1px 100% no-repeat,
-      linear-gradient(180deg, hsl(var(--sidebar) / 0.92), hsl(var(--background) / 0.96));
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.05),
-      12px 0 40px rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(22px);
+      hsl(var(--sidebar));
   }
 
-  /* Topbar — translucent glass strip with a Nocturne fading bottom rule
-     (structural chrome uses --mx-edge-strong via --mx-fade-x). */
+  /* Topbar — Nocturne fading bottom rule (structural chrome uses
+     --mx-edge-strong via --mx-fade-x). Flat ground, no glass/blur. */
   .mx-topbar {
     background:
       var(--mx-fade-x) bottom / 100% 1px no-repeat,
-      linear-gradient(180deg, hsl(var(--sidebar) / 0.88), hsl(var(--background) / 0.82));
-    backdrop-filter: blur(18px);
+      hsl(var(--sidebar));
   }
 
-  /* Premium glass card — Nocturne edges: container edge all round, top edge
-     one step lighter (simulated top-light on a dark ground). */
+  /* Nocturne card — flat surface, container edge all round, top edge one
+     step lighter (simulated top-light on a dark ground). No blur, no glow. */
   .mx-card {
     position: relative;
     overflow: hidden;
     border: 1px solid var(--mx-edge);
     border-top-color: var(--mx-edge-strong);
     border-radius: 14px;
-    background: linear-gradient(180deg, hsl(var(--card) / 0.78), hsl(var(--background) / 0.84));
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.045),
-      inset 0 0 0 1px rgba(255,255,255,0.015),
-      0 18px 50px rgba(0, 0, 0, 0.34),
-      0 0 38px hsl(var(--primary) / 0.08);
-    backdrop-filter: blur(18px);
-    transition: transform var(--mx-fast), border-color var(--mx-fast), box-shadow var(--mx-fast), background var(--mx-fast);
-  }
-
-  .mx-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at 18% 0%, hsl(var(--accent) / 0.18), transparent 34%),
-      linear-gradient(90deg, rgba(255,255,255,0.035), transparent 40%);
-    opacity: 0.5;
-    pointer-events: none;
+    background: hsl(var(--card));
+    transition: border-color var(--mx-fast);
   }
 
   .mx-card:hover {
-    transform: translateY(-1px);
     border-color: var(--mx-border-medium);
-    background: linear-gradient(180deg, hsl(var(--popover) / 0.86), hsl(var(--background) / 0.9));
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.07),
-      0 22px 64px rgba(0, 0, 0, 0.44),
-      0 0 42px hsl(var(--primary) / 0.16);
   }
 
-  /* Active nav item — primary/accent gradient with glow */
+  /* Active nav item — flat accent tint, no gradient or glow. */
   .mx-nav-active {
-    color: hsl(var(--primary-foreground)) !important;
-    background: linear-gradient(135deg, hsl(var(--primary) / 0.96), hsl(var(--accent) / 0.72)) !important;
-    border: 1px solid hsl(var(--accent) / 0.58);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.24),
-      0 0 24px hsl(var(--primary) / 0.42);
+    color: hsl(var(--primary)) !important;
+    background: hsl(var(--primary) / 0.12) !important;
+    border: 1px solid hsl(var(--primary) / 0.35);
   }
 
   /* Section label — small uppercase, wide tracking, accent-tinted */
@@ -362,137 +258,83 @@
     color: hsl(var(--accent));
   }
 
-  /* Primary CTA button — primary gradient, thin accent rim, subtle glow */
+  /* Primary CTA button — Nocturne .btn-primary: transparent fill, accent
+     rim and text; tinted fill only on hover/active. No gradient, no glow. */
   .mx-primary-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
     border-radius: 8px;
-    border: 1px solid hsl(var(--accent) / 0.54);
-    color: hsl(var(--primary-foreground));
-    font-weight: 700;
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, color-mix(in srgb, hsl(var(--primary)) 82%, hsl(var(--background))) 56%, hsl(var(--accent)) 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.22),
-      0 0 24px hsl(var(--primary) / 0.42);
-    transition: transform var(--mx-fast), box-shadow var(--mx-fast), filter var(--mx-fast);
+    border: 1px solid hsl(var(--primary));
+    color: hsl(var(--primary));
+    font-weight: 600;
+    background: transparent;
+    transition: background var(--mx-fast);
   }
   .mx-primary-btn:hover {
-    transform: translateY(-1px);
-    filter: brightness(1.06);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.26),
-      0 0 32px hsl(var(--primary) / 0.55);
+    background: hsl(var(--primary) / 0.12);
+  }
+  .mx-primary-btn:active {
+    background: hsl(var(--primary) / 0.22);
   }
 
-  /* Secondary button — dark glass with primary-tinted border */
+  /* Secondary button — Nocturne .btn-secondary: divider-bordered, subtle
+     tint on hover only. No gradient, no glow. */
   .mx-secondary-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     border-radius: 8px;
-    border: 1px solid var(--mx-border-medium);
+    border: 1px solid var(--mx-edge);
     color: var(--mx-text-soft);
     font-weight: 600;
-    background: linear-gradient(180deg, hsl(var(--secondary) / 0.6), hsl(var(--background) / 0.7));
-    transition: transform var(--mx-fast), border-color var(--mx-fast), color var(--mx-fast), box-shadow var(--mx-fast);
+    background: transparent;
+    transition: background var(--mx-fast), border-color var(--mx-fast), color var(--mx-fast);
   }
   .mx-secondary-btn:hover {
-    transform: translateY(-1px);
-    border-color: var(--mx-border-strong);
+    border-color: var(--mx-edge-strong);
     color: hsl(var(--foreground));
-    box-shadow: 0 0 18px hsl(var(--primary) / 0.2);
+    background: hsl(var(--foreground) / 0.05);
   }
 
   .mx-logo-glow {
-    filter: drop-shadow(0 0 10px hsl(var(--accent) / 0.55));
+    /* Nocturne strips logo glow — kept as a class so call sites don't need
+       edits, but it is now a visual no-op. */
   }
 
-  /* ── KPI metric tile — accent-bar top stripe + number emphasis ──────
-     Inherits mx-card base geometry. Use for all KPI/metric tiles on
-     Overview, Analysis, and sub-pages. */
+  /* ── KPI metric tile — flat card, same geometry as .mx-card. Use for all
+     KPI/metric tiles on Overview, Analysis, and sub-pages. */
   .mx-kpi-tile {
     position: relative;
     overflow: hidden;
-    border: 1px solid var(--mx-border-medium);
+    border: 1px solid var(--mx-edge);
+    border-top-color: var(--mx-edge-strong);
     border-radius: 14px;
-    background: linear-gradient(180deg, hsl(var(--card) / 0.72), hsl(var(--background) / 0.80));
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.05),
-      inset 0 0 0 1px rgba(255,255,255,0.01),
-      0 8px 24px rgba(0, 0, 0, 0.28);
-    backdrop-filter: blur(18px);
-    transition: transform var(--mx-fast), border-color var(--mx-fast), box-shadow var(--mx-fast);
-  }
-
-  /* Subtle 1px top highlight — replaces the loud blue→cyan gradient bar */
-  .mx-kpi-tile::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 14px 14px 0 0;
-    z-index: 1;
-  }
-
-  /* Minimal inner corner lift — no cyan glow */
-  .mx-kpi-tile::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, transparent 55%);
-    pointer-events: none;
-    z-index: 0;
+    background: hsl(var(--card));
+    transition: border-color var(--mx-fast);
   }
 
   .mx-kpi-tile:hover {
-    transform: translateY(-1px);
-    border-color: var(--mx-border-sharp);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.07),
-      0 14px 40px rgba(0, 0, 0, 0.36);
+    border-color: var(--mx-border-medium);
   }
 
-  /* ── Hero card — lead/section-lead cards with stronger presence ─────
-     For primary content leads (e.g. Results by Event header, top module card).
-     Stronger border glow, radial top-left highlight, lighter background. */
+  /* ── Hero card — lead/section-lead cards (e.g. Results by Event header,
+     top module card). Same flat treatment as .mx-card; distinguished only
+     by usage, not by extra glow or elevation. */
   .mx-card-hero {
     position: relative;
     overflow: hidden;
     border: 1px solid var(--mx-edge);
     border-top-color: var(--mx-edge-strong);
     border-radius: 14px;
-    background: linear-gradient(160deg, hsl(var(--card) / 0.78), hsl(var(--background) / 0.86));
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.05),
-      inset 0 0 0 1px rgba(255,255,255,0.015),
-      0 10px 32px rgba(0, 0, 0, 0.32);
-    backdrop-filter: blur(22px);
-    transition: transform var(--mx-fast), border-color var(--mx-fast), box-shadow var(--mx-fast);
-  }
-
-  .mx-card-hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at 12% 0%, hsl(var(--accent) / 0.22), transparent 38%),
-      linear-gradient(90deg, rgba(255,255,255,0.04), transparent 45%);
-    opacity: 0.65;
-    pointer-events: none;
+    background: hsl(var(--card));
+    transition: border-color var(--mx-fast);
   }
 
   .mx-card-hero:hover {
-    border-color: var(--mx-border-sharp);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.09),
-      0 26px 72px rgba(0, 0, 0, 0.5),
-      0 0 60px hsl(var(--primary) / 0.22);
+    border-color: var(--mx-border-medium);
   }
 
   /* ── Accent bar — top-of-card color stripe via ::before pseudo ──────
@@ -847,37 +689,11 @@
   100% { left: 110%; }
 }
 
-/* ═══ Metrix boot loader — "command deck powering up" ══════════════════
-   CSS recreation of the loading-video motion reference: a softly glowing,
-   gently pulsing logo mark and a blue→cyan progress sweep beneath a
-   rotating callout line (crossfade handled by the JS-driven .mx-boot-callout
-   transition in MetrixBootLoader.tsx, not a fixed-length keyframe loop).
-   No orbital ring/spin — kept minimal and glare-free. */
-
-/* Soft, static ambient glow behind the logo */
-.mx-boot-core-glow {
-  position: absolute;
-  width: 60%;
-  height: 60%;
-  border-radius: 999px;
-  background: radial-gradient(circle, hsl(var(--primary) / 0.26), hsl(var(--accent) / 0.08) 55%, transparent 72%);
-  filter: blur(12px);
-  animation: mx-boot-glow-breathe 1s ease-in-out infinite;
-}
-@keyframes mx-boot-glow-breathe {
-  0%, 100% { opacity: 0.8; transform: scale(0.96); }
-  50%      { opacity: 1; transform: scale(1.05); }
-}
-
-/* Logo breathes at 60 BPM (1s cycle) — a heartbeat pace, slightly stronger
-   scale/opacity swing than before but still tasteful. */
-.mx-boot-logo-pulse {
-  animation: mx-boot-logo-breathe 1s ease-in-out infinite;
-}
-@keyframes mx-boot-logo-breathe {
-  0%, 100% { transform: scale(0.96); opacity: 0.84; }
-  50%      { transform: scale(1.05); opacity: 1; }
-}
+/* ═══ Metrix boot loader ═════════════════════════════════════════════
+   Static logo, a flat accent progress-fill sweep, and a rotating callout
+   line (crossfade handled by the JS-driven .mx-boot-callout transition in
+   MetrixBootLoader.tsx, not a fixed-length keyframe loop). No glow, pulse,
+   or blur — Nocturne strips decorative motion from the loading state. */
 
 /* Rotating callout line — sequential fade (out, swap text, in) driven by
    MetrixBootLoader's READ_MS/FADE_MS timers; never two lines visible at
@@ -888,22 +704,22 @@
   will-change: opacity, transform;
 }
 
-/* Progress track + blue→cyan fill sweep */
+/* Progress track + flat accent fill sweep */
 .mx-boot-track {
   position: relative;
   width: 100%;
   height: 3px;
   border-radius: 999px;
   overflow: hidden;
-  background: hsl(var(--secondary) / 0.65);
-  border: 1px solid hsl(var(--primary) / 0.18);
+  background: hsl(var(--secondary));
+  border: 1px solid var(--mx-edge);
 }
 .mx-boot-fill {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   transform-origin: left center;
-  background: linear-gradient(90deg, hsl(var(--primary)), color-mix(in srgb, hsl(var(--primary)) 60%, hsl(var(--accent))) 55%, hsl(var(--accent)));
+  background: hsl(var(--primary));
   animation: mx-boot-fill 4.4s var(--mx-ease) infinite;
 }
 @keyframes mx-boot-fill {

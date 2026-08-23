@@ -41,8 +41,11 @@ interface AccountContextValue {
 const AccountContext = createContext<AccountContextValue | null>(null);
 
 function loadPersisted(): PersistShape {
+  // localStorage so the selection survives new tabs and app restarts; falls
+  // back to the legacy sessionStorage slot once, for pre-migration sessions
+  // that still only have the old key.
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(SESSION_KEY) ?? sessionStorage.getItem(SESSION_KEY);
     if (raw) return JSON.parse(raw);
   } catch {
     /* ignore */
@@ -91,7 +94,20 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       // will re-apply the URL param once accounts become available.
       return { type: "manager", adAccountId: null };
     }
-    return loadPersisted();
+    const stored = loadPersisted();
+    // A persisted account id that no longer resolves (revoked grant, deleted
+    // account) falls back to manager mode, same as the URL param case above.
+    // Skip this check while adAccounts is still empty (seed not yet loaded)
+    // so a legitimate persisted account isn't discarded before data arrives —
+    // the useEffect below re-validates once adAccounts is populated.
+    if (
+      stored.type === "ad_account" &&
+      adAccounts.length > 0 &&
+      !adAccounts.some((a) => a.id === stored.adAccountId)
+    ) {
+      return { type: "manager", adAccountId: null };
+    }
+    return stored;
   });
 
   // Re-apply the ?account= URL param once the seed has loaded and adAccounts
@@ -110,11 +126,26 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adAccounts]);
 
+  // A persisted account id (no URL override) that no longer resolves once
+  // the seed loads — revoked grant, deleted account — falls back to manager
+  // mode, same as the checks above. Runs after the URL re-apply effect so an
+  // explicit ?account= URL id still wins when both are present.
+  useEffect(() => {
+    if (adAccounts.length === 0) return;
+    if (readUrlAccountParam() !== null) return;
+    setPersisted((prev) => {
+      if (prev.type !== "ad_account") return prev;
+      if (adAccounts.some((a) => a.id === prev.adAccountId)) return prev;
+      return { type: "manager", adAccountId: null };
+    });
+  }, [adAccounts]);
+
   // Persist the selection and keep the URL's ?account= param in sync so the
   // current view stays shareable/bookmarkable across in-app navigation.
+  // localStorage (not sessionStorage) so the selection survives new tabs.
   useEffect(() => {
     try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(persisted));
+      localStorage.setItem(SESSION_KEY, JSON.stringify(persisted));
     } catch {
       /* ignore */
     }

@@ -11,8 +11,9 @@ import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@
 import {
   ModuleHeader, ModuleScopeGate, CaveatNote, PendingState, MetricTile,
   CrossLink, readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
-  useShowMore, ShowMoreButton,
+  useShowMore, ShowMoreButton, SegmentedToggle, SectionInfoIcon,
 } from "../shared";
+import { TYPE } from "../typography";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { RunScopePicker, ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
 import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
@@ -31,7 +32,7 @@ const SECTION = "MST · 06";
 
 interface CrossmapEnrichedRow {
   cell: MSTMatrixCell;
-  perf: { "Amount spent (USD)": number; Results: number; "Result type": string; CPA_result: number | null; CTR_link_pct: number | null }[];
+  perf: { "Amount spent (USD)": number; Results: number; "Result type": string; CPA_result: number | null; CTR_link_pct: number | null; Impressions: number; "Link clicks": number }[];
   spend: number;
   results: number;
   ran: boolean;
@@ -40,6 +41,16 @@ interface CrossmapEnrichedRow {
 }
 
 const CROSSMAP_SORT_KEY = "metrix.crossmap.sort.v1";
+
+/** Coverage filter — narrows the table to delivered vs. still-planned
+ *  cells without touching the header totals, which always describe the
+ *  full planned matrix regardless of the active filter. */
+type CoverageFilter = "all" | "ran" | "pending";
+const COVERAGE_OPTIONS: { id: CoverageFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "ran", label: "Delivered" },
+  { id: "pending", label: "Pending" },
+];
 
 const CROSSMAP_METRICS: RankMetric<CrossmapEnrichedRow>[] = [
   { id: "spend",   label: "Spend",    direction: "desc", value: (r) => r.ran ? r.spend   : null, format: (v) => fmtUSD(v, 0) },
@@ -64,6 +75,7 @@ export function CrossmapResultsView({
   const account = getAdAccount(seed, adAccountId);
   const deepDive = useDeepDive();
   const [segmentsFor, setSegmentsFor] = useState<{ cellId: string; title: string } | null>(null);
+  const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>("all");
   const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
   const controlled = runScope !== undefined && onRunScopeChange !== undefined;
   // When controlled, the parent owns persistence — the local hook is inert
@@ -109,9 +121,12 @@ export function CrossmapResultsView({
           const spend = perf.reduce((n, r) => n + r["Amount spent (USD)"], 0);
           const results = perf.reduce((n, r) => n + r.Results, 0);
           const cpa = results > 0 ? spend / results : null;
-          const avgCtr = perf.length > 0
-            ? perf.reduce((n, r) => n + (r.CTR_link_pct ?? 0), 0) / perf.length
-            : null;
+          // Ratio metric: recomputed from summed link clicks ÷ summed
+          // impressions across the cell's rows — never averaged per-row
+          // rates, which skews toward low-impression rows (see kpiBreakdown.ts).
+          const impressions = perf.reduce((n, r) => n + r.Impressions, 0);
+          const linkClicks = perf.reduce((n, r) => n + r["Link clicks"], 0);
+          const avgCtr = impressions > 0 ? (linkClicks / impressions) * 100 : null;
           return { cell, perf, spend, results, ran: perf.length > 0, cpa, avgCtr };
         });
 
@@ -141,6 +156,12 @@ export function CrossmapResultsView({
           const dir = activeSort.direction === "asc" ? 1 : -1;
           return (va - vb) * dir;
         });
+
+        // Coverage filter narrows what's shown in the table only — the
+        // header totals above always describe the full planned matrix.
+        const displayRows = coverageFilter === "all"
+          ? rows
+          : rows.filter((r) => (coverageFilter === "ran" ? r.ran : !r.ran));
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -173,24 +194,53 @@ export function CrossmapResultsView({
               <MetricTile label="Crossmapped results" value={fmtNum(totalResults)} />
             </div>
 
+            {/* Coverage bar — same "share of top" visual grammar as the MST
+               avatar tiles, here showing delivered vs. planned matrix cells. */}
+            <div className="px-6 pt-3">
+              <div className="flex items-center justify-between text-label text-muted-foreground/40 mb-1">
+                <span>Matrix coverage</span>
+                <span className="tabular-nums">{fmtNum(ran.length)} of {fmtNum(planned)} cells · {coveragePct.toFixed(0)}%</span>
+              </div>
+              <div className="h-[3px] rounded-full overflow-hidden bg-border/30">
+                <div className="h-full rounded-full bg-primary/60" style={{ width: `${Math.min(coveragePct, 100)}%` }} />
+              </div>
+            </div>
+
             <div className="px-6 py-5 space-y-4">
               <CaveatNote text={mst.render_policy} />
 
-              {/* Sort bar — ran cells rank by metric; non-ran always stay at bottom */}
+              {/* Table header — coverage filter narrows which rows show;
+                 rank sort decides their order among delivered cells. */}
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/40">
-                  Top performers
-                </span>
-                <RankSortBar
-                  metrics={CROSSMAP_METRICS}
-                  activeId={sortId}
-                  onSelect={setSortId}
-                />
+                <div className="flex items-center gap-1.5">
+                  <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/40")}>
+                    Crossmap
+                  </span>
+                  <SectionInfoIcon tip="Every planned matrix cell joined to its observed performance rows by cell_id. Delivered cells rank by the active sort metric; cells with no performance rows yet always sort last." />
+                  {coverageFilter !== "all" && (
+                    <span className={cn(TYPE.caption, "text-muted-foreground/50 tabular-nums")}>
+                      {fmtNum(displayRows.length)} of {fmtNum(rows.length)} cells
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <SegmentedToggle<CoverageFilter>
+                    ariaLabel="Filter crossmap coverage"
+                    options={COVERAGE_OPTIONS}
+                    active={coverageFilter}
+                    onChange={setCoverageFilter}
+                  />
+                  <RankSortBar
+                    metrics={CROSSMAP_METRICS}
+                    activeId={sortId}
+                    onSelect={setSortId}
+                  />
+                </div>
               </div>
 
               <TableShell>
                 <thead className="sticky top-0 bg-surface-table z-10">
-                  <tr className="border-b border-border/40">
+                  <tr>
                     <Th>Matrix cell</Th>
                     <Th>Concept</Th>
                     <Th>Diagonal</Th>
@@ -202,7 +252,7 @@ export function CrossmapResultsView({
                   </tr>
                 </thead>
                 <CrossmapRows
-                  rows={rows}
+                  rows={displayRows}
                   maxPerfSpend={maxPerfSpend}
                   maxPerfResults={maxPerfResults}
                   minPerfCpa={minPerfCpa}
@@ -262,6 +312,17 @@ function CrossmapRows({
   onSelectCell: (cell: MSTMatrixCell) => void;
 }) {
   const fold = useShowMore(rows, 10);
+  if (rows.length === 0) {
+    return (
+      <tbody>
+        <tr>
+          <td colSpan={8} className="px-2.5 py-6 text-center text-caption text-muted-foreground/50">
+            No cells match this filter.
+          </td>
+        </tr>
+      </tbody>
+    );
+  }
   return (
     <tbody>
       {fold.visible.map(({ cell, perf, ran: hasData }) => {
@@ -271,7 +332,7 @@ function CrossmapRows({
             <tr
               key={cell.cell_id}
               onClick={() => onSelectCell(cell)}
-              className="border-b border-border/30 cursor-pointer hover:bg-white/[0.04]"
+              className="cursor-pointer"
             >
               <Td><span className="font-mono text-caption text-muted-foreground/75">{cell.cell_id}</span></Td>
               <Td>
@@ -298,7 +359,7 @@ function CrossmapRows({
             <tr
               key={cell.cell_id + r["Result type"]}
               onClick={() => onSelectCell(cell)}
-              className="border-b border-border/30 cursor-pointer hover:bg-white/[0.04]"
+              className="cursor-pointer"
             >
               <Td>{i === 0 ? <span className="font-mono text-caption text-foreground/85">{cell.cell_id}</span> : null}</Td>
               <Td>

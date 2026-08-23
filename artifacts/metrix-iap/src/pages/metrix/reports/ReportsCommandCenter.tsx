@@ -85,7 +85,7 @@ export function ReportsCommandCenter() {
                   <button
                     type="button"
                     onClick={() => navigate("/app/reports/builder")}
-                    className="inline-flex items-center gap-1.5 text-body font-medium text-interactive border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-body font-medium text-interactive border border-primary/30 hover:bg-primary/10 active:bg-primary/20 rounded-lg px-3 py-1.5 transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     Build report
