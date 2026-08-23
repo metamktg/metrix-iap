@@ -547,7 +547,10 @@ function SmartCsvUpload({
   onRemoved,
 }: {
   accountId: string;
-  staged: Partial<Record<CsvKind, ManualImport | null>>;
+  /** Every staged file per slot, not just one — a slot legitimately carries
+   *  more than one (e.g. several weekly exports covering a date range
+   *  together), and all of them feed the next analysis run. */
+  staged: Partial<Record<CsvKind, ManualImport[]>>;
   onStaged: () => void;
   onRemoved: () => void;
 }) {
@@ -556,10 +559,13 @@ function SmartCsvUpload({
   const [lastMapping, setLastMapping] = useState<ColumnMappingSummaryEntry[] | null>(null);
   const [lastWarnings, setLastWarnings] = useState<string[] | null>(null);
   const [failures, setFailures] = useState<string[] | null>(null);
+  const [expandedSlot, setExpandedSlot] = useState<CsvKind | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const deleteMutation = useDeleteManualImport();
 
-  const bothRequiredStaged = Boolean(staged.performance_demo_csv && staged.performance_placement_csv);
+  const bothRequiredStaged = Boolean(
+    (staged.performance_demo_csv?.length ?? 0) > 0 && (staged.performance_placement_csv?.length ?? 0) > 0,
+  );
 
   const stageOne = async (fileToStage: File): Promise<ManualImportResult> => {
     const [content_base64, sniffedKind] = await Promise.all([
@@ -691,29 +697,32 @@ function SmartCsvUpload({
 
       <div className="grid grid-cols-2 gap-1.5">
         {SMART_CSV_SLOTS.map((slot) => {
-          const importForSlot = staged[slot.kind] ?? null;
+          const importsForSlot = staged[slot.kind] ?? [];
+          const filled = importsForSlot.length > 0;
+          const single = importsForSlot.length === 1 ? importsForSlot[0]! : null;
           return (
             <div
               key={slot.kind}
               className={cn(
                 "flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-label min-w-0",
-                importForSlot
-                  ? "border-emerald-400/20 bg-emerald-400/[0.05]"
-                  : "border-border/40 bg-white/[0.015]"
+                filled ? "border-emerald-400/20 bg-emerald-400/[0.05]" : "border-border/40 bg-white/[0.015]"
               )}
             >
-              {importForSlot ? (
+              {filled ? (
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               ) : (
                 <div className={cn("w-3.5 h-3.5 rounded-full border shrink-0", slot.optional ? "border-border/50" : "border-status-warning/50")} />
               )}
-              <span className={cn("truncate flex-1", importForSlot ? "text-foreground/85" : "text-muted-foreground/70")}>
+              <span className={cn("truncate flex-1", filled ? "text-foreground/85" : "text-muted-foreground/70")}>
                 {slot.label}
-                {!slot.optional && !importForSlot && <span className="text-status-warning/70"> *</span>}
+                {!slot.optional && !filled && <span className="text-status-warning/70"> *</span>}
+                {importsForSlot.length > 1 && (
+                  <span className="text-emerald-400/80"> · {importsForSlot.length} files</span>
+                )}
               </span>
-              {importForSlot && (
+              {single && (
                 <button
-                  onClick={() => void handleRemove(importForSlot)}
+                  onClick={() => void handleRemove(single)}
                   disabled={deleteMutation.isPending}
                   className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   aria-label={`Remove ${slot.label} file`}
@@ -721,10 +730,41 @@ function SmartCsvUpload({
                   <Trash2 className="w-3 h-3" />
                 </button>
               )}
+              {importsForSlot.length > 1 && (
+                <button
+                  onClick={() => setExpandedSlot((s) => (s === slot.kind ? null : slot.kind))}
+                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.06] transition-colors cursor-pointer"
+                  aria-label={`Manage ${slot.label} files`}
+                >
+                  <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", expandedSlot === slot.kind && "rotate-90")} />
+                </button>
+              )}
             </div>
           );
         })}
       </div>
+
+      {expandedSlot && (staged[expandedSlot]?.length ?? 0) > 1 && (
+        <div className="rounded-lg border border-border/40 bg-white/[0.02] p-2 space-y-1">
+          <div className="text-label font-semibold text-muted-foreground/70 px-1">
+            {SMART_CSV_SLOTS.find((s) => s.kind === expandedSlot)?.label} — every one of these files feeds the next
+            analysis run
+          </div>
+          {staged[expandedSlot]!.map((imp) => (
+            <div key={imp.id} className="flex items-center gap-2 px-1.5 py-1 rounded bg-white/[0.02] text-label">
+              <span className="text-foreground/80 truncate flex-1">{imp.filename}</span>
+              <button
+                onClick={() => void handleRemove(imp)}
+                disabled={deleteMutation.isPending}
+                className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                aria-label={`Remove ${imp.filename}`}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       {!bothRequiredStaged && (
         <p className="text-label text-muted-foreground/55 px-0.5">* Demographics and Placements are required before you can continue.</p>
       )}
@@ -1463,6 +1503,15 @@ function PipelineProgress({
   );
 }
 
+/** "file.csv" for one staged import, "3 files — a.csv, b.csv, c.csv" for more
+ *  than one — a kind can legitimately carry several staged files at once
+ *  (e.g. multiple weekly exports), and every one of them feeds the next
+ *  analysis run, so all of them need to be visible here, not just the first. */
+function stagedFilesLabel(list: ManualImport[]): string {
+  if (list.length <= 1) return list[0]?.filename ?? "";
+  return `${list.length} files — ${list.map((i) => i.filename).join(", ")}`;
+}
+
 export function ManualUploadPanel({
   accountId,
   availableAdNames,
@@ -1488,13 +1537,23 @@ export function ManualUploadPanel({
   // batch — a run's already-used files live in the Import History panel
   // (Analysis Command Center) for restaging, not here.
   const stagedImports = imports.filter((i) => i.status === "staged");
-  const demoImport = stagedImports.find((i) => i.kind === "performance_demo_csv") ?? null;
-  const placementImport = stagedImports.find((i) => i.kind === "performance_placement_csv") ?? null;
-  const summaryImport = stagedImports.find((i) => i.kind === "performance_ad_summary_csv") ?? null;
-  const conversionDeviceImport = stagedImports.find((i) => i.kind === "performance_conversion_device_csv") ?? null;
+  // Arrays, not a single import per kind: a kind legitimately accumulates more
+  // than one staged file (e.g. several weekly exports covering a date range
+  // together), and every one of them gets merged at analysis time — see the
+  // status='staged' comment in analysisEngine.ts. Picking just one via .find()
+  // here would silently hide the others from Review/Remove while they still
+  // feed the run, which is what actually broke when the demo/placement upload
+  // areas were unified into one free-form dropzone: it's now easy to end up
+  // with more than one file per slot without noticing.
+  const demoImports = stagedImports.filter((i) => i.kind === "performance_demo_csv");
+  const placementImports = stagedImports.filter((i) => i.kind === "performance_placement_csv");
+  const summaryImports = stagedImports.filter((i) => i.kind === "performance_ad_summary_csv");
+  const conversionDeviceImports = stagedImports.filter((i) => i.kind === "performance_conversion_device_csv");
+  const demoImport = demoImports[0] ?? null;
+  const placementImport = placementImports[0] ?? null;
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
   const guessedImports = guessedCreativeImports(imports);
-  const bothRequiredStaged = Boolean(demoImport && placementImport);
+  const bothRequiredStaged = Boolean(demoImports.length > 0 && placementImports.length > 0);
   const creativeMappedCount = creativeAssets.filter((a) => a.ad_names.length > 0).length;
   const creativeUnmappedCount = creativeAssets.length - creativeMappedCount;
 
@@ -1532,16 +1591,16 @@ export function ManualUploadPanel({
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 text-caption">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="text-foreground/80 truncate">Demographics — {demoImport?.filename}</span>
+              <span className="text-foreground/80 truncate">Demographics — {stagedFilesLabel(demoImports)}</span>
             </div>
             <div className="flex items-center gap-2 text-caption">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="text-foreground/80 truncate">Placements — {placementImport?.filename}</span>
+              <span className="text-foreground/80 truncate">Placements — {stagedFilesLabel(placementImports)}</span>
             </div>
-            {summaryImport ? (
+            {summaryImports.length > 0 ? (
               <div className="flex items-center gap-2 text-caption">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="text-foreground/80 truncate">Ad Summary — {summaryImport.filename}</span>
+                <span className="text-foreground/80 truncate">Ad Summary — {stagedFilesLabel(summaryImports)}</span>
               </div>
             ) : (
               /* Inline nudge — no separate warning block needed */
@@ -1558,10 +1617,10 @@ export function ManualUploadPanel({
                 </button>
               </div>
             )}
-            {conversionDeviceImport && (
+            {conversionDeviceImports.length > 0 && (
               <div className="flex items-center gap-2 text-caption">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="text-foreground/80 truncate">Conversion Device — {conversionDeviceImport.filename}</span>
+                <span className="text-foreground/80 truncate">Conversion Device — {stagedFilesLabel(conversionDeviceImports)}</span>
               </div>
             )}
             {/* Creative files: compact count summary — avoids listing 60+ raw filenames */}
@@ -1648,10 +1707,10 @@ export function ManualUploadPanel({
       <SmartCsvUpload
         accountId={accountId}
         staged={{
-          performance_demo_csv: demoImport,
-          performance_placement_csv: placementImport,
-          performance_ad_summary_csv: summaryImport,
-          performance_conversion_device_csv: conversionDeviceImport,
+          performance_demo_csv: demoImports,
+          performance_placement_csv: placementImports,
+          performance_ad_summary_csv: summaryImports,
+          performance_conversion_device_csv: conversionDeviceImports,
         }}
         onStaged={refresh}
         onRemoved={refresh}
