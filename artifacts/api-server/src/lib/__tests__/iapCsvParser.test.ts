@@ -201,15 +201,16 @@ describe("parseIapCsv — hard errors remain", () => {
     expect(() => parseIapCsv(line(header), "demographic")).toThrow(/no data rows/i);
   });
 
-  it("throws when a required breakdown value is blank (totals/subtotal row)", () => {
+  it("throws when a required breakdown value OTHER than Day is blank on a row that has a Day value", () => {
+    // A blank on a required column while Day is still present is a genuinely
+    // malformed row (not a Meta totals row — see the totals-row tests below),
+    // so it still hard-blocks.
     const breakdownCols = breakdownColsFor("demographic");
     const header = [...breakdownCols.map(resolveCurrency), ...BASE_METRICS.map(resolveCurrency)];
     const row = [
       ...breakdownCols.map((c) => (c === "Gender" ? "" : breakdownValue(c))),
       ...BASE_METRICS.map(baseValue),
     ];
-    // The column exists; only the VALUE is blank — so this really is a
-    // totals/subtotals row and the message says so.
     expect(() => parseIapCsv([line(header), line(row)].join("\n"), "demographic")).toThrow(
       /present but blank on this row/i,
     );
@@ -227,6 +228,72 @@ describe("parseIapCsv — hard errors remain", () => {
     expect(() => parseIapCsv(text, "demographic")).toThrow(/missing .*column/i);
     expect(() => parseIapCsv(text, "demographic")).toThrow(/Gender/);
     expect(() => parseIapCsv(text, "demographic")).not.toThrow(/totals/i);
+  });
+});
+
+// ── Totals rows: cross-validation, not a hard block ───────────────────────
+// Meta appends a grand-totals row to a pivot export unless "Show totals" is
+// unchecked at export time — Day blank, aggregate metrics filled. Rejecting
+// the whole file for this is hostile: the totals row is useful, as a free
+// check of this parser's own summed metrics.
+
+describe("parseIapCsv — totals row handling", () => {
+  const breakdownCols = breakdownColsFor("demographic");
+  const header = [...breakdownCols.map(resolveCurrency), ...BASE_METRICS.map(resolveCurrency)];
+  const dataRow = () => [...breakdownCols.map(breakdownValue), ...BASE_METRICS.map(baseValue)];
+  /** A Meta-style totals row: every breakdown blank, given base metric values. */
+  const totalsRow = (overrides: Record<string, string>) => [
+    ...breakdownCols.map(() => ""),
+    ...BASE_METRICS.map((c) => overrides[c] ?? ""),
+  ];
+
+  it("excludes a Day-blank totals row from the parsed rows without throwing", () => {
+    const text = [line(header), line(dataRow()), line(dataRow()), line(totalsRow({}))].join("\n");
+    const result = parseIapCsv(text, "demographic");
+    expect(result.rows.length).toBe(2);
+  });
+
+  it("does not warn when the totals row matches the computed sums", () => {
+    const text = [
+      line(header),
+      line(dataRow()),
+      line(dataRow()),
+      line(
+        totalsRow({
+          "Amount spent ({ACCOUNT_CURRENCY})": "85.00",
+          Impressions: "10200",
+          Reach: "9600",
+          Results: "6",
+        }),
+      ),
+    ].join("\n");
+    const result = parseIapCsv(text, "demographic");
+    expect(result.rows.length).toBe(2);
+    expect(result.warnings.some((w) => /totals row/i.test(w))).toBe(false);
+  });
+
+  it("warns (but does not throw) when the totals row disagrees with the computed sums", () => {
+    const text = [
+      line(header),
+      line(dataRow()),
+      line(dataRow()),
+      line(totalsRow({ "Amount spent ({ACCOUNT_CURRENCY})": "999.99" })),
+    ].join("\n");
+    const result = parseIapCsv(text, "demographic");
+    expect(result.rows.length).toBe(2);
+    expect(result.warnings.some((w) => /totals row/i.test(w) && /amount spent/i.test(w))).toBe(true);
+  });
+
+  it("excludes multiple totals rows without cross-validating them, with a warning explaining why", () => {
+    const text = [
+      line(header),
+      line(dataRow()),
+      line(totalsRow({ "Amount spent ({ACCOUNT_CURRENCY})": "20.00" })),
+      line(totalsRow({ "Amount spent ({ACCOUNT_CURRENCY})": "22.50" })),
+    ].join("\n");
+    const result = parseIapCsv(text, "demographic");
+    expect(result.rows.length).toBe(1);
+    expect(result.warnings.some((w) => /2 totals\/subtotal rows/i.test(w))).toBe(true);
   });
 });
 

@@ -34,7 +34,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { guessedCreativeImports } from "./manualImportUtils";
 import { ImportConfidenceReport } from "./ImportConfidenceReport";
-import { InfoTooltip, DetailReveal } from "./shared";
+import { InfoTooltip, DetailReveal, DenseText } from "./shared";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   AlertDialog,
@@ -221,9 +221,11 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
                 <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/80 mb-1">
                   Breakdown columns
                 </div>
-                <p className="text-caption text-foreground/80 leading-relaxed">
-                  {classData.breakdown_columns.join(", ")}
-                </p>
+                <DenseText
+                  text={classData.breakdown_columns.join(", ")}
+                  className="text-caption text-foreground/80 leading-relaxed"
+                  threshold={80}
+                />
               </div>
               <div className="rounded-md border border-border/30 divide-y divide-border/30">
                 {classData.metric_groups.map((g) => (
@@ -238,11 +240,13 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
                     >
                       {g.required ? "Required" : "Optional"}
                     </span>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="text-caption font-medium text-foreground">{g.name}</div>
-                      <p className="text-label text-muted-foreground/80 leading-relaxed mt-0.5">
-                        {g.columns.join(", ")}
-                      </p>
+                      <DenseText
+                        text={g.columns.join(", ")}
+                        className="text-label text-muted-foreground/80 leading-relaxed mt-0.5"
+                        threshold={80}
+                      />
                     </div>
                   </div>
                 ))}
