@@ -5,6 +5,7 @@ import {
   DERIVED_OR_IRRELEVANT_METRICS,
   DEMOGRAPHIC_BREAKDOWN_COLUMNS,
   DEVICE_PLACEMENT_BREAKDOWN_COLUMNS,
+  AD_SUMMARY_BREAKDOWN_COLUMNS,
   type IapCsvClass,
 } from "../iapCsvSpec";
 
@@ -225,7 +226,7 @@ describe("parseIapCsv — hard errors remain", () => {
     const header = [...breakdownCols.map(resolveCurrency), ...BASE_METRICS.map(resolveCurrency)];
     const row = [...breakdownCols.map(breakdownValue), ...BASE_METRICS.map(baseValue)];
     const text = [line(header), line(row)].join("\n");
-    expect(() => parseIapCsv(text, "demographic")).toThrow(/missing .*column/i);
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/could not be found|missing .*column/i);
     expect(() => parseIapCsv(text, "demographic")).toThrow(/Gender/);
     expect(() => parseIapCsv(text, "demographic")).not.toThrow(/totals/i);
   });
@@ -294,6 +295,39 @@ describe("parseIapCsv — totals row handling", () => {
     const result = parseIapCsv(text, "demographic");
     expect(result.rows.length).toBe(1);
     expect(result.warnings.some((w) => /2 totals\/subtotal rows/i.test(w))).toBe(true);
+  });
+});
+
+// ── Per-class critical columns: "Campaign name" is optional for ad_summary ──
+// AD_SUMMARY_BREAKDOWN_COLUMNS lists "Campaign name" as a breakdown column
+// ad_summary exports MAY carry, but that class's own requiredBreakdownColumns
+// is just ["Day", "Ad name"] — Campaign name is not required. The critical-
+// column hard-block used to check a fixed set shared across all 4 classes
+// (Day/Ad name/Campaign name) instead of the current class's own required
+// list, so a real ad-level export missing Campaign name was rejected outright
+// instead of proceeding like any other optional breakdown column.
+
+describe("parseIapCsv — ad_summary Campaign name is optional, not critical", () => {
+  it("stages an ad_summary export missing Campaign name with a warning, not a hard block", () => {
+    const breakdownCols = AD_SUMMARY_BREAKDOWN_COLUMNS.filter((c) => c !== "Campaign name");
+    const header = [...breakdownCols.map(resolveCurrency), ...BASE_METRICS.map(resolveCurrency)];
+    const row = [...breakdownCols.map(breakdownValue), ...BASE_METRICS.map(baseValue)];
+    const text = [line(header), line(row)].join("\n");
+
+    const result = parseIapCsv(text, "ad_summary");
+    expect(result.rows.length).toBe(1);
+    expect(result.missingColumns).toContain("Campaign name");
+    expect(result.warnings.some((w) => w.includes("Campaign name"))).toBe(true);
+  });
+
+  it("still hard-blocks demographic/device_placement/conversion_device exports missing Campaign name", () => {
+    const breakdownCols = DEMOGRAPHIC_BREAKDOWN_COLUMNS.filter((c) => c !== "Campaign name");
+    const header = [...breakdownCols.map(resolveCurrency), ...BASE_METRICS.map(resolveCurrency)];
+    const row = [...breakdownCols.map(breakdownValue), ...BASE_METRICS.map(baseValue)];
+    const text = [line(header), line(row)].join("\n");
+
+    expect(() => parseIapCsv(text, "demographic")).toThrow(IapCsvFormatError);
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/Campaign name/);
   });
 });
 
