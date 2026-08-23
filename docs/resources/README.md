@@ -17,6 +17,7 @@ at. Nothing here is a specification. Read these for *why* decisions were made; r
 | [`IAP_INFRASTRUCTURE_AUDIT_2026-07.md`](IAP_INFRASTRUCTURE_AUDIT_2026-07.md) | Infrastructure & UX audit: platform snapshot, five ranked bottlenecks (monolithic seed bundle, no code splitting, in-process jobs on autoscale, whole-bundle refetch, repo weight), progressive-disclosure gaps, and a sequenced P0-P3 roadmap. |
 | [`IAP_ROADMAP_SPEC_BRIEFS_2026-07.md`](IAP_ROADMAP_SPEC_BRIEFS_2026-07.md) | Companion per-item technical specs for the roadmap above (P0-P3), each with current-state references, implementation requirements, and validation gates. |
 | [`IAP_SPEC_SYNTHESIS_v1.0.md`](IAP_SPEC_SYNTHESIS_v1.0.md) | Modular system prompt for synthesizing a roadmap brief into a production-ready spec or PR. Not one of the six canonical IAP-chain prompts in `../prompts/`. |
+| [`METRIX_Bugfix_and_Polish_Phase_Handoff_2026-08.md`](METRIX_Bugfix_and_Polish_Phase_Handoff_2026-08.md) | Handoff written right after the first successful real-account (AAFE) end-to-end IAP loop run: what "done" means for the bug-fix and UI/UX-polish phases that follow, the manual-import bug cluster just fixed, and what's still genuinely open. |
 
 ## The one rule worth carrying forward
 
