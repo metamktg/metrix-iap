@@ -10,7 +10,14 @@
 //   - No data rows
 //   - Critical breakdown columns (Date, Ad name, Campaign name) not resolvable
 //     even after alias + fuzzy matching
-//   - Rows with blank required breakdown values (totals/subtotals rows)
+//   - A required breakdown column OTHER than "Day" blank on a row that does
+//     have a Day value (a genuinely malformed row, not a totals row)
+//
+// A row with a blank "Day" is Meta's own grand-totals row, appended whenever
+// "Show totals" isn't unchecked at export time — it is excluded from `rows`
+// but never rejects the file; instead its metric values are cross-checked
+// against this parser's own computed sums (see the totals cross-validation
+// block below), surfacing a mismatch as a warning rather than a hard block.
 
 import {
   BASE_METRICS,
@@ -604,28 +611,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   }
 
   // ── Parse rows ────────────────────────────────────────────────────────
-  const rows: IapCsvRow[] = [];
-  for (let li = 1; li < lines.length; li++) {
-    const cells = lines[li]!;
-    if (cells.every((c) => c.trim() === "")) continue;
-
-    const breakdowns: Record<string, string> = {};
-    for (const col of spec.breakdownColumns) {
-      const idx = breakdownIdx.get(col);
-      breakdowns[col] = idx !== undefined ? (cells[idx] ?? "").trim() : "";
-    }
-
-    // Required breakdown VALUES (row-level). The column is known to exist by
-    // this point, so a blank really does mean a totals/subtotals row.
-    for (const req of spec.requiredBreakdownColumns) {
-      if (!breakdowns[req]) {
-        throw new IapCsvFormatError(
-          `Row ${li + 1}: the "${req}" column is present but blank on this row. ` +
-            `Meta pivot exports must not include totals/subtotals rows — re-export with totals turned off.`,
-        );
-      }
-    }
-
+  const parseBaseMetrics = (cells: string[]): Record<string, number | string | null> => {
     const base: Record<string, number | string | null> = {};
     for (const col of BASE_METRICS) {
       const slug = slugifyColumn(col);
@@ -641,6 +627,43 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
         base[slug] = parseNumericCell(raw);
       }
     }
+    return base;
+  };
+
+  const rows: IapCsvRow[] = [];
+  const totalsRows: { line: number; base: Record<string, number | string | null> }[] = [];
+  for (let li = 1; li < lines.length; li++) {
+    const cells = lines[li]!;
+    if (cells.every((c) => c.trim() === "")) continue;
+
+    const breakdowns: Record<string, string> = {};
+    for (const col of spec.breakdownColumns) {
+      const idx = breakdownIdx.get(col);
+      breakdowns[col] = idx !== undefined ? (cells[idx] ?? "").trim() : "";
+    }
+
+    // "Day" is required on every class and is the column Meta leaves blank on
+    // the grand-totals row it appends. Park the row for cross-validation
+    // instead of rejecting the file — see the totals cross-validation block
+    // below, after all real data rows have been parsed and summed.
+    if (!breakdowns["Day"]) {
+      totalsRows.push({ line: li + 1, base: parseBaseMetrics(cells) });
+      continue;
+    }
+
+    // Required breakdown VALUES (row-level), Day already confirmed present
+    // above. The column is known to exist by this point, so a blank here on
+    // a row that does have a Day value is a genuinely malformed row.
+    for (const req of spec.requiredBreakdownColumns) {
+      if (req === "Day") continue;
+      if (!breakdowns[req]) {
+        throw new IapCsvFormatError(
+          `Row ${li + 1}: the "${req}" column is present but blank on this row.`,
+        );
+      }
+    }
+
+    const base = parseBaseMetrics(cells);
 
     const extra: Record<string, number | string | null> = {};
     for (const col of optionalMetricsPresent) {
@@ -705,6 +728,40 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   }
 
   const coverage: IapCsvCoverage = { totalRows: rows.length, columns: coverageColumns, emptyColumns };
+
+  // ── Totals-row cross-validation ─────────────────────────────────────────
+  // The row(s) parked above as Meta's own totals are Meta's own arithmetic on
+  // this export — a free check of what this parser independently summed from
+  // the data rows. Only a single grand-total row can be checked this way: a
+  // pivot export with subtotals per breakdown group could produce several
+  // totals rows, and summing those would double-count against the grand
+  // total, so multiple totals rows are excluded from `rows` but not
+  // cross-checked, and that's called out as a warning of its own.
+  if (totalsRows.length === 1) {
+    const totalsRow = totalsRows[0]!;
+    for (const col of BASE_METRICS) {
+      if (STRING_VALUED.has(col)) continue;
+      const slug = slugifyColumn(col);
+      const reported = totalsRow.base[slug];
+      if (typeof reported !== "number") continue;
+      const computed = coverage.columns.find((c) => c.slug === slug)?.sum;
+      if (computed === null || computed === undefined) continue;
+      const diff = Math.abs(computed - reported);
+      const tolerance = Math.max(1, Math.abs(reported) * 0.01);
+      if (diff > tolerance) {
+        warnings.push(
+          `Totals row (line ${totalsRow.line}) reports ${resolveCurrencyLabel(col)} = ${reported.toLocaleString()}, ` +
+            `but the ${rows.length.toLocaleString()} data rows sum to ${computed.toLocaleString()} ` +
+            `— off by ${diff.toLocaleString()}. Check the export wasn't truncated before running analysis.`,
+        );
+      }
+    }
+  } else if (totalsRows.length > 1) {
+    warnings.push(
+      `This export included ${totalsRows.length} totals/subtotal rows (line ${totalsRows.map((t) => t.line).join(", ")}). ` +
+        `They were excluded from analysis; with more than one, Metrix can't cross-check them against its own sums without risking double-counting.`,
+    );
+  }
 
   // ── Delivery coverage gate ────────────────────────────────────────────
   // Blocks the case the header-only checks could never see: every required
