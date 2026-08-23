@@ -8,8 +8,9 @@
 // Hard errors are reserved for truly unrecoverable situations:
 //   - Empty file
 //   - No data rows
-//   - Critical breakdown columns (Date, Ad name, Campaign name) not resolvable
-//     even after alias + fuzzy matching
+//   - A breakdown column the current CSV class's own requiredBreakdownColumns
+//     lists (see iapCsvSpec.ts — varies per class) not resolvable even after
+//     alias + fuzzy matching
 //   - A required breakdown column OTHER than "Day" blank on a row that does
 //     have a Day value (a genuinely malformed row, not a totals row)
 //
@@ -229,9 +230,6 @@ function parseNumericCell(raw: string | undefined): number | null {
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 }
-
-/** Breakdown column names that are load-bearing for the analysis pipeline. */
-const CRITICAL_BREAKDOWN_COLUMNS = new Set(["Day", "Ad name", "Campaign name"]);
 
 /** Determine the display tier for a ColumnMatch. */
 function matchTier(match: ColumnMatch): "exact" | "resolved" | "inferred" {
@@ -465,8 +463,19 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     }
   }
 
-  // Hard-error if critical breakdown columns are still unresolvable after inference
-  const criticalStillMissing = stillMissingAfterInference.filter((c) => CRITICAL_BREAKDOWN_COLUMNS.has(c));
+  // Hard-error if a breakdown column this CLASS actually requires is still
+  // unresolvable after inference. Gated on spec.requiredBreakdownColumns, not
+  // the fixed CRITICAL_BREAKDOWN_COLUMNS set below — that set is shared across
+  // all 4 classes and doesn't know that ad_summary carries "Campaign name" as
+  // an optional breakdown column (AD_SUMMARY_BREAKDOWN_COLUMNS includes it) but
+  // does NOT require it (ad_summary's requiredBreakdownColumns is just
+  // ["Day", "Ad name"]). Filtering on membership in that fixed set alone
+  // rejected ad-level exports that omit Campaign name — a legitimate, common
+  // shape — instead of proceeding with a warning like any other optional
+  // breakdown column.
+  const criticalStillMissing = stillMissingAfterInference.filter((c) =>
+    spec.requiredBreakdownColumns.includes(c),
+  );
   if (criticalStillMissing.length > 0) {
     const suggestions = criticalStillMissing.map((c) => {
       const suggestion = suggestCanonicalForUnknown(c, headerStrings);
@@ -480,7 +489,9 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   }
 
   // Non-critical breakdown columns that are still missing after all resolution passes
-  const nonCriticalStillMissing = stillMissingAfterInference.filter((c) => !CRITICAL_BREAKDOWN_COLUMNS.has(c));
+  const nonCriticalStillMissing = stillMissingAfterInference.filter(
+    (c) => !spec.requiredBreakdownColumns.includes(c),
+  );
   if (nonCriticalStillMissing.filter((c) => spec.breakdownColumns.includes(c)).length > 0) {
     const missing = nonCriticalStillMissing.filter((c) => spec.breakdownColumns.includes(c));
     warnings.push(
