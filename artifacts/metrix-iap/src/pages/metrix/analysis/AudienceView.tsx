@@ -492,7 +492,7 @@ function GroupDetailRow({
       <div className="flex items-center gap-4 shrink-0">
         <KpiStat label="CPA index" value={cpaIndex != null ? `${cpaIndex}%` : "—"} />
         <KpiStat label="CVR index" value={cvrIndex != null ? `${cvrIndex}%` : "—"} />
-        <KpiStat label="Spend" value={fmtUSD(group.totals.spend ?? 0, 0)} />
+        <KpiStat label="Spend" value={group.totals.spend != null ? fmtUSD(group.totals.spend, 0) : "—"} />
         <KpiStat label={resultPlural} value={fmtNum(group.totals.results)} />
       </div>
     </div>

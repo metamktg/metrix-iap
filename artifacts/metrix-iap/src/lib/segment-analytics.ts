@@ -243,7 +243,13 @@ export function assessSegmentSignal(
     };
   }
   const reasons: string[] = [];
-  if (totals.impressions != null && totals.impressions < LOW_SIGNAL_IMPRESSIONS) {
+  // The impressions heuristic only applies when the scoped source carries
+  // impressions at all: demographic rows served through the preset-window
+  // API have no impressions column (the adapter zero-fills them), and
+  // flagging every segment "Only 0 impressions" from that zero-fill is a
+  // fabricated warning, not a real read.
+  const sourceHasImpressions = scopedTotals.impressions != null && scopedTotals.impressions > 0;
+  if (sourceHasImpressions && totals.impressions != null && totals.impressions < LOW_SIGNAL_IMPRESSIONS) {
     reasons.push(`Only ${Math.round(totals.impressions).toLocaleString("en-US")} impressions — below the ${LOW_SIGNAL_IMPRESSIONS.toLocaleString("en-US")} needed for a stable read.`);
   }
   if (

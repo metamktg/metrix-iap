@@ -231,3 +231,90 @@ parser/merge code.
   real C1A… filename against an ad named "1".
 - **Verification evidence:** live `manual_imports.ad_names` rows for account
   `manual_9JGXU_AQJjxJ` + `ads`/`ad_performance` rows for ad name "1".
+
+## BUG-11 — Null-coalescing renders fabricated measurements ("$0"/"0.00%" for unknown)
+
+- **Symptom:** unknown values render as measured figures: audience group KPI rows showed
+  "$0" spend beside "—" results; IAP Library cell chips showed a measured "0" for unknown
+  results; the metric hover chart plotted never-delivered concepts as real "0.00%" CTR
+  worst-performers (`link_ctr` alone among its sibling ratios returned 0 instead of null on
+  zero impressions).
+- **Root cause:** `?? 0` coalescing at render/aggregation sites contradicting the
+  `sumStrict`/"null unless every row carries it" policy; one ratio helper diverging from its
+  siblings' null-on-zero-denominator convention.
+- **Category:** Fix-Now for the three render-side fabrications (shipped); the aggregation-
+  policy split (`metricsCatalog` any-row-present sums vs `sumStrict`, `date-scope.sumInRange`
+  always-number signature, `summaryTrends`/`reportExport` partial sums) is **Open — one
+  policy decision needed**, mapped in `docs/resources/METRIX_Data_Consistency_Audit_Phase1.md` §5.3.
+- **Resolution:** shipped: `metricConceptUtils.link_ctr` → null on zero impressions;
+  `AudienceView` group spend → "—" when unknown; `IapLibraryView` results → "—" when unknown.
+- **Verification evidence:** lib + metric popover + audience test suites green (341 tests).
+
+## BUG-12 — Fabricated "Only 0 impressions" low-signal warnings under date presets
+
+- **Symptom:** with any date preset active, every audience segment flagged low-signal with
+  "Only 0 impressions — below the 1,000 needed…".
+- **Root cause:** `demographic_performance` stores no impressions; the preset-window API
+  adapter zero-fills `Impressions: 0`; `assessSegmentSignal`'s impressions heuristic read
+  the zero-fill as a measurement.
+- **Category:** Fix-Now (fabricated warning).
+- **Resolution (shipped):** the impressions heuristic applies only when the scoped source
+  carries impressions at all (`scopedTotals.impressions > 0`); spend-share and coverage
+  heuristics still apply.
+- **Verification evidence:** `coverage-honesty.test.ts` + lib suites green.
+
+## BUG-13 — Concept-group CTR taken from an arbitrary row
+
+- **Symptom:** `ConceptFamilyView` cell stats presented `rows[0]?.CTR_link_pct` — one
+  event-row's rate — as the group CTR.
+- **Root cause:** missing blended derivation.
+- **Category:** Fix-Now (wrong number presented as a group metric).
+- **Resolution (shipped):** blended CTR from summed link clicks ÷ summed impressions; null
+  when impressions are absent.
+
+## BUG-14 — AnalysisHistoryView "Data integrity" block is permanently-empty dead UI
+
+- **Symptom:** the per-run reconciliation block renders from `run.reconciliation[]`, a field
+  no server code ever writes (`import_metric_reconciliation` has zero writers; `runShape`
+  omits it).
+- **Category:** Fix-Now-next (a dead "integrity" surface implies checks that don't run).
+- **Resolution:** next session — remove the block + orphan contract field, or implement the
+  writer. Not changed in this PR (needs a product call on which).
+
+## BUG-15 — Alerts page lineage mismatch
+
+- **Symptom:** `ListenCommandCenter` documents Alerts as sourced from `iap.data_quality[]`;
+  `AlertsView` actually renders `data_caveat` — importer quality flags (incl.
+  `cross_export_mismatch`) never reach the Alerts page.
+- **Category:** Open (surfacing gap; flags do render in AdPerformanceView SignalCards).
+- **Resolution:** next session, with the csv_warnings surfacing work (see audit doc §5.1).
+
+## BUG-16 — Manual-engine Stage-2 concept intelligence lands nowhere
+
+- **Symptom:** `buying_intent_score` / `performance_lift_vs_baseline` / `performance_tier` /
+  `confidence_level` are computed, persisted on `concept_performance`, and shipped on
+  `analysis.concept_rollup` — but the client type omits all four and `FindingsView` reads the
+  importer-only `concept_intelligence` table.
+- **Category:** Fix-Now-next (computed intelligence invisible for manual accounts).
+- **Resolution:** extend `ConceptRollupRow` + FindingsView source fallback; next session.
+
+## BUG-17 — AnalysisOverview headline tiles bypass the canonical totals
+
+- **Symptom:** scoped spend/impressions/CTR re-summed from `performance_by_cell`, bypassing
+  the `account_totals` ceiling override AND the impossible-CTR guard; sums to 0 on manual
+  accounts (cell perf is importer-only).
+- **Category:** Fix-Now-next (canonical-source violation, §2a.4).
+- **Resolution:** read `campaign_summary`/summary API; next session.
+
+## BUG-18 — Two contradictory concept lift/tier definitions
+
+- **Symptom:** engine persists CPA-lift vs blended baseline + tier; `AdPerformanceView`
+  computes CVR-lift vs an unweighted mean of per-concept CVRs (an average-of-averages the
+  codebase explicitly forbids elsewhere) and derives its own tiers.
+- **Category:** Fix-Now-next (same number, two definitions).
+- **Resolution:** adopt the engine's definition; next session, with BUG-16.
+
+## Shipped small honesty fixes from the audit (no separate entries)
+
+- "Top variable —" dash now carries the computed `unavailableReason` as a tooltip instead of
+  discarding it (`AvatarsView`).

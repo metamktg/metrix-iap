@@ -525,13 +525,15 @@ function IcpProfileCard({
 // ─── Audience segment tile ────────────────────────────────────────────
 
 function AudienceSegmentTile({
-  seg, totals, derived, signal, bestVariableCode, onExplore, rank,
+  seg, totals, derived, signal, bestVariableCode, variableUnavailableReason, onExplore, rank,
 }: {
   seg: SegmentId;
   totals: SegmentRawTotals;
   derived: SegmentDerivedMetrics;
   signal: SegmentSignal;
   bestVariableCode: string | null;
+  /** Why variable attribution is unavailable (account-level demographic grain etc.) — shown on the dash instead of being discarded. */
+  variableUnavailableReason?: string | null;
   onExplore: () => void;
   rank?: number;
 }) {
@@ -591,7 +593,15 @@ function AudienceSegmentTile({
         {bestVariableCode ? (
           <VariableStackChips stack={{ variable: bestVariableCode }} maxVisible={1} />
         ) : (
-          <span className={cn(TYPE.label, "text-muted-foreground/30 normal-case")}>—</span>
+          // The dash carries the computed reason (segment-analytics
+          // unavailableReason) instead of discarding it — a bare "—" cannot
+          // be told apart from lost data.
+          <span
+            className={cn(TYPE.label, "text-muted-foreground/30 normal-case cursor-default")}
+            title={variableUnavailableReason ?? "No variable attribution is computable for this segment."}
+          >
+            —
+          </span>
         )}
       </div>
 
@@ -903,12 +913,12 @@ export function AvatarsView() {
 
   const segmentStats = useMemo(() => {
     if (!scopedAnalysis || segmentList.length === 0) {
-      return new Map<string, { totals: SegmentRawTotals; derived: SegmentDerivedMetrics; signal: SegmentSignal; bestVariableCode: string | null }>();
+      return new Map<string, { totals: SegmentRawTotals; derived: SegmentDerivedMetrics; signal: SegmentSignal; bestVariableCode: string | null; variableUnavailableReason: string | null }>();
     }
     const allRows = scopedAnalysis.demographic_registration_signal ?? [];
     const scoped = scopeDemographicRows(allRows, null);
     const scopedTotals = computeSegmentTotals(scoped);
-    const result = new Map<string, { totals: SegmentRawTotals; derived: SegmentDerivedMetrics; signal: SegmentSignal; bestVariableCode: string | null }>();
+    const result = new Map<string, { totals: SegmentRawTotals; derived: SegmentDerivedMetrics; signal: SegmentSignal; bestVariableCode: string | null; variableUnavailableReason: string | null }>();
     for (const seg of segmentList) {
       const segRows = scoped.filter((r) => r.Age === seg.age && r.Gender === seg.gender);
       const totals = computeSegmentTotals(segRows);
@@ -916,7 +926,7 @@ export function AvatarsView() {
       const signal = assessSegmentSignal(totals, scopedTotals, demoCoverage);
       const attribution = computeSegmentAttribution(scopedAnalysis, mst, seg, null);
       const bestVariableCode = attribution.available && attribution.variables.length > 0 ? attribution.variables[0].code : null;
-      result.set(segmentKey(seg), { totals, derived, signal, bestVariableCode });
+      result.set(segmentKey(seg), { totals, derived, signal, bestVariableCode, variableUnavailableReason: attribution.unavailableReason });
     }
     return result;
   }, [scopedAnalysis, mst, segmentList, demoCoverage]);
@@ -1086,6 +1096,7 @@ export function AvatarsView() {
                           derived={stats.derived}
                           signal={stats.signal}
                           bestVariableCode={stats.bestVariableCode}
+                          variableUnavailableReason={stats.variableUnavailableReason}
                           onExplore={() => setAudienceSegment(seg)}
                         />
                       );

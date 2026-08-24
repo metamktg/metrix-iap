@@ -932,7 +932,7 @@ export function IapLibraryView() {
                                     {ctx?.angleLabel ? ` · ${ctx.angleLabel}` : ""}
                                   </span>
                                   <span className="tabular-nums shrink-0">
-                                    {stats.cpa != null ? fmtUSD(stats.cpa) : "—"} · {fmtNum(stats.results ?? 0)}
+                                    {stats.cpa != null ? fmtUSD(stats.cpa) : "—"} · {stats.results != null ? fmtNum(stats.results) : "—"}
                                   </span>
                                 </div>
                               </button>
