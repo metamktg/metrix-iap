@@ -50,9 +50,11 @@ import {
   listSegments, rowsForSegment,
   computeSegmentTotals, deriveSegmentMetrics,
   assessSegmentSignal, segmentLabel, segmentKey,
+  demographicCoverageOf,
   type SegmentId, type SegmentRawTotals,
   type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
+import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
 import {
   buildAudienceClusters, groupSegmentsByAge, classifyQuadrant, QUADRANT_LABEL,
   type AudienceGroup, type PositioningQuadrant,
@@ -490,7 +492,7 @@ function GroupDetailRow({
       <div className="flex items-center gap-4 shrink-0">
         <KpiStat label="CPA index" value={cpaIndex != null ? `${cpaIndex}%` : "—"} />
         <KpiStat label="CVR index" value={cvrIndex != null ? `${cvrIndex}%` : "—"} />
-        <KpiStat label="Spend" value={fmtUSD(group.totals.spend ?? 0, 0)} />
+        <KpiStat label="Spend" value={group.totals.spend != null ? fmtUSD(group.totals.spend, 0) : "—"} />
         <KpiStat label={resultPlural} value={fmtNum(group.totals.results)} />
       </div>
     </div>
@@ -581,14 +583,21 @@ function RankedListTab({
                 <span className={cn(TYPE.title, "text-foreground/90 flex-1 truncate")}>
                   {segmentLabel(e.seg)}
                 </span>
-                {e.signal.low && (
+                {e.signal.state === "insufficient_coverage" ? (
+                  <span
+                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-muted-foreground/60 shrink-0"
+                    title={e.signal.reasons.join(" ")}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" /> Coverage
+                  </span>
+                ) : e.signal.low ? (
                   <span
                     className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-amber-300/65 shrink-0"
                     title={e.signal.reasons.join(" ")}
                   >
                     <AlertTriangle className="w-3.5 h-3.5" /> Low
                   </span>
-                )}
+                ) : null}
                 <span className={cn(TYPE.title, "font-bold tabular-nums text-foreground/80 shrink-0 mr-1")}>
                   {v != null ? activeMetric.format(v) : "—"}
                 </span>
@@ -677,6 +686,18 @@ export function AudienceView() {
     enabled: preset !== "all" && !!adAccountId,
   });
 
+  // Join coverage from the latest successful analysis run (the "all"-preset
+  // summary carries it regardless of the active preset; react-query dedupes
+  // with the preset query when preset === "all").
+  const { data: allSummary } = useQuery({
+    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", "all"),
+    enabled: !!adAccountId,
+  });
+  const demoCoverage = useMemo(
+    () => demographicCoverageOf((presetData ?? allSummary)?.data_coverage ?? null),
+    [presetData, allSummary],
+  );
+
   const handleMode = useCallback((m: SegmentByMode) => {
     setMode(m);
     try { localStorage.setItem(SEGMENT_BY_KEY, m); } catch { /* storage blocked */ }
@@ -701,10 +722,10 @@ export function AudienceView() {
         seg,
         totals,
         derived: deriveSegmentMetrics(totals),
-        signal: assessSegmentSignal(totals, scopedTotals),
+        signal: assessSegmentSignal(totals, scopedTotals, demoCoverage),
       };
     });
-  }, [scopedRows]);
+  }, [scopedRows, demoCoverage]);
 
   const term = account
     ? resultTerm(account)
@@ -790,6 +811,10 @@ export function AudienceView() {
                     isFetching={presetFetching}
                   />
 
+                  <div className="px-6 pt-5">
+                    <DataCoverageBanner coverage={demoCoverage} />
+                  </div>
+
                   {(isRefetching || (preset !== "all" && presetFetching)) ? (
                     <div className="px-6 pt-5"><SkeletonTileRow count={4} /></div>
                   ) : (
@@ -871,6 +896,7 @@ export function AudienceView() {
           analysis={analysis}
           cellIds={null}
           kicker="Audience pocket"
+          demoCoverage={demoCoverage}
         />
       )}
     </>

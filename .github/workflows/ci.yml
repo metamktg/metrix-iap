@@ -94,6 +94,18 @@ jobs:
       - name: Scripts unit tests
         run: pnpm --filter @workspace/scripts run test
 
+      - name: API server pure unit tests (no DB)
+        # The api-server vitest suite as a whole needs live secrets
+        # (DATABASE_URL / Supabase) and stays excluded — see the header
+        # comment. These specific suites are pure (parser + engine guards)
+        # and pin the manual-ingestion regression class (Day-format
+        # normalization, ad_performance unique-key pre-write guards), so they
+        # must gate PRs even without secrets.
+        run: >
+          pnpm --filter @workspace/api-server exec vitest run
+          src/lib/__tests__/iapCsvDayNormalization.test.ts
+          src/lib/__tests__/analysisEngineAdRowGuards.test.ts
+
       - name: API server smoke (boots without Supabase env by design)
         # The server now imports the Anthropic AI integration client at module
         # load time (lib/integrations-anthropic-ai), which throws immediately

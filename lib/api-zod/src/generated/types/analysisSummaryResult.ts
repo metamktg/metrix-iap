@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AnalysisDataCoverage } from './analysisDataCoverage';
 import type { AnalysisSummaryConceptRow } from './analysisSummaryConceptRow';
 import type { AnalysisSummaryDayRow } from './analysisSummaryDayRow';
 import type { AnalysisSummaryDemoRow } from './analysisSummaryDemoRow';
@@ -29,4 +30,6 @@ export interface AnalysisSummaryResult {
   demographic_rows: AnalysisSummaryDemoRow[];
   placement_rows: AnalysisSummaryPlacementRow[];
   concept_rows: AnalysisSummaryConceptRow[];
+  /** Join coverage from the latest successful manual analysis run; null when no manual run has measured coverage for this account. */
+  data_coverage: AnalysisDataCoverage | null;
 }

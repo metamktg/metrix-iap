@@ -166,7 +166,16 @@ async function gotoAndWait(
   await page.goto(url, { waitUntil: "domcontentloaded" });
   // Wait for a stable section card heading (h3) to confirm the page rendered.
   // SectionCard renders its title inside an <h3>.
+  //
+  // Scoped to <main> (AppShell.tsx), not the whole document: the sidebar nav
+  // (a sibling of <main>, present on every route) renders its own permanent
+  // labels — e.g. "Hypothesis Queue" — which can match this same
+  // case-insensitive text search. An unscoped locator resolves as soon as
+  // the sidebar mounts, before the route's own (code-split, per PR #121)
+  // content has loaded, so assertTooltip then finds zero SectionInfoIcon
+  // elements on a page that hasn't actually rendered yet.
   await page
+    .locator("main")
     .locator("h3, h2, span, p")
     .filter({ hasText: new RegExp(waitText, "i") })
     .first()

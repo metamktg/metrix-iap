@@ -285,9 +285,12 @@ interface AgeBucket {
 function DemographicsTab({
   rows,
   onSegmentClick,
+  emptyReason,
 }: {
   rows: DemographicRow[];
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
+  /** Cause-specific empty-state text (file never imported vs account-level-only grain vs no rows for this cell). */
+  emptyReason?: string | null;
 }) {
   const [metric, setMetric] = useState<DemoMetric>("spend");
 
@@ -343,7 +346,9 @@ function DemographicsTab({
     return (
       <div className="py-10 text-center space-y-1.5">
         <p className="text-body font-medium text-muted-foreground/60">No demographic data for this cell</p>
-        <p className="text-label text-muted-foreground/50">Import a demographic pivot export to see the age × gender breakdown.</p>
+        <p className="text-label text-muted-foreground/50">
+          {emptyReason ?? "Import a demographic pivot export to see the age × gender breakdown."}
+        </p>
       </div>
     );
   }
@@ -515,7 +520,7 @@ function DemographicsTab({
 
 // ─── Placements tab ────────────────────────────────────────────────────
 
-function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
+function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReason?: string | null }) {
   const [metric, setMetric] = useState<PlacementMetric>("spend");
 
   const buckets = useMemo(() => {
@@ -546,7 +551,9 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
     return (
       <div className="py-10 text-center space-y-1.5">
         <p className="text-body font-medium text-muted-foreground/60">No placement data for this account</p>
-        <p className="text-label text-muted-foreground/50">Import a device × placement export to see placement signal.</p>
+        <p className="text-label text-muted-foreground/50">
+          {emptyReason ?? "Import a device × placement export to see placement signal."}
+        </p>
       </div>
     );
   }
@@ -601,12 +608,14 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
 
 // ─── Funnel tab ─────────────────────────────────────────────────────────
 
-function FunnelTab({ perfRow }: { perfRow: CellPerformanceRow | null }) {
+function FunnelTab({ perfRow, emptyReason }: { perfRow: CellPerformanceRow | null; emptyReason?: string | null }) {
   if (!perfRow) {
     return (
       <div className="py-10 text-center space-y-1.5">
         <p className="text-body font-medium text-muted-foreground/60">No performance data</p>
-        <p className="text-label text-muted-foreground/50">Funnel steps require performance data for this creative.</p>
+        <p className="text-label text-muted-foreground/50">
+          {emptyReason ?? "Funnel steps require performance data for this creative."}
+        </p>
       </div>
     );
   }
@@ -647,6 +656,10 @@ export interface CreativeExpandDialogProps {
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
   /** Performance row for this cell — used to render the Funnel tab. */
   perfRow?: CellPerformanceRow | null;
+  /** Cause-specific empty-state text per tab (§1.4 honesty: "file never imported" vs "imported but no rows for this cell" vs "account-level grain only" each need a different remedy). */
+  demographicEmptyReason?: string | null;
+  placementsEmptyReason?: string | null;
+  funnelEmptyReason?: string | null;
 }
 
 export function CreativeExpandDialog({
@@ -654,6 +667,9 @@ export function CreativeExpandDialog({
   demographic = [], placements = [],
   expandFooter, unmapped, onUploadCreatives, onSegmentClick,
   perfRow = null,
+  demographicEmptyReason = null,
+  placementsEmptyReason = null,
+  funnelEmptyReason = null,
 }: CreativeExpandDialogProps) {
   const [tab, setTab] = useState<Tab>("overview");
 
@@ -732,9 +748,9 @@ export function CreativeExpandDialog({
               )}
 
               {tab === "overview"     && <OverviewTab      data={data} />}
-              {tab === "demographics" && <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} />}
-              {tab === "placements"   && <PlacementsTab    rows={placements} />}
-              {tab === "funnel"       && <FunnelTab        perfRow={perfRow} />}
+              {tab === "demographics" && <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} emptyReason={demographicEmptyReason} />}
+              {tab === "placements"   && <PlacementsTab    rows={placements} emptyReason={placementsEmptyReason} />}
+              {tab === "funnel"       && <FunnelTab        perfRow={perfRow} emptyReason={funnelEmptyReason} />}
             </div>
 
             {/* Footer */}

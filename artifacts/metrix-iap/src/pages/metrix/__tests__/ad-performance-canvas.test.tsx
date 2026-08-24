@@ -66,6 +66,7 @@ function fakeSummary(current: AnalysisSummaryTotals, prior: AnalysisSummaryTotal
     demographic_rows: [],
     placement_rows: [],
     concept_rows: [],
+    data_coverage: null,
   };
 }
 
