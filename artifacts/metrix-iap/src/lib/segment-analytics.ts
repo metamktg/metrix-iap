@@ -181,12 +181,67 @@ export const LOW_SIGNAL_IMPRESSIONS = 1000;
 /** Below this share of scoped spend a segment reads as under-tested. */
 export const LOW_SIGNAL_SPEND_SHARE = 0.02;
 
+/**
+ * Signal classification is three-state, not two:
+ *  - "ok"  — enough impressions/spend for a stable read.
+ *  - "low" — measured, but thin (few impressions or a tiny spend share).
+ *  - "insufficient_coverage" — the DEMOGRAPHIC SOURCE ITSELF covers too
+ *    little of the account's spend for ANY segment classification to be
+ *    trustworthy (the run's measured join coverage is below the server's
+ *    threshold). A "signal ✓" computed from 1% of spend is fabricated
+ *    confidence — this state exists so no surface can render one.
+ * `low` is kept as a derived boolean (true for both non-ok states) so
+ * existing styling call sites stay correct.
+ */
+export type SignalState = "ok" | "low" | "insufficient_coverage";
+
 export interface SegmentSignal {
+  state: SignalState;
   low: boolean;
   reasons: string[];
 }
 
-export function assessSegmentSignal(totals: SegmentRawTotals, scopedTotals: SegmentRawTotals): SegmentSignal {
+/** Subset of the analysis summary's data_coverage the client needs for signal gating. */
+export interface DemographicCoverageInput {
+  spend_coverage_pct: number | null;
+  below_threshold: boolean;
+  note: string | null;
+}
+
+/**
+ * Picks the demographic class's coverage entry out of an analysis summary's
+ * data_coverage (null when coverage was never measured — legacy runs,
+ * importer accounts — in which case signal gating falls back to the
+ * per-segment heuristics alone).
+ */
+export function demographicCoverageOf(
+  dataCoverage: { classes?: { report_class?: string; spend_coverage_pct?: number | null; below_threshold?: boolean; note?: string | null }[] } | null | undefined,
+): DemographicCoverageInput | null {
+  const cls = dataCoverage?.classes?.find((c) => c.report_class === "demographic");
+  if (!cls) return null;
+  return {
+    spend_coverage_pct: cls.spend_coverage_pct ?? null,
+    below_threshold: cls.below_threshold ?? false,
+    note: cls.note ?? null,
+  };
+}
+
+export function assessSegmentSignal(
+  totals: SegmentRawTotals,
+  scopedTotals: SegmentRawTotals,
+  demoCoverage?: DemographicCoverageInput | null,
+): SegmentSignal {
+  if (demoCoverage?.below_threshold) {
+    const pct = demoCoverage.spend_coverage_pct;
+    return {
+      state: "insufficient_coverage",
+      low: true,
+      reasons: [
+        `Demographic data covers ${pct != null ? `only ${pct}%` : "too little"} of this account's spend — not enough attributable spend to classify any segment as signal. ` +
+          (demoCoverage.note ?? "Re-export the Demographics report from Meta covering all ads for this window."),
+      ],
+    };
+  }
   const reasons: string[] = [];
   if (totals.impressions != null && totals.impressions < LOW_SIGNAL_IMPRESSIONS) {
     reasons.push(`Only ${Math.round(totals.impressions).toLocaleString("en-US")} impressions — below the ${LOW_SIGNAL_IMPRESSIONS.toLocaleString("en-US")} needed for a stable read.`);
@@ -199,7 +254,7 @@ export function assessSegmentSignal(totals: SegmentRawTotals, scopedTotals: Segm
   ) {
     reasons.push(`Only ${((totals.spend / scopedTotals.spend) * 100).toFixed(1)}% of scoped spend landed on this segment.`);
   }
-  return { low: reasons.length > 0, reasons };
+  return { state: reasons.length > 0 ? "low" : "ok", low: reasons.length > 0, reasons };
 }
 
 // ─── Attribution join (segment → cells → variables) ───────────────────
@@ -401,7 +456,8 @@ export function computeSegmentDrilldown(
   analysis: AnalysisData,
   mst: MST | null | undefined,
   seg: SegmentId,
-  cellIds: string[] | null
+  cellIds: string[] | null,
+  demoCoverage?: DemographicCoverageInput | null,
 ): SegmentDrilldownData {
   const scoped = scopeDemographicRows(analysis.demographic_registration_signal ?? [], cellIds);
   const segRows = rowsForSegment(scoped, seg);
@@ -410,7 +466,7 @@ export function computeSegmentDrilldown(
     segment: seg,
     totals,
     derived: deriveSegmentMetrics(totals),
-    signal: assessSegmentSignal(totals, computeSegmentTotals(scoped)),
+    signal: assessSegmentSignal(totals, computeSegmentTotals(scoped), demoCoverage),
     attribution: computeSegmentAttribution(analysis, mst, seg, cellIds),
     placements: { available: false, entries: [] },
   };

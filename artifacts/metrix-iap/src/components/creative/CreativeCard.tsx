@@ -229,6 +229,9 @@ export function CreativeCard({
   onUploadCreative,
   onSegmentClick,
   perfRow,
+  demographicEmptyReason,
+  placementsEmptyReason,
+  funnelEmptyReason,
 }: {
   data: CreativeCardData;
   className?: string;
@@ -242,6 +245,10 @@ export function CreativeCard({
   onFullBreakdownClick?: () => void;
   /** Performance row for the Funnel tab in the expand dialog. */
   perfRow?: import("@/lib/data/seedTypes").CellPerformanceRow | null;
+  /** Cause-specific empty-state text forwarded to the expand dialog tabs. */
+  demographicEmptyReason?: string | null;
+  placementsEmptyReason?: string | null;
+  funnelEmptyReason?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const openDialog = useCallback(() => setOpen(true), []);
@@ -378,6 +385,9 @@ export function CreativeCard({
         onUploadCreatives={onUploadCreatives}
         onSegmentClick={onSegmentClick}
         perfRow={perfRow}
+        demographicEmptyReason={demographicEmptyReason}
+        placementsEmptyReason={placementsEmptyReason}
+        funnelEmptyReason={funnelEmptyReason}
       />
     </>
   );

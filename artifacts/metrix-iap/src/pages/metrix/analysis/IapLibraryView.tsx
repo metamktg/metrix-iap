@@ -44,6 +44,7 @@ import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { ConceptFamilyView } from "@/components/creative/ConceptFamilyView";
 import { cardFromCell, libraryCellById } from "@/lib/creative-assembly";
+import { demographicEmptyReasonFor, placementsEmptyReasonFor } from "@/lib/creative-empty-reasons";
 import { groupByConceptFamily } from "@/lib/concept-grouping";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
@@ -691,6 +692,8 @@ export function IapLibraryView() {
                                       unmapped={unmappedCellIds.has(row.cell_id)}
                                       demographic={demoByCell.get(row.cell_id) ?? []}
                                       placements={allPlacements}
+                                      demographicEmptyReason={demographicEmptyReasonFor(a?.demographic_registration_signal ?? [], row.cell_id)}
+                                      placementsEmptyReason={placementsEmptyReasonFor(allPlacements)}
                                       onUploadCreatives={() => setCreativeLibraryOpen(true)}
                                       onUploadCreative={adAccountId ? (cellId) => setUploadCellId(cellId) : undefined}
                                       onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
@@ -958,6 +961,8 @@ export function IapLibraryView() {
                               unmapped={unmappedCellIds.has(row.cell_id)}
                               demographic={demoByCell.get(row.cell_id) ?? []}
                               placements={allPlacements}
+                              demographicEmptyReason={demographicEmptyReasonFor(a?.demographic_registration_signal ?? [], row.cell_id)}
+                              placementsEmptyReason={placementsEmptyReasonFor(allPlacements)}
                               onUploadCreatives={() => setCreativeLibraryOpen(true)}
                               onUploadCreative={adAccountId ? (cellId) => setUploadCellId(cellId) : undefined}
                               onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}

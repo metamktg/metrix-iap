@@ -13,6 +13,9 @@ import { TYPE } from "../typography";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { useQuery } from "@tanstack/react-query";
+import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
+import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
@@ -36,7 +39,7 @@ import {
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import {
   listSegments, computeSegmentTotals, deriveSegmentMetrics,
-  assessSegmentSignal, computeSegmentAttribution,
+  assessSegmentSignal, computeSegmentAttribution, demographicCoverageOf,
   segmentLabel, segmentKey, scopeDemographicRows, LOW_SIGNAL_SPEND_SHARE,
   type SegmentId, type SegmentRawTotals, type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
@@ -550,10 +553,14 @@ function AudienceSegmentTile({
                 className={cn(
                   "shrink-0 rounded border px-1.5 py-0.5 cursor-default",
                   TYPE.label,
-                  signal.low ? "border-amber-400/30 bg-amber-400/[0.08] text-amber-400" : "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-400",
+                  signal.state === "insufficient_coverage"
+                    ? "border-border/60 bg-white/[0.04] text-muted-foreground/70"
+                    : signal.low
+                    ? "border-amber-400/30 bg-amber-400/[0.08] text-amber-400"
+                    : "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-400",
                 )}
               >
-                {signal.low ? "low signal" : "signal ✓"}
+                {signal.state === "insufficient_coverage" ? "insufficient join coverage" : signal.low ? "low signal" : "signal ✓"}
                 <span className="sr-only">{` — ${signal.low ? signal.reasons.join(" ") : "Sufficient spend and impressions for a reliable read."}`}</span>
               </span>
             </TooltipTrigger>
@@ -752,6 +759,16 @@ function CoverageMatrix({ rows, profiles }: { rows: { pillar: MessagePillar; cel
 export function AvatarsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
+  // Measured demographic join coverage from the latest successful analysis
+  // run — gates segment signal classification (see assessSegmentSignal).
+  const { data: allSummary } = useQuery({
+    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", "all"),
+    enabled: !!adAccountId,
+  });
+  const demoCoverage = useMemo(
+    () => demographicCoverageOf(allSummary?.data_coverage ?? null),
+    [allSummary],
+  );
   const account = getAdAccount(seed, adAccountId);
   const [, navigate] = useLocation();
 
@@ -896,13 +913,13 @@ export function AvatarsView() {
       const segRows = scoped.filter((r) => r.Age === seg.age && r.Gender === seg.gender);
       const totals = computeSegmentTotals(segRows);
       const derived = deriveSegmentMetrics(totals);
-      const signal = assessSegmentSignal(totals, scopedTotals);
+      const signal = assessSegmentSignal(totals, scopedTotals, demoCoverage);
       const attribution = computeSegmentAttribution(scopedAnalysis, mst, seg, null);
       const bestVariableCode = attribution.available && attribution.variables.length > 0 ? attribution.variables[0].code : null;
       result.set(segmentKey(seg), { totals, derived, signal, bestVariableCode });
     }
     return result;
-  }, [scopedAnalysis, mst, segmentList]);
+  }, [scopedAnalysis, mst, segmentList, demoCoverage]);
 
   const hypothesesByProfile = useMemo(() => {
     const hyps = strategyData?.active_hypotheses ?? [];
@@ -1052,6 +1069,7 @@ export function AvatarsView() {
 
               {segmentList.length > 0 && (
                 <SectionCard title="Audience segments" desc="Demographic signal · performance + confidence · explore">
+                  <DataCoverageBanner coverage={demoCoverage} className="mb-3" />
                   <FoldedGrid
                     items={segmentList.filter((seg) => segmentStats.has(segmentKey(seg)))}
                     limit={6}

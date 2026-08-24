@@ -4401,6 +4401,36 @@ components:
         link_clicks: { type: number }
         results: { type: number }
       required: [date, spend, impressions, link_clicks, results]
+    ReportClassCoverage:
+      type: object
+      description: Join coverage measured for one report class (upload slot) at analysis time — how much of the account's daily-attributable activity this class's rows represent.
+      properties:
+        report_class:
+          type: string
+          enum: [demographic, device_placement, ad_summary, conversion_device]
+        rows_scoped: { type: integer, description: "Rows from this class inside the analysis window." }
+        distinct_ads: { type: integer, description: "Distinct ad names present in this class's scoped rows." }
+        spend: { type: number, nullable: true, description: "Spend carried by this class's scoped rows; null when the class never carries spend (e.g. conversion_device)." }
+        spend_coverage_pct: { type: number, nullable: true, description: "spend as % of the run's daily-attributable baseline spend." }
+        ad_coverage_pct: { type: number, nullable: true, description: "distinct_ads as % of the baseline's distinct ads." }
+        aggregate_shape: { type: boolean, description: "True when the file is a whole-period aggregate export (excluded from daily totals, used for metadata/cross-checks only)." }
+        below_threshold: { type: boolean, description: "True when joined-spend coverage falls below threshold_pct — surfaces must warn and downgrade signal classification." }
+        note: { type: string, nullable: true, description: "Cause + remedy text, populated when below_threshold or aggregate_shape." }
+      required: [report_class, rows_scoped, distinct_ads, spend, spend_coverage_pct, ad_coverage_pct, aggregate_shape, below_threshold, note]
+    AnalysisDataCoverage:
+      type: object
+      description: Per-report-class join coverage measured by the latest successful manual analysis run — the degraded-data honesty layer. Null for accounts without manual runs or legacy runs predating coverage measurement.
+      properties:
+        window:
+          $ref: "#/components/schemas/AnalysisSummaryWindow"
+        baseline_spend: { type: number, description: "Sum of spend across the run's merged daily ad rows — the daily-attributable baseline." }
+        baseline_distinct_ads: { type: integer }
+        threshold_pct: { type: number, description: "Coverage % below which a class is not trustworthy enough to classify segments from." }
+        classes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportClassCoverage"
+      required: [window, baseline_spend, baseline_distinct_ads, threshold_pct, classes]
     AnalysisSummaryResult:
       type: object
       properties:
@@ -4445,7 +4475,12 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AnalysisSummaryConceptRow"
-      required: [preset, available_window, active_window, totals, daily, prior_totals, prior_window, demographic_rows, placement_rows, concept_rows]
+        data_coverage:
+          allOf:
+            - $ref: "#/components/schemas/AnalysisDataCoverage"
+          nullable: true
+          description: Join coverage from the latest successful manual analysis run; null when no manual run has measured coverage for this account.
+      required: [preset, available_window, active_window, totals, daily, prior_totals, prior_window, demographic_rows, placement_rows, concept_rows, data_coverage]
     AccountAnalysisDataWindow:
       type: object
       required: [label, start, end, spend, rows]

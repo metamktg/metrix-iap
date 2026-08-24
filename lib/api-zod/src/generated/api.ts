@@ -561,7 +561,27 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
   "spend": zod.number(),
   "results": zod.number(),
   "link_clicks": zod.number()
-}))
+})),
+  "data_coverage": zod.object({
+  "window": zod.object({
+  "start": zod.string().describe('Start date (YYYY-MM-DD)'),
+  "end": zod.string().describe('End date (YYYY-MM-DD)')
+}),
+  "baseline_spend": zod.number().describe('Sum of spend across the run\'s merged daily ad rows — the daily-attributable baseline.'),
+  "baseline_distinct_ads": zod.number(),
+  "threshold_pct": zod.number().describe('Coverage % below which a class is not trustworthy enough to classify segments from.'),
+  "classes": zod.array(zod.object({
+  "report_class": zod.enum(['demographic', 'device_placement', 'ad_summary', 'conversion_device']),
+  "rows_scoped": zod.number().describe('Rows from this class inside the analysis window.'),
+  "distinct_ads": zod.number().describe('Distinct ad names present in this class\'s scoped rows.'),
+  "spend": zod.number().nullable().describe('Spend carried by this class\'s scoped rows; null when the class never carries spend (e.g. conversion_device).'),
+  "spend_coverage_pct": zod.number().nullable().describe('spend as % of the run\'s daily-attributable baseline spend.'),
+  "ad_coverage_pct": zod.number().nullable().describe('distinct_ads as % of the baseline\'s distinct ads.'),
+  "aggregate_shape": zod.boolean().describe('True when the file is a whole-period aggregate export (excluded from daily totals, used for metadata\/cross-checks only).'),
+  "below_threshold": zod.boolean().describe('True when joined-spend coverage falls below threshold_pct — surfaces must warn and downgrade signal classification.'),
+  "note": zod.string().nullable().describe('Cause + remedy text, populated when below_threshold or aggregate_shape.')
+}).describe('Join coverage measured for one report class (upload slot) at analysis time — how much of the account\'s daily-attributable activity this class\'s rows represent.'))
+}).describe('Per-report-class join coverage measured by the latest successful manual analysis run — the degraded-data honesty layer. Null for accounts without manual runs or legacy runs predating coverage measurement.').nullable().describe('Join coverage from the latest successful manual analysis run; null when no manual run has measured coverage for this account.')
 })
 
 
@@ -651,7 +671,27 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
   "spend": zod.number(),
   "results": zod.number(),
   "link_clicks": zod.number()
-}))
+})),
+  "data_coverage": zod.object({
+  "window": zod.object({
+  "start": zod.string().describe('Start date (YYYY-MM-DD)'),
+  "end": zod.string().describe('End date (YYYY-MM-DD)')
+}),
+  "baseline_spend": zod.number().describe('Sum of spend across the run\'s merged daily ad rows — the daily-attributable baseline.'),
+  "baseline_distinct_ads": zod.number(),
+  "threshold_pct": zod.number().describe('Coverage % below which a class is not trustworthy enough to classify segments from.'),
+  "classes": zod.array(zod.object({
+  "report_class": zod.enum(['demographic', 'device_placement', 'ad_summary', 'conversion_device']),
+  "rows_scoped": zod.number().describe('Rows from this class inside the analysis window.'),
+  "distinct_ads": zod.number().describe('Distinct ad names present in this class\'s scoped rows.'),
+  "spend": zod.number().nullable().describe('Spend carried by this class\'s scoped rows; null when the class never carries spend (e.g. conversion_device).'),
+  "spend_coverage_pct": zod.number().nullable().describe('spend as % of the run\'s daily-attributable baseline spend.'),
+  "ad_coverage_pct": zod.number().nullable().describe('distinct_ads as % of the baseline\'s distinct ads.'),
+  "aggregate_shape": zod.boolean().describe('True when the file is a whole-period aggregate export (excluded from daily totals, used for metadata\/cross-checks only).'),
+  "below_threshold": zod.boolean().describe('True when joined-spend coverage falls below threshold_pct — surfaces must warn and downgrade signal classification.'),
+  "note": zod.string().nullable().describe('Cause + remedy text, populated when below_threshold or aggregate_shape.')
+}).describe('Join coverage measured for one report class (upload slot) at analysis time — how much of the account\'s daily-attributable activity this class\'s rows represent.'))
+}).describe('Per-report-class join coverage measured by the latest successful manual analysis run — the degraded-data honesty layer. Null for accounts without manual runs or legacy runs predating coverage measurement.').nullable().describe('Join coverage from the latest successful manual analysis run; null when no manual run has measured coverage for this account.')
 })
 
 
@@ -763,7 +803,27 @@ export const GetAnalysisSummaryResponse = zod.object({
   "spend": zod.number(),
   "results": zod.number(),
   "link_clicks": zod.number()
-}))
+})),
+  "data_coverage": zod.object({
+  "window": zod.object({
+  "start": zod.string().describe('Start date (YYYY-MM-DD)'),
+  "end": zod.string().describe('End date (YYYY-MM-DD)')
+}),
+  "baseline_spend": zod.number().describe('Sum of spend across the run\'s merged daily ad rows — the daily-attributable baseline.'),
+  "baseline_distinct_ads": zod.number(),
+  "threshold_pct": zod.number().describe('Coverage % below which a class is not trustworthy enough to classify segments from.'),
+  "classes": zod.array(zod.object({
+  "report_class": zod.enum(['demographic', 'device_placement', 'ad_summary', 'conversion_device']),
+  "rows_scoped": zod.number().describe('Rows from this class inside the analysis window.'),
+  "distinct_ads": zod.number().describe('Distinct ad names present in this class\'s scoped rows.'),
+  "spend": zod.number().nullable().describe('Spend carried by this class\'s scoped rows; null when the class never carries spend (e.g. conversion_device).'),
+  "spend_coverage_pct": zod.number().nullable().describe('spend as % of the run\'s daily-attributable baseline spend.'),
+  "ad_coverage_pct": zod.number().nullable().describe('distinct_ads as % of the baseline\'s distinct ads.'),
+  "aggregate_shape": zod.boolean().describe('True when the file is a whole-period aggregate export (excluded from daily totals, used for metadata\/cross-checks only).'),
+  "below_threshold": zod.boolean().describe('True when joined-spend coverage falls below threshold_pct — surfaces must warn and downgrade signal classification.'),
+  "note": zod.string().nullable().describe('Cause + remedy text, populated when below_threshold or aggregate_shape.')
+}).describe('Join coverage measured for one report class (upload slot) at analysis time — how much of the account\'s daily-attributable activity this class\'s rows represent.'))
+}).describe('Per-report-class join coverage measured by the latest successful manual analysis run — the degraded-data honesty layer. Null for accounts without manual runs or legacy runs predating coverage measurement.').nullable().describe('Join coverage from the latest successful manual analysis run; null when no manual run has measured coverage for this account.')
 })
 
 
