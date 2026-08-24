@@ -203,8 +203,11 @@ parser/merge code.
 - **Category:** Fix-Now for the same-bytes case (silent double-count risk); the
   overlapping-window (different bytes) case needs product semantics and stays open in the
   audit doc.
-- **Resolution:** pending this session (staging-time md5 check against currently-staged files
-  of the same kind → 409 with "already staged" message).
+- **Resolution (implemented):** `manual_imports.content_md5` (hex md5, stored at staging;
+  schema add applied live); staging a byte-identical file while a same-kind copy is still
+  `status='staged'` returns 409 naming the already-staged file and the double-count
+  consequence. Different-bytes files per slot and re-staging processed files stay legal.
+  Integration-tested in `manualAnalysisRerunIdempotency.test.ts`.
 
 ## BUG-10 — Fuzzy creative→ad matching maps seven different creatives to an ad named "1"
 
@@ -219,8 +222,12 @@ parser/merge code.
   a bare-numeric ad name can win on incidental digit tokens.
 - **Category:** Fix-Now (false joins violate the honesty invariant; the ad_names mapping is
   user-correctable but defaults must be honest).
-- **Resolution:** planned this session — minimum-signal guard in the fuzzy matcher (never
-  auto-match an all-numeric/1-character ad name via fuzzy; require alphabetic token overlap),
-  leaving such files unmapped (visible, correctable) instead of wrongly mapped.
+- **Resolution (implemented):** `MIN_CONTAINMENT_LENGTH = 5` in `adNameMatch.ts` — the
+  substring-containment fast path (score ≥ 0.75) now requires the contained side to be at
+  least 5 normalized characters; shorter candidates fall through to bigram/token scores,
+  which rate incidental digit overlap near zero, so the file stays unmapped (visible and
+  user-correctable). Legit short names can still surface as a flagged "guess" via token
+  overlap, never as a confident match. Regression tests in `adNameMatch.test.ts` use the
+  real C1A… filename against an ad named "1".
 - **Verification evidence:** live `manual_imports.ad_names` rows for account
   `manual_9JGXU_AQJjxJ` + `ads`/`ad_performance` rows for ad name "1".

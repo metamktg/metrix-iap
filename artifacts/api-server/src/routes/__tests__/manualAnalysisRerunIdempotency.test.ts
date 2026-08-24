@@ -300,4 +300,39 @@ describe("manual analysis re-run idempotency", () => {
     expect(warnings.some((w) => w.includes("normalized to YYYY-MM-DD"))).toBe(true);
     expect(warnings.some((w) => w.includes("[Re-run] Replaced"))).toBe(true);
   }, 120_000);
+
+  it("rejects staging the byte-identical file twice into the same slot (409), while different bytes stay legal", async () => {
+    // Same-bytes double-staging would double-count every row at analysis
+    // time (accumulate() sums both copies into the same buckets) — observed
+    // on a real account where the identical placement export was staged
+    // twice. Different-bytes files per slot remain the legitimate
+    // multi-file-per-slot workflow.
+    const accountId = await createManualAccount(`Rerun Dedup Test ${Date.now()}`);
+    try {
+      const csv = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS, [{ day: "2026-04-13", adName: AD, spend: "10.00" }]);
+      await stageCsv(accountId, "performance_demo_csv", csv);
+
+      const dupRes = await fetch(`${baseUrl}/api/metrix/accounts/${accountId}/manual-imports`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Cookie: `${SESSION_COOKIE}=${adminToken}` },
+        body: JSON.stringify({
+          kind: "performance_demo_csv",
+          filename: `rerun-dedup-copy-${Date.now()}.csv`,
+          content_base64: Buffer.from(csv, "utf8").toString("base64"),
+        }),
+      });
+      expect(dupRes.status).toBe(409);
+      const dupBody = (await dupRes.json()) as { message: string };
+      expect(dupBody.message).toContain("already staged");
+      expect(dupBody.message).toContain("double-count");
+
+      // A different-bytes file for the same slot still stages fine.
+      const otherCsv = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS, [{ day: "2026-04-14", adName: AD, spend: "11.00" }]);
+      await stageCsv(accountId, "performance_demo_csv", otherCsv);
+    } finally {
+      const supabase = getSupabase();
+      await supabase.from("manual_imports").delete().eq("account_id", accountId);
+      await supabase.from("ad_accounts").delete().eq("id", accountId);
+    }
+  }, 60_000);
 });

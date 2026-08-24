@@ -126,8 +126,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The byte-identical file is already staged for this slot — staging it twice would double-count its rows at analysis time. Remove the staged copy first to replace it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "413":
           description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: The file failed upload-time validation (unreadable, wrong report class, missing required columns, no data rows, or unusable delivery metrics).
           content:
             application/json:
               schema:

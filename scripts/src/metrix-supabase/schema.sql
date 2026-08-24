@@ -818,6 +818,14 @@ alter table if exists manual_analysis_runs add column if not exists objective_fl
 -- downgrade signal classification on under-covered report classes.
 alter table if exists manual_analysis_runs add column if not exists coverage jsonb;
 
+-- Content hash for staged uploads (hex md5, nullable on legacy rows).
+-- Staging the byte-identical file twice into the same slot while both are
+-- status='staged' is always an error (analysis would double-count its rows)
+-- and is rejected at upload with 409; different-bytes files per slot stay
+-- legal (multi-file-per-slot covers disjoint windows), and re-staging a
+-- 'processed' file for a re-run stays legal.
+alter table if exists manual_imports add column if not exists content_md5 text;
+
 -- ─────────────────────────────────────────────────────────────────────
 -- Run-tagged history for analysis rollups (analysis-run scoping).
 --
