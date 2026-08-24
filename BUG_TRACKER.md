@@ -390,3 +390,24 @@ parser/merge code.
 - Chain state verified against live data: all five required completeness surfaces populated
   post-rebuild; the Aug 23 strategy/briefs/deconstruct runs all succeeded but are stale
   relative to the corrected analysis — stale-stage detection will prompt regeneration.
+
+## BUG-21 — Fuzzy column inference maps configuration columns onto ID/name canonicals
+
+- **Symptom:** the AAFE ad-summary export ("AAFE---New-Owned-Ads-Jul-1-2026-Aug-19-2026.csv",
+  staged 2026-08-24 21:53 UTC) carried `Ad set budget` / `Ad set budget type` (campaign
+  configuration) but no ID or name columns. The Jaccard inference promoted `Ad set budget`
+  → `Ad set ID` at 50% ("please verify") — currency amounts mapped where object IDs belong
+  — and the unknown-column pass suggested `Ad set budget type` might be `Ad set name`.
+- **Root cause:** token similarity is structurally misleading for configuration columns:
+  `Ad set budget` shares its entity words (ad/set) with every `Ad set *` canonical, so it
+  always clears the 0.5 inference threshold against whichever `Ad set` column is missing,
+  despite naming a different concept entirely. No downstream contamination this time —
+  verified live that the engine never reads the `Ad set ID` breakdown — but the same
+  mechanism could promote `Campaign budget` → `Campaign name` (a bucket-key column) on a
+  worse-shaped export.
+- **Category:** Fix-Now (a "please verify" hedge on a mapping that is *never* correct is
+  exactly the warning-channel erosion BUG-20 targets).
+- **Resolution (implemented):** `CONFLICTING_CONCEPT_TOKENS` (budget/bid/schedule/delivery/
+  objective/status/cap) veto both `inferColumnMapping` promotion and
+  `suggestCanonicalForUnknown` suggestions when the token appears on the header side only.
+  Such headers stay honestly unmapped. Tests in `iapCsvWarningSignal.test.ts`.
