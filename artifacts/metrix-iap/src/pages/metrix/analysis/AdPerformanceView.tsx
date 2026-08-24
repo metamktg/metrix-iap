@@ -364,14 +364,34 @@ const TIER_FILTERS: { id: string; label: string }[] = [
 
 interface TierRow extends ConceptRollupRow {
   lift: number | null;
+  /** Which lift definition `lift` carries for THIS table — one definition
+   *  per render, never mixed per row. */
+  liftKind: "cpa_vs_baseline" | "cvr_vs_book_avg";
   bucket: ScalingBucket | null;
   bucketEntry: string | null;
 }
 
-/** CVR lift against the row's own book average — same formula MstSprintsView
- *  uses for "CVR lift vs avg" (confidence-checked in a prior audit), just
- *  applied across every book present in the rollup rather than one at a time. */
+/**
+ * One lift definition per table:
+ *  - When the rollup carries the engine's Stage-2
+ *    `performance_lift_vs_baseline` (CPA lift vs the book's spend-weighted
+ *    blended baseline, computed at analysis time), that is the canonical
+ *    number — the same one FindingsView's intelligence cards show. It is a
+ *    fraction ("0.1234" = concept CPA 12.34% cheaper than baseline).
+ *  - Legacy rollup rows without Stage-2 fields fall back to the CVR-vs-book-
+ *    average formula (an unweighted mean — kept only because no better
+ *    source exists for those rows, and applied to the WHOLE table so two
+ *    definitions never mix in one column).
+ */
 function computeTierRows(rollup: ConceptRollupRow[], playbook: ScalingPlaybook | null): TierRow[] {
+  const engineLift = (r: ConceptRollupRow): number | null => {
+    const v = r.performance_lift_vs_baseline;
+    if (v == null || v === "") return null;
+    const n = typeof v === "number" ? v : Number(v);
+    return Number.isFinite(n) ? n * 100 : null;
+  };
+  const hasEngineLift = rollup.some((r) => engineLift(r) != null);
+
   const cvrByBook = new Map<string, number[]>();
   for (const r of rollup) {
     if (r.cvr_link_pct != null) {
@@ -384,12 +404,23 @@ function computeTierRows(rollup: ConceptRollupRow[], playbook: ScalingPlaybook |
     return arr.reduce((n, v) => n + v, 0) / arr.length;
   };
   return rollup.map((r) => {
-    const avg = avgCvr(r.book);
-    const lift = avg != null && avg > 0 && r.cvr_link_pct != null
-      ? ((r.cvr_link_pct - avg) / avg) * 100
-      : null;
+    let lift: number | null;
+    if (hasEngineLift) {
+      lift = engineLift(r);
+    } else {
+      const avg = avgCvr(r.book);
+      lift = avg != null && avg > 0 && r.cvr_link_pct != null
+        ? ((r.cvr_link_pct - avg) / avg) * 100
+        : null;
+    }
     const match = bucketEntryForConcept(r.book, r.concept, playbook);
-    return { ...r, lift, bucket: match?.bucket ?? null, bucketEntry: match?.entry ?? null };
+    return {
+      ...r,
+      lift,
+      liftKind: hasEngineLift ? "cpa_vs_baseline" as const : "cvr_vs_book_avg" as const,
+      bucket: match?.bucket ?? null,
+      bucketEntry: match?.entry ?? null,
+    };
   });
 }
 
@@ -557,7 +588,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
               <th className="text-right">Spend</th>
               <th className="text-right">CPA</th>
               <th className="text-right">Link CVR</th>
-              <th className="text-right">Lift vs book avg</th>
+              <th className="text-right">{tierRows[0]?.liftKind === "cpa_vs_baseline" ? "CPA lift vs baseline" : "Lift vs book avg"}</th>
               <th>Confidence</th>
               <th className="text-right">Tier</th>
             </tr>

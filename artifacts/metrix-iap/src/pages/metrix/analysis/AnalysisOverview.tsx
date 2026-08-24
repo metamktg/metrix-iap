@@ -763,6 +763,35 @@ export function AnalysisOverview() {
     enabled: !!queryWindow && !!adAccountId,
   });
 
+  // ── Run-scoped canonical totals ───────────────────────────────────────
+  // When specific runs are selected, the headline tiles must read the same
+  // canonical daterange summary every other surface reads — never a client
+  // re-sum of performance_by_cell, which is empty for manual accounts
+  // (fabricating $0 tiles under a run selection) and bypasses the
+  // account_totals ceiling and the impossible-CTR guard for importer
+  // accounts. Selected runs map to their recorded windows; a multi-run
+  // selection uses the union window, read ONCE from current rows (no
+  // per-run summing, so overlapping run windows can never double-count).
+  const runScopeWindow = useMemo(() => {
+    if (runSelection.allTime) return null;
+    const selected = (analysisRunsData?.runs ?? []).filter(
+      (r) => runSelection.selectedRunIds.includes(r.id) && r.date_start && r.date_end,
+    );
+    if (selected.length === 0) return null;
+    return {
+      start: selected.map((r) => r.date_start!).reduce((m, d) => (d < m ? d : m)),
+      end: selected.map((r) => r.date_end!).reduce((m, d) => (d > m ? d : m)),
+    };
+  }, [runSelection, analysisRunsData]);
+  const { data: runScopeData } = useQuery({
+    ...getGetAnalysisSummaryByDateRangeQueryOptions(
+      adAccountId ?? "",
+      runScopeWindow?.start ?? "",
+      runScopeWindow?.end ?? "",
+    ),
+    enabled: !!adAccountId && !!runScopeWindow,
+  });
+
   // ── Stale-window guard ────────────────────────────────────────────────
   // A persisted window selection can outlive the data it referred to (e.g.
   // after a fresh manual import replaces the dataset). If the selection no
@@ -951,14 +980,20 @@ export function AnalysisOverview() {
         const effectiveGoalCpa = goalCpa ?? medianCpa;
 
         // ── KPI tile catalog (shared by tiles + drill-down modal) ─────
+        // Run-scoped: canonical window totals from the API (see
+        // runScopeWindow above). The client-side cell re-sum survives only
+        // as the last resort for legacy runs with no recorded window —
+        // where it is also the only source that exists.
         const tileCatalog = buildMetricCatalog(
           runScoped
-            ? metricSourceFromApiTotals({
-                total_spend_usd: scopedSpend,
-                total_impressions: scopedImpressions,
-                total_link_clicks: scopedLinkClicks,
-                overall_link_ctr_pct: scopedCtrPct,
-              })
+            ? runScopeData
+              ? metricSourceFromApiTotals(runScopeData.totals)
+              : metricSourceFromApiTotals({
+                  total_spend_usd: scopedSpend,
+                  total_impressions: scopedImpressions,
+                  total_link_clicks: scopedLinkClicks,
+                  overall_link_ctr_pct: scopedCtrPct,
+                })
             : selectedWindow && runData
               ? metricSourceFromApiTotals(runData.totals)
               : metricSourceFromCampaignSummary(summary),
@@ -997,7 +1032,7 @@ export function AnalysisOverview() {
             label: "Budget",
             Icon: Wallet,
             desc: "Spend allocation by result event, concept, and placement.",
-            stat: `${fmtUSD(runScoped ? scopedSpend : summary.total_spend_usd, 0)} analyzed`,
+            stat: `${fmtUSD(runScoped ? (runScopeData?.totals.total_spend_usd ?? scopedSpend) : summary.total_spend_usd, 0)} analyzed`,
           },
         ];
 

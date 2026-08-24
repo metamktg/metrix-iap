@@ -758,6 +758,59 @@ function derivedRates(spend: number | null, impressions: number | null, linkClic
 }
 
 /**
+ * Stable content signature for one parsed CSV row (breakdowns + metrics,
+ * key-sorted so column order differences between files can't hide equality).
+ */
+export function stableRowSignature(r: IapCsvRow): string {
+  const sorted = (o: Record<string, unknown>) =>
+    Object.fromEntries(Object.entries(o).sort(([a], [b]) => (a < b ? -1 : 1)));
+  return JSON.stringify([sorted(r.breakdowns), sorted(r.base), sorted(r.extra)]);
+}
+
+/**
+ * Appends one staged file's parsed rows onto its slot's accumulated rows,
+ * dropping rows that are EXACT duplicates of rows from a previously parsed
+ * file in the same slot (identical breakdowns + identical metric values).
+ *
+ * Why: multi-file-per-slot is additive by design (disjoint weekly exports),
+ * but the same export staged twice in different formats (.xlsx and .csv of
+ * one Sheets document — the real AAFE case) double-counts every metric.
+ * The staging-time md5 guard only catches byte-identical files. An exact
+ * duplicate row carries zero additional information, so dropping it can
+ * never lose data — and it is announced, never silent. Rows are only
+ * deduped ACROSS files: duplicates within one file are preserved (that
+ * would be a source-data property this layer must not editorialize).
+ *
+ * Exported for unit tests.
+ */
+export function appendRowsCrossFileDeduped(
+  target: IapCsvRow[],
+  incoming: IapCsvRow[],
+  seenFromPriorFiles: Set<string>,
+  ctx: { filename: string; label: string; warnings: string[] },
+): void {
+  const thisFileSignatures: string[] = [];
+  let dropped = 0;
+  for (const r of incoming) {
+    const sig = stableRowSignature(r);
+    if (seenFromPriorFiles.has(sig)) {
+      dropped += 1;
+      continue;
+    }
+    thisFileSignatures.push(sig);
+    target.push(r);
+  }
+  for (const sig of thisFileSignatures) seenFromPriorFiles.add(sig);
+  if (dropped > 0) {
+    ctx.warnings.push(
+      `[Duplicate data] ${dropped} row(s) in ${ctx.label} "${ctx.filename}" are exact duplicates of rows in another staged ${ctx.label} file ` +
+        `(identical dates, breakdowns, and metric values) — counted once, never twice. ` +
+        `If both files are the same export saved in different formats, remove one of them.`,
+    );
+  }
+}
+
+/**
  * Merges the three ad-level sources — the required demographic
  * (`scopedDemo`) and device/placement (`scopedPlacement`) exports plus the
  * optional ad_summary export (`scopedSummary`) — into one ad_performance
@@ -1452,13 +1505,14 @@ export async function startManualAnalysis(
       // General) to decide what gets assessed vs flagged. Never blocks.
       const objectiveGroupsPresent = new Set<ObjectiveColumnGroup>();
       const demoRows: IapCsvRow[] = [];
+      const demoRowsSeen = new Set<string>();
       for (const imp of demoImports) {
         try {
           const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Demographics "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "demographic");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
-          demoRows.push(...result.rows);
+          appendRowsCrossFileDeduped(demoRows, result.rows, demoRowsSeen, { filename: String(imp["filename"]), label: "Demographics", warnings: allCsvWarnings });
           for (const w of result.warnings) {
             allCsvWarnings.push(`[Demographics "${imp["filename"]}"] ${w}`);
           }
@@ -1469,13 +1523,14 @@ export async function startManualAnalysis(
       }
       await updateProgress(runId, 20, "Parsing placements export");
       const placementRows: IapCsvRow[] = [];
+      const placementRowsSeen = new Set<string>();
       for (const imp of placementImports) {
         try {
           const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Placements "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "device_placement");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
-          placementRows.push(...result.rows);
+          appendRowsCrossFileDeduped(placementRows, result.rows, placementRowsSeen, { filename: String(imp["filename"]), label: "Placements", warnings: allCsvWarnings });
           for (const w of result.warnings) {
             allCsvWarnings.push(`[Placements "${imp["filename"]}"] ${w}`);
           }
@@ -1491,13 +1546,14 @@ export async function startManualAnalysis(
         await updateProgress(runId, 36, "Parsing ad summary export");
       }
       const summaryRows: IapCsvRow[] = [];
+      const summaryRowsSeen = new Set<string>();
       for (const imp of summaryImports) {
         try {
           const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Ad Summary "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "ad_summary");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
-          summaryRows.push(...result.rows);
+          appendRowsCrossFileDeduped(summaryRows, result.rows, summaryRowsSeen, { filename: String(imp["filename"]), label: "Ad Summary", warnings: allCsvWarnings });
           for (const w of result.warnings) {
             allCsvWarnings.push(`[Ad Summary "${imp["filename"]}"] ${w}`);
           }
@@ -1514,13 +1570,14 @@ export async function startManualAnalysis(
         await updateProgress(runId, 42, "Parsing conversion device export");
       }
       const conversionDeviceRows: IapCsvRow[] = [];
+      const conversionDeviceRowsSeen = new Set<string>();
       for (const imp of conversionDeviceImports) {
         try {
           const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Conversion Device "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "conversion_device");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
-          conversionDeviceRows.push(...result.rows);
+          appendRowsCrossFileDeduped(conversionDeviceRows, result.rows, conversionDeviceRowsSeen, { filename: String(imp["filename"]), label: "Conversion Device", warnings: allCsvWarnings });
           for (const w of result.warnings) {
             allCsvWarnings.push(`[Conversion Device "${imp["filename"]}"] ${w}`);
           }

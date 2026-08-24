@@ -342,6 +342,27 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
 
   // Derived/irrelevant metrics are accepted transparently when present but are
   // never expected: absence is not recorded, warned about, or inferred against.
+  //
+  // Warning-noise policy: a per-column "auto-matched — verify" line is only
+  // worth the reader's attention when there is something to verify. Two match
+  // kinds never are: (a) deterministic normalizations (slug/case-insensitive —
+  // a spreadsheet round-trip mangles "CPM (cost per 1,000 impressions)" into
+  // "CPM _cost per 1_000 impressions_", and normalized-name matching is 1:1,
+  // not a guess), and (b) any match on a DERIVED_OR_IRRELEVANT column, whose
+  // values are recomputed from primitives and never trusted regardless. Those
+  // fold into ONE summary line (full detail stays in mappingSummary / the
+  // Import Confidence report). Semantic alias matches on real primitives and
+  // moderate-confidence inference keep their individual warnings — the real
+  // AAFE re-export produced 12 lines of slug noise that buried the two
+  // warnings that mattered (ID corruption + date normalization).
+  let foldedAutoMatches = 0;
+  let foldedExample: { from: string; to: string } | null = null;
+  const foldAutoMatch = (col: string, headerValue: string): void => {
+    foldedAutoMatches += 1;
+    if (!foldedExample) foldedExample = { from: headerValue, to: resolveCurrencyLabel(col) };
+  };
+  const isDeterministicVia = (via: string): boolean => via === "slug" || via === "case_insensitive";
+
   const acceptedBaseColumns: readonly string[] = [...BASE_METRICS, ...DERIVED_OR_IRRELEVANT_METRICS];
   for (const col of acceptedBaseColumns) {
     if (col === "Amount spent ({ACCOUNT_CURRENCY})") {
@@ -351,9 +372,13 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
         claimedHeaderValues.add(match.headerValue);
         if (match.via !== "exact" && match.via !== "currency") {
           columnMappings[col] = match;
-          warnings.push(
-            `Spend column auto-matched from "${match.headerValue}" (via ${match.via} match).`,
-          );
+          if (isDeterministicVia(match.via)) {
+            foldAutoMatch(col, match.headerValue);
+          } else {
+            warnings.push(
+              `Spend column auto-matched from "${match.headerValue}" (via ${match.via} match).`,
+            );
+          }
         }
         summaryMap.set(col, {
           canonical: col,
@@ -375,9 +400,13 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       claimedHeaderValues.add(match.headerValue);
       if (match.via !== "exact") {
         columnMappings[col] = match;
-        warnings.push(
-          `Metric column "${col}" auto-matched from "${match.headerValue}" (via ${match.via} match).`,
-        );
+        if (DERIVED_OR_IRRELEVANT_METRICS.includes(col) || isDeterministicVia(match.via)) {
+          foldAutoMatch(col, match.headerValue);
+        } else {
+          warnings.push(
+            `Metric column "${col}" auto-matched from "${match.headerValue}" (via ${match.via} match).`,
+          );
+        }
       }
       summaryMap.set(col, {
         canonical: col,
@@ -392,6 +421,15 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       // irrelevant columns (cost-per-X ratios, rankings) are simply skipped.
       missingBaseMetrics.push(col);
     }
+  }
+
+  // (read through a typed local — TS's flow analysis can't see the closure assignment)
+  const foldedExampleValue = foldedExample as { from: string; to: string } | null;
+  if (foldedAutoMatches > 0 && foldedExampleValue) {
+    warnings.push(
+      `${foldedAutoMatches} metric column(s) had spreadsheet-altered names and were matched automatically by normalized name ` +
+        `(e.g. "${foldedExampleValue.from}" → "${foldedExampleValue.to}") — no action needed; the full mapping is in the column report below.`,
+    );
   }
 
   // ── Inference pass: try Jaccard-based auto-mapping for ALL missing columns ─

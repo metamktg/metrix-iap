@@ -296,7 +296,10 @@ parser/merge code.
   `analysis.concept_rollup` — but the client type omits all four and `FindingsView` reads the
   importer-only `concept_intelligence` table.
 - **Category:** Fix-Now-next (computed intelligence invisible for manual accounts).
-- **Resolution:** extend `ConceptRollupRow` + FindingsView source fallback; next session.
+- **Resolution (implemented):** `ConceptRollupRow` now declares the four Stage-2 fields
+  (they always flowed through the loosely-typed seed payload); FindingsView falls back to
+  `analysis.concept_rollup` Stage-2 fields when `concept_intelligence` (importer-only) has
+  no rows — the manual engine's tier/lift/intent/confidence work now renders.
 
 ## BUG-17 — AnalysisOverview headline tiles bypass the canonical totals
 
@@ -304,7 +307,11 @@ parser/merge code.
   the `account_totals` ceiling override AND the impossible-CTR guard; sums to 0 on manual
   accounts (cell perf is importer-only).
 - **Category:** Fix-Now-next (canonical-source violation, §2a.4).
-- **Resolution:** read `campaign_summary`/summary API; next session.
+- **Resolution (implemented):** run-scoped headline tiles (and the Budget jump-off stat) now
+  read the canonical daterange summary for the selected runs' union window (selected runs →
+  recorded windows → ONE canonical query; overlapping windows can never double-count). The
+  client cell re-sum survives only for legacy runs with no recorded window — the only case
+  where no canonical source exists.
 
 ## BUG-18 — Two contradictory concept lift/tier definitions
 
@@ -312,9 +319,74 @@ parser/merge code.
   computes CVR-lift vs an unweighted mean of per-concept CVRs (an average-of-averages the
   codebase explicitly forbids elsewhere) and derives its own tiers.
 - **Category:** Fix-Now-next (same number, two definitions).
-- **Resolution:** adopt the engine's definition; next session, with BUG-16.
+- **Resolution (implemented):** `computeTierRows` prefers the engine's Stage-2
+  `performance_lift_vs_baseline` (CPA lift vs the book's blended baseline — the same number
+  FindingsView shows) whenever the rollup carries it, applied table-wide so definitions
+  never mix in one column; the CVR-vs-unweighted-mean formula survives only for legacy
+  rollups with no Stage-2 fields, and the column header names whichever definition is
+  active ("CPA lift vs baseline" vs "Lift vs book avg").
 
 ## Shipped small honesty fixes from the audit (no separate entries)
 
 - "Top variable —" dash now carries the computed `unavailableReason` as a tooltip instead of
   discarding it (`AvatarsView`).
+
+## BUG-19 — Same-slot files with duplicate content double-count (format variants beat the md5 guard)
+
+- **Symptom:** the first post-deploy AAFE re-run (2026-08-24 20:50 UTC, run `3fc473c6…`)
+  measured demographic coverage at **$1,713.05 across 1,000 rows — exactly 2× the real file**
+  ($856.52 / 500 rows): the re-staged demo `.xlsx` AND the still-staged demo `.csv` (same
+  export, two formats) were both consumed, and multi-file-per-slot merging summed them.
+  Every demographic surface (segment cards, heatmap, audience totals) showed doubled values.
+- **Root cause:** multi-file-per-slot is additive by design (disjoint weekly exports); the
+  BUG-09 staging guard only rejects byte-identical files. Nothing detected logically
+  identical rows across format variants. This is the "overlapping-window (different bytes)"
+  case left open under BUG-09.
+- **Category:** Fix-Now (silent double-counting).
+- **Resolution (implemented):** `appendRowsCrossFileDeduped` in `analysisEngine.ts` — at
+  parse time, rows that are EXACT duplicates of rows from a previously parsed file in the
+  same slot (identical breakdowns + identical metric values, key-order-independent
+  signature) are dropped and announced: `[Duplicate data] N row(s) in "file" are exact
+  duplicates… counted once, never twice`. Rows sharing a key but differing in metrics
+  (campaign-split exports) stay additive; duplicates WITHIN one file are preserved (a
+  source-data property this layer must not editorialize). Applied to all four slots.
+- **Verification evidence:** real files: xlsx+csv demo pair → 500 rows dropped, spend
+  restored to $856.52; unit tests in `iapCsvWarningSignal.test.ts`.
+- **Remediation for the live account:** the 20:50 run's demographic rollups are doubled.
+  After this fix deploys, re-stage placement (+ demo if desired) and re-run — the idempotent
+  rebuild replaces the doubled rows; with the dedupe, even both demo files staged together
+  now produce correct totals.
+
+## BUG-20 — Staging warning panel buries real warnings under mapping noise
+
+- **Symptom:** the AAFE demo CSV staging popup showed ~17 warnings: 12 were "auto-matched
+  (via slug match)" notes for derived/ratio columns (CPM/CTR/CPC/ROAS family — values the
+  server recomputes from primitives and never trusts), plus a spurious `"Amount spent _USD_"
+  mapped with moderate confidence (67%) — please verify` hedge. The two warnings that
+  mattered (ID corruption, date normalization) were at the bottom of the pile.
+- **Root cause:** (a) per-column auto-match warnings fired for every non-exact match, with
+  no distinction between deterministic normalizations (slug/case) and semantic guesses, nor
+  between primitives and recomputed derived columns; (b) `slugifyColumn` STRIPS the
+  `{ACCOUNT_CURRENCY}` placeholder, so the canonical slugs to `amount_spent` while the
+  mangled header slugs to `amount_spent_usd` — the slug pass could never match it and it
+  fell through to a 67% Jaccard inference.
+- **Category:** Fix-Now (a warning channel that trains users to ignore it defeats the
+  honesty invariant).
+- **Resolution (implemented):** deterministic (slug/case-insensitive) matches and any match
+  on a `DERIVED_OR_IRRELEVANT` column fold into ONE summary line naming an example mapping
+  ("no action needed; full mapping in the column report"); semantic alias matches on
+  primitives and moderate-confidence inference keep individual warnings; the currency
+  branch gains a slug-tolerant pattern so `Amount spent _USD_` is a confident slug match.
+  Real-file result: 17 warnings → 5 (1 folded mapping note + Day normalization + 3 ID
+  warnings). Unit tests in `iapCsvWarningSignal.test.ts`.
+
+## Chain continuation (this pass)
+
+- Strategy evidence packs now carry `data_coverage` (the run's measured per-class coverage)
+  with an explicit prompt rule: below-threshold classes are THIN evidence — claims grounded
+  in them must be qualified with the measured percentage and capped at
+  low/validation_required confidence. Prevents regenerated strategy from overtrusting the
+  2%-coverage demographic slice the Aug 23 strategy was silently built on.
+- Chain state verified against live data: all five required completeness surfaces populated
+  post-rebuild; the Aug 23 strategy/briefs/deconstruct runs all succeeded but are stale
+  relative to the corrected analysis — stale-stage detection will prompt regeneration.

@@ -12,7 +12,7 @@ import { useMemo } from "react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
 import { fmtMetric } from "@/lib/normalize";
 import {
   ModuleHeader,
@@ -365,8 +365,29 @@ export function FindingsView() {
   const execSummary: ExecutiveSummary | undefined = intel?.summary?.executive_summary;
   const reportMeta = intel?.summary?.report_metadata;
 
+  const analysis = getAnalysisData(seed, accountId);
   const conceptScores: ConceptScore[] = useMemo(() => {
-    const raw = intel?.concept_scores ?? [];
+    // Primary source: concept_intelligence (importer-authored). Manual
+    // accounts never get those rows — but the manual analysis engine
+    // computes the same Stage-2 fields (intent score, lift, tier,
+    // confidence) onto concept_performance, shipped here as
+    // analysis.concept_rollup. Without this fallback the engine's tier
+    // work was persisted, serialized, and rendered nowhere.
+    const raw: ConceptScore[] = (intel?.concept_scores?.length ?? 0) > 0
+      ? intel!.concept_scores!
+      : (analysis?.concept_rollup ?? []).map((r) => ({
+          book: r.book,
+          concept_code: r.concept,
+          mapped_in_library: r.mapped_in_library,
+          spend: r.spend ?? 0,
+          link_clicks: r.link_clicks ?? 0,
+          results: r.results ?? 0,
+          cpa: r.cpa,
+          buying_intent_score: r.buying_intent_score ?? undefined,
+          performance_lift_vs_baseline: r.performance_lift_vs_baseline ?? undefined,
+          performance_tier: r.performance_tier ?? undefined,
+          confidence_level: r.confidence_level ?? undefined,
+        }));
     return [...raw].sort((a, b) => {
       // Sort by CPA ascending; null CPA goes last
       if (a.cpa == null && b.cpa == null) return 0;
@@ -374,7 +395,7 @@ export function FindingsView() {
       if (b.cpa == null) return -1;
       return a.cpa - b.cpa;
     });
-  }, [intel]);
+  }, [intel, analysis]);
 
   const failurePatterns: FailurePattern[] = intel?.failure_patterns ?? [];
 
