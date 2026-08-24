@@ -657,6 +657,34 @@ export function findColumnInHeader(headers: string[], canonical: string): Column
   return null;
 }
 
+/** Tokens that name a DIFFERENT Meta export concept from any canonical
+ *  column in this spec. A header carrying one of these (where the canonical
+ *  doesn't) shares its entity words with the canonical — "Ad set budget" and
+ *  "Ad set ID" overlap on ad/set — but describes campaign *configuration*,
+ *  not the identifier or metric the canonical means, so token similarity is
+ *  structurally misleading for it. Observed live (AAFE, Aug 24): "Ad set
+ *  budget" auto-promoted to "Ad set ID" at 50%, putting currency amounts
+ *  where object IDs belong and asking the user to "please verify" a mapping
+ *  that is never correct. Such headers must stay unmapped instead. */
+const CONFLICTING_CONCEPT_TOKENS = new Set([
+  "budget",
+  "bid",
+  "bids",
+  "schedule",
+  "scheduling",
+  "delivery",
+  "objective",
+  "status",
+  "cap",
+]);
+
+function hasConflictingConceptToken(headerTokens: Set<string>, canonTokens: Set<string>): boolean {
+  for (const t of headerTokens) {
+    if (CONFLICTING_CONCEPT_TOKENS.has(t) && !canonTokens.has(t)) return true;
+  }
+  return false;
+}
+
 /**
  * Infers the best mapping from a list of unmapped CSV headers to a missing
  * canonical column using Jaccard token similarity on slugified forms.
@@ -671,6 +699,9 @@ export function findColumnInHeader(headers: string[], canonical: string): Column
  *   ≥ 0.75 — high confidence, auto-promote silently
  *   0.50–0.74 — moderate confidence, auto-promote with a warning
  *   < 0.50 — not promoted; canonical stays missing
+ *
+ * Headers whose extra tokens name a conflicting concept (see
+ * CONFLICTING_CONCEPT_TOKENS) are never promoted, regardless of score.
  */
 export function inferColumnMapping(
   unmappedHeaders: string[],
@@ -683,6 +714,7 @@ export function inferColumnMapping(
   for (const h of unmappedHeaders) {
     const hTokens = new Set(slugifyColumn(h).split("_").filter(Boolean));
     if (hTokens.size === 0) continue;
+    if (hasConflictingConceptToken(hTokens, canonTokens)) continue;
     const intersection = [...canonTokens].filter((t) => hTokens.has(t)).length;
     const union = new Set([...canonTokens, ...hTokens]).size;
     const jaccard = union > 0 ? intersection / union : 0;
@@ -721,6 +753,7 @@ export function suggestCanonicalForUnknown(
   let best: { canonical: string; score: number } | null = null;
   for (const canonical of missingCanonicals) {
     const canonTokens = new Set(slugifyColumn(canonical).split("_").filter(Boolean));
+    if (hasConflictingConceptToken(unknownTokens, canonTokens)) continue;
     const intersection = [...unknownTokens].filter((t) => canonTokens.has(t)).length;
     const union = new Set([...unknownTokens, ...canonTokens]).size;
     const jaccard = union > 0 ? intersection / union : 0;

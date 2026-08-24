@@ -13,7 +13,13 @@
 // Pure unit tests — no DB, no network.
 
 import { describe, expect, it } from "vitest";
-import { findColumnInHeader, DEMOGRAPHIC_BREAKDOWN_COLUMNS, BASE_METRICS } from "../iapCsvSpec";
+import {
+  findColumnInHeader,
+  inferColumnMapping,
+  suggestCanonicalForUnknown,
+  DEMOGRAPHIC_BREAKDOWN_COLUMNS,
+  BASE_METRICS,
+} from "../iapCsvSpec";
 import { parseIapCsv, type IapCsvRow } from "../iapCsvParser";
 import { appendRowsCrossFileDeduped, stableRowSignature } from "../analysisEngine";
 
@@ -36,6 +42,36 @@ describe("findColumnInHeader currency slug tolerance", () => {
   it("does not match unrelated columns through the currency slug pattern", () => {
     const match = findColumnInHeader(["Amount refunded _USD_"], "Amount spent ({ACCOUNT_CURRENCY})");
     expect(match).toBeNull();
+  });
+});
+
+// ── Cross-concept inference veto ────────────────────────────────────────
+//
+// Real-account case (AAFE ad-summary export, Aug 24): the export carried
+// "Ad set budget" / "Ad set budget type" (campaign configuration) but no ID
+// or name columns; Jaccard token overlap on ad/set promoted "Ad set budget"
+// to "Ad set ID" at 50% — currency amounts where object IDs belong, plus a
+// "please verify" hedge for a mapping that is never correct.
+
+describe("conflicting-concept inference veto", () => {
+  it('never promotes "Ad set budget" to "Ad set ID", at any score', () => {
+    expect(inferColumnMapping(["Ad set budget"], "Ad set ID")).toBeNull();
+  });
+
+  it('does not suggest "Ad set name" for "Ad set budget type"', () => {
+    expect(suggestCanonicalForUnknown("Ad set budget type", ["Ad set name", "Ad set ID"])).toBeNull();
+  });
+
+  it("still allows genuine renamings that share the concept", () => {
+    const m = inferColumnMapping(["Ad set ID number"], "Ad set ID");
+    expect(m).not.toBeNull();
+    expect(m!.headerValue).toBe("Ad set ID number");
+  });
+
+  it("a conflict token present on BOTH sides does not veto (token is part of the concept)", () => {
+    // Hypothetical canonical containing "budget" would legitimately match a
+    // budget-worded header; the veto only fires on one-sided conflict tokens.
+    expect(suggestCanonicalForUnknown("Daily budget", ["Daily budget amount"])).not.toBeNull();
   });
 });
 
