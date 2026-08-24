@@ -643,6 +643,15 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
 
   const rows: IapCsvRow[] = [];
   const totalsRows: { line: number; base: Record<string, number | string | null> }[] = [];
+  // Meta object-ID breakdowns that arrived corrupted at the source (a
+  // spreadsheet tool re-saved the long ID as a float and exported it in
+  // scientific notation, e.g. "1.20253E+17"). The exact digits are already
+  // gone, so the only safe move — same policy as xlsxToCsv's numeric-cell
+  // guard — is to blank the cell rather than store an ID that could cause
+  // false joins, and say so once per column.
+  const ID_BREAKDOWN_COLUMNS = ["Ad ID", "Ad set ID", "Campaign ID"];
+  const SCI_NOTATION_RE = /^-?\d+(?:[.,]\d+)?[eE][+-]?\d+$/;
+  const idCorruption = new Map<string, { count: number; example: string }>();
   for (let li = 1; li < lines.length; li++) {
     const cells = lines[li]!;
     if (cells.every((c) => c.trim() === "")) continue;
@@ -651,6 +660,14 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     for (const col of spec.breakdownColumns) {
       const idx = breakdownIdx.get(col);
       breakdowns[col] = idx !== undefined ? (cells[idx] ?? "").trim() : "";
+    }
+    for (const idCol of ID_BREAKDOWN_COLUMNS) {
+      const v = breakdowns[idCol];
+      if (v && SCI_NOTATION_RE.test(v)) {
+        breakdowns[idCol] = "";
+        const prior = idCorruption.get(idCol);
+        idCorruption.set(idCol, { count: (prior?.count ?? 0) + 1, example: prior?.example ?? v });
+      }
     }
 
     // "Day" is required on every class and is the column Meta leaves blank on
@@ -699,6 +716,22 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
 
   if (rows.length === 0) {
     throw new IapCsvFormatError("The file has a header row but no data rows.");
+  }
+
+  // Normalize every "Day" value to YYYY-MM-DD before anything downstream
+  // (bucket keys, window math, DB date columns) sees it — see the
+  // normalizeDayValues doc comment for why this must happen here and nowhere
+  // later. Throws IapCsvFormatError on unresolvable/ambiguous formats.
+  normalizeDayValues(rows, warnings);
+
+  for (const [idCol, entry] of idCorruption) {
+    warnings.push(
+      `⚠ "${idCol}" could not be read reliably from this file: ${entry.count} of ${rows.length + totalsRows.length} ` +
+        `row(s) stored it in scientific notation (for example "${entry.example}") — this is what happens when a tool ` +
+        `like Google Sheets re-saves a long Meta ID as a number instead of text. Those cells were left blank rather ` +
+        `than risk an incorrect ID; joins that depend on "${idCol}" will skip these rows. Re-export the source report ` +
+        `as CSV, or format the "${idCol}" column as Text before saving, to preserve the exact value.`,
+    );
   }
 
   // ── Coverage: measure DATA, not headers ───────────────────────────────
@@ -866,4 +899,118 @@ export function toIsoDate(raw: string, context: string): string {
     throw new IapCsvFormatError(`${context}: date "${raw}" is not in YYYY-MM-DD format.`);
   }
   return trimmed;
+}
+
+// ── "Day" date-format normalization ─────────────────────────────────────
+//
+// Meta Ads Manager exports "Day" as YYYY-MM-DD, and every consumer downstream
+// of this parser (aggregation bucket keys, lexicographic min/max window math,
+// the analysis engine's date-window delete, and Postgres `date` columns)
+// assumes exactly that. A file round-tripped through Google Sheets/Excel can
+// instead carry "7/1/2026"-style slash dates. Before this normalization pass
+// existed, such a file poisoned every one of those consumers at once: the
+// same real-world day existed under two different string keys (so buckets
+// didn't merge and the DB's unique key — which compares parsed dates, not
+// strings — rejected the second row), and lexicographic min/max over mixed
+// formats produced a wrong analysis window whose delete pass destroyed
+// neighbouring rows it should have left alone. This is the root cause of the
+// August 2026 AAFE re-ingestion failure ("duplicate key value violates
+// unique constraint ad_performance_...").
+//
+// Policy (honesty invariant — never guess silently):
+//   - YYYY-MM-DD and YYYY/M/D pass through (slash form normalized).
+//   - M/D/YYYY vs D/M/YYYY is disambiguated per FILE from component
+//     evidence: any first component > 12 proves day-first, any second
+//     component > 12 proves month-first. Both kinds present → hard error
+//     (inconsistent file). Neither present in the entire file → hard error
+//     (genuinely ambiguous; the fix is re-exporting with ISO dates), never
+//     a silent guess that could shift rows to wrong months.
+//   - Anything else (Excel serial numbers, two-digit years, datetimes) is a
+//     hard error naming the offending value and the remedy.
+
+const ISO_DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const SLASH_DMY_OR_MDY_RE = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+const SLASH_YMD_RE = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/;
+
+const DAY_FORMAT_REMEDY =
+  "Export the report as CSV directly from Meta Ads Manager (dates stay YYYY-MM-DD), " +
+  "or format the Day column as YYYY-MM-DD before saving from a spreadsheet tool.";
+
+/** Validates y/m/d as a real calendar date and returns zero-padded ISO, throwing with the raw cell named otherwise. */
+function toValidatedIso(y: number, m: number, d: number, raw: string): string {
+  const t = Date.UTC(y, m - 1, d);
+  const roundTrip = new Date(t);
+  if (roundTrip.getUTCFullYear() !== y || roundTrip.getUTCMonth() !== m - 1 || roundTrip.getUTCDate() !== d) {
+    throw new IapCsvFormatError(
+      `The "Day" column contains "${raw}", which is not a real calendar date. ${DAY_FORMAT_REMEDY}`,
+    );
+  }
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+/**
+ * Normalizes every row's "Day" breakdown to YYYY-MM-DD in place, appending a
+ * single summary warning when conversion happened. Exported for unit tests.
+ */
+export function normalizeDayValues(rows: IapCsvRow[], warnings: string[]): void {
+  const slashRows: { row: IapCsvRow; a: number; b: number; y: number; raw: string }[] = [];
+  let ymdConverted = 0;
+  for (const row of rows) {
+    const raw = row.breakdowns["Day"];
+    if (!raw) continue; // blank-Day totals rows never reach `rows`; defensive only
+    if (ISO_DAY_RE.test(raw)) {
+      const [y, m, d] = raw.split("-").map(Number) as [number, number, number];
+      row.breakdowns["Day"] = toValidatedIso(y, m, d, raw);
+      continue;
+    }
+    const ymd = SLASH_YMD_RE.exec(raw);
+    if (ymd) {
+      row.breakdowns["Day"] = toValidatedIso(Number(ymd[1]), Number(ymd[2]), Number(ymd[3]), raw);
+      ymdConverted++;
+      continue;
+    }
+    const slash = SLASH_DMY_OR_MDY_RE.exec(raw);
+    if (slash) {
+      slashRows.push({ row, a: Number(slash[1]), b: Number(slash[2]), y: Number(slash[3]), raw });
+      continue;
+    }
+    const serialHint = /^\d{4,6}$/.test(raw)
+      ? ` This looks like a spreadsheet date serial number — the tool that saved this file stored the date as a raw number.`
+      : "";
+    throw new IapCsvFormatError(
+      `The "Day" column contains "${raw}", which is not a recognized date format.${serialHint} ${DAY_FORMAT_REMEDY}`,
+    );
+  }
+
+  if (slashRows.length > 0) {
+    const firstGT12 = slashRows.some((s) => s.a > 12);
+    const secondGT12 = slashRows.some((s) => s.b > 12);
+    if (firstGT12 && secondGT12) {
+      throw new IapCsvFormatError(
+        `The "Day" column mixes incompatible slash date formats (some rows can only be D/M/YYYY, others only M/D/YYYY). ` +
+          `The file's dates cannot be trusted as-is. ${DAY_FORMAT_REMEDY}`,
+      );
+    }
+    if (!firstGT12 && !secondGT12) {
+      throw new IapCsvFormatError(
+        `The "Day" column uses slash dates (e.g. "${slashRows[0]!.raw}") where every value is ambiguous between ` +
+          `M/D/YYYY and D/M/YYYY. Rather than guess and risk placing rows in the wrong month, Metrix needs unambiguous dates. ${DAY_FORMAT_REMEDY}`,
+      );
+    }
+    const monthFirst = secondGT12;
+    for (const s of slashRows) {
+      const month = monthFirst ? s.a : s.b;
+      const day = monthFirst ? s.b : s.a;
+      s.row.breakdowns["Day"] = toValidatedIso(s.y, month, day, s.raw);
+    }
+  }
+
+  const converted = ymdConverted + slashRows.length;
+  if (converted > 0) {
+    warnings.push(
+      `The "Day" column used ${slashRows.length > 0 ? (slashRows.some((s) => s.a > 12) ? "D/M/YYYY" : "M/D/YYYY") : "YYYY/M/D"} ` +
+        `dates (typically a spreadsheet round-trip artifact) — ${converted} row(s) were normalized to YYYY-MM-DD. ` +
+        `Exporting the report as CSV directly from Meta avoids this conversion.`,
+    );
+  }
 }

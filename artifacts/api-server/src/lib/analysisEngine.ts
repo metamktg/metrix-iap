@@ -924,6 +924,76 @@ export function mergeAdPerformanceBuckets(
 }
 
 /**
+ * Maps merged ad buckets to ad_performance insert rows, enforcing two
+ * invariants BEFORE any DB write happens (so a violation aborts the run with
+ * an actionable message instead of a raw Postgres "duplicate key value
+ * violates unique constraint" — the August 2026 AAFE failure mode):
+ *
+ *   1. Every bucket date is a normalized YYYY-MM-DD string. The parser's
+ *      normalizeDayValues() guarantees this for CSV-sourced rows; this
+ *      assertion is defense-in-depth for any future non-parser data path,
+ *      because an unnormalized date silently corrupts the analysis window
+ *      math and the DB's date-typed unique key.
+ *   2. No two buckets resolve to the same (ad_name, campaign_name,
+ *      result_type, day) tuple — the account-scoped unique key on
+ *      ad_performance. Bucket keys are (campaign, ad, date) strings, so this
+ *      can only happen when two staged files date the same real-world day
+ *      differently; with dates normalized it should be impossible, and if it
+ *      ever fires the message says which row collided.
+ *
+ * Exported for unit testing (same rationale as mergeAdPerformanceBuckets).
+ */
+export function buildAdPerformanceRows(
+  accountId: string,
+  runId: string,
+  adBuckets: Map<string, AggBucket & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>,
+  adCreativeMetadata: Map<string, Record<string, string>>,
+): Record<string, any>[] {
+  const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+  const seenTuples = new Set<string>();
+  return Array.from(adBuckets.values()).map((b) => {
+    if (!ISO_DAY.test(b.date)) {
+      throw new AnalysisError(
+        `Internal consistency check failed: an aggregated ad row for "${b.adName}" carries the non-normalized date "${b.date}". ` +
+          `This should have been normalized at parse time — re-export the file as CSV directly from Meta and re-upload.`,
+        422,
+      );
+    }
+    const tuple = [b.adName, b.campaign, b.resultType, b.date].join("");
+    if (seenTuples.has(tuple)) {
+      throw new AnalysisError(
+        `Internal consistency check failed: two aggregated rows resolved to the same ad/day — ` +
+          `ad "${b.adName}", campaign "${b.campaign}", result type "${b.resultType}", day ${b.date}. ` +
+          `This usually means two staged files represent the same day in different date formats. ` +
+          `Re-export both files as CSV directly from Meta and re-upload.`,
+        422,
+      );
+    }
+    seenTuples.add(tuple);
+    const creativeMeta = adCreativeMetadata.get(b.adName);
+    return {
+      account_id: accountId,
+      campaign_name: b.campaign,
+      ad_set_name: b.adSet || null,
+      ad_name: b.adName,
+      result_type: b.resultType,
+      date_start: b.date,
+      date_end: b.date,
+      spend: b.spend,
+      impressions: b.impressions,
+      reach: b.reach,
+      clicks_all: b.clicksAll,
+      link_clicks: b.linkClicks,
+      results: b.results,
+      ...derivedRates(b.spend, b.impressions, b.linkClicks, b.results),
+      manual_analysis_run_id: runId,
+      extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
+      ad_creative_metadata: creativeMeta && Object.keys(creativeMeta).length > 0 ? creativeMeta : null,
+    };
+  });
+}
+
+/**
  * Builds one variable_performance row's `payload` for a single raw-token
  * aggregate (variable_family: "raw_token" — see the Stage 2 variable-level
  * comment at its call site in startManualAnalysis). Extracted out of the
@@ -1459,28 +1529,28 @@ export async function startManualAnalysis(
       // Full refresh of this manual account's output rows within the
       // selected window — safe because manual accounts are never written
       // to by the offline importer.
+      //
+      // Idempotent-rebuild contract (see replit.md "Architecture decisions"):
+      // each date-scoped rollup table is cleared for [dateStart, dateEnd]
+      // immediately BEFORE its own insert (not all tables up front), so a
+      // failure part-way through leaves not-yet-reached tables' previous
+      // rows intact, and every insert batch is validated (see
+      // buildAdPerformanceRows) before the first destructive delete runs.
+      // Replaced-row counts are collected and surfaced as a run warning so a
+      // re-run that supersedes earlier rows says so instead of silently
+      // overwriting.
       await updateProgress(runId, 62, "Clearing previous data window");
-      const del1 = await supabase
-        .from("ad_performance")
-        .delete()
-        .eq("account_id", accountId)
-        .gte("date_start", dateStart)
-        .lte("date_end", dateEnd);
-      if (del1.error) throw new Error(del1.error.message);
-      for (const table of [
-        "demographic_performance",
-        "placement_performance",
-        "platform_performance",
-        "device_performance",
-      ]) {
+      const replacedByTable = new Map<string, number>();
+      const clearWindow = async (table: string): Promise<void> => {
         const del = await supabase
           .from(table)
-          .delete()
+          .delete({ count: "exact" })
           .eq("account_id", accountId)
           .gte("date_start", dateStart)
           .lte("date_end", dateEnd);
         if (del.error) throw new Error(del.error.message);
-      }
+        if ((del.count ?? 0) > 0) replacedByTable.set(table, del.count!);
+      };
 
       const CHUNK = 500;
       const insertChunked = async (table: string, rows: Record<string, any>[]) => {
@@ -1491,28 +1561,10 @@ export async function startManualAnalysis(
       };
 
       await updateProgress(runId, 68, "Writing ad performance rows");
-      const adRows = Array.from(adBuckets.values()).map((b) => {
-        const creativeMeta = adCreativeMetadata.get(b.adName);
-        return {
-          account_id: accountId,
-          campaign_name: b.campaign,
-          ad_set_name: b.adSet || null,
-          ad_name: b.adName,
-          result_type: b.resultType,
-          date_start: b.date,
-          date_end: b.date,
-          spend: b.spend,
-          impressions: b.impressions,
-          reach: b.reach,
-          clicks_all: b.clicksAll,
-          link_clicks: b.linkClicks,
-          results: b.results,
-          ...derivedRates(b.spend, b.impressions, b.linkClicks, b.results),
-          manual_analysis_run_id: runId,
-          extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
-          ad_creative_metadata: creativeMeta && Object.keys(creativeMeta).length > 0 ? creativeMeta : null,
-        };
-      });
+      // Build (and validate) the batch BEFORE deleting anything, so a
+      // consistency failure aborts with the previous run's rows untouched.
+      const adRows = buildAdPerformanceRows(accountId, runId, adBuckets, adCreativeMetadata);
+      await clearWindow("ad_performance");
       await insertChunked("ad_performance", adRows);
 
       await updateProgress(runId, 78, "Writing concept performance");
@@ -1776,6 +1828,7 @@ export async function startManualAnalysis(
         adds_to_cart_value: b.addsToCartValue,
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
+      await clearWindow("demographic_performance");
       await insertChunked("demographic_performance", demographicRows);
 
       const trackingBasis = (b: { addsToCart: number | null; checkoutsInitiated: number | null; purchases: number | null; spend: number | null; impressions: number | null }) =>
@@ -1801,6 +1854,7 @@ export async function startManualAnalysis(
         tracking_basis: trackingBasis(b),
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
+      await clearWindow("placement_performance");
       await insertChunked("placement_performance", placementRowsOut);
 
       const platformRowsOut = Array.from(platformBuckets.values()).map((b) => ({
@@ -1820,6 +1874,7 @@ export async function startManualAnalysis(
         tracking_basis: trackingBasis(b),
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
+      await clearWindow("platform_performance");
       await insertChunked("platform_performance", platformRowsOut);
 
       const deviceRowsOut = Array.from(deviceBuckets.values()).map((b) => ({
@@ -1872,7 +1927,21 @@ export async function startManualAnalysis(
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
 
+      await clearWindow("device_performance");
       await insertChunked("device_performance", [...deviceRowsOut, ...convDeviceRowsOut]);
+
+      // Surface superseded rows honestly: a re-run over an already-analyzed
+      // window replaces those rows by design (idempotent rebuild), and the
+      // user is told how many, rather than the replacement happening
+      // silently.
+      if (replacedByTable.size > 0) {
+        const totalReplaced = [...replacedByTable.values()].reduce((s, n) => s + n, 0);
+        const detail = [...replacedByTable.entries()].map(([t, n]) => `${t}: ${n}`).join(", ");
+        allCsvWarnings.push(
+          `[Re-run] Replaced ${totalReplaced} previously ingested row(s) from an earlier analysis run in the ` +
+            `${dateStart} – ${dateEnd} window (${detail}). The newly staged files fully supersede the earlier data for this window.`,
+        );
+      }
 
       // ── Signal tables (what the Analysis UI + strategy evidence read) ──
       // Full per-account refresh: the source guard above ensures this
