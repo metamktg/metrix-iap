@@ -111,6 +111,15 @@ export interface AnalysisSummaryResult {
   demographic_rows: AnalysisSummaryDemoRow[];
   placement_rows: AnalysisSummaryPlacementRow[];
   concept_rows: AnalysisSummaryConceptRow[];
+  /**
+   * Join coverage measured by the latest successful manual analysis run
+   * (see computeDataCoverage) — the honesty layer every surface that
+   * aggregates a report class's rows must consult before classifying
+   * segments or rendering confident aggregates. Null for accounts without
+   * manual analysis runs (importer/live-Meta accounts) and legacy runs that
+   * predate coverage measurement.
+   */
+  data_coverage: AnalysisDataCoverage | null;
 }
 
 export class AnalysisError extends Error {
@@ -498,6 +507,7 @@ async function finishRun(
     csvWarnings?: string[];
     objectivesAssessed?: string[];
     objectiveFlags?: string[];
+    coverage?: AnalysisDataCoverage;
   },
 ): Promise<void> {
   const supabase = getSupabase();
@@ -522,6 +532,7 @@ async function finishRun(
       objective_flags: fields.objectiveFlags && fields.objectiveFlags.length > 0
         ? JSON.stringify(fields.objectiveFlags)
         : null,
+      coverage: fields.coverage ?? null,
       finished_at: new Date().toISOString(),
     })
     .eq("id", runId);
@@ -774,6 +785,16 @@ export function mergeAdPerformanceBuckets(
   scopedDemo: IapCsvRow[],
   scopedPlacement: IapCsvRow[],
   scopedSummary: IapCsvRow[],
+  opts?: {
+    /**
+     * True when the ad_summary export is a whole-period aggregate (see
+     * detectAggregateAdSummary): its rows still feed creative metadata, but
+     * are excluded from daily bucket supplements and summary-only daily row
+     * insertion — a whole-period total misdated as one day inflates every
+     * daily surface (the AAFE +41% total-spend bug).
+     */
+    summaryMetadataOnly?: boolean;
+  },
 ): {
   adBuckets: Map<string, AggBucket & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>;
   adCreativeMetadata: Map<string, Record<string, string>>;
@@ -827,15 +848,19 @@ export function mergeAdPerformanceBuckets(
     const adSet = row.breakdowns["Ad set name"] ?? "";
     const adName = row.breakdowns["Ad name"]!;
     const date = row.breakdowns["Day"]!;
-    const key = [campaign, adName, date].join("\u0001");
-    if (!summaryAdBuckets.has(key)) {
-      const bucket = { ...emptyBucket(), campaign, adSet, adName, date };
-      summaryAdBuckets.set(key, bucket);
-      if (campaign === "") {
-        summaryAdBucketsByAdDate.set([adName, date].join("\u0001"), bucket);
+    // A whole-period aggregate export contributes creative metadata only —
+    // its "dates" are the report window start, not real days (see opts doc).
+    if (!opts?.summaryMetadataOnly) {
+      const key = [campaign, adName, date].join("\u0001");
+      if (!summaryAdBuckets.has(key)) {
+        const bucket = { ...emptyBucket(), campaign, adSet, adName, date };
+        summaryAdBuckets.set(key, bucket);
+        if (campaign === "") {
+          summaryAdBucketsByAdDate.set([adName, date].join("\u0001"), bucket);
+        }
       }
+      accumulate(summaryAdBuckets.get(key)!, row);
     }
-    accumulate(summaryAdBuckets.get(key)!, row);
     // Collect creative metadata (merge, keeping first non-empty value per column)
     if (row.creativeMetadata && Object.keys(row.creativeMetadata).length > 0) {
       const existing = adCreativeMetadata.get(adName) ?? {};
@@ -921,6 +946,162 @@ export function mergeAdPerformanceBuckets(
     }
   }
   return { adBuckets, adCreativeMetadata, unknownResultTypeRows };
+}
+
+// ─── Join-coverage computation (degraded-data honesty layer) ────────────
+//
+// The platform's honesty invariant forbids rendering confident-looking
+// output on silently under-covered data. The August 2026 AAFE run rendered
+// Signal badges, ranked segment cards, and totals from a demographic export
+// that carried only ~1.3% of the account's spend (11 of ~400 ads), with no
+// indication anywhere. This block measures, per report class, how much of
+// the account's daily-attributable activity that class's rows actually
+// represent, persists it with the run, and ships it to every surface that
+// aggregates the class's rows (see AnalysisSummaryResult.data_coverage).
+// Below COVERAGE_THRESHOLD_PCT the UI must warn specifically and downgrade
+// signal classification to "insufficient join coverage" — one shared
+// definition of "trustworthy enough to classify".
+
+/** Joined-spend coverage below this % is not trustworthy enough to classify segments. */
+export const COVERAGE_THRESHOLD_PCT = 90;
+
+export type ReportClassCoverageKey = "demographic" | "device_placement" | "ad_summary" | "conversion_device";
+
+export interface ReportClassCoverage {
+  report_class: ReportClassCoverageKey;
+  /** Rows from this class inside the analysis window. */
+  rows_scoped: number;
+  /** Distinct ad names present in this class's scoped rows. */
+  distinct_ads: number;
+  /** Spend carried by this class's scoped rows (null when the class never carries spend). */
+  spend: number | null;
+  /** spend as % of the run's daily-attributable baseline spend. */
+  spend_coverage_pct: number | null;
+  /** distinct_ads as % of the baseline's distinct ads. */
+  ad_coverage_pct: number | null;
+  /** True when the file is a whole-period aggregate export (see detectAggregateAdSummary). */
+  aggregate_shape: boolean;
+  /** True when this class's joined-spend coverage falls below COVERAGE_THRESHOLD_PCT. */
+  below_threshold: boolean;
+  /** Cause + remedy, populated when below_threshold or aggregate_shape; null otherwise. */
+  note: string | null;
+}
+
+export interface AnalysisDataCoverage {
+  window: { start: string; end: string };
+  /** Sum of spend across the run's merged daily ad rows — the daily-attributable baseline. */
+  baseline_spend: number;
+  baseline_distinct_ads: number;
+  threshold_pct: number;
+  classes: ReportClassCoverage[];
+}
+
+const pctOfBaseline = (part: number, whole: number): number | null =>
+  whole > 0 ? Math.round((part / whole) * 1000) / 10 : null;
+
+/**
+ * True when the staged ad_summary export is a whole-period per-ad aggregate
+ * rather than a daily export: every row carries the SAME "Day" value (which
+ * is really the aliased "Reporting starts" — the report window start) while
+ * the companion daily exports span multiple days. Treating such a file as
+ * daily data misdates its whole-period spend as a single day and inflates
+ * totals (observed: +$21.8K / +41% on the AAFE account).
+ */
+export function detectAggregateAdSummary(summaryRows: IapCsvRow[], companionDays: string[]): boolean {
+  if (summaryRows.length === 0) return false;
+  const summaryDays = new Set(summaryRows.map((r) => r.breakdowns["Day"]!));
+  if (summaryDays.size !== 1) return false;
+  return new Set(companionDays).size > 1;
+}
+
+/**
+ * Measures per-report-class join coverage against the run's own merged daily
+ * ad rows. Pure — exported for unit tests.
+ */
+export function computeDataCoverage(args: {
+  window: { start: string; end: string };
+  scopedDemo: IapCsvRow[];
+  scopedPlacement: IapCsvRow[];
+  scopedSummary: IapCsvRow[];
+  scopedConversionDevice: IapCsvRow[];
+  adBuckets: Map<string, AggBucket & { adName: string }>;
+  summaryAggregate: boolean;
+}): AnalysisDataCoverage {
+  let baselineSpend = 0;
+  const baselineAds = new Set<string>();
+  for (const b of args.adBuckets.values()) {
+    baselineSpend += b.spend ?? 0;
+    baselineAds.add(b.adName);
+  }
+  baselineSpend = Math.round(baselineSpend * 100) / 100;
+
+  const classRows: [ReportClassCoverageKey, IapCsvRow[], boolean][] = [
+    ["demographic", args.scopedDemo, false],
+    ["device_placement", args.scopedPlacement, false],
+    ["ad_summary", args.scopedSummary, args.summaryAggregate],
+    ["conversion_device", args.scopedConversionDevice, false],
+  ];
+
+  const classes: ReportClassCoverage[] = [];
+  for (const [key, rows, aggregateShape] of classRows) {
+    if (rows.length === 0) continue; // class not imported — absence is its own honest state
+    let spend = 0;
+    let anySpend = false;
+    const ads = new Set<string>();
+    for (const r of rows) {
+      const s = r.base["amount_spent"];
+      if (typeof s === "number") {
+        spend += s;
+        anySpend = true;
+      }
+      const ad = r.breakdowns["Ad name"];
+      if (ad) ads.add(ad);
+    }
+    spend = Math.round(spend * 100) / 100;
+    const spendCoverage = anySpend ? pctOfBaseline(spend, baselineSpend) : null;
+    const adCoverage = ads.size > 0 ? pctOfBaseline(ads.size, baselineAds.size) : null;
+    // Conversion-device exports carry no spend by design (tracking_basis
+    // 'conversion') — coverage-of-spend does not apply to them.
+    const coverageApplies = key !== "conversion_device" && spendCoverage !== null;
+    const belowThreshold = coverageApplies && spendCoverage < COVERAGE_THRESHOLD_PCT && !aggregateShape;
+
+    let note: string | null = null;
+    if (aggregateShape) {
+      note =
+        `This ad summary export is a whole-period per-ad report (its date column is the report window start on every row), not a daily export. ` +
+        `Its $${spend.toLocaleString("en-US")} period total was used for creative metadata and total-spend cross-checking only — never added to daily totals. ` +
+        `Re-export it with the "Day" breakdown to include ad-level daily spend.`;
+    } else if (belowThreshold && key === "demographic") {
+      note =
+        `Demographic rows carry $${spend.toLocaleString("en-US")} of spend (${spendCoverage}% of the $${baselineSpend.toLocaleString("en-US")} daily-attributable total) ` +
+        `across ${ads.size} of ${baselineAds.size} ads. Demographic breakdowns, segment rankings, and signal classification describe only this slice. ` +
+        `Likely causes: the export was scoped to a subset of ads/campaigns, and iOS privacy limits demographic attribution. ` +
+        `Remedy: re-export Demographics from Meta Ads Reporting as CSV, covering all ads for the full window.`;
+    } else if (belowThreshold) {
+      note =
+        `${iapCsvClassLabel(key)} rows carry ${spendCoverage}% of the daily-attributable spend for this window — surfaces built from this class describe only that slice.`;
+    }
+
+    classes.push({
+      report_class: key,
+      rows_scoped: rows.length,
+      distinct_ads: ads.size,
+      spend: anySpend ? spend : null,
+      spend_coverage_pct: spendCoverage,
+      ad_coverage_pct: adCoverage,
+      aggregate_shape: aggregateShape,
+      below_threshold: belowThreshold,
+      note,
+    });
+  }
+
+  return {
+    window: args.window,
+    baseline_spend: baselineSpend,
+    baseline_distinct_ads: baselineAds.size,
+    threshold_pct: COVERAGE_THRESHOLD_PCT,
+    classes,
+  };
 }
 
 /**
@@ -1397,6 +1578,23 @@ export async function startManualAnalysis(
       const dateStart = scopedDates.reduce((min, d) => (d < min ? d : min), scopedDates[0]!);
       const dateEnd = scopedDates.reduce((max, d) => (d > max ? d : max), scopedDates[0]!);
 
+      // A whole-period aggregate ad_summary (its "Day" is really the
+      // aliased "Reporting starts" — identical on every row) must not feed
+      // daily buckets: its full-period per-ad spend would be misdated as a
+      // single day and inflate every daily total (observed +41% on AAFE).
+      const summaryAggregate = detectAggregateAdSummary(scopedSummary, [
+        ...scopedDemo.map((r) => r.breakdowns["Day"]!),
+        ...scopedPlacement.map((r) => r.breakdowns["Day"]!),
+      ]);
+      if (summaryAggregate) {
+        const names = summaryImports.map((i) => `"${i["filename"]}"`).join(", ");
+        allCsvWarnings.push(
+          `[Ad summary] ${names}: this is a whole-period per-ad export (every row carries the report window start as its date), not a daily export. ` +
+            `Its spend was used for creative metadata and total-spend cross-checking only — never added to daily totals, which would misdate whole-period spend as a single day. ` +
+            `Re-export it with the "Day" breakdown to include ad-level daily spend.`,
+        );
+      }
+
       // Merge the three ad-level sources into one bucket per (campaign, ad,
       // date) — see mergeAdPerformanceBuckets for the full priority/dedupe
       // rules, including the blank-Campaign-name ad_summary handling.
@@ -1404,7 +1602,41 @@ export async function startManualAnalysis(
         scopedDemo,
         scopedPlacement,
         scopedSummary,
+        { summaryMetadataOnly: summaryAggregate },
       );
+
+      // ── Join coverage (degraded-data honesty layer) ────────────────────
+      // Measured per report class against this run's own daily-attributable
+      // baseline; persisted with the run and served to every aggregating
+      // surface via the analysis-summary API. See computeDataCoverage.
+      const dataCoverage = computeDataCoverage({
+        window: { start: dateStart, end: dateEnd },
+        scopedDemo,
+        scopedPlacement,
+        scopedSummary,
+        scopedConversionDevice,
+        adBuckets,
+        summaryAggregate,
+      });
+      for (const cls of dataCoverage.classes) {
+        if (cls.note && !cls.aggregate_shape) {
+          allCsvWarnings.push(`[Coverage] ${cls.note}`);
+        }
+      }
+      if (summaryAggregate) {
+        const summaryCls = dataCoverage.classes.find((c) => c.report_class === "ad_summary");
+        const summarySpend = summaryCls?.spend ?? null;
+        if (summarySpend !== null && dataCoverage.baseline_spend > 0) {
+          const diffPct = Math.abs(summarySpend - dataCoverage.baseline_spend) / dataCoverage.baseline_spend;
+          if (diffPct > 0.01) {
+            allCsvWarnings.push(
+              `[Totals] Meta's whole-period total from the ad summary export is $${summarySpend.toLocaleString("en-US")}; ` +
+                `the daily-attributable rows sum to $${dataCoverage.baseline_spend.toLocaleString("en-US")}. Daily views show the latter; ` +
+                `the gap is spend on days or ads the daily exports don't cover.`,
+            );
+          }
+        }
+      }
       if (unknownResultTypeRows > 0) {
         allCsvWarnings.push(
           `[Result type] ${unknownResultTypeRows} ad/day row(s) had no result type in any export — recorded as "unknown" rather than a real conversion event.`,
@@ -2069,6 +2301,7 @@ export async function startManualAnalysis(
         csvWarnings: allCsvWarnings.length > 0 ? allCsvWarnings : undefined,
         objectivesAssessed: coverage.assessed,
         objectiveFlags: coverage.flags.length > 0 ? coverage.flags : undefined,
+        coverage: dataCoverage,
       });
       try {
         await markImportsProcessed(imports!.map((i) => String(i["id"])), runId);
@@ -2197,6 +2430,27 @@ export function priorWindowFor(start: string, end: string): AnalysisSummaryWindo
   return { start: shiftDate(start, -lenDays), end: shiftDate(start, -1) };
 }
 
+/**
+ * Coverage measured by the account's latest successful manual analysis run
+ * (null for importer/live-Meta accounts and legacy pre-coverage runs).
+ * Served with every analysis summary so aggregating surfaces share one
+ * definition of "trustworthy enough to classify".
+ */
+async function fetchLatestRunCoverage(accountId: string): Promise<AnalysisDataCoverage | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("manual_analysis_runs")
+    .select("coverage")
+    .eq("account_id", accountId)
+    .eq("status", "success")
+    .order("finished_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  const cov = (data as Record<string, unknown>)["coverage"];
+  return cov && typeof cov === "object" ? (cov as AnalysisDataCoverage) : null;
+}
+
 export async function getAnalysisSummaryByPreset(
   accountId: string,
   preset: ViewPreset,
@@ -2222,6 +2476,7 @@ export async function getAnalysisSummaryByPreset(
       demographic_rows: [],
       placement_rows: [],
       concept_rows: [],
+      data_coverage: await fetchLatestRunCoverage(accountId),
     };
   }
 
@@ -2401,6 +2656,7 @@ export async function getAnalysisSummaryByPreset(
     demographic_rows,
     placement_rows,
     concept_rows,
+    data_coverage: await fetchLatestRunCoverage(accountId),
   };
 }
 
@@ -2439,6 +2695,7 @@ async function _computeAnalysisSummaryForDateRange(
       demographic_rows: [],
       placement_rows: [],
       concept_rows: [],
+      data_coverage: await fetchLatestRunCoverage(accountId),
     };
   }
 
@@ -2593,6 +2850,7 @@ async function _computeAnalysisSummaryForDateRange(
     demographic_rows,
     placement_rows,
     concept_rows,
+    data_coverage: await fetchLatestRunCoverage(accountId),
   };
 }
 

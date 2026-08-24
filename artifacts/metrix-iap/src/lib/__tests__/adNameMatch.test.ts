@@ -83,3 +83,37 @@ describe("suggestAdNameMatch", () => {
     expect(suggestAdNameMatch("anything.mp4", [])).toBeNull();
   });
 });
+
+// ── Regression: bare-numeric ad names must never win via containment ──
+// Real-account case: an ad literally named "1" auto-matched (method
+// "fuzzy", score 0.75+) against SEVEN different cell-coded creative
+// filenames because "1" is a substring of "_001_" / "1080x1350".
+import { MIN_CONTAINMENT_LENGTH } from "@/lib/adNameMatch";
+
+describe("suggestAdNameMatch minimum containment signal", () => {
+  const cellCodedFile = "C1A_CN_ICP_CareerTransition_CN_Design_StaticBold_FW_PAS_TN_Emotional_HK_Problem_ST_TOFU_001_Meta_Feed_4x5_1080x1350.png";
+
+  it('never confidently maps a file to an ad named "1"', () => {
+    const match = suggestAdNameMatch(cellCodedFile, ["1"]);
+    expect(match).toBeNull(); // no real signal — stays unmapped, user can map manually
+  });
+
+  it('prefers a real candidate over the bare-numeric one', () => {
+    const match = suggestAdNameMatch("STAT_PEANUTHEAD.jpg", ["1", "STAT_PEANUTHEAD_79_ 01.jpg"]);
+    expect(match?.name).toBe("STAT_PEANUTHEAD_79_ 01.jpg");
+  });
+
+  it("still containment-matches when both sides carry real length", () => {
+    const match = suggestAdNameMatch("Summer_Sale_v2_final.mp4", ["Summer Sale v2"]);
+    expect(match?.method).toBe("fuzzy");
+    expect(match?.name).toBe("Summer Sale v2");
+    expect("Summer Sale v2".length).toBeGreaterThanOrEqual(MIN_CONTAINMENT_LENGTH);
+  });
+
+  it("short ad names can still surface as a reviewable guess via token overlap", () => {
+    // "v2" as a real token of the filename: token-set similarity keeps it as
+    // a flagged guess (never a confident fuzzy) — honest middle ground.
+    const match = suggestAdNameMatch("promo v2.mp4", ["v2"]);
+    expect(match === null || match.method === "guess").toBe(true);
+  });
+});

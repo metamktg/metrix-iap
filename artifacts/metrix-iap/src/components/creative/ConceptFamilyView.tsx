@@ -73,11 +73,15 @@ function AngleRow({
     const rows = group.allRows.filter((r) => r.cell_id === cellId);
     const spend = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
     const results = rows.reduce((s, r) => s + r.Results, 0);
+    // Blended CTR from summed counts — an arbitrary single row's rate
+    // (the old rows[0] read) presented a per-event rate as the group rate.
+    const impressions = rows.reduce((s, r) => s + (r.Impressions ?? 0), 0);
+    const linkClicks = rows.reduce((s, r) => s + (r["Link clicks"] ?? 0), 0);
     return {
       spend,
       results,
       cpa: results > 0 ? spend / results : null,
-      ctrPct: rows[0]?.CTR_link_pct ?? null,
+      ctrPct: impressions > 0 ? (linkClicks / impressions) * 100 : null,
       resultLabel: rows.length === 1 ? rows[0]!["Result type"] : `${rows.length} events`,
     };
   }

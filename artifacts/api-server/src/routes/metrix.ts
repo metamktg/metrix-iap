@@ -90,7 +90,7 @@ import {
   composeSeedForUser,
   invalidateMetrixSeedCache,
 } from "../lib/metrixSeedAssembly";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   deleteDerivedLibraryEntries,
   classifyCellCreative,
@@ -1085,6 +1085,35 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
       }
     }
 
+    // ── Same-bytes duplicate guard ────────────────────────────────────
+    // Staging the byte-identical file twice into the same slot while both
+    // are status='staged' is always an error: the analysis run merges every
+    // staged file per slot, so the duplicate's rows would silently
+    // double-count spend/results. Different-bytes files per slot stay legal
+    // (multi-file-per-slot covers disjoint windows), and re-staging a file a
+    // previous run already consumed (status='processed') stays legal — this
+    // guard only compares against currently-staged rows.
+    const contentMd5 = createHash("md5").update(content).digest("hex");
+    const dupCheckRes = await supabase
+      .from("manual_imports")
+      .select("id, filename, created_at")
+      .eq("account_id", accountId)
+      .eq("kind", parsed.data.kind)
+      .eq("status", "staged")
+      .eq("content_md5", contentMd5)
+      .limit(1);
+    if (dupCheckRes.error) throw new Error(dupCheckRes.error.message);
+    if (dupCheckRes.data && dupCheckRes.data.length > 0) {
+      const existing = dupCheckRes.data[0]!;
+      res.status(409).json({
+        message:
+          `This exact file is already staged for this slot as "${existing["filename"]}". ` +
+          `Running analysis with both copies would double-count its rows. ` +
+          `Remove the staged copy first if you meant to replace it.`,
+      });
+      return;
+    }
+
     // Staged only: the file is stored raw for the analysis pipeline. It is
     // never parsed into performance data at upload time — no fabricated
     // numbers appear in the app from an upload alone.
@@ -1096,6 +1125,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
         filename: parsed.data.filename,
         content_type: parsed.data.content_type ?? null,
         content: `\\x${content.toString("hex")}`,
+        content_md5: contentMd5,
         size_bytes: content.length,
         ad_names: parsed.data.kind === "creative_asset" ? (parsed.data.ad_names ?? []) : [],
         match_method: parsed.data.kind === "creative_asset" ? (parsed.data.match_method ?? null) : null,

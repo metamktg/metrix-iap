@@ -143,7 +143,10 @@ export function topConceptsForMetric(rows: CellPerformanceRow[], metric: MetricD
         // sort as the cheapest concept.
         value = c.results > 0 ? c.spend / c.results : null;
       } else if (metric.id === "link_ctr") {
-        value = c.impressions > 0 ? (c.linkClicks / c.impressions) * 100 : 0;
+        // Zero impressions = no delivery to measure a rate against — null
+        // ("n/a"), matching every sibling ratio here; a fabricated "0.00%"
+        // would plot as a real measured worst performer in the hover chart.
+        value = c.impressions > 0 ? (c.linkClicks / c.impressions) * 100 : null;
       } else if (metric.id === "ctr_all") {
         value = c.impressions > 0 && c.clicksAll <= c.impressions ? (c.clicksAll / c.impressions) * 100 : null;
       } else if (metric.id === "cpc") {

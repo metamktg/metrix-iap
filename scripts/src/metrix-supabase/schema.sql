@@ -808,6 +808,24 @@ alter table if exists manual_analysis_runs add column if not exists progress_sta
 alter table if exists manual_analysis_runs add column if not exists objectives_assessed text;
 alter table if exists manual_analysis_runs add column if not exists objective_flags text;
 
+-- Join-coverage measured per report class at analysis time (jsonb, nullable —
+-- null on legacy runs that predate coverage measurement). Shape:
+-- AnalysisDataCoverage in analysisEngine.ts: { window, baseline_spend,
+-- baseline_distinct_ads, threshold_pct, classes: [{ report_class,
+-- rows_scoped, distinct_ads, spend, spend_coverage_pct, ad_coverage_pct,
+-- aggregate_shape, below_threshold, note }] }. The degraded-data honesty
+-- layer: served with analysis summaries so UI surfaces can warn and
+-- downgrade signal classification on under-covered report classes.
+alter table if exists manual_analysis_runs add column if not exists coverage jsonb;
+
+-- Content hash for staged uploads (hex md5, nullable on legacy rows).
+-- Staging the byte-identical file twice into the same slot while both are
+-- status='staged' is always an error (analysis would double-count its rows)
+-- and is rejected at upload with 409; different-bytes files per slot stay
+-- legal (multi-file-per-slot covers disjoint windows), and re-staging a
+-- 'processed' file for a re-run stays legal.
+alter table if exists manual_imports add column if not exists content_md5 text;
+
 -- ─────────────────────────────────────────────────────────────────────
 -- Run-tagged history for analysis rollups (analysis-run scoping).
 --

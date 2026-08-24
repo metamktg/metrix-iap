@@ -813,6 +813,52 @@ export interface AnalysisSummaryDayRow {
   results: number;
 }
 
+export type ReportClassCoverageReportClass = typeof ReportClassCoverageReportClass[keyof typeof ReportClassCoverageReportClass];
+
+
+export const ReportClassCoverageReportClass = {
+  demographic: 'demographic',
+  device_placement: 'device_placement',
+  ad_summary: 'ad_summary',
+  conversion_device: 'conversion_device',
+} as const;
+
+/**
+ * Join coverage measured for one report class (upload slot) at analysis time — how much of the account's daily-attributable activity this class's rows represent.
+ */
+export interface ReportClassCoverage {
+  report_class: ReportClassCoverageReportClass;
+  /** Rows from this class inside the analysis window. */
+  rows_scoped: number;
+  /** Distinct ad names present in this class's scoped rows. */
+  distinct_ads: number;
+  /** Spend carried by this class's scoped rows; null when the class never carries spend (e.g. conversion_device). */
+  spend: number | null;
+  /** spend as % of the run's daily-attributable baseline spend. */
+  spend_coverage_pct: number | null;
+  /** distinct_ads as % of the baseline's distinct ads. */
+  ad_coverage_pct: number | null;
+  /** True when the file is a whole-period aggregate export (excluded from daily totals, used for metadata/cross-checks only). */
+  aggregate_shape: boolean;
+  /** True when joined-spend coverage falls below threshold_pct — surfaces must warn and downgrade signal classification. */
+  below_threshold: boolean;
+  /** Cause + remedy text, populated when below_threshold or aggregate_shape. */
+  note: string | null;
+}
+
+/**
+ * Per-report-class join coverage measured by the latest successful manual analysis run — the degraded-data honesty layer. Null for accounts without manual runs or legacy runs predating coverage measurement.
+ */
+export interface AnalysisDataCoverage {
+  window: AnalysisSummaryWindow;
+  /** Sum of spend across the run's merged daily ad rows — the daily-attributable baseline. */
+  baseline_spend: number;
+  baseline_distinct_ads: number;
+  /** Coverage % below which a class is not trustworthy enough to classify segments from. */
+  threshold_pct: number;
+  classes: ReportClassCoverage[];
+}
+
 export interface AnalysisSummaryResult {
   preset: ViewPreset;
   /** Full date window available in stored rows for this account (min/max date_start). */
@@ -829,6 +875,8 @@ export interface AnalysisSummaryResult {
   demographic_rows: AnalysisSummaryDemoRow[];
   placement_rows: AnalysisSummaryPlacementRow[];
   concept_rows: AnalysisSummaryConceptRow[];
+  /** Join coverage from the latest successful manual analysis run; null when no manual run has measured coverage for this account. */
+  data_coverage: AnalysisDataCoverage | null;
 }
 
 export interface AccountAnalysisDataWindow {

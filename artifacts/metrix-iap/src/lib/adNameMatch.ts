@@ -89,6 +89,18 @@ export function tokenSetSimilarity(a: string, b: string): number {
 export const FUZZY_MATCH_THRESHOLD = 0.55;
 
 /**
+ * Substring containment only counts as a signal when the CONTAINED side is
+ * at least this long. Without this floor, an ad named "1" is "contained" in
+ * any filename carrying a digit 1 ("_001_", "1080x1350") and scores a
+ * confident 0.75 — observed on a real account where seven different
+ * creatives all auto-mapped to one ad literally named "1". Short candidates
+ * fall through to the bigram/token scores, which correctly rate incidental
+ * digit overlap near zero, so such files stay unmapped (visible and
+ * user-correctable) instead of confidently wrong.
+ */
+export const MIN_CONTAINMENT_LENGTH = 5;
+
+/**
  * Floor for a low-confidence "guess". Between this and FUZZY_MATCH_THRESHOLD the
  * closest candidate is still pre-mapped (the "most logical" ad name) but flagged
  * for review. Below this the filename shares essentially no signal with any ad
@@ -141,7 +153,9 @@ export function suggestAdNameMatch(filename: string, candidates: Iterable<string
     if (normalizedCandidate === normalizedFile) return { name: candidate, method: "fuzzy" };
 
     let score: number;
-    if (normalizedFile.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedFile)) {
+    const containmentMeaningful =
+      Math.min(normalizedFile.length, normalizedCandidate.length) >= MIN_CONTAINMENT_LENGTH;
+    if (containmentMeaningful && (normalizedFile.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedFile))) {
       // Substring containment is a strong signal — filenames often carry extra
       // tokens (dates, sizes, "_final") around the ad name. Weight by how much
       // of the longer string the overlap covers so a near-full match beats a

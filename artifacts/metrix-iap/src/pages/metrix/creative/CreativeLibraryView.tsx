@@ -32,6 +32,8 @@ import { actionGroupForScope } from "@/components/deck/RecommendationDeck";
 import { addToTray, removeFromTray, isInTray, useTrayItems } from "@/lib/data/trayStore";
 import { cardFromLibraryCell, cardFromCell } from "@/lib/creative-assembly";
 import { fmtMetric } from "@/lib/normalize";
+import { demographicEmptyReasonFor, placementsEmptyReasonFor, funnelEmptyReasonFor } from "@/lib/creative-empty-reasons";
+import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 import { Library, Tags, LayoutGrid, ClipboardList, Check } from "lucide-react";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
@@ -364,11 +366,22 @@ export function CreativeLibraryView() {
             </div>
 
             {/* ── Cross-map / Next-moves "open asset" ── */}
+            {/* Passes the same account-level data IapLibraryView's cards get —
+                this call site previously passed nothing, so every tab rendered
+                its empty state regardless of what the account had (the AAFE
+                "creative popup empty" bug). Empty states carry cause-specific
+                reasons per creative-empty-reasons.ts. */}
             {openCellId && (
               <CreativeExpandDialog
                 open={openCellId != null}
                 onOpenChange={(v) => { if (!v) setOpenCellId(null); }}
                 data={cardFromCell(openCellId, cardCtx)}
+                demographic={(a?.demographic_registration_signal ?? []).filter((r: DemographicRow) => r.cell_id === openCellId)}
+                placements={([...(a?.v3_placement_signal ?? []), ...(a?.c4e_placement_signal ?? [])]) as PlacementRow[]}
+                perfRow={a?.performance_by_cell?.find((r) => r.cell_id === openCellId) ?? null}
+                demographicEmptyReason={demographicEmptyReasonFor(a?.demographic_registration_signal ?? [], openCellId)}
+                placementsEmptyReason={placementsEmptyReasonFor([...(a?.v3_placement_signal ?? []), ...(a?.c4e_placement_signal ?? [])])}
+                funnelEmptyReason={funnelEmptyReasonFor(a?.performance_by_cell, openCellId)}
               />
             )}
 

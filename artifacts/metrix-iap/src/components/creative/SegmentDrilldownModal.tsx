@@ -27,6 +27,7 @@ import {
   type SegmentRawTotals,
   type SegmentDerivedMetrics,
   type SegmentVariableAttribution,
+  type DemographicCoverageInput,
   type SegmentDrilldownData,
 } from "@/lib/segment-analytics";
 import {
@@ -626,6 +627,7 @@ export function SegmentDrilldownModal({
   kicker = "Segment drill-down",
   onBack,
   onNextStep,
+  demoCoverage = null,
 }: {
   open: boolean;
   onClose: () => void;
@@ -638,6 +640,8 @@ export function SegmentDrilldownModal({
   onBack?: () => void;
   /** Override the "Next step" CTA action. Defaults to opening the Audience view. */
   onNextStep?: () => void;
+  /** Measured demographic join coverage (analysis summary data_coverage) — gates signal classification. */
+  demoCoverage?: DemographicCoverageInput | null;
 }) {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
@@ -653,12 +657,12 @@ export function SegmentDrilldownModal({
   }, [primaryKey, open]);
 
   const data = useMemo(
-    () => (segment ? computeSegmentDrilldown(analysis, mst, segment, cellIds) : null),
-    [analysis, mst, segment, cellIds]
+    () => (segment ? computeSegmentDrilldown(analysis, mst, segment, cellIds, demoCoverage) : null),
+    [analysis, mst, segment, cellIds, demoCoverage]
   );
   const compareData = useMemo(
-    () => (compareSegment ? computeSegmentDrilldown(analysis, mst, compareSegment, cellIds) : null),
-    [analysis, mst, compareSegment, cellIds]
+    () => (compareSegment ? computeSegmentDrilldown(analysis, mst, compareSegment, cellIds, demoCoverage) : null),
+    [analysis, mst, compareSegment, cellIds, demoCoverage]
   );
   const catalog = useMemo(
     () => (data ? buildSegmentMetricCatalog(data.totals, data.derived) : []),

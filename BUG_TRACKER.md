@@ -78,7 +78,14 @@ parser/merge code.
   ID-blanking stays as-is (correct, per work order).
 - **Category:** Fix-Now, as the §1 class fix (coverage computation + propagation + badge
   suppression), not as a per-card patch.
-- **Resolution:** §1 coverage/honesty layer (this session, after B0).
+- **Resolution (implemented):** join coverage computed per report class at analysis time
+  (`computeDataCoverage`), persisted on the run (`manual_analysis_runs.coverage` jsonb),
+  served via `AnalysisSummaryResult.data_coverage`, and enforced client-side:
+  `assessSegmentSignal` gains an `insufficient_coverage` state that suppresses Signal/Low
+  Signal classification whenever demographic joined-spend coverage < 90%
+  (`COVERAGE_THRESHOLD_PCT`, one shared definition); `DataCoverageBanner` renders the
+  server-computed cause+remedy note on Audience and Avatars. Measured on the real files:
+  demographic = $856.52, 2% of the $42,290.67 daily-attributable baseline, 11 of 399 ads.
 - **Verification evidence:** probe over `demo-old.xlsx`/`demo-new.csv` (identical metric
   content): per-segment sums equal the UI's numbers to the cent.
 
@@ -86,15 +93,24 @@ parser/merge code.
 
 - **Symptom:** "No performance data", "No demographic data for this cell", "No placement data
   for this account" on creative C8A's popup tabs.
-- **Root cause:** under investigation (§0.3). Established so far: the AAFE ad names
-  (`ANIM_DAL_BOTOX.mp4`, `STAT_PEANUTHEAD_79_ 08.jpg`, …) carry no concept codes, so
-  concept-keyed surfaces are legitimately empty for this account (`.agents/memory/`
-  "manual accounts render from the daterange summary API"); demographic per-cell data can at
-  most cover the 11 ads in the demo export. Whether the performance/placement tabs *should*
-  populate via the `ad_names` creative-asset mapping is the open question.
-- **Category:** pending triage (Fix-Now if mapping regression; else folded into §1 empty-state
-  differentiation).
-- **Resolution:** TBD this session.
+- **Root cause (confirmed):** two independent causes. (1) **Wiring bug:** the
+  Creative → Library view (`CreativeLibraryView.tsx`) rendered `CreativeExpandDialog` with
+  NO `demographic`/`placements`/`perfRow` props at all — every tab fell back to its `[]`
+  default, so all tabs were empty by construction regardless of account data (the account
+  actually has 20 `placement_signal` rows). C1A–C9A cells only exist in this view (from
+  creative deconstruction), so this is exactly where the owner opened C8A. (2) **Honest
+  emptiness with misleading copy:** per-cell demographic rows genuinely don't exist for this
+  account (manual demographic signal is account-grain, `cell_id='ACCOUNT'`), and
+  `library_cell_performance` is genuinely empty (all 629 `ads.cell` are NULL — ad names carry
+  no cell codes and the creative→ad fuzzy mapping is broken, see BUG-10) — but the empty
+  states said "import a demographic pivot export" when one WAS imported.
+- **Category:** Fix-Now (wiring) + Fix-Now empty-state differentiation (§1.4).
+- **Resolution (implemented):** CreativeLibraryView now passes the same account-level
+  placements, per-cell demographic rows, and per-cell perf row IapLibraryView's cards get;
+  all three tabs accept cause-specific `emptyReason` props computed by
+  `creative-empty-reasons.ts` (never-imported vs account-level-grain vs
+  no-rows-joined-for-this-cell — each with its own remedy). Unit-tested in
+  `coverage-honesty.test.ts`.
 
 ## BUG-04 — Demo-vs-placement disparity flag: generic message
 
@@ -103,9 +119,11 @@ parser/merge code.
   placement coverage in this account's exports. The defect is the message: it names no cause
   and no remedy.
 - **Category:** Fix-Now (messaging only, per work-order §1.5 — do not change firing).
-- **Resolution:** message rewrite as part of §1: state measured coverage, the detectable cause
-  (demo export scoped to a subset of ads / spend), and the remedy (re-export demographics for
-  all ads / full window). Pending implementation.
+- **Resolution (implemented):** the coverage layer IS the cause-naming message: the run now
+  emits `[Coverage] Demographic rows carry $856.52 of spend (2% of the $42,290.67
+  daily-attributable total) across 11 of 399 ads… Remedy: re-export Demographics from Meta
+  Ads Reporting as CSV, covering all ads for the full window.` — surfaced in run warnings,
+  the Audience/Avatars banner, and the suppressed-badge tooltip. Firing behaviour unchanged.
 
 ## BUG-05 — Ad-summary aggregate export misdated as a single day → account totals inflated ~41%
 
@@ -122,11 +140,14 @@ parser/merge code.
   starts"); the defect is accepting a file whose "days" are all identical while companion
   files span weeks, i.e. failing to detect the aggregate-report shape.
 - **Category:** Fix-Now (data integrity: silently fabricated daily spend).
-- **Resolution (implemented in the §1/§2 pass):** parse-time aggregate-shape detection for
-  `ad_summary` — single distinct `Day` value + `Reporting ends` present and differing from
-  `Reporting starts` → the file is treated as window-scoped: used for creative metadata and
-  cross-validation/coverage totals, excluded from daily bucket merge and summary-only daily
-  insertion, with a warning naming the remedy (re-export with the Day breakdown).
+- **Resolution (implemented):** `detectAggregateAdSummary()` — a summary whose rows all
+  carry one distinct `Day` while companion files span multiple days is treated as
+  window-scoped: creative metadata and total-spend cross-checking only
+  (`mergeAdPerformanceBuckets` `summaryMetadataOnly` mode), excluded from daily buckets and
+  summary-only daily insertion, with two warnings (aggregate-shape + Meta-total vs
+  daily-attributable gap: $45,467.69 vs $42,290.67). Verified against the real files: total
+  drops from the fabricated $64,097.50 to the honest $42,290.67. Unit-tested in
+  `analysisEngineCoverage.test.ts`.
 - **Verification evidence:** probe totals above; header of the real file shows
   `"Reporting starts","Reporting ends",…` with no `Day` column and one distinct value.
 
@@ -182,5 +203,118 @@ parser/merge code.
 - **Category:** Fix-Now for the same-bytes case (silent double-count risk); the
   overlapping-window (different bytes) case needs product semantics and stays open in the
   audit doc.
-- **Resolution:** pending this session (staging-time md5 check against currently-staged files
-  of the same kind → 409 with "already staged" message).
+- **Resolution (implemented):** `manual_imports.content_md5` (hex md5, stored at staging;
+  schema add applied live); staging a byte-identical file while a same-kind copy is still
+  `status='staged'` returns 409 naming the already-staged file and the double-count
+  consequence. Different-bytes files per slot and re-staging processed files stay legal.
+  Integration-tested in `manualAnalysisRerunIdempotency.test.ts`.
+
+## BUG-10 — Fuzzy creative→ad matching maps seven different creatives to an ad named "1"
+
+- **Symptom:** 7 of the 12 staged AAFE creative assets (all the C-cell-coded files, e.g.
+  `C1A_CN_ICP_CareerTransition_…_001_Meta_Feed_4x5_1080x1350.png`) have
+  `ad_names: ["1"]` with `match_method: "fuzzy"` — the account really does contain an ad
+  literally named "1" (8 `ad_performance` rows), and one creative's asset URL got linked onto
+  that `ads` row. Seven different creatives claiming the same ad, chosen from numeric-token
+  noise ("001", "1080x1350"), is a false-positive mapping that would attribute ad "1"'s
+  performance to arbitrary creatives.
+- **Root cause:** the filename→ad-name fuzzy matcher accepts matches with no minimum signal —
+  a bare-numeric ad name can win on incidental digit tokens.
+- **Category:** Fix-Now (false joins violate the honesty invariant; the ad_names mapping is
+  user-correctable but defaults must be honest).
+- **Resolution (implemented):** `MIN_CONTAINMENT_LENGTH = 5` in `adNameMatch.ts` — the
+  substring-containment fast path (score ≥ 0.75) now requires the contained side to be at
+  least 5 normalized characters; shorter candidates fall through to bigram/token scores,
+  which rate incidental digit overlap near zero, so the file stays unmapped (visible and
+  user-correctable). Legit short names can still surface as a flagged "guess" via token
+  overlap, never as a confident match. Regression tests in `adNameMatch.test.ts` use the
+  real C1A… filename against an ad named "1".
+- **Verification evidence:** live `manual_imports.ad_names` rows for account
+  `manual_9JGXU_AQJjxJ` + `ads`/`ad_performance` rows for ad name "1".
+
+## BUG-11 — Null-coalescing renders fabricated measurements ("$0"/"0.00%" for unknown)
+
+- **Symptom:** unknown values render as measured figures: audience group KPI rows showed
+  "$0" spend beside "—" results; IAP Library cell chips showed a measured "0" for unknown
+  results; the metric hover chart plotted never-delivered concepts as real "0.00%" CTR
+  worst-performers (`link_ctr` alone among its sibling ratios returned 0 instead of null on
+  zero impressions).
+- **Root cause:** `?? 0` coalescing at render/aggregation sites contradicting the
+  `sumStrict`/"null unless every row carries it" policy; one ratio helper diverging from its
+  siblings' null-on-zero-denominator convention.
+- **Category:** Fix-Now for the three render-side fabrications (shipped); the aggregation-
+  policy split (`metricsCatalog` any-row-present sums vs `sumStrict`, `date-scope.sumInRange`
+  always-number signature, `summaryTrends`/`reportExport` partial sums) is **Open — one
+  policy decision needed**, mapped in `docs/resources/METRIX_Data_Consistency_Audit_Phase1.md` §5.3.
+- **Resolution:** shipped: `metricConceptUtils.link_ctr` → null on zero impressions;
+  `AudienceView` group spend → "—" when unknown; `IapLibraryView` results → "—" when unknown.
+- **Verification evidence:** lib + metric popover + audience test suites green (341 tests).
+
+## BUG-12 — Fabricated "Only 0 impressions" low-signal warnings under date presets
+
+- **Symptom:** with any date preset active, every audience segment flagged low-signal with
+  "Only 0 impressions — below the 1,000 needed…".
+- **Root cause:** `demographic_performance` stores no impressions; the preset-window API
+  adapter zero-fills `Impressions: 0`; `assessSegmentSignal`'s impressions heuristic read
+  the zero-fill as a measurement.
+- **Category:** Fix-Now (fabricated warning).
+- **Resolution (shipped):** the impressions heuristic applies only when the scoped source
+  carries impressions at all (`scopedTotals.impressions > 0`); spend-share and coverage
+  heuristics still apply.
+- **Verification evidence:** `coverage-honesty.test.ts` + lib suites green.
+
+## BUG-13 — Concept-group CTR taken from an arbitrary row
+
+- **Symptom:** `ConceptFamilyView` cell stats presented `rows[0]?.CTR_link_pct` — one
+  event-row's rate — as the group CTR.
+- **Root cause:** missing blended derivation.
+- **Category:** Fix-Now (wrong number presented as a group metric).
+- **Resolution (shipped):** blended CTR from summed link clicks ÷ summed impressions; null
+  when impressions are absent.
+
+## BUG-14 — AnalysisHistoryView "Data integrity" block is permanently-empty dead UI
+
+- **Symptom:** the per-run reconciliation block renders from `run.reconciliation[]`, a field
+  no server code ever writes (`import_metric_reconciliation` has zero writers; `runShape`
+  omits it).
+- **Category:** Fix-Now-next (a dead "integrity" surface implies checks that don't run).
+- **Resolution:** next session — remove the block + orphan contract field, or implement the
+  writer. Not changed in this PR (needs a product call on which).
+
+## BUG-15 — Alerts page lineage mismatch
+
+- **Symptom:** `ListenCommandCenter` documents Alerts as sourced from `iap.data_quality[]`;
+  `AlertsView` actually renders `data_caveat` — importer quality flags (incl.
+  `cross_export_mismatch`) never reach the Alerts page.
+- **Category:** Open (surfacing gap; flags do render in AdPerformanceView SignalCards).
+- **Resolution:** next session, with the csv_warnings surfacing work (see audit doc §5.1).
+
+## BUG-16 — Manual-engine Stage-2 concept intelligence lands nowhere
+
+- **Symptom:** `buying_intent_score` / `performance_lift_vs_baseline` / `performance_tier` /
+  `confidence_level` are computed, persisted on `concept_performance`, and shipped on
+  `analysis.concept_rollup` — but the client type omits all four and `FindingsView` reads the
+  importer-only `concept_intelligence` table.
+- **Category:** Fix-Now-next (computed intelligence invisible for manual accounts).
+- **Resolution:** extend `ConceptRollupRow` + FindingsView source fallback; next session.
+
+## BUG-17 — AnalysisOverview headline tiles bypass the canonical totals
+
+- **Symptom:** scoped spend/impressions/CTR re-summed from `performance_by_cell`, bypassing
+  the `account_totals` ceiling override AND the impossible-CTR guard; sums to 0 on manual
+  accounts (cell perf is importer-only).
+- **Category:** Fix-Now-next (canonical-source violation, §2a.4).
+- **Resolution:** read `campaign_summary`/summary API; next session.
+
+## BUG-18 — Two contradictory concept lift/tier definitions
+
+- **Symptom:** engine persists CPA-lift vs blended baseline + tier; `AdPerformanceView`
+  computes CVR-lift vs an unweighted mean of per-concept CVRs (an average-of-averages the
+  codebase explicitly forbids elsewhere) and derives its own tiers.
+- **Category:** Fix-Now-next (same number, two definitions).
+- **Resolution:** adopt the engine's definition; next session, with BUG-16.
+
+## Shipped small honesty fixes from the audit (no separate entries)
+
+- "Top variable —" dash now carries the computed `unavailableReason` as a tooltip instead of
+  discarding it (`AvatarsView`).
