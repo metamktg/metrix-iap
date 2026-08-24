@@ -342,6 +342,28 @@ async function buildStrategyEvidence(
   const icps = icpRows.map((r) => r["payload"] as Row).slice(0, 8);
   const metadata = moduleRows[0]?.["payload"] ?? null;
 
+  // Join coverage measured by the analysis run(s) this strategy is grounded
+  // in (newest selected run; latest success for "all") — shipped into the
+  // evidence pack so the model is TOLD how much of the account's spend each
+  // report class represents, instead of overtrusting an under-covered slice
+  // (the real failure mode: segment claims built on a demographic export
+  // carrying 2% of spend).
+  const coverage: Row | null = await (async () => {
+    const supabase = getSupabase();
+    let q = supabase
+      .from("manual_analysis_runs")
+      .select("coverage")
+      .eq("account_id", accountId)
+      .eq("status", "success")
+      .order("finished_at", { ascending: false })
+      .limit(1);
+    if (runIds !== "all" && runIds.length > 0) q = q.in("id", runIds) as typeof q;
+    const { data, error } = await q.maybeSingle();
+    if (error || !data) return null;
+    const cov = (data as Row)["coverage"];
+    return cov && typeof cov === "object" ? (cov as Row) : null;
+  })();
+
   const evidence: Row = {
     account: { id: accountId, name: accountName },
     top_cells: cells,
@@ -375,6 +397,14 @@ async function buildStrategyEvidence(
       .slice(0, 25),
     icp_profiles: icps,
     account_metadata: metadata,
+    ...(coverage
+      ? {
+          data_coverage: {
+            note: "Measured join coverage per report class for the analyzed window. A class with below_threshold=true represents only the stated share of account spend — treat evidence from it as thin and qualify claims accordingly.",
+            ...coverage,
+          },
+        }
+      : {}),
   };
 
   return {
@@ -573,6 +603,7 @@ function strategyPrompt(
     "- placement_strategy / scaling_guidance: reflect the Andromeda execution context (broad targeting, ABO, Advantage+ placements) rather than narrow demographic targeting.",
     "- priority: one of high | medium | low.",
     "- Be honest about weak evidence: mark low-confidence recommendations as such inside the text.",
+    "- evidence.data_coverage (when present) measures how much of the account's spend each report class represents. Any class with below_threshold=true is THIN evidence: qualify claims grounded in it with the measured coverage percentage, keep their confidence_level at low or validation_required, and never present an under-covered breakdown as account-representative.",
     "- icp_profiles: propose 0-4 NEW or meaningfully refined audience segments grounded in the demographic_signal/placement_signal/concept_rollup evidence — never duplicate a profile_name already present in evidence.icp_profiles. Each field is one prose paragraph (not a nested object): demographic_foundation covers age/gender/placement/device/geography; psychographic_profile covers core identity, pain points, values, motivators, objections, decision style; behavioral_signals covers engagement pattern, where this ICP sits in the account's funnel, price sensitivity, and urgency response; funnel_entry_point names where they typically enter; message_resonance summarizes which concepts/angles/hooks/proof/tone actually work for them per the evidence; strategic_recommendation is one concrete action; confidence_level is high|medium|low|validation_required based on how much real evidence supports it. Return an empty array when the evidence doesn't support any new segment — never invent one to fill space.",
     "",
     "Return ONLY a raw JSON object (no markdown fences, no prose) with this exact shape:",

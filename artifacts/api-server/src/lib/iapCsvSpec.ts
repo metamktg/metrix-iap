@@ -616,6 +616,18 @@ export function findColumnInHeader(headers: string[], canonical: string): Column
   if (canonical.includes("{ACCOUNT_CURRENCY}")) {
     const cur = headers.find((h) => headerMatchesColumn(h, canonical));
     if (cur !== undefined) return makeMatch(cur.trim(), "currency");
+    // Slug-tolerant currency match: a spreadsheet round-trip mangles
+    // "Amount spent (USD)" into "Amount spent _USD_", whose slug is
+    // "amount_spent_usd" — but slugifyColumn STRIPS the placeholder from the
+    // canonical ("amount_spent"), so the generic slug pass below can never
+    // see it and the header used to fall through to a 67% Jaccard inference
+    // with a spurious "please verify" hedge. Build the slug pattern with a
+    // real 3-letter code slot instead.
+    const slugPattern = new RegExp(
+      `^${slugifyColumn(canonical.replace("{ACCOUNT_CURRENCY}", "XQZ")).replace("xqz", "[a-z]{3}")}$`,
+    );
+    const slugCur = headers.find((h) => slugPattern.test(slugifyColumn(h)));
+    if (slugCur !== undefined) return makeMatch(slugCur.trim(), "slug");
     // Also check: header might literally say "Amount spent" with no currency
     const plainSpend = headers.find(
       (h) => h.trim().toLowerCase() === "amount spent" || COLUMN_ALIASES[h.trim().toLowerCase()] === canonical,

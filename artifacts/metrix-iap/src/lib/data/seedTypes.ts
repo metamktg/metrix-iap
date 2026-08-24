@@ -189,6 +189,12 @@ export interface ConceptRollupRow {
   cvr_link_pct: number | null;
   confidence: string | null;
   mapped_in_library: boolean;
+  /** Stage 2 Analysis Core intelligence (computed by analysisEngine after
+   *  each manual run; null/absent on importer-era and pre-Stage-2 rows). */
+  buying_intent_score?: number | null;
+  performance_lift_vs_baseline?: string | number | null;
+  performance_tier?: string | null;
+  confidence_level?: string | null;
 }
 
 export interface AnalysisData {
