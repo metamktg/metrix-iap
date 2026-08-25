@@ -86,7 +86,7 @@ from the scoped account's analysis data keyed on the card's cell code; explicit 
 win. The rules stay pure in `lib/creative-empty-reasons.ts`
 (`creativeEmptyReasonsFor`), unit-tested without React.
 
-### F-03 — `reconciliation` is declared **required** in the API contract with zero writers · **open, needs the BUG-14 product call**
+### F-03 — `reconciliation` was declared **required** in the API contract with zero writers · **resolved**
 
 Sharper than BUG-14 recorded it. `import_metric_reconciliation` exists in `schema.sql`
 with no writer anywhere; `runShape` (`analysisEngine.ts:184`) omits the field; yet
@@ -96,12 +96,17 @@ export's totals against the placement export's totals for this run") and lists i
 field that never arrives. `AnalysisHistoryView` survives only because it guards with
 `run.reconciliation ?? []`; the type invites an unguarded `.map()` that would throw.
 
-Not fixed here because the fix depends on the same product call BUG-14 already flagged, and
-the two options diverge: implement the writer (the over-baseline check in
-`computeDataCoverage` is most of the logic already) and the field stays required, or delete
-the block and the field. **Either way the current spec is wrong** — it describes a check
-that does not run. This should be settled in the E1–E4 sprint, where the OpenAPI contract is
-already being edited.
+**Resolved** (owner decision, second pass): the contract was made honest rather than the
+writer implemented or the block deleted — the smallest reversible change, and it does not
+preempt building the check later. `reconciliation` left `required`, its description now
+states plainly that nothing populates it and names the integrity check that DOES run today
+(the over-baseline guard in `computeDataCoverage`). Codegen regenerated, so the client's
+guard is type-correct rather than incidentally safe; the UI block is kept and self-hides.
+
+A scripted sweep of all 139 OpenAPI schemas for required non-nullable fields with no server
+writer confirmed `ReconciliationRow` was the **only genuine orphan in the entire contract** —
+the other eleven hits were shorthand-property or client→server input false positives, each
+checked by hand.
 
 ## 2. Handoff corrections for the Phase 2 sprint
 
@@ -117,11 +122,13 @@ already being edited.
   check now reports **zero** across 127 module page files. The comment is stale and the
   gate can be flipped to blocking — which is how the Phase 3 brief's §11 gets enforced
   rather than re-litigated per PR.
-- **`sumInRange` still coalesces.** `date-scope.ts:67` returns `number` and folds missing
-  values with `?? 0`, so an all-null column sums to a measured-looking `0`. This is
-  BUG-11's documented open half and remains the largest unresolved honesty-invariant gap;
-  it needs the single aggregation-policy decision mapped in
-  `METRIX_Data_Consistency_Audit_Phase1.md` §5.3, not another site-by-site patch.
+- **`sumInRange` coalescing — resolved.** It returned `number` and folded missing values
+  with `?? 0`, so an all-null column summed to a measured-looking `0`. Owner decision:
+  null unless every contributing row carries the value, matching `segment-analytics`'
+  existing `sumStrict` rather than adding a second convention. The type change then did the
+  auditing for us — it surfaced `MetricResultEvent.results`/`.spend` as non-nullable (so
+  `cpa_blended` and `cvr` could be derived from a partial sum that looked complete) and two
+  further `?? 0` fabrications in `AdPerformanceView`. All fixed.
 
 ## 3. The pattern worth carrying into Phase 3
 
@@ -135,3 +142,91 @@ Phase 3 will multiply these call sites. The durable rule: **a surface that rende
 should read its own qualifications, not receive them.** Both fixes here follow it — the
 drill-down reads coverage, the dialog derives its own empty reasons — and both are now
 pinned by tests that do not depend on any particular call site existing.
+
+
+---
+
+# Second pass (same session) — independent investigation
+
+The first pass asked whether Phase 1's fixes reached every surface. This pass went after
+everything else: the ingestion → warning → UI path end to end, the API contract as a whole,
+and the verification apparatus itself. Four more defects, all now fixed.
+
+## F-04 — The one column cascade that never got the warning-fold policy · **fixed**
+
+`iapCsvParser` has four column-resolution cascades. Three fold deterministic matches
+(slug / case-insensitive / curated alias / currency-suffix) into a single "matched
+automatically — no action needed" line. The **creative-metadata cascade** — which runs only
+for `ad_summary` exports, which is precisely why BUG-20 and BUG-27 both missed it — emitted
+one warning per column unconditionally. Meta's own ad-level exports label those columns
+"Body text", "Headline" and "CTA", all curated aliases, so **every real ad_summary import
+carried three warnings the user could neither act on nor verify.**
+
+The same cascade also ran ~200 lines after `unmappedHeaders` was computed, so its
+successfully-mapped headers were still unclaimed when the unknown-column pass ran — eligible
+to be reported as "Unrecognised column … may correspond to expected column X" — and any fold
+it contributed would have incremented a counter already reported, dropping the mapping from
+the summary rather than demoting it.
+
+Moved beside the other cascades and given the same fold. Measured on the real AAFE Ad Summary
+header shape: **6 warnings → 3**, fold count 1 → 4 with nothing dropped, both survivors
+informational. `warningSeverity` also gained `(via currency match)`, which was missing from
+the notice patterns.
+
+## F-05 — Alerts never showed the flags it documents as its source · **fixed**
+
+`ListenCommandCenter` advertises the Alerts lineage as `iap.data_quality[]`; `AlertsView`
+rendered only `data_caveat`. Every analysis-run quality finding — including
+`cross_export_mismatch`, the cross-export integrity trigger — reached the Ad Performance
+signal tiers and nowhere else. **The page a user opens to see what needs attention showed
+none of them**, and the "Active alerts" count excluded them. This was BUG-15, carried as open
+since Phase 1. Flag presentation is now shared (`lib/dataQualityFlags.ts`) and Alerts has a
+data-quality section that counts into the totals.
+
+Worth noting: the repo's own `inpage-nav-targets` guard caught a wrong cross-link target on
+the first attempt. The existing test apparatus is good, where it runs — which is the next
+finding.
+
+## F-06 — CI gated 59 of 288 available secret-free server tests · **fixed**
+
+CI excluded the api-server suite wholesale as "needs live secrets" and hand-picked five files
+back in. Running each of the 38 files individually with no environment set shows **16 pass
+secret-free** (288 tests). Eleven were therefore completely unprotected, including
+`iapCsvMapping` (73 tests — the column-mapping cascade behind the entire BUG-20/21/27 warning
+class), `metrixSeedAssembly` (the BUG-25 fix that resolved a production outage),
+`iapCsvParser`, `objectiveCoverage` and `analysisCsvClassCheck`.
+
+This is why F-04 survived three warning-noise passes: the code that produces those warnings
+had no gate. The CI step now runs all 16, with the inclusion criterion recorded in the
+workflow so the list stays correct as suites are added.
+
+## F-07 — Refetching KPI tiles rendered the same dash as a missing value · **fixed**
+
+`KpiValue` rendered `—` at reduced opacity while a refetch was in flight — the same glyph a
+null renders. A slow request and "this number does not exist" were the same picture, and the
+honest-null convention loses its meaning when loading borrows its glyph. Now a pulsing
+`aria-busy` bar; the dash means exactly one thing.
+
+## Verification state at close
+
+| Gate | Result |
+|---|---|
+| `pnpm run typecheck` (all packages) | green |
+| Metrix IAP vitest | 114 files / **1,672** tests green |
+| API server (CI-gated set) | 18 files / **288** tests green (was 59) |
+| `check:api-codegen-drift` | green |
+| Three contrast gates | green |
+| `check:disclosure-rulebook` | 0 violations |
+| Production build (`vite build`) | succeeds |
+
+The **build smoke** fails in a sandboxed container only: it launches a pinned Chromium
+revision (1228) the image does not carry (it has 1194). CI installs the pinned revision
+explicitly, and the underlying `vite build` succeeds here. Not a code defect.
+
+## What is left
+
+Nothing from Phase 1 is now open. The remaining backlog is deliberate scope, not defects:
+BUG-08 (restage discoverability, Phase 2 polish), the `routes/metrix.ts` split (E5 — now
+3,636 lines), retention policy for processed performance files, and the Optimization Loop
+build. The disclosure-rulebook gate can also be flipped from advisory to blocking: it has
+been at zero for the whole session and CI's "~170 violations" comment is stale.
