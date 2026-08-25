@@ -974,3 +974,30 @@ progress; the one live row was corrected.
 fail-stale-not-fresh case — reading an unusable timestamp as *fresh* would make a genuinely
 dead run unreclaimable and permanently block the account behind the one-running-row index.
 Wired into the CI gate list.
+
+## BUG-40 — the duplicate-header notice fired once per column, drowning the warnings that mattered
+
+**Severity:** medium (no wrong data; real warnings buried)
+**Found:** reading the `csv_warnings` of live successful runs, Aug 25.
+
+Meta's pivot exporter duplicates a *fixed set* of headers together — `Ad name`,
+`Ad ID`, `Result value type` — so the duplicate-header notice never fires once. It fires
+three times, per file. On the latest AAFE run, **6 of 15 warnings** were that one message
+repeated; on the run before it, 6 of 12. What they crowded out were the warnings that
+actually needed acting on: the 2.9% demographic coverage warning, and three ID columns
+blanked by a Sheets round-trip.
+
+This is the same class BUG-20 (severity-split) and BUG-31 (creative-metadata cascade)
+addressed, on a cascade that predates the fold policy and sits ~30 lines above where the
+fold state is declared — which is likely why it was missed both times.
+
+**Fix.** Fold to one line that names every affected column:
+`3 columns appear more than once in the header row — only the first occurrence of each is
+used: "Ad name", "Result value type", "Ad ID".` Singular wording is kept for the
+genuine one-column case. Nothing is lost — the columns are still named — and the panel
+drops from 15 lines to 10 on the same export.
+
+**Verification:** four tests in `iapCsvWarningSignal.test.ts` alongside the existing
+creative-metadata fold tests, pinning the folded count, that no column name is dropped,
+the singular case, and silence when nothing is duplicated. Regression-proven: reverting to
+the per-column loop fails two of them.

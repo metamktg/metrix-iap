@@ -313,8 +313,22 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       if (seen.has(h)) duplicated.add(h);
       seen.add(h);
     }
-    for (const h of duplicated) {
-      warnings.push(`Column "${h}" appears more than once in the header row — only the first occurrence is used.`);
+    // Folded into ONE line, same policy as the auto-match cascades below.
+    // Meta's pivot exporter duplicates a fixed set of headers together, so
+    // this fired three times per file on every real export — six of the
+    // fifteen warnings on a live AAFE run were this one notice, crowding
+    // out the coverage and ID-corruption warnings that actually needed
+    // acting on. One line naming every affected column says the same thing.
+    const dupes = [...duplicated];
+    if (dupes.length === 1) {
+      warnings.push(
+        `Column "${dupes[0]}" appears more than once in the header row — only the first occurrence is used.`,
+      );
+    } else if (dupes.length > 1) {
+      warnings.push(
+        `${dupes.length} columns appear more than once in the header row — only the first occurrence of each is used: ` +
+          `${dupes.map((h) => `"${h}"`).join(", ")}.`,
+      );
     }
   }
 

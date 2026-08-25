@@ -237,6 +237,55 @@ function parseAdSummary() {
   return parseIapCsv(`${AD_SUMMARY_HEADER}\n${AD_SUMMARY_ROW}\n`, "ad_summary" as never);
 }
 
+describe("duplicate-header fold policy", () => {
+  // Meta's pivot exporter duplicates a fixed SET of headers together, so a
+  // per-column notice fired three times on every real export. Six of the
+  // fifteen warnings on a live AAFE run were this one message, crowding out
+  // the coverage and ID-corruption warnings that actually needed acting on.
+  const dupHeader = [
+    "Day", "Ad name", "Ad name",
+    "Amount spent (USD)", "Impressions", "Reach", "Link clicks", "Clicks (all)",
+    "Results", "Result value type", "Result value type",
+    "Ad ID", "Ad ID",
+  ].join(",");
+  const dupRow = [
+    "2026-07-01", "Ad One", "Ad One",
+    "100", "1000", "900", "20", "30",
+    "4", "purchase", "purchase",
+    "123", "123",
+  ].join(",");
+  const parseDup = () => parseIapCsv(`${dupHeader}\n${dupRow}\n`, "ad_summary" as never);
+
+  const dupWarnings = (ws: string[]) =>
+    ws.filter((w) => w.includes("appear") && w.includes("more than once in the header row"));
+
+  it("emits ONE notice for three duplicated columns, not three", () => {
+    const found = dupWarnings(parseDup().warnings);
+    expect(found).toHaveLength(1);
+  });
+
+  it("still names every duplicated column, so folding loses no information", () => {
+    const [notice] = dupWarnings(parseDup().warnings);
+    expect(notice).toContain('"Ad name"');
+    expect(notice).toContain('"Result value type"');
+    expect(notice).toContain('"Ad ID"');
+    expect(notice).toContain("3 columns");
+  });
+
+  it("keeps the singular wording when only one column is duplicated", () => {
+    const header = ["Day", "Ad name", "Ad name", "Amount spent (USD)", "Impressions"].join(",");
+    const row = ["2026-07-01", "Ad One", "Ad One", "100", "1000"].join(",");
+    const [notice] = dupWarnings(parseIapCsv(`${header}\n${row}\n`, "ad_summary" as never).warnings);
+    expect(notice).toBe(
+      'Column "Ad name" appears more than once in the header row — only the first occurrence is used.',
+    );
+  });
+
+  it("says nothing at all when no header is duplicated", () => {
+    expect(dupWarnings(parseAdSummary().warnings)).toEqual([]);
+  });
+});
+
 describe("creative-metadata cascade fold policy", () => {
   it("folds alias-matched creative metadata instead of one warning per column", () => {
     const { warnings } = parseAdSummary();
