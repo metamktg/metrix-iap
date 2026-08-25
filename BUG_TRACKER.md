@@ -534,6 +534,35 @@ parser/merge code.
   parse 3.9 s at 583 MB peak RSS; all 48,729 rows parse with only the honest warnings
   (Sheets ID corruption ×3, duplicated header columns ×3).
 
+## BUG-27 — Optional-column absences rendered as warnings; currency-suffixed CPM flagged "low confidence"
+
+- **Symptom (live, AAFE Ad Summary export):** the pre-run mapping banner showed
+  "29 columns missing, 1 low-confidence — Missing optional columns may reduce analysis
+  accuracy. Consider fixing your CSV first." for a file whose class only REQUIRES
+  `Day` + `Ad name`. All 29 "missing" columns were optional metrics Meta's Ad Summary
+  export type simply doesn't carry — not a defect the user can fix. The one
+  "low-confidence" entry was `CPM (cost per 1,000 impressions)` found as
+  `CPM (cost per 1,000 impressions) (USD)` — a deterministic rename.
+- **Root causes (two):**
+  1. `findColumnInHeader`'s currency tolerance only covered canonicals containing the
+     `{ACCOUNT_CURRENCY}` placeholder ("Amount spent"). Some Meta export types append the
+     account currency to EVERY monetary column, so the suffixed CPM header fell through to
+     Jaccard inference (~71%) and rendered a spurious "please verify" flag.
+  2. Both mapping surfaces (pre-run `MappingHealthBanner`, upload-dialog
+     `CsvMappingPanel`) styled ALL missing columns as warnings — amber section, red rows —
+     regardless of `is_required`.
+- **Category:** Fix-Now (last known false-friction warning surface before Phase 2/3).
+- **Resolution (implemented):** generic currency-suffix tolerance in `findColumnInHeader`
+  (a trailing 3-uppercase-letter parenthetical strips and re-compares exact/ci/slug →
+  via `currency`, 0.99, tier `exact`; lowercase parentheticals like "(all)" are never
+  stripped), and `currency` added to the parser's deterministic-fold set so it joins the
+  single "matched automatically" summary line. Presentation: required-missing stays red,
+  genuine low-confidence inference stays amber, optional-missing demotes to a neutral
+  collapsed "N optional columns not included in this export — no action needed" notice on
+  both surfaces, and the confidence report's tier chip shows a muted "not in export"
+  instead of red "missing" for optional columns. The column list stays fully available
+  behind the disclosure — presentation demoted, data never hidden.
+
 ## Phase 1→2 optimization pass (Aug 25) — performance, load, and transfer
 
 Evidence-driven pass ahead of the Phase 2/3 transition; every change verified in isolation
