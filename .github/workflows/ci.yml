@@ -105,6 +105,9 @@ jobs:
           pnpm --filter @workspace/api-server exec vitest run
           src/lib/__tests__/iapCsvDayNormalization.test.ts
           src/lib/__tests__/analysisEngineAdRowGuards.test.ts
+          src/lib/__tests__/iapCsvWarningSignal.test.ts
+          src/lib/__tests__/analysisEngineCoverage.test.ts
+          src/lib/__tests__/xlsxToCsv.test.ts
 
       - name: API server smoke (boots without Supabase env by design)
         # The server now imports the Anthropic AI integration client at module
