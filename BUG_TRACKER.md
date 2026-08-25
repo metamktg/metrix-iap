@@ -654,12 +654,23 @@ Flags (operator action / product decisions, no code change):
   the generated client type both assert a field that never arrives.
   `AnalysisHistoryView` survives only via `run.reconciliation ?? []`; the type invites an
   unguarded `.map()` that would throw at runtime.
-- **Category:** Open — blocked on the same product call BUG-14 already flagged.
-- **Resolution:** not changed here. The two options diverge and the contract edit differs
-  per option: implement the writer (the over-baseline check in `computeDataCoverage` is
-  most of the logic already) and the field legitimately stays required, or delete the block
-  and the field. Either way the spec is currently wrong — it describes a check that does
-  not run. Settle it during E1–E4, where `openapi.yaml` is being edited anyway.
+- **Category:** Fix-Now (resolved 2026-08-25 by owner decision: make the contract honest).
+- **Owner decision:** of the three options (implement the writer / delete the block and
+  field / make the contract honest), the owner chose to make the contract honest — the
+  smallest reversible change, and it does not preempt building the check later.
+- **Resolution (implemented):** `reconciliation` moved out of `AnalysisRun.required` in
+  `openapi.yaml`, with the description stating plainly that nothing populates it, that the
+  equivalent integrity check running today is the over-baseline guard in
+  `computeDataCoverage` (surfaced via `data_coverage` + csv_warnings), and that the field
+  should move back to `required` if the writer is implemented. Codegen regenerated:
+  `reconciliation?: ReconciliationRow[]` in the client types, `.optional()` in the Zod
+  schema. `AnalysisHistoryView`'s block is kept and now reads through one nullish path, so
+  implementing the writer later needs no UI work — its guard is type-correct rather than
+  incidentally safe. Verified: codegen drift clean, full typecheck green.
+- **Sweep evidence:** a scripted check of all 139 OpenAPI schemas for required
+  non-nullable fields with no server writer found `ReconciliationRow` to be the ONLY
+  genuine orphan in the contract (the other 11 hits were shorthand-property or
+  client→server input false positives, each verified by hand).
 
 ## BUG-31 — Creative-metadata cascade bypassed the warning-fold policy and ran after header claiming
 
@@ -735,3 +746,30 @@ Flags (operator action / product decisions, no code change):
 - **Resolution (implemented):** the CI step now runs all 16, with the criterion recorded
   in the workflow so the list stays correct as suites are added: a file belongs there only
   if `vitest run <file>` passes with no environment. Gate went from 59 to 288 tests.
+
+## BUG-11 (open half) — resolved: one strict aggregation policy
+
+- **Symptom:** `sumInRange` (`date-scope.ts`) returned `number` and folded missing values
+  with `?? 0`. A column no row carried summed to a measured-looking `0`, and a date window
+  containing no rows reported "$0 spent" rather than "nothing measured here". Zero is a
+  real, meaningful figure in every metric this feeds, so it must never stand in for an
+  unknown. This was the largest remaining honesty-invariant gap and the last item from the
+  Phase 1 audit's §5.3 aggregation-policy split.
+- **Owner decision (2026-08-25):** null unless every contributing row carries the value —
+  matching the `sumStrict` policy already used in `segment-analytics`, rather than adding a
+  second convention that disagrees at the edges.
+- **Resolution (implemented):** `sumInRange` returns `number | null`: null when no row
+  falls in the range, null when any row that does lacks the value (or carries a non-finite
+  one), a real sum otherwise. The type change surfaced every downstream site that had been
+  silently coalescing:
+  - `MetricResultEvent.results` / `.spend` are now `number | null`. `buildMetricCatalog`
+    computes `totalResults` strictly (null if ANY event is unmeasured) so `cpa_blended` and
+    `cvr` stay null rather than being derived from a partial sum that looks complete;
+    `costPerResult` gained the matching null guard.
+  - Two `spend: scoped.spend ?? 0` fabrications removed from `AdPerformanceView`'s
+    range-scoped tile and drill-down catalogs.
+- **Verification evidence:** six new cases in `date-scope.test.ts` (null on empty range,
+  null on a gap in a contributing row, a gap OUTSIDE the range correctly ignored, null on
+  an empty row set, normal summation when complete, non-finite treated as unmeasured) plus
+  the two existing cases updated to the nullable contract. Full typecheck green, 1,672
+  client tests green, codegen drift clean, production build succeeds.

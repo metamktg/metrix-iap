@@ -975,7 +975,7 @@ export function AdPerformanceView() {
                     clicksAll: null,
                     linkClicks: scoped.linkClicks,
                     linkCtrPct: null,
-                    resultEvents: [{ key: "in_range_results", label: "Results (in range)", results: scoped.results, spend: scoped.spend ?? 0 }],
+                    resultEvents: [{ key: "in_range_results", label: "Results (in range)", results: scoped.results, spend: scoped.spend }],
                     isMultiEvent: false,
                   })}
                   tileCount={3}
@@ -1008,7 +1008,7 @@ export function AdPerformanceView() {
                       clicksAll: null,
                       linkClicks: scoped.linkClicks,
                       linkCtrPct: null,
-                      resultEvents: [{ key: "in_range_results", label: "Results (in range)", results: scoped.results, spend: scoped.spend ?? 0 }],
+                      resultEvents: [{ key: "in_range_results", label: "Results (in range)", results: scoped.results, spend: scoped.spend }],
                       isMultiEvent: false,
                     }
                   : metricSourceFromCampaignSummary(summary),
