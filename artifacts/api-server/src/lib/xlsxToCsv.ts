@@ -428,3 +428,34 @@ export async function convertXlsxToCsvText(
   }
   return builder.finish();
 }
+
+/**
+ * Reads ONLY the header row of a workbook — the first row of the first
+ * sheet that has any rows — via the streaming reader, without converting
+ * the rest of the file. Class detection needs just these cells; running the
+ * full conversion there cost a ~12s pass over a real 2.3M-cell workbook
+ * before a single data row was ever needed.
+ */
+export async function readXlsxHeaderCells(buffer: Buffer): Promise<string[]> {
+  try {
+    for await (const sheet of openStreamingReader(buffer)) {
+      const iterator = sheet[Symbol.asyncIterator]();
+      const first = await iterator.next();
+      await iterator.return?.(undefined);
+      if (first.done) continue;
+      const row = first.value;
+      const colCount = Math.max(row.cellCount, 1);
+      const header: string[] = [];
+      for (let c = 1; c <= colCount; c++) {
+        header.push(textualCellValue(row.getCell(c).value).trim());
+      }
+      return header;
+    }
+    return [];
+  } catch (err) {
+    throw new IapCsvFormatError(
+      `Could not read this file as an Excel workbook (${err instanceof Error ? err.message : "unknown error"}). ` +
+        `Re-export it as .xlsx or .csv and try again.`,
+    );
+  }
+}

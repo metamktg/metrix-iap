@@ -29,7 +29,7 @@ import type { IapCsvClass } from "./iapCsvSpec";
 import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel, optionalMetricSlugsForGroups, IAP_CSV_CLASS_SPECS, type ObjectiveColumnGroup } from "./iapCsvSpec";
 import { resolveAccountObjectives } from "./cohortConfig";
 import { computeObjectiveCoverage, OBJECTIVE_GROUP_FOR_KEY } from "./objectiveCoverage";
-import { convertXlsxToCsvText, looksLikeXlsxContent } from "./xlsxToCsv";
+import { convertXlsxToCsvText, looksLikeXlsxContent, readXlsxHeaderCells } from "./xlsxToCsv";
 import { extensionOf } from "./creativeAssetType";
 
 
@@ -1550,6 +1550,27 @@ export async function startManualAnalysis(
     }
     return p;
   };
+  // Header-only fast path for class detection: reading the first row is all
+  // detection needs, and fully decoding a large file there (a ~12s streaming
+  // convert of a 2.3M-cell workbook, or a 100MB+ toString of a big CSV) was
+  // pure waste before a single data row was required.
+  const getImportHeaderCells = async (imp: {
+    id?: unknown;
+    content?: unknown;
+    filename?: unknown;
+  }): Promise<string[]> => {
+    const buf = await getImportBuffer(imp);
+    const filename = String(imp["filename"]);
+    if (extensionOf(filename) === "xlsx" || looksLikeXlsxContent(buf)) {
+      return readXlsxHeaderCells(buf);
+    }
+    // Only the first line matters — decode at most the first 256KB.
+    const cap = Math.min(buf.length, 262144);
+    let end = buf.indexOf(0x0a);
+    if (end === -1 || end > cap) end = cap;
+    return csvFirstLineHeaders(buf.toString("utf8", 0, end));
+  };
+
   const importParses = new Map<string, { result: IapCsvParseResult; xlsxWarnings: string[] }>();
   const parseImportForClass = async (
     imp: { id?: unknown; content?: unknown; filename?: unknown },
@@ -1581,8 +1602,7 @@ export async function startManualAnalysis(
   // here rather than surfacing a confusing error from a pre-check.
   const detectClassForImport = async (imp: { content?: unknown; filename?: unknown }): Promise<IapCsvClass | null> => {
     try {
-      const { text } = await getImportText(imp);
-      return detectCsvClassFromHeaders(csvFirstLineHeaders(text));
+      return detectCsvClassFromHeaders(await getImportHeaderCells(imp));
     } catch {
       return null;
     }

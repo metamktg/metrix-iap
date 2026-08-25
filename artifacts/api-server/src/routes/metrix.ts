@@ -1732,8 +1732,11 @@ router.get("/metrix/accounts/:accountId/manual-imports/:importId/file", requireA
     }
     const { buf, contentType } = file;
     res.setHeader("Content-Type", contentType);
-    // Long browser cache — the file bytes never change after upload.
-    res.setHeader("Cache-Control", "private, max-age=3600");
+    // Creative imports are immutable: each upload gets its own importId URL,
+    // and replacing a creative creates a new URL. Keep the bytes in the
+    // browser's disk cache so revisiting the library or refreshing the page
+    // does not re-fetch the same image from Supabase.
+    res.setHeader("Cache-Control", "private, max-age=31536000, immutable");
 
     // Video elements (Safari in particular) require Range/206 support to
     // play at all, not just to seek — without this, video creatives can
