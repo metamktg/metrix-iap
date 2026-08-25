@@ -1031,6 +1031,26 @@ async function validatePerformanceCsvUpload(
   };
 }
 
+/**
+ * User-safe rendering of an upstream failure. Supabase errors can carry a
+ * whole HTML error page as their message (observed live: a Cloudflare 520
+ * page rendered verbatim in the staging popup) — anything that looks like
+ * markup, or is implausibly long for a sentence, collapses to a plain
+ * retryable message. Postgres statement timeouts get their own wording.
+ * The full error still goes to the server log at every call site.
+ */
+function publicErrorMessage(err: unknown, fallback: string): string {
+  const raw = err instanceof Error ? err.message : "";
+  if (!raw) return fallback;
+  if (/<\s*(!doctype|html|head|body)/i.test(raw) || raw.length > 300) {
+    return "The database is temporarily unavailable — wait a moment and try again.";
+  }
+  if (/statement timeout/i.test(raw)) {
+    return "The database took too long to respond — try again; the upload resumes from where it left off.";
+  }
+  return raw;
+}
+
 /** Returns the already-staged import that byte-matches (same md5) this
  *  upload in the same slot, or null. See the same-bytes duplicate guard. */
 async function findStagedByteDuplicate(
@@ -1265,6 +1285,15 @@ router.post("/metrix/accounts/:accountId/manual-imports/uploads", requireAuth, a
       .eq("account_id", accountId)
       .eq("status", "uploading")
       .lt("created_at", cutoff);
+    // A retried upload of the same file supersedes its own failed session
+    // immediately — chunks cascade-delete with the row.
+    await supabase
+      .from("manual_imports")
+      .delete()
+      .eq("account_id", accountId)
+      .eq("status", "uploading")
+      .eq("kind", parsed.data.kind)
+      .eq("filename", parsed.data.filename);
 
     const insert = await supabase
       .from("manual_imports")
@@ -1290,7 +1319,7 @@ router.post("/metrix/accounts/:accountId/manual-imports/uploads", requireAuth, a
     });
   } catch (err) {
     req.log.error({ err }, "Failed to init chunked manual import upload");
-    res.status(502).json({ message: err instanceof Error ? err.message : "Could not start the upload." });
+    res.status(502).json({ message: publicErrorMessage(err, "Could not start the upload.") });
   }
 });
 
@@ -1362,7 +1391,7 @@ router.put(
       res.json({ status: "ok", chunk_index: chunkIndex });
     } catch (err) {
       req.log.error({ err }, "Failed to store manual import chunk");
-      res.status(502).json({ message: err instanceof Error ? err.message : "Could not store the chunk." });
+      res.status(502).json({ message: publicErrorMessage(err, "Could not store the chunk.") });
     }
   },
 );
@@ -1463,7 +1492,7 @@ router.post(
       );
     } catch (err) {
       req.log.error({ err }, "Failed to complete chunked manual import upload");
-      res.status(502).json({ message: err instanceof Error ? err.message : "Could not finish the upload." });
+      res.status(502).json({ message: publicErrorMessage(err, "Could not finish the upload.") });
     }
   },
 );

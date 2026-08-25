@@ -196,7 +196,12 @@ const MAX_UPLOAD_MB_LABEL = "75 MB";
 const MAX_PERFORMANCE_UPLOAD_BYTES = 150 * 1024 * 1024;
 const MAX_PERFORMANCE_UPLOAD_MB_LABEL = "150 MB";
 const CHUNKED_THRESHOLD_BYTES = 20 * 1024 * 1024;
-const UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
+// 4 MB per chunk (≈8 MB as the hex payload Postgres actually parses): an
+// 8 MB chunk's upsert was observed exceeding the shared instance's original
+// 8s statement timeout. The timeout is now 120s for the server role, but
+// smaller statements + retries keep uploads robust under load regardless.
+const UPLOAD_CHUNK_BYTES = 4 * 1024 * 1024;
+const CHUNK_RETRY_DELAYS_MS = [1000, 3000];
 
 /**
  * Base64-encodes a file (or file slice) via FileReader.readAsDataURL — the
@@ -318,7 +323,22 @@ async function stageManualImportChunked(
   for (let i = 0; i < chunkCount; i++) {
     const slice = file.slice(i * UPLOAD_CHUNK_BYTES, Math.min((i + 1) * UPLOAD_CHUNK_BYTES, file.size));
     const content_base64 = await fileToBase64(slice);
-    await chunkedUploadRequest(`${base}/${init.import_id}/chunks/${i}`, "PUT", { content_base64 });
+    // Chunk PUTs are idempotent (upsert on (import, index)), so transient
+    // failures — a shared-instance timeout, a proxy hiccup — retry safely.
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt <= CHUNK_RETRY_DELAYS_MS.length; attempt++) {
+      try {
+        await chunkedUploadRequest(`${base}/${init.import_id}/chunks/${i}`, "PUT", { content_base64 });
+        lastError = null;
+        break;
+      } catch (err) {
+        lastError = err;
+        const delay = CHUNK_RETRY_DELAYS_MS[attempt];
+        if (delay === undefined) break;
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+    if (lastError) throw lastError;
     // Reserve the last few percent for the server-side assemble+validate step.
     onProgress?.(Math.round(((i + 1) / chunkCount) * 95));
   }
@@ -866,8 +886,10 @@ function SmartCsvUpload({
         // click away, and a notices-only staging drops the alarm styling
         // entirely.
         const isNotice = (w: string) => w.startsWith("Note:") || w.includes("no action needed");
-        const notices = lastWarnings.filter(isNotice);
-        const attention = lastWarnings.filter((w) => !isNotice(w));
+        const cleaned = lastWarnings.filter((w) => w.trim() !== "");
+        if (cleaned.length === 0) return null;
+        const notices = cleaned.filter(isNotice);
+        const attention = cleaned.filter((w) => !isNotice(w));
         const alarmed = attention.length > 0;
         return (
           <div
