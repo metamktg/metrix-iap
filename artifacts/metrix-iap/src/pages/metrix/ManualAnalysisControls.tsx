@@ -61,6 +61,7 @@ import {
   RefreshCw,
   Images,
   History,
+  Info,
 } from "lucide-react";
 
 function RunAnalysisBtn({
@@ -743,15 +744,23 @@ function CreativeLinkageStatus({
  * that are missing (tier = "missing") or only inferred with low confidence
  * (tier = "inferred").
  *
- * Required breakdown columns (is_required = true) that are missing are shown
- * in a distinct red section — these will cause the analysis run to produce
- * incomplete or failed results, not just reduced confidence.
+ * Severity is graded honestly, not uniformly:
+ *  - Required breakdown columns (is_required = true) that are missing get a
+ *    red section — the run will produce incomplete or failed results.
+ *  - Inferred (fuzzy-matched) columns get an amber section — a guess the
+ *    user should verify.
+ *  - OPTIONAL columns absent from the export get a neutral, collapsed
+ *    notice. Meta's export types simply don't all carry every column;
+ *    absence is normal, not a defect in the user's CSV, so it must never
+ *    render with warning styling. The list stays available behind the
+ *    disclosure — demoted presentation, never hidden data.
  *
  * Non-blocking — the user can still press "Run analysis" — but names the
  * specific columns so they can fix the CSV before committing compute time.
  */
 function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
   const [expanded, setExpanded] = useState(false);
+  const [noticesExpanded, setNoticesExpanded] = useState(false);
 
   // Only performance CSVs carry a mapping_summary; creatives don't. Once an
   // import is consumed by a run (status=processed) it's no longer part of
@@ -806,10 +815,10 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
   const optionalMissing = problems.filter((p) => p.tier === "missing" && !p.isRequired);
   const inferred = problems.filter((p) => p.tier === "inferred");
 
-  // Required-missing columns get their own red section at the top.
-  // Optional-missing and inferred columns share the amber section below.
+  // Required-missing → red. Inferred (genuine low-confidence guesses) →
+  // amber. Optional-missing → neutral collapsed notice only: absence of
+  // optional columns is a property of Meta's export type, not a user error.
   const hasRequired = requiredMissing.length > 0;
-  const amberProblems = [...optionalMissing, ...inferred];
 
   const renderProblemRow = (p: ProblemEntry, i: number) => (
     <li key={i} className="text-label leading-relaxed" style={{ color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive) / 0.85)" : "hsl(var(--chart-4) / 0.75)" }}>
@@ -860,8 +869,8 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
         </div>
       )}
 
-      {/* ── Optional-missing + inferred section (amber) ────────────────── */}
-      {amberProblems.length > 0 && (
+      {/* ── Inferred (genuine low-confidence) section (amber) ──────────── */}
+      {inferred.length > 0 && (
         <div className="rounded-lg border border-status-warning/30 bg-status-warning/[0.06] p-3 space-y-2">
           <button
             onClick={() => setExpanded((v) => !v)}
@@ -870,23 +879,54 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
             <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <div className="text-caption font-semibold text-status-warning">
-                {optionalMissing.length > 0 && inferred.length > 0
-                  ? `${optionalMissing.length} column${optionalMissing.length > 1 ? "s" : ""} missing, ${inferred.length} low-confidence`
-                  : optionalMissing.length > 0
-                  ? `${optionalMissing.length} optional column${optionalMissing.length > 1 ? "s" : ""} missing`
-                  : `${inferred.length} column${inferred.length > 1 ? "s" : ""} matched with low confidence`}
+                {inferred.length} column{inferred.length > 1 ? "s" : ""} matched with low confidence
               </div>
               <p className="text-label text-status-warning/70 mt-0.5 leading-relaxed">
-                {optionalMissing.length > 0
-                  ? "Missing optional columns may reduce analysis accuracy. Consider fixing your CSV first."
-                  : "These columns were matched by similarity rather than name. Verify the CSV header matches the expected column names."}{" "}
+                These columns were matched by similarity rather than name. Verify the CSV header
+                matches the expected column names.{" "}
                 <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
               </p>
             </div>
           </button>
           {expanded && (
             <ul className="space-y-1 pt-1 border-t border-status-warning/20">
-              {amberProblems.map((p, i) => renderProblemRow(p, i))}
+              {inferred.map((p, i) => renderProblemRow(p, i))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* ── Optional columns not in this export (neutral notice) ───────── */}
+      {optionalMissing.length > 0 && (
+        <div className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-2">
+          <button
+            onClick={() => setNoticesExpanded((v) => !v)}
+            className="w-full flex items-start gap-2 text-left"
+          >
+            <Info className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <div className="text-caption font-medium text-foreground/75">
+                {optionalMissing.length} optional column{optionalMissing.length > 1 ? "s" : ""} not
+                included in this export
+              </div>
+              <p className="text-label text-muted-foreground/65 mt-0.5 leading-relaxed">
+                Analysis proceeds without them — no action needed. Including them in a future
+                export deepens signal coverage.{" "}
+                <span className="underline cursor-pointer">{noticesExpanded ? "Hide" : "Show"} list</span>
+              </p>
+            </div>
+          </button>
+          {noticesExpanded && (
+            <ul className="space-y-1 pt-1 border-t border-border/20">
+              {optionalMissing.map((p, i) => (
+                <li key={i} className="text-label leading-relaxed text-muted-foreground/70">
+                  <span className="inline-block mr-1.5 px-1 py-px rounded text-label font-medium uppercase tracking-wide border bg-white/[0.03] border-border/40 text-muted-foreground/70">
+                    not in export
+                  </span>
+                  <span className="font-medium text-foreground/70">{p.canonical}</span>
+                  <span className="ml-1 text-muted-foreground/45">· {p.csvLabel}</span>
+                </li>
+              ))}
             </ul>
           )}
         </div>

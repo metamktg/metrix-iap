@@ -111,6 +111,53 @@ describe("findColumnInHeader — confidence scores", () => {
   });
 });
 
+// ── Generic currency-suffix tolerance ────────────────────────────────────────
+// Some Meta export types append the account currency to EVERY monetary
+// column, not just "Amount spent". Observed live (AAFE, Aug 2026): an Ad
+// Summary export carried "CPM (cost per 1,000 impressions) (USD)", which
+// fell through to a 71% Jaccard inference and rendered a spurious
+// "low confidence" flag in the staging popup for a 1:1 deterministic rename.
+
+describe("findColumnInHeader — generic currency-suffix tolerance", () => {
+  it('resolves "CPM (cost per 1,000 impressions) (USD)" via currency at 0.99', () => {
+    const match = findColumnInHeader(
+      ["CPM (cost per 1,000 impressions) (USD)"],
+      "CPM (cost per 1,000 impressions)",
+    );
+    expect(match).not.toBeNull();
+    expect(match!.via).toBe("currency");
+    expect(match!.confidence).toBe(0.99);
+    expect(match!.headerValue).toBe("CPM (cost per 1,000 impressions) (USD)");
+  });
+
+  it("applies to any monetary canonical and any 3-letter code", () => {
+    const match = findColumnInHeader(
+      ["CPC (cost per link click) (AED)"],
+      "CPC (cost per link click)",
+    );
+    expect(match).not.toBeNull();
+    expect(match!.via).toBe("currency");
+  });
+
+  it("tolerates a case-mangled base name under the currency suffix", () => {
+    const match = findColumnInHeader(
+      ["cpm (cost per 1,000 impressions) (EUR)"],
+      "CPM (cost per 1,000 impressions)",
+    );
+    expect(match).not.toBeNull();
+    expect(match!.via).toBe("currency");
+  });
+
+  it("never strips lowercase semantic parentheticals like (all)", () => {
+    // "Clicks (all)" must keep matching itself exactly, and a stripped
+    // "Clicks" must never leak into a DIFFERENT canonical.
+    const exact = findColumnInHeader(["Clicks (all)"], "Clicks (all)");
+    expect(exact).not.toBeNull();
+    expect(exact!.via).toBe("exact");
+    expect(findColumnInHeader(["Clicks (all)"], "Link clicks")).toBeNull();
+  });
+});
+
 // ── COLUMN_ALIASES — expanded alias coverage ─────────────────────────────────
 
 describe("COLUMN_ALIASES — new entries resolve correctly", () => {
@@ -371,6 +418,35 @@ describe("parseIapCsv — mappingSummary", () => {
     for (const col of DEVICE_PLACEMENT_BREAKDOWN_COLUMNS) {
       expect(summaryCanonicals).toContain(col);
     }
+  });
+
+  it("resolves a '(USD)'-suffixed CPM header deterministically — tier exact, folded warning only", () => {
+    const breakdownCols = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS];
+    const header = breakdownCols.map(resolveCurrency).concat(
+      BASE_METRICS.map((c) =>
+        c === "CPM (cost per 1,000 impressions)"
+          ? "CPM (cost per 1,000 impressions) (USD)"
+          : resolveCurrency(c),
+      ),
+    );
+    const row = breakdownCols.map(breakdownValue).concat(BASE_METRICS.map(baseValue));
+    const result = parseIapCsv([line(header), line(row)].join("\n"), "demographic");
+
+    const entry = result.mappingSummary.find(
+      (e) => e.canonical === "CPM (cost per 1,000 impressions)",
+    );
+    expect(entry).toBeDefined();
+    expect(entry!.tier).toBe("exact");
+    expect(entry!.confidence).toBe(0.99);
+    expect(entry!.foundAs).toBe("CPM (cost per 1,000 impressions) (USD)");
+
+    // Deterministic match → folds into the single "matched automatically"
+    // summary line; never an individual "auto-matched — verify" or
+    // moderate-confidence warning naming CPM.
+    expect(
+      result.warnings.filter((w) => /CPM/.test(w) && !/matched automatically/.test(w)),
+    ).toEqual([]);
+    expect(result.warnings.some((w) => /matched automatically/.test(w))).toBe(true);
   });
 });
 

@@ -331,9 +331,10 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   // Warning-noise policy (shared by the breakdown and metric cascades below):
   // a per-column "auto-matched — verify" line is only worth the reader's
   // attention when there is something to verify. Three match kinds never are:
-  // (a) deterministic normalizations (slug/case-insensitive — a spreadsheet
-  // round-trip mangles "CPM (cost per 1,000 impressions)" into
-  // "CPM _cost per 1_000 impressions_", and normalized-name matching is 1:1,
+  // (a) deterministic normalizations (slug/case-insensitive/currency-suffix —
+  // a spreadsheet round-trip mangles "CPM (cost per 1,000 impressions)" into
+  // "CPM _cost per 1_000 impressions_", some export types append "(USD)" to
+  // every monetary column, and normalized-name matching is 1:1,
   // not a guess), (b) curated ALIAS matches — the alias table maps headers
   // Meta itself emits ("Reporting starts" IS the native date header on
   // ad-level summary exports; telling the user to rename a column Meta named
@@ -350,7 +351,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     if (!foldedExample) foldedExample = { from: headerValue, to: resolveCurrencyLabel(col) };
   };
   const isDeterministicVia = (via: string): boolean =>
-    via === "slug" || via === "case_insensitive" || via === "alias";
+    via === "slug" || via === "case_insensitive" || via === "alias" || via === "currency";
 
   // ── Breakdown column resolution (primary cascade) ─────────────────────
   // Map each canonical breakdown column to the actual header cell index.
