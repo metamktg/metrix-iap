@@ -920,3 +920,57 @@ Flags (operator action / product decisions, no code change):
 - **`auth_db_connections_absolute`.** Auth server pinned to 10 connections rather than a
   percentage allocation, so scaling the instance will not scale Auth. Dashboard one-liner,
   worth doing before scaling.
+
+## BUG-39 — a slow run was indistinguishable from a dead one, and got its outputs deleted
+
+**Severity:** high (silent data loss on the two operator actions that matter most)
+**Found:** independent sweep of live run history, Aug 25 — not reported by a user.
+
+Both long-running engines reclaim a dead `running` row lazily on read: flip it to `error`,
+then **delete the partial outputs it wrote** (`deleteRunOutputs`). That reclaim is right —
+a half-written strategy must never read as a real one — but it asked the wrong question.
+Staleness was computed as `Date.now() - started_at > 10 min`, and `started_at` never
+advances. So the rule really said *"any run older than ten minutes is dead"*, whether or
+not it was still working.
+
+Neither engine could signal liveness through its existing phase writes. A generation run
+spends the bulk of its wall clock inside a **single model call** — `setRunProgressPhase`
+writes 10% "Calling strategy model…" and then nothing until 60% "Persisting pillars…". An
+analysis run can sit just as long inside one large parse (5% → 20%).
+
+Measured headroom against live history: the longest successful strategy run is **5.44 min**
+against a 10-minute window — 1.8×. Briefs are generated per concept, and AAFE, the largest
+account, is the next one queued for a full-range re-run and regeneration.
+
+The failure is not a clean abort. The reclaiming reader deletes the outputs while the live
+run keeps writing, so the end state is an `error` run whose rows are partially present —
+the exact fabricated-completeness state the honesty invariant exists to prevent. No orphan
+rows exist today (verified: every output row in all four tables joins to a `success` run),
+so this was latent, not manifest.
+
+**Fix.** `lib/runHeartbeat.ts`: a 30s interval touches `heartbeat_at` while a run is alive,
+guarded on `status = 'running'` so it cannot resurrect a resolved row. The ticker lives in
+the process executing the run, so it stops the instant that process dies — which is the
+condition the reclaim was trying to detect all along. Staleness now measures from the last
+sign of life. 30s against a 10-minute window is ~20× headroom, so several consecutive
+failed heartbeat writes still cannot cause a false reclaim.
+
+Degrades correctly if the migration has not applied: the write fails as a logged warning
+and `lastSignOfLife` falls back to `started_at`, i.e. exactly today's behaviour. That
+graceful degradation is *why* `check:generation-runs-migration` was extended to assert both
+`heartbeat_at` columns — the symptom of a missing migration is not an error, it is the
+silent return of the bug.
+
+**Also fixed, found while reading the same path:** the reclaim updated `status`,
+`error_message` and `finished_at` but never the progress fields, because it does not go
+through `finishRun`. One live row was found still advertising `progress_pct: 10`,
+`progress_stage: "Calling strategy model…"` on a run that had errored 80 minutes earlier.
+Nothing renders it today only because the progress view is gated on `isRunning` — an
+accident that stops protecting anyone after one refactor. Both reclaim paths now clear
+progress; the one live row was corrected.
+
+**Verification:** `lastSignOfLife` is the whole behavioural change and is unit-tested
+(`runHeartbeat.test.ts`, 6 tests, passes with a scrubbed environment) including the
+fail-stale-not-fresh case — reading an unusable timestamp as *fresh* would make a genuinely
+dead run unreclaimable and permanently block the account behind the one-running-row index.
+Wired into the CI gate list.
