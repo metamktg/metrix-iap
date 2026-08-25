@@ -857,3 +857,66 @@ Flags (operator action / product decisions, no code change):
   policies, so revoking from `authenticated` would break tenant reads outright. Correct
   remediation is relocating the helpers to a schema PostgREST does not expose and
   repointing the policy references — a deliberate change with a test pass.
+
+## BUG-37 — RLS policies re-evaluated `auth.uid()` once per row
+
+- **Symptom:** the Supabase *performance* linter (not run in the first backend pass — a
+  real gap in that audit) flagged `auth_rls_initplan` on seven policies:
+  `org_members_select`, `client_memberships_select`, and the select/insert pairs on
+  `review_events`, `human_edits` and `approval_events`. Each called `auth.uid()` bare in
+  the policy expression, so Postgres re-evaluated it per candidate row instead of hoisting
+  it into a one-time InitPlan.
+- **Category:** Fix-Now (cost sits on the tenancy path, paid by every signed-in read; the
+  fix is a pure expression rewrite with no behavioural component).
+- **Resolution (implemented):** rewritten to `(select auth.uid())` in
+  `supabase/policies/20260709000100_rls_all_tables.sql` (idempotent, re-applied every run)
+  and applied live. The four `auth.uid()` calls inside the SECURITY DEFINER helper bodies
+  were deliberately left alone — those evaluate once per function call, not per row, and
+  the functions are STABLE.
+- **Verification evidence:** the full anon + authenticated isolation probe was re-run after
+  the change and returned results **identical to the pre-change baseline** (anon: 42
+  denied / 22 zero / 0 visible; authenticated with no org and no client: 42 denied / 20
+  zero / 2 visible — only the two config-as-data tables). Behaviour preserved, proven.
+
+## BUG-38 — the prepared storage-reclaim script would have destroyed user-edited mappings
+
+- **Symptom:** found by auditing my own prepared cleanup script against live data before
+  recommending it. The original "keep the first copy per (account, kind, md5), delete the
+  rest" ranking had three hazards it did not handle:
+  1. `creative_deconstructions.manual_import_id` is **ON DELETE CASCADE** — deleting a
+     duplicate destroys its AI deconstruction (variables, detected copy, brief refs). All
+     12 live deconstructions happened to sit on rows the ordering kept, but by coincidence
+     of that ordering, not by construction.
+  2. **40 of the 62 duplicate rows carry a non-empty `ad_names` array** — the
+     user-editable creative→ad mapping BUG-10 made correctable. A byte-identical sibling
+     can carry a different or empty mapping, so deleting silently discards hand-corrected
+     work.
+  3. **18 are `status='processed'`**, carrying the run lineage Import History renders and
+     `restage` depends on.
+- **Category:** Fix-Now (a cleanup script that quietly destroys user work is worse than no
+  script — it reads as safe).
+- **Resolution (implemented):** ranking now prefers rows carrying a deconstruction, then
+  `ad_names`, then processed, then oldest; and the delete additionally refuses to touch any
+  row still carrying a deconstruction or a mapping regardless of rank. Safe set drops from
+  62 files / 270 MB to **22 files / 189 MB**, with 40 files / 81 MB explicitly held back for
+  a human. Script remains unexecuted.
+
+## Deferred with reasons (not defects)
+
+- **Storage reclaim before deploy — recommended against.** No disk pressure (533 MB, ~7% of
+  the plan's 8 GB); deleting source files immediately before a deploy removes restage
+  capability exactly when it is most likely needed; and the duplicates are inert now that
+  `content_md5` is backfilled (new duplicates 409 at the door) and BUG-19 dedupe catches
+  the rest. Deploy first, confirm stable, then reclaim.
+- **`multiple_permissive_policies` on 12 tables.** Both a `_select` (SELECT) and `_write`
+  (ALL) policy evaluate on every SELECT. Fixing means splitting each `_write` into separate
+  INSERT/UPDATE/DELETE policies (Postgres allows one command per policy), turning 12
+  policies into 36 on the tenancy path right before a deploy, for a saving unmeasurable at
+  current sizes (most tables under 10 rows). Revisit at real volume.
+- **`unused_index` linter INFOs — do NOT act on them.** ~40 reported, including every index
+  created in this pass. `pg_stat_user_indexes` counters start at zero for a new index and
+  these tables carry almost no traffic; treating that list as a cleanup list would undo the
+  fix. Revisit after real production load.
+- **`auth_db_connections_absolute`.** Auth server pinned to 10 connections rather than a
+  percentage allocation, so scaling the instance will not scale Auth. Dashboard one-liner,
+  worth doing before scaling.

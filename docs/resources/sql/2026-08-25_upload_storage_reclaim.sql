@@ -40,30 +40,63 @@ select id, account_id, filename, created_at from manual_imports where status = '
 -- delete from manual_imports where status = 'uploading' and created_at < now() - interval '2 hours';
 
 -- ── STEP 2 — exact duplicate copies ──────────────────────────────────
--- Byte-identical files (same account + kind + content_md5). Keeps ONE copy
--- per group, preferring a 'processed' row (it carries run lineage) and
--- otherwise the oldest. 62 rows / 270 MB logical at audit time — 22 groups
--- of bookster/skov_pet creative assets plus three performance exports.
+-- Byte-identical files (same account + kind + content_md5), keeping one per
+-- group. 62 rows / 270 MB logical at audit time.
 --
--- Review this list before running the delete: a kept row must remain for
--- every group, and creative assets may be referenced by ad_names mappings.
+-- READ THIS BEFORE RUNNING. A naive "keep the first, drop the rest" is NOT
+-- safe here, for three reasons found during the audit:
+--
+--   1. creative_deconstructions.manual_import_id is ON DELETE CASCADE.
+--      Deleting a duplicate destroys its AI deconstruction — real analysis
+--      output (variables, detected copy, brief refs). At audit time all 12
+--      deconstructions happened to hang off rows the ordering already kept,
+--      but that was luck, not design. The predicate below makes it explicit.
+--   2. 40 of the 62 duplicate rows carry a non-empty ad_names array — the
+--      user-editable creative->ad mapping. A byte-identical sibling can carry
+--      a DIFFERENT (or empty) mapping, so dropping the row silently discards
+--      hand-corrected work.
+--   3. 18 of the 62 are status='processed' and carry manual_analysis_run_id
+--      lineage, which is what Import History shows and what "restage" needs.
+--
+-- So the ranking below prefers, in order: rows carrying a deconstruction,
+-- then rows carrying ad_names, then processed rows, then the oldest. And the
+-- delete additionally REFUSES to touch any row that still carries a
+-- deconstruction or an ad_names mapping, whatever the ranking said — belt and
+-- braces, because the cascade is silent.
+
 with ranked as (
   select mi.id, mi.account_id, mi.kind, mi.filename, mi.status, mi.content_md5,
+         (select count(*) from creative_deconstructions d where d.manual_import_id = mi.id) as deconstructions,
+         coalesce(array_length(mi.ad_names, 1), 0) as ad_name_count,
          row_number() over (
            partition by mi.account_id, mi.kind, mi.content_md5
-           order by (mi.status = 'processed') desc, mi.created_at
+           order by (select count(*) from creative_deconstructions d where d.manual_import_id = mi.id) desc,
+                    coalesce(array_length(mi.ad_names, 1), 0) desc,
+                    (mi.status = 'processed') desc,
+                    mi.created_at
          ) as copy_no
   from manual_imports mi
   where mi.content_md5 is not null
 )
 select * from ranked where copy_no > 1 order by account_id, kind, filename;
+
+-- Safe delete: only rows that are duplicates AND carry no deconstruction AND
+-- no ad_names mapping. Anything excluded by those guards needs a human look.
 -- delete from manual_imports where id in (
 --   with ranked as (
---     select mi.id, row_number() over (
+--     select mi.id,
+--            (select count(*) from creative_deconstructions d where d.manual_import_id = mi.id) as dec_count,
+--            coalesce(array_length(mi.ad_names, 1), 0) as ad_name_count,
+--            row_number() over (
 --              partition by mi.account_id, mi.kind, mi.content_md5
---              order by (mi.status = 'processed') desc, mi.created_at) as copy_no
+--              order by (select count(*) from creative_deconstructions d where d.manual_import_id = mi.id) desc,
+--                       coalesce(array_length(mi.ad_names, 1), 0) desc,
+--                       (mi.status = 'processed') desc,
+--                       mi.created_at) as copy_no
 --       from manual_imports mi where mi.content_md5 is not null
---   ) select id from ranked where copy_no > 1
+--   )
+--   select id from ranked
+--    where copy_no > 1 and dec_count = 0 and ad_name_count = 0
 -- );
 
 -- ── STEP 3 — processed-file retention (needs a product decision) ─────

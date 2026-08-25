@@ -146,7 +146,83 @@ rows that already carried an app-written value (11 inline, 2 chunked) — 13/13 
 0 mismatches — because a wrong backfill is worse than a NULL one, it would 409-reject
 legitimate uploads. All 185 rows verified correct afterwards.
 
-## 4. Not fixed — needs your decision
+### 3e. RLS policies re-evaluated `auth.uid()` per row
+
+The Supabase **performance** linter (which the first pass of this audit did not run —
+a genuine gap) flagged `auth_rls_initplan` on seven policies: `org_members_select`,
+`client_memberships_select`, and the select/insert pairs on `review_events`,
+`human_edits` and `approval_events`. Each called `auth.uid()` bare in the policy
+expression, so Postgres re-evaluated it **once per candidate row** instead of hoisting
+it to a one-time InitPlan.
+
+Rewritten to `(select auth.uid())` — semantically identical, no behavioural change.
+The four `auth.uid()` calls inside the SECURITY DEFINER helper bodies were left alone
+on purpose: those are evaluated once per function call, not per row, and the functions
+are `STABLE`.
+
+Applied live and to `supabase/policies/` (idempotent, re-applied on every run). The
+full anon + authenticated isolation probe was re-run afterwards and returned results
+**identical to the pre-change baseline** — anon 42 denied / 22 zero / 0 visible;
+authenticated 42 denied / 20 zero / 2 visible. Behaviour preserved, proven not assumed.
+
+## 4. Deliberately deferred — with reasons
+
+### Storage reclaim: NOT recommended before this deployment
+
+Assessed on request and judged the wrong move right now. Four reasons:
+
+1. **No disk pressure.** 533 MB. The project is past the 500 MB free-tier ceiling so
+   it is on a paid plan (8 GB included) — roughly 7% utilisation. Nothing is at risk.
+2. **Sequencing is backwards.** Deleting uploaded source files immediately *before* a
+   deploy removes the restage capability at exactly the moment it is most likely to be
+   needed — right after the deploy, if a re-run is required.
+3. **The bleeding has already stopped.** `uploading` rows are excluded from runs by
+   design; exact duplicates are caught by the BUG-19 parse-time dedupe; and with
+   `content_md5` now backfilled, *new* duplicates are rejected with a 409 at the door.
+   The duplicates that exist are inert, not accumulating.
+4. **The deletion costs more than it looks.** Auditing the prepared script against live
+   data found three hazards it did not originally handle:
+   - `creative_deconstructions.manual_import_id` is **ON DELETE CASCADE** — deleting a
+     duplicate destroys its AI deconstruction. All 12 happened to sit on rows the
+     original ordering kept, but by luck, not construction.
+   - **40 of the 62 duplicate rows carry a non-empty `ad_names` array** — the
+     user-editable creative→ad mapping. A byte-identical sibling can carry a different
+     or empty mapping, so deleting silently discards hand-corrected work.
+   - **18 are `status='processed'`** and carry run lineage that Import History displays
+     and `restage` depends on.
+
+The script has been hardened accordingly: the ranking now prefers rows carrying a
+deconstruction, then `ad_names`, then processed, then oldest; and the delete refuses
+outright to touch any row still carrying a deconstruction or a mapping. Under those
+guards the safe set drops from 62 files / 270 MB to **22 files / 189 MB**, with 40
+files / 81 MB explicitly held back for a human decision. That is the correct trade.
+
+Recommended sequence: deploy first, confirm stable, then reclaim.
+
+### Multiple permissive policies — deferred on purpose
+
+The linter flags 12 tables where a `_select` (SELECT) and a `_write` (ALL) policy both
+evaluate on every SELECT, since ALL includes SELECT. Fixing it means splitting each
+`_write` into separate INSERT/UPDATE/DELETE policies — Postgres allows only one command
+per policy — turning 12 policies into 36 on the tenancy path, immediately before a
+deploy, for a saving that is unmeasurable at current table sizes (most under 10 rows).
+Not worth the regression risk now. Worth doing when these tables have real volume.
+
+### `unused_index` linter INFOs — do NOT act on these
+
+The linter reports ~40 unused indexes, **including every index created in this pass**.
+That is expected and must not be treated as a cleanup list: `pg_stat_user_indexes`
+counters start at zero for a newly built index, and these tables carry almost no
+traffic yet. Judging an index built minutes ago as "unused" would undo the fix. Revisit
+after the schema has seen real production load.
+
+### Auth connection strategy
+
+`auth_db_connections_absolute`: the Auth server is pinned to at most 10 connections
+rather than a percentage allocation, so scaling the instance will not scale Auth. A
+one-line dashboard change, worth making before scaling, harmless today.
+
+## 5. Not fixed — needs your decision
 
 ### Storage: 3 copies of one 138 MB CSV are 78% of the chunk table
 
@@ -179,7 +255,7 @@ duplicates are visible; the closeout runbook's "review the staged-imports list b
 running" step still stands, and the reclaim script's STEP 2 lists precisely what to
 remove.
 
-## 5. Verification state
+## 6. Verification state
 
 Repo unchanged in behaviour: full typecheck green across all 8 packages, 89 scripts
 tests green. The DDL applied live is byte-identical to what the committed
