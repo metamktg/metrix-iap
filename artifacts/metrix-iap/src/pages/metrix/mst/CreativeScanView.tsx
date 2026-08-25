@@ -121,7 +121,7 @@ export function CreativeScanView() {
                   </div>
 
                   <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <SegmentedToggle<LibraryFilter>
+                    <SegmentedToggle
                       ariaLabel="Filter concept library by QA status"
                       active={libraryFilter}
                       onChange={setLibraryFilter}

@@ -177,10 +177,10 @@ export function ConceptMapView({
             </div>
 
             <div className="px-6 pt-4 flex items-center justify-between gap-3 flex-wrap">
-              <SegmentedToggle<LinkFilter>
+              <SegmentedToggle
                 ariaLabel="Filter concepts by pillar link"
                 active={linkFilter}
-                onChange={setLinkFilter}
+                onChange={(id) => setLinkFilter(id as LinkFilter)}
                 options={[
                   { id: "all", label: "All" },
                   { id: "linked", label: "Linked" },
