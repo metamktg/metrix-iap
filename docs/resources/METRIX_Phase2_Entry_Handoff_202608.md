@@ -5,6 +5,9 @@
 the *third* in that chain and supersedes them wherever they disagree, because it was written
 against the merged code and the live database rather than against a plan.
 
+The kickoff message to open that environment with is
+`docs/resources/METRIX_Phase2_Kickoff_Prompt.md`.
+
 ---
 
 ## 0. What this session was
@@ -30,8 +33,8 @@ Every gate below was run **in this session, on the merged tree**, not inferred.
 | Gate | Result |
 |---|---|
 | `pnpm run typecheck` (all packages) | green |
-| Metrix IAP vitest | **117 files / 1,691 tests** green |
-| API server (CI-gated set) | **19 files / 298 tests** green, scrubbed env |
+| Metrix IAP vitest | **119 files / 1,704 tests** green |
+| API server (CI-gated set) | **19 files / 307 tests** green, scrubbed env |
 | Scripts unit tests | green |
 | `check:api-codegen-drift` | green |
 | `check:disclosure-rulebook` (**now blocking**) | 0 violations |
@@ -45,6 +48,9 @@ Every gate below was run **in this session, on the merged tree**, not inferred.
 **This is a stronger pass than Phase 1 closed on.** That audit had to record the build smoke as
 unverified, attributing it to a sandbox limitation. It is recoverable — see §7.
 
+`main` is verified green on GitHub Actions, not only locally. Note the distinction that cost
+time here: **a green `main` is not a deployed `main`** — see §7.
+
 Not runnable here, unchanged from Phase 1: `check:seed-fixture-drift` and the full api-server
 vitest suite (both need live secrets — `DEMO_ACCOUNT_PASSWORD`, `DATABASE_URL`, a running API
 server).
@@ -53,7 +59,7 @@ server).
 
 ## 2. What this session found and fixed
 
-Fourteen defects, `BUG-28` … `BUG-41` in `BUG_TRACKER.md`, which carries the full evidence for
+Fifteen defects, `BUG-28` … `BUG-42` in `BUG_TRACKER.md`, which carries the full evidence for
 each. Grouped by what they actually were:
 
 ### 2a. Propagation gaps — the primitive was right, the distribution wasn't
@@ -106,7 +112,7 @@ props still win, because two callers legitimately hold better-scoped data.
   warnings were that one message**, crowding out the 2.9% coverage warning and three ID columns
   blanked by a Sheets round-trip.
 
-### 2cc. The generation engine could not finish a large model call — and the fix for BUG-39 made it worse
+### 2d. The generation engine could not finish a large model call — and the fix for BUG-39 made it worse
 
 **BUG-41**, found after the rest of this document was written, by the operator reporting that
 *"briefs do not seem to be generating and also strategy is not."* Three defects behind it:
@@ -143,7 +149,36 @@ briefs** on the same unfixed build, because it never needed to escalate.
 condition you cannot force by reading, get a live run — or accept that "no defect found"
 means "not found", not "not there".
 
-### 2d. Contract and CI
+### 2e. A working run and a dead one rendered identically
+
+**BUG-42**, the last defect found, and the one that explains why the two reports above took a
+round-trip each to diagnose.
+
+The engine writes **no progress during the model call** — strategy goes 10% "Calling strategy
+model…" straight to 60% "Persisting pillars…", briefs the same — and that call is most of the
+run's wall clock. The panel therefore showed a bar frozen at 10% with a spinner, for a healthy
+four-minute run and for a run whose process had died, *identically*.
+
+Both operator reports on 2026-08-25 were this screen. In the first the run was genuinely wedged;
+in the second it was working and finished normally with 16 briefs. Same screen, same reported
+symptom. **That is a defect in the screen, not in the reading of it** — and it is worth stating
+plainly, because the instinct is to treat a user's "it's stuck" as imprecise when the interface
+gave them nothing better to say.
+
+Compounding it: `EXPECTED_SECONDS` claimed strategy 75s and briefs 90s. Measured against every
+successful run in production the real figures are **209s (max 326s)** and **199s (max 255s)** —
+less than half. The estimated bar raced to 95% inside ninety seconds and then sat there for
+minutes, which is worse than not moving at all.
+
+Elapsed time is the only thing on that panel that always moves while the client is alive, so the
+bar now shows it, with a sentence that stays true in both directions (`lib/generation-pace.ts`):
+within the typical duration it explains the held bar; past it, the reassurance stops, because a
+run that is overrunning should read as overrunning.
+
+**The generalisable rule:** any surface that reports on a long-running job must let a user
+distinguish *working* from *dead*. A percentage that holds does not; a clock does.
+
+### 2f. Contract and CI
 
 - **BUG-30** — `reconciliation` was declared REQUIRED in the API contract with zero writers.
 - **CI gated 59 of 288 available secret-free server tests.** Expanded 5 → 19 files. This left
@@ -153,7 +188,7 @@ means "not found", not "not there".
   Phase 3 UI pass: it is a ratchet, and a ratchet is worth most immediately before the churn it
   exists to contain.
 
-### 2e. Test coverage for the above
+### 2g. Test coverage for the above
 
 The four UI fixes shipped with pure-function coverage only; nothing asserted the **rendered**
 surface, which is where the bug was. Four component test files now cover them. **Each was
@@ -198,6 +233,26 @@ with a test pass.
 This is open **by explicit operator decision**, not oversight: the security register was parked
 in favour of operable implementation fixes. It is the first item of the security phase.
 
+Re-confirmed at close by re-running the Supabase security advisors: these four functions are the
+**only** WARN-level findings besides §4b. The 42 `rls_enabled_no_policy` INFO notices are the
+deny-by-default importer tables and are **correct by design** — RLS on, zero policies, grants
+revoked. Do not "fix" them.
+
+---
+
+## 4b. Second security finding, surfaced at close
+
+**Supabase Auth leaked-password protection is disabled** (`auth_leaked_password_protection`,
+WARN). Supabase can check new passwords against HaveIBeenPwned; it is currently off.
+
+**Impact is low but non-zero, and the reason matters:** Metrix IAP does *not* authenticate
+through Supabase Auth. Login is custom (bcryptjs + DB-backed sessions in Replit Postgres), and
+Supabase Auth users exist only as FK targets for the official schema. So this hardens an
+authentication path that is not the product's real one — but it is a dashboard toggle, so the
+cost of closing it is a click.
+
+Belongs with the security register in §4, not ahead of it.
+
 ---
 
 ## 5. Deferred, with reasons (not defects)
@@ -226,9 +281,33 @@ Verified by direct query, not inferred.
 | | |
 |---|---|
 | Database | 533 MB (`manual_imports` 375 MB) |
-| Ad accounts | 31 total — 23 configured, 8 unconfigured **with genuinely zero data** |
+| Ad accounts | 32 total — 24 configured, 8 unconfigured **with genuinely zero data** |
 | Runs in flight | 0 analysis, 0 generation |
 | Orphaned outputs | **0** — every output row in all four tables joins to a `success` run |
+
+**Backend sync check, run at close.** Every row below was queried, not assumed:
+
+| Check | Result |
+|---|---|
+| `heartbeat_at` present on both run tables | 2 of 2 |
+| `progress_pct` / `progress_stage` present | 4 of 4 |
+| `manual_imports.content_md5` NULL | **0%** (the BUG-09 dup guard is live, not inert) |
+| Runs stuck in `running` | 0 |
+| Resolved runs still advertising progress | 0 |
+| Public tables | 64 — **0 with RLS disabled** |
+| Tables granted to `anon`/`authenticated` | 22 (the official schema) — **0 of them without RLS** |
+| Tables with RLS and zero policies | 42 — deny-by-default importer tables, correct by design |
+
+**Perimeter probed behaviourally, not read from policy text**, by role impersonation:
+
+| Probe | Result |
+|---|---|
+| `anon` → importer table (`ad_performance`) | `permission denied for table ad_performance` |
+| `anon` → official table (`clients`) | **0 rows** |
+| membership-less `authenticated` → `clients` | **0 rows** |
+
+That is the documented two-layer design behaving as documented: importer tables deny by
+revoked grant, official tables return zero rows by RLS.
 
 **Two corrections applied to live data this session:**
 
@@ -245,17 +324,27 @@ Verified by direct query, not inferred.
 
 | Account | Analysis | Strategy | Briefs |
 |---|---|---|---|
-| NEW AAFE | Jul 1–Aug 18, Aug 25 ✓ | Aug 25, fresh ✓ | **missing** |
-| Fresh Import …960 | Aug 25 ✓ | Aug 23 — stale vs analysis | Aug 23 |
+| NEW AAFE | Jul 1–Aug 18, Aug 25 ✓ | Aug 25 14:12, fresh ✓ | **missing** |
+| Fresh Import …960 | Aug 25 09:33 ✓ | Aug 25 19:18 ✓ | **Aug 25 20:04 ✓ (16 briefs)** |
 | Bookster | Aug 18 | Aug 6 — stale vs analysis | Aug 23 |
 | BELT / Gabri / ECAS / SKOV Pet | older | present | missing |
 | skov | Jul 19 | Jul 18 — stale vs analysis | Aug 24 |
 
-**Outstanding operator action:** regenerate **briefs for NEW AAFE**. Its full-range analysis and
-strategy are both current; briefs were never generated. Note that a strategy run calls
-`deletePriorGenerated(account, "briefs")` at 92%, so regenerating strategy always leaves briefs
-missing until they are re-run — that is by design (briefs would reference pillars that no longer
-exist), not a defect.
+The full IAP chain — analysis → strategy → briefs — was proven end to end on
+**Fresh Import …960** at the close of this session. That is the first account to carry all
+three current.
+
+**Outstanding operator actions, in order:**
+
+1. **Republish the Replit app.** The BUG-41 streaming fix and the BUG-42 progress clock are
+   both merged to `main` but were NOT in the running build when this document was written.
+   Until they are deployed, briefs will keep failing intermittently — specifically on any run
+   whose first model response comes back truncated. See §7 on why this gap is invisible.
+2. **Regenerate briefs for NEW AAFE.** Its full-range analysis and strategy are both current;
+   briefs were never generated. Note that a strategy run calls
+   `deletePriorGenerated(account, "briefs")` at 92%, so regenerating strategy *always* leaves
+   briefs missing until they are re-run — by design (briefs would otherwise reference pillars
+   that no longer exist), not a defect.
 
 The 8 empty unconfigured accounts (`aaaa`, `aaaadf`, `Test`, `AAFE`, `AAFE 2`, `Clean Import …`,
 `Failure Path …`, `Reupload Isolation Test …`) are test leftovers. They clutter the account list
@@ -311,6 +400,16 @@ Keep these. They are why the audit trail in `BUG_TRACKER.md` is usable.
   zero duplicate natural keys, totals matching the verified figure exactly.
 - **Audit your own proposed change against live data before recommending it.** BUG-38 exists only
   because that was done.
+- **"No defect found" means *not found*, not *not there*.** Reading `startBriefsGeneration`,
+  `storedPillars`, the ICP column builder and the seed's `activePillars` end to end surfaced no
+  rejection path, and that was reported to the operator as no defect. It was wrong: the bug lived
+  in a branch reachable only when a model response comes back truncated. Two live runs six
+  minutes apart showed both outcomes — one refused, one succeeded with 16 briefs, on the same
+  build. Where a branch is reachable only under a condition you cannot force by reading, get a
+  live run, or say plainly that you could not reach it.
+- **Take a user's "it's stuck" literally, then check whether the screen could have told them
+  otherwise.** Twice the report was "it times out here" and twice the interface offered no way to
+  distinguish a working run from a dead one (§2e). The imprecision was the product's, not theirs.
 - **Prove a test can fail before trusting it.**
 - **State corrections plainly and move on.** Several diagnoses in this session were wrong before
   they were right; the record says so.
@@ -328,7 +427,7 @@ Unchanged and still authoritative — read them in this order:
 3. `docs/resources/METRIX_Phase1_Validation_Audit_202608.md` — this session's first two passes in
    full detail.
 4. `docs/resources/METRIX_Backend_Supabase_Audit_202608.md` — the backend/RLS audit.
-5. `BUG_TRACKER.md` — evidence for all 40 tracked defects (`BUG-02` … `BUG-41`;
+5. `BUG_TRACKER.md` — evidence for all 41 tracked defects (`BUG-02` … `BUG-42`;
    there is no `BUG-01` — the numbering starts at 02).
 6. `docs/architecture/METRIX_IAP_MASTER_BLUEPRINT_v2.0.md` — canonical when anything disagrees.
 
