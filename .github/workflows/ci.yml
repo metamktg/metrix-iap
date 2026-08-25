@@ -71,15 +71,23 @@ jobs:
       - name: Typecheck (all packages)
         run: pnpm run typecheck
 
-      - name: Disclosure rulebook (advisory — see comment)
-        # ~170 pre-existing violations are already tracked as a scoped backlog
-        # in docs/resources/METRIX_UI_Disclosure_Audit_Phase1.md, being paid
-        # down incrementally across separate PRs. Making this a hard gate now
-        # would block every unrelated PR until that entire backlog clears —
-        # not this change's job. Runs and reports every time (so regressions
-        # are visible in the log) but doesn't fail the build. Flip
-        # continue-on-error to false once the backlog reaches zero.
-        continue-on-error: true
+      - name: Disclosure rulebook (blocking)
+        # Was advisory while ~170 pre-existing violations were being paid down
+        # across separate PRs (docs/resources/METRIX_UI_Disclosure_Audit_Phase1.md).
+        # That backlog reached ZERO, verified against pristine main as well as
+        # this branch, so the condition the comment set for flipping it —
+        # "flip continue-on-error to false once the backlog reaches zero" — is met.
+        #
+        # Flipped BEFORE the Phase 3 UI pass rather than after: the gate is a
+        # ratchet (scripts/src/disclosure-rulebook.baseline.json, a file's count
+        # may only go down), and a ratchet is worth most immediately before the
+        # churn it exists to contain. Flipping it after Phase 3 would be closing
+        # the barn door.
+        #
+        # A PR only fails here if it INTRODUCES a raw pixel text-size class, which
+        # is exactly the regression the typography system forbids. If that ever
+        # blocks legitimate work, the fix is the typography role (TYPE.* in
+        # artifacts/metrix-iap/src/pages/metrix/typography.ts), not a baseline bump.
         run: pnpm --filter @workspace/scripts run check:disclosure-rulebook
 
       - name: Text contrast checks

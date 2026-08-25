@@ -14,6 +14,13 @@ chat. That contradicts the standing rule in the Phase 1 work order §3 and the P
 kickoff prompt ("No chat-pasted DB credentials"). **That password must be rotated.**
 It was never written to a file, a commit, or any artifact in this repo.
 
+Rotation runbook: `METRIX_DB_Password_Rotation_Runbook.md`. Key facts established
+there: neither Claude nor the Replit agent can perform the rotation (Supabase exposes
+no credential-rotation API and the password does not live in Replit), and the live app
+is unaffected because it reaches Supabase over PostgREST with the service-role key and
+never opens a Postgres connection — so rotation costs **zero runtime downtime** and
+breaks only admin/CI tooling until one secret is updated.
+
 It also could not have been used from the session sandbox: `db.<ref>.supabase.co`
 resolves to IPv6 only (Supabase has retired IPv4 on direct connections) and the
 sandbox has no IPv6 egress. All work below went through the Supabase MCP server,
