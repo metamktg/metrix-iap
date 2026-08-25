@@ -165,60 +165,84 @@ export type IapCsvCoverage = {
 
 function parseCsvLines(text: string): string[][] {
   // Minimal RFC4180 CSV parser: handles quoted fields, embedded commas/quotes/newlines.
+  //
+  // Fields are extracted as slices over the input, batched between the next
+  // structural character — NOT accumulated one character at a time. The
+  // per-character `field += c` version built V8 rope strings across the whole
+  // input and OOM-killed the production process on a real 132 MB demographic
+  // export (48K rows, each carrying the full ad copy in a "Text" column) —
+  // surfacing as a bare HTTP 500 for both the CSV and XLSX upload of the
+  // same report. State-machine semantics are unchanged, including mid-field
+  // quote toggling on malformed input.
+  const QUOTE = 34;
+  const COMMA = 44;
+  const CR = 13;
+  const LF = 10;
+  const n = text.length;
   const rows: string[][] = [];
-  let field = "";
   let row: string[] = [];
+  let parts: string[] = [];
   let inQuotes = false;
   let i = 0;
   const push = () => {
-    row.push(field);
-    field = "";
+    row.push(parts.length === 1 ? parts[0]! : parts.join(""));
+    parts = [];
   };
   const pushRow = () => {
     push();
     rows.push(row);
     row = [];
   };
-  while (i < text.length) {
-    const c = text[i];
+  while (i < n) {
     if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') {
-          field += '"';
-          i += 2;
-          continue;
-        }
-        inQuotes = false;
-        i++;
+      const q = text.indexOf('"', i);
+      if (q === -1) {
+        // Unterminated quote: the rest of the input is field content.
+        parts.push(text.slice(i));
+        i = n;
+        break;
+      }
+      if (q > i) parts.push(text.slice(i, q));
+      if (text.charCodeAt(q + 1) === QUOTE) {
+        parts.push('"');
+        i = q + 2;
         continue;
       }
-      field += c;
-      i++;
+      inQuotes = false;
+      i = q + 1;
       continue;
     }
-    if (c === '"') {
+    const c = text.charCodeAt(i);
+    if (c === QUOTE) {
       inQuotes = true;
       i++;
       continue;
     }
-    if (c === ",") {
+    if (c === COMMA) {
       push();
       i++;
       continue;
     }
-    if (c === "\r") {
+    if (c === CR) {
       i++;
       continue;
     }
-    if (c === "\n") {
+    if (c === LF) {
       pushRow();
       i++;
       continue;
     }
-    field += c;
-    i++;
+    // Batch a run of ordinary characters up to the next structural one.
+    let j = i + 1;
+    while (j < n) {
+      const d = text.charCodeAt(j);
+      if (d === QUOTE || d === COMMA || d === CR || d === LF) break;
+      j++;
+    }
+    parts.push(text.slice(i, j));
+    i = j;
   }
-  if (field.length > 0 || row.length > 0) pushRow();
+  if (parts.length > 0 || row.length > 0) pushRow();
   return rows.filter((r) => !(r.length === 1 && r[0]!.trim() === ""));
 }
 

@@ -511,3 +511,25 @@ parser/merge code.
   manual_imports fetch enumerates metadata columns only (`id, account_id, kind, filename,
   ad_names, status` — all the auto-heal detection reads). File bytes are only ever read by
   the file-serving route and the analysis/deconstruction engines, per import, on demand.
+
+## BUG-26 — Large real-world exports OOM-kill the process at upload validation (bare HTTP 500 for both CSV and XLSX)
+
+- **Symptom:** the re-exported AAFE demographic report (9.6 MB xlsx / ~132 MB as CSV,
+  48,729 rows each carrying the full ad copy in a "Text" column) returned a bare
+  "Upload failed (HTTP 500)" — no JSON body — for BOTH file formats. Reproduced locally:
+  process death under a 1.5 GB heap cap.
+- **Root causes (two, compounding):**
+  1. `convertXlsxToCsvText` used ExcelJS's buffered reader, which materializes every cell
+     as an object — this file's single sheet is 103 MB of XML / 2.3M cells, blowing past
+     1.5 GB before conversion even finishes.
+  2. `parseCsvLines` built every field one character at a time (`field += c`), creating V8
+     rope-string churn across the whole 132 MB input — the CSV upload died the same way
+     without ExcelJS involved.
+- **Category:** Fix-Now (blocks the user's real re-export both ways).
+- **Resolution (implemented):** workbooks over 4 MB compressed convert through ExcelJS's
+  streaming reader (row-at-a-time; both readers share one row-to-CSV core so cell
+  semantics never diverge — forceStreaming test mode holds the streaming path to the same
+  assertions). The CSV tokenizer batches fields as slices between structural characters
+  with unchanged state-machine semantics. Verified on the real file: convert 12.6 s +
+  parse 3.9 s at 583 MB peak RSS; all 48,729 rows parse with only the honest warnings
+  (Sheets ID corruption ×3, duplicated header columns ×3).

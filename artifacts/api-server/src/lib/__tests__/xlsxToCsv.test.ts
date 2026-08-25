@@ -326,3 +326,75 @@ describe("multi-sheet workbook sheet selection", () => {
     expect(parseIapCsv(csvText, "demographic").rows.length).toBe(1);
   });
 });
+
+// ── Streaming path parity ───────────────────────────────────────────────
+// Large workbooks route through ExcelJS's streaming reader (the buffered
+// reader OOM-killed production on a real 2.3M-cell Sheets export — BUG-26).
+// forceStreaming holds the streaming path to the same semantic assertions
+// as the buffered one.
+
+describe("streaming conversion parity (forceStreaming)", () => {
+  it("converts a demographic workbook identically to the buffered path", async () => {
+    const rows: CellPlan[] = [
+      Object.fromEntries([
+        ...DEMOGRAPHIC_BREAKDOWN_COLUMNS.map((c) => [resolveCurrency(c), breakdownValue(c)]),
+        ...BASE_METRICS.map((c) => [resolveCurrency(c), baseValue(c)]),
+      ]),
+    ];
+    const buf = await buildWorkbookBuffer(DEMOGRAPHIC_BREAKDOWN_COLUMNS, rows);
+    const buffered = await convertXlsxToCsvText(buf);
+    const streamed = await convertXlsxToCsvText(buf, undefined, { forceStreaming: true });
+    expect(streamed.csvText).toBe(buffered.csvText);
+    expect(streamed.warnings).toEqual(buffered.warnings);
+  });
+
+  it("applies the corrupted-ID guard in streaming mode (blanked + one summary warning)", async () => {
+    const rows: CellPlan[] = [
+      {
+        ...Object.fromEntries([
+          ...DEMOGRAPHIC_BREAKDOWN_COLUMNS.map((c) => [resolveCurrency(c), breakdownValue(c)]),
+          ...BASE_METRICS.map((c) => [resolveCurrency(c), baseValue(c)]),
+        ]),
+        "Ad ID": { value: 120253000000000002, numFmt: "0.00E+00" },
+      },
+    ];
+    const buf = await buildWorkbookBuffer(DEMOGRAPHIC_BREAKDOWN_COLUMNS, rows);
+    const { csvText, warnings } = await convertXlsxToCsvText(buf, undefined, { forceStreaming: true });
+    const parsed = parseIapCsv(csvText, "demographic");
+    expect(parsed.rows[0]!.breakdowns["Ad ID"]).toBe("");
+    expect(warnings.some((w) => w.includes('"Ad ID"'))).toBe(true);
+  });
+
+  it("converts Excel date cells to ISO in streaming mode", async () => {
+    const rows: CellPlan[] = [
+      {
+        ...Object.fromEntries([
+          ...DEMOGRAPHIC_BREAKDOWN_COLUMNS.map((c) => [resolveCurrency(c), breakdownValue(c)]),
+          ...BASE_METRICS.map((c) => [resolveCurrency(c), baseValue(c)]),
+        ]),
+        Day: { value: new Date(Date.UTC(2026, 5, 1)), numFmt: "yyyy-mm-dd" },
+      },
+    ];
+    const buf = await buildWorkbookBuffer(DEMOGRAPHIC_BREAKDOWN_COLUMNS, rows);
+    const { csvText } = await convertXlsxToCsvText(buf, undefined, { forceStreaming: true });
+    expect(parseIapCsv(csvText, "demographic").rows[0]!.breakdowns["Day"]).toBe("2026-06-01");
+  });
+
+  it("finds the export sheet in a multi-sheet workbook in streaming mode", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const cover = workbook.addWorksheet("Notes");
+    cover.addRow(["Internal working notes", "Owner"]);
+    cover.addRow(["remember to update budget", "AJ"]);
+    const sheet = workbook.addWorksheet("IAP-DEMO-EXPORT");
+    const header = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS.map(resolveCurrency), ...BASE_METRICS.map(resolveCurrency)];
+    sheet.addRow(header);
+    sheet.addRow([...DEMOGRAPHIC_BREAKDOWN_COLUMNS.map(breakdownValue), ...BASE_METRICS.map(baseValue)]);
+    const buf = Buffer.from(await workbook.xlsx.writeBuffer());
+    const { csvText } = await convertXlsxToCsvText(buf, ["Day", "Campaign name", "Ad name", "Gender", "Age"], {
+      forceStreaming: true,
+    });
+    const parsed = parseIapCsv(csvText, "demographic");
+    expect(parsed.rows.length).toBe(1);
+    expect(parsed.rows[0]!.breakdowns["Ad name"]).toBe("UGC_Testimonial_v1");
+  });
+});
