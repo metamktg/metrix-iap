@@ -17,6 +17,8 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import {
   computeSegmentDrilldown,
+  type DemographicCoverageInput,
+  type SegmentSignal,
   segmentLabel,
   type SegmentId,
 } from "@/lib/segment-analytics";
@@ -386,21 +388,29 @@ function buildSegmentComparisonSection(
   analysis: AnalysisData,
   mst: ReturnType<typeof getMST>,
   req: SegmentComparisonRequest,
+  demoCoverage: DemographicCoverageInput | null,
 ): ReportSection {
   const cellIds = req.cellIds ?? null;
-  const a = computeSegmentDrilldown(analysis, mst ?? undefined, req.segmentA, cellIds);
-  const b = computeSegmentDrilldown(analysis, mst ?? undefined, req.segmentB, cellIds);
+  // Coverage gates signal classification here exactly as it does in-app: an
+  // exported client deliverable is the LAST place an unqualified segment read
+  // over a 2%-coverage demographic export may appear.
+  const a = computeSegmentDrilldown(analysis, mst ?? undefined, req.segmentA, cellIds, demoCoverage);
+  const b = computeSegmentDrilldown(analysis, mst ?? undefined, req.segmentB, cellIds, demoCoverage);
   const labelA = segmentLabel(req.segmentA);
   const labelB = segmentLabel(req.segmentB);
   const title = `Segment Comparison: ${labelA} vs ${labelB}`;
   const blocks: ReportBlock[] = [];
 
-  // Low-signal warnings surface before the numbers so readers see them first.
+  // Signal warnings surface before the numbers so readers see them first.
+  // The prefix names which of the three states fired — calling an
+  // insufficient-coverage read "low signal" understates it.
+  const signalPrefix = (state: SegmentSignal["state"]) =>
+    state === "insufficient_coverage" ? "Insufficient join coverage" : "Low signal";
   for (const reason of a.signal.reasons) {
-    blocks.push({ kind: "text", text: `Low signal — ${labelA}: ${reason}` });
+    blocks.push({ kind: "text", text: `${signalPrefix(a.signal.state)} — ${labelA}: ${reason}` });
   }
   for (const reason of b.signal.reasons) {
-    blocks.push({ kind: "text", text: `Low signal — ${labelB}: ${reason}` });
+    blocks.push({ kind: "text", text: `${signalPrefix(b.signal.state)} — ${labelB}: ${reason}` });
   }
 
   // Side-by-side key metrics table.
@@ -470,6 +480,13 @@ export interface BuildReportOptions {
    * The section is omitted entirely when this option is absent.
    */
   segmentComparison?: SegmentComparisonRequest;
+  /**
+   * The run's measured demographic join coverage (see useDemographicCoverage).
+   * Gates segment signal classification in the exported document the same way
+   * it does on screen. Null is honest for accounts whose run predates the
+   * coverage layer; omitting it on a covered account is not.
+   */
+  demoCoverage?: DemographicCoverageInput | null;
 }
 
 export function buildReportModel(
@@ -504,7 +521,7 @@ export function buildReportModel(
     const analysis = getAnalysisData(seed, adAccountId);
     const mst = getMST(seed, adAccountId);
     if (analysis) {
-      sections.push(buildSegmentComparisonSection(analysis, mst, opts.segmentComparison));
+      sections.push(buildSegmentComparisonSection(analysis, mst, opts.segmentComparison, opts.demoCoverage ?? null));
     }
   }
 

@@ -9,7 +9,7 @@
 //     manual demographic uploads).
 // Pure functions — unit-testable without React.
 
-import type { CellPerformanceRow, DemographicRow } from "@/lib/data/seedTypes";
+import type { AnalysisData, CellPerformanceRow, DemographicRow } from "@/lib/data/seedTypes";
 
 /** Sentinel cell_id the manual-analysis engine writes for account-grain demographic signal rows. */
 export const ACCOUNT_GRAIN_CELL_ID = "ACCOUNT";
@@ -47,4 +47,35 @@ export function funnelEmptyReasonFor(
     return "No performance rows joined to this creative — its mapped ad names don't appear in the imported performance exports.";
   }
   return null;
+}
+
+export interface CreativeEmptyReasons {
+  demographic: string | null;
+  placements: string | null;
+  funnel: string | null;
+}
+
+/**
+ * All three tab reasons for one creative cell, derived from an account's
+ * analysis data. Each is null when that tab genuinely has rows to show, so
+ * the tab renders its data and never an empty state at all.
+ *
+ * This is the whole rule set in one place: useCreativeEmptyReasons is a thin
+ * React wrapper over it, so the reasons every creative popup shows are unit-
+ * tested here rather than only observable through a rendered dialog.
+ */
+export function creativeEmptyReasonsFor(
+  analysis: Pick<AnalysisData, "demographic_registration_signal" | "v3_placement_signal" | "c4e_placement_signal" | "performance_by_cell"> | null | undefined,
+  cellId: string | null | undefined,
+): CreativeEmptyReasons {
+  if (!cellId) return { demographic: null, placements: null, funnel: null };
+  const placements = [
+    ...(analysis?.v3_placement_signal ?? []),
+    ...(analysis?.c4e_placement_signal ?? []),
+  ];
+  return {
+    demographic: demographicEmptyReasonFor(analysis?.demographic_registration_signal ?? [], cellId),
+    placements: placementsEmptyReasonFor(placements),
+    funnel: funnelEmptyReasonFor(analysis?.performance_by_cell, cellId),
+  };
 }

@@ -13,8 +13,7 @@ import { TYPE } from "../typography";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
-import { useQuery } from "@tanstack/react-query";
-import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
+import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
 import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
@@ -39,7 +38,7 @@ import {
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import {
   listSegments, computeSegmentTotals, deriveSegmentMetrics,
-  assessSegmentSignal, computeSegmentAttribution, demographicCoverageOf,
+  assessSegmentSignal, computeSegmentAttribution,
   segmentLabel, segmentKey, scopeDemographicRows, LOW_SIGNAL_SPEND_SHARE,
   type SegmentId, type SegmentRawTotals, type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
@@ -771,14 +770,9 @@ export function AvatarsView() {
   const adAccountId = useScopedAdAccountId();
   // Measured demographic join coverage from the latest successful analysis
   // run — gates segment signal classification (see assessSegmentSignal).
-  const { data: allSummary } = useQuery({
-    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", "all"),
-    enabled: !!adAccountId,
-  });
-  const demoCoverage = useMemo(
-    () => demographicCoverageOf(allSummary?.data_coverage ?? null),
-    [allSummary],
-  );
+  // Read through the shared hook so this view and the drill-down modal can
+  // never disagree about the same account's coverage.
+  const demoCoverage = useDemographicCoverage();
   const account = getAdAccount(seed, adAccountId);
   const [, navigate] = useLocation();
 

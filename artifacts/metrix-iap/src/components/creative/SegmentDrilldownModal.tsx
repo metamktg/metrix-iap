@@ -16,6 +16,7 @@ import { useLocation } from "wouter";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
 import { getMST } from "@/lib/data/metrixSeedAdapter";
 import {
   computeSegmentDrilldown,
@@ -627,7 +628,7 @@ export function SegmentDrilldownModal({
   kicker = "Segment drill-down",
   onBack,
   onNextStep,
-  demoCoverage = null,
+  demoCoverage,
 }: {
   open: boolean;
   onClose: () => void;
@@ -640,11 +641,21 @@ export function SegmentDrilldownModal({
   onBack?: () => void;
   /** Override the "Next step" CTA action. Defaults to opening the Audience view. */
   onNextStep?: () => void;
-  /** Measured demographic join coverage (analysis summary data_coverage) — gates signal classification. */
+  /**
+   * Override the measured demographic join coverage that gates signal
+   * classification. Omit it: the modal reads the scoped account's coverage
+   * itself (useDemographicCoverage). Pass it only when a caller holds a
+   * better-scoped summary than the run-level one — AudienceView passes its
+   * active date-preset summary. Never pass null to opt out: an unqualified
+   * "signal ✓" over a 2%-coverage export is exactly the fabricated
+   * confidence the coverage layer exists to prevent.
+   */
   demoCoverage?: DemographicCoverageInput | null;
 }) {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
+  const scopedCoverage = useDemographicCoverage();
+  const coverage = demoCoverage !== undefined ? demoCoverage : scopedCoverage;
   const mst = getMST(seed, adAccountId);
   const [, navigate] = useLocation();
 
@@ -657,12 +668,12 @@ export function SegmentDrilldownModal({
   }, [primaryKey, open]);
 
   const data = useMemo(
-    () => (segment ? computeSegmentDrilldown(analysis, mst, segment, cellIds, demoCoverage) : null),
-    [analysis, mst, segment, cellIds, demoCoverage]
+    () => (segment ? computeSegmentDrilldown(analysis, mst, segment, cellIds, coverage) : null),
+    [analysis, mst, segment, cellIds, coverage]
   );
   const compareData = useMemo(
-    () => (compareSegment ? computeSegmentDrilldown(analysis, mst, compareSegment, cellIds, demoCoverage) : null),
-    [analysis, mst, compareSegment, cellIds, demoCoverage]
+    () => (compareSegment ? computeSegmentDrilldown(analysis, mst, compareSegment, cellIds, coverage) : null),
+    [analysis, mst, compareSegment, cellIds, coverage]
   );
   const catalog = useMemo(
     () => (data ? buildSegmentMetricCatalog(data.totals, data.derived) : []),

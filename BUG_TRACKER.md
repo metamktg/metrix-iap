@@ -593,3 +593,70 @@ Flags (operator action / product decisions, no code change):
   staging area should be reviewed and stale files removed before the next run.
 - Processed performance files are kept for restaging by design; a retention policy
   (e.g. keep last N per slot) is a Phase 2 product decision.
+
+## BUG-28 — Coverage gating reached 2 of 5 drill-down surfaces, and never the report export
+
+- **Symptom:** on AAFE (demographic export covers ~2% of account spend) the SAME segment
+  rendered "insufficient join coverage" when opened from Audience and an unqualified
+  signal read when opened from Analysis Overview, the IAP Library creative card's
+  Demographics tab, or a variable drill-down. `lib/reportExport.ts` computed segment
+  comparisons with no coverage at all, so those numbers could leave the product in a
+  client-facing document uncaveated (latent — no UI passes `segmentComparison` yet).
+- **Root cause:** BUG-02's gate is an OPTIONAL `demoCoverage` prop on
+  `SegmentDrilldownModal`, threaded through call sites by hand. Two of five passed it;
+  three omitted it and silently got `null` = "legacy run, no coverage measured", which
+  falls back to per-segment heuristics. The prop's absence is indistinguishable from an
+  account that genuinely has no coverage data.
+- **Category:** Fix-Now (fabricated confidence — the exact defect class BUG-02 exists to
+  prevent, surviving on three of the surfaces it was supposed to cover).
+- **Resolution (implemented):** `hooks/useDemographicCoverage.ts` resolves the scoped
+  account's run-level coverage once (the "all" preset — coverage is a property of the RUN,
+  not the selected window; react-query dedupes it against any preset query a caller holds).
+  `SegmentDrilldownModal` reads it itself and treats the prop as an OVERRIDE, so a call
+  site can no longer omit what it never has to pass; AudienceView still overrides with its
+  tighter date-preset summary, AvatarsView drops its duplicated query.
+  `buildReportModel` gains an explicit `demoCoverage` option threaded into
+  `buildSegmentComparisonSection`. The export's warning prefix now names the state it
+  reports — "Insufficient join coverage" rather than "Low signal", which understated it.
+- **Verification evidence:** three new cases in `reportExport.test.ts` (below-threshold
+  qualifies both segments and never says "Low signal"; adequate coverage stays unqualified;
+  a legacy run with no measured coverage falls back to heuristics). Full suite 1,663 green,
+  typecheck green.
+
+## BUG-29 — Creative popup empty-state reasons reached 3 of 10 call sites
+
+- **Symptom:** seven of ten `<CreativeCard>` call sites (Concept family, Variable
+  drill-down, Creative Scan, Brief builder, three further IAP Library rows) still showed
+  "Import a demographic pivot export to see the age × gender breakdown" on accounts where
+  a demographic export HAD been imported — the misleading copy BUG-03 §1.4 was written to
+  remove. No call site passed `funnelEmptyReason` at all, so the Funnel tab fell back to
+  generic text everywhere.
+- **Root cause:** same mechanism as BUG-28 — the cause-specific reasons are optional props
+  computed at each call site rather than derived where they render.
+- **Category:** Fix-Now (BUG-03 partially applied; the remaining sites tell the user to do
+  something they have already done).
+- **Resolution (implemented):** `creativeEmptyReasonsFor(analysis, cellId)` in
+  `creative-empty-reasons.ts` carries all three rules as one pure function;
+  `hooks/useCreativeEmptyReasons.ts` is a thin wrapper supplying the scoped account's
+  analysis data; `CreativeExpandDialog` derives the reasons from the card's cell code, with
+  explicit props still winning for callers that scope a card differently. All ten sites are
+  covered without any of them changing.
+- **Verification evidence:** four new cases in `coverage-honesty.test.ts` (derives all three
+  reasons for an unjoined cell; nulls per tab that has rows; stays silent without a cell id
+  rather than guessing; reports never-imported vs account-grain correctly).
+
+## BUG-30 — `reconciliation` declared REQUIRED in the API contract with zero writers
+
+- **Symptom:** sharper restatement of BUG-14. `import_metric_reconciliation` exists in
+  `schema.sql` with no writer anywhere in the codebase; `runShape`
+  (`analysisEngine.ts:184`) never emits the field; yet `openapi.yaml:4463` documents it as
+  a live cross-check and lists it under `required`, so generated Zod (`lib/api-zod`) and
+  the generated client type both assert a field that never arrives.
+  `AnalysisHistoryView` survives only via `run.reconciliation ?? []`; the type invites an
+  unguarded `.map()` that would throw at runtime.
+- **Category:** Open — blocked on the same product call BUG-14 already flagged.
+- **Resolution:** not changed here. The two options diverge and the contract edit differs
+  per option: implement the writer (the over-baseline check in `computeDataCoverage` is
+  most of the logic already) and the field legitimately stays required, or delete the block
+  and the field. Either way the spec is currently wrong — it describes a check that does
+  not run. Settle it during E1–E4, where `openapi.yaml` is being edited anyway.
