@@ -118,11 +118,30 @@ it("folds derived/deterministic auto-matches into one line; real warnings stay i
   // …and no spurious "please verify" hedge on the mangled spend column.
   expect(res.warnings.some((w) => w.includes("moderate confidence"))).toBe(false);
   // One folded summary line naming an example mapping.
-  const folded = res.warnings.filter((w) => w.includes("matched automatically by normalized name"));
+  const folded = res.warnings.filter((w) => w.includes("matched automatically"));
   expect(folded.length).toBe(1);
   expect(folded[0]).toContain("→");
   // Mapping detail is still recorded for the confidence report.
   expect(res.mappingSummary.some((e) => e.foundAs === "Amount spent _USD_")).toBe(true);
+});
+
+it('folds curated alias matches too — "Reporting starts" is Meta\'s own ad-summary date header, not a user mistake', () => {
+  const header = ["Reporting starts", "Ad name", "Amount spent (USD)", "Impressions", "Results", "Result type"];
+  const row = ["2026-07-13", "Ad A", "10.00", "1000", "2", "Purchases"];
+  const res = parseIapCsv([line(header), line(row)].join("\n"), "ad_summary");
+  // No per-column "rename it in your export" advice for a header Meta itself emits…
+  expect(res.warnings.some((w) => w.includes("via alias match"))).toBe(false);
+  // …the mapping folds into the one summary line instead, and detail survives.
+  expect(res.mappingSummary.some((e) => e.canonical === "Day" && e.foundAs === "Reporting starts")).toBe(true);
+});
+
+it("optional-column absences read as notes, not alarms", () => {
+  const header = ["Day", "Ad name", "Amount spent (USD)", "Impressions", "Results", "Result type"];
+  const row = ["2026-07-13", "Ad A", "10.00", "1000", "2", "Purchases"];
+  const res = parseIapCsv([line(header), line(row)].join("\n"), "ad_summary");
+  const missingLine = res.warnings.find((w) => w.includes("breakdown columns not present"));
+  expect(missingLine).toBeDefined();
+  expect(missingLine!.startsWith("Note:")).toBe(true);
 });
 
 // ── Cross-file duplicate dedupe ─────────────────────────────────────────

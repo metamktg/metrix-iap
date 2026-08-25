@@ -411,3 +411,71 @@ parser/merge code.
   objective/status/cap) veto both `inferColumnMapping` promotion and
   `suggestCanonicalForUnknown` suggestions when the token appears on the header side only.
   Such headers stay honestly unmapped. Tests in `iapCsvWarningSignal.test.ts`.
+
+## BUG-22 — Completeness panel reports "0 rows" for every module after a failed run
+
+- **Symptom:** "Analysis incomplete — 5 modules missing data" with 0 rows on every module
+  (screenshot, AAFE) while the last successful run's 3,000+ rollup rows sat intact in the DB,
+  and Strategy stayed locked on them.
+- **Root cause:** `verifyAnalysisRunCompleteness` scoped every per-module count to the LATEST
+  run by `started_at` — including a failed one, which has no outputs by definition (failed
+  runs delete their own partial rows). The morning's two errored B0 re-runs made "latest"
+  an error run, so every count keyed to its run id returned zero.
+- **Category:** Fix-Now (context-awareness: a failure is already reported by run history;
+  reporting it a second time as universal data loss is misinformation).
+- **Resolution (implemented):** module counts scope to the latest SUCCESSFUL run; the
+  absolute-latest run's status still rides along as `run_status` so a fresh failure stays
+  visible; a run in flight keeps completeness false until it settles.
+
+## BUG-23 — Large performance files can't upload at all (bare HTTP 413/500 at the proxy)
+
+- **Symptom:** "IAP-PLACEMENTS-NEW-AA … (1).csv: Upload failed (HTTP 413)" with no server
+  message — and earlier, the same bare-status shape as an HTTP 500. Files never reached the
+  API (no manual_imports row, no JSON error body, which every application path attaches).
+- **Root cause:** the deployment proxy caps single request bodies well below the app's own
+  75 MB limit and rejects them before Express sees the request. Raising express limits
+  cannot fix this, and the 75 MB single-request cap itself exists because base64+JSON+hex
+  multiplication of one big payload OOM'd Node at 150-200 MB (see the memory note in
+  metrix.ts).
+- **Category:** Fix-Now (capacity requirement: 150 MB performance files).
+- **Resolution (implemented):** chunked upload flow (init → PUT ~8 MB base64 chunks →
+  complete) for performance report kinds, storing chunks as `manual_import_chunks` rows
+  (bytea, PK (import_id, chunk_index), cascade delete) with `manual_imports.content` NULL
+  and `status='uploading'` until complete. The complete step assembles, verifies announced
+  size, runs the IDENTICAL validation + md5 duplicate guard as single-request staging, and
+  flips to 'staged'. Readers (`loadImportContentBuffer`) fetch chunk-wise so no PostgREST
+  payload ever carries a whole large file. Client auto-switches transports above 20 MB;
+  performance dropzone limit is now 150 MB (creative assets keep the 75 MB inline path).
+  Abandoned sessions sweep after 24h. 'uploading' rows are excluded from listings and can
+  never be consumed by a run (runs read status='staged' only).
+
+## BUG-24 — Multi-sheet workbook uploads fail on the wrong sheet
+
+- **Symptom:** "AAFE DEMO IAP Untitled spreadsheet.xlsx: The following required columns
+  could not be found: 'Day', 'Ad name'" — a whole Google Sheets workbook saved as .xlsx,
+  where the active tab wasn't the export sheet.
+- **Root cause:** `selectWorksheet` picked the active/first-visible tab blindly; the real
+  export sheet elsewhere in the workbook was never considered.
+- **Category:** Fix-Now (valid warning, avoidable failure).
+- **Resolution (implemented):** when the target class is known, every sheet's header row is
+  scored by how many of the class's required breakdown columns resolve through the normal
+  alias/slug cascade; the best-scoring sheet wins, previous behavior on no match or ties.
+
+## Context-aware validation pass (extends BUG-20)
+
+- Curated ALIAS matches now fold into the single automatic-mapping summary line — "Reporting
+  starts" IS Meta's native date header on ad-level summary exports; "rename it in your
+  export" was advice the user cannot act on. Same for "Device platform" → "Impression
+  device" on placement exports.
+- Optional-column absences ("breakdown columns … treated as blank") are now "Note:"-prefixed
+  informational notices.
+- Client warning panel splits severities: action-needed lines stay on the first layer;
+  "Note:"/"no action needed" lines collapse behind a count (progressive disclosure); a
+  notices-only staging drops the alarm styling entirely.
+
+## Reconciliation guard (prevention layer for BUG-19's class)
+
+- `computeDataCoverage` now flags any breakdown class whose windowed spend EXCEEDS the
+  daily-attributable baseline (>101%, aggregate-shape summaries exempt) with a loud
+  "Reconciliation check failed … counted more than once" note that also lands in the run's
+  csv_warnings. The BUG-19 double-ingestion registered exactly 200% here and was silent.

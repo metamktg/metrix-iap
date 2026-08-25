@@ -717,6 +717,42 @@ alter table manual_imports add column if not exists ad_names text[] not null def
 -- manually-picked mapping.
 alter table manual_imports add column if not exists match_method text;
 
+-- ── Chunked large-file uploads ──────────────────────────────────────────
+-- Files too large for a single request (the deployment proxy rejects big
+-- bodies before Express sees them, and the single-request path's own
+-- memory profile caps it at 75 MB) upload as per-chunk rows here and keep
+-- manual_imports.content NULL. Chunks cascade-delete with their import.
+-- Rows in status 'uploading' are in-flight sessions: excluded from every
+-- listing/staging query and swept after 24h by the init endpoint.
+alter table manual_imports alter column content drop not null;
+
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname
+    from pg_constraint
+    where conrelid = 'manual_imports'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%status = ANY%'
+  loop
+    execute format('alter table manual_imports drop constraint %I', cname);
+  end loop;
+  alter table manual_imports
+    add constraint manual_imports_status_check
+    check (status in ('uploading', 'staged', 'processed', 'rejected'));
+end $$;
+
+create table if not exists manual_import_chunks (
+  import_id uuid not null references manual_imports(id) on delete cascade,
+  chunk_index integer not null,
+  content bytea not null,
+  primary key (import_id, chunk_index)
+);
+
+alter table manual_import_chunks enable row level security;
+revoke all on manual_import_chunks from anon, authenticated;
+
 -- Persists the CSV column-mapping report produced at upload time so the
 -- CsvMappingPanel can be re-hydrated from the GET /manual-imports response
 -- on any subsequent visit (dialog re-open, page refresh) without requiring
@@ -1005,7 +1041,7 @@ declare
     'variable_registry', 'signal_cards', 'account_modules', 'app_config',
     'request_access', 'meta_oauth_pending', 'connected_ad_accounts', 'report_pulls',
     'report_rows', 'generation_runs', 'manual_imports', 'manual_analysis_runs',
-    'cell_creative_overrides',
+    'cell_creative_overrides', 'manual_import_chunks',
     'import_metric_reconciliation', 'creative_deconstructions'
   ];
 begin

@@ -187,13 +187,24 @@ export function ConnectMetaDialog({
 const MAX_UPLOAD_BYTES = 75 * 1024 * 1024;
 const MAX_UPLOAD_MB_LABEL = "75 MB";
 
+// Performance report files go up to 150 MB via the chunked upload flow
+// (MAX_CHUNKED_IMPORT_BYTES server-side). Anything above the threshold is
+/// sent in ~8 MB chunks: the deployment proxy rejects large single request
+// bodies with a bare 413 before the API ever sees them, so a bigger
+// single-request limit cannot work — chunking is the only transport that
+// scales past it.
+const MAX_PERFORMANCE_UPLOAD_BYTES = 150 * 1024 * 1024;
+const MAX_PERFORMANCE_UPLOAD_MB_LABEL = "150 MB";
+const CHUNKED_THRESHOLD_BYTES = 20 * 1024 * 1024;
+const UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
+
 /**
- * Base64-encodes a file via FileReader.readAsDataURL — the browser does
- * the encoding natively off the main thread, unlike the previous
- * arrayBuffer + String.fromCharCode loop which froze the UI for large
- * (multi-MB) video files.
+ * Base64-encodes a file (or file slice) via FileReader.readAsDataURL — the
+ * browser does the encoding natively off the main thread, unlike the
+ * previous arrayBuffer + String.fromCharCode loop which froze the UI for
+ * large (multi-MB) video files.
  */
-function fileToBase64(file: File): Promise<string> {
+function fileToBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -256,6 +267,65 @@ function stageManualImportWithProgress(
 
     xhr.send(JSON.stringify(data));
   });
+}
+
+/** JSON fetch with the app's cookie auth; throws Error(message) on any non-2xx. */
+async function chunkedUploadRequest(url: string, method: "POST" | "PUT", body?: unknown): Promise<unknown> {
+  const res = await fetch(url, {
+    method,
+    credentials: "include",
+    headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  let parsed: unknown = null;
+  try {
+    parsed = await res.json();
+  } catch {
+    // non-JSON body (platform error page) — handled below via status
+  }
+  if (!res.ok) {
+    const message =
+      (parsed && typeof parsed === "object" && "message" in parsed
+        ? String((parsed as { message?: unknown }).message)
+        : null) ?? `Upload failed (HTTP ${res.status})`;
+    throw new Error(message);
+  }
+  return parsed;
+}
+
+/**
+ * Stages a large performance report through the chunked upload flow:
+ * init → PUT ~8 MB chunks (progress = chunks delivered) → complete, which
+ * runs the exact same server-side validation as the single-request path
+ * and returns the same ManualImportResult shape.
+ */
+async function stageManualImportChunked(
+  accountId: string,
+  file: File,
+  kind: CsvKind,
+  onProgress?: (pct: number) => void
+): Promise<ManualImportResult> {
+  const chunkCount = Math.max(1, Math.ceil(file.size / UPLOAD_CHUNK_BYTES));
+  const base = `/api/metrix/accounts/${accountId}/manual-imports/uploads`;
+  const init = (await chunkedUploadRequest(base, "POST", {
+    kind,
+    filename: file.name,
+    content_type: file.type || null,
+    size_bytes: file.size,
+    chunk_count: chunkCount,
+  })) as { import_id: string };
+
+  for (let i = 0; i < chunkCount; i++) {
+    const slice = file.slice(i * UPLOAD_CHUNK_BYTES, Math.min((i + 1) * UPLOAD_CHUNK_BYTES, file.size));
+    const content_base64 = await fileToBase64(slice);
+    await chunkedUploadRequest(`${base}/${init.import_id}/chunks/${i}`, "PUT", { content_base64 });
+    // Reserve the last few percent for the server-side assemble+validate step.
+    onProgress?.(Math.round(((i + 1) / chunkCount) * 95));
+  }
+
+  const result = (await chunkedUploadRequest(`${base}/${init.import_id}/complete`, "POST")) as ManualImportResult;
+  onProgress?.(100);
+  return result;
 }
 
 function UploadProgressBar({ pct, label }: { pct: number; label: string }) {
@@ -568,16 +638,19 @@ function SmartCsvUpload({
   );
 
   const stageOne = async (fileToStage: File): Promise<ManualImportResult> => {
-    const [content_base64, sniffedKind] = await Promise.all([
-      fileToBase64(fileToStage),
-      sniffCsvKind(fileToStage),
-    ]);
+    const sniffedKind = await sniffCsvKind(fileToStage);
+    // Large files take the chunked flow (never base64-encoded whole — the
+    // single-request body would be rejected by the platform proxy anyway).
+    const useChunked = fileToStage.size > CHUNKED_THRESHOLD_BYTES;
+    const content_base64 = useChunked ? null : await fileToBase64(fileToStage);
     const stageAs = (k: CsvKind) =>
-      stageManualImportWithProgress(
-        accountId,
-        { kind: k, filename: fileToStage.name, content_type: fileToStage.type || undefined, content_base64 },
-        (pct) => setCurrent({ name: fileToStage.name, pct })
-      );
+      useChunked
+        ? stageManualImportChunked(accountId, fileToStage, k, (pct) => setCurrent({ name: fileToStage.name, pct }))
+        : stageManualImportWithProgress(
+            accountId,
+            { kind: k, filename: fileToStage.name, content_type: fileToStage.type || undefined, content_base64: content_base64! },
+            (pct) => setCurrent({ name: fileToStage.name, pct })
+          );
 
     // Classify from the file's own headers first (matches how the server
     // itself tells the classes apart) rather than guessing by which slot is
@@ -610,9 +683,9 @@ function SmartCsvUpload({
     setLastWarnings(null);
     setFailures(null);
     const fileList = Array.from(files);
-    const oversized = fileList.filter((f) => f.size > MAX_UPLOAD_BYTES);
+    const oversized = fileList.filter((f) => f.size > MAX_PERFORMANCE_UPLOAD_BYTES);
     if (oversized.length > 0) {
-      setFailures(oversized.map((f) => `${f.name} — file is too large — the limit is ${MAX_UPLOAD_MB_LABEL}.`));
+      setFailures(oversized.map((f) => `${f.name} — file is too large — the limit is ${MAX_PERFORMANCE_UPLOAD_MB_LABEL}.`));
       if (fileRef.current) fileRef.current.value = "";
       return;
     }
@@ -691,7 +764,7 @@ function SmartCsvUpload({
         <span className="text-body font-medium text-foreground/85">
           {current !== null ? `Uploading ${current.name}…` : "Drop your Meta CSV or XLSX exports here, or click to browse"}
         </span>
-        <span className="text-caption text-muted-foreground/60">Any number of files, any order — up to {MAX_UPLOAD_MB_LABEL} each</span>
+        <span className="text-caption text-muted-foreground/60">Any number of files, any order — up to {MAX_PERFORMANCE_UPLOAD_MB_LABEL} each</span>
         {current !== null && <div className="w-full max-w-xs mt-1"><UploadProgressBar pct={current.pct} label="" /></div>}
       </button>
 
@@ -783,28 +856,75 @@ function SmartCsvUpload({
 
       {lastMapping && <CsvMappingPanel summary={lastMapping} />}
 
-      {lastWarnings && lastWarnings.length > 0 && (
-        <div className="rounded-lg border border-status-warning/30 bg-status-warning/[0.06] p-3 space-y-2">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="text-caption font-semibold text-status-warning">File staged with a warning — check before running analysis</div>
-              <ul className="space-y-0.5">
-                {lastWarnings.map((w, i) => (
-                  <li key={i} className="text-label text-status-warning/80 leading-relaxed">{w}</li>
-                ))}
-              </ul>
+      {lastWarnings && lastWarnings.length > 0 && (() => {
+        // Severity split (progressive disclosure): informational notices —
+        // "Note:"-prefixed optional-column lists and the folded "matched
+        // automatically … no action needed" mapping summary — collapse
+        // behind a count, so the lines that actually need a decision (ID
+        // corruption, moderate-confidence mappings, reconciliation) are the
+        // only ones on the first layer. Nothing is hidden: notices stay one
+        // click away, and a notices-only staging drops the alarm styling
+        // entirely.
+        const isNotice = (w: string) => w.startsWith("Note:") || w.includes("no action needed");
+        const notices = lastWarnings.filter(isNotice);
+        const attention = lastWarnings.filter((w) => !isNotice(w));
+        const alarmed = attention.length > 0;
+        return (
+          <div
+            className={cn(
+              "rounded-lg border p-3 space-y-2",
+              alarmed ? "border-status-warning/30 bg-status-warning/[0.06]" : "border-border/40 bg-white/[0.02]",
+            )}
+          >
+            <div className="flex items-start gap-2">
+              {alarmed ? (
+                <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
+              ) : (
+                <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className={cn("text-caption font-semibold", alarmed ? "text-status-warning" : "text-foreground/85")}>
+                  {alarmed
+                    ? `Staged with ${attention.length} warning${attention.length !== 1 ? "s" : ""} — check before running analysis`
+                    : `Staged — ${notices.length} notice${notices.length !== 1 ? "s" : ""}, no action needed`}
+                </div>
+                {attention.length > 0 && (
+                  <ul className="space-y-0.5">
+                    {attention.map((w, i) => (
+                      <li key={i} className="text-label text-status-warning/80 leading-relaxed">{w}</li>
+                    ))}
+                  </ul>
+                )}
+                {notices.length > 0 && (
+                  <details className="group/notices">
+                    <summary className="flex items-center gap-1 text-label text-muted-foreground/70 cursor-pointer hover:text-foreground/80 transition-colors [&::-webkit-details-marker]:hidden">
+                      <ChevronRight className="w-3 h-3 shrink-0 transition-transform group-open/notices:rotate-90" />
+                      {notices.length} notice{notices.length !== 1 ? "s" : ""} — automatic mappings &amp; optional columns
+                    </summary>
+                    <ul className="space-y-0.5 pl-4 pt-1">
+                      {notices.map((w, i) => (
+                        <li key={i} className="text-label text-muted-foreground/70 leading-relaxed">{w}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </div>
+              <button
+                onClick={() => setLastWarnings(null)}
+                className={cn(
+                  "shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors",
+                  alarmed
+                    ? "text-status-warning/70 hover:text-status-warning hover:bg-status-warning/10"
+                    : "text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.04]",
+                )}
+                aria-label="Dismiss warning"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <button
-              onClick={() => setLastWarnings(null)}
-              className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-status-warning/70 hover:text-status-warning hover:bg-status-warning/10 transition-colors"
-              aria-label="Dismiss warning"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {failures && failures.length > 0 && (
         <div className="rounded-lg border border-status-warning/30 bg-status-warning/[0.06] p-3 space-y-1.5">

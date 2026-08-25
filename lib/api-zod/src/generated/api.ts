@@ -140,6 +140,101 @@ export const ListManualImportsResponse = zod.object({
 
 
 /**
+ * Creates an 'uploading' manual import row for a performance report file too large for a single request (the deployment proxy caps request bodies well below the 150 MB file limit). The client then PUTs base64 chunks and finishes with the complete endpoint, which runs the exact same validation as the single-request staging route. Performance CSV kinds only. Requires access to the account.
+ * @summary Begin a chunked upload of a large performance report file
+ */
+
+
+
+export const InitChunkedManualImportUploadParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+
+
+
+
+
+export const InitChunkedManualImportUploadBody = zod.object({
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv']).describe('Performance report kinds only — creative assets use single-request staging.'),
+  "filename": zod.string().min(1),
+  "content_type": zod.string().nullish(),
+  "size_bytes": zod.number().min(1).describe('Total file size in bytes (max 150 MB). Verified against the assembled chunks at completion.'),
+  "chunk_count": zod.number().min(1).describe('Number of chunks the client will send (max 64).')
+})
+
+export const InitChunkedManualImportUploadResponse = zod.object({
+  "status": zod.enum(['uploading']),
+  "import_id": zod.string(),
+  "max_chunk_bytes": zod.number().describe('Decoded per-chunk byte ceiling the server will accept.')
+})
+
+
+/**
+ * Stores one base64-encoded chunk (decoded max 16 MB) for an 'uploading' import. Idempotent per (importId, chunkIndex) — re-sending a chunk replaces it. Requires access to the account.
+ * @summary Upload one chunk of a chunked manual import
+ */
+
+
+export const uploadManualImportChunkPathChunkIndexMin = 0;
+
+
+
+export const UploadManualImportChunkParams = zod.object({
+  "accountId": zod.coerce.string().min(1),
+  "importId": zod.coerce.string().min(1),
+  "chunkIndex": zod.coerce.number().min(uploadManualImportChunkPathChunkIndexMin)
+})
+
+
+
+
+export const UploadManualImportChunkBody = zod.object({
+  "content_base64": zod.string().min(1)
+})
+
+export const UploadManualImportChunkResponse = zod.object({
+  "status": zod.enum(['ok']),
+  "chunk_index": zod.number()
+})
+
+
+/**
+ * Assembles the uploaded chunks, runs the exact same validation as single-request staging (CSV/XLSX parse, column mapping report, same-bytes duplicate guard), and flips the import to 'staged'. On a validation failure the upload session and its chunks are deleted and the error explains what to fix. Requires access to the account.
+ * @summary Finish a chunked upload and stage the file
+ */
+
+
+
+
+export const CompleteChunkedManualImportUploadParams = zod.object({
+  "accountId": zod.coerce.string().min(1),
+  "importId": zod.coerce.string().min(1)
+})
+
+export const CompleteChunkedManualImportUploadResponse = zod.object({
+  "status": zod.enum(['staged']),
+  "import_id": zod.string(),
+  "filename": zod.string(),
+  "size_bytes": zod.number(),
+  "note": zod.string().describe('Honest processing note (staged for analysis, not parsed into performance data).'),
+  "link_result": zod.object({
+  "matched": zod.array(zod.string()).describe('Ad names that resolved to a real ad row and were linked to this asset.'),
+  "unmatched": zod.array(zod.string()).describe('Ad names with no matching ad row — the asset is staged but not linked to a live ad.')
+}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).'),
+  "mapping_summary": zod.array(zod.object({
+  "canonical": zod.string().describe('The canonical column name from the IAP spec.'),
+  "found_as": zod.string().nullish().describe('The actual header value found in the CSV, or null if the column was not found.'),
+  "confidence": zod.number().describe('Mapping confidence 0–1. 1.0 = exact match; 0 = not found.'),
+  "method": zod.string().describe('Human-readable label describing how the column was resolved.'),
+  "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
+  "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
+}).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).optional().describe('Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column.'),
+  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only.')
+})
+
+
+/**
  * Flips every manual_imports row this run consumed (status=processed) back to staged and clears the run linkage, so "Run analysis" picks them up again to regenerate the analysis from the same files without re-uploading. Requires access to the account.
  * @summary Restage the imports a past analysis run consumed
  */

@@ -26,7 +26,7 @@ import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow } from "./iapCsvParser";
 import type { IapCsvClass } from "./iapCsvSpec";
-import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel, optionalMetricSlugsForGroups, type ObjectiveColumnGroup } from "./iapCsvSpec";
+import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel, optionalMetricSlugsForGroups, IAP_CSV_CLASS_SPECS, type ObjectiveColumnGroup } from "./iapCsvSpec";
 import { resolveAccountObjectives } from "./cohortConfig";
 import { computeObjectiveCoverage, OBJECTIVE_GROUP_FOR_KEY } from "./objectiveCoverage";
 import { convertXlsxToCsvText, looksLikeXlsxContent } from "./xlsxToCsv";
@@ -409,10 +409,30 @@ export async function verifyAnalysisRunCompleteness(accountId: string): Promise<
     .limit(1);
   if (runErr) throw new Error(runErr.message);
   const latestRun = runRows?.[0] ?? null;
-  const runId = latestRun ? String(latestRun["id"]) : null;
   const runStatus: AnalysisCompleteness["run_status"] = latestRun
     ? (latestRun["status"] as AnalysisCompleteness["run_status"])
     : "none";
+
+  // Module counts are verified against the latest SUCCESSFUL run, not the
+  // absolute latest. A failed run has no outputs by definition — scoping the
+  // per-module counts to it reported "0 rows" across every module while the
+  // last successful run's data sat intact underneath (observed live on AAFE
+  // after the morning's two errored re-runs), and gated Strategy on a
+  // failure the run history already reports. run_status still carries the
+  // absolute latest run's state so a fresh failure stays visible.
+  let scopedRun = latestRun;
+  if (latestRun && latestRun["status"] !== "success") {
+    const { data: successRows, error: successErr } = await supabase
+      .from("manual_analysis_runs")
+      .select("id, status")
+      .eq("account_id", accountId)
+      .eq("status", "success")
+      .order("started_at", { ascending: false })
+      .limit(1);
+    if (successErr) throw new Error(successErr.message);
+    scopedRun = successRows?.[0] ?? null;
+  }
+  const runId = scopedRun ? String(scopedRun["id"]) : null;
 
   const surfaces: AnalysisSurfaceCheck[] = await Promise.all(
     COMPLETENESS_SURFACES.map(async (s) => {
@@ -463,8 +483,12 @@ export async function verifyAnalysisRunCompleteness(accountId: string): Promise<
   }
 
   const requiredOk = surfaces.every((s) => !s.required || s.ok);
+  // Completeness follows the SCOPED (last successful) run: a later failed
+  // run doesn't erase the validated outputs it never touched. A run still
+  // in flight keeps completeness false until it settles — its outputs are
+  // partial by definition.
   const complete = runId
-    ? runStatus === "success" && requiredOk
+    ? runStatus !== "running" && requiredOk
     : requiredOk && surfaces.some((s) => s.rows > 0);
 
   return {
@@ -627,6 +651,49 @@ function decodeStagedContentBuffer(hexOrRaw: string): Buffer {
 }
 
 /**
+ * Loads a staged manual_imports row's raw bytes. Small files store their
+ * content inline in manual_imports.content; large files (chunked upload —
+ * see the /manual-imports/uploads routes) store NULL content and their
+ * bytes as ordered rows in manual_import_chunks, fetched here one chunk at
+ * a time so no single PostgREST response ever has to carry the whole file.
+ */
+export async function loadImportContentBuffer(imp: {
+  id?: unknown;
+  content?: unknown;
+}): Promise<Buffer> {
+  if (imp.content !== null && imp.content !== undefined) {
+    return decodeStagedContentBuffer(String(imp.content));
+  }
+  const importId = String(imp.id ?? "");
+  if (!importId) throw new Error("Import row has neither inline content nor an id to load chunks by.");
+  const supabase = getSupabase();
+  const { data: index, error: idxErr } = await supabase
+    .from("manual_import_chunks")
+    .select("chunk_index")
+    .eq("import_id", importId)
+    .order("chunk_index", { ascending: true });
+  if (idxErr) throw new Error(idxErr.message);
+  const indices = (index ?? []).map((r) => Number(r["chunk_index"]));
+  if (indices.length === 0) {
+    throw new Error(`Import ${importId} has no inline content and no stored chunks.`);
+  }
+  const parts: Buffer[] = [];
+  for (const i of indices) {
+    const { data: rows, error } = await supabase
+      .from("manual_import_chunks")
+      .select("content")
+      .eq("import_id", importId)
+      .eq("chunk_index", i)
+      .limit(1);
+    if (error) throw new Error(error.message);
+    const content = rows?.[0]?.["content"];
+    if (content === null || content === undefined) throw new Error(`Import ${importId} chunk ${i} is empty.`);
+    parts.push(decodeStagedContentBuffer(String(content)));
+  }
+  return Buffer.concat(parts);
+}
+
+/**
  * Decodes a staged manual_imports row's content into canonical CSV text,
  * transparently converting XLSX workbooks (detected by filename extension or
  * ZIP magic bytes, same rule as the upload route) into the exact CSV text
@@ -634,14 +701,17 @@ function decodeStagedContentBuffer(hexOrRaw: string): Buffer {
  * conversion-time warnings (e.g. the Ad/Ad set/Campaign ID precision-loss
  * guard) alongside the text so callers can fold them into csv_warnings the
  * same way parseIapCsv's own warnings already are.
+ *
+ * `expectedColumns` steers multi-sheet workbook sheet selection only.
  */
 async function decodeStagedContentAsCsvText(
-  hexOrRaw: string,
+  imp: { id?: unknown; content?: unknown },
   filename: string,
+  expectedColumns?: readonly string[],
 ): Promise<{ text: string; warnings: string[] }> {
-  const buf = decodeStagedContentBuffer(hexOrRaw);
+  const buf = await loadImportContentBuffer(imp);
   if (extensionOf(filename) === "xlsx" || looksLikeXlsxContent(buf)) {
-    const converted = await convertXlsxToCsvText(buf);
+    const converted = await convertXlsxToCsvText(buf, expectedColumns);
     return { text: converted.csvText, warnings: converted.warnings };
   }
   return { text: buf.toString("utf8"), warnings: [] };
@@ -1118,8 +1188,24 @@ export function computeDataCoverage(args: {
     const coverageApplies = key !== "conversion_device" && spendCoverage !== null;
     const belowThreshold = coverageApplies && spendCoverage < COVERAGE_THRESHOLD_PCT && !aggregateShape;
 
+    // Over-baseline reconciliation: a breakdown class can only ever slice the
+    // daily-attributable total — spend EXCEEDING it means rows are being
+    // counted more than once (the demographic double-ingestion shipped as
+    // BUG-19 showed up as exactly 200% here). 101% allows rounding drift.
+    // (An aggregate-shape summary legitimately exceeds the daily baseline —
+    // its whole-period total is excluded from daily buckets by design — so
+    // the aggregate note takes precedence over this check.)
+    const overBaseline = coverageApplies && spendCoverage > 101 && !aggregateShape;
+
     let note: string | null = null;
-    if (aggregateShape) {
+    if (overBaseline) {
+      note =
+        `Reconciliation check failed: ${iapCsvClassLabel(key)} rows carry $${spend.toLocaleString("en-US")} of spend — ` +
+        `${spendCoverage}% of the $${baselineSpend.toLocaleString("en-US")} daily-attributable total for this window. ` +
+        `A breakdown can never exceed the total, so some rows are being counted more than once. ` +
+        `Most likely the same export is staged twice in different formats or overlapping date windows — ` +
+        `remove the duplicate file(s) and re-run analysis.`;
+    } else if (aggregateShape) {
       note =
         `This ad summary export is a whole-period per-ad report (its date column is the report window start on every row), not a daily export. ` +
         `Its $${spend.toLocaleString("en-US")} period total was used for creative metadata and total-spend cross-checking only — never added to daily totals. ` +
@@ -1442,7 +1528,7 @@ export async function startManualAnalysis(
   // here rather than surfacing a confusing error from a pre-check.
   const detectClassForImport = async (imp: { content?: unknown; filename?: unknown }): Promise<IapCsvClass | null> => {
     try {
-      const { text } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
+      const { text } = await decodeStagedContentAsCsvText(imp, String(imp["filename"]));
       return detectCsvClassFromHeaders(csvFirstLineHeaders(text));
     } catch {
       return null;
@@ -1467,15 +1553,15 @@ export async function startManualAnalysis(
   // numbers. Block here instead: require the caller to explicitly confirm
   // before those files are used, unless they already have.
   if (!confirmConversionExport) {
-    const deliveryImports: { filename: string; content: string; csvClass: IapCsvClass }[] = [
-      ...demoImports.map((i) => ({ filename: String(i["filename"]), content: String(i["content"]), csvClass: "demographic" as IapCsvClass })),
-      ...placementImports.map((i) => ({ filename: String(i["filename"]), content: String(i["content"]), csvClass: "device_placement" as IapCsvClass })),
-      ...summaryImports.map((i) => ({ filename: String(i["filename"]), content: String(i["content"]), csvClass: "ad_summary" as IapCsvClass })),
+    const deliveryImports: { filename: string; row: { id?: unknown; content?: unknown }; csvClass: IapCsvClass }[] = [
+      ...demoImports.map((i) => ({ filename: String(i["filename"]), row: i, csvClass: "demographic" as IapCsvClass })),
+      ...placementImports.map((i) => ({ filename: String(i["filename"]), row: i, csvClass: "device_placement" as IapCsvClass })),
+      ...summaryImports.map((i) => ({ filename: String(i["filename"]), row: i, csvClass: "ad_summary" as IapCsvClass })),
     ];
     const suspectFiles: string[] = [];
     for (const imp of deliveryImports) {
       try {
-        const { text } = await decodeStagedContentAsCsvText(imp.content, imp.filename);
+        const { text } = await decodeStagedContentAsCsvText(imp.row, imp.filename);
         const result = parseIapCsv(text, imp.csvClass);
         if (result.conversionExportSuspected) suspectFiles.push(imp.filename);
       } catch {
@@ -1508,7 +1594,7 @@ export async function startManualAnalysis(
       const demoRowsSeen = new Set<string>();
       for (const imp of demoImports) {
         try {
-          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
+          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(imp, String(imp["filename"]), IAP_CSV_CLASS_SPECS["demographic"].requiredBreakdownColumns);
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Demographics "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "demographic");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
@@ -1526,7 +1612,7 @@ export async function startManualAnalysis(
       const placementRowsSeen = new Set<string>();
       for (const imp of placementImports) {
         try {
-          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
+          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(imp, String(imp["filename"]), IAP_CSV_CLASS_SPECS["device_placement"].requiredBreakdownColumns);
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Placements "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "device_placement");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
@@ -1549,7 +1635,7 @@ export async function startManualAnalysis(
       const summaryRowsSeen = new Set<string>();
       for (const imp of summaryImports) {
         try {
-          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
+          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(imp, String(imp["filename"]), IAP_CSV_CLASS_SPECS["ad_summary"].requiredBreakdownColumns);
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Ad Summary "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "ad_summary");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
@@ -1573,7 +1659,7 @@ export async function startManualAnalysis(
       const conversionDeviceRowsSeen = new Set<string>();
       for (const imp of conversionDeviceImports) {
         try {
-          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
+          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(imp, String(imp["filename"]), IAP_CSV_CLASS_SPECS["conversion_device"].requiredBreakdownColumns);
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Conversion Device "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "conversion_device");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
