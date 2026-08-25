@@ -660,3 +660,78 @@ Flags (operator action / product decisions, no code change):
   most of the logic already) and the field legitimately stays required, or delete the block
   and the field. Either way the spec is currently wrong — it describes a check that does
   not run. Settle it during E1–E4, where `openapi.yaml` is being edited anyway.
+
+## BUG-31 — Creative-metadata cascade bypassed the warning-fold policy and ran after header claiming
+
+- **Symptom (real AAFE Ad Summary shape):** every `ad_summary` import emitted three
+  extra warnings — `Creative metadata column "Ad creative body text" auto-matched from
+  "Body text" (via alias match)` and the same for Headline and CTA. Those are Meta's own
+  header names, resolved through the curated alias table: nothing for the user to verify
+  and nothing they can act on. Probe over the real header shape: 6 warnings, 3 of them
+  this noise.
+- **Root causes (three, one cascade):** `iapCsvParser`'s breakdown, spend and metric
+  cascades fold deterministic matches (slug / case-insensitive / curated alias /
+  currency-suffix) into ONE "matched automatically — no action needed" line. The
+  creative-metadata cascade — `ad_summary` only, which is why BUG-20 and BUG-27 both
+  missed it — emitted one line per column unconditionally. It also ran ~200 lines AFTER
+  `unmappedHeaders` was computed, so (a) its successfully-mapped headers were still
+  unclaimed when the unknown-column pass ran and were eligible to be reported as
+  "Unrecognised column … may correspond to expected column X", and (b) had it folded, it
+  would have incremented a counter already reported — dropping the mapping from the
+  summary rather than demoting it.
+- **Category:** Fix-Now (the warning-channel erosion BUG-20 targets, in the one cascade
+  the fix never reached).
+- **Resolution (implemented):** the cascade moved up beside the others, before
+  `unmappedHeaders` and before the fold summary is emitted, and now applies
+  `isDeterministicVia` exactly as they do. Probe over the same header: 6 warnings → 3,
+  fold count 1 → 4 (nothing dropped), both survivors informational "Note:" lines.
+  Separately, `warningSeverity.ts` gained `(via currency match)` — currency-suffix
+  resolution is deterministic, and stored runs from before this fix can carry a
+  per-column line for it that would otherwise render as action-needed.
+- **Verification evidence:** five new cases in `iapCsvWarningSignal.test.ts` (no
+  per-column creative-metadata lines; fold count includes them; every column still
+  mapped; no mapped header reported as unrecognised; the real shape yields exactly 3
+  informational warnings) + two in `warningSeverity.test.ts`. 288 server tests green.
+
+## BUG-32 — Alerts page never surfaced the data-quality flags it documents as its source
+
+- **Symptom:** `ListenCommandCenter` documents Alerts' lineage as `iap.data_quality[]`,
+  but `AlertsView` rendered only high-impact signal cards and `data_caveat`. Importer and
+  analysis-run quality findings — including `cross_export_mismatch`, the cross-export
+  integrity trigger — reached only the Ad Performance signal tiers. The page a user opens
+  to see what needs attention showed none of them, and the "Active alerts" count excluded
+  them.
+- **Root cause:** BUG-15, previously recorded as an open surfacing gap.
+- **Category:** Fix-Now (a trigger that fires correctly and surfaces nowhere the user
+  looks is indistinguishable from one that never fired).
+- **Resolution (implemented):** flag presentation (`flagHeadline` / `flagBody` /
+  `flagEvidence`) extracted from `AdPerformanceView` into `lib/dataQualityFlags.ts` and
+  shared; Alerts renders a "Data-quality findings" section from `acct.iap.data_quality`,
+  counts them in the alert totals, and cross-links to Ad Performance for full per-finding
+  evidence rather than duplicating the tier UI. The command-center lineage label now
+  names all three real sources (`signal_cards[] · data_caveat · iap.data_quality[]`).
+- **Verification evidence:** the repo's `inpage-nav-targets` guard caught a wrong
+  cross-link target (`/app/analysis/ad-performance`) on the first attempt; corrected to
+  the real route (`/app/analysis/performance`). 1,666 client tests green.
+
+## BUG-33 — Refetching KPI tiles rendered the same "—" as a missing value
+
+- **Symptom:** `KpiValue` rendered `—` at reduced opacity while a refetch was in flight —
+  the same glyph a null value renders. A slow request and "this number does not exist"
+  were the same picture, and the honest-null convention loses its meaning when loading
+  borrows the glyph.
+- **Category:** Fix-Now (swallowed state, group (c) of the Phase 1 audit §5.3).
+- **Resolution (implemented):** the in-flight state renders a pulsing bar with
+  `aria-busy` and an accessible label instead. The dash now means exactly one thing.
+
+## CI coverage gap — 224 secret-free server tests were never gated
+
+- **Finding:** CI excluded the api-server suite as "needs live secrets" and hand-picked
+  five files back in. Running each of the 38 files individually with no environment set
+  shows **16 of them pass secret-free** (288 tests). Eleven were therefore unprotected,
+  including `iapCsvMapping` (73 tests — the column-mapping cascade behind the whole
+  BUG-20/21/27 warning class), `metrixSeedAssembly` (the BUG-25 fix that resolved a
+  production outage), `iapCsvParser`, `objectiveCoverage` and `analysisCsvClassCheck`.
+- **Resolution (implemented):** the CI step now runs all 16, with the criterion recorded
+  in the workflow so the list stays correct as suites are added: a file belongs there only
+  if `vitest run <file>` passes with no environment. Gate went from 59 to 288 tests.

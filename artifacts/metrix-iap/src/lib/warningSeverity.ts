@@ -14,7 +14,10 @@
 // Runs persist their warnings verbatim (manual_analysis_runs.csv_warnings),
 // so the patterns cover BOTH the current phrasings and the pre-fold ones
 // older stored runs still carry ("via slug match" per-column lines, the
-// un-prefixed optional-breakdown list).
+// un-prefixed optional-breakdown list). "via currency match" is covered for
+// the same reason: currency-suffix resolution is deterministic, and runs
+// stored before the creative-metadata cascade joined the fold can carry
+// per-column lines for it.
 
 const NOTICE_PATTERNS: RegExp[] = [
   /^\s*(\[[^\]]+\]\s*)?Note:/,
@@ -23,6 +26,7 @@ const NOTICE_PATTERNS: RegExp[] = [
   /\(via slug match\)/,
   /\(via alias match\)/,
   /\(via case_insensitive match\)/,
+  /\(via currency match\)/,
   /will be treated as blank/,
 ];
 

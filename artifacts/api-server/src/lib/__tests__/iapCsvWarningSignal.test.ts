@@ -203,3 +203,78 @@ describe("appendRowsCrossFileDeduped", () => {
     expect(stableRowSignature(a)).toBe(stableRowSignature(b));
   });
 });
+
+// ── Creative-metadata cascade obeys the same fold policy ────────────────
+//
+// The breakdown / spend / metric cascades fold deterministic matches
+// (slug / case-insensitive / curated alias / currency-suffix) into ONE
+// "matched automatically — no action needed" summary line. The
+// creative-metadata cascade — which only runs for ad_summary exports —
+// bypassed that policy entirely and emitted one "auto-matched" line per
+// column. Meta's own ad-level exports label these columns "Body text",
+// "Headline" and "CTA", all curated aliases, so EVERY real ad_summary
+// import carried three warnings the user could neither act on nor verify.
+//
+// The cascade also used to run after `unmappedHeaders` was computed, so
+// those same successfully-mapped headers were still eligible for the
+// unknown-column "may correspond to expected column X" suggestion, and any
+// fold it did contribute incremented a counter that had already been
+// reported (silently dropping the mapping from the summary).
+
+const AD_SUMMARY_HEADER = [
+  "Day", "Ad name",
+  "Amount spent (USD)", "Impressions", "Reach", "Link clicks", "Clicks (all)",
+  "Results", "CTR (link click-through rate)",
+  '"CPM (cost per 1,000 impressions) (USD)"',
+  "Body text", "Headline", "CTA",
+].join(",");
+const AD_SUMMARY_ROW = [
+  "2026-07-01", "Ad A", "10", "1000", "900", "20", "30", "2", "1.5", "5",
+  "hello", "buy", "SHOP_NOW",
+].join(",");
+
+function parseAdSummary() {
+  return parseIapCsv(`${AD_SUMMARY_HEADER}\n${AD_SUMMARY_ROW}\n`, "ad_summary" as never);
+}
+
+describe("creative-metadata cascade fold policy", () => {
+  it("folds alias-matched creative metadata instead of one warning per column", () => {
+    const { warnings } = parseAdSummary();
+    const perColumn = warnings.filter((w) => w.startsWith("Creative metadata column "));
+    expect(perColumn).toEqual([]);
+  });
+
+  it("counts the folded creative-metadata columns in the summary rather than dropping them", () => {
+    const { warnings } = parseAdSummary();
+    const summary = warnings.find((w) => w.includes("matched automatically"));
+    expect(summary).toBeDefined();
+    // 3 creative-metadata aliases + the currency-suffixed CPM.
+    expect(summary!).toMatch(/^4 column\(s\)/);
+    expect(summary!).toContain("no action needed");
+  });
+
+  it("still maps every creative metadata column it folded", () => {
+    const { columnMappings } = parseAdSummary();
+    expect(columnMappings["Ad creative body text"]?.headerValue).toBe("Body text");
+    expect(columnMappings["Ad creative headline"]?.headerValue).toBe("Headline");
+    expect(columnMappings["Ad creative call to action type"]?.headerValue).toBe("CTA");
+  });
+
+  it("never reports a mapped creative-metadata header as an unrecognised column", () => {
+    const { warnings } = parseAdSummary();
+    const unrecognised = warnings.filter((w) => w.startsWith("Unrecognised column "));
+    for (const w of unrecognised) {
+      expect(w).not.toContain('"Body text"');
+      expect(w).not.toContain('"Headline"');
+      expect(w).not.toContain('"CTA"');
+    }
+  });
+
+  it("leaves the real ad_summary shape with only informational notices", () => {
+    const { warnings } = parseAdSummary();
+    // Nothing in this export needs a decision: the folded summary plus the
+    // two "Note:" absences. Anything else would be false friction.
+    expect(warnings).toHaveLength(3);
+    expect(warnings.filter((w) => w.startsWith("Note:"))).toHaveLength(2);
+  });
+});

@@ -44,3 +44,28 @@ describe("splitWarningsBySeverity", () => {
     expect(notices).toEqual([]);
   });
 });
+
+describe("currency-suffix resolution is a notice, not an attention line", () => {
+  // Currency-suffix resolution is deterministic (some Meta export types append
+  // the account currency to every monetary column). New runs fold it into the
+  // "matched automatically" summary, but runs stored before the creative-
+  // metadata cascade joined the fold can carry a per-column line for it — and
+  // a deterministic rename must never render as something to act on.
+  it("classifies a per-column currency match as informational", () => {
+    expect(
+      isInformationalWarning(
+        'Creative metadata column "Ad creative link caption" auto-matched from "Ad creative link caption (USD)" (via currency match).',
+      ),
+    ).toBe(true);
+  });
+
+  it("still treats moderate-confidence inference as attention", () => {
+    const { attention, notices } = splitWarningsBySeverity([
+      'Metric column "CPM" auto-matched from "CPM x" (via currency match).',
+      'Metric column "CPM" mapped from "Cost per mille" with moderate confidence (67%) — please verify this is correct.',
+    ]);
+    expect(notices).toHaveLength(1);
+    expect(attention).toHaveLength(1);
+    expect(attention[0]).toContain("please verify");
+  });
+});

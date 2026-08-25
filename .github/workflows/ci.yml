@@ -97,16 +97,37 @@ jobs:
       - name: API server pure unit tests (no DB)
         # The api-server vitest suite as a whole needs live secrets
         # (DATABASE_URL / Supabase) and stays excluded — see the header
-        # comment. These specific suites are pure (parser + engine guards)
-        # and pin the manual-ingestion regression class (Day-format
-        # normalization, ad_performance unique-key pre-write guards), so they
-        # must gate PRs even without secrets.
+        # comment. But "the suite needs secrets" was over-applied: only 22 of
+        # its 38 files do. The 16 below import nothing that reads DATABASE_URL
+        # or SUPABASE_DB_URL at module load and pass on a bare checkout —
+        # verified by running each file individually with no env set. Five of
+        # them used to gate PRs; the other eleven (283 tests total) did not,
+        # which left the column-mapping cascade, the seed-assembly columns fix
+        # that resolved a production outage, objective coverage and the
+        # class-detection logic with no automated gate at all.
+        #
+        # Keep this list append-only as pure suites are added. A file belongs
+        # here only if `vitest run <file>` passes with no environment; anything
+        # touching lib/db or requiring SUPABASE_DB_URL does not.
         run: >
           pnpm --filter @workspace/api-server exec vitest run
-          src/lib/__tests__/iapCsvDayNormalization.test.ts
+          src/lib/__tests__/adminPanelSession.test.ts
+          src/lib/__tests__/analysisCsvClassCheck.test.ts
+          src/lib/__tests__/analysisEngine.test.ts
           src/lib/__tests__/analysisEngineAdRowGuards.test.ts
-          src/lib/__tests__/iapCsvWarningSignal.test.ts
           src/lib/__tests__/analysisEngineCoverage.test.ts
+          src/lib/__tests__/analysisEngineSignals.test.ts
+          src/lib/__tests__/cellCreativeValidation.test.ts
+          src/lib/__tests__/creativeAssetType.test.ts
+          src/lib/__tests__/deconstructionReclassify.test.ts
+          src/lib/__tests__/iapCsvDayNormalization.test.ts
+          src/lib/__tests__/iapCsvMapping.test.ts
+          src/lib/__tests__/iapCsvParser.test.ts
+          src/lib/__tests__/iapCsvWarningSignal.test.ts
+          src/lib/__tests__/metaGraph.test.ts
+          src/lib/__tests__/metrixSeedAssembly.test.ts
+          src/lib/__tests__/objectiveCoverage.test.ts
+          src/lib/__tests__/selectAllPagination.test.ts
           src/lib/__tests__/xlsxToCsv.test.ts
 
       - name: API server smoke (boots without Supabase env by design)

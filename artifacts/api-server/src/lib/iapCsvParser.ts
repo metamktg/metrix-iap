@@ -457,6 +457,54 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     }
   }
 
+  // Creative metadata columns (only for ad_summary): use same resolution cascade
+  // as breakdown columns so aliases like "body text" → "Ad creative body text" work.
+  //
+  // Placed with the other cascades, BEFORE unmappedHeaders is computed and
+  // before the fold summary is emitted. It used to run several hundred lines
+  // later, which broke both: its headers were still unclaimed when the
+  // unknown-column pass ran (so "Body text"/"Headline"/"CTA" — columns this
+  // cascade maps successfully — were eligible to be reported as unrecognised
+  // and offered a rename suggestion), and any fold it contributed landed in a
+  // counter that had already been reported.
+  const isAdSummary = csvClass === "ad_summary";
+  const creativeMetaIdx = new Map<string, number>(); // canonical → rawHeader index
+  if (isAdSummary) {
+    for (const col of CREATIVE_METADATA_COLUMNS) {
+      const match = findColumnInHeader(headerStrings, col);
+      if (match) {
+        const idx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
+        creativeMetaIdx.set(col, idx);
+        claimedHeaderValues.add(match.headerValue);
+        if (match.via !== "exact") {
+          columnMappings[col] = match;
+          // Same fold policy as the breakdown/spend/metric cascades above —
+          // this cascade previously bypassed it, so every ad_summary export
+          // using Meta's own shorter header names ("Body text", "Headline",
+          // "CTA" — all curated aliases) produced one "auto-matched" line per
+          // column. That is the BUG-20 warning-noise class: a deterministic
+          // mapping the user cannot act on and does not need to verify.
+          if (isDeterministicVia(match.via)) {
+            foldAutoMatch(col, match.headerValue);
+          } else {
+            warnings.push(
+              `Creative metadata column "${col}" auto-matched from "${match.headerValue}" (via ${match.via} match).`,
+            );
+          }
+        }
+        summaryMap.set(col, {
+          canonical: col,
+          foundAs: match.headerValue,
+          confidence: match.confidence,
+          method: match.method,
+          tier: matchTier(match),
+          isRequired: false,
+        });
+      }
+      // Creative metadata columns are truly optional — do NOT add to missingColumns when absent.
+    }
+  }
+
   // (read through a typed local — TS's flow analysis can't see the closure assignment)
   const foldedExampleValue = foldedExample as { from: string; to: string } | null;
   if (foldedAutoMatches > 0 && foldedExampleValue) {
@@ -640,36 +688,6 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     if (idx < 0) continue;
     optionalMetricsPresent.push(col);
     optionalMetricIdx.set(col, idx);
-  }
-
-  // Creative metadata columns (only for ad_summary): use same resolution cascade
-  // as breakdown columns so aliases like "body text" → "Ad creative body text" work.
-  const isAdSummary = csvClass === "ad_summary";
-  const creativeMetaIdx = new Map<string, number>(); // canonical → rawHeader index
-  if (isAdSummary) {
-    for (const col of CREATIVE_METADATA_COLUMNS) {
-      const match = findColumnInHeader(headerStrings, col);
-      if (match) {
-        const idx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
-        creativeMetaIdx.set(col, idx);
-        claimedHeaderValues.add(match.headerValue);
-        if (match.via !== "exact") {
-          columnMappings[col] = match;
-          warnings.push(
-            `Creative metadata column "${col}" auto-matched from "${match.headerValue}" (via ${match.via} match).`,
-          );
-        }
-        summaryMap.set(col, {
-          canonical: col,
-          foundAs: match.headerValue,
-          confidence: match.confidence,
-          method: match.method,
-          tier: matchTier(match),
-          isRequired: false,
-        });
-      }
-      // Creative metadata columns are truly optional — do NOT add to missingColumns when absent.
-    }
   }
 
   // ── Required breakdown COLUMNS (file-level, checked once) ─────────────
