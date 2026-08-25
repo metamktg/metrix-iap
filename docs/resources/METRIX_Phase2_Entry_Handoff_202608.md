@@ -233,6 +233,26 @@ with a test pass.
 This is open **by explicit operator decision**, not oversight: the security register was parked
 in favour of operable implementation fixes. It is the first item of the security phase.
 
+Re-confirmed at close by re-running the Supabase security advisors: these four functions are the
+**only** WARN-level findings besides §4b. The 42 `rls_enabled_no_policy` INFO notices are the
+deny-by-default importer tables and are **correct by design** — RLS on, zero policies, grants
+revoked. Do not "fix" them.
+
+---
+
+## 4b. Second security finding, surfaced at close
+
+**Supabase Auth leaked-password protection is disabled** (`auth_leaked_password_protection`,
+WARN). Supabase can check new passwords against HaveIBeenPwned; it is currently off.
+
+**Impact is low but non-zero, and the reason matters:** Metrix IAP does *not* authenticate
+through Supabase Auth. Login is custom (bcryptjs + DB-backed sessions in Replit Postgres), and
+Supabase Auth users exist only as FK targets for the official schema. So this hardens an
+authentication path that is not the product's real one — but it is a dashboard toggle, so the
+cost of closing it is a click.
+
+Belongs with the security register in §4, not ahead of it.
+
 ---
 
 ## 5. Deferred, with reasons (not defects)
@@ -264,6 +284,30 @@ Verified by direct query, not inferred.
 | Ad accounts | 32 total — 24 configured, 8 unconfigured **with genuinely zero data** |
 | Runs in flight | 0 analysis, 0 generation |
 | Orphaned outputs | **0** — every output row in all four tables joins to a `success` run |
+
+**Backend sync check, run at close.** Every row below was queried, not assumed:
+
+| Check | Result |
+|---|---|
+| `heartbeat_at` present on both run tables | 2 of 2 |
+| `progress_pct` / `progress_stage` present | 4 of 4 |
+| `manual_imports.content_md5` NULL | **0%** (the BUG-09 dup guard is live, not inert) |
+| Runs stuck in `running` | 0 |
+| Resolved runs still advertising progress | 0 |
+| Public tables | 64 — **0 with RLS disabled** |
+| Tables granted to `anon`/`authenticated` | 22 (the official schema) — **0 of them without RLS** |
+| Tables with RLS and zero policies | 42 — deny-by-default importer tables, correct by design |
+
+**Perimeter probed behaviourally, not read from policy text**, by role impersonation:
+
+| Probe | Result |
+|---|---|
+| `anon` → importer table (`ad_performance`) | `permission denied for table ad_performance` |
+| `anon` → official table (`clients`) | **0 rows** |
+| membership-less `authenticated` → `clients` | **0 rows** |
+
+That is the documented two-layer design behaving as documented: importer tables deny by
+revoked grant, official tables return zero rows by RLS.
 
 **Two corrections applied to live data this session:**
 
