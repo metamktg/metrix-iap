@@ -75,29 +75,43 @@ password. If a `SUPABASE_DB_URL` secret exists carrying the old password, **dele
 so the resolver falls through to the password path — or update it in full if you
 prefer to keep an explicit URL.
 
-**3. Update the GitHub Actions secret.**
-Repo → Settings → Secrets and variables → Actions. `supabase-policies.yml` reads
-`secrets.SUPABASE_DB_URL` and passes it straight to `psql`, so this store needs a full
-connection URL, not a bare password. Use the **session pooler** form:
+**3. Update the GitHub Actions secret — a SEPARATE store.**
+Repo → Settings → Secrets and variables → Actions. GitHub Actions secrets are distinct
+from Replit secrets even when they share a name; `supabase/policies/README.md` already
+flags this. `supabase-policies.yml` passes `secrets.SUPABASE_DB_URL` straight to `psql`,
+so this one needs a full connection URL, not a bare password.
 
-```
-postgresql://postgres.<PROJECT_REF>@aws-1-us-east-2.pooler.supabase.com:5432/postgres
-```
+Do **not** hand-assemble it. On Supabase → Project Settings → Database → Connection
+string, switch the mode selector to **Session pooler** and copy that URI — it already
+has the right host, the `postgres.<ref>` username form and the right port. Substitute
+the new password into it. Hand-building this string means URL-encoding the password
+yourself, which is the single most common way this step goes wrong.
 
-with the new password URL-encoded in the userinfo section. GitHub Actions secrets are
-separate from Replit secrets even when they share a name — `supabase/policies/README.md`
-already calls this out.
+Never use the **Direct connection** string (`db.<ref>.supabase.co`). It is IPv6-only
+and unreachable from Replit and CI, and because the resolver silently falls through
+when it sees that host, the resulting failure names a secret you believe you just set.
 
 **4. Verify — without revealing anything.**
+
+Run this first. It reports which secret resolved, which host it reached, and whether
+the credential authenticated — and prints no credential material, so its output is
+safe to paste anywhere:
+
+```
+pnpm --filter @workspace/scripts run check:db-credentials
+```
+
+It distinguishes the two failures that look identical in a raw driver error:
+*rejected credential* (wrong password stored) versus *unreachable host* (the IPv6
+direct-host trap). Then confirm the real tooling works:
 
 ```
 pnpm --filter @workspace/scripts run check:generation-runs-migration
 pnpm --filter @workspace/scripts run enforce:importer-rls
 ```
 
-The first prints SKIP if the secret is missing and verifies columns if it connected.
-The second is idempotent — safe to re-run, and it re-asserts the deny-by-default RLS
-posture as a side effect. Green on both means the rotation landed everywhere it needed to.
+The second is idempotent and re-asserts the deny-by-default RLS posture as a side
+effect. Green on all three means the rotation landed everywhere it needed to.
 
 **5. Confirm the old credential is dead.**
 Any tool still holding the old password should now fail to authenticate. That failure
