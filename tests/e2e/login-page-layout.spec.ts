@@ -279,8 +279,11 @@ async function main() {
         const visible = await link.isVisible();
         assert(visible, "link-marketing-site should be visible on desktop");
 
+        // The "Learn more" link was repointed from the marketing site (/www/)
+        // to the waitlist page — see LoginPage.tsx and the unit test in
+        // login-page.test.tsx, which already asserts /waitlist/.
         const href = await link.getAttribute("href");
-        assert(href === "/www/", `Expected href="/www/", got "${href}"`);
+        assert(href === "/waitlist/", `Expected href="/waitlist/", got "${href}"`);
       } finally {
         await ctx.close();
       }
