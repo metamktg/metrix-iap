@@ -23,7 +23,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
     const link = screen.getByTestId("link-request-access");
     expect(link.tagName).toBe("A");
-    expect(link.getAttribute("href")).toBe("/www/#request-access");
+    expect(link.getAttribute("href")).toBe("/waitlist/#request-access");
   });
 
   it("does not render the old inline waitlist email form", () => {
@@ -37,7 +37,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
     expect(screen.getByTestId("button-login")).toBeTruthy();
     expect(screen.getByTestId("link-marketing-site").getAttribute("href")).toBe(
-      "/www/",
+      "/waitlist/",
     );
   });
 });
