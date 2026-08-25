@@ -901,6 +901,87 @@ Flags (operator action / product decisions, no code change):
   62 files / 270 MB to **22 files / 189 MB**, with 40 files / 81 MB explicitly held back for
   a human. Script remains unexecuted.
 
+## BUG-39 — a slow run was indistinguishable from a dead one, and got its outputs deleted
+
+**Severity:** high (silent data loss on the two operator actions that matter most)
+**Found:** independent sweep of live run history, Aug 25 — not reported by a user.
+
+Both long-running engines reclaim a dead `running` row lazily on read: flip it to `error`,
+then **delete the partial outputs it wrote** (`deleteRunOutputs`). That reclaim is right —
+a half-written strategy must never read as a real one — but it asked the wrong question.
+Staleness was computed as `Date.now() - started_at > 10 min`, and `started_at` never
+advances. So the rule really said *"any run older than ten minutes is dead"*, whether or
+not it was still working.
+
+Neither engine could signal liveness through its existing phase writes. A generation run
+spends the bulk of its wall clock inside a **single model call** — `setRunProgressPhase`
+writes 10% "Calling strategy model…" and then nothing until 60% "Persisting pillars…". An
+analysis run can sit just as long inside one large parse (5% → 20%).
+
+Measured headroom against live history: the longest successful strategy run is **5.44 min**
+against a 10-minute window — 1.8×. Briefs are generated per concept, and AAFE, the largest
+account, is the next one queued for a full-range re-run and regeneration.
+
+The failure is not a clean abort. The reclaiming reader deletes the outputs while the live
+run keeps writing, so the end state is an `error` run whose rows are partially present —
+the exact fabricated-completeness state the honesty invariant exists to prevent. No orphan
+rows exist today (verified: every output row in all four tables joins to a `success` run),
+so this was latent, not manifest.
+
+**Fix.** `lib/runHeartbeat.ts`: a 30s interval touches `heartbeat_at` while a run is alive,
+guarded on `status = 'running'` so it cannot resurrect a resolved row. The ticker lives in
+the process executing the run, so it stops the instant that process dies — which is the
+condition the reclaim was trying to detect all along. Staleness now measures from the last
+sign of life. 30s against a 10-minute window is ~20× headroom, so several consecutive
+failed heartbeat writes still cannot cause a false reclaim.
+
+Degrades correctly if the migration has not applied: the write fails as a logged warning
+and `lastSignOfLife` falls back to `started_at`, i.e. exactly today's behaviour. That
+graceful degradation is *why* `check:generation-runs-migration` was extended to assert both
+`heartbeat_at` columns — the symptom of a missing migration is not an error, it is the
+silent return of the bug.
+
+**Also fixed, found while reading the same path:** the reclaim updated `status`,
+`error_message` and `finished_at` but never the progress fields, because it does not go
+through `finishRun`. One live row was found still advertising `progress_pct: 10`,
+`progress_stage: "Calling strategy model…"` on a run that had errored 80 minutes earlier.
+Nothing renders it today only because the progress view is gated on `isRunning` — an
+accident that stops protecting anyone after one refactor. Both reclaim paths now clear
+progress; the one live row was corrected.
+
+**Verification:** `lastSignOfLife` is the whole behavioural change and is unit-tested
+(`runHeartbeat.test.ts`, 6 tests, passes with a scrubbed environment) including the
+fail-stale-not-fresh case — reading an unusable timestamp as *fresh* would make a genuinely
+dead run unreclaimable and permanently block the account behind the one-running-row index.
+Wired into the CI gate list.
+
+## BUG-40 — the duplicate-header notice fired once per column, drowning the warnings that mattered
+
+**Severity:** medium (no wrong data; real warnings buried)
+**Found:** reading the `csv_warnings` of live successful runs, Aug 25.
+
+Meta's pivot exporter duplicates a *fixed set* of headers together — `Ad name`,
+`Ad ID`, `Result value type` — so the duplicate-header notice never fires once. It fires
+three times, per file. On the latest AAFE run, **6 of 15 warnings** were that one message
+repeated; on the run before it, 6 of 12. What they crowded out were the warnings that
+actually needed acting on: the 2.9% demographic coverage warning, and three ID columns
+blanked by a Sheets round-trip.
+
+This is the same class BUG-20 (severity-split) and BUG-31 (creative-metadata cascade)
+addressed, on a cascade that predates the fold policy and sits ~30 lines above where the
+fold state is declared — which is likely why it was missed both times.
+
+**Fix.** Fold to one line that names every affected column:
+`3 columns appear more than once in the header row — only the first occurrence of each is
+used: "Ad name", "Result value type", "Ad ID".` Singular wording is kept for the
+genuine one-column case. Nothing is lost — the columns are still named — and the panel
+drops from 15 lines to 10 on the same export.
+
+**Verification:** four tests in `iapCsvWarningSignal.test.ts` alongside the existing
+creative-metadata fold tests, pinning the folded count, that no column name is dropped,
+the singular case, and silence when nothing is duplicated. Regression-proven: reverting to
+the per-column loop fails two of them.
+
 ## Deferred with reasons (not defects)
 
 - **Storage reclaim before deploy — recommended against.** No disk pressure (533 MB, ~7% of

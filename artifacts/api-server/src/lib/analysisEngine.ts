@@ -24,6 +24,7 @@
 import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
+import { startRunHeartbeat, lastSignOfLife } from "./runHeartbeat";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow, type IapCsvParseResult } from "./iapCsvParser";
 import type { IapCsvClass } from "./iapCsvSpec";
 import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel, optionalMetricSlugsForGroups, IAP_CSV_CLASS_SPECS, type ObjectiveColumnGroup } from "./iapCsvSpec";
@@ -285,9 +286,13 @@ async function synthesizeRunFromReportPulls(accountId: string): Promise<ManualAn
 }
 
 function isStaleRunningRow(row: Record<string, any>): boolean {
+  // Measured from the last sign of life (heartbeat), not from `started_at`:
+  // a single large parse can hold one phase for minutes, so "started more
+  // than STALE_ANALYSIS_RUN_MS ago" was never the same question as "dead".
+  // See lib/runHeartbeat.ts.
   return (
     row["status"] === "running" &&
-    Date.now() - new Date(row["started_at"]).getTime() > STALE_ANALYSIS_RUN_MS
+    Date.now() - lastSignOfLife(row) > STALE_ANALYSIS_RUN_MS
   );
 }
 
@@ -303,6 +308,11 @@ async function flipStaleRunToError(row: Record<string, any>): Promise<Record<str
       status: "error",
       error_message: "The analysis run did not finish (server restarted or timed out). Try again.",
       finished_at: new Date().toISOString(),
+      // See the matching note in generationEngine: a reclaimed run never
+      // reaches finishRun, so its progress fields must be cleared here or
+      // the resolved row keeps advertising a live-looking stage.
+      progress_pct: 0,
+      progress_stage: "",
     })
     .eq("id", row["id"])
     .eq("status", "running")
@@ -1653,6 +1663,10 @@ export async function startManualAnalysis(
   }
 
   const runId = await startRun(accountId, dateRange, createdBy);
+  // Signal liveness while the run works, so a long parse cannot be
+  // mistaken for a dead process and have its partial rows deleted
+  // out from under it.
+  const stopHeartbeat = startRunHeartbeat("manual_analysis_runs", runId);
 
   void (async () => {
     try {
@@ -2539,6 +2553,8 @@ export async function startManualAnalysis(
       }
       await finishRun(runId, "error", { errorMessage: message });
       invalidateMetrixSeedCache();
+    } finally {
+      stopHeartbeat();
     }
   })();
 

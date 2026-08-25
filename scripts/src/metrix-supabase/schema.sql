@@ -1288,3 +1288,27 @@ update manual_imports mi
  where a.import_id = mi.id
    and mi.content_md5 is null
    and mi.content is null;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- BUG-39 — run liveness heartbeat
+--
+-- A dead 'running' row is reclaimed (flipped to error, its partial
+-- outputs deleted) once it has been running longer than STALE_RUN_MS.
+-- That staleness was measured from `started_at`, which never advances,
+-- so the rule really said "any run older than 10 minutes is dead" —
+-- including one still legitimately working. The longest phase of a
+-- generation run is a single model call that writes no progress for
+-- minutes at a time, and a large analysis run can spend just as long
+-- inside one parse, so the two engines cannot signal liveness through
+-- their existing phase writes alone.
+--
+-- `heartbeat_at` is touched every 30s for as long as the run is alive
+-- (see lib/runHeartbeat.ts). The ticker dies with the process, so a
+-- genuinely dead run stops heartbeating and is reclaimed exactly as
+-- before; a slow-but-alive run is not. NULL on rows written before
+-- this column existed — readers fall back to `started_at`, i.e. the
+-- old behaviour, which is correct for runs that are long since over.
+-- ─────────────────────────────────────────────────────────────────────
+
+alter table if exists generation_runs      add column if not exists heartbeat_at timestamptz;
+alter table if exists manual_analysis_runs add column if not exists heartbeat_at timestamptz;

@@ -20,6 +20,7 @@ import { z } from "zod";
 import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
+import { startRunHeartbeat, lastSignOfLife } from "./runHeartbeat";
 import { resolveAccountObjectives, COHORT_DEFINITIONS, type CohortDefinition } from "./cohortConfig";
 
 export const GENERATION_MODEL = "claude-sonnet-4-6";
@@ -883,13 +884,25 @@ export async function getLatestGenerationRun(
   if (error) throw new Error(error.message);
   const row = data?.[0];
   if (!row) return null;
-  if (row["status"] === "running" && Date.now() - new Date(row["started_at"]).getTime() > STALE_RUN_MS) {
+  // Staleness is measured from the last sign of life (heartbeat), not from
+  // `started_at`: a run's longest phase is a single model call that writes
+  // no progress for minutes, so "started more than STALE_RUN_MS ago" was
+  // never the same question as "dead". See lib/runHeartbeat.ts.
+  if (row["status"] === "running" && Date.now() - lastSignOfLife(row) > STALE_RUN_MS) {
     const { data: updated, error: updErr } = await supabase
       .from("generation_runs")
       .update({
         status: "error",
         error_message: "The generation run did not finish (server restarted or timed out). Try again.",
         finished_at: new Date().toISOString(),
+        // Reclaim has to clear progress too. finishRun() resets these on the
+        // normal paths, but a run reclaimed here never reaches it — leaving a
+        // resolved row advertising "10% · Calling strategy model…" forever
+        // (one such row was found live). Nothing renders it today because the
+        // progress view is gated on isRunning, which is exactly the kind of
+        // accident that stops being true after one refactor.
+        progress_pct: 0,
+        progress_stage: "",
       })
       .eq("id", row["id"])
       .eq("status", "running")
@@ -1070,6 +1083,10 @@ export async function startStrategyGeneration(
     runIds,
   );
   const runId = await startRun(accountId, "strategy", createdBy, runIds);
+  // Signal liveness for as long as this run is actually working, so a
+  // slow model call cannot be mistaken for a dead process and have its
+  // outputs deleted out from under it.
+  const stopHeartbeat = startRunHeartbeat("generation_runs", runId);
 
   // Run-scope generated ids so ids from different runs never collide —
   // a brief referencing GEN_PILLAR_<oldrun>_1 can never silently resolve
@@ -1196,6 +1213,8 @@ export async function startStrategyGeneration(
       } catch (cleanupErr) {
         logger.error({ accountId, runId, err: cleanupErr }, "Strategy generation cleanup failed");
       }
+    } finally {
+      stopHeartbeat();
     }
   })();
 
@@ -1223,6 +1242,7 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
     icpIds: new Set<string>(),
   }));
   const runId = await startRun(accountId, "briefs", createdBy);
+  const stopHeartbeat = startRunHeartbeat("generation_runs", runId);
   const pillarIds = new Set(pillars.map((p) => String(p["pillar_id"])));
 
   // Concept columns = one per real ICP profile, in a stable order. Column
@@ -1423,6 +1443,8 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
       } catch (cleanupErr) {
         logger.error({ accountId, runId, err: cleanupErr }, "Briefs generation cleanup failed");
       }
+    } finally {
+      stopHeartbeat();
     }
   })();
 

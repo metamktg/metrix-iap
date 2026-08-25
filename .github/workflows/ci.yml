@@ -135,6 +135,7 @@ jobs:
           src/lib/__tests__/metaGraph.test.ts
           src/lib/__tests__/metrixSeedAssembly.test.ts
           src/lib/__tests__/objectiveCoverage.test.ts
+          src/lib/__tests__/runHeartbeat.test.ts
           src/lib/__tests__/selectAllPagination.test.ts
           src/lib/__tests__/xlsxToCsv.test.ts
 
