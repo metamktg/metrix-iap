@@ -533,3 +533,34 @@ parser/merge code.
   with unchanged state-machine semantics. Verified on the real file: convert 12.6 s +
   parse 3.9 s at 583 MB peak RSS; all 48,729 rows parse with only the honest warnings
   (Sheets ID corruption ×3, duplicated header columns ×3).
+
+## Phase 1→2 optimization pass (Aug 25) — performance, load, and transfer
+
+Evidence-driven pass ahead of the Phase 2/3 transition; every change verified in isolation
+(typecheck + the owning test suites, incl. the in-memory-Supabase e2e engine test).
+
+- **Response compression (transfer):** the API served the multi-MB seed JSON uncompressed —
+  no `compression` middleware existed. Added; JSON of this shape gzips roughly 10×.
+- **Seed cache TTL 30s → 5min (Supabase load):** every in-app mutation path already calls
+  `invalidateMetrixSeedCache()` explicitly (verified across 7 modules), so the TTL only
+  bounds out-of-band writes. Cuts the ~25-parallel-query rebuild from twice a minute to at
+  most every 5 for idle viewers.
+- **Per-run import reader (CPU + chunk fetches):** each staged file was fetched, decoded,
+  and parsed up to 3× per run (class detection → conversion gate → main parse) — triple a
+  ~15s convert+parse on a large workbook. One run-scoped cache: bytes fetched once, decoded
+  text cached per sheet-selection key, parse result shared between the gate and the main
+  loop; caches cleared before the DB-heavy ingestion phase. Side effect: the conversion
+  gate's sheet selection is now class-aware, consistent with the main parse.
+- **Creative file cache byte cap (memory):** the 10-min TTL cache had no size bound — the
+  real 125-asset library (~245 MB decoded) could accumulate in RAM. Now capped at 64 MB
+  with oldest-first eviction; oversized single files are served uncached.
+- **Deliberately NOT done:** trimming ad_performance's jsonb columns from the seed —
+  measured at 86 kB across 5,406 rows (1.2 MB table total); not worth the risk.
+
+Flags (operator action / product decisions, no code change):
+- `manual_imports` is 363 MB of the 437 MB database: 245 MB creatives (legitimate),
+  45 MB processed performance-file history, and **77 MB across 20 currently-STAGED
+  performance files** — the next analysis run merges every staged file per slot, so the
+  staging area should be reviewed and stale files removed before the next run.
+- Processed performance files are kept for restaging by design; a retention policy
+  (e.g. keep last N per slot) is a Phase 2 product decision.

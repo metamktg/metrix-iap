@@ -695,8 +695,31 @@ function manualImportFileUrl(accountId: string, importId: string): string {
 // importId at the same time, only ONE Supabase query runs; the other 19
 // await the shared Promise instead of each racing to open their own connection.
 const CREATIVE_FILE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
+// Byte-bounded: the TTL alone let the cache grow to the whole creative
+// library's decoded size (a real account holds 125 assets ≈ 257 MB — more
+// RAM than the deployment instance can spare). Insertion order doubles as
+// the eviction order (oldest first); a single file bigger than the cap is
+// served without being cached at all.
+const CREATIVE_FILE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
 const creativeFileCache = new Map<string, { buf: Buffer; contentType: string; expires: number }>();
+let creativeFileCacheBytes = 0;
 const creativeFileInFlight = new Map<string, Promise<{ buf: Buffer; contentType: string }>>();
+
+function cacheCreativeFile(importId: string, entry: { buf: Buffer; contentType: string; expires: number }): void {
+  const prior = creativeFileCache.get(importId);
+  if (prior) {
+    creativeFileCacheBytes -= prior.buf.length;
+    creativeFileCache.delete(importId);
+  }
+  if (entry.buf.length > CREATIVE_FILE_CACHE_MAX_BYTES) return;
+  for (const [key, value] of creativeFileCache) {
+    if (creativeFileCacheBytes + entry.buf.length <= CREATIVE_FILE_CACHE_MAX_BYTES) break;
+    creativeFileCache.delete(key);
+    creativeFileCacheBytes -= value.buf.length;
+  }
+  creativeFileCache.set(importId, entry);
+  creativeFileCacheBytes += entry.buf.length;
+}
 
 async function fetchAndCacheCreativeFile(
   importId: string,
@@ -724,7 +747,7 @@ async function fetchAndCacheCreativeFile(
     // bytes in manual_import_chunks — loadImportContentBuffer handles both.
     const buf = await loadImportContentBuffer(row);
     const contentType = (row["content_type"] as string | null) ?? "application/octet-stream";
-    creativeFileCache.set(importId, { buf, contentType, expires: Date.now() + CREATIVE_FILE_CACHE_TTL_MS });
+    cacheCreativeFile(importId, { buf, contentType, expires: Date.now() + CREATIVE_FILE_CACHE_TTL_MS });
     return { buf, contentType };
   })().finally(() => {
     creativeFileInFlight.delete(importId);

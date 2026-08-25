@@ -1270,8 +1270,16 @@ export async function assembleMetrixSeed(): Promise<Row> {
 }
 
 // ── tiny cache so repeated page loads don't refire ~20 REST queries ────
+// TTL is a SAFETY NET, not the freshness mechanism: every in-app mutation
+// path (staging/deleting imports, analysis runs, generation runs, creative
+// links, account registration, Meta pulls, deconstructions) calls
+// invalidateMetrixSeedCache() explicitly, so app-driven changes appear
+// immediately regardless of TTL. Five minutes only bounds staleness from
+// out-of-band writes (direct DB edits, the importer) while cutting the
+// ~25-parallel-query rebuild from twice a minute to at most every 5 —
+// the dominant steady-state Supabase load for idle viewers.
 let cached: { at: number; data: Row } | null = null;
-const CACHE_TTL_MS = 30_000;
+const CACHE_TTL_MS = 5 * 60_000;
 
 export async function getMetrixSeedFromSupabase(): Promise<Row> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.data;
