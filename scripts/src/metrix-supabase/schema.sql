@@ -743,6 +743,14 @@ begin
     check (status in ('uploading', 'staged', 'processed', 'rejected'));
 end $$;
 
+-- The authenticator role ships with statement_timeout=8s, which applies to
+-- every PostgREST request — including service_role ones, since service_role
+-- had no override of its own. Large bytea writes/reads (chunk upserts,
+-- chunk-wise content reads, the historical 15-20s single-request inserts)
+-- legitimately exceed 8s. service_role is server-only; the browser-embedded
+-- anon key keeps its own 3s cap.
+alter role service_role set statement_timeout = '120s';
+
 create table if not exists manual_import_chunks (
   import_id uuid not null references manual_imports(id) on delete cascade,
   chunk_index integer not null,
