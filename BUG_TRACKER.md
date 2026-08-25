@@ -901,26 +901,6 @@ Flags (operator action / product decisions, no code change):
   62 files / 270 MB to **22 files / 189 MB**, with 40 files / 81 MB explicitly held back for
   a human. Script remains unexecuted.
 
-## Deferred with reasons (not defects)
-
-- **Storage reclaim before deploy — recommended against.** No disk pressure (533 MB, ~7% of
-  the plan's 8 GB); deleting source files immediately before a deploy removes restage
-  capability exactly when it is most likely needed; and the duplicates are inert now that
-  `content_md5` is backfilled (new duplicates 409 at the door) and BUG-19 dedupe catches
-  the rest. Deploy first, confirm stable, then reclaim.
-- **`multiple_permissive_policies` on 12 tables.** Both a `_select` (SELECT) and `_write`
-  (ALL) policy evaluate on every SELECT. Fixing means splitting each `_write` into separate
-  INSERT/UPDATE/DELETE policies (Postgres allows one command per policy), turning 12
-  policies into 36 on the tenancy path right before a deploy, for a saving unmeasurable at
-  current sizes (most tables under 10 rows). Revisit at real volume.
-- **`unused_index` linter INFOs — do NOT act on them.** ~40 reported, including every index
-  created in this pass. `pg_stat_user_indexes` counters start at zero for a new index and
-  these tables carry almost no traffic; treating that list as a cleanup list would undo the
-  fix. Revisit after real production load.
-- **`auth_db_connections_absolute`.** Auth server pinned to 10 connections rather than a
-  percentage allocation, so scaling the instance will not scale Auth. Dashboard one-liner,
-  worth doing before scaling.
-
 ## BUG-39 — a slow run was indistinguishable from a dead one, and got its outputs deleted
 
 **Severity:** high (silent data loss on the two operator actions that matter most)
@@ -1001,3 +981,23 @@ drops from 15 lines to 10 on the same export.
 creative-metadata fold tests, pinning the folded count, that no column name is dropped,
 the singular case, and silence when nothing is duplicated. Regression-proven: reverting to
 the per-column loop fails two of them.
+
+## Deferred with reasons (not defects)
+
+- **Storage reclaim before deploy — recommended against.** No disk pressure (533 MB, ~7% of
+  the plan's 8 GB); deleting source files immediately before a deploy removes restage
+  capability exactly when it is most likely needed; and the duplicates are inert now that
+  `content_md5` is backfilled (new duplicates 409 at the door) and BUG-19 dedupe catches
+  the rest. Deploy first, confirm stable, then reclaim.
+- **`multiple_permissive_policies` on 12 tables.** Both a `_select` (SELECT) and `_write`
+  (ALL) policy evaluate on every SELECT. Fixing means splitting each `_write` into separate
+  INSERT/UPDATE/DELETE policies (Postgres allows one command per policy), turning 12
+  policies into 36 on the tenancy path right before a deploy, for a saving unmeasurable at
+  current sizes (most tables under 10 rows). Revisit at real volume.
+- **`unused_index` linter INFOs — do NOT act on them.** ~40 reported, including every index
+  created in this pass. `pg_stat_user_indexes` counters start at zero for a new index and
+  these tables carry almost no traffic; treating that list as a cleanup list would undo the
+  fix. Revisit after real production load.
+- **`auth_db_connections_absolute`.** Auth server pinned to 10 connections rather than a
+  percentage allocation, so scaling the instance will not scale Auth. Dashboard one-liner,
+  worth doing before scaling.
