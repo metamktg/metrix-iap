@@ -25,6 +25,29 @@ import { logger } from "./logger";
 /** How often a live run touches `heartbeat_at`. */
 export const HEARTBEAT_INTERVAL_MS = 30 * 1000;
 
+/**
+ * The longest a run may keep attesting to its own liveness (BUG-41).
+ *
+ * A heartbeat must attest LIVENESS, not immortality. Without a ceiling, a
+ * run wedged inside an un-timed network call keeps beating from its
+ * interval — which runs independently of the awaited call — so it never
+ * looks stale, is never reclaimed, and holds the account's
+ * one-running-run unique index for as long as the process lives. That is
+ * strictly worse than the bug the heartbeat was added to fix: before it,
+ * such a run was at least reclaimed (wrongly killing slow-but-alive runs,
+ * but leaving the account usable).
+ *
+ * Past this point the beating stops and the ordinary staleness rule takes
+ * over, so a wedged run is reclaimed and the account is unblocked.
+ *
+ * 30 minutes sits above any legitimate run and below "nobody can work".
+ * The realistic worst case is ~24 minutes: three model calls (an initial,
+ * one budget escalation, one validation repair) at the 8-minute per-call
+ * ceiling in generationEngine. The longest run that ever succeeded took
+ * 5.44 minutes.
+ */
+export const MAX_HEARTBEAT_MS = 30 * 60 * 1000;
+
 /** Tables carrying a `heartbeat_at` column (see schema.sql, BUG-39). */
 export type HeartbeatTable = "generation_runs" | "manual_analysis_runs";
 
@@ -61,6 +84,7 @@ export function lastSignOfLife(row: Record<string, unknown>): number {
  */
 export function startRunHeartbeat(table: HeartbeatTable, runId: string): () => void {
   let stopped = false;
+  const openedAt = Date.now();
 
   const beat = async (): Promise<void> => {
     if (stopped) return;
@@ -82,7 +106,20 @@ export function startRunHeartbeat(table: HeartbeatTable, runId: string): () => v
   // process that restarted mid-request).
   void beat();
 
-  const timer = setInterval(() => void beat(), HEARTBEAT_INTERVAL_MS);
+  const timer = setInterval(() => {
+    // Stop attesting past the ceiling: a run that has been "alive" this
+    // long is wedged, not working, and must become reclaimable again.
+    if (Date.now() - openedAt >= MAX_HEARTBEAT_MS) {
+      logger.warn(
+        { table, runId, ms: Date.now() - openedAt },
+        "Run exceeded the heartbeat ceiling — no longer attesting liveness; it is now reclaimable",
+      );
+      stopped = true;
+      clearInterval(timer);
+      return;
+    }
+    void beat();
+  }, HEARTBEAT_INTERVAL_MS);
   // Never hold the process open on the heartbeat alone.
   timer.unref?.();
 
@@ -91,4 +128,33 @@ export function startRunHeartbeat(table: HeartbeatTable, runId: string): () => v
     stopped = true;
     clearInterval(timer);
   };
+}
+
+/**
+ * The message a reclaimed run should carry (BUG-41).
+ *
+ * The old text — "did not finish (server restarted or timed out)" — named
+ * two causes, covered a third it did not name (a live run wrongly judged
+ * stale), and said nothing about WHERE the run stopped. Reading it told
+ * you only that something went wrong, so every occurrence started a fresh
+ * investigation from zero.
+ *
+ * The row already knows how long the run was silent and which phase it was
+ * in. Saying both turns the failure into its own first diagnostic: a run
+ * silent for 31 minutes in "Calling strategy model…" is a wedged model
+ * call, while one silent for 12 minutes in "Persisting pillars…" is not
+ * the same problem at all.
+ */
+export function reclaimedRunMessage(row: Record<string, unknown>, kind: "generation" | "analysis"): string {
+  const silentMs = Date.now() - lastSignOfLife(row);
+  const silentMin = Math.max(1, Math.round(silentMs / 60000));
+  const stage = String(row["progress_stage"] ?? "").trim();
+  const where = stage ? ` Last reported stage: "${stage}".` : "";
+  const pct = row["progress_pct"];
+  const pctNote = typeof pct === "number" && pct > 0 ? ` (${pct}% complete)` : "";
+  return (
+    `The ${kind} run stopped reporting progress for ${silentMin} minute(s) and was marked failed.${where}${pctNote} ` +
+    `This means the process running it died (a restart or deploy), or the step it was on hung. ` +
+    `Any partial output it wrote has been removed, so nothing half-finished is shown as real. Try again.`
+  );
 }

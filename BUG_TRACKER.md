@@ -1001,3 +1001,229 @@ the per-column loop fails two of them.
 - **`auth_db_connections_absolute`.** Auth server pinned to 10 connections rather than a
   percentage allocation, so scaling the instance will not scale Auth. Dashboard one-liner,
   worth doing before scaling.
+
+## BUG-41 — a non-streaming model call at a large token budget (refused by the SDK), plus my own heartbeat making a wedged run unreclaimable
+
+**Severity:** high (an account's generation is blocked; no trace anywhere the user can look)
+**Found:** operator report — "briefs do not seem to be generating and also strategy is not."
+
+Three separate defects behind one symptom. The first is the cause; the second is a regression
+this session introduced while fixing BUG-39; the third is why it took a debugging round-trip to
+find either.
+
+### 1. The model call was unbounded
+
+`callModel` issued a **non-streaming** `anthropic.messages.create` at `max_tokens` up to 32,768
+with **no `timeout` and no `maxRetries`**. The TypeScript SDK's default timeout is 10 minutes,
+but for a non-streaming request it *scales that default upward with `max_tokens`* — toward 60
+minutes at these budgets — and timeouts are then retried (`maxRetries` defaults to 2). Worst case
+wall clock for a single call: roughly three hours.
+
+The evidence matched exactly: a live strategy run sat in `progress_stage: "Calling strategy
+model…"` from 09:50 to 11:09 — **1h19m** — and ended only because the server restarted.
+
+Fixed by making both bounds explicit and switching to `.stream().finalMessage()`, which is the
+shape the SDK does not stretch and which keeps the connection demonstrably alive. 4-minute
+timeout, 1 retry: 8 minutes worst case per call. The longest strategy run that ever *succeeded*
+took **5.44 minutes** end to end, across several calls plus all its database writes. Every call
+now logs its budget, duration, stop reason and output tokens, so the next hang is answerable
+from the logs alone rather than by reproducing it.
+
+### 2. The BUG-39 heartbeat made this strictly worse — my regression
+
+The heartbeat added in BUG-39 runs on a `setInterval`, which fires **independently of the
+awaited call**. So a run wedged inside the un-timed model call above kept beating: it never
+looked stale, was never reclaimed, and held the account's `generation_runs_one_running` unique
+index for as long as the process lived. Before the heartbeat, that same run was at least
+reclaimed after 10 minutes — wrongly killing slow-but-alive runs, which was BUG-39, but leaving
+the account *usable*.
+
+**A heartbeat must attest liveness, not immortality.** `MAX_HEARTBEAT_MS` (30 min) stops the
+attestation, after which the ordinary staleness rule reclaims the run and unblocks the account.
+
+The two bounds are only meaningful relative to each other — raise the model timeout above the
+ceiling and reclaim starts killing live work again (BUG-39 returns); lower the ceiling under the
+model budget and the same thing happens. They now live together in `lib/generationLimits.ts`
+with that ordering pinned by tests, rather than as tribal knowledge in two files.
+
+### 3. A rejected attempt left no trace — the real reason this needed a round-trip
+
+Both entry points validate prerequisites *before* `startRun` inserts anything: no strategy
+pillars, account not found, an analysis that is not fully loaded. Those rejections returned an
+error to the browser and logged server-side, and **created no row**. The History panel reads
+`generation_runs`, so a rejected attempt showed nothing at all and the panel kept displaying
+whatever ran last, however long ago.
+
+That is exactly what the operator's screenshot shows: History reporting a **ten-hour-old**
+errored run as "Latest run". Pressing the button and watching that stay put is indistinguishable
+from the button doing nothing.
+
+A rejection *is* what happened when the user pressed the button, so it now goes into the run
+history like any other outcome. The recording wraps the entry points inside the engine — the
+same "derive at the point of use" move as BUG-28/29 — so a future entry point cannot forget it.
+Concurrency rejections ("already in progress") are deliberately **not** recorded: a run is
+genuinely in flight then, and since the reader takes the most recent row, inserting one would
+mask the live run's own progress behind a spurious error.
+
+### Also: the reclaim message was a dead end
+
+"The generation run did not finish (server restarted or timed out)" named two causes, covered a
+third it did not name (a live run wrongly judged stale), and said nothing about *where* the run
+stopped. `reclaimedRunMessage` now states how long the run was silent and the phase it stopped
+in — a run silent 31 minutes in "Calling strategy model…" is a wedged model call; one silent 12
+minutes in "Persisting pillars…" is a different problem entirely.
+
+**Verification:** 15 tests in `runHeartbeat.test.ts`, passing with a scrubbed environment.
+Regression-proven: restoring the SDK's default `maxRetries: 2` fails three of them; removing the
+heartbeat ceiling fails another. Full api-server CI set 19 files / 307 tests, typecheck and the
+scripts suite green.
+
+**Not a defect, worth recording:** strategy generation *did* succeed at 19:18 (3m36s) while this
+was being diagnosed. The account was never permanently broken — but nothing in the product said
+so, which is defect 3.
+
+---
+
+### Confirmed against production, 19:40–19:51 — two corrections to the above
+
+The account was watched through two live briefs runs after the fix merged (but before it
+deployed). Both corrections matter enough to state plainly rather than quietly amend.
+
+**Correction 1 — the proximate mechanism was a REFUSAL, not a timeout.** Run
+`b49bbb74` failed at 19:44:21, 4m13s in, with the SDK's own error:
+
+> `Streaming is required for operations that may take longer than 10 minutes.`
+> `See https://github.com/anthropics/anthropic-sdk-typescript#long-requests`
+
+The SDK does not stretch and then hang at these budgets — it **refuses the request outright**.
+Section 1 above reasoned from the documented timeout-scaling behaviour and predicted a hang;
+that reasoning fits the 1h19m strategy run, but not this. Same root cause (a non-streaming
+request at a large `max_tokens`) and the same fix — the SDK's error names `.stream()` as the
+remedy, which is exactly what `callModel` now does — but the failure mode is different and
+the tracker should not imply otherwise.
+
+**Correction 2 — briefs WAS broken, intermittently, and this was reported as "no defect
+found".** An earlier pass through `startBriefsGeneration`, `storedPillars`, the ICP column
+builder and the seed's `activePillars` derivation found no rejection path, and that was
+reported to the operator as no defect found. It was wrong. The trigger is the budget
+escalation in `generateValidated`: the first call runs at 16,384 tokens, and **only if that
+response comes back truncated** does it retry at 32,768 — which is the budget that crosses
+the SDK's ten-minute estimate and gets refused.
+
+That is why it looked like nothing: it fails only on the runs that truncate. Run
+`bbb14e5f`, retried six minutes later, **succeeded in 4m15s and wrote 16 briefs** — on the
+same unfixed build, because it never needed to escalate.
+
+The lesson is the same one §2e records for tests: *a path not taken is not a path that works.*
+Tracing the entry point statically could not surface this, because the defect lives in a
+branch that only a truncated response reaches. Two live runs six minutes apart showed both
+outcomes.
+
+## BUG-42 — a working run and a dead one rendered identically
+
+**Severity:** medium (no wrong data; the screen cannot answer the question being asked of it)
+**Found:** both operator reports of 2026-08-25, read back after the fact.
+
+The generation engine writes no progress during the model call: strategy goes 10% "Calling
+strategy model…" straight to 60% "Persisting pillars…", briefs the same. That call is most of
+the run's wall clock. So the panel showed a bar frozen at 10% with a spinner — for a healthy
+four-minute run and for a run whose process had died, **identically**.
+
+Both reports that day were exactly this screen. In the first, the run was genuinely wedged. In
+the second, it was working and finished normally with 16 briefs. The operator read the same
+screen both times and reported the same symptom, because nothing on it distinguished the two.
+That is a defect in the screen, not in the reading of it.
+
+A compounding error: `EXPECTED_SECONDS` claimed strategy 75s and briefs 90s. Measured against
+every successful run in production, the real figures are **209s (max 326s)** and **199s (max
+255s)** — the estimates were less than half of reality. The estimated bar therefore raced to 95%
+inside the first ninety seconds and then sat there for minutes, which is worse than not moving.
+
+**Fix.** Elapsed time is the only thing on that panel that always moves while the client is
+alive, so the bar now shows it, alongside a sentence that stays true in both directions
+(`lib/generation-pace.ts`):
+
+- within the typical duration — *"The bar holds while the model runs. Usually about 3–4 min."*
+  It explains the frozen bar at the moment the screen misleads.
+- past it — *"Longer than the usual about 3–4 min — still running."* The reassurance stops when
+  it stops being accurate; a run that is overrunning should read as overrunning.
+
+`EXPECTED_SECONDS` corrected to the measured values.
+
+**Verification:** 7 unit tests on the pure helpers, 6 rendered-surface tests on the bar.
+Regression-proven against the true pre-fix component (clock and note both removed): 4 of the 6
+fail, including the one that states the actual guarantee — *two runs at the same percentage must
+render differently when their ages differ*. Full suite 119 files / 1,704 tests; typecheck and the
+blocking disclosure rulebook green.
+
+## GAP-01 — generated strategy and briefs are destroyed on regeneration, with no archive
+
+**Type:** design gap, not a defect. Current behaviour is deliberate and its honesty rationale is
+sound; the unintended cost is that it is *destructive* where it only needed to be *exclusive*.
+**Raised by:** the operator, on being told that each briefs run replaces the previous set.
+**Status:** open — recorded for Phase 2, deliberately not built at handoff.
+
+### The evidence
+
+**15 successful generation runs currently have no surviving output** — 7 briefs, 8 strategy.
+`generation_runs` records them as `success`; every artifact they produced is gone. A run history
+that asserts an event it cannot show you is only half-honest, and it is the same class this whole
+session has been closing.
+
+Two further arguments:
+
+- **The pattern already exists in this codebase.** `workspace_reports` (Replit Postgres) stores a
+  full document snapshot at generate time precisely so History/Exports reproduce it exactly.
+  Generated strategy and briefs simply do not use it.
+- **The IAP loop needs it.** MST → optimization compares what was *briefed* against what
+  *performed*. A strategy regeneration silently destroys the briefs that were actually shipped,
+  so the loop loses its own audit trail.
+
+Storage is a non-argument: 16 brief rows per run, against a 533 MB database.
+
+### What is actually blocking it — corrected
+
+An earlier reading of this said the `UNIQUE (account_id, brief_id)` constraint physically
+prevents holding two versions, and that a uniqueness migration was required. **That is wrong.**
+Every generated id is already run-scoped:
+
+```
+GEN_BRIEF_${runTag}_${i+1}      GEN_PILLAR_${runTag}_${i+1}      GEN_HYP_${runTag}_${i+1}
+```
+
+Rows from different runs therefore carry different ids and would coexist under the existing
+constraint without complaint. **Nothing structural is stopping this. The only thing destroying
+history is the explicit `deletePriorGenerated` call**, and `generation_run_id` is already on
+every one of the four tables, so lineage is already recorded.
+
+### The design
+
+1. `deletePriorGenerated` stops deleting for `strategy` and `briefs`.
+2. Seed assembly scopes generated rows to the **latest successful run of that kind** for the
+   account. It already filters `source='generated'`; this adds run scoping. No new column is
+   strictly required — currency is derivable — though an explicit `superseded_at` would make it
+   legible at the database level.
+3. Retention only if it ever matters, which at this volume it will not.
+
+**The subtlety that makes this better than deleting.** A strategy run currently calls
+`deletePriorGenerated(account, "briefs")` at 92%, because those briefs reference pillars that no
+longer exist. Under an archive model that delete disappears — but currency cannot then be "the
+latest briefs run" alone, or a stale set would keep rendering as live against dead pillars. The
+correct rule is: **a brief set is current only if its run is the latest successful briefs run
+AND that run started after the latest successful strategy run.** Otherwise it is retained and
+labelled stale-relative-to-strategy.
+
+That is strictly more honest than today's behaviour, which resolves the same conflict by
+destroying the evidence. The honesty invariant is preserved either way — exactly one set is ever
+active, and archived sets are explicitly historical, never blended.
+
+### Why it was not built at handoff
+
+It changes the seed read path, the highest-blast-radius code in the application: a mistake shows
+an account 32 briefs, or none. That deserves the enabler sprint rather than a rushed change at
+close, and the archive needs a UI surface to be worth anything — an archive nobody can open is
+just storage.
+
+**But the preservation half is time-sensitive in a way the rest of the backlog is not.** Every
+regeneration between now and Phase 2 destroys history that cannot be recovered. If the sprint
+splits, land "stop deleting, scope reads to current" first and surface the archive afterwards.

@@ -65,3 +65,99 @@ describe("lastSignOfLife", () => {
     expect(HEARTBEAT_INTERVAL_MS).toBeLessThanOrEqual((10 * MIN) / 10);
   });
 });
+
+// ─── The heartbeat must attest liveness, not immortality (BUG-41) ──────
+//
+// The ceiling exists because the interval runs INDEPENDENTLY of the awaited
+// work. A run wedged inside a network call with no timeout keeps beating,
+// so it never looks stale, is never reclaimed, and holds the account's
+// one-running-run unique index for as long as the process lives — strictly
+// worse than the bug the heartbeat was added to fix.
+
+describe("MAX_HEARTBEAT_MS ceiling", () => {
+  it("sits above the worst legitimate run, so it never kills real work", async () => {
+    const { MAX_HEARTBEAT_MS } = await import("../runHeartbeat");
+    // Worst realistic case: three model calls (initial, budget escalation,
+    // validation repair) at the 8-minute per-call ceiling = ~24 min.
+    expect(MAX_HEARTBEAT_MS).toBeGreaterThan(24 * MIN);
+  });
+
+  it("still bounds the block, so a wedged run cannot hold the slot forever", async () => {
+    const { MAX_HEARTBEAT_MS } = await import("../runHeartbeat");
+    expect(MAX_HEARTBEAT_MS).toBeLessThanOrEqual(45 * MIN);
+  });
+});
+
+describe("reclaimedRunMessage", () => {
+  it("names the phase the run stopped in, so the failure is its own first clue", async () => {
+    const { reclaimedRunMessage } = await import("../runHeartbeat");
+    const msg = reclaimedRunMessage(
+      { started_at: iso(40 * MIN), heartbeat_at: iso(31 * MIN), progress_stage: "Calling strategy model…", progress_pct: 10 },
+      "generation",
+    );
+    expect(msg).toContain("Calling strategy model…");
+    expect(msg).toContain("31 minute(s)");
+    expect(msg).toContain("10% complete");
+  });
+
+  it("distinguishes a wedged model call from a wedged persist by the stage alone", async () => {
+    const { reclaimedRunMessage } = await import("../runHeartbeat");
+    const a = reclaimedRunMessage(
+      { started_at: iso(40 * MIN), heartbeat_at: iso(31 * MIN), progress_stage: "Calling strategy model…" },
+      "generation",
+    );
+    const b = reclaimedRunMessage(
+      { started_at: iso(20 * MIN), heartbeat_at: iso(12 * MIN), progress_stage: "Persisting pillars…" },
+      "generation",
+    );
+    expect(a).not.toBe(b);
+    expect(b).toContain("Persisting pillars…");
+  });
+
+  it("stays honest when the row never recorded a stage", async () => {
+    const { reclaimedRunMessage } = await import("../runHeartbeat");
+    const msg = reclaimedRunMessage({ started_at: iso(30 * MIN) }, "analysis");
+    expect(msg).toContain("analysis run");
+    expect(msg).not.toContain("Last reported stage");
+    expect(msg).not.toContain("undefined");
+    expect(msg).not.toContain("NaN");
+  });
+
+  it("promises that partial output was removed — the reclaim does delete it", async () => {
+    const { reclaimedRunMessage } = await import("../runHeartbeat");
+    expect(reclaimedRunMessage({ started_at: iso(30 * MIN) }, "generation")).toContain(
+      "partial output",
+    );
+  });
+});
+
+// ─── The two bounds only mean anything relative to each other ──────────
+//
+// A run that is genuinely working keeps beating; a run that is wedged must
+// eventually stop. That only holds if the longest a run can LEGITIMATELY
+// spend in the model is shorter than the heartbeat ceiling. Raise the model
+// timeout past the ceiling and the reclaim starts killing live work again —
+// which is BUG-39 all over. Lower the ceiling under the model budget and the
+// same thing happens. This pins the ordering so neither edit passes silently.
+
+describe("model-call bounds vs the heartbeat ceiling", () => {
+  it("lets the slowest legitimate run finish before the ceiling stops attesting", async () => {
+    const { worstCaseModelMs } = await import("../generationLimits");
+    const { MAX_HEARTBEAT_MS } = await import("../runHeartbeat");
+    expect(worstCaseModelMs()).toBeLessThan(MAX_HEARTBEAT_MS);
+  });
+
+  it("keeps a single call well under the stale window, so one call is never mistaken for death", async () => {
+    const { MODEL_CALL_TIMEOUT_MS, MODEL_CALL_MAX_RETRIES } = await import("../generationLimits");
+    // 10 min is STALE_RUN_MS in generationEngine. A single call's worst case
+    // must stay under it, or a first call alone could look dead.
+    expect(MODEL_CALL_TIMEOUT_MS * (MODEL_CALL_MAX_RETRIES + 1)).toBeLessThanOrEqual(10 * MIN);
+  });
+
+  it("bounds retries — timeouts are retried, so wall clock is timeout x (retries+1)", async () => {
+    const { MODEL_CALL_MAX_RETRIES } = await import("../generationLimits");
+    // The SDK default is 2. Left at the default, a 4-minute timeout becomes
+    // 12 minutes of wall clock per call.
+    expect(MODEL_CALL_MAX_RETRIES).toBeLessThan(2);
+  });
+});

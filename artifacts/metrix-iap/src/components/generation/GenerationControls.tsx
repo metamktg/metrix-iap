@@ -18,6 +18,7 @@ import {
 } from "@workspace/api-client-react";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
+import { fmtElapsed, pacePhrase } from "@/lib/generation-pace";
 
 export type GenerationKind = "strategy" | "briefs";
 
@@ -29,11 +30,17 @@ const KIND_LABEL: Record<GenerationKind, string> = {
 // How often (ms) we poll the run status endpoint while a job is in flight.
 const POLL_INTERVAL_MS = 2500;
 
-// Estimated total duration (seconds) per generation kind.
-// Used to compute a smooth 0→95% progress estimate from elapsed time.
+// Typical total duration (seconds) per generation kind. Used both for the
+// elapsed-time progress estimate and for the "usually about N min" note.
+//
+// Measured from every successful run in production (BUG-42), not guessed:
+// strategy averaged 209s (max 326s) and briefs 199s (max 255s). The prior
+// values — 75s and 90s — were less than half of reality, so the estimated
+// bar raced to 95% in the first ninety seconds and then sat there for
+// minutes, which made a healthy run look hung.
 const EXPECTED_SECONDS: Record<GenerationKind, number> = {
-  strategy: 75,
-  briefs:   90,
+  strategy: 210,
+  briefs:   210,
 };
 
 /** Quadratic ease-out: starts fast, decelerates as expected time approaches.
@@ -211,6 +218,7 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
     start,
     isRunning,
     elapsedSeconds,
+    typicalSeconds: EXPECTED_SECONDS[kind],
     progressPercent,
     progressStage,
     lastRun: run,
@@ -254,17 +262,33 @@ export function GenerationProgressBar({
   isRunning,
   progressPercent,
   stageLabel,
+  elapsedSeconds,
+  typicalSeconds,
 }: {
   isRunning: boolean;
   progressPercent: number;
   stageLabel: string;
+  /** Seconds since the run started. Omit only where no run clock exists. */
+  elapsedSeconds?: number;
+  /** Typical total duration for this kind, for the "usually about N min" note. */
+  typicalSeconds?: number;
 }) {
   if (!isRunning) return null;
+  // Elapsed time is the ONLY thing on this panel that distinguishes a
+  // working run from a dead one: the percentage holds at 10% for the whole
+  // model call, so a healthy four-minute run and a dead process render
+  // identically without it. See lib/generation-pace.ts.
+  const showClock = typeof elapsedSeconds === "number";
   return (
     <div className="space-y-1.5" data-testid="generation-progress-bar">
       <div className="flex items-center justify-between gap-2 text-label text-muted-foreground/75">
         <span className="truncate">{stageLabel}</span>
-        <span className="tabular-nums shrink-0">{progressPercent}%</span>
+        <span className="flex items-center gap-1.5 tabular-nums shrink-0">
+          {showClock && (
+            <span data-testid="generation-elapsed">{fmtElapsed(elapsedSeconds)}</span>
+          )}
+          <span>{progressPercent}%</span>
+        </span>
       </div>
       <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
         <div
@@ -272,6 +296,11 @@ export function GenerationProgressBar({
           style={{ width: `${progressPercent}%` }}
         />
       </div>
+      {showClock && typeof typicalSeconds === "number" && (
+        <div className="text-caption text-muted-foreground/60" data-testid="generation-pace-note">
+          {pacePhrase(elapsedSeconds, typicalSeconds)}
+        </div>
+      )}
     </div>
   );
 }
