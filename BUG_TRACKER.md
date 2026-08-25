@@ -773,3 +773,87 @@ Flags (operator action / product decisions, no code change):
   an empty row set, normal summation when complete, non-finite treated as unmeasured) plus
   the two existing cases updated to the nullable contract. Full typecheck green, 1,672
   client tests green, codegen drift clean, production build succeeds.
+
+## BUG-34 — `ad_performance` was the only run-scoped rollup with no run index
+
+- **Symptom (live DB):** the run-tagging block in `schema.sql` creates a
+  `manual_analysis_run_id` index on six rollup tables; `ad_performance` was omitted —
+  despite being the largest of them (9,647 rows live, ~2x the next) and the table the
+  idempotent-rebuild path deletes run-scoped on every re-ingestion. That delete, and
+  every run-scoped read of it, ran against no index.
+- **Root cause:** oversight when the run-tagging block was written; the sibling tables
+  were enumerated and this one was missed.
+- **Category:** Fix-Now (efficiency; grows with the largest table in the schema).
+- **Resolution (implemented):** `ad_performance_run_idx` added to `schema.sql` and
+  applied live, alongside six other missing importer FK indexes
+  (`data_quality_flags`, `signal_cards`, `ad_traffic_quality`, `failure_patterns`,
+  `import_metric_reconciliation` account lookups; `creative_deconstructions`
+  .manual_import_id for parent-delete enforcement).
+
+## BUG-35 — 42 unindexed foreign keys, including every RLS policy predicate column
+
+- **Symptom:** a live audit found 42 single-column FKs with no supporting index.
+  Postgres creates none automatically. Unindexed FKs cost twice: lookups seq-scan, and
+  every parent DELETE scans the whole child table while holding a lock.
+- **Why it matters more than the row counts suggest:** on the official 22-table schema
+  these columns (`analysis_run_id`, `client_id`, `user_id`, `org_id`) are evaluated
+  INSIDE RLS POLICY PREDICATES — once per candidate row, on every read by every signed-in
+  user. The cost sits on the tenancy path, not on joins the application chooses to write.
+- **Category:** Fix-Now (cheap now at current table sizes; expensive to build later under
+  load on the tenancy path).
+- **Resolution (implemented):** migration `20260825000100_fk_index_coverage.sql` (official
+  schema) + `schema.sql` additions (importer). Applied live; index count 118 → 156;
+  unindexed FKs 42 → 7. The 7 survivors are deliberate and documented in the migration:
+  `cohort_key` FKs point at a 4-row config table whose rows are never deleted, and
+  `global_variable_registry.superseded_by` is a self-reference followed one row at a time.
+- **Also fixed in the same pass:** 17 tables had `reltuples = -1` (never analyzed — the
+  planner had no statistics at all, including `cell_creative_overrides` at 6.8 MB).
+  `ANALYZE` run; now 0.
+
+## BUG-36 — `content_md5` NULL on 93% of rows left the BUG-09 duplicate guard inert
+
+- **Symptom:** the same-bytes staging guard compares an incoming file's md5 against
+  currently-staged rows with an equality filter. 172 of 185 `manual_imports` rows carried
+  NULL `content_md5` (the column shipped with the guard but was never backfilled), and
+  `= NULL` never matches — so for 93% of rows the guard silently did nothing.
+- **What it let through (live):** 25 groups of byte-identical files staged into the same
+  slot, every one of which should have been rejected with a 409. Three are performance
+  exports — the kind that double-count spend (`ecas` IAP-DEVICE-MAIN-ECAS.csv x2,
+  `manual_BwsYjC5ZRk0i` real_20mb.csv x2, `manual_QmjeK52K5QiQ` king-DEVi.csv x2). The
+  other 22 are creative assets (storage waste, duplicate library rows, no spend impact).
+- **Spend was not corrupted:** the BUG-19 parse-time cross-file dedupe catches identical
+  rows and drops them with a `[Duplicate data]` warning. Defence in depth held — but the
+  second layer was doing the first layer's job, which is exactly the condition that makes
+  a future regression in either layer invisible.
+- **Category:** Fix-Now (a guard that cannot fire is worse than no guard: it is trusted).
+- **Resolution (implemented):** all 185 rows backfilled, recorded as an idempotent block in
+  `schema.sql` (inline rows via `md5(content)`; chunked rows via chunks reassembled in
+  `chunk_index` order, matching what the complete-step hashes).
+- **Verification evidence:** correctness established BEFORE writing — Postgres
+  `md5(bytea)` checked against all 13 rows that already held an app-written value
+  (11 inline + 2 chunked): 13/13 exact, 0 mismatches. A wrong backfill is worse than a
+  NULL one; it would 409-reject legitimate uploads. All 185 re-verified after.
+
+## Open (owner decision) — upload storage retention
+
+- 533 MB database; 794 MB logical upload bytes across 185 files. Three copies of one
+  138 MB `IAP-DEMO-NEW.csv` (identical md5) account for the entire chunk table: one
+  abandoned `uploading` row on AAFE, two `processed` copies on `manual_kisg7_8qaRG_`.
+- Reclaimable without touching anything still needed: 138 MB abandoned + 270 MB exact
+  duplicates (logical; physical is lower — bytea is TOAST-compressed).
+- `docs/resources/sql/2026-08-25_upload_storage_reclaim.sql` is prepared and deliberately
+  NOT executed: every statement destroys uploaded source files. SELECTs lead, DELETEs stay
+  commented. Processed-file retention still needs the keep-last-N-per-slot decision from
+  the Phase 2 backlog before anything is purged.
+
+## Open (needs a tested change) — SECURITY DEFINER helpers exposed over PostgREST
+
+- Four tenancy helpers are callable by any signed-in user at `/rest/v1/rpc/...`.
+  `metrix_client_id_of_run(run_id)` resolves ANY run UUID to its owning `client_id`,
+  bypassing RLS — a cross-tenant mapping primitive (limited in practice by run ids being
+  unguessable v4 UUIDs). The other three answer only about the caller.
+- **Do NOT simply revoke EXECUTE:** RLS policy expressions evaluate with the querying
+  user's privileges, and all six run-scoped tables call this function inside their
+  policies, so revoking from `authenticated` would break tenant reads outright. Correct
+  remediation is relocating the helpers to a schema PostgREST does not expose and
+  repointing the policy references — a deliberate change with a test pass.
