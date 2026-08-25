@@ -1001,3 +1001,83 @@ the per-column loop fails two of them.
 - **`auth_db_connections_absolute`.** Auth server pinned to 10 connections rather than a
   percentage allocation, so scaling the instance will not scale Auth. Dashboard one-liner,
   worth doing before scaling.
+
+## BUG-41 — the model call had no timeout, and my own heartbeat made a hung run unreclaimable
+
+**Severity:** high (an account's generation is blocked; no trace anywhere the user can look)
+**Found:** operator report — "briefs do not seem to be generating and also strategy is not."
+
+Three separate defects behind one symptom. The first is the cause; the second is a regression
+this session introduced while fixing BUG-39; the third is why it took a debugging round-trip to
+find either.
+
+### 1. The model call was unbounded
+
+`callModel` issued a **non-streaming** `anthropic.messages.create` at `max_tokens` up to 32,768
+with **no `timeout` and no `maxRetries`**. The TypeScript SDK's default timeout is 10 minutes,
+but for a non-streaming request it *scales that default upward with `max_tokens`* — toward 60
+minutes at these budgets — and timeouts are then retried (`maxRetries` defaults to 2). Worst case
+wall clock for a single call: roughly three hours.
+
+The evidence matched exactly: a live strategy run sat in `progress_stage: "Calling strategy
+model…"` from 09:50 to 11:09 — **1h19m** — and ended only because the server restarted.
+
+Fixed by making both bounds explicit and switching to `.stream().finalMessage()`, which is the
+shape the SDK does not stretch and which keeps the connection demonstrably alive. 4-minute
+timeout, 1 retry: 8 minutes worst case per call. The longest strategy run that ever *succeeded*
+took **5.44 minutes** end to end, across several calls plus all its database writes. Every call
+now logs its budget, duration, stop reason and output tokens, so the next hang is answerable
+from the logs alone rather than by reproducing it.
+
+### 2. The BUG-39 heartbeat made this strictly worse — my regression
+
+The heartbeat added in BUG-39 runs on a `setInterval`, which fires **independently of the
+awaited call**. So a run wedged inside the un-timed model call above kept beating: it never
+looked stale, was never reclaimed, and held the account's `generation_runs_one_running` unique
+index for as long as the process lived. Before the heartbeat, that same run was at least
+reclaimed after 10 minutes — wrongly killing slow-but-alive runs, which was BUG-39, but leaving
+the account *usable*.
+
+**A heartbeat must attest liveness, not immortality.** `MAX_HEARTBEAT_MS` (30 min) stops the
+attestation, after which the ordinary staleness rule reclaims the run and unblocks the account.
+
+The two bounds are only meaningful relative to each other — raise the model timeout above the
+ceiling and reclaim starts killing live work again (BUG-39 returns); lower the ceiling under the
+model budget and the same thing happens. They now live together in `lib/generationLimits.ts`
+with that ordering pinned by tests, rather than as tribal knowledge in two files.
+
+### 3. A rejected attempt left no trace — the real reason this needed a round-trip
+
+Both entry points validate prerequisites *before* `startRun` inserts anything: no strategy
+pillars, account not found, an analysis that is not fully loaded. Those rejections returned an
+error to the browser and logged server-side, and **created no row**. The History panel reads
+`generation_runs`, so a rejected attempt showed nothing at all and the panel kept displaying
+whatever ran last, however long ago.
+
+That is exactly what the operator's screenshot shows: History reporting a **ten-hour-old**
+errored run as "Latest run". Pressing the button and watching that stay put is indistinguishable
+from the button doing nothing.
+
+A rejection *is* what happened when the user pressed the button, so it now goes into the run
+history like any other outcome. The recording wraps the entry points inside the engine — the
+same "derive at the point of use" move as BUG-28/29 — so a future entry point cannot forget it.
+Concurrency rejections ("already in progress") are deliberately **not** recorded: a run is
+genuinely in flight then, and since the reader takes the most recent row, inserting one would
+mask the live run's own progress behind a spurious error.
+
+### Also: the reclaim message was a dead end
+
+"The generation run did not finish (server restarted or timed out)" named two causes, covered a
+third it did not name (a live run wrongly judged stale), and said nothing about *where* the run
+stopped. `reclaimedRunMessage` now states how long the run was silent and the phase it stopped
+in — a run silent 31 minutes in "Calling strategy model…" is a wedged model call; one silent 12
+minutes in "Persisting pillars…" is a different problem entirely.
+
+**Verification:** 15 tests in `runHeartbeat.test.ts`, passing with a scrubbed environment.
+Regression-proven: restoring the SDK's default `maxRetries: 2` fails three of them; removing the
+heartbeat ceiling fails another. Full api-server CI set 19 files / 307 tests, typecheck and the
+scripts suite green.
+
+**Not a defect, worth recording:** strategy generation *did* succeed at 19:18 (3m36s) while this
+was being diagnosed. The account was never permanently broken — but nothing in the product said
+so, which is defect 3.

@@ -20,7 +20,8 @@ import { z } from "zod";
 import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
-import { startRunHeartbeat, lastSignOfLife } from "./runHeartbeat";
+import { startRunHeartbeat, lastSignOfLife, reclaimedRunMessage } from "./runHeartbeat";
+import { MODEL_CALL_TIMEOUT_MS, MODEL_CALL_MAX_RETRIES } from "./generationLimits";
 import { resolveAccountObjectives, COHORT_DEFINITIONS, type CohortDefinition } from "./cohortConfig";
 
 export const GENERATION_MODEL = "claude-sonnet-4-6";
@@ -472,17 +473,41 @@ function extractJson(text: string): unknown {
 /** A user-message content payload: plain text, or text+image blocks (vision). */
 export type ModelContent = string | Array<Record<string, unknown>>;
 
+// Timing bounds live in ./generationLimits — see BUG-41 for why they are
+// only meaningful relative to the heartbeat ceiling in ./runHeartbeat.
+
 async function callModel(
   prompt: ModelContent,
   maxTokens = 8192,
 ): Promise<{ text: string; truncated: boolean }> {
-  const message = await anthropic.messages.create({
-    model: GENERATION_MODEL,
-    max_tokens: maxTokens,
-    // The SDK type for content blocks is stricter than our generic record
-    // shape; the wire format is identical.
-    messages: [{ role: "user", content: prompt as never }],
-  });
+  const startedAt = Date.now();
+  // Streamed, not `messages.create`. At these budgets a non-streaming
+  // request is the shape the SDK stretches its timeout for; streaming also
+  // keeps the connection demonstrably alive rather than silent. The final
+  // message has the same shape either way.
+  const message = await anthropic.messages
+    .stream(
+      {
+        model: GENERATION_MODEL,
+        max_tokens: maxTokens,
+        // The SDK type for content blocks is stricter than our generic record
+        // shape; the wire format is identical.
+        messages: [{ role: "user", content: prompt as never }],
+      },
+      { timeout: MODEL_CALL_TIMEOUT_MS, maxRetries: MODEL_CALL_MAX_RETRIES },
+    )
+    .finalMessage();
+  // Logged on every call so the next hang is answerable from the logs alone,
+  // without reproducing it: which budget, how long, why it stopped.
+  logger.info(
+    {
+      maxTokens,
+      ms: Date.now() - startedAt,
+      stopReason: message.stop_reason,
+      outputTokens: message.usage?.output_tokens,
+    },
+    "Generation model call finished",
+  );
   const block = message.content.find((b) => b.type === "text");
   if (!block || block.type !== "text") throw new Error("Model returned no text content.");
   return { text: block.text, truncated: message.stop_reason === "max_tokens" };
@@ -893,7 +918,10 @@ export async function getLatestGenerationRun(
       .from("generation_runs")
       .update({
         status: "error",
-        error_message: "The generation run did not finish (server restarted or timed out). Try again.",
+        // Self-describing: names how long it was silent and the phase it
+        // stopped in, so the next occurrence does not start a fresh
+        // investigation from zero. Built BEFORE progress is cleared below.
+        error_message: reclaimedRunMessage(row, "generation"),
         finished_at: new Date().toISOString(),
         // Reclaim has to clear progress too. finishRun() resets these on the
         // normal paths, but a run reclaimed here never reaches it — leaving a
@@ -915,6 +943,76 @@ export async function getLatestGenerationRun(
     return runShape(updated?.[0] ?? { ...row, status: "error" });
   }
   return runShape(row);
+}
+
+/**
+ * Record an attempt that was REJECTED before it ever became a run (BUG-41).
+ *
+ * Both entry points validate prerequisites before `startRun` inserts
+ * anything: no strategy pillars yet, account not found, an analysis that
+ * is not fully loaded. Those rejections returned an error to the browser
+ * and logged server-side — and left NO durable trace. The History panel
+ * reads `generation_runs`, so a rejected attempt showed nothing at all and
+ * the panel kept displaying whatever ran last, however long ago. Pressing
+ * the button and watching a ten-hour-old error stay put is indistinguishable
+ * from the button doing nothing, which is exactly how this was reported.
+ *
+ * A rejection IS what happened when the user pressed the button, so it
+ * belongs in the run history like any other outcome.
+ *
+ * Deliberately NOT recorded: concurrency rejections ("already in progress").
+ * A run is genuinely in flight in that case, and since `getLatestGenerationRun`
+ * reads the most recent row, inserting one would mask the live run's own
+ * progress behind a spurious error.
+ *
+ * Best-effort: never let bookkeeping convert a clean 422 into a 500.
+ */
+async function recordRejectedAttempt(
+  accountId: string,
+  kind: GenerationKind,
+  message: string,
+): Promise<void> {
+  try {
+    const now = new Date().toISOString();
+    const { error } = await getSupabase().from("generation_runs").insert({
+      account_id: accountId,
+      kind,
+      status: "error",
+      error_message: message,
+      model: GENERATION_MODEL,
+      started_at: now,
+      finished_at: now,
+    });
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    logger.warn({ accountId, kind, err }, "Could not record rejected generation attempt");
+  }
+}
+
+/**
+ * Run a start function's prerequisite checks so that a rejection is visible
+ * in the run history rather than only in the HTTP response. Wrapping here,
+ * in the engine, means a future entry point cannot forget it.
+ */
+async function recordingRejections<T>(
+  accountId: string,
+  kind: GenerationKind,
+  fn: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    const status = err instanceof GenerationError ? err.statusCode : 500;
+    // 409 = a real run holds the slot; see the note on recordRejectedAttempt.
+    if (status !== 409) {
+      await recordRejectedAttempt(
+        accountId,
+        kind,
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+    throw err;
+  }
 }
 
 export async function startRun(
@@ -1064,6 +1162,16 @@ async function upsertLoopStage(accountId: string, stage: string, runId: string):
  * run row records the outcome.
  */
 export async function startStrategyGeneration(
+  accountId: string,
+  createdBy: string,
+  runIds: string[] | "all",
+): Promise<string> {
+  return recordingRejections(accountId, "strategy", () =>
+    startStrategyGenerationInner(accountId, createdBy, runIds),
+  );
+}
+
+async function startStrategyGenerationInner(
   accountId: string,
   createdBy: string,
   runIds: string[] | "all",
@@ -1226,6 +1334,12 @@ export async function startStrategyGeneration(
  * account's stored pillars (generated set preferred, else imported).
  */
 export async function startBriefsGeneration(accountId: string, createdBy: string): Promise<string> {
+  return recordingRejections(accountId, "briefs", () =>
+    startBriefsGenerationInner(accountId, createdBy),
+  );
+}
+
+async function startBriefsGenerationInner(accountId: string, createdBy: string): Promise<string> {
   const account = await accountExists(accountId);
   if (!account) throw new GenerationError("Ad account not found.", 404);
   const objectives = resolveAccountObjectives(account).map((k) => COHORT_DEFINITIONS[k]);

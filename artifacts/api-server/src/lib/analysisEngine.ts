@@ -24,7 +24,7 @@
 import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
-import { startRunHeartbeat, lastSignOfLife } from "./runHeartbeat";
+import { startRunHeartbeat, lastSignOfLife, reclaimedRunMessage } from "./runHeartbeat";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow, type IapCsvParseResult } from "./iapCsvParser";
 import type { IapCsvClass } from "./iapCsvSpec";
 import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel, optionalMetricSlugsForGroups, IAP_CSV_CLASS_SPECS, type ObjectiveColumnGroup } from "./iapCsvSpec";
@@ -306,7 +306,9 @@ async function flipStaleRunToError(row: Record<string, any>): Promise<Record<str
     .from("manual_analysis_runs")
     .update({
       status: "error",
-      error_message: "The analysis run did not finish (server restarted or timed out). Try again.",
+      // See the matching note in generationEngine: self-describing message,
+      // built BEFORE the progress fields are cleared below.
+      error_message: reclaimedRunMessage(row, "analysis"),
       finished_at: new Date().toISOString(),
       // See the matching note in generationEngine: a reclaimed run never
       // reaches finishRun, so its progress fields must be cleared here or
