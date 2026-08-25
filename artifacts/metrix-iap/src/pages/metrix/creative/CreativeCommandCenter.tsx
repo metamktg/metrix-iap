@@ -135,6 +135,8 @@ export function CreativeCommandCenter() {
                         <GenerationProgressBar
                           isRunning={generation.isRunning}
                           progressPercent={generation.progressPercent}
+                          elapsedSeconds={generation.elapsedSeconds}
+                          typicalSeconds={generation.typicalSeconds}
                           stageLabel={generation.progressStage ?? "Generating briefs from strategy…"}
                         />
                         <GenerationErrorNote message={generation.lastError} />

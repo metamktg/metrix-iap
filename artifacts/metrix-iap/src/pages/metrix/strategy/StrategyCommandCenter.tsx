@@ -102,6 +102,8 @@ export function StrategyCommandCenter() {
                         <GenerationProgressBar
                           isRunning={generation.isRunning}
                           progressPercent={generation.progressPercent}
+                          elapsedSeconds={generation.elapsedSeconds}
+                          typicalSeconds={generation.typicalSeconds}
                           stageLabel={generation.progressStage ?? "Generating strategy from validated analysis…"}
                         />
                         <GenerationErrorNote message={generation.lastError} />
