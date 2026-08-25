@@ -27,16 +27,24 @@ const round = (v: number, dp = 2) => {
   return Math.round(v * f) / f;
 };
 
-export async function selectAll(table: string, build?: (q: any) => any): Promise<Row[]> {
+export async function selectAll(table: string, build?: (q: any) => any, columns = "*"): Promise<Row[]> {
   const supabase = getSupabase();
   // Paginate in 1000-row pages so large tables (device_performance,
   // demographic_performance, etc.) are fetched in full even when the
   // Supabase / PostgREST server-side row limit is 1000.
+  //
+  // `columns` exists for tables carrying bytea payloads: select("*") on
+  // manual_imports dragged every uploaded file's full content through
+  // PostgREST on each seed assembly — fine at a handful of assets, fatal at
+  // a real creative library (observed live: 125 assets ≈ 257 MB of bytea ≈
+  // half a gigabyte of hex JSON in one page; the seed request never
+  // completed and production hung on the splash screen). Callers touching
+  // such tables MUST enumerate the metadata columns they need.
   const PAGE_SIZE = 1000;
   let offset = 0;
   const allRows: Row[] = [];
   for (;;) {
-    let query: any = supabase.from(table).select("*");
+    let query: any = supabase.from(table).select(columns);
     if (build) query = build(query);
     query = query.range(offset, offset + PAGE_SIZE - 1);
     const { data, error } = await query;
@@ -915,8 +923,13 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("cell_creative_overrides", (q) => q.order("uploaded_at").order("id")).catch(() => [] as Row[]),
     // creative_asset manual_imports: used for auto-heal detection only; rows
     // with null ad_names are excluded because they carry no mapping to fix.
-    selectAll("manual_imports", (q) =>
-      q.eq("kind", "creative_asset").not("ad_names", "is", null).order("id"),
+    // Metadata columns ONLY — never the bytea content (see selectAll's note:
+    // select("*") here pulled the entire creative library's file bytes into
+    // every seed build and hung production once the library grew real).
+    selectAll(
+      "manual_imports",
+      (q) => q.eq("kind", "creative_asset").not("ad_names", "is", null).order("id"),
+      "id, account_id, kind, filename, ad_names, status",
     ).catch(() => [] as Row[]),
     // Creative deconstruction classifications (review queue + badges).
     // Graceful: [] if the table hasn't been created yet (pre-migration).

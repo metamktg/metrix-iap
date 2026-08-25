@@ -494,3 +494,20 @@ parser/merge code.
   upstream bodies and statement timeouts to plain retryable messages in the upload routes
   (full error still logged); init sweeps a failed session for the same file immediately
   instead of waiting for the 24h sweep; the two orphaned `uploading` rows were deleted live.
+
+## BUG-25 — Production hangs on the splash screen once the creative library grows (seed drags all file bytes)
+
+- **Symptom:** production stuck on the loading splash after the Aug 25 main sync + creative
+  library upload session. API healthy (healthz 200, auth 401 fast) — only the seed hung.
+- **Root cause:** `selectAll("manual_imports", …)` in seed assembly uses `select("*")`, so
+  every seed build fetched the FULL bytea content of every creative asset. At ~8 assets
+  that was slow-but-survivable; at the real library (125 assets ≈ 257 MB of bytea ≈ ~0.5 GB
+  of hex JSON in a single 1000-row page) the request never completes and the seed cache
+  never fills. Latent since the manual-imports feature shipped — the volume, not the code
+  sync, pulled the trigger (the code sync landed the same night by coincidence). Stale PR
+  #14 had aimed at exactly this and was dropped when selectAll lost its columns param.
+- **Category:** Fix-Now (production down).
+- **Resolution (implemented):** `selectAll` regains a `columns` parameter; the seed's
+  manual_imports fetch enumerates metadata columns only (`id, account_id, kind, filename,
+  ad_names, status` — all the auto-heal detection reads). File bytes are only ever read by
+  the file-serving route and the analysis/deconstruction engines, per import, on demand.
