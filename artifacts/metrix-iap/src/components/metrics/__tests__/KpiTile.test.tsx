@@ -136,3 +136,70 @@ describe("KpiTileRow — per-view persistence", () => {
     expect(tiles[0].textContent).toContain("Total spend");
   });
 });
+
+// ─── Loading is not the same picture as missing (BUG-33) ───────────────
+// While a refetch was in flight KpiValue rendered the SAME "—" glyph a null
+// value renders, only fainter. A slow request and "this number does not
+// exist" were indistinguishable, and the honest-null convention loses its
+// meaning if loading borrows its glyph.
+
+describe("KpiTile — in-flight state is distinguishable from a missing value", () => {
+  it("renders an aria-busy affordance, not a dash, while refetching", () => {
+    const { container } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} isRefetching />
+    );
+    const busy = container.querySelector('[data-testid="kpi-value-loading"]');
+    expect(busy).toBeTruthy();
+    expect(busy!.getAttribute("aria-busy")).toBe("true");
+    // The dash must NOT be what represents "loading".
+    expect(busy!.textContent ?? "").not.toContain("—");
+  });
+
+  it("shows the real value once the refetch settles", () => {
+    const { container } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} isRefetching={false} />
+    );
+    expect(container.querySelector('[data-testid="kpi-value-loading"]')).toBeNull();
+    expect(container.textContent).toContain("$12,800");
+  });
+});
+
+// ─── Strict aggregation: a partial sum never looks complete (BUG-11) ────
+// MetricResultEvent.results/.spend became nullable so an unmeasured event
+// propagates as null rather than a fabricated 0. Anything derived from the
+// event total (blended CPA, CVR) must stay null rather than being computed
+// against a sum that silently omits the unmeasured part.
+
+describe("buildMetricCatalog — strict null propagation from result events", () => {
+  const withUnmeasuredEvent: MetricSource = {
+    ...SOURCE,
+    resultEvents: [
+      { key: "Website purchases", label: "Purchases", results: 640, spend: 1280 },
+      { key: "Leads", label: "Leads", results: null, spend: null },
+    ],
+    isMultiEvent: true,
+  };
+
+  it("leaves blended CPA null when any event's results are unmeasured", () => {
+    const c = buildMetricCatalog(withUnmeasuredEvent);
+    expect(c.find((m) => m.id === "cpa_blended")!.value).toBeNull();
+  });
+
+  it("leaves CVR null when any event's results are unmeasured", () => {
+    const cvr = buildMetricCatalog(withUnmeasuredEvent).find((m) => m.id === "cvr");
+    // cvr is hideWhenNull, so it is either absent or present-with-null —
+    // both are honest; a number here would not be.
+    if (cvr) expect(cvr.value).toBeNull();
+  });
+
+  it("still computes them when every event is measured", () => {
+    const c = buildMetricCatalog(SOURCE);
+    expect(c.find((m) => m.id === "cpa_blended")!.value).not.toBeNull();
+  });
+
+  it("does not invent a cost-per-result for an unmeasured event", () => {
+    const c = buildMetricCatalog(withUnmeasuredEvent);
+    const leadCost = c.find((m) => m.eventKey === "Leads" && m.id.startsWith("cost:"));
+    if (leadCost) expect(leadCost.value).toBeNull();
+  });
+});
