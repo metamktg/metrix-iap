@@ -67,7 +67,7 @@ Metrix IAP is an ad-performance analysis platform: agencies connect Meta ad acco
 
 ## Architecture decisions
 
-- Metrix data lives in Supabase Postgres; the API server assembles a seed bundle at request time (30s cache) and returns 503 if Supabase is down — no static fallback by design.
+- Metrix data lives in Supabase Postgres; the API server assembles a seed bundle at request time (5-min cache; every in-app mutation invalidates it explicitly, so the TTL only bounds out-of-band writes) and returns 503 if Supabase is down — no static fallback by design.
 - Seed assembly is fully account-aware (no hardcoded ids): `buildAccountObject()` builds any account generically, honest pending shape until it has real data. Manager totals sum across accounts. `invalidateMetrixSeedCache()` busts the cache.
 - Selecting a live Meta ad account registers it in Supabase `ad_accounts` (insert-only, `status: "unconfigured"`) so it appears immediately with an honest "analysis not run yet" state; promotion to `configured` happens only when real analysis data lands.
 - `optimization_loop`/Creative Scan stay empty/pending until those stages actually run — UI never fabricates data. Same principle applies to account-level totals overrides (e.g. LittleData): authoritative totals are stated separately from ad-level coverage gaps, never blended dishonestly.

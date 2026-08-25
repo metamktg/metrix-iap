@@ -1,4 +1,5 @@
 import express, { type Express } from "express";
+import compression from "compression";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
@@ -9,6 +10,13 @@ import { getAppBaseUrl } from "./lib/appUrl";
 const app: Express = express();
 
 app.set("trust proxy", 1);
+
+// Response compression: the Metrix seed bundle is a multi-megabyte JSON
+// document served on every cache miss and re-fetched by the client after
+// each mutation — highly repetitive text that gzips ~10x. Registered before
+// the logger/routes so every JSON response (seed, summaries, listings)
+// benefits; the default filter already skips tiny and non-text bodies.
+app.use(compression());
 
 app.use(
   pinoHttp({

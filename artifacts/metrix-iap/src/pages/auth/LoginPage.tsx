@@ -169,13 +169,13 @@ export function LoginPage() {
             {/* CTAs */}
             <div className="flex items-center gap-3">
               <a
-                href="/www/#request-access"
+                href="/waitlist/#request-access"
                 className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 shadow-md shadow-primary/25 transition-all"
               >
                 Request Demo Access <ArrowRight className="w-3.5 h-3.5" />
               </a>
               <a
-                href="/www/"
+                href="/waitlist/"
                 className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl border border-border/40 text-body text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
               >
                 See More <ArrowRight className="w-3.5 h-3.5" />
@@ -208,7 +208,7 @@ export function LoginPage() {
               Performance intelligence for marketers who need to move faster.
             </p>
             <a
-              href="/www/#request-access"
+              href="/waitlist/#request-access"
               className="inline-flex items-center gap-1.5 text-body font-semibold text-interactive hover:opacity-75 transition-opacity"
             >
               Request Demo Access <ArrowRight className="w-3.5 h-3.5" />
@@ -309,7 +309,7 @@ export function LoginPage() {
                 No account?
               </p>
               <a
-                href="/www/#request-access"
+                href="/waitlist/#request-access"
                 className="w-full h-11 rounded-xl border border-primary/30 bg-primary/10 text-body font-semibold text-interactive hover:bg-primary/20 hover:border-primary/50 transition-all flex items-center justify-center gap-2"
                 data-testid="link-request-access"
               >
@@ -330,7 +330,7 @@ export function LoginPage() {
             {/* Marketing link — desktop only */}
             <div className="mt-6 text-center hidden lg:block">
               <a
-                href="/www/"
+                href="/waitlist/"
                 className="inline-flex items-center gap-1 text-caption text-muted-foreground/40 hover:text-foreground/70 transition-colors"
                 data-testid="link-marketing-site"
               >

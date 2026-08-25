@@ -24,7 +24,7 @@
 import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
-import { parseIapCsv, IapCsvFormatError, type IapCsvRow } from "./iapCsvParser";
+import { parseIapCsv, IapCsvFormatError, type IapCsvRow, type IapCsvParseResult } from "./iapCsvParser";
 import type { IapCsvClass } from "./iapCsvSpec";
 import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel, optionalMetricSlugsForGroups, IAP_CSV_CLASS_SPECS, type ObjectiveColumnGroup } from "./iapCsvSpec";
 import { resolveAccountObjectives } from "./cohortConfig";
@@ -705,11 +705,10 @@ export async function loadImportContentBuffer(imp: {
  * `expectedColumns` steers multi-sheet workbook sheet selection only.
  */
 async function decodeStagedContentAsCsvText(
-  imp: { id?: unknown; content?: unknown },
+  buf: Buffer,
   filename: string,
   expectedColumns?: readonly string[],
 ): Promise<{ text: string; warnings: string[] }> {
-  const buf = await loadImportContentBuffer(imp);
   if (extensionOf(filename) === "xlsx" || looksLikeXlsxContent(buf)) {
     const converted = await convertXlsxToCsvText(buf, expectedColumns);
     return { text: converted.csvText, warnings: converted.warnings };
@@ -1516,6 +1515,60 @@ export async function startManualAnalysis(
     );
   }
 
+  // ── Per-run import reader (fetch once, decode once, parse once) ────────
+  // Each staged file used to be fetched, decoded, and parsed up to three
+  // times per run: class detection, the conversion-export gate, then the
+  // real parse loop — triple the chunk fetches and, on a large workbook,
+  // triple a ~15s convert+parse. One run-scoped cache instead: bytes are
+  // fetched once, decoded text is cached per sheet-selection key, and the
+  // parse result is cached per (import, class) so the gate's full parse is
+  // the same object the main loop consumes. All three caches are cleared
+  // after the parse loops, before the DB-heavy ingestion phase, so the
+  // memory is released as early as possible.
+  const importBuffers = new Map<string, Promise<Buffer>>();
+  const getImportBuffer = (imp: { id?: unknown; content?: unknown }): Promise<Buffer> => {
+    const id = String(imp["id"]);
+    let p = importBuffers.get(id);
+    if (!p) {
+      p = loadImportContentBuffer(imp);
+      importBuffers.set(id, p);
+    }
+    return p;
+  };
+  const importTexts = new Map<string, Promise<{ text: string; warnings: string[] }>>();
+  const getImportText = (
+    imp: { id?: unknown; content?: unknown; filename?: unknown },
+    expectedColumns?: readonly string[],
+  ): Promise<{ text: string; warnings: string[] }> => {
+    const key = `${String(imp["id"])}|${expectedColumns ? expectedColumns.join(",") : ""}`;
+    let p = importTexts.get(key);
+    if (!p) {
+      p = getImportBuffer(imp).then((buf) =>
+        decodeStagedContentAsCsvText(buf, String(imp["filename"]), expectedColumns),
+      );
+      importTexts.set(key, p);
+    }
+    return p;
+  };
+  const importParses = new Map<string, { result: IapCsvParseResult; xlsxWarnings: string[] }>();
+  const parseImportForClass = async (
+    imp: { id?: unknown; content?: unknown; filename?: unknown },
+    cls: IapCsvClass,
+  ): Promise<{ result: IapCsvParseResult; xlsxWarnings: string[] }> => {
+    const key = `${String(imp["id"])}|${cls}`;
+    const hit = importParses.get(key);
+    if (hit) return hit;
+    const { text, warnings } = await getImportText(imp, IAP_CSV_CLASS_SPECS[cls].requiredBreakdownColumns);
+    const entry = { result: parseIapCsv(text, cls), xlsxWarnings: warnings };
+    importParses.set(key, entry);
+    return entry;
+  };
+  const clearImportCaches = (): void => {
+    importBuffers.clear();
+    importTexts.clear();
+    importParses.clear();
+  };
+
   // ── Duplicate-class guard ──────────────────────────────────────────────
   // Detect the actual pivot class of each staged CSV and verify the two
   // slots cover DISTINCT classes (one demographic, one device_placement).
@@ -1528,7 +1581,7 @@ export async function startManualAnalysis(
   // here rather than surfacing a confusing error from a pre-check.
   const detectClassForImport = async (imp: { content?: unknown; filename?: unknown }): Promise<IapCsvClass | null> => {
     try {
-      const { text } = await decodeStagedContentAsCsvText(imp, String(imp["filename"]));
+      const { text } = await getImportText(imp);
       return detectCsvClassFromHeaders(csvFirstLineHeaders(text));
     } catch {
       return null;
@@ -1561,8 +1614,7 @@ export async function startManualAnalysis(
     const suspectFiles: string[] = [];
     for (const imp of deliveryImports) {
       try {
-        const { text } = await decodeStagedContentAsCsvText(imp.row, imp.filename);
-        const result = parseIapCsv(text, imp.csvClass);
+        const { result } = await parseImportForClass(imp.row, imp.csvClass);
         if (result.conversionExportSuspected) suspectFiles.push(imp.filename);
       } catch {
         // Malformed files (including unreadable XLSX) are reported by the real parse pass below — skip here.
@@ -1594,9 +1646,8 @@ export async function startManualAnalysis(
       const demoRowsSeen = new Set<string>();
       for (const imp of demoImports) {
         try {
-          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(imp, String(imp["filename"]), IAP_CSV_CLASS_SPECS["demographic"].requiredBreakdownColumns);
+          const { result, xlsxWarnings } = await parseImportForClass(imp, "demographic");
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Demographics "${imp["filename"]}"] ${w}`);
-          const result = parseIapCsv(text, "demographic");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           appendRowsCrossFileDeduped(demoRows, result.rows, demoRowsSeen, { filename: String(imp["filename"]), label: "Demographics", warnings: allCsvWarnings });
           for (const w of result.warnings) {
@@ -1612,9 +1663,8 @@ export async function startManualAnalysis(
       const placementRowsSeen = new Set<string>();
       for (const imp of placementImports) {
         try {
-          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(imp, String(imp["filename"]), IAP_CSV_CLASS_SPECS["device_placement"].requiredBreakdownColumns);
+          const { result, xlsxWarnings } = await parseImportForClass(imp, "device_placement");
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Placements "${imp["filename"]}"] ${w}`);
-          const result = parseIapCsv(text, "device_placement");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           appendRowsCrossFileDeduped(placementRows, result.rows, placementRowsSeen, { filename: String(imp["filename"]), label: "Placements", warnings: allCsvWarnings });
           for (const w of result.warnings) {
@@ -1635,9 +1685,8 @@ export async function startManualAnalysis(
       const summaryRowsSeen = new Set<string>();
       for (const imp of summaryImports) {
         try {
-          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(imp, String(imp["filename"]), IAP_CSV_CLASS_SPECS["ad_summary"].requiredBreakdownColumns);
+          const { result, xlsxWarnings } = await parseImportForClass(imp, "ad_summary");
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Ad Summary "${imp["filename"]}"] ${w}`);
-          const result = parseIapCsv(text, "ad_summary");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           appendRowsCrossFileDeduped(summaryRows, result.rows, summaryRowsSeen, { filename: String(imp["filename"]), label: "Ad Summary", warnings: allCsvWarnings });
           for (const w of result.warnings) {
@@ -1659,9 +1708,8 @@ export async function startManualAnalysis(
       const conversionDeviceRowsSeen = new Set<string>();
       for (const imp of conversionDeviceImports) {
         try {
-          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(imp, String(imp["filename"]), IAP_CSV_CLASS_SPECS["conversion_device"].requiredBreakdownColumns);
+          const { result, xlsxWarnings } = await parseImportForClass(imp, "conversion_device");
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Conversion Device "${imp["filename"]}"] ${w}`);
-          const result = parseIapCsv(text, "conversion_device");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           appendRowsCrossFileDeduped(conversionDeviceRows, result.rows, conversionDeviceRowsSeen, { filename: String(imp["filename"]), label: "Conversion Device", warnings: allCsvWarnings });
           for (const w of result.warnings) {
@@ -1672,6 +1720,10 @@ export async function startManualAnalysis(
           throw new AnalysisError(`Conversion Device file "${imp["filename"]}": ${detail}`, 422);
         }
       }
+
+      // Free the raw file bytes/text/parses before the DB-heavy ingestion
+      // phase — the parsed rows arrays above are all ingestion needs.
+      clearImportCaches();
 
       // ── Apply objective coverage to ingestion ──────────────────────────
       // Only the account's CONFIGURED objectives (Settings → General) get
