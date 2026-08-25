@@ -147,6 +147,8 @@ function CreativeVisualInner({ data, className }: { data: CreativeCardData; clas
         <img
           src={data.assetUrl}
           alt={`Creative for ${data.conceptCode}`}
+          loading="lazy"
+          decoding="async"
           className={cn(
             "w-full h-full object-cover transition-opacity duration-300",
             loading ? "opacity-0" : "opacity-100",
