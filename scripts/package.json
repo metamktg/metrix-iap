@@ -15,6 +15,7 @@
     "check:disclosure-rulebook": "tsx ./src/check-disclosure-rulebook.ts",
     "check:communications-section-icons": "tsx ./src/check-communications-section-icons.ts",
     "check:generation-runs-migration": "tsx ./src/check-generation-runs-migration.ts",
+    "check:db-credentials": "tsx ./src/check-db-credentials.ts",
     "refresh:seed-fixture": "tsx ./src/check-seed-fixture-drift.ts --refresh",
     "smoke:api-server": "tsx ./src/smoke-api-server.ts",
     "smoke:metrix-iap-build": "tsx ./src/smoke-metrix-iap-build.ts",

@@ -119,7 +119,7 @@ create policy organizations_select on organizations
 drop policy if exists org_members_select on org_members;
 create policy org_members_select on org_members
   for select to authenticated
-  using (user_id = auth.uid());
+  using (user_id = (select auth.uid()));
 
 -- clients: visible to client members and org members. No authenticated writes.
 drop policy if exists clients_select on clients;
@@ -135,7 +135,7 @@ create policy clients_select on clients
 drop policy if exists client_memberships_select on client_memberships;
 create policy client_memberships_select on client_memberships
   for select to authenticated
-  using (user_id = auth.uid());
+  using (user_id = (select auth.uid()));
 
 -- ---------------------------------------------------------------------------
 -- Config-as-data (Migrations 0002 + 0009): global read, service-role write.
@@ -309,7 +309,7 @@ create policy review_events_select on review_events
   using (
     (analysis_run_id is not null
       and public.metrix_user_is_client_member(public.metrix_client_id_of_run(analysis_run_id)))
-    or reviewer_id = auth.uid()
+    or reviewer_id = (select auth.uid())
   );
 
 drop policy if exists review_events_insert on review_events;
@@ -318,7 +318,7 @@ create policy review_events_insert on review_events
   with check (
     analysis_run_id is not null
     and public.metrix_user_is_client_writer(public.metrix_client_id_of_run(analysis_run_id))
-    and (reviewer_id is null or reviewer_id = auth.uid())
+    and (reviewer_id is null or reviewer_id = (select auth.uid()))
   );
 
 drop policy if exists human_edits_select on human_edits;
@@ -327,7 +327,7 @@ create policy human_edits_select on human_edits
   using (
     (analysis_run_id is not null
       and public.metrix_user_is_client_member(public.metrix_client_id_of_run(analysis_run_id)))
-    or editor_id = auth.uid()
+    or editor_id = (select auth.uid())
   );
 
 drop policy if exists human_edits_insert on human_edits;
@@ -336,7 +336,7 @@ create policy human_edits_insert on human_edits
   with check (
     analysis_run_id is not null
     and public.metrix_user_is_client_writer(public.metrix_client_id_of_run(analysis_run_id))
-    and (editor_id is null or editor_id = auth.uid())
+    and (editor_id is null or editor_id = (select auth.uid()))
   );
 
 drop policy if exists approval_events_select on approval_events;
@@ -345,7 +345,7 @@ create policy approval_events_select on approval_events
   using (
     (analysis_run_id is not null
       and public.metrix_user_is_client_member(public.metrix_client_id_of_run(analysis_run_id)))
-    or approver_id = auth.uid()
+    or approver_id = (select auth.uid())
   );
 
 drop policy if exists approval_events_insert on approval_events;
@@ -354,7 +354,7 @@ create policy approval_events_insert on approval_events
   with check (
     analysis_run_id is not null
     and public.metrix_user_is_client_writer(public.metrix_client_id_of_run(analysis_run_id))
-    and (approver_id is null or approver_id = auth.uid())
+    and (approver_id is null or approver_id = (select auth.uid()))
   );
 
 -- learning_registry: reads for members, inserts for writers — but ALL inserts

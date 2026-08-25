@@ -100,6 +100,10 @@ describe("sumInRange", () => {
 
   it("sums everything when range is null", () => {
     const all = sumInRange(rollup, null, dates, (r) => r.spend);
+    // Strict policy: the fixture's rollup carries spend on every row, so this
+    // is a real sum. If any row lacked it the honest answer would be null.
+    const everyRowHasSpend = rollup.every((r) => typeof r.spend === "number");
+    expect(everyRowHasSpend).toBe(true);
     const manual = rollup.reduce((n, r) => n + (r.spend ?? 0), 0);
     expect(all).toBeCloseTo(manual, 6);
   });
@@ -122,7 +126,51 @@ describe("sumInRange", () => {
     );
     // C4 flights end 2026-06-30, before the range → drop out.
     // C2 flights continue through 2026-07-31 → stay in.
-    expect(narrowed).toBeLessThan(all);
-    expect(narrowed).toBeGreaterThan(0);
+    expect(narrowed).not.toBeNull();
+    expect(all).not.toBeNull();
+    expect(narrowed!).toBeLessThan(all!);
+    expect(narrowed!).toBeGreaterThan(0);
+  });
+
+  // ── Strict null policy ────────────────────────────────────────────────
+  // sumInRange used to return `number` and fold missing values with `?? 0`,
+  // so a column no row carried summed to a measured-looking zero and an empty
+  // window reported "$0" rather than "nothing measured". Zero is a real
+  // figure in every metric this feeds and must never stand for an unknown.
+  // The policy matches segment-analytics' sumStrict exactly.
+
+  const strictRows = [
+    { start: "2026-05-01", end: "2026-05-31", v: 10 as number | null },
+    { start: "2026-06-01", end: "2026-06-30", v: 20 as number | null },
+  ];
+  const strictDates = (r: (typeof strictRows)[number]) => ({ start: r.start, end: r.end });
+
+  it("returns null when no row falls in the range — never 0", () => {
+    const out = sumInRange(strictRows, { start: "2026-09-01", end: "2026-09-30" }, strictDates, (r) => r.v);
+    expect(out).toBeNull();
+  });
+
+  it("returns null when any contributing row lacks the value", () => {
+    const withGap = [strictRows[0]!, { start: "2026-06-01", end: "2026-06-30", v: null }];
+    expect(sumInRange(withGap, null, strictDates, (r) => r.v)).toBeNull();
+  });
+
+  it("ignores a missing value on a row OUTSIDE the range", () => {
+    const withGap = [strictRows[0]!, { start: "2026-08-01", end: "2026-08-31", v: null }];
+    const out = sumInRange(withGap, { start: "2026-05-01", end: "2026-05-31" }, strictDates, (r) => r.v);
+    expect(out).toBe(10);
+  });
+
+  it("returns null for an empty row set rather than a zero total", () => {
+    expect(sumInRange([], null, strictDates, (r) => r.v)).toBeNull();
+  });
+
+  it("sums normally when every contributing row carries the value", () => {
+    expect(sumInRange(strictRows, null, strictDates, (r) => r.v)).toBe(30);
+  });
+
+  it("treats a non-finite value as unmeasured", () => {
+    const bad = [{ start: "2026-05-01", end: "2026-05-31", v: Number.NaN as number | null }];
+    expect(sumInRange(bad, null, strictDates, (r) => r.v)).toBeNull();
   });
 });

@@ -313,8 +313,22 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       if (seen.has(h)) duplicated.add(h);
       seen.add(h);
     }
-    for (const h of duplicated) {
-      warnings.push(`Column "${h}" appears more than once in the header row — only the first occurrence is used.`);
+    // Folded into ONE line, same policy as the auto-match cascades below.
+    // Meta's pivot exporter duplicates a fixed set of headers together, so
+    // this fired three times per file on every real export — six of the
+    // fifteen warnings on a live AAFE run were this one notice, crowding
+    // out the coverage and ID-corruption warnings that actually needed
+    // acting on. One line naming every affected column says the same thing.
+    const dupes = [...duplicated];
+    if (dupes.length === 1) {
+      warnings.push(
+        `Column "${dupes[0]}" appears more than once in the header row — only the first occurrence is used.`,
+      );
+    } else if (dupes.length > 1) {
+      warnings.push(
+        `${dupes.length} columns appear more than once in the header row — only the first occurrence of each is used: ` +
+          `${dupes.map((h) => `"${h}"`).join(", ")}.`,
+      );
     }
   }
 
@@ -331,9 +345,10 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   // Warning-noise policy (shared by the breakdown and metric cascades below):
   // a per-column "auto-matched — verify" line is only worth the reader's
   // attention when there is something to verify. Three match kinds never are:
-  // (a) deterministic normalizations (slug/case-insensitive — a spreadsheet
-  // round-trip mangles "CPM (cost per 1,000 impressions)" into
-  // "CPM _cost per 1_000 impressions_", and normalized-name matching is 1:1,
+  // (a) deterministic normalizations (slug/case-insensitive/currency-suffix —
+  // a spreadsheet round-trip mangles "CPM (cost per 1,000 impressions)" into
+  // "CPM _cost per 1_000 impressions_", some export types append "(USD)" to
+  // every monetary column, and normalized-name matching is 1:1,
   // not a guess), (b) curated ALIAS matches — the alias table maps headers
   // Meta itself emits ("Reporting starts" IS the native date header on
   // ad-level summary exports; telling the user to rename a column Meta named
@@ -350,7 +365,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     if (!foldedExample) foldedExample = { from: headerValue, to: resolveCurrencyLabel(col) };
   };
   const isDeterministicVia = (via: string): boolean =>
-    via === "slug" || via === "case_insensitive" || via === "alias";
+    via === "slug" || via === "case_insensitive" || via === "alias" || via === "currency";
 
   // ── Breakdown column resolution (primary cascade) ─────────────────────
   // Map each canonical breakdown column to the actual header cell index.
@@ -453,6 +468,54 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       // Only genuinely-expected base metrics count as missing; derived or
       // irrelevant columns (cost-per-X ratios, rankings) are simply skipped.
       missingBaseMetrics.push(col);
+    }
+  }
+
+  // Creative metadata columns (only for ad_summary): use same resolution cascade
+  // as breakdown columns so aliases like "body text" → "Ad creative body text" work.
+  //
+  // Placed with the other cascades, BEFORE unmappedHeaders is computed and
+  // before the fold summary is emitted. It used to run several hundred lines
+  // later, which broke both: its headers were still unclaimed when the
+  // unknown-column pass ran (so "Body text"/"Headline"/"CTA" — columns this
+  // cascade maps successfully — were eligible to be reported as unrecognised
+  // and offered a rename suggestion), and any fold it contributed landed in a
+  // counter that had already been reported.
+  const isAdSummary = csvClass === "ad_summary";
+  const creativeMetaIdx = new Map<string, number>(); // canonical → rawHeader index
+  if (isAdSummary) {
+    for (const col of CREATIVE_METADATA_COLUMNS) {
+      const match = findColumnInHeader(headerStrings, col);
+      if (match) {
+        const idx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
+        creativeMetaIdx.set(col, idx);
+        claimedHeaderValues.add(match.headerValue);
+        if (match.via !== "exact") {
+          columnMappings[col] = match;
+          // Same fold policy as the breakdown/spend/metric cascades above —
+          // this cascade previously bypassed it, so every ad_summary export
+          // using Meta's own shorter header names ("Body text", "Headline",
+          // "CTA" — all curated aliases) produced one "auto-matched" line per
+          // column. That is the BUG-20 warning-noise class: a deterministic
+          // mapping the user cannot act on and does not need to verify.
+          if (isDeterministicVia(match.via)) {
+            foldAutoMatch(col, match.headerValue);
+          } else {
+            warnings.push(
+              `Creative metadata column "${col}" auto-matched from "${match.headerValue}" (via ${match.via} match).`,
+            );
+          }
+        }
+        summaryMap.set(col, {
+          canonical: col,
+          foundAs: match.headerValue,
+          confidence: match.confidence,
+          method: match.method,
+          tier: matchTier(match),
+          isRequired: false,
+        });
+      }
+      // Creative metadata columns are truly optional — do NOT add to missingColumns when absent.
     }
   }
 
@@ -639,36 +702,6 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     if (idx < 0) continue;
     optionalMetricsPresent.push(col);
     optionalMetricIdx.set(col, idx);
-  }
-
-  // Creative metadata columns (only for ad_summary): use same resolution cascade
-  // as breakdown columns so aliases like "body text" → "Ad creative body text" work.
-  const isAdSummary = csvClass === "ad_summary";
-  const creativeMetaIdx = new Map<string, number>(); // canonical → rawHeader index
-  if (isAdSummary) {
-    for (const col of CREATIVE_METADATA_COLUMNS) {
-      const match = findColumnInHeader(headerStrings, col);
-      if (match) {
-        const idx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
-        creativeMetaIdx.set(col, idx);
-        claimedHeaderValues.add(match.headerValue);
-        if (match.via !== "exact") {
-          columnMappings[col] = match;
-          warnings.push(
-            `Creative metadata column "${col}" auto-matched from "${match.headerValue}" (via ${match.via} match).`,
-          );
-        }
-        summaryMap.set(col, {
-          canonical: col,
-          foundAs: match.headerValue,
-          confidence: match.confidence,
-          method: match.method,
-          tier: matchTier(match),
-          isRequired: false,
-        });
-      }
-      // Creative metadata columns are truly optional — do NOT add to missingColumns when absent.
-    }
   }
 
   // ── Required breakdown COLUMNS (file-level, checked once) ─────────────

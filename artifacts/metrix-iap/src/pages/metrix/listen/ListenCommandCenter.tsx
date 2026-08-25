@@ -19,7 +19,7 @@ import { Radio, CheckCircle2, Circle, AlertTriangle, Bell, Activity, Lightbulb }
 const SECTION = "Listen · 02";
 
 const LISTEN_CHILDREN = [
-  { to: "/app/listen/alerts", label: "Alerts", desc: "High-impact signals worth acting on now.", Icon: Bell, lineage: "iap.data_quality[]" },
+  { to: "/app/listen/alerts", label: "Alerts", desc: "High-impact signals worth acting on now.", Icon: Bell, lineage: "signal_cards[] · data_caveat · iap.data_quality[]" },
   { to: "/app/listen/signal", label: "Signal", desc: "The full signal feed for this scope.", Icon: Activity, lineage: "campaign_summary · ad_performance[]" },
   { to: "/app/listen/recommendations", label: "Recommendations", desc: "Suggested next actions from what's been heard.", Icon: Lightbulb, lineage: "optimization_loop · pending until run" },
 ];

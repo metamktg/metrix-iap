@@ -415,25 +415,31 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
 
   const nonExact = summary.filter((e) => e.tier !== "exact");
   const resolved = nonExact.filter((e) => e.tier !== "missing");
-  const missing = nonExact.filter((e) => e.tier === "missing");
+  // Only REQUIRED missing columns are a problem worth warning colors — an
+  // optional column absent from the export is a property of Meta's export
+  // type, not a defect in the user's file, so it renders as a neutral
+  // "not in export" group instead of red rows under an amber header.
+  const requiredMissing = nonExact.filter((e) => e.tier === "missing" && e.is_required);
+  const optionalMissing = nonExact.filter((e) => e.tier === "missing" && !e.is_required);
 
   if (nonExact.length === 0) return null;
 
   const headerLabel = [
     resolved.length > 0 && `${resolved.length} auto-resolved`,
-    missing.length > 0 && `${missing.length} missing`,
+    requiredMissing.length > 0 && `${requiredMissing.length} required missing`,
+    optionalMissing.length > 0 && `${optionalMissing.length} not in export`,
   ]
     .filter(Boolean)
     .join(" · ");
 
   const headerColor =
-    missing.length > 0
+    requiredMissing.length > 0
       ? "border-status-warning/25 bg-status-warning/[0.04]"
       : "border-emerald-400/20 bg-emerald-400/[0.03]";
   const chevronColor =
-    missing.length > 0 ? "text-status-warning/80" : "text-emerald-400/80";
+    requiredMissing.length > 0 ? "text-status-warning/80" : "text-emerald-400/80";
   const iconColor =
-    missing.length > 0 ? "text-status-warning" : "text-emerald-400";
+    requiredMissing.length > 0 ? "text-status-warning" : "text-emerald-400";
 
   return (
     <div className={cn("rounded-lg border overflow-hidden", headerColor)}>
@@ -496,20 +502,34 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
             </div>
           )}
 
-          {missing.length > 0 && (
+          {requiredMissing.length > 0 && (
             <div className={cn("pt-2 space-y-1", resolved.length > 0 && "mt-1")}>
-              {missing.length > 0 && (
-                <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/60 pb-0.5">
-                  Missing columns
-                </p>
-              )}
-              {missing.map((e) => (
+              <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/60 pb-0.5">
+                Required columns missing
+              </p>
+              {requiredMissing.map((e) => (
                 <div
                   key={e.canonical}
                   className="flex items-center gap-2 px-2 py-1.5 rounded text-label bg-red-400/[0.06] border border-red-400/15"
                 >
                   <XCircle className="w-3.5 h-3.5 shrink-0 text-red-400/80" />
                   <span className="font-medium text-foreground/80 min-w-0 truncate">{e.canonical}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {optionalMissing.length > 0 && (
+            <div className={cn("pt-2 space-y-1", (resolved.length > 0 || requiredMissing.length > 0) && "mt-1")}>
+              <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/60 pb-0.5">
+                Optional columns not included in this export — no action needed
+              </p>
+              {optionalMissing.map((e) => (
+                <div
+                  key={e.canonical}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded text-label bg-white/[0.02] border border-border/30"
+                >
+                  <span className="font-medium text-muted-foreground/70 min-w-0 truncate">{e.canonical}</span>
                 </div>
               ))}
             </div>

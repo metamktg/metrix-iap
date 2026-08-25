@@ -556,7 +556,7 @@ export type ColumnMatchVia = "exact" | "currency" | "case_insensitive" | "alias"
  *
  * `confidence` ranges 0–1:
  *   - exact       → 1.00
- *   - currency    → 0.99 (amount spent with locale currency suffix)
+ *   - currency    → 0.99 (monetary column with a locale currency suffix)
  *   - case_insensitive → 0.97
  *   - alias       → 0.95 (known Meta UI export variant)
  *   - slug        → 0.90 (normalized slug match)
@@ -593,7 +593,9 @@ const METHOD_LABEL_BY_VIA: Record<ColumnMatchVia, string> = {
 /**
  * Tries to find a canonical column in a CSV header row using a cascade:
  *  1. Exact match
- *  2. {ACCOUNT_CURRENCY} placeholder match (e.g. "Amount spent (USD)")
+ *  2. {ACCOUNT_CURRENCY} placeholder match (e.g. "Amount spent (USD)"), or —
+ *     for every other column — a trailing currency-suffix match
+ *     (e.g. "CPM (cost per 1,000 impressions) (USD)")
  *  3. Case-insensitive exact match
  *  4. Known alias lookup (COLUMN_ALIASES)
  *  5. Slug-based match (normalize both sides to slug form)
@@ -633,6 +635,26 @@ export function findColumnInHeader(headers: string[], canonical: string): Column
       (h) => h.trim().toLowerCase() === "amount spent" || COLUMN_ALIASES[h.trim().toLowerCase()] === canonical,
     );
     if (plainSpend !== undefined) return makeMatch(plainSpend.trim(), "alias");
+  } else {
+    // 2b. Generic currency-suffix tolerance: some Meta export types append
+    // the account currency to EVERY monetary column, not just "Amount spent"
+    // — e.g. "CPM (cost per 1,000 impressions) (USD)". Stripping one
+    // trailing 3-uppercase-letter parenthetical and re-comparing is 1:1,
+    // not a guess, so it must resolve deterministically here instead of
+    // falling through to Jaccard inference with a spurious low-confidence
+    // flag. Uppercase-only keeps semantic parentheticals like "(all)" out.
+    const canonSlugForCurrency = slugifyColumn(canonical);
+    const currencySuffixed = headers.find((h) => {
+      const trimmed = h.trim();
+      const stripped = trimmed.replace(/\s*\([A-Z]{3}\)$/, "");
+      if (stripped === trimmed) return false;
+      return (
+        stripped === canonical ||
+        stripped.toLowerCase() === canonical.toLowerCase() ||
+        slugifyColumn(stripped) === canonSlugForCurrency
+      );
+    });
+    if (currencySuffixed !== undefined) return makeMatch(currencySuffixed.trim(), "currency");
   }
 
   const lower = canonical.toLowerCase();

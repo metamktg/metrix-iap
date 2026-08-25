@@ -83,7 +83,17 @@ function GradeBadge({ grade }: { grade: "A" | "B" | "C" | "D" | "F" }) {
   );
 }
 
-function TierBadge({ tier }: { tier: MappingEntry["tier"] }) {
+function TierBadge({ tier, isRequired }: { tier: MappingEntry["tier"]; isRequired?: boolean }) {
+  // "missing" only earns red when the column is REQUIRED — an optional column
+  // absent from the export is a property of Meta's export type, not a defect,
+  // so it renders as a neutral "not in export" chip instead.
+  if (tier === "missing" && !isRequired) {
+    return (
+      <span className="px-1.5 py-0.5 rounded text-label font-medium uppercase tracking-wide border bg-white/[0.04] border-border/40 text-muted-foreground/70">
+        not in export
+      </span>
+    );
+  }
   const styles: Record<string, string> = {
     exact: "bg-emerald-400/10 border-emerald-400/25 text-emerald-400",
     resolved: "bg-chart-1/10 border-blue-400/25 text-blue-300",
@@ -223,7 +233,7 @@ function SingleCsvConfidenceReport({
                       )}
                     </div>
                   </div>
-                  <TierBadge tier={col.tier} />
+                  <TierBadge tier={col.tier} isRequired={col.is_required ?? false} />
                   {col.tier !== "missing" && col.confidence < 1 ? (
                     <div className="w-20 shrink-0">
                       <ConfidenceBar value={col.confidence} />

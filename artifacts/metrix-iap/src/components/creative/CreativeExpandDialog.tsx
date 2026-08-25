@@ -15,6 +15,7 @@ import type { CreativeCardData } from "./CreativeCard";
 import { FunnelStepsChart, buildFunnelSteps } from "./FunnelStepsChart";
 import { AdsManagerButton } from "./AdsManagerLink";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
+import { useCreativeEmptyReasons } from "@/hooks/useCreativeEmptyReasons";
 
 // ─── QA mapping status ─────────────────────────────────────────────────
 // MSTLibraryCell.qa_mapping_status, observed values: "pass",
@@ -667,11 +668,21 @@ export function CreativeExpandDialog({
   demographic = [], placements = [],
   expandFooter, unmapped, onUploadCreatives, onSegmentClick,
   perfRow = null,
-  demographicEmptyReason = null,
-  placementsEmptyReason = null,
-  funnelEmptyReason = null,
+  demographicEmptyReason,
+  placementsEmptyReason,
+  funnelEmptyReason,
 }: CreativeExpandDialogProps) {
   const [tab, setTab] = useState<Tab>("overview");
+
+  // Empty-state reasons are DERIVED here from the scoped account's own
+  // analysis data, so every call site gets the cause-specific text without
+  // having to pass it (seven of ten did not). An explicitly supplied reason
+  // still wins — callers that scope a card differently than by cell code
+  // know better than the derivation does.
+  const derivedReasons = useCreativeEmptyReasons(data.conceptCode);
+  const demoReason = demographicEmptyReason ?? derivedReasons.demographic;
+  const placeReason = placementsEmptyReason ?? derivedReasons.placements;
+  const funnelReason = funnelEmptyReason ?? derivedReasons.funnel;
 
   const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "overview",      label: "Overview",      icon: <BarChart2    className="w-3.5 h-3.5" /> },
@@ -748,9 +759,9 @@ export function CreativeExpandDialog({
               )}
 
               {tab === "overview"     && <OverviewTab      data={data} />}
-              {tab === "demographics" && <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} emptyReason={demographicEmptyReason} />}
-              {tab === "placements"   && <PlacementsTab    rows={placements} emptyReason={placementsEmptyReason} />}
-              {tab === "funnel"       && <FunnelTab        perfRow={perfRow} emptyReason={funnelEmptyReason} />}
+              {tab === "demographics" && <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} emptyReason={demoReason} />}
+              {tab === "placements"   && <PlacementsTab    rows={placements} emptyReason={placeReason} />}
+              {tab === "funnel"       && <FunnelTab        perfRow={perfRow} emptyReason={funnelReason} />}
             </div>
 
             {/* Footer */}

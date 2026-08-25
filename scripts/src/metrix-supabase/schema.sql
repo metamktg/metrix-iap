@@ -1202,3 +1202,113 @@ $fn$;
 
 revoke all on function metrix_replace_deconstruction_filing(text, uuid, jsonb, text, jsonb)
   from public, anon, authenticated;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Foreign-key index coverage (live-DB audit, 2026-08-25)
+--
+-- A production audit of the live project found 42 single-column foreign
+-- keys with no supporting index. Postgres does NOT create one for a FK
+-- automatically, and an unindexed FK costs twice: every lookup by that
+-- column seq-scans, and every DELETE on the PARENT must scan the whole
+-- child table to enforce the constraint (taking a lock while it does).
+--
+-- The most consequential omission: ad_performance is the only run-scoped
+-- rollup WITHOUT a manual_analysis_run_id index. Its six siblings all got
+-- one in the run-tagging block above (~L902-907) and ad_performance was
+-- missed — despite being the largest of them (9,647 rows live, roughly 2x
+-- the next biggest) and the one the engine deletes run-scoped on every
+-- re-ingestion. The idempotent-rebuild path (delete-adjacent-to-insert,
+-- scoped per run/window) was doing that against no index at all.
+--
+-- Everything below is `create index if not exists` — additive, idempotent,
+-- safe to re-run, and consistent with this file's contract.
+-- ─────────────────────────────────────────────────────────────────────
+
+create index if not exists ad_performance_run_idx
+  on ad_performance (manual_analysis_run_id);
+
+-- Per-account lookups the seed assembly performs on every seed build.
+create index if not exists data_quality_flags_account_idx
+  on data_quality_flags (account_id);
+create index if not exists signal_cards_account_idx
+  on signal_cards (account_id);
+create index if not exists ad_traffic_quality_account_idx
+  on ad_traffic_quality (account_id);
+create index if not exists failure_patterns_account_idx
+  on failure_patterns (account_id);
+create index if not exists import_metric_reconciliation_account_idx
+  on import_metric_reconciliation (account_id);
+
+-- creative_deconstructions.manual_import_id: parent manual_imports rows are
+-- deleted routinely (staging cleanup, retention); without this every such
+-- delete scans creative_deconstructions to enforce the FK.
+create index if not exists creative_deconstructions_import_idx
+  on creative_deconstructions (manual_import_id);
+
+-- ─────────────────────────────────────────────────────────────────────
+-- content_md5 backfill (live-DB audit, 2026-08-25)
+--
+-- content_md5 was added with the BUG-09 same-bytes staging guard but never
+-- backfilled, so 172 of 185 existing rows (93%) carried NULL. The guard
+-- compares an incoming file's md5 against currently-staged rows via an
+-- equality filter — and `= NULL` never matches, so for those rows the guard
+-- was silently inert. The live audit found 25 groups of byte-identical files
+-- staged into the same slot that the guard should have rejected with a 409,
+-- three of them performance exports (the kind that double-count spend; the
+-- BUG-19 parse-time cross-file dedupe is what actually caught those, which is
+-- the second layer doing the first layer's job).
+--
+-- Postgres md5(bytea) is byte-for-byte identical to the app's
+-- createHash("md5").update(content).digest("hex") over the same decoded
+-- bytes. Verified against all 13 rows that already had an app-written value
+-- (11 inline + 2 chunked): 13/13 exact match, 0 mismatches — checked BEFORE
+-- writing anything, because a wrong backfill is worse than a NULL one (it
+-- would 409-reject legitimate uploads).
+--
+-- Chunked uploads keep content NULL and store bytes in manual_import_chunks;
+-- their hash is taken over the chunks reassembled in chunk_index order, which
+-- is exactly what the complete-step hashes.
+--
+-- Idempotent: both statements are no-ops once content_md5 is populated.
+-- ─────────────────────────────────────────────────────────────────────
+
+update manual_imports mi
+   set content_md5 = md5(mi.content)
+ where mi.content_md5 is null
+   and mi.content is not null;
+
+update manual_imports mi
+   set content_md5 = a.asm_md5
+  from (
+    select c.import_id,
+           md5(string_agg(c.content, ''::bytea order by c.chunk_index)) as asm_md5
+      from manual_import_chunks c
+     group by c.import_id
+  ) a
+ where a.import_id = mi.id
+   and mi.content_md5 is null
+   and mi.content is null;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- BUG-39 — run liveness heartbeat
+--
+-- A dead 'running' row is reclaimed (flipped to error, its partial
+-- outputs deleted) once it has been running longer than STALE_RUN_MS.
+-- That staleness was measured from `started_at`, which never advances,
+-- so the rule really said "any run older than 10 minutes is dead" —
+-- including one still legitimately working. The longest phase of a
+-- generation run is a single model call that writes no progress for
+-- minutes at a time, and a large analysis run can spend just as long
+-- inside one parse, so the two engines cannot signal liveness through
+-- their existing phase writes alone.
+--
+-- `heartbeat_at` is touched every 30s for as long as the run is alive
+-- (see lib/runHeartbeat.ts). The ticker dies with the process, so a
+-- genuinely dead run stops heartbeating and is reclaimed exactly as
+-- before; a slow-but-alive run is not. NULL on rows written before
+-- this column existed — readers fall back to `started_at`, i.e. the
+-- old behaviour, which is correct for runs that are long since over.
+-- ─────────────────────────────────────────────────────────────────────
+
+alter table if exists generation_runs      add column if not exists heartbeat_at timestamptz;
+alter table if exists manual_analysis_runs add column if not exists heartbeat_at timestamptz;

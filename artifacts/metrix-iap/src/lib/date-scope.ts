@@ -63,21 +63,38 @@ export function cellInRange(
   return rangesOverlap(range, w.start, w.end);
 }
 
-/** Sum a numeric field over dated rows that overlap a range. */
+/**
+ * Strict nullable sum of a numeric field over dated rows overlapping a range.
+ *
+ * Null — never 0 — when no row falls in the range, or when any row that does
+ * lacks the field. This used to return `number` and fold missing values with
+ * `?? 0`, so a column no row carried summed to a measured-looking zero and an
+ * empty window reported "$0 spent" rather than "nothing measured here". Zero
+ * is a real, meaningful figure in every metric this feeds; it must never stand
+ * in for an unknown.
+ *
+ * The policy is deliberately identical to segment-analytics' `sumStrict`
+ * (null on no rows, null if any row lacks the field) so the codebase has ONE
+ * definition of a trustworthy sum rather than two that disagree at the edges.
+ */
 export function sumInRange<T>(
   rows: T[],
   range: IsoRange | null,
   getDates: (row: T) => { start: string | null | undefined; end: string | null | undefined },
   getValue: (row: T) => number | null | undefined
-): number {
+): number | null {
   let sum = 0;
+  let contributing = 0;
   for (const row of rows) {
     const d = getDates(row);
     if (!range || rangesOverlap(range, d.start, d.end)) {
-      sum += getValue(row) ?? 0;
+      const v = getValue(row);
+      if (v == null || !Number.isFinite(v)) return null;
+      sum += v;
+      contributing += 1;
     }
   }
-  return sum;
+  return contributing === 0 ? null : sum;
 }
 
 // ─── React hook: cell-level range scoping ─────────────────────────────

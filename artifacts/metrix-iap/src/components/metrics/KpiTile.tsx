@@ -304,8 +304,20 @@ export function KpiTileRow({
 function KpiValue({ formatted, isRefetching }: { formatted: string; isRefetching: boolean }) {
   // Nocturne stat treatment: heading-family weight (500) rather than the
   // previous extrabold — the canvas's calmer hero-tile number.
+  //
+  // While refetching this rendered the SAME "—" glyph a null value renders,
+  // only fainter, so "still loading" and "this number does not exist" were
+  // the same picture — the reader cannot tell a slow request from data loss,
+  // and the honest-null convention loses its meaning if loading borrows the
+  // glyph. A pulsing bar is unmistakably an in-flight state, and aria-busy
+  // says so to assistive tech; the dash now means exactly one thing.
   return isRefetching ? (
-    <span className="text-bignum font-medium text-muted-foreground/20 metric-num leading-none">—</span>
+    <span
+      className="inline-block h-[1em] w-[3.5ch] rounded bg-white/[0.08] animate-pulse align-middle"
+      aria-busy="true"
+      aria-label="Loading"
+      data-testid="kpi-value-loading"
+    />
   ) : (
     <span className="text-bignum font-medium text-foreground metric-num leading-none tracking-[-0.02em]">
       {formatted}

@@ -123,13 +123,17 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
         </div>
       )}
 
-      {/* Data integrity */}
+      {/* Data integrity: `reconciliation` is declared optional in the API
+          contract because nothing writes it today (see openapi.yaml). This
+          block is therefore inert in practice and self-hides — it is kept,
+          rather than deleted, so implementing the writer needs no UI work.
+          Read through a local so the empty and absent cases are one path. */}
       {run.status === "success" && (run.reconciliation ?? []).length > 0 && (
         <div className="space-y-1.5 pt-1 border-t border-border/25">
           <div className="text-label text-muted-foreground/50 font-medium uppercase tracking-wide">
             Data integrity check
           </div>
-          {run.reconciliation.map((r) => (
+          {(run.reconciliation ?? []).map((r) => (
             <div
               key={r.metric_key}
               className={cn(

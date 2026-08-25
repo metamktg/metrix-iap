@@ -11,8 +11,10 @@ import type { CampaignSummary, CellPerformanceRow, ManagerBottomLineTotals, Seed
 export interface MetricResultEvent {
   key: string;
   label: string;
-  results: number;
-  spend: number;
+  /** Null when the source could not measure this event's results — never 0. */
+  results: number | null;
+  /** Null when the source could not measure this event's spend — never 0. */
+  spend: number | null;
 }
 
 /** Normalized numeric source both overview scopes can build a catalog from. */
@@ -141,8 +143,13 @@ export interface MetricDef {
  * (null value) are omitted entirely — never rendered as blank tiles.
  */
 export function buildMetricCatalog(source: MetricSource): MetricDef[] {
-  const totalResults = source.resultEvents.reduce((n, e) => n + e.results, 0);
-  const cpaBlended = source.spend != null && totalResults > 0 ? source.spend / totalResults : null;
+  // Strict: null if ANY event's results are unmeasured, so every metric
+  // derived from the total (CPA blended, CVR) stays null rather than being
+  // computed against a partial sum that looks complete.
+  const totalResults = source.resultEvents.some((e) => e.results == null)
+    ? null
+    : source.resultEvents.reduce((n, e) => n + (e.results ?? 0), 0);
+  const cpaBlended = source.spend != null && totalResults != null && totalResults > 0 ? source.spend / totalResults : null;
   // For multi-event accounts, delivery totals (reach, clicks) are cross-event
   // sums that may over-count — flag them with a small caveat sub-label.
   const deliverySub = source.isMultiEvent ? "est. across events" : undefined;
@@ -160,7 +167,7 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
   const cpm = source.spend != null && source.impressions != null && source.impressions > 0
     ? (source.spend / source.impressions) * 1000
     : null;
-  const cvr = source.linkClicks != null && source.linkClicks > 0 && totalResults > 0 && totalResults <= source.linkClicks
+  const cvr = source.linkClicks != null && source.linkClicks > 0 && totalResults != null && totalResults > 0 && totalResults <= source.linkClicks
     ? (totalResults / source.linkClicks) * 100
     : null;
 
@@ -190,7 +197,7 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
       isResultEvent: true,
       eventKey: e.key,
     });
-    const costPerResult = e.spend != null && e.results > 0 ? e.spend / e.results : null;
+    const costPerResult = e.spend != null && e.results != null && e.results > 0 ? e.spend / e.results : null;
     catalog.push({
       id: resultCostMetricId(e.key),
       label: costPerResultLabel(e.key),

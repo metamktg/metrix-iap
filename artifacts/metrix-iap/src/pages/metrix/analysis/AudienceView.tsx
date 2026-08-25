@@ -55,6 +55,7 @@ import {
   type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
 import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
+import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
 import {
   buildAudienceClusters, groupSegmentsByAge, classifyQuadrant, QUADRANT_LABEL,
   type AudienceGroup, type PositioningQuadrant,
@@ -686,16 +687,15 @@ export function AudienceView() {
     enabled: preset !== "all" && !!adAccountId,
   });
 
-  // Join coverage from the latest successful analysis run (the "all"-preset
-  // summary carries it regardless of the active preset; react-query dedupes
-  // with the preset query when preset === "all").
-  const { data: allSummary } = useQuery({
-    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", "all"),
-    enabled: !!adAccountId,
-  });
+  // Join coverage: prefer the active date preset's own summary when it
+  // carries coverage (it is scoped tighter than the run), otherwise the
+  // run-level coverage the shared hook resolves. The hook is the same source
+  // SegmentDrilldownModal reads, so this view and the drill-down it opens can
+  // never disagree about the same account.
+  const runCoverage = useDemographicCoverage();
   const demoCoverage = useMemo(
-    () => demographicCoverageOf((presetData ?? allSummary)?.data_coverage ?? null),
-    [presetData, allSummary],
+    () => demographicCoverageOf(presetData?.data_coverage ?? null) ?? runCoverage,
+    [presetData, runCoverage],
   );
 
   const handleMode = useCallback((m: SegmentByMode) => {

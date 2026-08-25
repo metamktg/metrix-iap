@@ -1,13 +1,23 @@
 // check-generation-runs-migration.ts
 //
-// Verifies that the generation_runs table in the live Supabase schema has the
-// progress_pct and progress_stage columns added by the Task 616 post-merge
-// migration. These columns are required by the progress-display code in
-// generationEngine.ts; a missing migration silently breaks progress reporting.
+// Verifies that the live Supabase schema carries the run-table columns the
+// API server writes but that no code path can fail loudly on:
+//
+//   generation_runs.progress_pct / .progress_stage  (Task 616)
+//       required by the progress-display code in generationEngine.ts;
+//       a missing migration silently breaks progress reporting.
+//
+//   generation_runs.heartbeat_at
+//   manual_analysis_runs.heartbeat_at               (BUG-39)
+//       required by lib/runHeartbeat.ts. Both engines degrade gracefully
+//       without them — the heartbeat write fails as a logged warning and
+//       staleness falls back to started_at — which is precisely why a
+//       missing migration needs a check: the symptom is not an error, it
+//       is the silent return of the bug the column exists to fix.
 //
 // Exit codes:
-//   0  — both columns confirmed present (or SUPABASE_DB_URL is unset → SKIP)
-//   1  — one or both columns are missing (migration did not apply)
+//   0  — every column confirmed present (or SUPABASE_DB_URL is unset → SKIP)
+//   1  — one or more columns are missing (migration did not apply)
 //
 // Usage:
 //   pnpm --filter @workspace/scripts run check:generation-runs-migration
@@ -25,8 +35,10 @@ function fail(msg: string, detail?: string): never {
   process.exit(1);
 }
 
-const REQUIRED_COLUMNS = ["progress_pct", "progress_stage"] as const;
-const TABLE = "generation_runs";
+const REQUIRED: Record<string, string[]> = {
+  generation_runs: ["progress_pct", "progress_stage", "heartbeat_at"],
+  manual_analysis_runs: ["heartbeat_at"],
+};
 
 const dbUrl = resolveSupabaseDbUrl("SUPABASE_DB_URL");
 if (!dbUrl) {
@@ -37,7 +49,17 @@ if (!dbUrl) {
   process.exit(0);
 }
 
-console.log(`\nChecking ${TABLE} migration columns: ${REQUIRED_COLUMNS.join(", ")}\n`);
+const REQUIRED_PAIRS = Object.entries(REQUIRED).flatMap(([table, cols]) =>
+  cols.map((col) => ({ table, col })),
+);
+
+console.log(
+  "\nChecking migration columns:\n" +
+    Object.entries(REQUIRED)
+      .map(([table, cols]) => `  ${table}: ${cols.join(", ")}`)
+      .join("\n") +
+    "\n",
+);
 
 const client = new pg.Client({
   connectionString: dbUrl,
@@ -57,33 +79,32 @@ try {
 }
 
 try {
-  const result = await client.query<{ column_name: string }>(
-    `select column_name
+  const result = await client.query<{ table_name: string; column_name: string }>(
+    `select table_name, column_name
        from information_schema.columns
       where table_schema = 'public'
-        and table_name   = $1
-        and column_name  = any($2::text[])
-      order by column_name`,
-    [TABLE, REQUIRED_COLUMNS],
+        and table_name   = any($1::text[])
+      order by table_name, column_name`,
+    [Object.keys(REQUIRED)],
   );
 
-  const found = new Set(result.rows.map((r) => r.column_name));
-  const missing = REQUIRED_COLUMNS.filter((col) => !found.has(col));
+  const found = new Set(result.rows.map((r) => `${r.table_name}.${r.column_name}`));
+  const missing = REQUIRED_PAIRS.filter(({ table, col }) => !found.has(`${table}.${col}`));
 
   if (missing.length > 0) {
     fail(
-      `${TABLE} is missing column(s): ${missing.join(", ")}`,
-      "The Task 616 post-merge migration did not apply. " +
+      `Missing column(s): ${missing.map(({ table, col }) => `${table}.${col}`).join(", ")}`,
+      "A post-merge migration did not apply. " +
         "Run scripts/post-merge.sh (or pnpm --filter @workspace/scripts exec tsx ./src/apply-supabase-schema.ts) " +
         "against the target database to apply the missing ALTER TABLE statements.",
     );
   }
 
-  for (const col of REQUIRED_COLUMNS) {
-    pass(`${TABLE}.${col} exists`);
+  for (const { table, col } of REQUIRED_PAIRS) {
+    pass(`${table}.${col} exists`);
   }
 
-  console.log(`\nOK  ${TABLE} migration columns are present.\n`);
+  console.log(`\nOK  all run-table migration columns are present.\n`);
 } finally {
   await client.end();
 }
