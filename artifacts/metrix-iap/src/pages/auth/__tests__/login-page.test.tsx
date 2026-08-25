@@ -1,6 +1,6 @@
 // ─── Login page regression tests ───────────────────────────────────────
 // Guards the "no account?" path: the login page must link out to the
-// marketing site's Request Access form (/www/#request-access) and must
+// marketing site's Request Access form (/waitlist/#request-access) and must
 // NOT reintroduce the old inline email-only waitlist form.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
