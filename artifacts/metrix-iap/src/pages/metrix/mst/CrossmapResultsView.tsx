@@ -224,11 +224,11 @@ export function CrossmapResultsView({
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <SegmentedToggle<CoverageFilter>
+                  <SegmentedToggle
                     ariaLabel="Filter crossmap coverage"
                     options={COVERAGE_OPTIONS}
                     active={coverageFilter}
-                    onChange={setCoverageFilter}
+                    onChange={(id) => setCoverageFilter(id as CoverageFilter)}
                   />
                   <RankSortBar
                     metrics={CROSSMAP_METRICS}

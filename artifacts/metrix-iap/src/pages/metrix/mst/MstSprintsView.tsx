@@ -351,14 +351,14 @@ export function MstSprintsView() {
                   <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/40")}>
                     Filter by tier
                   </span>
-                  <SegmentedToggle<ScalingBucket | "all">
+                  <SegmentedToggle
                     ariaLabel="Filter matrix by scaling-playbook tier"
                     options={[
                       { id: "all", label: "All" },
                       ...availableTiers.map((t) => ({ id: t, label: BUCKET_LABEL[t] })),
                     ]}
                     active={tierFilter}
-                    onChange={setTierFilter}
+                    onChange={(id) => setTierFilter(id as ScalingBucket | "all")}
                   />
                   {tierFilter !== "all" && (
                     <span className="text-caption text-muted-foreground/50">

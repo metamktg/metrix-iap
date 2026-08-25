@@ -122,7 +122,7 @@ export function MstDirectionView() {
 
             {activeBuckets.length > 0 && (
               <div className="px-6 pt-4">
-                <SegmentedToggle<ScalingBucket | "all"> ariaLabel="Filter concepts by classification" active={filter} onChange={setFilter} options={filterOptions} />
+                <SegmentedToggle ariaLabel="Filter concepts by classification" active={filter} onChange={(id) => setFilter(id as ScalingBucket | "all")} options={filterOptions} />
               </div>
             )}
 
