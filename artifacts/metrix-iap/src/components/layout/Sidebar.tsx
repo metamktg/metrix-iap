@@ -595,13 +595,6 @@ export function Sidebar() {
           </ol>
         ) : (
           <ol className="space-y-0.5 list-none p-0 m-0">
-            {/* Real interaction hint: a section header click navigates to
-                that section's own command-center landing route. */}
-            <li aria-hidden="true" className="px-2 pb-1.5">
-              <p className="text-[10px] leading-snug text-muted-foreground/45">
-                Click a section for its command center
-              </p>
-            </li>
             {visibleTree.map((section) =>
               section.children?.length ? (
                 <ExpandableSection
