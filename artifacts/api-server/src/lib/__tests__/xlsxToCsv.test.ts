@@ -26,7 +26,7 @@
 
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
-import { convertXlsxToCsvText, looksLikeXlsxContent } from "../xlsxToCsv";
+import { convertXlsxToCsvText, looksLikeXlsxContent, readXlsxHeaderCells } from "../xlsxToCsv";
 import { parseIapCsv, IapCsvFormatError } from "../iapCsvParser";
 import { BASE_METRICS, DEMOGRAPHIC_BREAKDOWN_COLUMNS, DEVICE_PLACEMENT_BREAKDOWN_COLUMNS } from "../iapCsvSpec";
 
@@ -396,5 +396,29 @@ describe("streaming conversion parity (forceStreaming)", () => {
     const parsed = parseIapCsv(csvText, "demographic");
     expect(parsed.rows.length).toBe(1);
     expect(parsed.rows[0]!.breakdowns["Ad name"]).toBe("UGC_Testimonial_v1");
+  });
+});
+
+describe("readXlsxHeaderCells", () => {
+  it("returns just the header row without converting the workbook", async () => {
+    const buf = await buildWorkbookBuffer(DEMOGRAPHIC_BREAKDOWN_COLUMNS, [
+      Object.fromEntries([
+        ...DEMOGRAPHIC_BREAKDOWN_COLUMNS.map((c) => [resolveCurrency(c), breakdownValue(c)]),
+        ...BASE_METRICS.map((c) => [resolveCurrency(c), baseValue(c)]),
+      ]),
+    ]);
+    const header = await readXlsxHeaderCells(buf);
+    expect(header).toContain("Day");
+    expect(header).toContain("Ad name");
+    expect(header).toContain("Amount spent (USD)");
+  });
+
+  it("skips empty leading sheets", async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.addWorksheet("Empty");
+    const sheet = workbook.addWorksheet("Data");
+    sheet.addRow(["Day", "Ad name"]);
+    const buf = Buffer.from(await workbook.xlsx.writeBuffer());
+    expect(await readXlsxHeaderCells(buf)).toEqual(["Day", "Ad name"]);
   });
 });
