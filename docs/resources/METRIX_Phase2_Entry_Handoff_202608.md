@@ -53,7 +53,7 @@ server).
 
 ## 2. What this session found and fixed
 
-Thirteen defects, `BUG-28` … `BUG-40` in `BUG_TRACKER.md`, which carries the full evidence for
+Fourteen defects, `BUG-28` … `BUG-41` in `BUG_TRACKER.md`, which carries the full evidence for
 each. Grouped by what they actually were:
 
 ### 2a. Propagation gaps — the primitive was right, the distribution wasn't
@@ -105,6 +105,43 @@ props still win, because two callers legitimately hold better-scoped data.
   duplicates a fixed *set* of headers together, so on the latest live AAFE run **6 of 15
   warnings were that one message**, crowding out the 2.9% coverage warning and three ID columns
   blanked by a Sheets round-trip.
+
+### 2cc. The generation engine could not finish a large model call — and the fix for BUG-39 made it worse
+
+**BUG-41**, found after the rest of this document was written, by the operator reporting that
+*"briefs do not seem to be generating and also strategy is not."* Three defects behind it:
+
+1. **`callModel` issued a non-streaming request at `max_tokens` up to 32,768**, with no
+   `timeout` and no `maxRetries`. At that budget the SDK **refuses the request outright**:
+   `"Streaming is required for operations that may take longer than 10 minutes."` Now
+   `.stream().finalMessage()` with a 4-minute timeout and 1 retry.
+
+2. **The BUG-39 heartbeat turned a wedged run into a permanently wedged one.** The
+   heartbeat's `setInterval` fires independently of the awaited call, so a run stuck inside
+   that call kept attesting liveness: never stale, never reclaimed, holding the account's
+   one-running-run index for the life of the process. Before the heartbeat it was at least
+   reclaimed after 10 minutes. A heartbeat must attest **liveness, not immortality** —
+   `MAX_HEARTBEAT_MS` (30 min) now ends the attestation. The model timeout and that ceiling
+   are only meaningful *relative to each other*; they live together in
+   `lib/generationLimits.ts` with the ordering pinned by tests.
+
+3. **A rejected attempt left no trace.** Both entry points validate prerequisites before
+   `startRun` inserts anything, so a rejection returned an error to the browser and created
+   no row. History reads `generation_runs` — it therefore kept showing whatever ran last,
+   in the reported case a **ten-hour-old** errored run labelled "Latest run". Rejections are
+   now recorded like any other outcome (concurrency rejections excepted, since a live run
+   genuinely holds the slot).
+
+**Why this one is worth reading in full.** The defect only fires when a model response comes
+back **truncated**, because only then does `generateValidated` escalate 16,384 → 32,768 and
+cross the SDK's threshold. Static tracing of the entry point found no rejection path and it
+was reported to the operator as *no defect found* — which was wrong. Two live runs six
+minutes apart settled it: one refused at 4m13s, the next **succeeded in 4m15s and wrote 16
+briefs** on the same unfixed build, because it never needed to escalate.
+
+*A path not taken is not a path that works.* Where a branch is reachable only under a
+condition you cannot force by reading, get a live run — or accept that "no defect found"
+means "not found", not "not there".
 
 ### 2d. Contract and CI
 
@@ -230,6 +267,12 @@ but hold no data. Removing them is an operator decision, deliberately not taken 
 
 Each of these cost real time in this session. None is a code defect.
 
+- **Merged is not deployed, and the gap is invisible.** GitHub `main` and the running Replit
+  build are different things: a fix merged at 19:33 was still absent from the app at 19:50.
+  Nothing in the product shows which build is live, so a bug you just fixed will keep
+  reproducing and read as "the fix didn't work". Before concluding a fix failed, confirm the
+  app was republished. Symptom that gives it away: the failure signature is *identical* to the
+  pre-fix one, down to the timing.
 - **Playwright browser revision.** The sandbox image carries Chromium **1194**; `playwright-core`
   1.61.1 pins **1228**, so every browser-dependent gate fails with *"Executable doesn't exist"*.
   Phase 1 recorded this as an unavoidable sandbox limitation. **It is recoverable:** the smoke
@@ -285,7 +328,7 @@ Unchanged and still authoritative — read them in this order:
 3. `docs/resources/METRIX_Phase1_Validation_Audit_202608.md` — this session's first two passes in
    full detail.
 4. `docs/resources/METRIX_Backend_Supabase_Audit_202608.md` — the backend/RLS audit.
-5. `BUG_TRACKER.md` — evidence for all 39 tracked defects (`BUG-02` … `BUG-40`;
+5. `BUG_TRACKER.md` — evidence for all 40 tracked defects (`BUG-02` … `BUG-41`;
    there is no `BUG-01` — the numbering starts at 02).
 6. `docs/architecture/METRIX_IAP_MASTER_BLUEPRINT_v2.0.md` — canonical when anything disagrees.
 

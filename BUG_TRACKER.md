@@ -1002,7 +1002,7 @@ the per-column loop fails two of them.
   percentage allocation, so scaling the instance will not scale Auth. Dashboard one-liner,
   worth doing before scaling.
 
-## BUG-41 — the model call had no timeout, and my own heartbeat made a hung run unreclaimable
+## BUG-41 — a non-streaming model call at a large token budget (refused by the SDK), plus my own heartbeat making a wedged run unreclaimable
 
 **Severity:** high (an account's generation is blocked; no trace anywhere the user can look)
 **Found:** operator report — "briefs do not seem to be generating and also strategy is not."
@@ -1081,3 +1081,40 @@ scripts suite green.
 **Not a defect, worth recording:** strategy generation *did* succeed at 19:18 (3m36s) while this
 was being diagnosed. The account was never permanently broken — but nothing in the product said
 so, which is defect 3.
+
+---
+
+### Confirmed against production, 19:40–19:51 — two corrections to the above
+
+The account was watched through two live briefs runs after the fix merged (but before it
+deployed). Both corrections matter enough to state plainly rather than quietly amend.
+
+**Correction 1 — the proximate mechanism was a REFUSAL, not a timeout.** Run
+`b49bbb74` failed at 19:44:21, 4m13s in, with the SDK's own error:
+
+> `Streaming is required for operations that may take longer than 10 minutes.`
+> `See https://github.com/anthropics/anthropic-sdk-typescript#long-requests`
+
+The SDK does not stretch and then hang at these budgets — it **refuses the request outright**.
+Section 1 above reasoned from the documented timeout-scaling behaviour and predicted a hang;
+that reasoning fits the 1h19m strategy run, but not this. Same root cause (a non-streaming
+request at a large `max_tokens`) and the same fix — the SDK's error names `.stream()` as the
+remedy, which is exactly what `callModel` now does — but the failure mode is different and
+the tracker should not imply otherwise.
+
+**Correction 2 — briefs WAS broken, intermittently, and this was reported as "no defect
+found".** An earlier pass through `startBriefsGeneration`, `storedPillars`, the ICP column
+builder and the seed's `activePillars` derivation found no rejection path, and that was
+reported to the operator as no defect found. It was wrong. The trigger is the budget
+escalation in `generateValidated`: the first call runs at 16,384 tokens, and **only if that
+response comes back truncated** does it retry at 32,768 — which is the budget that crosses
+the SDK's ten-minute estimate and gets refused.
+
+That is why it looked like nothing: it fails only on the runs that truncate. Run
+`bbb14e5f`, retried six minutes later, **succeeded in 4m15s and wrote 16 briefs** — on the
+same unfixed build, because it never needed to escalate.
+
+The lesson is the same one §2e records for tests: *a path not taken is not a path that works.*
+Tracing the entry point statically could not surface this, because the defect lives in a
+branch that only a truncated response reaches. Two live runs six minutes apart showed both
+outcomes.
