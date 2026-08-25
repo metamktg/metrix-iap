@@ -255,6 +255,40 @@ Belongs with the security register in §4, not ahead of it.
 
 ---
 
+## 4c. Open design gap — GAP-01, generated output is destroyed on regeneration
+
+Raised by the operator at close, and the **first Phase 2 backlog item**. Full write-up in
+`BUG_TRACKER.md` under `GAP-01`; the short form:
+
+**15 successful generation runs currently have no surviving output** (7 briefs, 8 strategy).
+`generation_runs` records them as `success` and every artifact they produced is gone, because
+`deletePriorGenerated` hard-deletes the previous set on each run. A run history that asserts an
+event it cannot show you is only half-honest.
+
+**Nothing structural is blocking a fix.** Generated ids are already run-scoped
+(`GEN_BRIEF_${runTag}_…`, `GEN_PILLAR_${runTag}_…`), so rows from different runs already coexist
+under the existing `UNIQUE (account_id, <entity>_id)` constraints — no uniqueness migration is
+needed. `generation_run_id` is already on all four output tables, so lineage is already recorded.
+The only thing destroying history is the explicit delete.
+
+**Design:** stop deleting; scope seed reads to the latest successful run of that kind. The
+subtlety that makes this *better* than deleting — a strategy run currently deletes briefs at 92%
+because they reference pillars that no longer exist, so currency cannot be "latest briefs run"
+alone. The correct rule is **latest successful briefs run AND started after the latest successful
+strategy run**; otherwise retained and labelled stale-relative-to-strategy. That states the
+conflict rather than resolving it by destroying the evidence.
+
+**Not built at handoff** because it changes the seed read path — the highest-blast-radius code in
+the app — and an archive needs a UI surface to be worth anything. But **the preservation half is
+time-sensitive**: every regeneration until it lands destroys history that cannot be recovered. If
+the sprint splits, land "stop deleting, scope reads to current" first.
+
+Related, smaller, same family: the briefs panel shows a bare count ("16") with no run timestamp,
+so it cannot distinguish *"your new run produced 16"* from *"nothing happened, here is the old
+16"*. Same ambiguity as BUG-42, on a different surface. Phase 3.
+
+---
+
 ## 5. Deferred, with reasons (not defects)
 
 - **Storage reclaim — recommended against for now.** 533 MB total, ~7% of the plan's 8 GB. No
@@ -431,9 +465,18 @@ Unchanged and still authoritative — read them in this order:
    there is no `BUG-01` — the numbering starts at 02).
 6. `docs/architecture/METRIX_IAP_MASTER_BLUEPRINT_v2.0.md` — canonical when anything disagrees.
 
-Still-live Phase 2 backlog beyond the work order: BUG-08 (restage discoverability), retention
-policy for processed performance files, the ephemeral-upload-warning surfacing gap, and the
-Optimization Loop build (3–4.5 days, on explicit request only).
+Still-live Phase 2 backlog beyond the work order, **`GAP-01` first**:
+
+1. **`GAP-01` — stop destroying generated strategy and briefs on regeneration** (§4c). First
+   because it is the only backlog item that gets *more expensive to have deferred*: every
+   regeneration until it lands destroys history that cannot be recovered. The design is settled;
+   the work is removing a delete and scoping the seed read.
+2. BUG-08 (restage discoverability).
+3. Retention policy for processed performance files.
+4. The ephemeral-upload-warning surfacing gap.
+5. The Optimization Loop build (3–4.5 days, on explicit request only) — note this one *depends*
+   on GAP-01: the loop compares what was briefed against what performed, and cannot do so if the
+   briefs that shipped were deleted.
 
 The honest-data primitives — severity-split warning surfaces, coverage banners, 3-state signal
 badges, the typography/density rulebook, `normalize.ts` — are the foundation Phase 3 presentation

@@ -39,9 +39,18 @@ The full IAP chain — analysis → strategy → briefs — is proven end to end
    Do it *before* Phase 3 multiplies the UI contact surface; afterwards it is far more
    expensive.
 2. **E1 — structured signals**, the critical path. Then E2, E3, E4 as the sprint doc specifies.
-3. The still-live Phase 2 backlog named in handoff §9: BUG-08 (restage discoverability),
-   retention policy for processed performance files, the ephemeral-upload-warning surfacing
-   gap. The Optimization Loop build is 3–4.5 days and only on explicit request.
+3. **`GAP-01` (handoff §4c) — stop destroying generated strategy and briefs on regeneration.**
+   Take this before the rest of the backlog: it is the only item that gets more expensive the
+   longer it waits, because every regeneration until it lands destroys history that cannot be
+   recovered. 15 successful runs already have no surviving output. The design is settled in
+   `BUG_TRACKER.md`; nothing structural blocks it (generated ids are already run-scoped, so no
+   uniqueness migration is needed) — the work is removing a delete and scoping the seed read to
+   the latest successful run per kind. Treat the seed read path with care: it is the
+   highest-blast-radius code in the app.
+4. The rest of the backlog in handoff §9: BUG-08 (restage discoverability), retention policy for
+   processed performance files, the ephemeral-upload-warning surfacing gap. The Optimization Loop
+   build is 3–4.5 days, only on explicit request, and **depends on GAP-01** — it compares what
+   was briefed against what performed, which is impossible if the shipped briefs were deleted.
 
 ## Two rules that are not negotiable
 
