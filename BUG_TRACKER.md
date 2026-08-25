@@ -1118,3 +1118,40 @@ The lesson is the same one §2e records for tests: *a path not taken is not a pa
 Tracing the entry point statically could not surface this, because the defect lives in a
 branch that only a truncated response reaches. Two live runs six minutes apart showed both
 outcomes.
+
+## BUG-42 — a working run and a dead one rendered identically
+
+**Severity:** medium (no wrong data; the screen cannot answer the question being asked of it)
+**Found:** both operator reports of 2026-08-25, read back after the fact.
+
+The generation engine writes no progress during the model call: strategy goes 10% "Calling
+strategy model…" straight to 60% "Persisting pillars…", briefs the same. That call is most of
+the run's wall clock. So the panel showed a bar frozen at 10% with a spinner — for a healthy
+four-minute run and for a run whose process had died, **identically**.
+
+Both reports that day were exactly this screen. In the first, the run was genuinely wedged. In
+the second, it was working and finished normally with 16 briefs. The operator read the same
+screen both times and reported the same symptom, because nothing on it distinguished the two.
+That is a defect in the screen, not in the reading of it.
+
+A compounding error: `EXPECTED_SECONDS` claimed strategy 75s and briefs 90s. Measured against
+every successful run in production, the real figures are **209s (max 326s)** and **199s (max
+255s)** — the estimates were less than half of reality. The estimated bar therefore raced to 95%
+inside the first ninety seconds and then sat there for minutes, which is worse than not moving.
+
+**Fix.** Elapsed time is the only thing on that panel that always moves while the client is
+alive, so the bar now shows it, alongside a sentence that stays true in both directions
+(`lib/generation-pace.ts`):
+
+- within the typical duration — *"The bar holds while the model runs. Usually about 3–4 min."*
+  It explains the frozen bar at the moment the screen misleads.
+- past it — *"Longer than the usual about 3–4 min — still running."* The reassurance stops when
+  it stops being accurate; a run that is overrunning should read as overrunning.
+
+`EXPECTED_SECONDS` corrected to the measured values.
+
+**Verification:** 7 unit tests on the pure helpers, 6 rendered-surface tests on the bar.
+Regression-proven against the true pre-fix component (clock and note both removed): 4 of the 6
+fail, including the one that states the actual guarantee — *two runs at the same percentage must
+render differently when their ages differ*. Full suite 119 files / 1,704 tests; typecheck and the
+blocking disclosure rulebook green.
