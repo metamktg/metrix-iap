@@ -124,7 +124,7 @@ export function CreativeScanView() {
                     <SegmentedToggle
                       ariaLabel="Filter concept library by QA status"
                       active={libraryFilter}
-                      onChange={setLibraryFilter}
+                       onChange={(id) => setLibraryFilter(id as LibraryFilter)}
                       options={[
                         { id: "all", label: "All concepts" },
                         { id: "attention", label: "Needs attention", Icon: AlertTriangle },
