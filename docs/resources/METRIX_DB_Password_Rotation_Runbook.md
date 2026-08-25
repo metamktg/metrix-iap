@@ -91,6 +91,14 @@ Never use the **Direct connection** string (`db.<ref>.supabase.co`). It is IPv6-
 and unreachable from Replit and CI, and because the resolver silently falls through
 when it sees that host, the resulting failure names a secret you believe you just set.
 
+**3b. Open a FRESH shell before verifying. This is not optional.**
+Replit injects secrets into a process at start, so any shell or workflow opened
+before you saved the secret is still holding the OLD value. During the 2026-08-25
+rotation this cost four rounds of debugging: the password was correct in the secrets
+UI from the first attempt, but the verifying shell predated it and reported
+`password authentication failed`, which reads exactly like a wrong password. Close
+the shell and open a new one — or restart the Repl — before concluding anything.
+
 **4. Verify — without revealing anything.**
 
 Run this first. It reports which secret resolved, which host it reached, and whether
