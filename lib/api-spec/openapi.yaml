@@ -176,6 +176,188 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/manual-imports/uploads:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: initChunkedManualImportUpload
+      tags: [metrix]
+      summary: Begin a chunked upload of a large performance report file
+      description: Creates an 'uploading' manual import row for a performance report file too large for a single request (the deployment proxy caps request bodies well below the 150 MB file limit). The client then PUTs base64 chunks and finishes with the complete endpoint, which runs the exact same validation as the single-request staging route. Performance CSV kinds only. Requires access to the account.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChunkedUploadInit"
+      responses:
+        "200":
+          description: Upload session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChunkedUploadInitResult"
+        "400":
+          description: Invalid input (unsupported kind, size over 150 MB, bad chunk count)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/manual-imports/uploads/{importId}/chunks/{chunkIndex}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - name: importId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - name: chunkIndex
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+    put:
+      operationId: uploadManualImportChunk
+      tags: [metrix]
+      summary: Upload one chunk of a chunked manual import
+      description: Stores one base64-encoded chunk (decoded max 16 MB) for an 'uploading' import. Idempotent per (importId, chunkIndex) — re-sending a chunk replaces it. Requires access to the account.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChunkedUploadChunk"
+      responses:
+        "200":
+          description: Chunk stored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  chunk_index:
+                    type: integer
+                required: [status, chunk_index]
+        "400":
+          description: Invalid chunk (bad base64, empty, over the per-chunk limit)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Upload session not found or not in 'uploading' state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/manual-imports/uploads/{importId}/complete:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - name: importId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: completeChunkedManualImportUpload
+      tags: [metrix]
+      summary: Finish a chunked upload and stage the file
+      description: Assembles the uploaded chunks, runs the exact same validation as single-request staging (CSV/XLSX parse, column mapping report, same-bytes duplicate guard), and flips the import to 'staged'. On a validation failure the upload session and its chunks are deleted and the error explains what to fix. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Import staged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualImportResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Upload session not found or not in 'uploading' state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The byte-identical file is already staged for this slot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: The assembled file failed validation (missing chunks, malformed CSV/XLSX, wrong report class). The upload session was discarded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/manual-imports/restage-run/{runId}:
     parameters:
       - name: accountId
@@ -3962,6 +4144,47 @@ components:
         - method
         - tier
         - is_required
+    ChunkedUploadInit:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, performance_conversion_device_csv]
+          description: Performance report kinds only — creative assets use single-request staging.
+        filename:
+          type: string
+          minLength: 1
+        content_type:
+          type: string
+          nullable: true
+        size_bytes:
+          type: integer
+          minimum: 1
+          description: Total file size in bytes (max 150 MB). Verified against the assembled chunks at completion.
+        chunk_count:
+          type: integer
+          minimum: 1
+          description: Number of chunks the client will send (max 64).
+      required: [kind, filename, size_bytes, chunk_count]
+    ChunkedUploadInitResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [uploading]
+        import_id:
+          type: string
+        max_chunk_bytes:
+          type: integer
+          description: Decoded per-chunk byte ceiling the server will accept.
+      required: [status, import_id, max_chunk_bytes]
+    ChunkedUploadChunk:
+      type: object
+      properties:
+        content_base64:
+          type: string
+          minLength: 1
+      required: [content_base64]
     ManualImportResult:
       type: object
       properties:

@@ -135,6 +135,28 @@ describe("computeDataCoverage", () => {
     expect(sumCov.spend).toBe(5000);
   });
 
+  it("flags a class whose spend EXCEEDS the baseline as a failed reconciliation (the BUG-19 double-count shape)", () => {
+    // Baseline: one ad, one day, $100. Demo rows carry $200 for the same
+    // window — exactly what staging the same export twice produces.
+    const placement = [row("2026-07-01", "A", 100, PLACEMENT_DIMS)];
+    const demo = [row("2026-07-01", "A", 100, DEMO_DIMS), row("2026-07-01", "A", 100, DEMO_DIMS)];
+    const { adBuckets } = mergeAdPerformanceBuckets([], placement, []);
+    const cov = computeDataCoverage({
+      window: { start: "2026-07-01", end: "2026-07-01" },
+      scopedDemo: demo,
+      scopedPlacement: placement,
+      scopedSummary: [],
+      scopedConversionDevice: [],
+      adBuckets,
+      summaryAggregate: false,
+    });
+    const demoCov = cov.classes.find((c) => c.report_class === "demographic")!;
+    expect(demoCov.spend_coverage_pct).toBe(200);
+    expect(demoCov.below_threshold).toBe(false);
+    expect(demoCov.note).toContain("Reconciliation check failed");
+    expect(demoCov.note).toContain("counted more than once");
+  });
+
   it("never applies spend coverage to conversion_device (no spend by design)", () => {
     const placement = [row("2026-07-01", "A", 100, PLACEMENT_DIMS)];
     const conv = [row("2026-07-01", "A", null, { "Conversion device": "iphone" })];

@@ -296,7 +296,10 @@ parser/merge code.
   `analysis.concept_rollup` — but the client type omits all four and `FindingsView` reads the
   importer-only `concept_intelligence` table.
 - **Category:** Fix-Now-next (computed intelligence invisible for manual accounts).
-- **Resolution:** extend `ConceptRollupRow` + FindingsView source fallback; next session.
+- **Resolution (implemented):** `ConceptRollupRow` now declares the four Stage-2 fields
+  (they always flowed through the loosely-typed seed payload); FindingsView falls back to
+  `analysis.concept_rollup` Stage-2 fields when `concept_intelligence` (importer-only) has
+  no rows — the manual engine's tier/lift/intent/confidence work now renders.
 
 ## BUG-17 — AnalysisOverview headline tiles bypass the canonical totals
 
@@ -304,7 +307,11 @@ parser/merge code.
   the `account_totals` ceiling override AND the impossible-CTR guard; sums to 0 on manual
   accounts (cell perf is importer-only).
 - **Category:** Fix-Now-next (canonical-source violation, §2a.4).
-- **Resolution:** read `campaign_summary`/summary API; next session.
+- **Resolution (implemented):** run-scoped headline tiles (and the Budget jump-off stat) now
+  read the canonical daterange summary for the selected runs' union window (selected runs →
+  recorded windows → ONE canonical query; overlapping windows can never double-count). The
+  client cell re-sum survives only for legacy runs with no recorded window — the only case
+  where no canonical source exists.
 
 ## BUG-18 — Two contradictory concept lift/tier definitions
 
@@ -312,9 +319,163 @@ parser/merge code.
   computes CVR-lift vs an unweighted mean of per-concept CVRs (an average-of-averages the
   codebase explicitly forbids elsewhere) and derives its own tiers.
 - **Category:** Fix-Now-next (same number, two definitions).
-- **Resolution:** adopt the engine's definition; next session, with BUG-16.
+- **Resolution (implemented):** `computeTierRows` prefers the engine's Stage-2
+  `performance_lift_vs_baseline` (CPA lift vs the book's blended baseline — the same number
+  FindingsView shows) whenever the rollup carries it, applied table-wide so definitions
+  never mix in one column; the CVR-vs-unweighted-mean formula survives only for legacy
+  rollups with no Stage-2 fields, and the column header names whichever definition is
+  active ("CPA lift vs baseline" vs "Lift vs book avg").
 
 ## Shipped small honesty fixes from the audit (no separate entries)
 
 - "Top variable —" dash now carries the computed `unavailableReason` as a tooltip instead of
   discarding it (`AvatarsView`).
+
+## BUG-19 — Same-slot files with duplicate content double-count (format variants beat the md5 guard)
+
+- **Symptom:** the first post-deploy AAFE re-run (2026-08-24 20:50 UTC, run `3fc473c6…`)
+  measured demographic coverage at **$1,713.05 across 1,000 rows — exactly 2× the real file**
+  ($856.52 / 500 rows): the re-staged demo `.xlsx` AND the still-staged demo `.csv` (same
+  export, two formats) were both consumed, and multi-file-per-slot merging summed them.
+  Every demographic surface (segment cards, heatmap, audience totals) showed doubled values.
+- **Root cause:** multi-file-per-slot is additive by design (disjoint weekly exports); the
+  BUG-09 staging guard only rejects byte-identical files. Nothing detected logically
+  identical rows across format variants. This is the "overlapping-window (different bytes)"
+  case left open under BUG-09.
+- **Category:** Fix-Now (silent double-counting).
+- **Resolution (implemented):** `appendRowsCrossFileDeduped` in `analysisEngine.ts` — at
+  parse time, rows that are EXACT duplicates of rows from a previously parsed file in the
+  same slot (identical breakdowns + identical metric values, key-order-independent
+  signature) are dropped and announced: `[Duplicate data] N row(s) in "file" are exact
+  duplicates… counted once, never twice`. Rows sharing a key but differing in metrics
+  (campaign-split exports) stay additive; duplicates WITHIN one file are preserved (a
+  source-data property this layer must not editorialize). Applied to all four slots.
+- **Verification evidence:** real files: xlsx+csv demo pair → 500 rows dropped, spend
+  restored to $856.52; unit tests in `iapCsvWarningSignal.test.ts`.
+- **Remediation for the live account:** the 20:50 run's demographic rollups are doubled.
+  After this fix deploys, re-stage placement (+ demo if desired) and re-run — the idempotent
+  rebuild replaces the doubled rows; with the dedupe, even both demo files staged together
+  now produce correct totals.
+
+## BUG-20 — Staging warning panel buries real warnings under mapping noise
+
+- **Symptom:** the AAFE demo CSV staging popup showed ~17 warnings: 12 were "auto-matched
+  (via slug match)" notes for derived/ratio columns (CPM/CTR/CPC/ROAS family — values the
+  server recomputes from primitives and never trusts), plus a spurious `"Amount spent _USD_"
+  mapped with moderate confidence (67%) — please verify` hedge. The two warnings that
+  mattered (ID corruption, date normalization) were at the bottom of the pile.
+- **Root cause:** (a) per-column auto-match warnings fired for every non-exact match, with
+  no distinction between deterministic normalizations (slug/case) and semantic guesses, nor
+  between primitives and recomputed derived columns; (b) `slugifyColumn` STRIPS the
+  `{ACCOUNT_CURRENCY}` placeholder, so the canonical slugs to `amount_spent` while the
+  mangled header slugs to `amount_spent_usd` — the slug pass could never match it and it
+  fell through to a 67% Jaccard inference.
+- **Category:** Fix-Now (a warning channel that trains users to ignore it defeats the
+  honesty invariant).
+- **Resolution (implemented):** deterministic (slug/case-insensitive) matches and any match
+  on a `DERIVED_OR_IRRELEVANT` column fold into ONE summary line naming an example mapping
+  ("no action needed; full mapping in the column report"); semantic alias matches on
+  primitives and moderate-confidence inference keep individual warnings; the currency
+  branch gains a slug-tolerant pattern so `Amount spent _USD_` is a confident slug match.
+  Real-file result: 17 warnings → 5 (1 folded mapping note + Day normalization + 3 ID
+  warnings). Unit tests in `iapCsvWarningSignal.test.ts`.
+
+## Chain continuation (this pass)
+
+- Strategy evidence packs now carry `data_coverage` (the run's measured per-class coverage)
+  with an explicit prompt rule: below-threshold classes are THIN evidence — claims grounded
+  in them must be qualified with the measured percentage and capped at
+  low/validation_required confidence. Prevents regenerated strategy from overtrusting the
+  2%-coverage demographic slice the Aug 23 strategy was silently built on.
+- Chain state verified against live data: all five required completeness surfaces populated
+  post-rebuild; the Aug 23 strategy/briefs/deconstruct runs all succeeded but are stale
+  relative to the corrected analysis — stale-stage detection will prompt regeneration.
+
+## BUG-21 — Fuzzy column inference maps configuration columns onto ID/name canonicals
+
+- **Symptom:** the AAFE ad-summary export ("AAFE---New-Owned-Ads-Jul-1-2026-Aug-19-2026.csv",
+  staged 2026-08-24 21:53 UTC) carried `Ad set budget` / `Ad set budget type` (campaign
+  configuration) but no ID or name columns. The Jaccard inference promoted `Ad set budget`
+  → `Ad set ID` at 50% ("please verify") — currency amounts mapped where object IDs belong
+  — and the unknown-column pass suggested `Ad set budget type` might be `Ad set name`.
+- **Root cause:** token similarity is structurally misleading for configuration columns:
+  `Ad set budget` shares its entity words (ad/set) with every `Ad set *` canonical, so it
+  always clears the 0.5 inference threshold against whichever `Ad set` column is missing,
+  despite naming a different concept entirely. No downstream contamination this time —
+  verified live that the engine never reads the `Ad set ID` breakdown — but the same
+  mechanism could promote `Campaign budget` → `Campaign name` (a bucket-key column) on a
+  worse-shaped export.
+- **Category:** Fix-Now (a "please verify" hedge on a mapping that is *never* correct is
+  exactly the warning-channel erosion BUG-20 targets).
+- **Resolution (implemented):** `CONFLICTING_CONCEPT_TOKENS` (budget/bid/schedule/delivery/
+  objective/status/cap) veto both `inferColumnMapping` promotion and
+  `suggestCanonicalForUnknown` suggestions when the token appears on the header side only.
+  Such headers stay honestly unmapped. Tests in `iapCsvWarningSignal.test.ts`.
+
+## BUG-22 — Completeness panel reports "0 rows" for every module after a failed run
+
+- **Symptom:** "Analysis incomplete — 5 modules missing data" with 0 rows on every module
+  (screenshot, AAFE) while the last successful run's 3,000+ rollup rows sat intact in the DB,
+  and Strategy stayed locked on them.
+- **Root cause:** `verifyAnalysisRunCompleteness` scoped every per-module count to the LATEST
+  run by `started_at` — including a failed one, which has no outputs by definition (failed
+  runs delete their own partial rows). The morning's two errored B0 re-runs made "latest"
+  an error run, so every count keyed to its run id returned zero.
+- **Category:** Fix-Now (context-awareness: a failure is already reported by run history;
+  reporting it a second time as universal data loss is misinformation).
+- **Resolution (implemented):** module counts scope to the latest SUCCESSFUL run; the
+  absolute-latest run's status still rides along as `run_status` so a fresh failure stays
+  visible; a run in flight keeps completeness false until it settles.
+
+## BUG-23 — Large performance files can't upload at all (bare HTTP 413/500 at the proxy)
+
+- **Symptom:** "IAP-PLACEMENTS-NEW-AA … (1).csv: Upload failed (HTTP 413)" with no server
+  message — and earlier, the same bare-status shape as an HTTP 500. Files never reached the
+  API (no manual_imports row, no JSON error body, which every application path attaches).
+- **Root cause:** the deployment proxy caps single request bodies well below the app's own
+  75 MB limit and rejects them before Express sees the request. Raising express limits
+  cannot fix this, and the 75 MB single-request cap itself exists because base64+JSON+hex
+  multiplication of one big payload OOM'd Node at 150-200 MB (see the memory note in
+  metrix.ts).
+- **Category:** Fix-Now (capacity requirement: 150 MB performance files).
+- **Resolution (implemented):** chunked upload flow (init → PUT ~8 MB base64 chunks →
+  complete) for performance report kinds, storing chunks as `manual_import_chunks` rows
+  (bytea, PK (import_id, chunk_index), cascade delete) with `manual_imports.content` NULL
+  and `status='uploading'` until complete. The complete step assembles, verifies announced
+  size, runs the IDENTICAL validation + md5 duplicate guard as single-request staging, and
+  flips to 'staged'. Readers (`loadImportContentBuffer`) fetch chunk-wise so no PostgREST
+  payload ever carries a whole large file. Client auto-switches transports above 20 MB;
+  performance dropzone limit is now 150 MB (creative assets keep the 75 MB inline path).
+  Abandoned sessions sweep after 24h. 'uploading' rows are excluded from listings and can
+  never be consumed by a run (runs read status='staged' only).
+
+## BUG-24 — Multi-sheet workbook uploads fail on the wrong sheet
+
+- **Symptom:** "AAFE DEMO IAP Untitled spreadsheet.xlsx: The following required columns
+  could not be found: 'Day', 'Ad name'" — a whole Google Sheets workbook saved as .xlsx,
+  where the active tab wasn't the export sheet.
+- **Root cause:** `selectWorksheet` picked the active/first-visible tab blindly; the real
+  export sheet elsewhere in the workbook was never considered.
+- **Category:** Fix-Now (valid warning, avoidable failure).
+- **Resolution (implemented):** when the target class is known, every sheet's header row is
+  scored by how many of the class's required breakdown columns resolve through the normal
+  alias/slug cascade; the best-scoring sheet wins, previous behavior on no match or ties.
+
+## Context-aware validation pass (extends BUG-20)
+
+- Curated ALIAS matches now fold into the single automatic-mapping summary line — "Reporting
+  starts" IS Meta's native date header on ad-level summary exports; "rename it in your
+  export" was advice the user cannot act on. Same for "Device platform" → "Impression
+  device" on placement exports.
+- Optional-column absences ("breakdown columns … treated as blank") are now "Note:"-prefixed
+  informational notices.
+- Client warning panel splits severities: action-needed lines stay on the first layer;
+  "Note:"/"no action needed" lines collapse behind a count (progressive disclosure); a
+  notices-only staging drops the alarm styling entirely.
+
+## Reconciliation guard (prevention layer for BUG-19's class)
+
+- `computeDataCoverage` now flags any breakdown class whose windowed spend EXCEEDS the
+  daily-attributable baseline (>101%, aggregate-shape summaries exempt) with a loud
+  "Reconciliation check failed … counted more than once" note that also lands in the run's
+  csv_warnings. The BUG-19 double-ingestion registered exactly 200% here and was silent.

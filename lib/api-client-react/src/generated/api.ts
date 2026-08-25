@@ -50,6 +50,9 @@ import type {
   CellCreativeDeleteResult,
   CellCreativeUploadInput,
   CellCreativeUploadResult,
+  ChunkedUploadChunk,
+  ChunkedUploadInit,
+  ChunkedUploadInitResult,
   CreateAdAccountInput,
   CreateAdAccountResult,
   CreateGoogleDocInput,
@@ -109,6 +112,7 @@ import type {
   UpdateMemberPermissionsResult,
   UpdateMemberStatusInput,
   UpdateMemberStatusResult,
+  UploadManualImportChunk200,
   ViewPreset,
   WaitlistApprovalResult,
   WaitlistEntriesResult,
@@ -448,6 +452,227 @@ export function useListManualImports<TData = Awaited<ReturnType<typeof listManua
 
 
 
+
+export const getInitChunkedManualImportUploadUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/manual-imports/uploads`
+}
+
+/**
+ * Creates an 'uploading' manual import row for a performance report file too large for a single request (the deployment proxy caps request bodies well below the 150 MB file limit). The client then PUTs base64 chunks and finishes with the complete endpoint, which runs the exact same validation as the single-request staging route. Performance CSV kinds only. Requires access to the account.
+ * @summary Begin a chunked upload of a large performance report file
+ */
+export const initChunkedManualImportUpload = async (accountId: string,
+    chunkedUploadInit: ChunkedUploadInit, options?: RequestInit): Promise<ChunkedUploadInitResult> => {
+
+  return customFetch<ChunkedUploadInitResult>(getInitChunkedManualImportUploadUrl(accountId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(chunkedUploadInit)
+  }
+);}
+
+
+
+
+export const getInitChunkedManualImportUploadMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof initChunkedManualImportUpload>>, TError,{accountId: string;data: BodyType<ChunkedUploadInit>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof initChunkedManualImportUpload>>, TError,{accountId: string;data: BodyType<ChunkedUploadInit>}, TContext> => {
+
+const mutationKey = ['initChunkedManualImportUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof initChunkedManualImportUpload>>, {accountId: string;data: BodyType<ChunkedUploadInit>}> = (props) => {
+          const {accountId,data} = props ?? {};
+
+          return  initChunkedManualImportUpload(accountId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InitChunkedManualImportUploadMutationResult = NonNullable<Awaited<ReturnType<typeof initChunkedManualImportUpload>>>
+    export type InitChunkedManualImportUploadMutationBody = BodyType<ChunkedUploadInit>
+    export type InitChunkedManualImportUploadMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Begin a chunked upload of a large performance report file
+ */
+export const useInitChunkedManualImportUpload = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof initChunkedManualImportUpload>>, TError,{accountId: string;data: BodyType<ChunkedUploadInit>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof initChunkedManualImportUpload>>,
+        TError,
+        {accountId: string;data: BodyType<ChunkedUploadInit>},
+        TContext
+      > => {
+      return useMutation(getInitChunkedManualImportUploadMutationOptions(options));
+    }
+
+export const getUploadManualImportChunkUrl = (accountId: string,
+    importId: string,
+    chunkIndex: number,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/manual-imports/uploads/${importId}/chunks/${chunkIndex}`
+}
+
+/**
+ * Stores one base64-encoded chunk (decoded max 16 MB) for an 'uploading' import. Idempotent per (importId, chunkIndex) — re-sending a chunk replaces it. Requires access to the account.
+ * @summary Upload one chunk of a chunked manual import
+ */
+export const uploadManualImportChunk = async (accountId: string,
+    importId: string,
+    chunkIndex: number,
+    chunkedUploadChunk: ChunkedUploadChunk, options?: RequestInit): Promise<UploadManualImportChunk200> => {
+
+  return customFetch<UploadManualImportChunk200>(getUploadManualImportChunkUrl(accountId,importId,chunkIndex),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(chunkedUploadChunk)
+  }
+);}
+
+
+
+
+export const getUploadManualImportChunkMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadManualImportChunk>>, TError,{accountId: string;importId: string;chunkIndex: number;data: BodyType<ChunkedUploadChunk>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadManualImportChunk>>, TError,{accountId: string;importId: string;chunkIndex: number;data: BodyType<ChunkedUploadChunk>}, TContext> => {
+
+const mutationKey = ['uploadManualImportChunk'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadManualImportChunk>>, {accountId: string;importId: string;chunkIndex: number;data: BodyType<ChunkedUploadChunk>}> = (props) => {
+          const {accountId,importId,chunkIndex,data} = props ?? {};
+
+          return  uploadManualImportChunk(accountId,importId,chunkIndex,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadManualImportChunkMutationResult = NonNullable<Awaited<ReturnType<typeof uploadManualImportChunk>>>
+    export type UploadManualImportChunkMutationBody = BodyType<ChunkedUploadChunk>
+    export type UploadManualImportChunkMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Upload one chunk of a chunked manual import
+ */
+export const useUploadManualImportChunk = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadManualImportChunk>>, TError,{accountId: string;importId: string;chunkIndex: number;data: BodyType<ChunkedUploadChunk>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadManualImportChunk>>,
+        TError,
+        {accountId: string;importId: string;chunkIndex: number;data: BodyType<ChunkedUploadChunk>},
+        TContext
+      > => {
+      return useMutation(getUploadManualImportChunkMutationOptions(options));
+    }
+
+export const getCompleteChunkedManualImportUploadUrl = (accountId: string,
+    importId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/manual-imports/uploads/${importId}/complete`
+}
+
+/**
+ * Assembles the uploaded chunks, runs the exact same validation as single-request staging (CSV/XLSX parse, column mapping report, same-bytes duplicate guard), and flips the import to 'staged'. On a validation failure the upload session and its chunks are deleted and the error explains what to fix. Requires access to the account.
+ * @summary Finish a chunked upload and stage the file
+ */
+export const completeChunkedManualImportUpload = async (accountId: string,
+    importId: string, options?: RequestInit): Promise<ManualImportResult> => {
+
+  return customFetch<ManualImportResult>(getCompleteChunkedManualImportUploadUrl(accountId,importId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCompleteChunkedManualImportUploadMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeChunkedManualImportUpload>>, TError,{accountId: string;importId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeChunkedManualImportUpload>>, TError,{accountId: string;importId: string}, TContext> => {
+
+const mutationKey = ['completeChunkedManualImportUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeChunkedManualImportUpload>>, {accountId: string;importId: string}> = (props) => {
+          const {accountId,importId} = props ?? {};
+
+          return  completeChunkedManualImportUpload(accountId,importId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteChunkedManualImportUploadMutationResult = NonNullable<Awaited<ReturnType<typeof completeChunkedManualImportUpload>>>
+
+    export type CompleteChunkedManualImportUploadMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Finish a chunked upload and stage the file
+ */
+export const useCompleteChunkedManualImportUpload = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeChunkedManualImportUpload>>, TError,{accountId: string;importId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeChunkedManualImportUpload>>,
+        TError,
+        {accountId: string;importId: string},
+        TContext
+      > => {
+      return useMutation(getCompleteChunkedManualImportUploadMutationOptions(options));
+    }
 
 export const getRestageManualImportsForRunUrl = (accountId: string,
     runId: string,) => {

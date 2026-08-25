@@ -277,3 +277,52 @@ describe("regression: the existing CSV path is completely unaffected", () => {
     expect(result.missingColumns).toEqual([]);
   });
 });
+
+// ── Multi-sheet class-aware selection ───────────────────────────────────
+
+describe("multi-sheet workbook sheet selection", () => {
+  async function buildMultiSheetBuffer(exportSheetFirst: boolean): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const addCover = () => {
+      const cover = workbook.addWorksheet("Notes");
+      cover.addRow(["Internal working notes", "Owner"]);
+      cover.addRow(["remember to update budget", "AJ"]);
+    };
+    const addExport = () => {
+      const sheet = workbook.addWorksheet("IAP-DEMO-EXPORT");
+      const header = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS.map(resolveCurrency), ...BASE_METRICS.map(resolveCurrency)];
+      sheet.addRow(header);
+      sheet.addRow([...DEMOGRAPHIC_BREAKDOWN_COLUMNS.map(breakdownValue), ...BASE_METRICS.map(baseValue)]);
+    };
+    if (exportSheetFirst) {
+      addExport();
+      addCover();
+    } else {
+      addCover();
+      addExport();
+    }
+    // Active tab points at the FIRST sheet either way (Sheets default).
+    workbook.views = [{ x: 0, y: 0, width: 10000, height: 20000, firstSheet: 0, activeTab: 0, visibility: "visible" }];
+    return Buffer.from(await workbook.xlsx.writeBuffer());
+  }
+
+  it("finds the export sheet even when a notes tab is first/active (the failed AAFE workbook shape)", async () => {
+    const buf = await buildMultiSheetBuffer(false);
+    const { csvText } = await convertXlsxToCsvText(buf, ["Day", "Campaign name", "Ad name", "Gender", "Age"]);
+    const parsed = parseIapCsv(csvText, "demographic");
+    expect(parsed.rows.length).toBe(1);
+    expect(parsed.rows[0]!.breakdowns["Ad name"]).toBe("UGC_Testimonial_v1");
+  });
+
+  it("keeps the previous active-tab behavior when no expectation is given", async () => {
+    const buf = await buildMultiSheetBuffer(false);
+    const { csvText } = await convertXlsxToCsvText(buf);
+    expect(csvText.split("\n")[0]).toContain("Internal working notes");
+  });
+
+  it("still picks the active export sheet when it comes first", async () => {
+    const buf = await buildMultiSheetBuffer(true);
+    const { csvText } = await convertXlsxToCsvText(buf, ["Day", "Campaign name", "Ad name", "Gender", "Age"]);
+    expect(parseIapCsv(csvText, "demographic").rows.length).toBe(1);
+  });
+});

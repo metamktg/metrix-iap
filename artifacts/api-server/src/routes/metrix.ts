@@ -97,9 +97,9 @@ import {
   fileCellCreativeOverride,
 } from "../lib/deconstructionEngine";
 import { getSupabase } from "../lib/supabase";
-import { restageImportsForRun } from "../lib/analysisEngine";
+import { restageImportsForRun, loadImportContentBuffer } from "../lib/analysisEngine";
 import { parseIapCsv, IapCsvFormatError } from "../lib/iapCsvParser";
-import type { IapCsvClass } from "../lib/iapCsvSpec";
+import { IAP_CSV_CLASS_SPECS, type IapCsvClass } from "../lib/iapCsvSpec";
 import { convertXlsxToCsvText, looksLikeXlsxContent } from "../lib/xlsxToCsv";
 import {
   detectCreativeAssetKind,
@@ -720,9 +720,9 @@ async function fetchAndCacheCreativeFile(
     if (result.error) throw new Error(result.error.message);
     if (!result.data || result.data.length === 0) throw Object.assign(new Error("not_found"), { code: "not_found" });
     const row = result.data[0]!;
-    const rawContent = row["content"] as string;
-    const hex = rawContent.startsWith("\\x") ? rawContent.slice(2) : rawContent;
-    const buf = Buffer.from(hex, "hex");
+    // Chunk-aware: large chunked imports store NULL inline content and their
+    // bytes in manual_import_chunks — loadImportContentBuffer handles both.
+    const buf = await loadImportContentBuffer(row);
     const contentType = (row["content_type"] as string | null) ?? "application/octet-stream";
     creativeFileCache.set(importId, { buf, contentType, expires: Date.now() + CREATIVE_FILE_CACHE_TTL_MS });
     return { buf, contentType };
@@ -961,6 +961,97 @@ const PERFORMANCE_CSV_CLASS: Record<string, IapCsvClass> = {
   performance_conversion_device_csv: "conversion_device",
 };
 
+// ── Chunked upload limits ─────────────────────────────────────────────
+// Large performance exports can't arrive in one request: the deployment
+// proxy rejects big request bodies before they ever reach Express (a bare
+// 413 with no JSON message — observed live on a ~40 MB placement CSV), and
+// the single-request path's own memory profile is what capped
+// MAX_MANUAL_IMPORT_BYTES at 75 MB (see the note above). Chunked uploads
+// sidestep both: each request stays small, and the file is stored as
+// per-chunk bytea rows (manual_import_chunks) so no single PostgREST
+// payload ever carries the whole file either.
+const MAX_CHUNKED_IMPORT_BYTES = 150 * 1024 * 1024;
+const MAX_UPLOAD_CHUNK_BYTES = 16 * 1024 * 1024;
+const MAX_UPLOAD_CHUNKS = 64;
+
+type PerformanceCsvValidation = {
+  mappingSummary?: Array<{
+    canonical: string;
+    found_as: string | null;
+    confidence: number;
+    method: string;
+    tier: "exact" | "resolved" | "inferred" | "missing";
+    is_required: boolean;
+  }>;
+  uploadWarnings?: string[];
+};
+
+/**
+ * Upload-time validation for the performance CSV kinds — shared verbatim by
+ * the single-request staging route and the chunked-upload complete route so
+ * a file gets the identical mapping report and warnings regardless of how
+ * its bytes arrived. Throws IapCsvFormatError for anything the caller
+ * should surface as a 422. Creative assets (no csvClass) return {}.
+ */
+async function validatePerformanceCsvUpload(
+  kind: string,
+  filename: string,
+  content: Buffer,
+): Promise<PerformanceCsvValidation> {
+  const csvClass = PERFORMANCE_CSV_CLASS[kind];
+  if (!csvClass) return {};
+  const isXlsx = extensionOf(filename) === "xlsx" || looksLikeXlsxContent(content);
+  let text: string;
+  let xlsxConversionWarnings: string[] = [];
+  if (isXlsx) {
+    const converted = await convertXlsxToCsvText(content, IAP_CSV_CLASS_SPECS[csvClass].requiredBreakdownColumns);
+    text = converted.csvText;
+    xlsxConversionWarnings = converted.warnings;
+  } else {
+    text = content.toString("utf8");
+  }
+  const parseResult = parseIapCsv(text, csvClass);
+  if (parseResult.rows.length === 0) {
+    throw new IapCsvFormatError(
+      "This export has a valid header but no data rows. Re-export it with the campaign's rows included.",
+    );
+  }
+  const mappingSummary = parseResult.mappingSummary.map((e) => ({
+    canonical: e.canonical,
+    found_as: e.foundAs ?? null,
+    confidence: e.confidence,
+    method: e.method,
+    tier: e.tier,
+    is_required: e.isRequired,
+  }));
+  const allWarnings = [...xlsxConversionWarnings, ...parseResult.warnings];
+  return {
+    mappingSummary,
+    ...(allWarnings.length > 0 ? { uploadWarnings: allWarnings } : {}),
+  };
+}
+
+/** Returns the already-staged import that byte-matches (same md5) this
+ *  upload in the same slot, or null. See the same-bytes duplicate guard. */
+async function findStagedByteDuplicate(
+  accountId: string,
+  kind: string,
+  contentMd5: string,
+): Promise<{ filename: string } | null> {
+  const supabase = getSupabase();
+  const dupCheckRes = await supabase
+    .from("manual_imports")
+    .select("id, filename, created_at")
+    .eq("account_id", accountId)
+    .eq("kind", kind)
+    .eq("status", "staged")
+    .eq("content_md5", contentMd5)
+    .limit(1);
+  if (dupCheckRes.error) throw new Error(dupCheckRes.error.message);
+  const existing = dupCheckRes.data?.[0];
+  return existing ? { filename: String(existing["filename"]) } : null;
+}
+
 router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req, res) => {
   const accountId = String(req.params["accountId"]);
   const parsed = StageManualImportBody.safeParse(req.body);
@@ -1015,63 +1106,23 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
     // export template NOW, so a malformed file is rejected at upload instead
     // of silently failing later at analysis-run time. Validation only checks
     // shape — no performance numbers are stored or fabricated from the parse.
-    const csvClass = PERFORMANCE_CSV_CLASS[parsed.data.kind];
-    let csvMappingSummary: Array<{
-      canonical: string;
-      found_as: string | null;
-      confidence: number;
-      method: string;
-      tier: "exact" | "resolved" | "inferred" | "missing";
-      is_required: boolean;
-    }> | undefined;
+    // Performance exports arrive as CSV (preferred, matches Meta's native
+    // export) or XLSX (common when a client/agency round-trips the export
+    // through Excel or Google Sheets first) — validatePerformanceCsvUpload
+    // detects by content and runs the identical parse/mapping cascade either
+    // way, and is shared verbatim with the chunked-upload complete route.
+    let csvMappingSummary: PerformanceCsvValidation["mappingSummary"];
     let csvUploadWarnings: string[] | undefined;
-    if (csvClass) {
-      try {
-        // Performance exports arrive as CSV (preferred, matches Meta's native
-        // export) or XLSX (common when a client/agency round-trips the export
-        // through Excel or Google Sheets first). Detect by content — the ZIP
-        // magic bytes every XLSX starts with — rather than trusting only the
-        // filename, so a mislabeled file still reaches the right parser.
-        // Either way the XLSX path converts to the exact same CSV text shape
-        // and hands off to the same parseIapCsv() used for native CSVs, so
-        // every downstream rule (aliases, class-mismatch detection, coverage
-        // gates, signal weights…) runs identically for both file types.
-        const isXlsx = extensionOf(parsed.data.filename) === "xlsx" || looksLikeXlsxContent(content);
-        let text: string;
-        let xlsxConversionWarnings: string[] = [];
-        if (isXlsx) {
-          const converted = await convertXlsxToCsvText(content);
-          text = converted.csvText;
-          xlsxConversionWarnings = converted.warnings;
-        } else {
-          text = content.toString("utf8");
-        }
-        const parseResult = parseIapCsv(text, csvClass);
-        if (parseResult.rows.length === 0) {
-          res.status(422).json({
-            message: "This export has a valid header but no data rows. Re-export it with the campaign's rows included.",
-          });
-          return;
-        }
-        csvMappingSummary = parseResult.mappingSummary.map((e) => ({
-          canonical: e.canonical,
-          found_as: e.foundAs ?? null,
-          confidence: e.confidence,
-          method: e.method,
-          tier: e.tier,
-          is_required: e.isRequired,
-        }));
-        const allWarnings = [...xlsxConversionWarnings, ...parseResult.warnings];
-        if (allWarnings.length > 0) {
-          csvUploadWarnings = allWarnings;
-        }
-      } catch (err) {
-        if (err instanceof IapCsvFormatError) {
-          res.status(422).json({ message: err.message });
-          return;
-        }
-        throw err;
+    try {
+      const validation = await validatePerformanceCsvUpload(parsed.data.kind, parsed.data.filename, content);
+      csvMappingSummary = validation.mappingSummary;
+      csvUploadWarnings = validation.uploadWarnings;
+    } catch (err) {
+      if (err instanceof IapCsvFormatError) {
+        res.status(422).json({ message: err.message });
+        return;
       }
+      throw err;
     }
 
     // Creative files are checked for a filename-extension / real-content
@@ -1094,20 +1145,11 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
     // previous run already consumed (status='processed') stays legal — this
     // guard only compares against currently-staged rows.
     const contentMd5 = createHash("md5").update(content).digest("hex");
-    const dupCheckRes = await supabase
-      .from("manual_imports")
-      .select("id, filename, created_at")
-      .eq("account_id", accountId)
-      .eq("kind", parsed.data.kind)
-      .eq("status", "staged")
-      .eq("content_md5", contentMd5)
-      .limit(1);
-    if (dupCheckRes.error) throw new Error(dupCheckRes.error.message);
-    if (dupCheckRes.data && dupCheckRes.data.length > 0) {
-      const existing = dupCheckRes.data[0]!;
+    const duplicate = await findStagedByteDuplicate(accountId, parsed.data.kind, contentMd5);
+    if (duplicate) {
       res.status(409).json({
         message:
-          `This exact file is already staged for this slot as "${existing["filename"]}". ` +
+          `This exact file is already staged for this slot as "${duplicate.filename}". ` +
           `Running analysis with both copies would double-count its rows. ` +
           `Remove the staged copy first if you meant to replace it.`,
       });
@@ -1169,6 +1211,263 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
   }
 });
 
+// ── Chunked upload (large performance report files) ────────────────────
+// Three-step flow for files the single-request path can't carry (the
+// deployment proxy rejects large bodies with a bare 413 before Express
+// ever sees them): init → PUT chunks → complete. The complete step runs
+// the exact same validation as single-request staging, so a file gets the
+// identical mapping report and duplicate guard regardless of transport.
+
+router.post("/metrix/accounts/:accountId/manual-imports/uploads", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const { z } = await import("zod/v4");
+  const Body = z.object({
+    kind: z.enum(["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv", "performance_conversion_device_csv"]),
+    filename: z.string().min(1),
+    content_type: z.string().nullish(),
+    size_bytes: z.number().int().positive(),
+    chunk_count: z.number().int().positive(),
+  });
+  const parsed = Body.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "kind (a performance report kind), filename, size_bytes, and chunk_count are required." });
+    return;
+  }
+  const user = req.authUser!;
+  try {
+    if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+      res.status(403).json({ message: "You don't have access to this ad account." });
+      return;
+    }
+    const supabase = getSupabase();
+    const account = await supabase.from("ad_accounts").select("id").eq("id", accountId).limit(1);
+    if (account.error) throw new Error(account.error.message);
+    if (!account.data || account.data.length === 0) {
+      res.status(404).json({ message: "Ad account not found." });
+      return;
+    }
+    if (parsed.data.size_bytes > MAX_CHUNKED_IMPORT_BYTES) {
+      res.status(400).json({ message: "File is too large — the limit is 150 MB." });
+      return;
+    }
+    if (parsed.data.chunk_count > MAX_UPLOAD_CHUNKS) {
+      res.status(400).json({ message: `Too many chunks — send at most ${MAX_UPLOAD_CHUNKS}.` });
+      return;
+    }
+
+    // Opportunistic cleanup: abandoned upload sessions (browser closed
+    // mid-transfer) never complete, so sweep this account's stale ones here
+    // rather than leaving orphaned chunk bytes behind forever.
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    await supabase
+      .from("manual_imports")
+      .delete()
+      .eq("account_id", accountId)
+      .eq("status", "uploading")
+      .lt("created_at", cutoff);
+
+    const insert = await supabase
+      .from("manual_imports")
+      .insert({
+        account_id: accountId,
+        kind: parsed.data.kind,
+        filename: parsed.data.filename,
+        content_type: parsed.data.content_type ?? null,
+        content: null,
+        size_bytes: parsed.data.size_bytes,
+        ad_names: [],
+        status: "uploading",
+        uploaded_by_user_id: user.id,
+        uploaded_by_email: user.email,
+      })
+      .select("id")
+      .single();
+    if (insert.error) throw new Error(insert.error.message);
+    res.json({
+      status: "uploading",
+      import_id: String(insert.data["id"]),
+      max_chunk_bytes: MAX_UPLOAD_CHUNK_BYTES,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to init chunked manual import upload");
+    res.status(502).json({ message: err instanceof Error ? err.message : "Could not start the upload." });
+  }
+});
+
+/** Fetches an 'uploading' import row scoped to this account, or responds 404 and returns null. */
+async function findUploadingImport(
+  accountId: string,
+  importId: string,
+  res: Response,
+): Promise<{ id: string; kind: string; filename: string; size_bytes: number } | null> {
+  const supabase = getSupabase();
+  const rowRes = await supabase
+    .from("manual_imports")
+    .select("id, kind, filename, size_bytes, status")
+    .eq("id", importId)
+    .eq("account_id", accountId)
+    .limit(1);
+  if (rowRes.error) throw new Error(rowRes.error.message);
+  const row = rowRes.data?.[0];
+  if (!row || String(row["status"]) !== "uploading") {
+    res.status(404).json({ message: "Upload session not found. Start the upload again." });
+    return null;
+  }
+  return {
+    id: String(row["id"]),
+    kind: String(row["kind"]),
+    filename: String(row["filename"]),
+    size_bytes: Number(row["size_bytes"]),
+  };
+}
+
+router.put(
+  "/metrix/accounts/:accountId/manual-imports/uploads/:importId/chunks/:chunkIndex",
+  requireAuth,
+  async (req, res) => {
+    const accountId = String(req.params["accountId"]);
+    const importId = String(req.params["importId"]);
+    const chunkIndex = Number(req.params["chunkIndex"]);
+    const user = req.authUser!;
+    try {
+      if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+        res.status(403).json({ message: "You don't have access to this ad account." });
+        return;
+      }
+      if (!Number.isInteger(chunkIndex) || chunkIndex < 0 || chunkIndex >= MAX_UPLOAD_CHUNKS) {
+        res.status(400).json({ message: "Invalid chunk index." });
+        return;
+      }
+      const b64raw = (req.body as { content_base64?: unknown })?.content_base64;
+      const b64 = typeof b64raw === "string" ? b64raw.replace(/\s/g, "") : "";
+      if (!b64 || !BASE64_RE.test(b64)) {
+        res.status(400).json({ message: "Chunk content is not valid base64." });
+        return;
+      }
+      const chunk = Buffer.from(b64, "base64");
+      if (chunk.length === 0 || chunk.length > MAX_UPLOAD_CHUNK_BYTES) {
+        res.status(400).json({ message: `Each chunk must be between 1 byte and ${MAX_UPLOAD_CHUNK_BYTES} bytes.` });
+        return;
+      }
+      const upload = await findUploadingImport(accountId, importId, res);
+      if (!upload) return;
+      const supabase = getSupabase();
+      const upsert = await supabase
+        .from("manual_import_chunks")
+        .upsert(
+          { import_id: importId, chunk_index: chunkIndex, content: `\\x${chunk.toString("hex")}` },
+          { onConflict: "import_id,chunk_index" },
+        );
+      if (upsert.error) throw new Error(upsert.error.message);
+      res.json({ status: "ok", chunk_index: chunkIndex });
+    } catch (err) {
+      req.log.error({ err }, "Failed to store manual import chunk");
+      res.status(502).json({ message: err instanceof Error ? err.message : "Could not store the chunk." });
+    }
+  },
+);
+
+router.post(
+  "/metrix/accounts/:accountId/manual-imports/uploads/:importId/complete",
+  requireAuth,
+  async (req, res) => {
+    const accountId = String(req.params["accountId"]);
+    const importId = String(req.params["importId"]);
+    const user = req.authUser!;
+    try {
+      if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+        res.status(403).json({ message: "You don't have access to this ad account." });
+        return;
+      }
+      const upload = await findUploadingImport(accountId, importId, res);
+      if (!upload) return;
+      const supabase = getSupabase();
+
+      const discardSession = async (): Promise<void> => {
+        // Chunks cascade-delete with the row.
+        await supabase.from("manual_imports").delete().eq("id", importId);
+      };
+
+      let content: Buffer;
+      try {
+        content = await loadImportContentBuffer({ id: importId, content: null });
+      } catch {
+        await discardSession();
+        res.status(422).json({ message: "Some chunks never arrived — the upload was discarded. Try again." });
+        return;
+      }
+      if (content.length === 0 || content.length > MAX_CHUNKED_IMPORT_BYTES) {
+        await discardSession();
+        res.status(422).json({ message: "The assembled file is empty or over the 150 MB limit — the upload was discarded." });
+        return;
+      }
+      if (content.length !== upload.size_bytes) {
+        await discardSession();
+        res.status(422).json({
+          message: `The assembled file is ${content.length} bytes but ${upload.size_bytes} were announced — a chunk is missing or duplicated. The upload was discarded; try again.`,
+        });
+        return;
+      }
+
+      const contentMd5 = createHash("md5").update(content).digest("hex");
+      const duplicate = await findStagedByteDuplicate(accountId, upload.kind, contentMd5);
+      if (duplicate) {
+        await discardSession();
+        res.status(409).json({
+          message:
+            `This exact file is already staged for this slot as "${duplicate.filename}". ` +
+            `Running analysis with both copies would double-count its rows. ` +
+            `Remove the staged copy first if you meant to replace it.`,
+        });
+        return;
+      }
+
+      let validation: PerformanceCsvValidation;
+      try {
+        validation = await validatePerformanceCsvUpload(upload.kind, upload.filename, content);
+      } catch (err) {
+        if (err instanceof IapCsvFormatError) {
+          await discardSession();
+          res.status(422).json({ message: err.message });
+          return;
+        }
+        throw err;
+      }
+
+      const update = await supabase
+        .from("manual_imports")
+        .update({
+          status: "staged",
+          content_md5: contentMd5,
+          size_bytes: content.length,
+          ...(validation.mappingSummary ? { mapping_summary: validation.mappingSummary } : {}),
+        })
+        .eq("id", importId)
+        .eq("status", "uploading");
+      if (update.error) throw new Error(update.error.message);
+
+      req.log.info(
+        { accountId, kind: upload.kind, filename: upload.filename, sizeBytes: content.length, chunked: true },
+        "Manual import staged (chunked)",
+      );
+      res.json(
+        StageManualImportResponse.parse({
+          status: "staged",
+          import_id: importId,
+          filename: upload.filename,
+          size_bytes: content.length,
+          note: "File staged for the analysis pipeline. Performance data appears only after an analysis run processes it — nothing is parsed or fabricated at upload time.",
+          ...(validation.mappingSummary ? { mapping_summary: validation.mappingSummary } : {}),
+          ...(validation.uploadWarnings ? { upload_warnings: validation.uploadWarnings } : {}),
+        }),
+      );
+    } catch (err) {
+      req.log.error({ err }, "Failed to complete chunked manual import upload");
+      res.status(502).json({ message: err instanceof Error ? err.message : "Could not finish the upload." });
+    }
+  },
+);
+
 router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req, res) => {
   const accountId = String(req.params["accountId"]);
   const user = req.authUser!;
@@ -1187,6 +1486,7 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
     const { data, error } = await supabase
       .from("manual_imports")
       .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, match_method, status, manual_analysis_run_id, created_at, mapping_summary")
+      .neq("status", "uploading")
       .eq("account_id", accountId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);

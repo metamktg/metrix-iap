@@ -70,21 +70,51 @@ function csvQuote(field: string): string {
   return /[",\r\n]/.test(field) ? `"${field.replace(/"/g, '""')}"` : field;
 }
 
-/** Picks the worksheet to read: the workbook's active tab when it points at
- *  a visible sheet, else the first visible sheet, else simply the first
- *  sheet — so a multi-sheet file never crashes, it just degrades to "read
- *  the first sheet" the same way a human opening the file would default. */
-function selectWorksheet(workbook: ExcelJS.Workbook): ExcelJS.Worksheet {
+/** Picks the worksheet to read. Multi-sheet workbooks (a whole Google Sheets
+ *  file saved as .xlsx, with cover/working tabs alongside the actual export)
+ *  used to resolve blindly to the active/first visible tab — which then
+ *  failed parsing with "required columns could not be found: Day, Ad name"
+ *  even though the real export sheet was right there in the same file.
+ *
+ *  When the caller knows which columns the target class requires
+ *  (`expectedColumns`), every sheet's header row is scored by how many of
+ *  those columns resolve through the same alias/slug cascade the CSV parser
+ *  uses, and the best-scoring sheet wins (active-tab order breaks ties).
+ *  With no expectation, or when no sheet matches at all, the previous
+ *  behavior stands: active tab if visible, else first visible, else first —
+ *  the same way a human opening the file would default. */
+function selectWorksheet(workbook: ExcelJS.Workbook, expectedColumns?: readonly string[]): ExcelJS.Worksheet {
   const sheets = workbook.worksheets;
   if (sheets.length === 0) {
     throw new IapCsvFormatError("This Excel file has no worksheets.");
   }
   if (sheets.length === 1) return sheets[0]!;
+
   const activeTab = workbook.views?.[0]?.activeTab;
-  if (typeof activeTab === "number" && sheets[activeTab] && sheets[activeTab]!.state === "visible") {
-    return sheets[activeTab]!;
+  const fallback =
+    (typeof activeTab === "number" && sheets[activeTab] && sheets[activeTab]!.state === "visible"
+      ? sheets[activeTab]
+      : undefined) ??
+    sheets.find((s) => s.state === "visible") ??
+    sheets[0]!;
+
+  if (!expectedColumns || expectedColumns.length === 0) return fallback;
+
+  let best: { sheet: ExcelJS.Worksheet; score: number } | null = null;
+  for (const sheet of sheets) {
+    if (sheet.rowCount === 0) continue;
+    const header = readHeaderRow(sheet.getRow(1), Math.max(sheet.actualColumnCount, 1));
+    let score = 0;
+    for (const col of expectedColumns) {
+      if (findColumnInHeader(header, col)) score += 1;
+    }
+    // Prefer the fallback (active/first-visible) sheet on equal scores so a
+    // workbook whose tabs all match keeps its previous, predictable pick.
+    if (score > 0 && (!best || score > best.score || (score === best.score && sheet === fallback))) {
+      best = { sheet, score };
+    }
   }
-  return sheets.find((s) => s.state === "visible") ?? sheets[0]!;
+  return best?.sheet ?? fallback;
 }
 
 /** Unwraps rich-text / hyperlink / formula cell value shapes down to plain text. */
@@ -147,8 +177,14 @@ function isCorruptedIdCell(value: number, numFmt: string | undefined): boolean {
  * Converts one XLSX workbook (as a Buffer) into canonical CSV text plus any
  * conversion-time warnings, ready to hand to parseIapCsv() exactly as if it
  * had been a CSV file all along.
+ *
+ * `expectedColumns` (optional): the target class's required breakdown
+ * columns — used only to pick the right sheet in a multi-sheet workbook.
  */
-export async function convertXlsxToCsvText(buffer: Buffer): Promise<XlsxConversionResult> {
+export async function convertXlsxToCsvText(
+  buffer: Buffer,
+  expectedColumns?: readonly string[],
+): Promise<XlsxConversionResult> {
   const workbook = new ExcelJS.Workbook();
   try {
     // exceljs's bundled type defs declare a structurally slightly different
@@ -162,7 +198,7 @@ export async function convertXlsxToCsvText(buffer: Buffer): Promise<XlsxConversi
     );
   }
 
-  const sheet = selectWorksheet(workbook);
+  const sheet = selectWorksheet(workbook, expectedColumns);
   if (sheet.rowCount === 0) {
     throw new IapCsvFormatError("This Excel file's sheet has no rows.");
   }

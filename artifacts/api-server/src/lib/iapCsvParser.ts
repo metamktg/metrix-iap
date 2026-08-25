@@ -304,6 +304,30 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   // (used later for the inferred-match pass over unmapped headers).
   const claimedHeaderValues = new Set<string>();
 
+  // Warning-noise policy (shared by the breakdown and metric cascades below):
+  // a per-column "auto-matched — verify" line is only worth the reader's
+  // attention when there is something to verify. Three match kinds never are:
+  // (a) deterministic normalizations (slug/case-insensitive — a spreadsheet
+  // round-trip mangles "CPM (cost per 1,000 impressions)" into
+  // "CPM _cost per 1_000 impressions_", and normalized-name matching is 1:1,
+  // not a guess), (b) curated ALIAS matches — the alias table maps headers
+  // Meta itself emits ("Reporting starts" IS the native date header on
+  // ad-level summary exports; telling the user to rename a column Meta named
+  // is advice they can't act on), and (c) any match on a
+  // DERIVED_OR_IRRELEVANT column, whose values are recomputed from
+  // primitives and never trusted regardless. Those fold into ONE summary
+  // line (full detail stays in mappingSummary / the Import Confidence
+  // report). Moderate-confidence inference keeps its individual warning —
+  // that one genuinely needs verifying.
+  let foldedAutoMatches = 0;
+  let foldedExample: { from: string; to: string } | null = null;
+  const foldAutoMatch = (col: string, headerValue: string): void => {
+    foldedAutoMatches += 1;
+    if (!foldedExample) foldedExample = { from: headerValue, to: resolveCurrencyLabel(col) };
+  };
+  const isDeterministicVia = (via: string): boolean =>
+    via === "slug" || via === "case_insensitive" || via === "alias";
+
   // ── Breakdown column resolution (primary cascade) ─────────────────────
   // Map each canonical breakdown column to the actual header cell index.
   const breakdownIdx = new Map<string, number>();
@@ -317,10 +341,14 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       claimedHeaderValues.add(match.headerValue);
       if (match.via !== "exact") {
         columnMappings[col] = match;
-        warnings.push(
-          `Column "${col}" was auto-matched from "${match.headerValue}" (via ${match.via} match). ` +
-            `Renaming it to "${col}" in your export will improve reliability.`,
-        );
+        if (isDeterministicVia(match.via)) {
+          foldAutoMatch(col, match.headerValue);
+        } else {
+          warnings.push(
+            `Column "${col}" was auto-matched from "${match.headerValue}" (via ${match.via} match). ` +
+              `Renaming it to "${col}" in your export will improve reliability.`,
+          );
+        }
       }
       summaryMap.set(col, {
         canonical: col,
@@ -342,6 +370,8 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
 
   // Derived/irrelevant metrics are accepted transparently when present but are
   // never expected: absence is not recorded, warned about, or inferred against.
+  // (Warning-noise policy + fold state are declared above the breakdown
+  // cascade — both cascades share them.)
   const acceptedBaseColumns: readonly string[] = [...BASE_METRICS, ...DERIVED_OR_IRRELEVANT_METRICS];
   for (const col of acceptedBaseColumns) {
     if (col === "Amount spent ({ACCOUNT_CURRENCY})") {
@@ -351,9 +381,13 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
         claimedHeaderValues.add(match.headerValue);
         if (match.via !== "exact" && match.via !== "currency") {
           columnMappings[col] = match;
-          warnings.push(
-            `Spend column auto-matched from "${match.headerValue}" (via ${match.via} match).`,
-          );
+          if (isDeterministicVia(match.via)) {
+            foldAutoMatch(col, match.headerValue);
+          } else {
+            warnings.push(
+              `Spend column auto-matched from "${match.headerValue}" (via ${match.via} match).`,
+            );
+          }
         }
         summaryMap.set(col, {
           canonical: col,
@@ -375,9 +409,13 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       claimedHeaderValues.add(match.headerValue);
       if (match.via !== "exact") {
         columnMappings[col] = match;
-        warnings.push(
-          `Metric column "${col}" auto-matched from "${match.headerValue}" (via ${match.via} match).`,
-        );
+        if (DERIVED_OR_IRRELEVANT_METRICS.includes(col) || isDeterministicVia(match.via)) {
+          foldAutoMatch(col, match.headerValue);
+        } else {
+          warnings.push(
+            `Metric column "${col}" auto-matched from "${match.headerValue}" (via ${match.via} match).`,
+          );
+        }
       }
       summaryMap.set(col, {
         canonical: col,
@@ -392,6 +430,15 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       // irrelevant columns (cost-per-X ratios, rankings) are simply skipped.
       missingBaseMetrics.push(col);
     }
+  }
+
+  // (read through a typed local — TS's flow analysis can't see the closure assignment)
+  const foldedExampleValue = foldedExample as { from: string; to: string } | null;
+  if (foldedAutoMatches > 0 && foldedExampleValue) {
+    warnings.push(
+      `${foldedAutoMatches} column(s) arrived under known alternate or spreadsheet-altered names and were matched automatically ` +
+        `(e.g. "${foldedExampleValue.from}" → "${foldedExampleValue.to}") — no action needed; the full mapping is in the column report below.`,
+    );
   }
 
   // ── Inference pass: try Jaccard-based auto-mapping for ALL missing columns ─
@@ -495,9 +542,9 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   if (nonCriticalStillMissing.filter((c) => spec.breakdownColumns.includes(c)).length > 0) {
     const missing = nonCriticalStillMissing.filter((c) => spec.breakdownColumns.includes(c));
     warnings.push(
-      `The following breakdown columns are missing and will be treated as blank: ` +
+      `Note: optional breakdown columns not present in this export (treated as blank): ` +
         `${missing.join(", ")}. ` +
-        `This will reduce the detail available for breakdown analysis.`,
+        `Include them in the export for more breakdown detail.`,
     );
     for (const col of missing) {
       missingColumns.push(col);

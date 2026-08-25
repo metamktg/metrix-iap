@@ -468,6 +468,56 @@ export interface ColumnMappingSummaryEntry {
   is_required: boolean;
 }
 
+/**
+ * Performance report kinds only — creative assets use single-request staging.
+ */
+export type ChunkedUploadInitKind = typeof ChunkedUploadInitKind[keyof typeof ChunkedUploadInitKind];
+
+
+export const ChunkedUploadInitKind = {
+  performance_demo_csv: 'performance_demo_csv',
+  performance_placement_csv: 'performance_placement_csv',
+  performance_ad_summary_csv: 'performance_ad_summary_csv',
+  performance_conversion_device_csv: 'performance_conversion_device_csv',
+} as const;
+
+export interface ChunkedUploadInit {
+  /** Performance report kinds only — creative assets use single-request staging. */
+  kind: ChunkedUploadInitKind;
+  /** @minLength 1 */
+  filename: string;
+  content_type?: string | null;
+  /**
+     * Total file size in bytes (max 150 MB). Verified against the assembled chunks at completion.
+     * @minimum 1
+     */
+  size_bytes: number;
+  /**
+     * Number of chunks the client will send (max 64).
+     * @minimum 1
+     */
+  chunk_count: number;
+}
+
+export type ChunkedUploadInitResultStatus = typeof ChunkedUploadInitResultStatus[keyof typeof ChunkedUploadInitResultStatus];
+
+
+export const ChunkedUploadInitResultStatus = {
+  uploading: 'uploading',
+} as const;
+
+export interface ChunkedUploadInitResult {
+  status: ChunkedUploadInitResultStatus;
+  import_id: string;
+  /** Decoded per-chunk byte ceiling the server will accept. */
+  max_chunk_bytes: number;
+}
+
+export interface ChunkedUploadChunk {
+  /** @minLength 1 */
+  content_base64: string;
+}
+
 export type ManualImportResultStatus = typeof ManualImportResultStatus[keyof typeof ManualImportResultStatus];
 
 
@@ -1937,6 +1987,18 @@ export interface ApiError {
 export interface HealthStatus {
   status: string;
 }
+
+export type UploadManualImportChunk200Status = typeof UploadManualImportChunk200Status[keyof typeof UploadManualImportChunk200Status];
+
+
+export const UploadManualImportChunk200Status = {
+  ok: 'ok',
+} as const;
+
+export type UploadManualImportChunk200 = {
+  status: UploadManualImportChunk200Status;
+  chunk_index: number;
+};
 
 export type ListAgentWaitlistParams = {
 /**
