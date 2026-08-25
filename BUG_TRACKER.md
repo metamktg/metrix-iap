@@ -1155,3 +1155,75 @@ Regression-proven against the true pre-fix component (clock and note both remove
 fail, including the one that states the actual guarantee — *two runs at the same percentage must
 render differently when their ages differ*. Full suite 119 files / 1,704 tests; typecheck and the
 blocking disclosure rulebook green.
+
+## GAP-01 — generated strategy and briefs are destroyed on regeneration, with no archive
+
+**Type:** design gap, not a defect. Current behaviour is deliberate and its honesty rationale is
+sound; the unintended cost is that it is *destructive* where it only needed to be *exclusive*.
+**Raised by:** the operator, on being told that each briefs run replaces the previous set.
+**Status:** open — recorded for Phase 2, deliberately not built at handoff.
+
+### The evidence
+
+**15 successful generation runs currently have no surviving output** — 7 briefs, 8 strategy.
+`generation_runs` records them as `success`; every artifact they produced is gone. A run history
+that asserts an event it cannot show you is only half-honest, and it is the same class this whole
+session has been closing.
+
+Two further arguments:
+
+- **The pattern already exists in this codebase.** `workspace_reports` (Replit Postgres) stores a
+  full document snapshot at generate time precisely so History/Exports reproduce it exactly.
+  Generated strategy and briefs simply do not use it.
+- **The IAP loop needs it.** MST → optimization compares what was *briefed* against what
+  *performed*. A strategy regeneration silently destroys the briefs that were actually shipped,
+  so the loop loses its own audit trail.
+
+Storage is a non-argument: 16 brief rows per run, against a 533 MB database.
+
+### What is actually blocking it — corrected
+
+An earlier reading of this said the `UNIQUE (account_id, brief_id)` constraint physically
+prevents holding two versions, and that a uniqueness migration was required. **That is wrong.**
+Every generated id is already run-scoped:
+
+```
+GEN_BRIEF_${runTag}_${i+1}      GEN_PILLAR_${runTag}_${i+1}      GEN_HYP_${runTag}_${i+1}
+```
+
+Rows from different runs therefore carry different ids and would coexist under the existing
+constraint without complaint. **Nothing structural is stopping this. The only thing destroying
+history is the explicit `deletePriorGenerated` call**, and `generation_run_id` is already on
+every one of the four tables, so lineage is already recorded.
+
+### The design
+
+1. `deletePriorGenerated` stops deleting for `strategy` and `briefs`.
+2. Seed assembly scopes generated rows to the **latest successful run of that kind** for the
+   account. It already filters `source='generated'`; this adds run scoping. No new column is
+   strictly required — currency is derivable — though an explicit `superseded_at` would make it
+   legible at the database level.
+3. Retention only if it ever matters, which at this volume it will not.
+
+**The subtlety that makes this better than deleting.** A strategy run currently calls
+`deletePriorGenerated(account, "briefs")` at 92%, because those briefs reference pillars that no
+longer exist. Under an archive model that delete disappears — but currency cannot then be "the
+latest briefs run" alone, or a stale set would keep rendering as live against dead pillars. The
+correct rule is: **a brief set is current only if its run is the latest successful briefs run
+AND that run started after the latest successful strategy run.** Otherwise it is retained and
+labelled stale-relative-to-strategy.
+
+That is strictly more honest than today's behaviour, which resolves the same conflict by
+destroying the evidence. The honesty invariant is preserved either way — exactly one set is ever
+active, and archived sets are explicitly historical, never blended.
+
+### Why it was not built at handoff
+
+It changes the seed read path, the highest-blast-radius code in the application: a mistake shows
+an account 32 briefs, or none. That deserves the enabler sprint rather than a rushed change at
+close, and the archive needs a UI surface to be worth anything — an archive nobody can open is
+just storage.
+
+**But the preservation half is time-sensitive in a way the rest of the backlog is not.** Every
+regeneration between now and Phase 2 destroys history that cannot be recovered. If the sprint
+splits, land "stop deleting, scope reads to current" first and surface the archive afterwards.
