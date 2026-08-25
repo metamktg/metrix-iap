@@ -53,6 +53,7 @@ import {
   CommandList,
 } from "@workspace/command-deck/components/ui/command";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { splitWarningsBySeverity } from "@/lib/warningSeverity";
 import {
   Plug,
   FileUp,
@@ -885,11 +886,8 @@ function SmartCsvUpload({
         // only ones on the first layer. Nothing is hidden: notices stay one
         // click away, and a notices-only staging drops the alarm styling
         // entirely.
-        const isNotice = (w: string) => w.startsWith("Note:") || w.includes("no action needed");
-        const cleaned = lastWarnings.filter((w) => w.trim() !== "");
-        if (cleaned.length === 0) return null;
-        const notices = cleaned.filter(isNotice);
-        const attention = cleaned.filter((w) => !isNotice(w));
+        const { attention, notices } = splitWarningsBySeverity(lastWarnings);
+        if (attention.length === 0 && notices.length === 0) return null;
         const alarmed = attention.length > 0;
         return (
           <div
