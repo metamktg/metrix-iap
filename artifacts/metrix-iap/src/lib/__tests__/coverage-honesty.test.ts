@@ -17,6 +17,7 @@ import {
   demographicEmptyReasonFor,
   placementsEmptyReasonFor,
   funnelEmptyReasonFor,
+  creativeEmptyReasonsFor,
   ACCOUNT_GRAIN_CELL_ID,
 } from "@/lib/creative-empty-reasons";
 import type { CellPerformanceRow, DemographicRow } from "@/lib/data/seedTypes";
@@ -103,5 +104,48 @@ describe("creative empty-state reasons", () => {
     const perfRow = { cell_id: "C1A" } as CellPerformanceRow;
     expect(funnelEmptyReasonFor([perfRow], "C8A")).toContain("don't appear in the imported performance exports");
     expect(funnelEmptyReasonFor([perfRow], "C1A")).toBeNull();
+  });
+});
+
+// ─── Derivation used by every creative popup ────────────────────────────
+// The per-tab rules above were previously applied by each <CreativeCard>
+// call site, and seven of ten did not apply them (and none supplied a funnel
+// reason), so most creative popups still told users to import a file they
+// had already imported. CreativeExpandDialog now derives all three from the
+// scoped account via this function — these cases pin that derivation.
+
+describe("creativeEmptyReasonsFor", () => {
+  const analysis = {
+    demographic_registration_signal: [demoRow(ACCOUNT_GRAIN_CELL_ID)],
+    v3_placement_signal: [],
+    c4e_placement_signal: [],
+    performance_by_cell: [{ cell_id: "C1A" } as CellPerformanceRow],
+  };
+
+  it("derives all three tab reasons for a cell with no joined rows", () => {
+    const r = creativeEmptyReasonsFor(analysis, "C8A");
+    expect(r.demographic).toContain("account-level");
+    expect(r.placements).toContain("No device × placement export");
+    expect(r.funnel).toContain("don't appear in the imported performance exports");
+  });
+
+  it("returns null per tab that genuinely has rows for the cell", () => {
+    const r = creativeEmptyReasonsFor(
+      { ...analysis, c4e_placement_signal: [{}] as never[] },
+      "C1A",
+    );
+    expect(r.placements).toBeNull();
+    expect(r.funnel).toBeNull();
+  });
+
+  it("stays silent without a cell id rather than guessing a cause", () => {
+    expect(creativeEmptyReasonsFor(analysis, null)).toEqual({
+      demographic: null, placements: null, funnel: null,
+    });
+  });
+
+  it("reports never-imported (not account-grain) when the account has no demographic rows", () => {
+    const r = creativeEmptyReasonsFor({ ...analysis, demographic_registration_signal: [] }, "C8A");
+    expect(r.demographic).toContain("No demographic export has been imported");
   });
 });

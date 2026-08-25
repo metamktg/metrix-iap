@@ -16,7 +16,10 @@ import {
 import { useGetMetaConnection } from "@workspace/api-client-react";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { AlertTriangle, BellOff } from "lucide-react";
-import type { SignalCard } from "@/lib/data/seedTypes";
+import { cn } from "@workspace/command-deck/lib/utils";
+import { TYPE } from "../typography";
+import type { SignalCard, DataQualityFlag } from "@/lib/data/seedTypes";
+import { flagHeadline, flagBody } from "@/lib/dataQualityFlags";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 
 const SECTION = "Listen · 02";
@@ -42,7 +45,14 @@ export function AlertsView() {
           ...(core?.data_caveat ? [{ id: "caveat_core", source: "core_reanalysis_read", text: core.data_caveat }] : []),
           ...(summary?.data_caveat ? [{ id: "caveat_summary", source: "campaign_summary", text: summary.data_caveat }] : []),
         ];
-        const total = highSignals.length + caveats.length;
+        // Data-quality findings raised by the last analysis run (importer
+        // quality flags, cross_export_mismatch, zero-conversion anomalies).
+        // This page documents its lineage as iap.data_quality[] but used to
+        // render only data_caveat, so these reached the Ad Performance signal
+        // tiers and nowhere else — invisible on the page users open to see
+        // what needs attention.
+        const qualityFlags: DataQualityFlag[] = acct.iap?.data_quality ?? [];
+        const total = highSignals.length + caveats.length + qualityFlags.length;
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -50,7 +60,7 @@ export function AlertsView() {
               section={SECTION}
               title="Alerts"
               accountName={acct.name}
-              subtitle="High-impact signals · data caveats"
+              subtitle="High-impact signals · data caveats · data-quality findings"
             />
             <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />
             <>
@@ -65,7 +75,7 @@ export function AlertsView() {
                 value={String(total)}
               />
               <MetricTile label="High-impact signals" value={String(highSignals.length)} />
-              <MetricTile label="Data caveats" value={String(caveats.length)} />
+              <MetricTile label="Data caveats" value={String(caveats.length + qualityFlags.length)} />
             </div>
 
             <div className="px-6 py-5 max-w-3xl space-y-6">
@@ -107,6 +117,25 @@ export function AlertsView() {
                           <CaveatNote key={c.id} text={c.text} source={c.source} />
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {qualityFlags.length > 0 && (
+                    <div>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Data-quality findings</h3>
+                      <div className="space-y-2">
+                        {qualityFlags.map((f, i) => (
+                          <CaveatNote
+                            key={`${f.kind}-${i}`}
+                            text={`${flagHeadline(f)} — ${flagBody(f)}`}
+                            source="iap.data_quality"
+                          />
+                        ))}
+                      </div>
+                      <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-2 leading-snug")}>
+                        Raised by the last analysis run. Full evidence per finding is on{" "}
+                        <CrossLink to="/app/analysis/performance" label="Ad Performance" />.
+                      </p>
                     </div>
                   )}
                 </>

@@ -502,3 +502,52 @@ describe("buildReportModel — segment comparison", () => {
     expect(html).toContain("Men 35-44");
   });
 });
+
+// ─── Coverage gating reaches the exported document ─────────────────────
+// An exported client deliverable is the last surface a segment read can
+// escape through. The in-app drill-down suppresses signal classification
+// when the run's measured demographic join coverage is below threshold; the
+// export path took no coverage at all, so the same numbers left the product
+// unqualified. These pin that it no longer can.
+
+describe("buildReportModel — segment comparison coverage gating", () => {
+  const req: SegmentComparisonRequest = { segmentA: SEG_A, segmentB: SEG_B };
+
+  function comparisonText(opts: Parameters<typeof buildReportModel>[3]) {
+    const model = buildReportModel(makeSeedWithTwoSegments(), "bookster", "internal", opts)!;
+    const section = model.sections[model.sections.length - 1]!;
+    return section.blocks
+      .filter((b): b is { kind: "text"; text: string } => b.kind === "text")
+      .map((b) => b.text);
+  }
+
+  it("qualifies both segments when the run's demographic coverage is below threshold", () => {
+    const texts = comparisonText({
+      segmentComparison: req,
+      demoCoverage: {
+        spend_coverage_pct: 2,
+        below_threshold: true,
+        note: "Re-export Demographics from Meta Ads Reporting as CSV.",
+      },
+    });
+    const qualified = texts.filter((t) => t.startsWith("Insufficient join coverage —"));
+    expect(qualified).toHaveLength(2);
+    expect(qualified[0]).toContain("only 2%");
+    expect(qualified[0]).toContain("Re-export Demographics");
+    // The state is named for what it is — not softened into "low signal".
+    expect(texts.some((t) => t.startsWith("Low signal —"))).toBe(false);
+  });
+
+  it("leaves an adequately covered run's segments unqualified", () => {
+    const texts = comparisonText({
+      segmentComparison: req,
+      demoCoverage: { spend_coverage_pct: 96, below_threshold: false, note: null },
+    });
+    expect(texts.some((t) => t.startsWith("Insufficient join coverage —"))).toBe(false);
+  });
+
+  it("falls back to per-segment heuristics on a legacy run with no measured coverage", () => {
+    const texts = comparisonText({ segmentComparison: req });
+    expect(texts.some((t) => t.startsWith("Insufficient join coverage —"))).toBe(false);
+  });
+});

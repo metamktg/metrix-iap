@@ -593,3 +593,330 @@ Flags (operator action / product decisions, no code change):
   staging area should be reviewed and stale files removed before the next run.
 - Processed performance files are kept for restaging by design; a retention policy
   (e.g. keep last N per slot) is a Phase 2 product decision.
+
+## BUG-28 — Coverage gating reached 2 of 5 drill-down surfaces, and never the report export
+
+- **Symptom:** on AAFE (demographic export covers ~2% of account spend) the SAME segment
+  rendered "insufficient join coverage" when opened from Audience and an unqualified
+  signal read when opened from Analysis Overview, the IAP Library creative card's
+  Demographics tab, or a variable drill-down. `lib/reportExport.ts` computed segment
+  comparisons with no coverage at all, so those numbers could leave the product in a
+  client-facing document uncaveated (latent — no UI passes `segmentComparison` yet).
+- **Root cause:** BUG-02's gate is an OPTIONAL `demoCoverage` prop on
+  `SegmentDrilldownModal`, threaded through call sites by hand. Two of five passed it;
+  three omitted it and silently got `null` = "legacy run, no coverage measured", which
+  falls back to per-segment heuristics. The prop's absence is indistinguishable from an
+  account that genuinely has no coverage data.
+- **Category:** Fix-Now (fabricated confidence — the exact defect class BUG-02 exists to
+  prevent, surviving on three of the surfaces it was supposed to cover).
+- **Resolution (implemented):** `hooks/useDemographicCoverage.ts` resolves the scoped
+  account's run-level coverage once (the "all" preset — coverage is a property of the RUN,
+  not the selected window; react-query dedupes it against any preset query a caller holds).
+  `SegmentDrilldownModal` reads it itself and treats the prop as an OVERRIDE, so a call
+  site can no longer omit what it never has to pass; AudienceView still overrides with its
+  tighter date-preset summary, AvatarsView drops its duplicated query.
+  `buildReportModel` gains an explicit `demoCoverage` option threaded into
+  `buildSegmentComparisonSection`. The export's warning prefix now names the state it
+  reports — "Insufficient join coverage" rather than "Low signal", which understated it.
+- **Verification evidence:** three new cases in `reportExport.test.ts` (below-threshold
+  qualifies both segments and never says "Low signal"; adequate coverage stays unqualified;
+  a legacy run with no measured coverage falls back to heuristics). Full suite 1,663 green,
+  typecheck green.
+
+## BUG-29 — Creative popup empty-state reasons reached 3 of 10 call sites
+
+- **Symptom:** seven of ten `<CreativeCard>` call sites (Concept family, Variable
+  drill-down, Creative Scan, Brief builder, three further IAP Library rows) still showed
+  "Import a demographic pivot export to see the age × gender breakdown" on accounts where
+  a demographic export HAD been imported — the misleading copy BUG-03 §1.4 was written to
+  remove. No call site passed `funnelEmptyReason` at all, so the Funnel tab fell back to
+  generic text everywhere.
+- **Root cause:** same mechanism as BUG-28 — the cause-specific reasons are optional props
+  computed at each call site rather than derived where they render.
+- **Category:** Fix-Now (BUG-03 partially applied; the remaining sites tell the user to do
+  something they have already done).
+- **Resolution (implemented):** `creativeEmptyReasonsFor(analysis, cellId)` in
+  `creative-empty-reasons.ts` carries all three rules as one pure function;
+  `hooks/useCreativeEmptyReasons.ts` is a thin wrapper supplying the scoped account's
+  analysis data; `CreativeExpandDialog` derives the reasons from the card's cell code, with
+  explicit props still winning for callers that scope a card differently. All ten sites are
+  covered without any of them changing.
+- **Verification evidence:** four new cases in `coverage-honesty.test.ts` (derives all three
+  reasons for an unjoined cell; nulls per tab that has rows; stays silent without a cell id
+  rather than guessing; reports never-imported vs account-grain correctly).
+
+## BUG-30 — `reconciliation` declared REQUIRED in the API contract with zero writers
+
+- **Symptom:** sharper restatement of BUG-14. `import_metric_reconciliation` exists in
+  `schema.sql` with no writer anywhere in the codebase; `runShape`
+  (`analysisEngine.ts:184`) never emits the field; yet `openapi.yaml:4463` documents it as
+  a live cross-check and lists it under `required`, so generated Zod (`lib/api-zod`) and
+  the generated client type both assert a field that never arrives.
+  `AnalysisHistoryView` survives only via `run.reconciliation ?? []`; the type invites an
+  unguarded `.map()` that would throw at runtime.
+- **Category:** Fix-Now (resolved 2026-08-25 by owner decision: make the contract honest).
+- **Owner decision:** of the three options (implement the writer / delete the block and
+  field / make the contract honest), the owner chose to make the contract honest — the
+  smallest reversible change, and it does not preempt building the check later.
+- **Resolution (implemented):** `reconciliation` moved out of `AnalysisRun.required` in
+  `openapi.yaml`, with the description stating plainly that nothing populates it, that the
+  equivalent integrity check running today is the over-baseline guard in
+  `computeDataCoverage` (surfaced via `data_coverage` + csv_warnings), and that the field
+  should move back to `required` if the writer is implemented. Codegen regenerated:
+  `reconciliation?: ReconciliationRow[]` in the client types, `.optional()` in the Zod
+  schema. `AnalysisHistoryView`'s block is kept and now reads through one nullish path, so
+  implementing the writer later needs no UI work — its guard is type-correct rather than
+  incidentally safe. Verified: codegen drift clean, full typecheck green.
+- **Sweep evidence:** a scripted check of all 139 OpenAPI schemas for required
+  non-nullable fields with no server writer found `ReconciliationRow` to be the ONLY
+  genuine orphan in the contract (the other 11 hits were shorthand-property or
+  client→server input false positives, each verified by hand).
+
+## BUG-31 — Creative-metadata cascade bypassed the warning-fold policy and ran after header claiming
+
+- **Symptom (real AAFE Ad Summary shape):** every `ad_summary` import emitted three
+  extra warnings — `Creative metadata column "Ad creative body text" auto-matched from
+  "Body text" (via alias match)` and the same for Headline and CTA. Those are Meta's own
+  header names, resolved through the curated alias table: nothing for the user to verify
+  and nothing they can act on. Probe over the real header shape: 6 warnings, 3 of them
+  this noise.
+- **Root causes (three, one cascade):** `iapCsvParser`'s breakdown, spend and metric
+  cascades fold deterministic matches (slug / case-insensitive / curated alias /
+  currency-suffix) into ONE "matched automatically — no action needed" line. The
+  creative-metadata cascade — `ad_summary` only, which is why BUG-20 and BUG-27 both
+  missed it — emitted one line per column unconditionally. It also ran ~200 lines AFTER
+  `unmappedHeaders` was computed, so (a) its successfully-mapped headers were still
+  unclaimed when the unknown-column pass ran and were eligible to be reported as
+  "Unrecognised column … may correspond to expected column X", and (b) had it folded, it
+  would have incremented a counter already reported — dropping the mapping from the
+  summary rather than demoting it.
+- **Category:** Fix-Now (the warning-channel erosion BUG-20 targets, in the one cascade
+  the fix never reached).
+- **Resolution (implemented):** the cascade moved up beside the others, before
+  `unmappedHeaders` and before the fold summary is emitted, and now applies
+  `isDeterministicVia` exactly as they do. Probe over the same header: 6 warnings → 3,
+  fold count 1 → 4 (nothing dropped), both survivors informational "Note:" lines.
+  Separately, `warningSeverity.ts` gained `(via currency match)` — currency-suffix
+  resolution is deterministic, and stored runs from before this fix can carry a
+  per-column line for it that would otherwise render as action-needed.
+- **Verification evidence:** five new cases in `iapCsvWarningSignal.test.ts` (no
+  per-column creative-metadata lines; fold count includes them; every column still
+  mapped; no mapped header reported as unrecognised; the real shape yields exactly 3
+  informational warnings) + two in `warningSeverity.test.ts`. 288 server tests green.
+
+## BUG-32 — Alerts page never surfaced the data-quality flags it documents as its source
+
+- **Symptom:** `ListenCommandCenter` documents Alerts' lineage as `iap.data_quality[]`,
+  but `AlertsView` rendered only high-impact signal cards and `data_caveat`. Importer and
+  analysis-run quality findings — including `cross_export_mismatch`, the cross-export
+  integrity trigger — reached only the Ad Performance signal tiers. The page a user opens
+  to see what needs attention showed none of them, and the "Active alerts" count excluded
+  them.
+- **Root cause:** BUG-15, previously recorded as an open surfacing gap.
+- **Category:** Fix-Now (a trigger that fires correctly and surfaces nowhere the user
+  looks is indistinguishable from one that never fired).
+- **Resolution (implemented):** flag presentation (`flagHeadline` / `flagBody` /
+  `flagEvidence`) extracted from `AdPerformanceView` into `lib/dataQualityFlags.ts` and
+  shared; Alerts renders a "Data-quality findings" section from `acct.iap.data_quality`,
+  counts them in the alert totals, and cross-links to Ad Performance for full per-finding
+  evidence rather than duplicating the tier UI. The command-center lineage label now
+  names all three real sources (`signal_cards[] · data_caveat · iap.data_quality[]`).
+- **Verification evidence:** the repo's `inpage-nav-targets` guard caught a wrong
+  cross-link target (`/app/analysis/ad-performance`) on the first attempt; corrected to
+  the real route (`/app/analysis/performance`). 1,666 client tests green.
+
+## BUG-33 — Refetching KPI tiles rendered the same "—" as a missing value
+
+- **Symptom:** `KpiValue` rendered `—` at reduced opacity while a refetch was in flight —
+  the same glyph a null value renders. A slow request and "this number does not exist"
+  were the same picture, and the honest-null convention loses its meaning when loading
+  borrows the glyph.
+- **Category:** Fix-Now (swallowed state, group (c) of the Phase 1 audit §5.3).
+- **Resolution (implemented):** the in-flight state renders a pulsing bar with
+  `aria-busy` and an accessible label instead. The dash now means exactly one thing.
+
+## CI coverage gap — 224 secret-free server tests were never gated
+
+- **Finding:** CI excluded the api-server suite as "needs live secrets" and hand-picked
+  five files back in. Running each of the 38 files individually with no environment set
+  shows **16 of them pass secret-free** (288 tests). Eleven were therefore unprotected,
+  including `iapCsvMapping` (73 tests — the column-mapping cascade behind the whole
+  BUG-20/21/27 warning class), `metrixSeedAssembly` (the BUG-25 fix that resolved a
+  production outage), `iapCsvParser`, `objectiveCoverage` and `analysisCsvClassCheck`.
+- **Resolution (implemented):** the CI step now runs all 16, with the criterion recorded
+  in the workflow so the list stays correct as suites are added: a file belongs there only
+  if `vitest run <file>` passes with no environment. Gate went from 59 to 288 tests.
+
+## BUG-11 (open half) — resolved: one strict aggregation policy
+
+- **Symptom:** `sumInRange` (`date-scope.ts`) returned `number` and folded missing values
+  with `?? 0`. A column no row carried summed to a measured-looking `0`, and a date window
+  containing no rows reported "$0 spent" rather than "nothing measured here". Zero is a
+  real, meaningful figure in every metric this feeds, so it must never stand in for an
+  unknown. This was the largest remaining honesty-invariant gap and the last item from the
+  Phase 1 audit's §5.3 aggregation-policy split.
+- **Owner decision (2026-08-25):** null unless every contributing row carries the value —
+  matching the `sumStrict` policy already used in `segment-analytics`, rather than adding a
+  second convention that disagrees at the edges.
+- **Resolution (implemented):** `sumInRange` returns `number | null`: null when no row
+  falls in the range, null when any row that does lacks the value (or carries a non-finite
+  one), a real sum otherwise. The type change surfaced every downstream site that had been
+  silently coalescing:
+  - `MetricResultEvent.results` / `.spend` are now `number | null`. `buildMetricCatalog`
+    computes `totalResults` strictly (null if ANY event is unmeasured) so `cpa_blended` and
+    `cvr` stay null rather than being derived from a partial sum that looks complete;
+    `costPerResult` gained the matching null guard.
+  - Two `spend: scoped.spend ?? 0` fabrications removed from `AdPerformanceView`'s
+    range-scoped tile and drill-down catalogs.
+- **Verification evidence:** six new cases in `date-scope.test.ts` (null on empty range,
+  null on a gap in a contributing row, a gap OUTSIDE the range correctly ignored, null on
+  an empty row set, normal summation when complete, non-finite treated as unmeasured) plus
+  the two existing cases updated to the nullable contract. Full typecheck green, 1,672
+  client tests green, codegen drift clean, production build succeeds.
+
+## BUG-34 — `ad_performance` was the only run-scoped rollup with no run index
+
+- **Symptom (live DB):** the run-tagging block in `schema.sql` creates a
+  `manual_analysis_run_id` index on six rollup tables; `ad_performance` was omitted —
+  despite being the largest of them (9,647 rows live, ~2x the next) and the table the
+  idempotent-rebuild path deletes run-scoped on every re-ingestion. That delete, and
+  every run-scoped read of it, ran against no index.
+- **Root cause:** oversight when the run-tagging block was written; the sibling tables
+  were enumerated and this one was missed.
+- **Category:** Fix-Now (efficiency; grows with the largest table in the schema).
+- **Resolution (implemented):** `ad_performance_run_idx` added to `schema.sql` and
+  applied live, alongside six other missing importer FK indexes
+  (`data_quality_flags`, `signal_cards`, `ad_traffic_quality`, `failure_patterns`,
+  `import_metric_reconciliation` account lookups; `creative_deconstructions`
+  .manual_import_id for parent-delete enforcement).
+
+## BUG-35 — 42 unindexed foreign keys, including every RLS policy predicate column
+
+- **Symptom:** a live audit found 42 single-column FKs with no supporting index.
+  Postgres creates none automatically. Unindexed FKs cost twice: lookups seq-scan, and
+  every parent DELETE scans the whole child table while holding a lock.
+- **Why it matters more than the row counts suggest:** on the official 22-table schema
+  these columns (`analysis_run_id`, `client_id`, `user_id`, `org_id`) are evaluated
+  INSIDE RLS POLICY PREDICATES — once per candidate row, on every read by every signed-in
+  user. The cost sits on the tenancy path, not on joins the application chooses to write.
+- **Category:** Fix-Now (cheap now at current table sizes; expensive to build later under
+  load on the tenancy path).
+- **Resolution (implemented):** migration `20260825000100_fk_index_coverage.sql` (official
+  schema) + `schema.sql` additions (importer). Applied live; index count 118 → 156;
+  unindexed FKs 42 → 7. The 7 survivors are deliberate and documented in the migration:
+  `cohort_key` FKs point at a 4-row config table whose rows are never deleted, and
+  `global_variable_registry.superseded_by` is a self-reference followed one row at a time.
+- **Also fixed in the same pass:** 17 tables had `reltuples = -1` (never analyzed — the
+  planner had no statistics at all, including `cell_creative_overrides` at 6.8 MB).
+  `ANALYZE` run; now 0.
+
+## BUG-36 — `content_md5` NULL on 93% of rows left the BUG-09 duplicate guard inert
+
+- **Symptom:** the same-bytes staging guard compares an incoming file's md5 against
+  currently-staged rows with an equality filter. 172 of 185 `manual_imports` rows carried
+  NULL `content_md5` (the column shipped with the guard but was never backfilled), and
+  `= NULL` never matches — so for 93% of rows the guard silently did nothing.
+- **What it let through (live):** 25 groups of byte-identical files staged into the same
+  slot, every one of which should have been rejected with a 409. Three are performance
+  exports — the kind that double-count spend (`ecas` IAP-DEVICE-MAIN-ECAS.csv x2,
+  `manual_BwsYjC5ZRk0i` real_20mb.csv x2, `manual_QmjeK52K5QiQ` king-DEVi.csv x2). The
+  other 22 are creative assets (storage waste, duplicate library rows, no spend impact).
+- **Spend was not corrupted:** the BUG-19 parse-time cross-file dedupe catches identical
+  rows and drops them with a `[Duplicate data]` warning. Defence in depth held — but the
+  second layer was doing the first layer's job, which is exactly the condition that makes
+  a future regression in either layer invisible.
+- **Category:** Fix-Now (a guard that cannot fire is worse than no guard: it is trusted).
+- **Resolution (implemented):** all 185 rows backfilled, recorded as an idempotent block in
+  `schema.sql` (inline rows via `md5(content)`; chunked rows via chunks reassembled in
+  `chunk_index` order, matching what the complete-step hashes).
+- **Verification evidence:** correctness established BEFORE writing — Postgres
+  `md5(bytea)` checked against all 13 rows that already held an app-written value
+  (11 inline + 2 chunked): 13/13 exact, 0 mismatches. A wrong backfill is worse than a
+  NULL one; it would 409-reject legitimate uploads. All 185 re-verified after.
+
+## Open (owner decision) — upload storage retention
+
+- 533 MB database; 794 MB logical upload bytes across 185 files. Three copies of one
+  138 MB `IAP-DEMO-NEW.csv` (identical md5) account for the entire chunk table: one
+  abandoned `uploading` row on AAFE, two `processed` copies on `manual_kisg7_8qaRG_`.
+- Reclaimable without touching anything still needed: 138 MB abandoned + 270 MB exact
+  duplicates (logical; physical is lower — bytea is TOAST-compressed).
+- `docs/resources/sql/2026-08-25_upload_storage_reclaim.sql` is prepared and deliberately
+  NOT executed: every statement destroys uploaded source files. SELECTs lead, DELETEs stay
+  commented. Processed-file retention still needs the keep-last-N-per-slot decision from
+  the Phase 2 backlog before anything is purged.
+
+## Open (needs a tested change) — SECURITY DEFINER helpers exposed over PostgREST
+
+- Four tenancy helpers are callable by any signed-in user at `/rest/v1/rpc/...`.
+  `metrix_client_id_of_run(run_id)` resolves ANY run UUID to its owning `client_id`,
+  bypassing RLS — a cross-tenant mapping primitive (limited in practice by run ids being
+  unguessable v4 UUIDs). The other three answer only about the caller.
+- **Do NOT simply revoke EXECUTE:** RLS policy expressions evaluate with the querying
+  user's privileges, and all six run-scoped tables call this function inside their
+  policies, so revoking from `authenticated` would break tenant reads outright. Correct
+  remediation is relocating the helpers to a schema PostgREST does not expose and
+  repointing the policy references — a deliberate change with a test pass.
+
+## BUG-37 — RLS policies re-evaluated `auth.uid()` once per row
+
+- **Symptom:** the Supabase *performance* linter (not run in the first backend pass — a
+  real gap in that audit) flagged `auth_rls_initplan` on seven policies:
+  `org_members_select`, `client_memberships_select`, and the select/insert pairs on
+  `review_events`, `human_edits` and `approval_events`. Each called `auth.uid()` bare in
+  the policy expression, so Postgres re-evaluated it per candidate row instead of hoisting
+  it into a one-time InitPlan.
+- **Category:** Fix-Now (cost sits on the tenancy path, paid by every signed-in read; the
+  fix is a pure expression rewrite with no behavioural component).
+- **Resolution (implemented):** rewritten to `(select auth.uid())` in
+  `supabase/policies/20260709000100_rls_all_tables.sql` (idempotent, re-applied every run)
+  and applied live. The four `auth.uid()` calls inside the SECURITY DEFINER helper bodies
+  were deliberately left alone — those evaluate once per function call, not per row, and
+  the functions are STABLE.
+- **Verification evidence:** the full anon + authenticated isolation probe was re-run after
+  the change and returned results **identical to the pre-change baseline** (anon: 42
+  denied / 22 zero / 0 visible; authenticated with no org and no client: 42 denied / 20
+  zero / 2 visible — only the two config-as-data tables). Behaviour preserved, proven.
+
+## BUG-38 — the prepared storage-reclaim script would have destroyed user-edited mappings
+
+- **Symptom:** found by auditing my own prepared cleanup script against live data before
+  recommending it. The original "keep the first copy per (account, kind, md5), delete the
+  rest" ranking had three hazards it did not handle:
+  1. `creative_deconstructions.manual_import_id` is **ON DELETE CASCADE** — deleting a
+     duplicate destroys its AI deconstruction (variables, detected copy, brief refs). All
+     12 live deconstructions happened to sit on rows the ordering kept, but by coincidence
+     of that ordering, not by construction.
+  2. **40 of the 62 duplicate rows carry a non-empty `ad_names` array** — the
+     user-editable creative→ad mapping BUG-10 made correctable. A byte-identical sibling
+     can carry a different or empty mapping, so deleting silently discards hand-corrected
+     work.
+  3. **18 are `status='processed'`**, carrying the run lineage Import History renders and
+     `restage` depends on.
+- **Category:** Fix-Now (a cleanup script that quietly destroys user work is worse than no
+  script — it reads as safe).
+- **Resolution (implemented):** ranking now prefers rows carrying a deconstruction, then
+  `ad_names`, then processed, then oldest; and the delete additionally refuses to touch any
+  row still carrying a deconstruction or a mapping regardless of rank. Safe set drops from
+  62 files / 270 MB to **22 files / 189 MB**, with 40 files / 81 MB explicitly held back for
+  a human. Script remains unexecuted.
+
+## Deferred with reasons (not defects)
+
+- **Storage reclaim before deploy — recommended against.** No disk pressure (533 MB, ~7% of
+  the plan's 8 GB); deleting source files immediately before a deploy removes restage
+  capability exactly when it is most likely needed; and the duplicates are inert now that
+  `content_md5` is backfilled (new duplicates 409 at the door) and BUG-19 dedupe catches
+  the rest. Deploy first, confirm stable, then reclaim.
+- **`multiple_permissive_policies` on 12 tables.** Both a `_select` (SELECT) and `_write`
+  (ALL) policy evaluate on every SELECT. Fixing means splitting each `_write` into separate
+  INSERT/UPDATE/DELETE policies (Postgres allows one command per policy), turning 12
+  policies into 36 on the tenancy path right before a deploy, for a saving unmeasurable at
+  current sizes (most tables under 10 rows). Revisit at real volume.
+- **`unused_index` linter INFOs — do NOT act on them.** ~40 reported, including every index
+  created in this pass. `pg_stat_user_indexes` counters start at zero for a new index and
+  these tables carry almost no traffic; treating that list as a cleanup list would undo the
+  fix. Revisit after real production load.
+- **`auth_db_connections_absolute`.** Auth server pinned to 10 connections rather than a
+  percentage allocation, so scaling the instance will not scale Auth. Dashboard one-liner,
+  worth doing before scaling.

@@ -736,8 +736,8 @@ export interface AnalysisRun {
   progress_pct?: number;
   /** Human-readable label for the current pipeline stage (e.g. "Parsing demographics export"). Empty string when idle or complete. */
   progress_stage?: string;
-  /** Cross-checks the demographic export's totals against the placement export's totals for this run — both are pivot slices of the same underlying campaigns, so a large delta flags a real data-integrity problem (mismatched date ranges, partial exports, wrong file uploaded). */
-  reconciliation: ReconciliationRow[];
+  /** Intended to cross-check the demographic export's totals against the placement export's totals for this run. NOT CURRENTLY POPULATED — no server code writes it and `import_metric_reconciliation` has no writer, so this is always absent. Declared optional rather than required for exactly that reason: a required field the server never sends is a contract that lies, and consumers must not assume it is present. The equivalent integrity check that DOES run today is the over-baseline guard in `computeDataCoverage`, surfaced through `data_coverage` and the run's csv_warnings. Treat this field as reserved; if the writer is implemented, move it back to `required`. */
+  reconciliation?: ReconciliationRow[];
 }
 
 export interface SyncCreativeLinksResult {
