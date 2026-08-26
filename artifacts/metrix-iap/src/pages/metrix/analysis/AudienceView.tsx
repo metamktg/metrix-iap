@@ -54,6 +54,7 @@ import {
   type SegmentId, type SegmentRawTotals,
   type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
+import { buildSegmentMetricCatalog } from "@/lib/data/segmentMetricsCatalog";
 import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
 import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
 import {
@@ -438,6 +439,33 @@ function ShareOfSpendCard({
 
 // ── Group detail — collapsed by default, indexed against account average ─
 
+// ─── Reasons for an absent stat (C3) ──────────────────────────────────
+//
+// The dashes on these rows used to be unexplainable. Rather than write a
+// second set of reason strings, both helpers read the ones the segment
+// metric catalog already computes — the same text the drill-down modal
+// shows — so a change to why a metric is unavailable lands everywhere at
+// once instead of drifting between surfaces.
+
+function segmentStatReason(
+  totals: SegmentRawTotals,
+  derived: SegmentDerivedMetrics,
+  metricId: string,
+): string | undefined {
+  const m = buildSegmentMetricCatalog(totals, derived).find((x) => x.id === metricId);
+  return m?.availability === "unavailable" ? m.unavailableReason : undefined;
+}
+
+/** An index compares this group against the account blend; say which half is missing. */
+function indexReason(label: string, accountValue: number | null, groupValue: number | null): string | undefined {
+  if (accountValue != null && accountValue > 0 && groupValue != null) return undefined;
+  if (groupValue == null && (accountValue == null || accountValue <= 0)) {
+    return `neither this group's ${label} nor the account blend could be measured, so there is nothing to index against`;
+  }
+  if (groupValue == null) return `this group's own ${label} could not be measured`;
+  return `the account-wide ${label} baseline could not be measured, so an index against it would be meaningless`;
+}
+
 function GroupDetailRow({
   group, accountDerived, onSelectMember, resultPlural,
 }: {
@@ -491,9 +519,21 @@ function GroupDetailRow({
         />
       </div>
       <div className="flex items-center gap-4 shrink-0">
-        <KpiStat label="CPA index" value={cpaIndex != null ? `${cpaIndex}%` : "—"} />
-        <KpiStat label="CVR index" value={cvrIndex != null ? `${cvrIndex}%` : "—"} />
-        <KpiStat label="Spend" value={group.totals.spend != null ? fmtUSD(group.totals.spend, 0) : "—"} />
+        <KpiStat
+          label="CPA index"
+          value={cpaIndex != null ? `${cpaIndex}%` : "—"}
+          unavailableReason={indexReason("CPA", accountDerived.cpa, group.derived.cpa)}
+        />
+        <KpiStat
+          label="CVR index"
+          value={cvrIndex != null ? `${cvrIndex}%` : "—"}
+          unavailableReason={indexReason("CVR", accountDerived.cvr, group.derived.cvr)}
+        />
+        <KpiStat
+          label="Spend"
+          value={group.totals.spend != null ? fmtUSD(group.totals.spend, 0) : "—"}
+          unavailableReason={segmentStatReason(group.totals, group.derived, "spend")}
+        />
         <KpiStat label={resultPlural} value={fmtNum(group.totals.results)} />
       </div>
     </div>
@@ -614,9 +654,12 @@ function RankedListTab({
               </div>
               <div className="ml-6 flex items-center gap-4 flex-wrap">
                 <KpiStat label={resultPlural}  value={fmtNum(e.totals.results)}                                   highlight={activeMetric.id === "results"} />
-                <KpiStat label="CPA"           value={e.derived.cpa != null ? fmtUSD(e.derived.cpa) : "—"}       highlight={activeMetric.id === "cpa"} />
-                <KpiStat label="Spend"         value={e.totals.spend != null ? fmtUSD(e.totals.spend, 0) : "—"}  highlight={activeMetric.id === "spend"} />
-                <KpiStat label="CTR"           value={e.derived.ctr != null ? fmtPct(e.derived.ctr) : "—"}       highlight={activeMetric.id === "ctr"} />
+                <KpiStat label="CPA"           value={e.derived.cpa != null ? fmtUSD(e.derived.cpa) : "—"}       highlight={activeMetric.id === "cpa"}
+                         unavailableReason={segmentStatReason(e.totals, e.derived, "cpa")} />
+                <KpiStat label="Spend"         value={e.totals.spend != null ? fmtUSD(e.totals.spend, 0) : "—"}  highlight={activeMetric.id === "spend"}
+                         unavailableReason={segmentStatReason(e.totals, e.derived, "spend")} />
+                <KpiStat label="CTR"           value={e.derived.ctr != null ? fmtPct(e.derived.ctr) : "—"}       highlight={activeMetric.id === "ctr"}
+                         unavailableReason={segmentStatReason(e.totals, e.derived, "ctr")} />
               </div>
             </button>
           );

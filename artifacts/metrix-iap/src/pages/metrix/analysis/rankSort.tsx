@@ -279,15 +279,35 @@ export function MetricPickerTile({
 }
 
 /** Tiny labeled KPI value used inside data-rich list rows. */
+/**
+ * A dense stat cell with an optional reason for an absent value (C3).
+ *
+ * KpiStat had no disclosure slot at all, so every "—" on the Audience
+ * stat rows was structurally unexplainable — the reader could not tell a
+ * metric this segment genuinely cannot compute from one the page failed to
+ * compute. The `segmentMetricsCatalog` availability/unavailableReason
+ * pattern already solves this everywhere else, and its `missing()` strings
+ * are the reasons passed in here; this only supplies the render half.
+ *
+ * The affordance is a dotted underline plus a `title`, NOT a tooltip or a
+ * DetailReveal: these stats also render inside button-cards (the ranked
+ * segment rows), where the rulebook forbids a nested interactive element.
+ * One mechanism that is correct in both places beats two that disagree.
+ */
 export function KpiStat({
   label,
   value,
   highlight,
+  unavailableReason,
 }: {
   label: string;
   value: string;
   highlight?: boolean;
+  /** Why this stat has no value. Ignored when a real value is present. */
+  unavailableReason?: string;
 }) {
+  const isAbsent = value === "—" || value === "n/a";
+  const reason = isAbsent ? unavailableReason : undefined;
   return (
     <div className="min-w-0">
       <div className={cn(TYPE.microLabel, "mb-1")}>
@@ -296,8 +316,10 @@ export function KpiStat({
       <div
         className={cn(
           "text-caption font-semibold tabular-nums leading-none truncate",
-          highlight ? "text-interactive" : "text-foreground/90"
+          highlight ? "text-interactive" : "text-foreground/90",
+          reason && "border-b border-dotted border-muted-foreground/40 cursor-help",
         )}
+        {...(reason ? { title: `${label}: ${reason}`, "data-unavailable-reason": reason } : {})}
       >
         {value}
       </div>

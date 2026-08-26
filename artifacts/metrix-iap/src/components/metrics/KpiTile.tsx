@@ -120,6 +120,19 @@ export interface KpiTileTrend {
   priorFormatted: string;
 }
 
+/**
+ * What a null on this tile means, when the metric carries no note of its
+ * own. Deliberately says which of the two cases it is — the catalog omits
+ * metrics it cannot compute at all (`hideWhenNull`), so a null that
+ * survives to a rendered tile is an absence of measurement, not an absence
+ * of definition.
+ */
+function unavailableNote(m: MetricDef): string {
+  return m.isResultEvent
+    ? "No rows in the current selection carry this result event, so there is nothing to total. This is an absence of data, not a value of zero."
+    : "Not measured in the current selection — no row carries this field over the active scope. This is an absence of data, not a value of zero.";
+}
+
 export interface KpiTileProps {
   metricId: string;
   catalog: MetricDef[];
@@ -146,11 +159,21 @@ export function KpiTile({
   const m = metricById(catalog, metricId);
   if (!m) return null;
 
-  const infoContent = disclosure || m.sub
+  // C4: the ⓘ used to appear only when a metric carried `sub` or a caller
+  // passed `disclosure`, so the six base hero metrics — spend, impressions,
+  // reach, clicks, link clicks, link CTR — rendered a bare "—" with no way
+  // to ask why. Those are the highest-visibility numbers on the platform,
+  // and a dash the reader cannot interrogate is exactly the ambiguity the
+  // honest-null convention exists to remove. A null value now always has
+  // something behind the ⓘ: the metric's own note when it has one, and
+  // otherwise a statement of what null means here.
+  const nullNote = m.value == null ? unavailableNote(m) : null;
+  const infoContent = disclosure || m.sub || nullNote
     ? (
       <div className="space-y-1">
         {disclosure}
         {m.sub && <div className="text-muted-foreground/80">{m.sub}</div>}
+        {!m.sub && nullNote && <div className="text-muted-foreground/80">{nullNote}</div>}
       </div>
     )
     : null;
