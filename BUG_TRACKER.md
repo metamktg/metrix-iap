@@ -1169,6 +1169,42 @@ fail, including the one that states the actual guarantee — *two runs at the sa
 render differently when their ages differ*. Full suite 119 files / 1,704 tests; typecheck and the
 blocking disclosure rulebook green.
 
+## BUG-46 — an integration test leaked a permanent account into production on every run
+
+- **Category:** Fix-Now (test hygiene with a production side effect). Found while decluttering
+  the account list.
+- **Symptom:** 18 accounts named `Reupload Isolation Test <timestamp>` in the live account
+  picker, created 2026-08-23 → 2026-08-26 — **69% of the 26 accounts a user saw**. Every one
+  was marked `configured`, so none of them read as debris; they just looked like accounts whose
+  analysis had not run.
+- **Root cause:** `manualAnalysisReuploadIsolation.test.ts` creates a REAL account in the live
+  database (`createManualAccount(\`Reupload Isolation Test ${Date.now()}\`)`) and has an
+  `afterAll` that tries to remove it. Two faults compounded:
+  1. Cleanup deletes rollup rows by `manual_analysis_run_id`, but an analysis run also writes
+     `demographic_signal`, `placement_signal` and `iap_runs`, none of which HAS that column —
+     they are account-scoped, so the run-scoped loop could never reach them.
+  2. Every FK to `ad_accounts` is `NO ACTION`, so those leftovers blocked the account delete —
+     and the delete's `{ error }` was never checked. It failed silently, every run.
+- **Why it survived:** the delete "succeeded" as far as anyone looked, because nobody looked.
+  The test asserts its own subject thoroughly and asserted nothing about its own cleanup.
+- **Resolution:** `ACCOUNT_SCOPED_TABLES` now covers the three missing tables; every cleanup
+  delete checks its error; and the account is re-queried afterwards, failing the test if it
+  survived. That last check is the durable part — if a new table starts referencing
+  `ad_accounts`, this becomes a red test instead of another row in the picker.
+- **Correction worth recording:** an earlier pass here reported these accounts as holding "zero
+  of everything". That was based on a hand-picked list of seven tables. A sweep over every table
+  with an FK to `ad_accounts` found 54 rows (3 per account) that the narrow check had missed.
+  The narrow check was the same mistake the test made.
+- **Cleanup:** the 18 accounts and their 54 synthetic rows were removed (2026-08-26), along with
+  8 older empty test accounts and their 6 staged files. **34 accounts → 8 real ones.**
+  `ad_performance` 9,647 before and after, `manual_imports` 164, `creative_deconstructions` 12,
+  analysis runs 36, generation runs 34 — all unchanged.
+- **Not verifiable here:** this test needs live secrets and does not run in CI, so the fix is
+  typechecked but was NOT executed in this environment. It runs on the next local full
+  api-server suite.
+
+---
+
 ## BUG-45 — redundant byte-identical staged copies made every run warn, and wasted storage
 
 - **Category:** Phase 2 Polish (clutter + storage). Found while auditing the deferred

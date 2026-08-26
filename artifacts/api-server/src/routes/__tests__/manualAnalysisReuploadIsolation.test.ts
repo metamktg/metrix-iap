@@ -120,6 +120,15 @@ const ROLLUP_TABLES = [
   "device_performance",
 ];
 
+// Tables an analysis run writes that are scoped to the ACCOUNT, not the run.
+// The loop above deletes by `manual_analysis_run_id`; these three have no such
+// column, so it could never reach them — and because every FK to ad_accounts
+// is NO ACTION, the leftover rows blocked the account delete below, whose
+// error was never checked. The result was one permanent "Reupload Isolation
+// Test <timestamp>" account in the LIVE account picker per test run: 18 of
+// them had accumulated by 2026-08-26, 69% of the account list.
+const ACCOUNT_SCOPED_TABLES = ["ads", "demographic_signal", "placement_signal", "iap_runs"];
+
 beforeAll(async () => {
   const [admin] = await db
     .insert(usersTable)
@@ -153,9 +162,24 @@ afterAll(async () => {
   if (stagedImportIds.length > 0) {
     await supabase.from("manual_imports").delete().in("id", stagedImportIds);
   }
+  // Collected, not thrown immediately: the server and pool below must still
+  // close, or a cleanup failure leaks a port and a connection on top of a row.
+  let leak: string | null = null;
   if (testAccountId) {
-    await supabase.from("ads").delete().eq("account_id", testAccountId);
-    await supabase.from("ad_accounts").delete().eq("id", testAccountId);
+    for (const table of ACCOUNT_SCOPED_TABLES) {
+      const { error } = await supabase.from(table).delete().eq("account_id", testAccountId);
+      if (error) leak ??= `cleanup failed on ${table}: ${error.message}`;
+    }
+    const { error: acctErr } = await supabase.from("ad_accounts").delete().eq("id", testAccountId);
+    if (acctErr) leak ??= `cleanup failed on ad_accounts: ${acctErr.message}`;
+    // Verify rather than assume. This is the check whose absence let the leak
+    // run for weeks: the delete "succeeded" as far as anyone looked, because
+    // nobody looked. If a future table starts referencing ad_accounts, this
+    // turns the leak into a red test instead of another row in the picker.
+    const { data: survivors } = await supabase.from("ad_accounts").select("id").eq("id", testAccountId);
+    if (survivors && survivors.length > 0) {
+      leak ??= `test account ${testAccountId} survived cleanup — a table referencing ad_accounts is missing from ACCOUNT_SCOPED_TABLES/ROLLUP_TABLES`;
+    }
   }
   if (adminUserId !== undefined) {
     await db.delete(userSessionsTable).where(inArray(userSessionsTable.userId, [adminUserId]));
@@ -163,6 +187,7 @@ afterAll(async () => {
   }
   await close?.();
   await pool.end();
+  if (leak) throw new Error(leak);
 }, 120_000);
 
 // ── Helpers ────────────────────────────────────────────────────────────
