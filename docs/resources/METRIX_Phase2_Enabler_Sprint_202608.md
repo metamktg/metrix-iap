@@ -56,6 +56,30 @@ prompt). Type in `seedTypes.ts`; UI teams consume in Phase 3. Do NOT redesign th
 here — contract only, with the card face falling back to today's rendering when
 structured fields are absent (honesty: no fabricated headlines from regex-mangled prose).
 
+**Status: landed, with one correction to the above.** The contract is in the schema
+(`signal_cards`: `headline`, `metric_value`, `metric_context`, `delta_pct`, `implication`,
+all nullable), in `cardShape` (which also exposes `action`, `evidence_ref` and `body` as the
+contract's names for the existing `recommended_action`, `source_path` and `rationale`), and in
+`seedTypes.ts`.
+
+The correction: **there is no generation-engine producer of signal cards to extend.** The only
+writer of `signal_cards` is the source-data importer (`import.ts`) — no analysis or generation
+run emits one. So "generation engine emits the full shape for new cards" had no code to attach
+to, and the zod schema and prompt were left alone rather than given a card shape that nothing
+would ever call. The importer now passes structured fields through when a source package states
+them; today's packages state prose only, so all five land NULL on all 8 live cards.
+
+Also worth recording, because it shaped the contract: the worked example above
+("underspend (critical): Spend recorded ($57.97) is 5.8% of the committed ~$1,000 pilot
+budget…") is not a real signal — it comes from the design mockup
+(`artifacts/mockup-sandbox/src/components/mockups/analysis-overview/SignalFeed.tsx`). Real cards
+read like "C4E is the current checkout-depth control". The contract was built against the real
+rows, and the mockup's shape remains what a future producer should aim at.
+
+Nothing derives structure from prose, in either the importer or the seed. That is the whole
+point of the `derivation fallback` phrasing above and is pinned by tests: a card with no
+structured fields renders from `title`/`rationale` exactly as it does today.
+
 ## E2 — KPI analytical context (brief §9, §10)
 
 **Current state:** `KpiTile.tsx` + `metricsCatalog.ts` render point-in-time values; the

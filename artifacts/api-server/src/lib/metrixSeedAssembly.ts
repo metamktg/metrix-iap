@@ -892,6 +892,23 @@ const deconstructionSeedShape = (r: Row): Row => ({
 });
 
 // ── Cards ────────────────────────────────────────────────────────────
+// ── Signal card shape, including the structured contract (E1) ─────────
+//
+// A card's analysis is prose, so the UI can only render sentences. The
+// structured fields below state the parts a card FACE needs — the number,
+// what it is measured against, the one-line reading — alongside the prose,
+// which becomes the disclosure-layer `body`.
+//
+// They are null whenever the producer did not supply them, and nothing here
+// derives them from the prose. Regex-mangling "Spend recorded ($57.97) is
+// 5.8% of the committed ~$1,000" into a headline and a metric would be
+// fabricating structure the producer never asserted, and a card face is
+// exactly where a fabricated number does the most damage. A card with no
+// structured fields renders from `title`/`rationale` as it does today.
+//
+// `action` and `evidence_ref` are the existing `recommended_action` and
+// `source_path` under the contract's names — the same values, not new ones —
+// and both original keys stay for callers already reading them.
 const cardShape = (c: Row) => ({
   id: c["card_id"],
   account_id: c["account_id"],
@@ -903,6 +920,15 @@ const cardShape = (c: Row) => ({
   source_path: c["source_path"] ?? undefined,
   recommended_action: c["recommended_action"],
   ...(c["manager_card_descriptor"] ? { manager_card_descriptor: c["manager_card_descriptor"] } : {}),
+  // ── structured contract ──
+  headline: c["headline"] ?? null,
+  metric_value: c["metric_value"] ?? null,
+  metric_context: c["metric_context"] ?? null,
+  delta_pct: c["delta_pct"] === null || c["delta_pct"] === undefined ? null : Number(c["delta_pct"]),
+  implication: c["implication"] ?? null,
+  action: c["recommended_action"] ?? null,
+  evidence_ref: c["source_path"] ?? null,
+  body: c["rationale"] ?? null,
 });
 
 // ─── assembly ─────────────────────────────────────────────────────────

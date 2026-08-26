@@ -784,3 +784,100 @@ describe("generated output currency (GAP-01)", () => {
     expect((bb["draft_briefs"] as Row[]).map((b) => b["id"])).toEqual(["GEN_BRIEF_new_1"]);
   });
 });
+
+// ── E1: the structured signal contract ──────────────────────────────────────
+//
+// Signal cards carry their analysis as prose, so a card face can only render
+// sentences. The structured fields state the parts a face needs — the number,
+// its baseline, the one-line reading — ALONGSIDE the prose, which becomes the
+// disclosure-layer body.
+//
+// The honesty rule this pins: nothing is derived from the prose. A producer
+// that supplies structure gets it through untouched; one that does not leaves
+// nulls, and the face falls back to today's title/rationale rendering. A
+// headline regexed out of "Spend recorded ($57.97) is 5.8% of…" would be a
+// fabricated headline, and a card face is where that does the most damage.
+
+describe("structured signal contract (E1)", () => {
+  const acct = "sig_acct";
+
+  const card = (over: Row = {}): Row => ({
+    card_id: "SIG_1",
+    account_id: acct,
+    surface: "listen",
+    scope: "creative",
+    title: "C4E is the current checkout-depth control",
+    rationale: "C4E's aspirational authority/static system generated the majority of checkout volume.",
+    impact: "high",
+    confidence: "medium",
+    source_path: "analysis.creative.C4E",
+    recommended_action: "Build challenger variants before scaling",
+    ...over,
+  });
+
+  const listenCards = (rows: Row[]): Row[] => {
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(acct)]);
+    t.signalCards = rows;
+    const obj = buildAccountObject({ id: acct, name: "Sig", status: "configured" }, t);
+    return obj["listen"]["signal_cards"] as Row[];
+  };
+
+  it("leaves structured fields null when the producer supplies only prose", () => {
+    const [c] = listenCards([card()]);
+    expect(c!["headline"]).toBeNull();
+    expect(c!["metric_value"]).toBeNull();
+    expect(c!["metric_context"]).toBeNull();
+    expect(c!["delta_pct"]).toBeNull();
+    expect(c!["implication"]).toBeNull();
+    // …and the prose the face falls back to is untouched.
+    expect(c!["title"]).toBe("C4E is the current checkout-depth control");
+    expect(c!["rationale"]).toContain("aspirational authority");
+  });
+
+  it("never derives a headline or a metric from the prose", () => {
+    // The prose here is exactly the shape a regex would be tempted by.
+    const [c] = listenCards([
+      card({ rationale: "Spend recorded ($57.97) is 5.8% of the committed ~$1,000 pilot budget." }),
+    ]);
+    expect(c!["headline"]).toBeNull();
+    expect(c!["metric_value"]).toBeNull();
+    expect(c!["delta_pct"]).toBeNull();
+  });
+
+  it("exposes the prose as `body` and mirrors action/evidence under the contract names", () => {
+    const [c] = listenCards([card()]);
+    expect(c!["body"]).toBe(c!["rationale"]);
+    expect(c!["action"]).toBe("Build challenger variants before scaling");
+    expect(c!["evidence_ref"]).toBe("analysis.creative.C4E");
+    // The original keys stay for callers already reading them.
+    expect(c!["recommended_action"]).toBe(c!["action"]);
+    expect(c!["source_path"]).toBe(c!["evidence_ref"]);
+  });
+
+  it("passes a producer's structured fields through untouched", () => {
+    const [c] = listenCards([
+      card({
+        headline: "Underspend",
+        metric_value: "$57.97",
+        metric_context: "of $1,000 committed",
+        delta_pct: -94.2,
+        implication: "Delivery stalled before the test could read.",
+      }),
+    ]);
+    expect(c!["headline"]).toBe("Underspend");
+    expect(c!["metric_value"]).toBe("$57.97");
+    expect(c!["metric_context"]).toBe("of $1,000 committed");
+    expect(c!["delta_pct"]).toBe(-94.2);
+    expect(c!["implication"]).toBe("Delivery stalled before the test could read.");
+    // Structure is added ALONGSIDE the prose, never instead of it.
+    expect(c!["body"]).toBe(c!["rationale"]);
+  });
+
+  it("keeps delta_pct numeric and distinguishes a real 0 from absent", () => {
+    const [zero] = listenCards([card({ delta_pct: 0 })]);
+    expect(zero!["delta_pct"]).toBe(0);          // a measured zero
+    const [absent] = listenCards([card()]);
+    expect(absent!["delta_pct"]).toBeNull();     // not measured — never 0
+  });
+});

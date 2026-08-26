@@ -432,6 +432,33 @@ export interface SignalCard {
   confidence: string;
   source_path?: string;
   recommended_action: string;
+
+  // ── Structured signal contract (E1) ─────────────────────────────────
+  // The card's analysis is prose. These state the parts a card FACE needs
+  // alongside it — never instead of it — so a surface can lead with the
+  // number rather than a sentence.
+  //
+  // Every one is `null` when the producer did not supply it, and NOTHING
+  // derives them from the prose: a headline pattern-matched out of a
+  // sentence is a fabricated headline, and a card face is where that does
+  // the most damage. Treat null as "render the prose the way you do today",
+  // never as "nothing to show" and never as a value to invent.
+  /** Short card-face title, e.g. "Underspend". Null → fall back to `title`. */
+  headline?: string | null;
+  /** The number that matters, pre-formatted by the producer, e.g. "$57.97". */
+  metric_value?: string | null;
+  /** What that number is measured against, e.g. "of $1,000 committed". */
+  metric_context?: string | null;
+  /** Signed change where one is meaningful; null when it is not. */
+  delta_pct?: number | null;
+  /** One-sentence card-face reading (≤120 chars). */
+  implication?: string | null;
+  /** One imperative clause. Mirrors `recommended_action`. */
+  action?: string | null;
+  /** Evidence link. Mirrors `source_path`. */
+  evidence_ref?: string | null;
+  /** The full prose, for the drawer/disclosure layer. Mirrors `rationale`. */
+  body?: string | null;
 }
 
 // ─── MST ──────────────────────────────────────────────────────────────

@@ -1734,23 +1734,36 @@ async function main() {
     }
 
     // ── Cards (listen + manager) ───────────────────────────────────────
+    // Structured signal fields (E1) are passed through ONLY when the source
+    // package states them. Today's packages carry prose alone, so these land
+    // NULL and the card face falls back to title/rationale — which is the
+    // honest outcome. Deriving a headline or a metric from the prose here
+    // would invent structure the analysis never asserted.
+    const signalStructured = (c: any) => [
+      str(c.headline), str(c.metric_value), str(c.metric_context),
+      c.delta_pct === undefined || c.delta_pct === null ? null : Number(c.delta_pct),
+      str(c.implication),
+    ];
     const bookster = seed.ad_accounts.find((a: any) => a.id === ACCOUNT_ID);
     for (const c of bookster?.listen?.signal_cards ?? []) {
       await q(
         `insert into signal_cards (card_id, account_id, surface, scope, title, rationale, impact, confidence,
-           source_path, recommended_action, manager_card_descriptor)
-         values ($1,$2,'listen',$3,$4,$5,$6,$7,$8,$9,null)`,
+           source_path, recommended_action, manager_card_descriptor,
+           headline, metric_value, metric_context, delta_pct, implication)
+         values ($1,$2,'listen',$3,$4,$5,$6,$7,$8,$9,null,$10,$11,$12,$13,$14)`,
         [c.id, ACCOUNT_ID, c.scope, c.title, c.rationale, c.impact, c.confidence,
-          str(c.source_path), c.recommended_action],
+          str(c.source_path), c.recommended_action, ...signalStructured(c)],
       );
     }
     for (const c of seed.manager_account?.recommendation_cards ?? []) {
       await q(
         `insert into signal_cards (card_id, account_id, surface, scope, title, rationale, impact, confidence,
-           source_path, recommended_action, manager_card_descriptor)
-         values ($1,$2,'manager_overview',$3,$4,$5,$6,$7,$8,$9,$10)`,
+           source_path, recommended_action, manager_card_descriptor,
+           headline, metric_value, metric_context, delta_pct, implication)
+         values ($1,$2,'manager_overview',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
         [c.id, c.account_id === "skov_pet" ? "skov_pet" : ACCOUNT_ID, c.scope, c.title, c.rationale,
-          c.impact, c.confidence, str(c.source_path), c.recommended_action, str(c.manager_card_descriptor)],
+          c.impact, c.confidence, str(c.source_path), c.recommended_action, str(c.manager_card_descriptor),
+          ...signalStructured(c)],
       );
     }
 
