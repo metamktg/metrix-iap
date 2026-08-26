@@ -1169,6 +1169,45 @@ fail, including the one that states the actual guarantee — *two runs at the sa
 render differently when their ages differ*. Full suite 119 files / 1,704 tests; typecheck and the
 blocking disclosure rulebook green.
 
+## BUG-45 — redundant byte-identical staged copies made every run warn, and wasted storage
+
+- **Category:** Phase 2 Polish (clutter + storage). Found while auditing the deferred
+  storage-reclaim script against live data before running any of it.
+- **Symptom:** three accounts each held TWO byte-identical files STAGED in the same slot —
+  `ecas` (`IAP-DEVICE-MAIN-ECAS.csv` ×2, placement), `manual_BwsYjC5ZRk0i` / Gabri
+  (`real_20mb.csv` ×2, demographics), `manual_QmjeK52K5QiQ` / AAFE (`king-DEVi.csv` ×2,
+  placement). Every analysis run on those accounts parsed the second copy in full, dropped all
+  of its rows as duplicates, and emitted a `[Duplicate data]` warning telling the user to remove
+  one of the files — a warning nothing else was going to resolve.
+- **Root cause:** BUG-09's same-bytes guard returns 409 when staging a file byte-identical to one
+  already `staged` in that slot. The guard is prospective only and was never paired with a
+  cleanup of the pairs that already existed when it shipped.
+
+### Correction — this was NOT a double-count
+
+An earlier version of this entry claimed the next run on ECAS or Gabri would have summed both
+copies and reported roughly double the spend. **That is wrong**, and it is worth recording why
+rather than quietly editing it out. `appendRowsCrossFileDeduped` already dedupes rows across
+staged files by `stableRowSignature` — identical dates, breakdowns and metric values are
+"counted once, never twice" — so every row of the second copy was already being dropped. The
+BUG-09 tracker entry describes the double-count as the pre-fix behaviour; that row-level dedupe
+is the fix, and it was working.
+
+The real cost was therefore clutter, wasted bytes, and a recurring warning on every run — not a
+wrong number. The reclaim was still correct; the severity was not.
+
+- **Resolution:** the duplicate copy was removed from each pair (2026-08-26), keeping one.
+  Verified zero byte-identical staged pairs remain. `ad_performance` held 9,647 rows before and
+  after, and `creative_deconstructions` 12 before and after — nothing derived was touched.
+- **Deliberately NOT added:** an md5-level skip at consumption time. The row-level dedupe
+  already protects the number; the only thing an earlier skip would save is parsing a file whose
+  rows are all about to be dropped, which does not justify touching the ingest path.
+- **Worth carrying forward:** a guard added for a defect does not retire the instances that
+  predate it. When a constraint is introduced, check what already violates it — and check what
+  ELSE already defends against it before pricing the exposure.
+
+---
+
 ## BUG-44 — upload-time warnings were ephemeral: shown once, then unrecoverable
 
 - **Category:** Fix-Now (honesty invariant). Carried as "ephemeral upload warnings" in the

@@ -1,4 +1,37 @@
--- METRIX — upload storage reclaim (prepared 2026-08-25, NOT YET RUN)
+-- METRIX — upload storage reclaim
+--
+-- ══ EXECUTION RECORD — 2026-08-26 ═══════════════════════════════════
+-- STEP 1 and a NARROWED STEP 2 were run in production on 2026-08-26.
+-- STEP 3 was deliberately NOT run. STEP 4 is still outstanding.
+--
+--   STEP 1  abandoned 'uploading' session      1 row   (138 MB logical)
+--   STEP 2  duplicate copies, narrowed        14 rows  ( 26 MB logical)
+--   ─────────────────────────────────────────────────────────────────
+--   manual_imports        185 → 170     manual_import_chunks  105 → 70
+--   creative_deconstructions  12 → 12   ad_performance  9,647 → 9,647
+--
+-- STEP 2 was narrowed beyond the guards below: rows carrying
+-- `manual_analysis_run_id` were ALSO excluded (8 of the 22 the original
+-- predicate called safe). That lineage is what Import History shows and what
+-- `restage-run/:runId` reads, and BUG-08 has since made re-staging a
+-- documented, sign-posted path — so dropping those rows would have quietly
+-- regressed a feature that had just been made discoverable. Kept 8 rows /
+-- ~163 MB rather than take that.
+--
+-- It also cleared three accounts (ECAS, Gabri, AAFE) that each held TWO
+-- byte-identical files STAGED in the same slot — pre-guard leftovers the
+-- BUG-09 staging guard rejects on the way in but never cleaned up behind it.
+-- These did NOT double-count: `appendRowsCrossFileDeduped` already drops
+-- exact-duplicate rows across staged files. What they did was make every run
+-- parse the second copy, discard all of its rows, and emit a
+-- `[Duplicate data]` warning nothing else was going to resolve. Zero such
+-- pairs remain. See BUG-45, which records the corrected severity.
+--
+-- STEP 4 NOT DONE: plain DELETE only marks tuples dead. `vacuum (analyze)`
+-- was run on both tables, which returns the space to each table's free list —
+-- the database still reports 533 MB, because only VACUUM FULL returns space
+-- to the filesystem and that holds an ACCESS EXCLUSIVE lock. Schedule it.
+-- ════════════════════════════════════════════════════════════════════
 --
 -- Prepared during the pre-deploy backend audit. DELIBERATELY NOT EXECUTED:
 -- every statement here destroys uploaded source files, which is the repo
