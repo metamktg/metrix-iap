@@ -1425,3 +1425,87 @@ and 4 shared-helper tests; restored, all pass.
 The **archive UI surface**. Nothing yet lets a user open a superseded set, so the history is
 preserved but not browsable — "an archive nobody can open is just storage". The data and its
 lineage are now there for that surface to read, which was the blocking half.
+
+## E6 — carry-forward hardening sweep (2026-08-26)
+
+The Phase 2/3 handoff bundle arrived as a courier zip whose carry-forward register was written
+on 2026-08-25. BUG-28 → BUG-46 landed between then and now, so the first job was establishing
+which register items were still real. Every one was checked by opening the file; the results,
+with verdicts and line references, are in `docs/resources/CARRY_FORWARD_REGISTER.md`, which is
+now the canonical E6 record.
+
+**Overtaken by work already merged** — C2 (BUG-33), C8 (BUG-32), C9 (BUG-30), C11 (BUG-44), and
+the larger half of C5 (BUG-11's open half). Not re-fixed.
+
+**Fixed in this sweep:**
+
+- **C1** — `AvatarsView`'s "Creative combos" was titled "Concept × placement × platform" over one
+  table holding two disjoint row sets (concept rows with placement/platform "—", placement rows
+  with concept "—"). The join is not computed anywhere and cannot be from current data:
+  `performance_by_cell` carries no placement dimension, and `placement_performance` is keyed
+  (account, placement, window) with the ad dimension already aggregated away. Now two
+  separately-headed rankings, each with only the columns its grain measures, and a disclosure
+  saying why they are not combined. Recorded for the future: the raw Meta device/placement export
+  DOES carry `Ad name` per row, so a real cross-tab is buildable behind an ad-level placement
+  rollup that no ingestion path writes today.
+- **C5 (remainder)** — `buildLibraryMetricCatalog` aggregated adds-to-cart and checkouts on "ANY
+  row carries it", folding the rest with `?? 0`. Three measured cells out of eleven summed to a
+  figure that rendered complete and was then divided by a COMPLETE link-click denominator,
+  understating every downstream rate. Both now follow the policy the owner set on BUG-11 and
+  report coverage. That policy has one implementation (`lib/strict-sum.ts`); `segment-analytics`
+  and `date-scope` delegate to it. One existing test asserted the old folding by name and is
+  superseded in place, with the reason, rather than deleted.
+- **R1/R2/R3** — three silent-failure holes. `KpiDrilldownModal` read typed event rows through
+  `as any`, where a renamed key yields `NaN` (not null), so the "no data" note never fires and
+  the modal renders a confident wrong number. `run-scope`/`date-scope` read the concept hint
+  through `as Record<string, unknown>`, where a rename silently drops rows in or out of scope;
+  `ConceptHint` is now an indexed access into `CellPerformanceRow`, verified by renaming the
+  field and watching the build fail on that line. `SegmentDrilldownModal` rendered the same "—"
+  for an honest absence and a catalog miss.
+- **C3/C4** — `KpiStat` had no disclosure slot at all, and `KpiTile` suppressed its ⓘ whenever a
+  metric had no `sub`, so the six base hero metrics rendered bare dashes with no way to ask why.
+  Both now explain. `KpiStat`'s affordance is a dotted underline + `title` rather than a tooltip:
+  it also renders inside button-cards, where the rulebook forbids a nested interactive element.
+- **C7** — `EngagementFunnelView`'s `ratio` guarded with `if (!a || !b)`, nulling a **measured**
+  zero numerator. A real, recorded zero adds-to-cart reported "not measured" rather than 0% — the
+  honesty invariant inverted, in the direction that hides a bad result.
+- **C10** — `csv_warnings` rendered only in `ManualAnalysisControls`, only for the latest run.
+  Runs started from the Loop command chain or task tray surfaced warnings nowhere, and the
+  history screen showed none, despite the field already being on the `AnalysisRun` the list
+  endpoint returns. Now a shared panel in both places.
+- **E-a** — `SIGNAL_WEIGHTS` was mirrored client-side with nothing but a comment tying the copies
+  together, and had already drifted. `check:signal-weights-drift` is the tie, wired into the
+  validation list and verified by reintroducing the original drift and a re-weight.
+- **E-b** — the run-warnings headline was picked by substring-matching warning prose. One copy
+  edit away from silently demoting the only line that tells a user their efficiency metrics are
+  incomplete. Now classified in `lib/warningSeverity.ts` with tests pinned to the producer's
+  actual wording.
+- **E-c** — `rollupPlacements` existed twice, plus a third inline derivation of the same two
+  ratios for run-API rows. One implementation now.
+- **F-c** — `CreativeExpandDialog` ASSIGNED CPA/CTR from each row's own rate inside a loop over
+  the bucket's rows, so the last row won and which ad that was depended on iteration order.
+  Now accumulates denominators and derives once.
+
+**Found while fixing E-a, not a defect:** `SIGNAL_WEIGHTS` totals **0.98**, not the 1.00 both its
+doc comment and its trailing comment claimed (17 entries, arithmetic checked). Nothing depends on
+the figure — the Confidence Report grades present weight over the total weight of the columns an
+import actually carries, so it self-normalises — so the weights were left untouched and the false
+claim corrected. Closing the 0.02 shifts every grade, which makes it an owner decision;
+`check:signal-weights-drift` pins 0.98 so it has to be made deliberately.
+
+**Left open, deliberately, with reasons in the register:** S1 (operational reclaim against live
+data, which a repo checkout cannot verify), S2–S4 (dead writes and an unmade canonical-vs-derived
+decision), S5 (upgraded — see below), C6 (a ~158-site vocabulary sweep, not a defect), F-a, F-b,
+F-d (computed intelligence never reaching the UI).
+
+**S5 upgraded.** `variablePerformancePayload` (`analysisEngine.ts:1390-1392`) hardcodes Reach,
+Impressions and Clicks (all) to zero, with a comment stating they are "not available at the token
+level — set to 0 so numeric consumers don't receive undefined". That is a fabricated measurement
+by the platform's own invariant, in persisted data, and `Result_per_link_click_pct: cvrLinkPct ?? 0`
+coalesces the same way. The fix makes three fields nullable on `VariablePerformanceRow` and
+threads through five consumers — **and** has to address the zeros already stored on every existing
+row, since changing the writer does not retroactively fix data. Too large to land safely at the
+end of this sweep; recorded rather than half-done.
+
+**Verification:** full typecheck green; 1,759 client tests and 92 scripts tests pass;
+disclosure-rulebook and the new signal-weights-drift gate clean.
