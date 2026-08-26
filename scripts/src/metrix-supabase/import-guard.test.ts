@@ -3,8 +3,13 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import {
   ACCOUNT_SCOPED_TABLES,
+  GENERATED_OUTPUT_TABLES,
   GLOBAL_TABLES,
   SKOV_PET_ID,
   type CountMap,
@@ -13,6 +18,7 @@ import {
   formatCountMap,
   applyPreFlightGuard,
   detectPostImportLoss,
+  managedDeleteSql,
 } from "./import-guard";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -363,5 +369,48 @@ describe("guard fires → caller exits(1) integration", () => {
 
     // Restore
     process.exitCode = originalExitCode;
+  });
+});
+
+// ── The importer must not destroy in-app generated output ───────────────────
+//
+// Four tables hold both imported rows and generated ones (source column). The
+// importer clears its managed accounts and re-inserts the imported half; an
+// unqualified delete therefore destroyed every generated strategy and brief
+// set for `bookster` and `ecas`. Observed live before this was fixed:
+// `bookster` held 16 generated briefs with ZERO generated pillars, and `ecas`
+// a successful strategy run with no surviving output at all.
+
+describe("managedDeleteSql", () => {
+  it("narrows the delete to imported rows on every generated-output table", () => {
+    for (const table of GENERATED_OUTPUT_TABLES) {
+      expect(managedDeleteSql(table)).toBe(
+        `delete from ${table} where account_id = any($1) and source = 'imported'`,
+      );
+    }
+  });
+
+  it("leaves tables the importer fully owns cleared wholesale", () => {
+    for (const table of ["ad_performance", "ads", "signal_cards", "iap_runs"]) {
+      const sql = managedDeleteSql(table);
+      expect(sql).toBe(`delete from ${table} where account_id = any($1)`);
+      expect(sql).not.toContain("source");
+    }
+  });
+
+  it("spares generated rows on every account-scoped table that has a source column", () => {
+    // The guard is only as good as its table list. Read the real schema and
+    // require that every account-scoped table carrying a `source` column is
+    // registered — otherwise a table added later is silently wiped again.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const schema = readFileSync(join(here, "schema.sql"), "utf8");
+    const withSource = new Set(
+      [...schema.matchAll(/alter table (\w+) add column if not exists source\b/g)].map((m) => m[1]),
+    );
+    const accountScoped = new Set<string>(ACCOUNT_SCOPED_TABLES);
+    const shouldBeGuarded = [...withSource].filter((t) => accountScoped.has(t)).sort();
+
+    expect(shouldBeGuarded.length).toBeGreaterThan(0);
+    expect([...GENERATED_OUTPUT_TABLES].sort()).toEqual(shouldBeGuarded);
   });
 });

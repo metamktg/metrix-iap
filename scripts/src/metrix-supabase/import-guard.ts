@@ -32,6 +32,36 @@ export const ACCOUNT_SCOPED_TABLES = [
 
 export const GLOBAL_TABLES = ["variable_registry", "app_config"] as const;
 
+/**
+ * Tables that hold BOTH imported rows and in-app generated output.
+ *
+ * These four carry a `source` column ('imported' | 'generated'). The importer
+ * owns only the 'imported' rows; the 'generated' ones are written by the
+ * generation engine and are the user's work. Any delete this importer issues
+ * against these tables must be qualified by `source = 'imported'`, or a
+ * re-import silently destroys generated strategy and briefs — the re-insert
+ * that follows restores only the imported half.
+ */
+export const GENERATED_OUTPUT_TABLES: ReadonlySet<string> = new Set([
+  "message_pillars",
+  "testing_hypotheses",
+  "icp_profiles",
+  "imported_creative_briefs",
+]);
+
+/**
+ * The DELETE the importer issues for one managed table.
+ *
+ * Tables that also hold generated output are narrowed to the rows this
+ * importer owns; everything else is cleared wholesale as before. `$1` is the
+ * managed-account id array in both shapes, so callers pass the same values.
+ */
+export function managedDeleteSql(table: string): string {
+  return GENERATED_OUTPUT_TABLES.has(table)
+    ? `delete from ${table} where account_id = any($1) and source = 'imported'`
+    : `delete from ${table} where account_id = any($1)`;
+}
+
 export const SKOV_PET_ID = "skov_pet";
 
 // ── snapshotCounts ────────────────────────────────────────────────────────────

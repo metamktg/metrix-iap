@@ -15,6 +15,7 @@
 
 import { z } from "zod";
 import { getSupabase } from "./supabase";
+import { fetchSuccessfulRuns, splitBySource } from "./generatedCurrency";
 import { logger } from "./logger";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { extractVideoKeyframes } from "./videoKeyframes";
@@ -1014,11 +1015,24 @@ export async function startCreativeDeconstruction(
         logger.warn({ accountId, runId, err: progressErr }, "Could not initialize run progress");
       }
       // Shared account context, fetched once per run.
-      const [{ data: ads }, { data: briefs }, { data: registry }] = await Promise.all([
+      const [{ data: ads }, { data: allBriefs }, { data: registry }, briefRuns] = await Promise.all([
         supabase.from("ads").select("ad_name, cell, concept, variation").eq("account_id", accountId),
-        supabase.from("imported_creative_briefs").select("brief_id, source, payload").eq("account_id", accountId),
+        supabase
+          .from("imported_creative_briefs")
+          .select("brief_id, source, payload, generation_run_id")
+          .eq("account_id", accountId),
         supabase.from("variable_registry").select("prefix, family, status"),
+        fetchSuccessfulRuns(accountId, "briefs"),
       ]);
+      // Drop ARCHIVED generated sets only (GAP-01) — superseded briefs stay in
+      // the table now, and matching a new creative to one would attribute it to
+      // a brief nothing renders. Imported briefs and the generated/imported
+      // precedence below are untouched.
+      const { imported: importedBriefs, generated: currentGeneratedBriefs } = splitBySource(
+        allBriefs ?? [],
+        briefRuns,
+      );
+      const briefs = [...importedBriefs, ...currentGeneratedBriefs];
       const adByName = new Map((ads ?? []).map((a: Row) => [String(a["ad_name"]), a]));
       const registryFamilies = (registry ?? [])
         .filter((r: Row) => String(r["status"] ?? "") !== "registry_missing")

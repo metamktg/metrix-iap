@@ -56,6 +56,30 @@ prompt). Type in `seedTypes.ts`; UI teams consume in Phase 3. Do NOT redesign th
 here — contract only, with the card face falling back to today's rendering when
 structured fields are absent (honesty: no fabricated headlines from regex-mangled prose).
 
+**Status: landed, with one correction to the above.** The contract is in the schema
+(`signal_cards`: `headline`, `metric_value`, `metric_context`, `delta_pct`, `implication`,
+all nullable), in `cardShape` (which also exposes `action`, `evidence_ref` and `body` as the
+contract's names for the existing `recommended_action`, `source_path` and `rationale`), and in
+`seedTypes.ts`.
+
+The correction: **there is no generation-engine producer of signal cards to extend.** The only
+writer of `signal_cards` is the source-data importer (`import.ts`) — no analysis or generation
+run emits one. So "generation engine emits the full shape for new cards" had no code to attach
+to, and the zod schema and prompt were left alone rather than given a card shape that nothing
+would ever call. The importer now passes structured fields through when a source package states
+them; today's packages state prose only, so all five land NULL on all 8 live cards.
+
+Also worth recording, because it shaped the contract: the worked example above
+("underspend (critical): Spend recorded ($57.97) is 5.8% of the committed ~$1,000 pilot
+budget…") is not a real signal — it comes from the design mockup
+(`artifacts/mockup-sandbox/src/components/mockups/analysis-overview/SignalFeed.tsx`). Real cards
+read like "C4E is the current checkout-depth control". The contract was built against the real
+rows, and the mockup's shape remains what a future producer should aim at.
+
+Nothing derives structure from prose, in either the importer or the seed. That is the whole
+point of the `derivation fallback` phrasing above and is pinned by tests: a card with no
+structured fields renders from `title`/`rationale` exactly as it does today.
+
 ## E2 — KPI analytical context (brief §9, §10)
 
 **Current state:** `KpiTile.tsx` + `metricsCatalog.ts` render point-in-time values; the
@@ -68,6 +92,29 @@ value) for sparklines. Compute in `metrixSeedAssembly.ts`/summary assembly from 
 rows — no schema change. OpenAPI + codegen. Client stores them on the tile model;
 rendering is Phase 3's job. Honesty rule: when the preceding window has no rows, the
 fields are null — never zero.
+
+**Status: already satisfied — no new work. The "Current state" above is stale.** It was written
+at Phase 1 close; the Nocturne trend layer landed afterwards and covers all three asks:
+
+- `previous_period` → `AnalysisSummaryResult.prior_totals`, computed by a real query over the
+  equal-length preceding window and left `null` when that window holds no rows — the date-range
+  path included (`analysisEngine.ts`, the `priorRows` block).
+- `delta_pct` → `trendForMetric()` in `artifacts/metrix-iap/src/lib/data/summaryTrends.ts`.
+- `daily_series` → `AnalysisSummaryResult.daily` plus `sparkSeriesForMetric()`.
+
+Rendered today by `KpiTile.tsx` for `AdAccountOverview` and `AdPerformanceView`; 12 tests in
+`summaryTrends.test.ts`. The honesty rule this section asks for is already the module's stated
+contract: a delta exists only when both windows carry a real value (and, for ratios, a non-zero
+prior), and a sparkline only where a metric has an exact per-day mapping — cost metrics get a
+delta but no sparkline, because a day with zero results has no real CPA.
+
+**One deliberate divergence, kept on purpose.** This section specifies computing `delta_pct` and
+`daily_series` server-side and having the client "store them on the tile model". The
+implementation derives both CLIENT-side from the totals the server already returns. That shape
+stays: deriving at the point of use is the standing rule from handoff §3, and threading a
+precomputed per-metric delta from the boundary out to every tile is exactly the distribution
+pattern that rule exists to prevent. Nothing is lost — the server still owns the measured
+values; only the arithmetic sits next to the component that renders it.
 
 ## E3 — Status-semantics normalization (brief §15)
 
@@ -84,6 +131,39 @@ survives), `workflow: new|reviewed|saved|actioned`. Serve the normalized triple 
 the raw values (raw moves to the diagnostic layer in Phase 3). Do not rewrite stored
 data; normalize at the read boundary.
 
+**Status: landed, with the vocabulary corrected against live data.** The mapping is
+`artifacts/api-server/src/lib/statusSemantics.ts`, normalizing at the READ boundary and served
+alongside the raw values: signal cards gain `priority` / `confidence_level` / `needs_validation`
+beside an untouched `impact` / `confidence`, and `iap.data_quality[]` gains `priority` beside its
+`kind` so the act_now/watch/investigate split `AdPerformanceView` derives locally has one
+definition to read instead of re-deriving. No stored data is rewritten.
+
+The correction: the vocabulary above is not the live one. Read from the database, the real
+values are `impact` = high | medium | **setup**; `confidence` = high | medium | directional |
+**system** | validation_required plus free-text **compounds** ("high for registration,
+directional for checkout"); `confidence_level` = high | medium | low | **hypothesis** |
+**insufficient** | validation_required; flag `kind` = anomaly | quality_flag |
+attribution_window | data_quality_score. `critical` never occurs as a stored value, and
+`partial_reporting_cell` / `zero_conversions` are data fields in the bundles, not typed code.
+A coverage test enumerates the real set and fails if any member stops resolving.
+
+Three judgement calls worth stating, since each could have gone the dishonest way:
+
+- **An unrecognized value normalizes to `null`, never to a default bucket.** Bucketing an
+  unknown status as "informational" asserts a priority nobody measured, and a surface reading
+  null can fall back to the raw string while one reading a guess cannot tell it was guessed.
+- **A compound resolves to its WEAKEST component.** Overstating confidence is the failure that
+  costs a user money; understating it costs them a second look.
+- **`system` is not forced onto the confidence scale** — it is a provenance marker on setup
+  cards, not a confidence claim — and reporting-cell flags resolve on the confidence axis with
+  priority left null, because calling `zero_conversions` "critical" would invent an urgency the
+  product has never assigned it.
+
+The brief's `workflow: new|reviewed|saved|actioned` axis was NOT added. The live tray vocabulary
+is `open | done | archived` (`trayStore.ts`), it is client-only and localStorage-backed, and it
+never crosses the read boundary this module sits on — so there is nothing for the server to
+normalize. Mapping it here would have been a mapping with no caller.
+
 ## E4 — Account display names (brief §6)
 
 **Current state:** manual accounts are created with names like "Fresh Import
@@ -96,10 +176,28 @@ Phase 3 restyles it). Generated IDs remain in metadata. Also sweep title surface
 prefer the display name (the `GEN_ICP_*` equivalent for ICP titles already has
 `compactIcpName` — extend its use to page/drawer titles).
 
+**Status: landed.** `PATCH /metrix/accounts/{accountId}/name` (declared in `openapi.yaml`,
+codegen clean), admin-or-granted, trims and validates non-empty ≤80, invalidates the seed cache —
+a rename that does not bust the cache reads as a rename that failed, since the seed carries the
+name onto every page title. The inline affordance is an "Account name" card in Settings →
+General, which shows the account's generated id beside the field: only the DISPLAY name moves,
+and the id stays the stable key every other table joins on. Component-tested at the rendered
+surface (not just the validation arithmetic) and regression-proven.
+
 ## E5 — Structural (do here, before Phase 3 multiplies contact surface)
 
 - Split `routes/metrix.ts` (~2.7K lines) into routers: uploads/imports, creatives,
   accounts, admin. Pure move — no behavior change, route tests stay green.
+
+  **Status: landed.** Seven routers behind `routes/metrix/index.ts` (admin, seed, accounts,
+  uploads, creatives, waitlist, workspaces), each a contiguous run of the original file, mounted
+  in the original order — several paths depend on that order (`…/manual-imports/uploads` must
+  still be tried before `…/manual-imports/:importId`). Verified as a move rather than a rewrite
+  two ways: the mounted route table is IDENTICAL before and after (all 58 routes, same methods,
+  paths, registration order and per-route handler counts, enumerated from the real Express stack),
+  and the non-import code lines match as a multiset (2,983 in, 2,983 out). Only 10 of the 41
+  module-level helpers are reached by more than one router and stayed in `shared.ts`; the other
+  31 moved to their single owner, resolved by transitive reachability.
 - Retention policy for processed performance files (product decision required first:
   suggested keep-last-N-per-slot with an explicit purge action, never silent deletion).
 

@@ -1096,6 +1096,32 @@ export function mergeAdPerformanceBuckets(
 // signal classification to "insufficient join coverage" — one shared
 // definition of "trustworthy enough to classify".
 
+// ─── BUG-08: the "missing reports" message ────────────────────────────
+//
+// A run consumes the STAGED batch, so a successful run leaves its files
+// `processed` and the next run reports them missing. That is by design —
+// reading processed files back would double-count — but the message never
+// said the files still exist and can be re-staged from Import History, so the
+// workaround people found was re-uploading a file already in the database
+// (byte-identical, md5-verified, on 2026-08-24).
+//
+// Extracted as a pure function so both directions are testable without
+// standing up the whole run pipeline. The restage sentence appears ONLY when
+// there is really something to re-stage: pointing a user at an empty Import
+// History is the BUG-29 failure again — telling someone to import a file they
+// have already imported.
+export function missingReportsMessage(
+  missing: string[],
+  restagableCount: number,
+  missingKindCount: number,
+): string {
+  const base = `Both reports are required before running analysis. Missing: ${missing.join(" and ")}.`;
+  if (restagableCount <= 0) return base;
+  const files = `${restagableCount} previously processed file${restagableCount === 1 ? "" : "s"}`;
+  const which = missingKindCount > 1 ? "these reports" : "this report";
+  return `${base} ${files} for ${which} can be re-staged from Import History — no need to upload again.`;
+}
+
 /** Joined-spend coverage below this % is not trustworthy enough to classify segments. */
 export const COVERAGE_THRESHOLD_PCT = 90;
 
@@ -1517,12 +1543,50 @@ export async function startManualAnalysis(
   const summaryImports = (imports ?? []).filter((i) => i["kind"] === "performance_ad_summary_csv");
   const conversionDeviceImports = (imports ?? []).filter((i) => i["kind"] === "performance_conversion_device_csv");
   if (demoImports.length === 0 || placementImports.length === 0) {
+    const missingKinds = [
+      demoImports.length === 0 ? "performance_demo_csv" : null,
+      placementImports.length === 0 ? "performance_placement_csv" : null,
+    ].filter((k): k is string => k !== null);
     const missing = [
       demoImports.length === 0 ? "Demographics export" : null,
       placementImports.length === 0 ? "Placements export" : null,
-    ].filter(Boolean);
+    ].filter((m): m is string => m !== null);
+
+    // BUG-08: a run consumes the STAGED batch, so a successful run leaves its
+    // files `processed` and the next run reports them missing. That is by
+    // design — reading processed files back would double-count — but the
+    // message never said the files still exist and can be re-staged from
+    // Import History, so the documented workaround was a byte-identical
+    // re-upload of a file already in the database.
+    //
+    // The offer is made ONLY when there is really something to re-stage.
+    // Pointing a user at an empty Import History is the BUG-29 failure over
+    // again: telling someone to import a file they already imported.
+    //
+    // Deliberately a SECOND query rather than widening the one above: that
+    // one selects `content`, and pulling bytea for every processed file is
+    // what hung production once already. This selects `kind` alone.
+    //
+    // A failure counting them degrades to omitting the hint, deliberately: the
+    // caller's real answer is the 422 about the missing reports, and turning
+    // that into a 502 because an optional sentence could not be assembled
+    // would be worse than saying less. It is logged, not swallowed.
+    const { data: processedRows, error: processedErr } = await supabase
+      .from("manual_imports")
+      .select("kind")
+      .eq("account_id", accountId)
+      .eq("status", "processed")
+      .in("kind", missingKinds);
+    if (processedErr) {
+      logger.warn(
+        { accountId, err: processedErr.message },
+        "Could not count re-stageable imports; omitting the restage hint",
+      );
+    }
+    const restagable = processedRows?.length ?? 0;
+
     throw new AnalysisError(
-      `Both reports are required before running analysis. Missing: ${missing.join(" and ")}.`,
+      missingReportsMessage(missing, restagable, missingKinds.length),
       422,
     );
   }

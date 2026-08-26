@@ -1174,6 +1174,59 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/name:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    patch:
+      operationId: setAccountDisplayName
+      tags: [metrix]
+      summary: Rename an ad account for display
+      description: Sets the account's display name. Manual accounts are created with a generated name ("Fresh Import 1786839868960") that every page title then inherits; this makes that name editable without touching the account's generated id, which stays the stable key everything else joins on. Requires access to the account.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetAccountNameInput"
+      responses:
+        "200":
+          description: Display name set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetAccountNameResult"
+        "400":
+          description: Invalid name (empty after trimming, or longer than 80 characters)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Ad account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/generate/strategy:
     parameters:
       - name: accountId
@@ -4262,6 +4315,16 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/ColumnMappingSummaryEntry"
+        upload_warnings:
+          type: array
+          description: >-
+            Warnings recorded by upload-time validation, persisted so they outlive the upload dialog.
+            NULL and [] mean different things and must not be conflated: NULL is "not recorded" (a
+            creative_asset row, or a file staged before warnings were persisted) and must never render
+            as "no warnings"; [] is "validation ran and found none", which is a real positive finding.
+          nullable: true
+          items:
+            type: string
       required:
         - id
         - account_id
@@ -5118,6 +5181,28 @@ components:
         - manage_team
         - view_agency_rollups
         - export_data
+    SetAccountNameInput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: New display name. Trimmed by the server; must be non-empty and at most 80 characters.
+          minLength: 1
+          maxLength: 80
+      required:
+        - name
+    SetAccountNameResult:
+      type: object
+      properties:
+        account_id:
+          type: string
+          description: The account that was renamed. Unchanged by the rename — only the display name moves.
+        name:
+          type: string
+          description: The stored display name, after trimming.
+      required:
+        - account_id
+        - name
     SetAccountObjectivesInput:
       type: object
       properties:

@@ -190,7 +190,20 @@ parser/merge code.
 - **Category:** Phase 2 Polish (UX). The design is sound; the failure mode is discoverability —
   the error message doesn't mention that previously processed files can be re-staged from
   Import History.
-- **Resolution:** Phase 2 — mention restage in the error/UI copy. Not changed this session.
+- **Resolution (implemented, Phase 2):** both surfaces now name the restage path, and name it
+  ONLY when there is something to re-stage.
+  - Server: `missingReportsMessage()` (pure, exported from `analysisEngine.ts`) appends
+    "N previously processed file(s) … can be re-staged from Import History — no need to upload
+    again" to the 422. The processed count comes from a SECOND, deliberately narrow query
+    (`select("kind")`, status `processed`) rather than by widening the existing one, which
+    selects `content` — pulling bytea for every processed file is what hung production once.
+  - Client: `ManualAnalysisControls` derives `canRestageDemo` / `canRestagePlacement` from the
+    imports it already holds and rewrites the hard-block copy accordingly.
+- **The half that was easy to get wrong:** offering restage unconditionally would have been
+  BUG-29 again — telling a user to import a file they had already imported, pointing at an empty
+  Import History. Both directions are asserted (`restage-discoverability.test.ts`, 4 tests;
+  `analysisEngine.test.ts`, 3 tests), and regression-proven: replacing the derivation with an
+  unconditional offer fails exactly the two tests that guard the empty-history case.
 
 ## BUG-09 — `manual_imports` re-upload dedup gap (F-08)
 
@@ -1156,12 +1169,155 @@ fail, including the one that states the actual guarantee — *two runs at the sa
 render differently when their ages differ*. Full suite 119 files / 1,704 tests; typecheck and the
 blocking disclosure rulebook green.
 
+## BUG-46 — an integration test leaked a permanent account into production on every run
+
+- **Category:** Fix-Now (test hygiene with a production side effect). Found while decluttering
+  the account list.
+- **Symptom:** 18 accounts named `Reupload Isolation Test <timestamp>` in the live account
+  picker, created 2026-08-23 → 2026-08-26 — **69% of the 26 accounts a user saw**. Every one
+  was marked `configured`, so none of them read as debris; they just looked like accounts whose
+  analysis had not run.
+- **Root cause:** `manualAnalysisReuploadIsolation.test.ts` creates a REAL account in the live
+  database (`createManualAccount(\`Reupload Isolation Test ${Date.now()}\`)`) and has an
+  `afterAll` that tries to remove it. Two faults compounded:
+  1. Cleanup deletes rollup rows by `manual_analysis_run_id`, but an analysis run also writes
+     `demographic_signal`, `placement_signal` and `iap_runs`, none of which HAS that column —
+     they are account-scoped, so the run-scoped loop could never reach them.
+  2. Every FK to `ad_accounts` is `NO ACTION`, so those leftovers blocked the account delete —
+     and the delete's `{ error }` was never checked. It failed silently, every run.
+- **Why it survived:** the delete "succeeded" as far as anyone looked, because nobody looked.
+  The test asserts its own subject thoroughly and asserted nothing about its own cleanup.
+- **Resolution:** `ACCOUNT_SCOPED_TABLES` now covers the three missing tables; every cleanup
+  delete checks its error; and the account is re-queried afterwards, failing the test if it
+  survived. That last check is the durable part — if a new table starts referencing
+  `ad_accounts`, this becomes a red test instead of another row in the picker.
+- **Correction worth recording:** an earlier pass here reported these accounts as holding "zero
+  of everything". That was based on a hand-picked list of seven tables. A sweep over every table
+  with an FK to `ad_accounts` found 54 rows (3 per account) that the narrow check had missed.
+  The narrow check was the same mistake the test made.
+- **Cleanup:** the 18 accounts and their 54 synthetic rows were removed (2026-08-26), along with
+  8 older empty test accounts and their 6 staged files. **34 accounts → 8 real ones.**
+  `ad_performance` 9,647 before and after, `manual_imports` 164, `creative_deconstructions` 12,
+  analysis runs 36, generation runs 34 — all unchanged.
+- **Not verifiable here:** this test needs live secrets and does not run in CI, so the fix is
+  typechecked but was NOT executed in this environment. It runs on the next local full
+  api-server suite.
+
+---
+
+## BUG-45 — redundant byte-identical staged copies made every run warn, and wasted storage
+
+- **Category:** Phase 2 Polish (clutter + storage). Found while auditing the deferred
+  storage-reclaim script against live data before running any of it.
+- **Symptom:** three accounts each held TWO byte-identical files STAGED in the same slot —
+  `ecas` (`IAP-DEVICE-MAIN-ECAS.csv` ×2, placement), `manual_BwsYjC5ZRk0i` / Gabri
+  (`real_20mb.csv` ×2, demographics), `manual_QmjeK52K5QiQ` / AAFE (`king-DEVi.csv` ×2,
+  placement). Every analysis run on those accounts parsed the second copy in full, dropped all
+  of its rows as duplicates, and emitted a `[Duplicate data]` warning telling the user to remove
+  one of the files — a warning nothing else was going to resolve.
+- **Root cause:** BUG-09's same-bytes guard returns 409 when staging a file byte-identical to one
+  already `staged` in that slot. The guard is prospective only and was never paired with a
+  cleanup of the pairs that already existed when it shipped.
+
+### Correction — this was NOT a double-count
+
+An earlier version of this entry claimed the next run on ECAS or Gabri would have summed both
+copies and reported roughly double the spend. **That is wrong**, and it is worth recording why
+rather than quietly editing it out. `appendRowsCrossFileDeduped` already dedupes rows across
+staged files by `stableRowSignature` — identical dates, breakdowns and metric values are
+"counted once, never twice" — so every row of the second copy was already being dropped. The
+BUG-09 tracker entry describes the double-count as the pre-fix behaviour; that row-level dedupe
+is the fix, and it was working.
+
+The real cost was therefore clutter, wasted bytes, and a recurring warning on every run — not a
+wrong number. The reclaim was still correct; the severity was not.
+
+- **Resolution:** the duplicate copy was removed from each pair (2026-08-26), keeping one.
+  Verified zero byte-identical staged pairs remain. `ad_performance` held 9,647 rows before and
+  after, and `creative_deconstructions` 12 before and after — nothing derived was touched.
+- **Deliberately NOT added:** an md5-level skip at consumption time. The row-level dedupe
+  already protects the number; the only thing an earlier skip would save is parsing a file whose
+  rows are all about to be dropped, which does not justify touching the ingest path.
+- **Worth carrying forward:** a guard added for a defect does not retire the instances that
+  predate it. When a constraint is introduced, check what already violates it — and check what
+  ELSE already defends against it before pricing the exposure.
+
+---
+
+## BUG-44 — upload-time warnings were ephemeral: shown once, then unrecoverable
+
+- **Category:** Fix-Now (honesty invariant). Carried as "ephemeral upload warnings" in the
+  Phase 1 closeout's warning-surfacing gaps; built in Phase 2.
+- **Symptom:** upload validation produces real warnings — ID columns blanked by a Google Sheets
+  round-trip, Meta's pivot exporter duplicating a header set — and they were returned once in
+  the staging response (`upload_warnings`), pushed into a local array in
+  `ConnectAccountDialogs.tsx`, rendered in the upload dialog, and lost when it closed. Nothing
+  persisted them. A different user, a later visit, or the analysis run days afterwards that
+  actually consumed the file had no way to see them.
+- **Root cause:** `manual_imports` had no column for them. The neighbouring `mapping_summary`
+  had exactly this treatment already — persisted at staging, returned by the listing, re-hydrated
+  in the UI — so the gap was that warnings never got the same one, not that the pattern was
+  missing.
+- **Why it is an honesty defect rather than a UX one:** the invariant is that a true-positive
+  warning is never suppressed. A warning that can only ever be seen once, by whoever happened to
+  be at the keyboard, is suppressed on every look after the first — and it is suppressed exactly
+  at the moment it matters most, the run that ingests the file.
+- **Resolution (implemented):** `manual_imports.upload_warnings jsonb` (nullable; schema add
+  applied live), written by BOTH staging paths — single-request and chunked-complete — and
+  returned by `GET …/manual-imports`. Surfaced per file in `ImportConfidenceReport`: a count on
+  the collapsed card face, the full list in the detail panel.
+- **The distinction that had to survive:** `NULL` and `[]` are different claims and are rendered
+  differently. `NULL` means "not recorded" — a creative asset, or a file staged before the column
+  existed — and renders as *"Upload warnings weren't recorded for this file"*; `[]` means
+  "validation ran and found none", a real positive finding, and renders as nothing. Coalescing
+  the two would assert a clean bill of health nobody ever issued. `mapping_summary` being set is
+  the "validation ran" signal that keeps them apart at write time.
+- **Verification:** `upload-warnings-persisted.test.ts` (4 tests, rendered surface).
+  Regression-proven — replacing the read with `imp.upload_warnings ?? []` fails the
+  not-recorded test.
+
+---
+
+## BUG-43 — the source-data importer destroys in-app generated strategy and briefs
+
+- **Category:** Fix-Now. Found while auditing GAP-01 against the live database.
+- **Symptom:** `bookster` held **16 generated briefs and zero generated pillars**, from a
+  successful 2026-08-06 strategy run with no strategy run after it. `ecas` (East Coast Art
+  Studio) held a successful 2026-08-07 strategy run with **no surviving output at all**.
+  Nothing in `generationEngine.ts` could produce either state: a briefs run never deletes
+  pillars, and `deletePriorGenerated` only runs when a *later* run replaces the set.
+- **Root cause:** `scripts/src/metrix-supabase/import.ts` cleared its managed accounts with
+  `delete from <t> where account_id = any($1)` across 26 tables — **with no `source`
+  filter**. Four of those tables (`message_pillars`, `testing_hypotheses`, `icp_profiles`,
+  `imported_creative_briefs`) hold in-app generated output beside the imported rows. The
+  re-insert that follows restores only the imported half, so every `import:metrix` run
+  silently destroyed the generated strategy and briefs for `bookster` and `ecas`.
+- **Evidence (live, non-destructive):** the importer's exact predicate, run as a `SELECT`,
+  currently matches **16 generated briefs** on `bookster` — real user output that the next
+  import would have destroyed. The pre-existing `detectPostImportLoss` guard would have
+  reported the drop after the fact, which is how the loss was survivable but not prevented.
+- **Resolution:** `managedDeleteSql(table)` in `import-guard.ts` narrows the delete to
+  `source = 'imported'` for the four dual-source tables and leaves every other table cleared
+  wholesale. Generated ids live in their own namespace (`GEN_PILLAR_*`, `GEN_BRIEF_*`), so
+  surviving rows cannot collide with the re-inserted imported rows under the
+  `(account_id, <natural key>)` unique constraints.
+- **Verification:** `import-guard.test.ts` — regression-proven (reverted to the unqualified
+  delete, watched the assertion fail, restored). A third test reads `schema.sql` and requires
+  that every account-scoped table carrying a `source` column is registered, so a table added
+  later cannot be silently wiped again.
+- **Why it matters for GAP-01:** GAP-01's design removes the *engine's* delete. On its own
+  that would have left `bookster` and `ecas` still losing their output to a second,
+  unrelated destroyer. The two had to land together.
+
+---
+
 ## GAP-01 — generated strategy and briefs are destroyed on regeneration, with no archive
 
 **Type:** design gap, not a defect. Current behaviour is deliberate and its honesty rationale is
 sound; the unintended cost is that it is *destructive* where it only needed to be *exclusive*.
 **Raised by:** the operator, on being told that each briefs run replaces the previous set.
-**Status:** open — recorded for Phase 2, deliberately not built at handoff.
+**Status:** RESOLVED in Phase 2 (preservation + read scoping). The archive UI surface remains
+open — see "What is still open" at the end of this entry.
 
 ### The evidence
 
@@ -1227,3 +1383,45 @@ just storage.
 **But the preservation half is time-sensitive in a way the rest of the backlog is not.** Every
 regeneration between now and Phase 2 destroys history that cannot be recovered. If the sprint
 splits, land "stop deleting, scope reads to current" first and surface the archive afterwards.
+
+### Resolution (Phase 2)
+
+The preservation half landed exactly as scoped above — "stop deleting, scope reads to current".
+
+1. **The engine stops deleting.** All three `deletePriorGenerated` calls are gone, and with them
+   the function. Every generated id is already run-scoped, so sets from different runs coexist
+   under the existing `UNIQUE (account_id, <natural key>)` constraints — the corrected reading
+   above held up: **no uniqueness migration was needed.**
+2. **Currency is derived, not assumed.** `lib/generatedCurrency.ts` is the single answer to
+   "which set is live": the newest successful run of that kind *that still has rows*. The
+   "still has rows" qualifier is what keeps an account whose latest run was wiped out of band
+   (BUG-43) rendering its newest surviving set rather than nothing.
+3. **The briefs rule is as specified.** A brief set renders only if it was generated after the
+   strategy set being rendered; otherwise it is retained and demoted, and the seed falls back
+   to the imported briefs — the same visible outcome the 92% delete used to produce, minus the
+   destruction.
+
+**Two things this turned up that the design did not anticipate.**
+
+- **The imported fallback was a raw array.** `activeBriefs = generated.length > 0 ? generated :
+  creativeBriefs` was safe only because the generated rows had been deleted; once they persist,
+  that fallback renders archived briefs beside the imported ones as one live set. Caught by a
+  test, not by review. All four fallbacks now filter `source !== 'generated'` explicitly.
+- **Four other readers assumed one set** — `storedPillars` (which feeds brief generation),
+  the strategy evidence pack's `icp_profiles`, the deconstruction brief matcher, and
+  `metrixStageStatus`'s `briefs.count` (which is user-visible and gates `mst.unlocked`; it
+  would have climbed 16 → 32 → 48 across regenerations). This is the handoff §3 pattern
+  precisely, which is why currency is derived at each point of use from one shared module
+  rather than threaded by hand.
+
+**Verified against live data before merge.** No account holds generated rows from more than one
+run (the delete guaranteed that), and no account's briefs run predates its rendered strategy
+run — so the change is **rendering-neutral on all 32 live accounts** while stopping the
+destruction going forward. Regression-proven: neutralising the run scoping fails 2 seed tests
+and 4 shared-helper tests; restored, all pass.
+
+### What is still open
+
+The **archive UI surface**. Nothing yet lets a user open a superseded set, so the history is
+preserved but not browsable — "an archive nobody can open is just storage". The data and its
+lineage are now there for that surface to read, which was the blocking half.

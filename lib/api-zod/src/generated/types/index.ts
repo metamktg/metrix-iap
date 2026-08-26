@@ -185,6 +185,8 @@ export * from './runMetaReportsResult';
 export * from './selectMetaAdAccountInput';
 export * from './selectMetaAdAccountResult';
 export * from './sessionSummary';
+export * from './setAccountNameInput';
+export * from './setAccountNameResult';
 export * from './setAccountObjectivesInput';
 export * from './setAccountObjectivesInputObjectivesItem';
 export * from './setAccountObjectivesResult';

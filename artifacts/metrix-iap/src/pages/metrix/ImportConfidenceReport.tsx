@@ -14,7 +14,7 @@
 // not listed there has weight 0 and does not affect the grade.
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, TrendingDown } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, TrendingDown } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import type { ManualImport } from "@workspace/api-client-react";
 import { InfoTooltip } from "./shared";
@@ -146,6 +146,16 @@ function SingleCsvConfidenceReport({
   const [open, setOpen] = useState(defaultOpen ?? false);
 
   const summary = imp.mapping_summary;
+  // Upload-time warnings, persisted so they outlive the upload dialog. They
+  // used to be returned once in the staging response, rendered in that dialog,
+  // and lost when it closed — so a file whose IDs a Sheets round-trip had
+  // blanked said so exactly once, to whoever was at the keyboard, and never
+  // again at the run that actually consumed it.
+  //
+  // `null` and `[]` are different claims and are rendered differently below:
+  // null is "not recorded" (staged before this was persisted), [] is
+  // "validation ran and found none".
+  const uploadWarnings = imp.upload_warnings;
   if (!summary || summary.length === 0) return null;
 
   // Build column reports with signal weights
@@ -193,12 +203,39 @@ function SingleCsvConfidenceReport({
           <p className="text-label text-muted-foreground/70">
             {Math.round(pct * 100)}% signal coverage ·{" "}
             {resolvedColumns.length} of {summary.length} columns matched
+            {uploadWarnings && uploadWarnings.length > 0 && (
+              <> · {uploadWarnings.length} upload warning{uploadWarnings.length === 1 ? "" : "s"}</>
+            )}
           </p>
         </div>
       </button>
 
       {open && (
         <div className="border-t border-border/30 px-3 pb-3 pt-2 space-y-3">
+          {/* Upload-time warnings — persisted, not ephemeral. */}
+          {uploadWarnings && uploadWarnings.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">
+                Upload warnings ({uploadWarnings.length})
+              </div>
+              <div className="rounded-md border border-status-warning/25 bg-status-warning/[0.06] divide-y divide-border/20">
+                {uploadWarnings.map((w, i) => (
+                  <div key={i} className="flex items-start gap-2 px-2 py-1.5">
+                    <AlertTriangle className="w-3 h-3 text-status-warning shrink-0 mt-0.5" />
+                    <span className="flex-1 text-label text-foreground/85">{w}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* A file staged before warnings were persisted has none RECORDED,
+              which is not the same as having none. Say which. */}
+          {uploadWarnings == null && (
+            <p className="text-label text-muted-foreground/60">
+              Upload warnings weren't recorded for this file — it was staged before they were kept.
+            </p>
+          )}
+
           {/* Missing weighted columns with signal penalty */}
           {missingColumns.length > 0 && (
             <div className="space-y-1">
