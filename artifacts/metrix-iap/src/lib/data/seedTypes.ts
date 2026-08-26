@@ -459,6 +459,24 @@ export interface SignalCard {
   evidence_ref?: string | null;
   /** The full prose, for the drawer/disclosure layer. Mirrors `rationale`. */
   body?: string | null;
+
+  // ── Normalized status axes (E3) ─────────────────────────────────────
+  // Served ALONGSIDE the raw `impact` / `confidence`, which stay exactly as
+  // they were — this is a read-boundary projection, not a rewrite.
+  //
+  // `null` on any axis means the raw value did not determine it. Fall back
+  // to rendering the raw string; do NOT substitute a default bucket, or the
+  // surface asserts a priority nobody measured.
+  /** high impact → critical, medium → important, setup/low → informational. */
+  priority?: "critical" | "important" | "informational" | null;
+  /** Normalized confidence. Compound free text resolves to its WEAKEST part. */
+  confidence_level?: "high" | "medium" | "low" | null;
+  /**
+   * The reading is not yet established (`validation_required`, `hypothesis`,
+   * `insufficient`) as opposed to merely weak. Collapsing those to "low"
+   * would lose exactly this distinction, so it travels separately.
+   */
+  needs_validation?: boolean;
 }
 
 // ─── MST ──────────────────────────────────────────────────────────────

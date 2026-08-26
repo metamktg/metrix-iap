@@ -1228,6 +1228,22 @@ export interface AuthUser {
   export_data: boolean;
 }
 
+export interface SetAccountNameInput {
+  /**
+     * New display name. Trimmed by the server; must be non-empty and at most 80 characters.
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+}
+
+export interface SetAccountNameResult {
+  /** The account that was renamed. Unchanged by the rename — only the display name moves. */
+  account_id: string;
+  /** The stored display name, after trimming. */
+  name: string;
+}
+
 export type SetAccountObjectivesInputObjectivesItem = typeof SetAccountObjectivesInputObjectivesItem[keyof typeof SetAccountObjectivesInputObjectivesItem];
 
 

@@ -4,7 +4,7 @@
 // the original order too, so Express matching is unchanged.
 
 import { Router, type IRouter } from "express";
-import { SetAccountObjectivesResponse, StageManualImportBody, StageManualImportResponse } from "@workspace/api-zod";
+import { SetAccountDisplayNameResponse, SetAccountObjectivesResponse, StageManualImportBody, StageManualImportResponse } from "@workspace/api-zod";
 import { and, count, eq } from "drizzle-orm";
 import { requireAuth } from "../../middlewares/requireAuth";
 import { invalidateMetrixSeedCache } from "../../lib/metrixSeedAssembly";
@@ -25,6 +25,53 @@ const OBJECTIVE_KEYS = ["ecommerce", "lead_gen", "service", "app"] as const;
 
 const router: IRouter = Router();
 
+
+// ─── Display name (E4) ────────────────────────────────────────────────
+// Manual accounts are created as "Fresh Import 1786839868960" and every page
+// title inherits it. Only the DISPLAY name is editable here — the generated
+// id stays the stable key every other table joins on, so a rename can never
+// orphan an account's data.
+const MAX_ACCOUNT_NAME_LEN = 80;
+
+router.patch("/metrix/accounts/:accountId/name", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const raw = req.body?.["name"];
+  const name = typeof raw === "string" ? raw.trim() : "";
+  if (!name || name.length > MAX_ACCOUNT_NAME_LEN) {
+    res.status(400).json({
+      message: `name must be non-empty and at most ${MAX_ACCOUNT_NAME_LEN} characters.`,
+    });
+    return;
+  }
+  const user = req.authUser!;
+  if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+    res.status(403).json({ message: "You don't have access to this ad account." });
+    return;
+  }
+  try {
+    const supabase = getSupabase();
+    const update = await supabase
+      .from("ad_accounts")
+      .update({ name })
+      .eq("id", accountId)
+      .select("id");
+    if (update.error) throw new Error(update.error.message);
+    if (!update.data || update.data.length === 0) {
+      res.status(404).json({ message: "Ad account not found." });
+      return;
+    }
+    // The seed carries the name onto every surface that titles a page, so a
+    // rename that does not bust the cache reads as a rename that failed.
+    invalidateMetrixSeedCache();
+    req.log.info({ accountId }, "Ad account display name set");
+    res.json(SetAccountDisplayNameResponse.parse({ account_id: accountId, name }));
+  } catch (err) {
+    req.log.error({ err, accountId }, "Failed to set account display name");
+    res.status(502).json({
+      message: err instanceof Error ? err.message : "Could not rename the account.",
+    });
+  }
+});
 
 // Replaces the account's full objectives set (one-or-more of the four
 // keys). Objectives are configured ONLY here (via Settings → General as

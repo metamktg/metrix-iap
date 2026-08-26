@@ -14,6 +14,7 @@
 // passed through so the client can surface them.
 
 import { getSupabase } from "./supabase";
+import { normalizeStatus } from "./statusSemantics";
 import {
   resolveCurrentGeneratedSet,
   runOrderKey,
@@ -855,7 +856,15 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
         })),
         failure_patterns: failurePatterns.map((r) => r["payload"] ?? r),
       },
-      data_quality: dataQualityFlags.map((r) => ({ kind: r["kind"], ...r["payload"] })),
+      // `priority` is served alongside the raw `kind` (E3) so the act_now /
+      // watch / investigate split the Ad Performance view derives locally has
+      // a single definition to read instead of re-deriving. `kind` and the
+      // payload are unchanged.
+      data_quality: dataQualityFlags.map((r) => ({
+        kind: r["kind"],
+        priority: normalizeStatus({ flagKind: r["kind"] }).priority,
+        ...r["payload"],
+      })),
       loop_status: loopStatus,
     },
     mst: {
@@ -920,6 +929,14 @@ const cardShape = (c: Row) => ({
   source_path: c["source_path"] ?? undefined,
   recommended_action: c["recommended_action"],
   ...(c["manager_card_descriptor"] ? { manager_card_descriptor: c["manager_card_descriptor"] } : {}),
+  // ── normalized status axes (E3) ──
+  // Served ALONGSIDE `impact` / `confidence`, which are untouched. Null on
+  // any axis means the raw value did not determine it — a surface should
+  // fall back to showing the raw string, never to a default bucket.
+  ...(() => {
+    const s = normalizeStatus({ impact: c["impact"], confidence: c["confidence"] });
+    return { priority: s.priority, confidence_level: s.confidence, needs_validation: s.needs_validation };
+  })(),
   // ── structured contract ──
   headline: c["headline"] ?? null,
   metric_value: c["metric_value"] ?? null,

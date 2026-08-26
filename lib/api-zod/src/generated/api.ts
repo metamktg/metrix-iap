@@ -1009,6 +1009,31 @@ export const SetAccountObjectivesResponse = zod.object({
 
 
 /**
+ * Sets the account's display name. Manual accounts are created with a generated name ("Fresh Import 1786839868960") that every page title then inherits; this makes that name editable without touching the account's generated id, which stays the stable key everything else joins on. Requires access to the account.
+ * @summary Rename an ad account for display
+ */
+
+
+
+export const SetAccountDisplayNameParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const setAccountDisplayNameBodyNameMax = 80;
+
+
+
+export const SetAccountDisplayNameBody = zod.object({
+  "name": zod.string().min(1).max(setAccountDisplayNameBodyNameMax).describe('New display name. Trimmed by the server; must be non-empty and at most 80 characters.')
+})
+
+export const SetAccountDisplayNameResponse = zod.object({
+  "account_id": zod.string().describe('The account that was renamed. Unchanged by the rename — only the display name moves.'),
+  "name": zod.string().describe('The stored display name, after trimming.')
+})
+
+
+/**
  * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows from the selected run(s), or every run when analysis_all_time is true. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
  * @summary Generate strategy (pillars + hypotheses) from selected analysis run(s)
  */

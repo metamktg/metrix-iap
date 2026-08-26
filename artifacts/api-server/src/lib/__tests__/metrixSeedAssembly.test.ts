@@ -881,3 +881,56 @@ describe("structured signal contract (E1)", () => {
     expect(absent!["delta_pct"]).toBeNull();     // not measured — never 0
   });
 });
+
+// ── E3: normalized status axes served alongside the raw values ──────────────
+describe("normalized status axes (E3)", () => {
+  const acct = "status_acct";
+
+  const build = (cardOver: Row = {}, flags: Row[] = []): Row => {
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(acct)]);
+    t.dataQualityFlags = groupByAccount(flags);
+    t.signalCards = [{
+      card_id: "S1", account_id: acct, surface: "listen", scope: "creative",
+      title: "t", rationale: "r", impact: "high", confidence: "medium",
+      recommended_action: "do it", ...cardOver,
+    }];
+    return buildAccountObject({ id: acct, name: "S", status: "configured" }, t);
+  };
+
+  it("adds priority/confidence_level/needs_validation without touching impact or confidence", () => {
+    const c = (build()["listen"] as Row)["signal_cards"][0] as Row;
+    expect(c["priority"]).toBe("critical");
+    expect(c["confidence_level"]).toBe("medium");
+    expect(c["needs_validation"]).toBe(false);
+    // The raw values are a projection source, not something to rewrite.
+    expect(c["impact"]).toBe("high");
+    expect(c["confidence"]).toBe("medium");
+  });
+
+  it("keeps 'not established' distinct from 'weak' on a real card", () => {
+    const c = (build({ confidence: "validation_required" })["listen"] as Row)["signal_cards"][0] as Row;
+    expect(c["confidence_level"]).toBe("low");
+    expect(c["needs_validation"]).toBe(true);
+    expect(c["confidence"]).toBe("validation_required");
+  });
+
+  it("leaves an axis null when the raw value does not determine it", () => {
+    const c = (build({ impact: "catastrophic", confidence: "system" })["listen"] as Row)["signal_cards"][0] as Row;
+    expect(c["priority"]).toBeNull();
+    expect(c["confidence_level"]).toBeNull();
+    // …and the raw values survive for the surface to fall back to.
+    expect(c["impact"]).toBe("catastrophic");
+    expect(c["confidence"]).toBe("system");
+  });
+
+  it("serves a priority on data-quality flags so the UI need not re-derive the tier", () => {
+    const obj = build({}, [
+      { account_id: acct, kind: "anomaly", payload: { note: "x" } },
+      { account_id: acct, kind: "attribution_window", payload: { note: "y" } },
+    ]);
+    const dq = obj["iap"]["data_quality"] as Row[];
+    expect(dq.map((f) => f["priority"])).toEqual(["critical", "informational"]);
+    expect(dq.map((f) => f["kind"])).toEqual(["anomaly", "attribution_window"]);
+  });
+});

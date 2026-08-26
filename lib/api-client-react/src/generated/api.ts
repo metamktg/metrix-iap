@@ -100,6 +100,8 @@ import type {
   RunMetaReportsResult,
   SelectMetaAdAccountInput,
   SelectMetaAdAccountResult,
+  SetAccountNameInput,
+  SetAccountNameResult,
   SetAccountObjectivesInput,
   SetAccountObjectivesResult,
   StageStatusResult,
@@ -2142,6 +2144,78 @@ export const useSetAccountObjectives = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getSetAccountObjectivesMutationOptions(options));
+    }
+
+export const getSetAccountDisplayNameUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/name`
+}
+
+/**
+ * Sets the account's display name. Manual accounts are created with a generated name ("Fresh Import 1786839868960") that every page title then inherits; this makes that name editable without touching the account's generated id, which stays the stable key everything else joins on. Requires access to the account.
+ * @summary Rename an ad account for display
+ */
+export const setAccountDisplayName = async (accountId: string,
+    setAccountNameInput: SetAccountNameInput, options?: RequestInit): Promise<SetAccountNameResult> => {
+
+  return customFetch<SetAccountNameResult>(getSetAccountDisplayNameUrl(accountId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setAccountNameInput)
+  }
+);}
+
+
+
+
+export const getSetAccountDisplayNameMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAccountDisplayName>>, TError,{accountId: string;data: BodyType<SetAccountNameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setAccountDisplayName>>, TError,{accountId: string;data: BodyType<SetAccountNameInput>}, TContext> => {
+
+const mutationKey = ['setAccountDisplayName'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setAccountDisplayName>>, {accountId: string;data: BodyType<SetAccountNameInput>}> = (props) => {
+          const {accountId,data} = props ?? {};
+
+          return  setAccountDisplayName(accountId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetAccountDisplayNameMutationResult = NonNullable<Awaited<ReturnType<typeof setAccountDisplayName>>>
+    export type SetAccountDisplayNameMutationBody = BodyType<SetAccountNameInput>
+    export type SetAccountDisplayNameMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Rename an ad account for display
+ */
+export const useSetAccountDisplayName = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAccountDisplayName>>, TError,{accountId: string;data: BodyType<SetAccountNameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setAccountDisplayName>>,
+        TError,
+        {accountId: string;data: BodyType<SetAccountNameInput>},
+        TContext
+      > => {
+      return useMutation(getSetAccountDisplayNameMutationOptions(options));
     }
 
 export const getGenerateAccountStrategyUrl = (accountId: string,) => {

@@ -138,6 +138,7 @@ jobs:
           src/lib/__tests__/objectiveCoverage.test.ts
           src/lib/__tests__/runHeartbeat.test.ts
           src/lib/__tests__/selectAllPagination.test.ts
+          src/lib/__tests__/statusSemantics.test.ts
           src/lib/__tests__/xlsxToCsv.test.ts
 
       - name: API server smoke (boots without Supabase env by design)
