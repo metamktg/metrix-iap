@@ -380,6 +380,9 @@ router.post(
           content_md5: contentMd5,
           size_bytes: content.length,
           ...(validation.mappingSummary ? { mapping_summary: validation.mappingSummary } : {}),
+          // Same persistence as the single-request path: warnings outlive the
+          // dialog. [] means validated-and-clean; NULL means never validated.
+          ...(validation.mappingSummary ? { upload_warnings: validation.uploadWarnings ?? [] } : {}),
         })
         .eq("id", importId)
         .eq("status", "uploading");
@@ -425,7 +428,7 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
     }
     const { data, error } = await supabase
       .from("manual_imports")
-      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, match_method, status, manual_analysis_run_id, created_at, mapping_summary")
+      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, match_method, status, manual_analysis_run_id, created_at, mapping_summary, upload_warnings")
       .neq("status", "uploading")
       .eq("account_id", accountId)
       .order("created_at", { ascending: false });
@@ -445,6 +448,10 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
           manual_analysis_run_id: r["manual_analysis_run_id"] ?? null,
           created_at: String(r["created_at"]),
           mapping_summary: r["mapping_summary"] ?? null,
+          // `?? null` is correct here and NOT a coalesce-to-empty: a NULL
+          // column means the warnings were never recorded, which is a
+          // different claim from "validation found none" ([]).
+          upload_warnings: r["upload_warnings"] ?? null,
         })),
       }),
     );

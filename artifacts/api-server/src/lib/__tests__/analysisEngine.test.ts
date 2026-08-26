@@ -20,7 +20,7 @@
 //  Result_per_link_click_pct.
 
 import { describe, it, expect } from "vitest";
-import { mergeAdPerformanceBuckets, variablePerformancePayload } from "../analysisEngine";
+import { mergeAdPerformanceBuckets, missingReportsMessage, variablePerformancePayload } from "../analysisEngine";
 import type { IapCsvRow } from "../iapCsvParser";
 
 /** Builds a minimal IapCsvRow for these tests — only the fields the merge/
@@ -179,5 +179,37 @@ describe("variablePerformancePayload — CTR/CVR field mapping (BUG 2)", () => {
     expect(payload["CTR_link_pct"]).toBeNull();
     expect(payload["Result_per_link_click_pct"]).toBe(0);
     expect(payload["CPA_result"]).toBeNull();
+  });
+});
+
+// ── BUG-08: the "missing reports" message names the restage path ────────────
+//
+// A run consumes the STAGED batch, so a successful run leaves its files
+// `processed` and the next run reports them missing — by design, since reading
+// processed files back would double-count. The message never said the files
+// still exist and can be re-staged, so the workaround people found was
+// re-uploading a file already in the database, byte-identical.
+//
+// The second test is the one that matters as much as the first: the offer is
+// made ONLY when something is actually re-stageable. Sending a user to an
+// empty Import History is BUG-29 over again.
+
+describe("missingReportsMessage (BUG-08)", () => {
+  it("names the restage path when processed copies exist", () => {
+    const msg = missingReportsMessage(["Demographics export", "Placements export"], 2, 2);
+    expect(msg).toContain("Missing: Demographics export and Placements export.");
+    expect(msg).toContain("2 previously processed files for these reports can be re-staged from Import History");
+  });
+
+  it("says nothing about restage when there is nothing to re-stage", () => {
+    const msg = missingReportsMessage(["Demographics export"], 0, 1);
+    expect(msg).toBe("Both reports are required before running analysis. Missing: Demographics export.");
+    expect(msg).not.toContain("Import History");
+  });
+
+  it("agrees in number for a single file and a single report", () => {
+    const msg = missingReportsMessage(["Placements export"], 1, 1);
+    expect(msg).toContain("1 previously processed file for this report");
+    expect(msg).not.toContain("files for");
   });
 });

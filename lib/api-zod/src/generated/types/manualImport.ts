@@ -28,4 +28,6 @@ export interface ManualImport {
   link_result?: CreativeLinkResult;
   /** Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the 'Run analysis' step and to re-hydrate the mapping panel on subsequent visits without re-uploading. */
   mapping_summary?: ColumnMappingSummaryEntry[] | null;
+  /** Warnings recorded by upload-time validation, persisted so they outlive the upload dialog. NULL and [] mean different things and must not be conflated: NULL is "not recorded" (a creative_asset row, or a file staged before warnings were persisted) and must never render as "no warnings"; [] is "validation ran and found none", which is a real positive finding. */
+  upload_warnings?: string[] | null;
 }

@@ -789,6 +789,21 @@ revoke all on manual_import_chunks from anon, authenticated;
 -- performance_placement_csv kinds; null for creative_asset rows.
 alter table manual_imports add column if not exists mapping_summary jsonb;
 
+-- Upload-time warnings, persisted for the same reason the mapping summary is.
+-- They were EPHEMERAL: produced by upload validation, returned once in the
+-- staging response, rendered in the upload dialog, and then gone when it
+-- closed. A file whose IDs were blanked by a Sheets round-trip, or whose
+-- headers Meta's exporter duplicated, said so exactly once — to whoever
+-- happened to be at the keyboard — and never again, including at the analysis
+-- run days later that actually consumes the file. A true-positive warning that
+-- can only be seen once is a suppressed warning on the second look.
+--
+-- NULL and [] mean different things and must stay distinguishable:
+--   NULL — not recorded (a creative_asset row, or staged before this column
+--          existed). The UI must not read this as "no warnings".
+--   []   — validation ran and found none. That is a real, positive finding.
+alter table manual_imports add column if not exists upload_warnings jsonb;
+
 -- (Re)apply the check idempotently. `add column if not exists` above won't
 -- widen a pre-existing id/fuzzy-only constraint, so drop any existing
 -- match_method check and re-add the current allowed set. This lets the new

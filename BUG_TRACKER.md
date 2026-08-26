@@ -190,7 +190,20 @@ parser/merge code.
 - **Category:** Phase 2 Polish (UX). The design is sound; the failure mode is discoverability —
   the error message doesn't mention that previously processed files can be re-staged from
   Import History.
-- **Resolution:** Phase 2 — mention restage in the error/UI copy. Not changed this session.
+- **Resolution (implemented, Phase 2):** both surfaces now name the restage path, and name it
+  ONLY when there is something to re-stage.
+  - Server: `missingReportsMessage()` (pure, exported from `analysisEngine.ts`) appends
+    "N previously processed file(s) … can be re-staged from Import History — no need to upload
+    again" to the 422. The processed count comes from a SECOND, deliberately narrow query
+    (`select("kind")`, status `processed`) rather than by widening the existing one, which
+    selects `content` — pulling bytea for every processed file is what hung production once.
+  - Client: `ManualAnalysisControls` derives `canRestageDemo` / `canRestagePlacement` from the
+    imports it already holds and rewrites the hard-block copy accordingly.
+- **The half that was easy to get wrong:** offering restage unconditionally would have been
+  BUG-29 again — telling a user to import a file they had already imported, pointing at an empty
+  Import History. Both directions are asserted (`restage-discoverability.test.ts`, 4 tests;
+  `analysisEngine.test.ts`, 3 tests), and regression-proven: replacing the derivation with an
+  unconditional offer fails exactly the two tests that guard the empty-history case.
 
 ## BUG-09 — `manual_imports` re-upload dedup gap (F-08)
 
@@ -1155,6 +1168,40 @@ Regression-proven against the true pre-fix component (clock and note both remove
 fail, including the one that states the actual guarantee — *two runs at the same percentage must
 render differently when their ages differ*. Full suite 119 files / 1,704 tests; typecheck and the
 blocking disclosure rulebook green.
+
+## BUG-44 — upload-time warnings were ephemeral: shown once, then unrecoverable
+
+- **Category:** Fix-Now (honesty invariant). Carried as "ephemeral upload warnings" in the
+  Phase 1 closeout's warning-surfacing gaps; built in Phase 2.
+- **Symptom:** upload validation produces real warnings — ID columns blanked by a Google Sheets
+  round-trip, Meta's pivot exporter duplicating a header set — and they were returned once in
+  the staging response (`upload_warnings`), pushed into a local array in
+  `ConnectAccountDialogs.tsx`, rendered in the upload dialog, and lost when it closed. Nothing
+  persisted them. A different user, a later visit, or the analysis run days afterwards that
+  actually consumed the file had no way to see them.
+- **Root cause:** `manual_imports` had no column for them. The neighbouring `mapping_summary`
+  had exactly this treatment already — persisted at staging, returned by the listing, re-hydrated
+  in the UI — so the gap was that warnings never got the same one, not that the pattern was
+  missing.
+- **Why it is an honesty defect rather than a UX one:** the invariant is that a true-positive
+  warning is never suppressed. A warning that can only ever be seen once, by whoever happened to
+  be at the keyboard, is suppressed on every look after the first — and it is suppressed exactly
+  at the moment it matters most, the run that ingests the file.
+- **Resolution (implemented):** `manual_imports.upload_warnings jsonb` (nullable; schema add
+  applied live), written by BOTH staging paths — single-request and chunked-complete — and
+  returned by `GET …/manual-imports`. Surfaced per file in `ImportConfidenceReport`: a count on
+  the collapsed card face, the full list in the detail panel.
+- **The distinction that had to survive:** `NULL` and `[]` are different claims and are rendered
+  differently. `NULL` means "not recorded" — a creative asset, or a file staged before the column
+  existed — and renders as *"Upload warnings weren't recorded for this file"*; `[]` means
+  "validation ran and found none", a real positive finding, and renders as nothing. Coalescing
+  the two would assert a clean bill of health nobody ever issued. `mapping_summary` being set is
+  the "validation ran" signal that keeps them apart at write time.
+- **Verification:** `upload-warnings-persisted.test.ts` (4 tests, rendered surface).
+  Regression-proven — replacing the read with `imp.upload_warnings ?? []` fails the
+  not-recorded test.
+
+---
 
 ## BUG-43 — the source-data importer destroys in-app generated strategy and briefs
 

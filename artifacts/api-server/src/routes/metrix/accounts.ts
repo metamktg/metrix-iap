@@ -247,6 +247,11 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
         uploaded_by_user_id: user.id,
         uploaded_by_email: user.email,
         ...(csvMappingSummary ? { mapping_summary: csvMappingSummary } : {}),
+        // Persist the upload warnings rather than letting them die with the
+        // dialog. `csvMappingSummary` being set is the "validation ran" signal,
+        // which is what keeps [] (validated, none found — a real finding)
+        // distinguishable from NULL (never validated, e.g. a creative asset).
+        ...(csvMappingSummary ? { upload_warnings: csvUploadWarnings ?? [] } : {}),
       })
       .select("id")
       .single();

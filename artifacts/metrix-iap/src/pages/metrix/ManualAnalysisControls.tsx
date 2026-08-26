@@ -1113,6 +1113,23 @@ export function AnalysisControls({
   const hasPlacementCsv = stagedImports.some((imp) => imp.kind === "performance_placement_csv");
   const missingRequiredCsv = !hasDemoCsv || !hasPlacementCsv;
 
+  // BUG-08 — a run consumes the STAGED batch, so a successful run leaves its
+  // files `processed` and the next run reports them missing. By design (reading
+  // processed files back would double-count), but the copy never said the files
+  // still exist and can be re-staged from Import History, so the workaround
+  // people found was re-uploading a file already in the database.
+  //
+  // Derived here rather than passed in, and only true when there is really
+  // something to re-stage: offering it against an empty Import History would
+  // be the BUG-29 failure again — telling someone to import what they already
+  // imported.
+  const allImports = importsData?.imports ?? [];
+  const restagableFor = (kind: string) =>
+    allImports.some((imp) => imp.kind === kind && imp.status === "processed");
+  const canRestageDemo = !hasDemoCsv && restagableFor("performance_demo_csv");
+  const canRestagePlacement = !hasPlacementCsv && restagableFor("performance_placement_csv");
+  const canRestageMissing = canRestageDemo || canRestagePlacement;
+
   // Detect whether any required breakdown column is missing across staged CSVs.
   // When true, we soft-block the Run button with a warning (escape hatch kept).
   const hasRequiredMissing = stagedImports.some(
@@ -1289,7 +1306,12 @@ export function AnalysisControls({
             Missing: {[!hasDemoCsv && "Demographics export", !hasPlacementCsv && "Placement export"]
               .filter(Boolean)
               .join(", ")}
-            . Upload {missingRequiredCsv && !hasDemoCsv && !hasPlacementCsv ? "them" : "it"} from this account's setup screen.
+            .{" "}
+            {canRestageMissing
+              ? `A previously processed ${[canRestageDemo && "Demographics", canRestagePlacement && "Placement"]
+                  .filter(Boolean)
+                  .join(" and ")} export is already on this account — re-stage it from Import History below, or upload a new one from the setup screen.`
+              : `Upload ${!hasDemoCsv && !hasPlacementCsv ? "them" : "it"} from this account's setup screen.`}
           </p>
         </div>
       </div>
