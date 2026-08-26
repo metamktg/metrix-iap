@@ -128,6 +128,7 @@ jobs:
           src/lib/__tests__/cellCreativeValidation.test.ts
           src/lib/__tests__/creativeAssetType.test.ts
           src/lib/__tests__/deconstructionReclassify.test.ts
+          src/lib/__tests__/generatedCurrency.test.ts
           src/lib/__tests__/iapCsvDayNormalization.test.ts
           src/lib/__tests__/iapCsvMapping.test.ts
           src/lib/__tests__/iapCsvParser.test.ts

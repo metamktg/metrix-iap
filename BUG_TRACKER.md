@@ -1156,12 +1156,46 @@ fail, including the one that states the actual guarantee — *two runs at the sa
 render differently when their ages differ*. Full suite 119 files / 1,704 tests; typecheck and the
 blocking disclosure rulebook green.
 
+## BUG-43 — the source-data importer destroys in-app generated strategy and briefs
+
+- **Category:** Fix-Now. Found while auditing GAP-01 against the live database.
+- **Symptom:** `bookster` held **16 generated briefs and zero generated pillars**, from a
+  successful 2026-08-06 strategy run with no strategy run after it. `ecas` (East Coast Art
+  Studio) held a successful 2026-08-07 strategy run with **no surviving output at all**.
+  Nothing in `generationEngine.ts` could produce either state: a briefs run never deletes
+  pillars, and `deletePriorGenerated` only runs when a *later* run replaces the set.
+- **Root cause:** `scripts/src/metrix-supabase/import.ts` cleared its managed accounts with
+  `delete from <t> where account_id = any($1)` across 26 tables — **with no `source`
+  filter**. Four of those tables (`message_pillars`, `testing_hypotheses`, `icp_profiles`,
+  `imported_creative_briefs`) hold in-app generated output beside the imported rows. The
+  re-insert that follows restores only the imported half, so every `import:metrix` run
+  silently destroyed the generated strategy and briefs for `bookster` and `ecas`.
+- **Evidence (live, non-destructive):** the importer's exact predicate, run as a `SELECT`,
+  currently matches **16 generated briefs** on `bookster` — real user output that the next
+  import would have destroyed. The pre-existing `detectPostImportLoss` guard would have
+  reported the drop after the fact, which is how the loss was survivable but not prevented.
+- **Resolution:** `managedDeleteSql(table)` in `import-guard.ts` narrows the delete to
+  `source = 'imported'` for the four dual-source tables and leaves every other table cleared
+  wholesale. Generated ids live in their own namespace (`GEN_PILLAR_*`, `GEN_BRIEF_*`), so
+  surviving rows cannot collide with the re-inserted imported rows under the
+  `(account_id, <natural key>)` unique constraints.
+- **Verification:** `import-guard.test.ts` — regression-proven (reverted to the unqualified
+  delete, watched the assertion fail, restored). A third test reads `schema.sql` and requires
+  that every account-scoped table carrying a `source` column is registered, so a table added
+  later cannot be silently wiped again.
+- **Why it matters for GAP-01:** GAP-01's design removes the *engine's* delete. On its own
+  that would have left `bookster` and `ecas` still losing their output to a second,
+  unrelated destroyer. The two had to land together.
+
+---
+
 ## GAP-01 — generated strategy and briefs are destroyed on regeneration, with no archive
 
 **Type:** design gap, not a defect. Current behaviour is deliberate and its honesty rationale is
 sound; the unintended cost is that it is *destructive* where it only needed to be *exclusive*.
 **Raised by:** the operator, on being told that each briefs run replaces the previous set.
-**Status:** open — recorded for Phase 2, deliberately not built at handoff.
+**Status:** RESOLVED in Phase 2 (preservation + read scoping). The archive UI surface remains
+open — see "What is still open" at the end of this entry.
 
 ### The evidence
 
@@ -1227,3 +1261,45 @@ just storage.
 **But the preservation half is time-sensitive in a way the rest of the backlog is not.** Every
 regeneration between now and Phase 2 destroys history that cannot be recovered. If the sprint
 splits, land "stop deleting, scope reads to current" first and surface the archive afterwards.
+
+### Resolution (Phase 2)
+
+The preservation half landed exactly as scoped above — "stop deleting, scope reads to current".
+
+1. **The engine stops deleting.** All three `deletePriorGenerated` calls are gone, and with them
+   the function. Every generated id is already run-scoped, so sets from different runs coexist
+   under the existing `UNIQUE (account_id, <natural key>)` constraints — the corrected reading
+   above held up: **no uniqueness migration was needed.**
+2. **Currency is derived, not assumed.** `lib/generatedCurrency.ts` is the single answer to
+   "which set is live": the newest successful run of that kind *that still has rows*. The
+   "still has rows" qualifier is what keeps an account whose latest run was wiped out of band
+   (BUG-43) rendering its newest surviving set rather than nothing.
+3. **The briefs rule is as specified.** A brief set renders only if it was generated after the
+   strategy set being rendered; otherwise it is retained and demoted, and the seed falls back
+   to the imported briefs — the same visible outcome the 92% delete used to produce, minus the
+   destruction.
+
+**Two things this turned up that the design did not anticipate.**
+
+- **The imported fallback was a raw array.** `activeBriefs = generated.length > 0 ? generated :
+  creativeBriefs` was safe only because the generated rows had been deleted; once they persist,
+  that fallback renders archived briefs beside the imported ones as one live set. Caught by a
+  test, not by review. All four fallbacks now filter `source !== 'generated'` explicitly.
+- **Four other readers assumed one set** — `storedPillars` (which feeds brief generation),
+  the strategy evidence pack's `icp_profiles`, the deconstruction brief matcher, and
+  `metrixStageStatus`'s `briefs.count` (which is user-visible and gates `mst.unlocked`; it
+  would have climbed 16 → 32 → 48 across regenerations). This is the handoff §3 pattern
+  precisely, which is why currency is derived at each point of use from one shared module
+  rather than threaded by hand.
+
+**Verified against live data before merge.** No account holds generated rows from more than one
+run (the delete guaranteed that), and no account's briefs run predates its rendered strategy
+run — so the change is **rendering-neutral on all 32 live accounts** while stopping the
+destruction going forward. Regression-proven: neutralising the run scoping fails 2 seed tests
+and 4 shared-helper tests; restored, all pass.
+
+### What is still open
+
+The **archive UI surface**. Nothing yet lets a user open a superseded set, so the history is
+preserved but not browsable — "an archive nobody can open is just storage". The data and its
+lineage are now there for that surface to read, which was the blocking half.

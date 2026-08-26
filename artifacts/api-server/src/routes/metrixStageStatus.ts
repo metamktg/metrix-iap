@@ -11,6 +11,7 @@ import { userHasAccountAccess } from "./metrix";
 import { getLatestAnalysisRun, verifyAnalysisRunCompleteness } from "../lib/analysisEngine";
 import { getLatestGenerationRun } from "../lib/generationEngine";
 import { getSupabase } from "../lib/supabase";
+import { fetchSuccessfulRuns, splitBySource } from "../lib/generatedCurrency";
 
 const router: IRouter = Router();
 
@@ -39,14 +40,18 @@ router.get("/metrix/accounts/:accountId/stage-status", requireAuth, async (req, 
       }),
       getLatestGenerationRun(accountId, "strategy"),
       getLatestGenerationRun(accountId, "briefs"),
-      getSupabase()
-        .from("imported_creative_briefs")
-        .select("brief_id", { count: "exact", head: true })
-        .eq("account_id", accountId)
-        .then(({ count, error }) => {
-          if (error) throw new Error(error.message);
-          return count ?? 0;
-        }),
+      // Count the briefs that are actually live, not every row ever written.
+      // Generated sets are archived rather than deleted (GAP-01), so a plain
+      // count would climb 16 → 32 → 48 across regenerations and report briefs
+      // that nothing renders — and `mst.unlocked` below keys off this number.
+      (async () => {
+        const { data, error } = await getSupabase()
+          .from("imported_creative_briefs")
+          .select("brief_id, source, generation_run_id")
+          .eq("account_id", accountId);
+        if (error) throw new Error(error.message);
+        return splitBySource(data ?? [], await fetchSuccessfulRuns(accountId, "briefs")).active.length;
+      })(),
     ]);
 
     res.json({

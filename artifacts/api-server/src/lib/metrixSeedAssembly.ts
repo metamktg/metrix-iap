@@ -14,6 +14,11 @@
 // passed through so the client can surface them.
 
 import { getSupabase } from "./supabase";
+import {
+  resolveCurrentGeneratedSet,
+  runOrderKey,
+  successfulRunsNewestFirst,
+} from "./generatedCurrency";
 import { syncAllCreativeLinksForAccount } from "./analysisEngine";
 import { resolveAccountObjectives } from "./cohortConfig";
 import { logger } from "./logger";
@@ -178,6 +183,7 @@ export type AccountTables = {
   adsRegistry: Map<string, Row[]>;
   cellCreativeOverrides: Map<string, Row[]>;
   creativeDeconstructions: Map<string, Row[]>;
+  generationRuns: Map<string, Row[]>;
   accountModules: Row[];
   signalCards: Row[];
 };
@@ -267,6 +273,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   const icpProfiles = forAccount(t.icpProfiles, accountId);
   const variableCombinations = forAccount(t.variableCombinations, accountId);
   const creativeBriefs = forAccount(t.creativeBriefs, accountId);
+  const generationRuns = forAccount(t.generationRuns, accountId);
   const iapRuns = forAccount(t.iapRuns, accountId);
   const conceptIntelligence = forAccount(t.conceptIntelligence, accountId);
   const failurePatterns = forAccount(t.failurePatterns, accountId);
@@ -463,25 +470,44 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   };
 
   // ── Strategy (mapped from the real Strategy Map output) ─────────────
-  // Provenance: when the in-app Metrix engine has generated a strategy
-  // for this account (source='generated' rows), that set is rendered and
-  // the imported set is set aside — never merged (duplicate pillars) and
-  // never deleted (importer rows stay untouched). Provenance is surfaced
-  // so the UI can badge generated output honestly.
-  const generatedPillars = messagePillars.filter((r) => r["source"] === "generated");
-  const activePillars = generatedPillars.length > 0 ? generatedPillars : messagePillars;
+  // Provenance: when the in-app Metrix engine has generated a strategy for
+  // this account, that set is rendered and the imported set is set aside —
+  // never merged (duplicate pillars) and never deleted (importer rows stay
+  // untouched). Provenance is surfaced so the UI can badge generated output
+  // honestly.
+  //
+  // Generated sets are now retained across runs (GAP-01), so `source =
+  // 'generated'` no longer identifies ONE set: each is narrowed to the
+  // current run before it is compared against the imported set.
+  const strategyRuns = successfulRunsNewestFirst(generationRuns, "strategy");
+  const currentPillarSet = resolveCurrentGeneratedSet(
+    messagePillars.filter((r) => r["source"] === "generated"),
+    strategyRuns,
+  );
+  const generatedPillars = currentPillarSet.rows;
+  // Same rule as briefs below: the imported fallback is filtered explicitly,
+  // never the raw array, so an archived set can never render beside it.
+  const importedPillars = messagePillars.filter((r) => r["source"] !== "generated");
+  const activePillars = generatedPillars.length > 0 ? generatedPillars : importedPillars;
   // ICP profiles generate independently of pillars (Strategy Map's
   // "ICP Profile Registry" output) — the same generated-preferred-over-
   // imported swap, but on its own generated-set check, not gated on pillars.
-  const generatedIcpProfiles = icpProfiles.filter((r) => r["source"] === "generated");
-  const activeIcpProfiles = generatedIcpProfiles.length > 0 ? generatedIcpProfiles : icpProfiles;
-  const generatedHypotheses = testingHypotheses.filter((r) => r["source"] === "generated");
+  const generatedIcpProfiles = resolveCurrentGeneratedSet(
+    icpProfiles.filter((r) => r["source"] === "generated"),
+    strategyRuns,
+  ).rows;
+  const importedIcpProfiles = icpProfiles.filter((r) => r["source"] !== "generated");
+  const activeIcpProfiles = generatedIcpProfiles.length > 0 ? generatedIcpProfiles : importedIcpProfiles;
+  const generatedHypotheses = resolveCurrentGeneratedSet(
+    testingHypotheses.filter((r) => r["source"] === "generated"),
+    strategyRuns,
+  ).rows;
   const activeHypotheses =
     generatedPillars.length > 0 && generatedHypotheses.length > 0
       ? generatedHypotheses
       : generatedPillars.length > 0
         ? []
-        : testingHypotheses;
+        : testingHypotheses.filter((r) => r["source"] !== "generated");
   const strategyProvenance = generatedPillars.length > 0 ? "generated" : "imported";
   const strategy = {
     provenance: strategyProvenance,
@@ -538,8 +564,30 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   // Same provenance rule as strategy: an in-app generated brief set is
   // rendered in place of the imported set (never merged, imported rows
   // never touched).
-  const generatedBriefs = creativeBriefs.filter((r) => r["source"] === "generated");
-  const activeBriefs = generatedBriefs.length > 0 ? generatedBriefs : creativeBriefs;
+  // Currency for briefs carries one extra condition. A strategy run used
+  // to DELETE the generated briefs, because they reference pillars it had
+  // just replaced. It no longer does — so "latest successful briefs run"
+  // alone would keep rendering a set built against pillars that are no
+  // longer the ones on screen. A brief set is current only if it was
+  // generated AFTER the strategy set being rendered; otherwise it is
+  // retained as archive and the seed falls back to the imported briefs,
+  // which is exactly what the delete used to produce.
+  const currentBriefSet = resolveCurrentGeneratedSet(
+    creativeBriefs.filter((r) => r["source"] === "generated"),
+    successfulRunsNewestFirst(generationRuns, "briefs"),
+  );
+  const briefsPredateRenderedStrategy =
+    currentBriefSet.run !== null &&
+    currentPillarSet.run !== null &&
+    runOrderKey(currentBriefSet.run.started_at) < runOrderKey(currentPillarSet.run.started_at);
+  const generatedBriefs = briefsPredateRenderedStrategy ? [] : currentBriefSet.rows;
+  // Fall back to the IMPORTED rows explicitly. Before archiving, the raw array
+  // held nothing else — the generated rows had been deleted — so falling back
+  // to it was the same thing. It is not any more: archived and demoted sets
+  // still sit in this array, and returning it whole would render superseded
+  // briefs beside the imported ones as if they were one live set.
+  const importedBriefs = creativeBriefs.filter((r) => r["source"] !== "generated");
+  const activeBriefs = generatedBriefs.length > 0 ? generatedBriefs : importedBriefs;
   const briefBuilder = {
     provenance: generatedBriefs.length > 0 ? "generated" : "imported",
     source_policy:
@@ -892,6 +940,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     cellCreativeOverridesAll,
     manualImportsCreativeAll,
     creativeDeconstructionsAll,
+    generationRunsAll,
   ] = await Promise.all([
     selectAll("app_config", (q) => q.order("key")),
     selectAll("ad_accounts", (q) => q.order("id")),
@@ -936,6 +985,17 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("creative_deconstructions", (q) => q.order("created_at", { ascending: false }).order("id", { ascending: false })).catch(
       () => [] as Row[],
     ),
+    // Generation run lineage — resolves WHICH generated set is current now
+    // that runs no longer delete the ones they supersede (GAP-01).
+    // Metadata columns only; the run rows carry no payload worth shipping.
+    // Graceful: [] if the table hasn't been created yet (pre-migration),
+    // which degrades to the pre-scoping behaviour rather than to no
+    // strategy at all.
+    selectAll(
+      "generation_runs",
+      (q) => q.eq("status", "success").order("started_at", { ascending: false }),
+      "id, account_id, kind, status, started_at",
+    ).catch(() => [] as Row[]),
   ]);
 
   if (adAccounts.length === 0 || adPerformanceAll.length === 0) {
@@ -1142,6 +1202,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     adsRegistry: groupByAccount(finalAdsRegistryAll),
     cellCreativeOverrides: groupByAccount(cellCreativeOverridesAll),
     creativeDeconstructions: groupByAccount(creativeDeconstructionsAll),
+    generationRuns: groupByAccount(generationRunsAll),
     accountModules,
     signalCards,
   };

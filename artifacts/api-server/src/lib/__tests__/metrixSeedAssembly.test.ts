@@ -38,6 +38,7 @@ const emptyTables = (): AccountTables => ({
   adsRegistry: new Map(),
   cellCreativeOverrides: new Map(),
   creativeDeconstructions: new Map(),
+  generationRuns: new Map(),
   accountModules: [],
   signalCards: [],
 });
@@ -649,5 +650,137 @@ describe("detectAccountsNeedingCreativeSync", () => {
     ];
     const ads: Row[] = [];
     expect(detectAccountsNeedingCreativeSync(manualImports, ads)).toEqual([]);
+  });
+});
+
+// ── GAP-01: generated sets are archived, not destroyed ──────────────────────
+//
+// Generation runs used to delete the set they superseded, so "a generated row
+// exists" and "this is the current generated set" were the same statement. They
+// are not any more: runs keep their output and an account can hold several sets
+// at once. The read path must therefore resolve exactly ONE current set per
+// kind — the newest successful run's — and never merge or blend them.
+//
+// 15 successful runs had already lost every artifact they produced by the time
+// this landed (7 briefs, 8 strategy), which is what made the delete worth
+// removing; these tests are what stop the read path fabricating a merged
+// strategy in its place.
+
+describe("generated output currency (GAP-01)", () => {
+  const acct = "gen_acct";
+  const RUN_OLD = "11111111-1111-4111-8111-111111111111";
+  const RUN_NEW = "22222222-2222-4222-8222-222222222222";
+  const RUN_BRIEFS = "33333333-3333-4333-8333-333333333333";
+
+  const pillar = (runId: string, id: string, name: string): Row => ({
+    account_id: acct,
+    pillar_id: id,
+    pillar_name: name,
+    source: "generated",
+    generation_run_id: runId,
+    payload: { pillar_id: id, pillar_name: name },
+  });
+
+  const brief = (runId: string, id: string): Row => ({
+    account_id: acct,
+    brief_id: id,
+    source: "generated",
+    generation_run_id: runId,
+    payload: { brief_metadata: { brief_id: id, asset_type: "static" }, strategic_foundation: {} },
+  });
+
+  const run = (id: string, kind: string, startedAt: string): Row => ({
+    id,
+    account_id: acct,
+    kind,
+    status: "success",
+    started_at: startedAt,
+  });
+
+  const baseTables = () => {
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(acct)]);
+    return t;
+  };
+
+  const build = (t: AccountTables) =>
+    buildAccountObject({ id: acct, name: "Gen", status: "configured" }, t);
+
+  it("renders only the newest successful run's pillars when several sets survive", () => {
+    const t = baseTables();
+    t.messagePillars = groupByAccount([
+      pillar(RUN_OLD, "GEN_PILLAR_old_1", "Superseded"),
+      pillar(RUN_NEW, "GEN_PILLAR_new_1", "Current"),
+    ]);
+    t.generationRuns = groupByAccount([
+      run(RUN_OLD, "strategy", "2026-08-01T10:00:00Z"),
+      run(RUN_NEW, "strategy", "2026-08-20T10:00:00Z"),
+    ]);
+
+    const pillars = build(t)["iap"]["strategy"]["message_pillars"] as Row[];
+    // The archived set is retained in the table but never blended into the
+    // live one — two sets on disk, exactly one on screen.
+    expect(pillars).toHaveLength(1);
+    expect(pillars[0]["label"]).toBe("Current");
+  });
+
+  it("keeps a single generated set rendering exactly as before run scoping", () => {
+    const t = baseTables();
+    t.messagePillars = groupByAccount([pillar(RUN_NEW, "GEN_PILLAR_new_1", "Only")]);
+    t.generationRuns = groupByAccount([run(RUN_NEW, "strategy", "2026-08-20T10:00:00Z")]);
+
+    const strategy = build(t)["iap"]["strategy"] as Row;
+    expect(strategy["provenance"]).toBe("generated");
+    expect((strategy["message_pillars"] as Row[]).map((p) => p["label"])).toEqual(["Only"]);
+  });
+
+  it("still renders generated rows that map to no successful run, rather than dropping them", () => {
+    // Pre-lineage rows, or a run row since removed. Scoping must never turn
+    // output that is really there into "no generated strategy".
+    const t = baseTables();
+    t.messagePillars = groupByAccount([pillar(RUN_OLD, "GEN_PILLAR_x_1", "Orphaned")]);
+    t.generationRuns = groupByAccount([]);
+
+    const strategy = build(t)["iap"]["strategy"] as Row;
+    expect(strategy["provenance"]).toBe("generated");
+    expect((strategy["message_pillars"] as Row[])[0]["label"]).toBe("Orphaned");
+  });
+
+  it("demotes a brief set that predates the strategy now rendering, without deleting it", () => {
+    // This is the case the strategy run's deletePriorGenerated(…, 'briefs')
+    // used to handle by destruction: the briefs describe pillars that have
+    // been superseded, so they must stop rendering as live — and the seed
+    // falls back to the imported briefs, exactly as the delete produced.
+    const t = baseTables();
+    t.messagePillars = groupByAccount([pillar(RUN_NEW, "GEN_PILLAR_new_1", "Current")]);
+    t.creativeBriefs = groupByAccount([
+      brief(RUN_BRIEFS, "GEN_BRIEF_old_1"),
+      { account_id: acct, brief_id: "IMPORTED_1", source: "imported", payload: { brief_metadata: { brief_id: "IMPORTED_1" }, strategic_foundation: {} } },
+    ]);
+    t.generationRuns = groupByAccount([
+      run(RUN_BRIEFS, "briefs", "2026-08-10T10:00:00Z"),
+      run(RUN_NEW, "strategy", "2026-08-20T10:00:00Z"), // strategy is NEWER
+    ]);
+
+    const bb = build(t)["iap"]["brief_builder"] as Row;
+    expect(bb["provenance"]).toBe("imported");
+    expect((bb["draft_briefs"] as Row[]).map((b) => b["id"])).toEqual(["IMPORTED_1"]);
+  });
+
+  it("keeps a brief set that was generated after the strategy now rendering", () => {
+    const t = baseTables();
+    t.messagePillars = groupByAccount([pillar(RUN_NEW, "GEN_PILLAR_new_1", "Current")]);
+    t.creativeBriefs = groupByAccount([
+      brief(RUN_BRIEFS, "GEN_BRIEF_new_1"),
+      { account_id: acct, brief_id: "IMPORTED_1", source: "imported", payload: { brief_metadata: { brief_id: "IMPORTED_1" }, strategic_foundation: {} } },
+    ]);
+    t.generationRuns = groupByAccount([
+      run(RUN_NEW, "strategy", "2026-08-20T10:00:00Z"),
+      run(RUN_BRIEFS, "briefs", "2026-08-21T10:00:00Z"), // briefs are NEWER
+    ]);
+
+    const bb = build(t)["iap"]["brief_builder"] as Row;
+    expect(bb["provenance"]).toBe("generated");
+    expect((bb["draft_briefs"] as Row[]).map((b) => b["id"])).toEqual(["GEN_BRIEF_new_1"]);
   });
 });

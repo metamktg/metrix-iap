@@ -56,6 +56,7 @@ import {
   verifyLdDemoReconciliation,
   verifyLdDeviceReconciliation,
 } from "./ldCsv";
+import { managedDeleteSql } from "./import-guard";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "../../data/metrix");
@@ -1385,8 +1386,21 @@ async function main() {
     }
 
     // ── Wipe previously imported rows (idempotent re-run) ─────────────
+    // Four of these tables also hold IN-APP GENERATED output (source =
+    // 'generated'), written by the generation engine and owned by the user
+    // — not by this package. An unqualified delete took those with it: the
+    // re-insert below only restores the imported rows, so every generated
+    // strategy and brief set for a managed account was destroyed by any
+    // re-import. That is how `bookster` came to hold 16 generated briefs
+    // with zero generated pillars, and `ecas` a successful strategy run
+    // with no surviving output at all.
+    //
+    // Scope the delete to the rows this importer actually owns. Generated
+    // rows carry ids in their own namespace (GEN_PILLAR_*, GEN_BRIEF_*), so
+    // leaving them in place cannot collide with the re-inserted imported
+    // rows under the (account_id, <natural key>) unique constraints.
     for (const t of dataTables) {
-      await q(`delete from ${t} where account_id = any($1)`, [[ACCOUNT_ID, ECAS_ACCOUNT_ID]]);
+      await q(managedDeleteSql(t), [[ACCOUNT_ID, ECAS_ACCOUNT_ID]]);
     }
     await q(`delete from signal_cards`); // manager cards have no bookster-only account scoping guarantee
     await q(`delete from account_modules where account_id = 'skov_pet'`);
