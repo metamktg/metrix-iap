@@ -618,26 +618,105 @@ function AudienceSegmentTile({
   );
 }
 
-// ─── Combinations panel ───────────────────────────────────────────────
-// Unified concept × placement × platform table ranked by CPA (top 10,
-// expandable). Concept rows show "—" for placement/platform; placement
-// rows show "—" for concept. All sorted by CPA ascending.
+// ─── Top performers by dimension ──────────────────────────────────────
+//
+// HONESTY NOTE (C1). This panel used to be titled "Creative combos" and
+// described as "Concept × placement × platform", which promised a cross-tab
+// that is never computed anywhere. It rendered two disjoint row sets in one
+// table — concept rows carrying placement/platform "—", placement rows
+// carrying concept "—" — so the layout implied a join whose cells simply
+// happened to be missing, rather than a join that does not exist.
+//
+// It does not exist because the grain isn't there: `performance_by_cell`
+// carries no placement or platform dimension, and `placement_performance`
+// is keyed (account, placement, window) with the ad dimension already
+// aggregated away, so nothing downstream can attribute a placement's spend
+// back to a concept. The raw Meta device/placement export DOES carry "Ad
+// name" per row, so a real cross-tab is buildable — but it needs an
+// ad-level placement rollup that no ingestion path writes today. Until one
+// does, these stay what they measurably are: two independent rankings of
+// the same spend, shown side by side and never merged.
 
-type ComboRow = {
-  concept: string;
-  placement: string;
-  platform: string;
+/**
+ * The section's disclosure text. Exported so a regression test can pin the
+ * reason itself, not merely the presence of an \u24d8 — the whole point of
+ * C1 is that a reader who expected a cross-tab is told why there isn't one.
+ */
+export const COMBOS_DISCLOSURE =
+  "Concepts and placements \u00b7 each ranked by CPA \u00b7 two independent rankings of the same spend, not a cross-tab. " +
+  "Concept CPA comes from performance_by_cell, which carries no placement dimension; placement CPA comes from placement " +
+  "rollups, where the ad dimension is already aggregated away. Nothing in the data attributes a placement's spend back to " +
+  "a concept, so the two are never combined.";
+
+type DimensionRow = {
+  label: string;
+  sublabel?: string;
   spend: number;
   results: number;
   cpa: number | null;
   rowKey: string;
 };
 
-function CombosPanel({ analysis, resultNoun }: { analysis: AnalysisData | null | undefined; resultNoun: string }) {
+function DimensionRanking({
+  title, unitHeader, rows, resultNoun,
+}: {
+  title: string;
+  unitHeader: string;
+  rows: DimensionRow[];
+  resultNoun: string;
+}) {
   const [expanded, setExpanded] = useState(false);
+  if (rows.length === 0) return null;
+  const visible = expanded ? rows : rows.slice(0, 5);
 
-  const rows = useMemo((): ComboRow[] => {
-    const out: ComboRow[] = [];
+  return (
+    <div className="min-w-0">
+      <div className={cn(TYPE.label, "mb-1.5 font-semibold uppercase tracking-[0.14em] text-interactive/75")}>
+        {title}
+      </div>
+      <div className="rounded-xl border border-border/40 overflow-hidden bg-card/40">
+        <div className="overflow-x-auto">
+          <table className="nc-table">
+            <thead className="sticky top-0 bg-surface-table z-10">
+              <tr>
+                <th>{unitHeader}</th>
+                <th className="text-right">Spend</th>
+                <th className="text-right">Results</th>
+                <th className="text-right">CPA</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((r) => (
+                <tr key={r.rowKey}>
+                  <td className="text-foreground/85 font-medium max-w-[180px] truncate" title={r.sublabel ? `${r.label} · ${r.sublabel}` : r.label}>
+                    {r.label}
+                    {r.sublabel && (
+                      <span className="text-muted-foreground/55 capitalize"> · {r.sublabel}</span>
+                    )}
+                  </td>
+                  <td className="text-right tabular-nums text-foreground/70">{fmtUSD(r.spend, 0)}</td>
+                  <td className="text-right tabular-nums text-foreground/70">{fmtNum(r.results)} {resultNoun}</td>
+                  <td className="text-right font-semibold tabular-nums text-foreground/85">{r.cpa != null ? fmtUSD(r.cpa) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {rows.length > 5 && (
+          <button
+            onClick={() => setExpanded((o) => !o)}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 text-body font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-primary/[0.04] border-t border-border/30 transition-colors"
+          >
+            {expanded ? "Show fewer" : `Show all ${rows.length}`}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CombosPanel({ analysis, resultNoun }: { analysis: AnalysisData | null | undefined; resultNoun: string }) {
+  const conceptRows = useMemo((): DimensionRow[] => {
     const source = analysis?.performance_by_cell ?? [];
     const byCellId = new Map<string, (typeof source)[number]>();
     for (const r of source) {
@@ -651,64 +730,38 @@ function CombosPanel({ analysis, resultNoun }: { analysis: AnalysisData | null |
       const prev = byConcept.get(r.book2_concept_name);
       if (!prev || (r.CPA_result ?? Infinity) < (prev.CPA_result ?? Infinity)) byConcept.set(r.book2_concept_name, r);
     }
-    for (const r of byConcept.values()) {
-      out.push({
-        concept: r.book2_concept_name!, placement: "—", platform: "—",
-        spend: r["Amount spent (USD)"], results: r.Results, cpa: r.CPA_result ?? null,
+    return [...byConcept.values()]
+      .map((r) => ({
+        label: r.book2_concept_name!,
+        spend: r["Amount spent (USD)"],
+        results: r.Results,
+        cpa: r.CPA_result ?? null,
         rowKey: `concept:${r.book2_concept_name}`,
-      });
-    }
-    for (const r of analysis?.v3_placement_signal ?? []) {
-      if (r.Results <= 0 || r.CPA == null) continue;
-      out.push({
-        concept: "—", placement: r.Placement, platform: r.Platform,
-        spend: r["Amount spent (USD)"], results: r.Results, cpa: r.CPA,
-        rowKey: `placement:${r.Placement}:${r.Platform}`,
-      });
-    }
-    return out.sort((a, b) => (a.cpa ?? Infinity) - (b.cpa ?? Infinity));
+      }))
+      .sort((a, b) => (a.cpa ?? Infinity) - (b.cpa ?? Infinity));
   }, [analysis]);
 
-  const visible = expanded ? rows : rows.slice(0, 10);
-  if (rows.length === 0) return null;
+  const placementRows = useMemo((): DimensionRow[] => {
+    return (analysis?.v3_placement_signal ?? [])
+      .filter((r) => r.Results > 0 && r.CPA != null)
+      .map((r) => ({
+        label: r.Placement,
+        sublabel: r.Platform,
+        spend: r["Amount spent (USD)"],
+        results: r.Results,
+        cpa: r.CPA,
+        rowKey: `placement:${r.Placement}:${r.Platform}`,
+      }))
+      .sort((a, b) => (a.cpa ?? Infinity) - (b.cpa ?? Infinity));
+  }, [analysis]);
+
+  if (conceptRows.length === 0 && placementRows.length === 0) return null;
 
   return (
-    <SectionCard title="Creative combos" desc="Concept × placement × platform · ranked by CPA · top 10">
-      <div className="rounded-xl border border-border/40 overflow-hidden bg-card/40">
-        <div className="overflow-x-auto">
-          <table className="nc-table">
-            <thead className="sticky top-0 bg-surface-table z-10">
-              <tr>
-                <th>Concept</th>
-                <th>Placement</th>
-                <th>Platform</th>
-                <th className="text-right">Spend</th>
-                <th className="text-right">Results</th>
-                <th className="text-right">CPA</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((r) => (
-                <tr key={r.rowKey}>
-                  <td className="text-foreground/85 font-medium max-w-[160px] truncate">{r.concept}</td>
-                  <td className="text-foreground/70 max-w-[140px] truncate">{r.placement}</td>
-                  <td className="text-muted-foreground/60 capitalize">{r.platform}</td>
-                  <td className="text-right tabular-nums text-foreground/70">{fmtUSD(r.spend, 0)}</td>
-                  <td className="text-right tabular-nums text-foreground/70">{fmtNum(r.results)} {resultNoun}</td>
-                  <td className="text-right font-semibold tabular-nums text-foreground/85">{r.cpa != null ? fmtUSD(r.cpa) : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {rows.length > 10 && (
-          <button
-            onClick={() => setExpanded((o) => !o)}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 text-body font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-primary/[0.04] border-t border-border/30 transition-colors"
-          >
-            {expanded ? "Show fewer" : `Show all ${rows.length} combinations`}
-          </button>
-        )}
+    <SectionCard title="Top performers by dimension" desc={COMBOS_DISCLOSURE}>
+      <div className="grid gap-4 md:grid-cols-2">
+        <DimensionRanking title="By concept" unitHeader="Concept" rows={conceptRows} resultNoun={resultNoun} />
+        <DimensionRanking title="By placement" unitHeader="Placement" rows={placementRows} resultNoun={resultNoun} />
       </div>
     </SectionCard>
   );

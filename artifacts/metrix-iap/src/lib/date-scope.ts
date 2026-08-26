@@ -10,6 +10,7 @@
 import { useMemo, useCallback } from "react";
 import type { AnalysisData } from "@/lib/data/seedTypes";
 import { rangesOverlap, isoMin, isoMax, useDateRange, type IsoRange } from "@/contexts/DateRangeContext";
+import { sumStrict } from "@/lib/strict-sum";
 
 /** Concept code for a creative cell id: "C2B" → "C2". */
 export function conceptForCell(cellId: string): string | null {
@@ -73,9 +74,9 @@ export function cellInRange(
  * is a real, meaningful figure in every metric this feeds; it must never stand
  * in for an unknown.
  *
- * The policy is deliberately identical to segment-analytics' `sumStrict`
- * (null on no rows, null if any row lacks the field) so the codebase has ONE
- * definition of a trustworthy sum rather than two that disagree at the edges.
+ * The fold itself is `lib/strict-sum`'s `sumStrict` — this function only
+ * adds the range filter. There is ONE definition of a trustworthy sum in
+ * the codebase rather than several that disagree at the edges.
  */
 export function sumInRange<T>(
   rows: T[],
@@ -83,18 +84,12 @@ export function sumInRange<T>(
   getDates: (row: T) => { start: string | null | undefined; end: string | null | undefined },
   getValue: (row: T) => number | null | undefined
 ): number | null {
-  let sum = 0;
-  let contributing = 0;
-  for (const row of rows) {
+  const inRange = rows.filter((row) => {
+    if (!range) return true;
     const d = getDates(row);
-    if (!range || rangesOverlap(range, d.start, d.end)) {
-      const v = getValue(row);
-      if (v == null || !Number.isFinite(v)) return null;
-      sum += v;
-      contributing += 1;
-    }
-  }
-  return contributing === 0 ? null : sum;
+    return rangesOverlap(range, d.start, d.end);
+  });
+  return sumStrict(inRange, getValue);
 }
 
 // ─── React hook: cell-level range scoping ─────────────────────────────
