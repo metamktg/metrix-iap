@@ -4,6 +4,7 @@
 // then the core control reads and drill-in module cards.
 
 import { useState, useMemo, useEffect } from "react";
+import { rollupPlacements, derivePlacementRollup, type PlacementRollup } from "@/lib/placement-rollup";
 import { useAnalysisView } from "@/contexts/AnalysisViewContext";
 import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -113,33 +114,6 @@ function buildMonthlyTrend(rollup: ConceptRollupRow[]): MonthBucket[] {
 }
 
 // ─── Placement rollup (mirrors PlacementsView) ────────────────────────
-
-interface PlacementRollup {
-  placement: string;
-  spend: number;
-  results: number;
-  cpa: number | null;
-  ctr: number | null;
-}
-
-function rollupPlacements(rows: PlacementRow[]): PlacementRollup[] {
-  const map = new Map<string, { spend: number; results: number; impr: number; clicks: number }>();
-  for (const r of rows) {
-    const s = map.get(r.Placement) ?? { spend: 0, results: 0, impr: 0, clicks: 0 };
-    s.spend   += r["Amount spent (USD)"];
-    s.results += r.Results;
-    s.impr    += r.Impressions;
-    s.clicks  += r["Link clicks"];
-    map.set(r.Placement, s);
-  }
-  return [...map.entries()].map(([placement, s]) => ({
-    placement,
-    spend:   s.spend,
-    results: s.results,
-    cpa:     s.results > 0 ? s.spend / s.results : null,
-    ctr:     s.impr    > 0 ? (s.clicks / s.impr) * 100 : null,
-  }));
-}
 
 // ─── Demographic heatmap builder ──────────────────────────────────────
 
@@ -940,13 +914,16 @@ export function AnalysisOverview() {
         // When a run is selected and data has loaded, use the API placement rows.
         const allPlacements = (runData &&
           (selectedWindow || (a.v3_placement_signal.length === 0 && a.c4e_placement_signal.length === 0))
-          ? runData.placement_rows.map((r) => ({
-              placement: r.placement,
-              spend: r.spend,
-              results: r.results,
-              cpa: r.results > 0 ? r.spend / r.results : null,
-              ctr: r.impressions > 0 ? (r.link_clicks / r.impressions) * 100 : null,
-            }))
+          ? runData.placement_rows.map((r) =>
+              // Same derivation as the seed-row path — these rows arrive
+              // pre-aggregated from the run API, so only the ratios are
+              // computed here, and by the same function.
+              derivePlacementRollup(r.placement, {
+                spend: r.spend,
+                results: r.results,
+                impressions: r.impressions,
+                linkClicks: r.link_clicks,
+              }))
           : rollupPlacements([
               ...a.v3_placement_signal,
               ...a.c4e_placement_signal,

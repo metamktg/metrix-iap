@@ -18,40 +18,13 @@ import { AlertTriangle, ChevronDown, ChevronRight, TrendingDown } from "lucide-r
 import { cn } from "@workspace/command-deck/lib/utils";
 import type { ManualImport } from "@workspace/api-client-react";
 import { InfoTooltip } from "./shared";
-
-// ── Signal weights (mirrors iapCsvSpec.ts SIGNAL_WEIGHTS) ──────────────
-// Maintained as a client-side copy so the frontend doesn't need a separate
-// API call. Must be kept in sync with the server-side constant.
-const SIGNAL_WEIGHTS: Record<string, number> = {
-  "Amount spent ({ACCOUNT_CURRENCY})": 0.20,
-  "Amount spent (USD)": 0.20,  // resolved currency variant
-  "Results": 0.23,
-  "Impressions": 0.10,
-  "CTR (link click-through rate)": 0.07,
-  "Link clicks": 0.07,
-  "Reach": 0.06,
-  "CPM (cost per 1,000 impressions)": 0.05,
-  "Video average play time": 0.03,
-  "ThruPlays": 0.03,
-  "Landing page views": 0.03,
-  "Clicks (all)": 0.02,
-  "CTR (all)": 0.02,
-  "Frequency": 0.02,
-  "Result type": 0.02,
-  "Ad creative body text": 0.01,
-  "Ad creative headline": 0.01,
-  "Conversion device": 0.01,
-};
+import { getSignalWeight } from "@/lib/signalWeights";
 
 type MappingEntry = NonNullable<ManualImport["mapping_summary"]>[number];
 
 type ColumnReport = MappingEntry & {
   signalWeight: number;
 };
-
-function getSignalWeight(canonical: string): number {
-  return SIGNAL_WEIGHTS[canonical] ?? 0;
-}
 
 function computeGrade(present: number, total: number): { grade: "A" | "B" | "C" | "D" | "F"; pct: number } {
   const pct = total > 0 ? present / total : 0;

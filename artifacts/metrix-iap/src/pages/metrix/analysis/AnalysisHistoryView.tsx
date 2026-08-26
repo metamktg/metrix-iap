@@ -4,6 +4,7 @@
 // strategy from the IAP Loop.
 
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { CsvWarningsPanel } from "@/components/analysis/CsvWarningsPanel";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useListAnalysisRuns, getListAnalysisRunsQueryKey, type AnalysisRun } from "@workspace/api-client-react";
@@ -122,6 +123,15 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
           {run.error_message}
         </div>
       )}
+
+      {/* Run warnings (C10). csv_warnings has always been on the AnalysisRun
+          this list already fetches, but only ManualAnalysisControls rendered
+          it, and only for the LATEST run — so a run started from the Loop
+          command chain or the task tray surfaced its warnings nowhere, and
+          this screen, the one that lists every run, showed none at all. Same
+          component as the controls panel, so the severity split and the
+          reduced-confidence headline can never drift between the two. */}
+      {run.status === "success" && <CsvWarningsPanel run={run} compact />}
 
       {/* Data integrity: `reconciliation` is declared optional in the API
           contract because nothing writes it today (see openapi.yaml). This

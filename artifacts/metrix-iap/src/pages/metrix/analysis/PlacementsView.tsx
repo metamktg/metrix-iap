@@ -20,6 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import { LayoutGrid, ChevronRight, BarChart2 } from "lucide-react";
 import type { ConversionTrackingSignal, DeviceDeliveryRow, PlacementRow } from "@/lib/data/seedTypes";
+import { rollupPlacements, type PlacementRollup } from "@/lib/placement-rollup";
 import { ConversionFunnelTable } from "./tables";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { RankSortBar, sortByRankMetric, useRankMetric, type RankMetric } from "./rankSort";
@@ -29,38 +30,6 @@ const SECTION = "Analysis · 03";
 const RANK_STORAGE_KEY = "metrix.placements.rank.v1";
 
 // ─── Rollup ───────────────────────────────────────────────────────────
-
-interface PlacementRollup {
-  placement: string;
-  spend: number;
-  results: number;
-  impressions: number;
-  linkClicks: number;
-  cpa: number | null;
-  ctr: number | null;
-  cpm: number | null;
-  cpc: number | null;
-}
-
-function rollupPlacements(rows: PlacementRow[]): PlacementRollup[] {
-  const byPlacement = new Map<string, { spend: number; results: number; impressions: number; linkClicks: number }>();
-  for (const r of rows) {
-    const s = byPlacement.get(r.Placement) ?? { spend: 0, results: 0, impressions: 0, linkClicks: 0 };
-    s.spend += r["Amount spent (USD)"];
-    s.results += r.Results;
-    s.impressions += r.Impressions;
-    s.linkClicks += r["Link clicks"];
-    byPlacement.set(r.Placement, s);
-  }
-  return [...byPlacement.entries()].map(([placement, s]) => ({
-    placement,
-    ...s,
-    cpa: s.results > 0 ? s.spend / s.results : null,
-    ctr: s.impressions > 0 ? (s.linkClicks / s.impressions) * 100 : null,
-    cpm: s.impressions > 0 ? (s.spend / s.impressions) * 1000 : null,
-    cpc: s.linkClicks > 0 ? s.spend / s.linkClicks : null,
-  }));
-}
 
 function buildRankMetrics(resultPlural: string): RankMetric<PlacementRollup>[] {
   return [
