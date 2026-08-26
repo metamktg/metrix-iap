@@ -11,7 +11,7 @@
 // never hide a row we can't honestly attribute to a run.
 
 import { useMemo, useCallback, useState, useEffect } from "react";
-import type { AnalysisData } from "@/lib/data/seedTypes";
+import type { AnalysisData, ConceptScopedRow } from "@/lib/data/seedTypes";
 import { conceptForCell } from "@/lib/date-scope";
 import { ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
 import type { AnalysisRun } from "@workspace/api-client-react";
@@ -166,10 +166,10 @@ export function useCellRunScope(analysis: AnalysisData | null | undefined, selec
   );
 
   const filterByRun = useCallback(
-    <T extends { cell_id: string }>(rows: T[]): T[] =>
+    <T extends ConceptScopedRow>(rows: T[]): T[] =>
       selection.allTime
         ? rows
-        : rows.filter((r) => inRunScope(r.cell_id, (r as Record<string, unknown>)["concept_variable"] as string | null)),
+        : rows.filter((r) => inRunScope(r.cell_id, r.concept_variable ?? null)),
     [selection, inRunScope],
   );
 

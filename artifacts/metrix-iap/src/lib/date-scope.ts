@@ -8,7 +8,7 @@
 // per-day numbers.
 
 import { useMemo, useCallback } from "react";
-import type { AnalysisData } from "@/lib/data/seedTypes";
+import type { AnalysisData, ConceptScopedRow } from "@/lib/data/seedTypes";
 import { rangesOverlap, isoMin, isoMax, useDateRange, type IsoRange } from "@/contexts/DateRangeContext";
 import { sumStrict } from "@/lib/strict-sum";
 
@@ -112,9 +112,9 @@ export function useCellRangeScope(analysis: AnalysisData | null | undefined) {
   );
 
   const filterCells = useCallback(
-    <T extends { cell_id: string }>(rows: T[]): T[] =>
+    <T extends ConceptScopedRow>(rows: T[]): T[] =>
       narrowed
-        ? rows.filter((r) => inRangeCell(r.cell_id, (r as Record<string, unknown>)["concept_variable"] as string | null))
+        ? rows.filter((r) => inRangeCell(r.cell_id, r.concept_variable ?? null))
         : rows,
     [narrowed, inRangeCell]
   );

@@ -79,6 +79,26 @@ export interface CellPerformanceRow {
   purchases?: number | null;
 }
 
+/**
+ * The concept hint a scoping helper reads off a cell-keyed row when the
+ * cell_id doesn't encode the concept itself (LittleData historical cells,
+ * whose cell_id is an ad name).
+ *
+ * Declared as an indexed access into CellPerformanceRow ON PURPOSE: both
+ * run-scope and date-scope used to reach for this field through
+ * `(r as Record<string, unknown>)["concept_variable"]`, so renaming it on
+ * the row type silently yielded `undefined` — the hint vanished, rows
+ * quietly fell in or out of scope, and neither the compiler nor the
+ * runtime said a word. Renaming it now breaks this line first.
+ */
+export type ConceptHint = CellPerformanceRow["concept_variable"];
+
+/** A cell-keyed row that may carry an explicit concept hint. */
+export interface ConceptScopedRow {
+  cell_id: string;
+  concept_variable?: ConceptHint | null;
+}
+
 export interface VariablePerformanceRow {
   variable_family: string;
   variable_id: string;

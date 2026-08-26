@@ -301,7 +301,26 @@ function CompareMetricCell({
   isWinner?: boolean;
 }) {
   const m = segmentMetricById(catalog, id);
-  if (!m) return <span className="text-muted-foreground/40">—</span>;
+  // A catalog MISS is not a reasoned absence: the metric below renders "—"
+  // with a tooltip saying why it can't be computed, and this used to render
+  // the identical glyph with nothing behind it — so an id that fell out of
+  // the catalog (a rename, a build that dropped a row) was indistinguishable
+  // from data the account honestly doesn't have. Say which one this is.
+  if (!m) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="text-muted-foreground/40 cursor-default">—</span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[220px]">
+          <p className="text-label">
+            This metric is not in the segment catalog for this account, which is a defect rather
+            than missing data. Nothing was measured or withheld — the tile has no definition to read.
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
   if (m.availability === "unavailable") {
     return (
       <Tooltip>

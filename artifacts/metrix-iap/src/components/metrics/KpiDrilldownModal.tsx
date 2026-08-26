@@ -27,7 +27,7 @@ import {
 import { ChartContainer, type ChartConfig } from "@workspace/command-deck/components/ui/chart";
 import { Switch } from "@workspace/command-deck/components/ui/switch";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { getGetAnalysisSummaryByDateRangeQueryOptions } from "@workspace/api-client-react";
+import { getGetAnalysisSummaryByDateRangeQueryOptions, type AnalysisSummaryTotalsEventRow } from "@workspace/api-client-react";
 import { TYPE, DIALOG } from "@/pages/metrix/typography";
 import type { AdAccount, AnalysisData, CellPerformanceRow } from "@/lib/data/seedTypes";
 import { metricById, type MetricDef } from "@/lib/data/metricsCatalog";
@@ -333,16 +333,22 @@ export function KpiDrilldownModal({
         const events = Object.entries(totals.bottom_line_totals ?? {});
         const eventKey = mid.startsWith("result:") ? mid.slice("result:".length) : null;
         const scoped = eventKey ? events.filter(([k]) => k === eventKey) : events;
-        const sum = (pick: (e: { reach: number; clicks_all: number; results: number }) => number) =>
-          scoped.length > 0 ? scoped.reduce((s, [, e]) => s + pick(e as any), 0) : null;
+        // These reads were `as any`, which is a silent-failure hole: the
+        // event row is fully typed (AnalysisSummaryTotalsEventRow), so a
+        // key rename would have produced `undefined + number` = NaN, and
+        // NaN is not null — the "no data for this metric" note below never
+        // fires for it, and the modal renders a plausible-looking wrong
+        // number with no error anywhere. Typed, a rename fails the build.
+        const sum = (pick: (e: AnalysisSummaryTotalsEventRow) => number) =>
+          scoped.length > 0 ? scoped.reduce((s, [, e]) => s + pick(e), 0) : null;
         results = sum((e) => e.results);
-        spend = eventKey ? (scoped.length > 0 ? scoped.reduce((s, [, e]) => s + (e as any).spend, 0) : null) : totals.total_spend_usd;
+        spend = eventKey ? sum((e) => e.spend) : totals.total_spend_usd;
         value = metricValueFromTotals(mid, {
           spend,
-          impressions: eventKey ? sum((e) => (e as any).impressions) : totals.total_impressions,
+          impressions: eventKey ? sum((e) => e.impressions) : totals.total_impressions,
           reach: sum((e) => e.reach),
           clicksAll: sum((e) => e.clicks_all),
-          linkClicks: eventKey ? sum((e) => (e as any).link_clicks) : totals.total_link_clicks,
+          linkClicks: eventKey ? sum((e) => e.link_clicks) : totals.total_link_clicks,
           results,
         });
         if (value == null) note = "No data for this metric in the overlap window.";
