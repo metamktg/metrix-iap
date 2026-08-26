@@ -134,7 +134,8 @@ export const ListManualImportsResponse = zod.object({
   "method": zod.string().describe('Human-readable label describing how the column was resolved.'),
   "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
   "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
-}).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).nullish().describe('Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the \'Run analysis\' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.')
+}).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).nullish().describe('Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the \'Run analysis\' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.'),
+  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings recorded by upload-time validation, persisted so they outlive the upload dialog. NULL and [] mean different things and must not be conflated: NULL is \"not recorded\" (a creative_asset row, or a file staged before warnings were persisted) and must never render as \"no warnings\"; [] is \"validation ran and found none\", which is a real positive finding.')
 }))
 })
 
@@ -293,7 +294,8 @@ export const UpdateManualImportAdNamesResponse = zod.object({
   "method": zod.string().describe('Human-readable label describing how the column was resolved.'),
   "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
   "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
-}).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).nullish().describe('Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the \'Run analysis\' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.')
+}).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).nullish().describe('Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the \'Run analysis\' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.'),
+  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings recorded by upload-time validation, persisted so they outlive the upload dialog. NULL and [] mean different things and must not be conflated: NULL is \"not recorded\" (a creative_asset row, or a file staged before warnings were persisted) and must never render as \"no warnings\"; [] is \"validation ran and found none\", which is a real positive finding.')
 })
 
 
@@ -1005,6 +1007,31 @@ export const SetAccountObjectivesBody = zod.object({
 export const SetAccountObjectivesResponse = zod.object({
   "account_id": zod.string(),
   "objectives": zod.array(zod.enum(['ecommerce', 'lead_gen', 'service', 'app']))
+})
+
+
+/**
+ * Sets the account's display name. Manual accounts are created with a generated name ("Fresh Import 1786839868960") that every page title then inherits; this makes that name editable without touching the account's generated id, which stays the stable key everything else joins on. Requires access to the account.
+ * @summary Rename an ad account for display
+ */
+
+
+
+export const SetAccountDisplayNameParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const setAccountDisplayNameBodyNameMax = 80;
+
+
+
+export const SetAccountDisplayNameBody = zod.object({
+  "name": zod.string().min(1).max(setAccountDisplayNameBodyNameMax).describe('New display name. Trimmed by the server; must be non-empty and at most 80 characters.')
+})
+
+export const SetAccountDisplayNameResponse = zod.object({
+  "account_id": zod.string().describe('The account that was renamed. Unchanged by the rename — only the display name moves.'),
+  "name": zod.string().describe('The stored display name, after trimming.')
 })
 
 

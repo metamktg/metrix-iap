@@ -588,6 +588,8 @@ export interface ManualImport {
   link_result?: CreativeLinkResult;
   /** Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the 'Run analysis' step and to re-hydrate the mapping panel on subsequent visits without re-uploading. */
   mapping_summary?: ColumnMappingSummaryEntry[] | null;
+  /** Warnings recorded by upload-time validation, persisted so they outlive the upload dialog. NULL and [] mean different things and must not be conflated: NULL is "not recorded" (a creative_asset row, or a file staged before warnings were persisted) and must never render as "no warnings"; [] is "validation ran and found none", which is a real positive finding. */
+  upload_warnings?: string[] | null;
 }
 
 export interface RestageManualImportsResult {
@@ -1226,6 +1228,22 @@ export interface AuthUser {
   view_agency_rollups: boolean;
   /** Can use the Exports section (JSON/CSV handoff of analysis/strategy/briefs/reports). A future premium entitlement, off by default — NOT implied by admin role. */
   export_data: boolean;
+}
+
+export interface SetAccountNameInput {
+  /**
+     * New display name. Trimmed by the server; must be non-empty and at most 80 characters.
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+}
+
+export interface SetAccountNameResult {
+  /** The account that was renamed. Unchanged by the rename — only the display name moves. */
+  account_id: string;
+  /** The stored display name, after trimming. */
+  name: string;
 }
 
 export type SetAccountObjectivesInputObjectivesItem = typeof SetAccountObjectivesInputObjectivesItem[keyof typeof SetAccountObjectivesInputObjectivesItem];

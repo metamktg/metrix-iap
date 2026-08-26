@@ -128,6 +128,7 @@ jobs:
           src/lib/__tests__/cellCreativeValidation.test.ts
           src/lib/__tests__/creativeAssetType.test.ts
           src/lib/__tests__/deconstructionReclassify.test.ts
+          src/lib/__tests__/generatedCurrency.test.ts
           src/lib/__tests__/iapCsvDayNormalization.test.ts
           src/lib/__tests__/iapCsvMapping.test.ts
           src/lib/__tests__/iapCsvParser.test.ts
@@ -137,6 +138,7 @@ jobs:
           src/lib/__tests__/objectiveCoverage.test.ts
           src/lib/__tests__/runHeartbeat.test.ts
           src/lib/__tests__/selectAllPagination.test.ts
+          src/lib/__tests__/statusSemantics.test.ts
           src/lib/__tests__/xlsxToCsv.test.ts
 
       - name: API server smoke (boots without Supabase env by design)

@@ -613,8 +613,11 @@ create index if not exists report_rows_user_account_class_date_idx on report_row
 -- ── In-app generation (strategy from analysis, briefs from strategy) ──
 -- Provenance: importer rows keep source='imported'; rows written by the
 -- in-app Metrix generation engine carry source='generated' plus the run id.
--- Regeneration replaces only prior generated rows — imported rows are
--- never touched by the engine.
+-- Regeneration RETAINS prior generated rows rather than deleting them
+-- (GAP-01): ids are run-scoped, so each run's set coexists under the
+-- existing unique constraints and `generation_run_id` says which run wrote
+-- which. Exactly one set per kind is current — resolved on read, never by
+-- destroying the alternatives. Imported rows are never touched by the engine.
 
 alter table message_pillars add column if not exists source text not null default 'imported';
 alter table message_pillars add column if not exists generation_run_id uuid;
@@ -627,6 +630,24 @@ alter table testing_hypotheses add column if not exists generation_run_id uuid;
 alter table testing_hypotheses add column if not exists pillar_id text;
 alter table imported_creative_briefs add column if not exists source text not null default 'imported';
 alter table imported_creative_briefs add column if not exists generation_run_id uuid;
+
+-- ── Structured signal fields (E1) ────────────────────────────────────────
+-- Signal cards carry their analysis as PROSE (`title` + `rationale`), so the
+-- UI can only render sentences. These columns let a producer state the parts
+-- a card face actually needs — the number, what it is measured against, the
+-- one-line reading, and a short headline — ALONGSIDE the prose rather than
+-- instead of it: `rationale` remains the disclosure-layer body.
+--
+-- Every column is nullable and every one stays NULL for rows whose producer
+-- does not supply it. That is deliberate. A card face with no structured
+-- fields falls back to rendering `title`/`rationale` exactly as it does
+-- today; nothing derives a headline or a metric by pattern-matching the
+-- prose, because a headline inferred from a sentence is a fabricated one.
+alter table signal_cards add column if not exists headline text;
+alter table signal_cards add column if not exists metric_value text;
+alter table signal_cards add column if not exists metric_context text;
+alter table signal_cards add column if not exists delta_pct numeric;
+alter table signal_cards add column if not exists implication text;
 
 -- One row per in-app generation attempt. Inserted as 'running'; flips to
 -- 'success' only after every output row has committed (report-pull
@@ -767,6 +788,21 @@ revoke all on manual_import_chunks from anon, authenticated;
 -- the user to re-upload. Only present for performance_demo_csv and
 -- performance_placement_csv kinds; null for creative_asset rows.
 alter table manual_imports add column if not exists mapping_summary jsonb;
+
+-- Upload-time warnings, persisted for the same reason the mapping summary is.
+-- They were EPHEMERAL: produced by upload validation, returned once in the
+-- staging response, rendered in the upload dialog, and then gone when it
+-- closed. A file whose IDs were blanked by a Sheets round-trip, or whose
+-- headers Meta's exporter duplicated, said so exactly once — to whoever
+-- happened to be at the keyboard — and never again, including at the analysis
+-- run days later that actually consumes the file. A true-positive warning that
+-- can only be seen once is a suppressed warning on the second look.
+--
+-- NULL and [] mean different things and must stay distinguishable:
+--   NULL — not recorded (a creative_asset row, or staged before this column
+--          existed). The UI must not read this as "no warnings".
+--   []   — validation ran and found none. That is a real, positive finding.
+alter table manual_imports add column if not exists upload_warnings jsonb;
 
 -- (Re)apply the check idempotently. `add column if not exists` above won't
 -- widen a pre-existing id/fuzzy-only constraint, so drop any existing

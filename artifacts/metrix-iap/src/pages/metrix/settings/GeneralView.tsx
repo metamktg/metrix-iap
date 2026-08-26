@@ -18,6 +18,7 @@ import {
   useUpdateNotificationPrefs,
   getGetNotificationPrefsQueryKey,
   useSetAccountObjectives,
+  useSetAccountDisplayName,
   getGetMetrixSeedQueryKey,
   ApiError,
 } from "@workspace/api-client-react";
@@ -43,6 +44,80 @@ function SystemInfoSection() {
           <div className="text-label text-muted-foreground/60 font-mono">SAMPLE / DEMO DATA</div>
         </div>
         <DataSourceBadgeToggle />
+      </div>
+    </SectionCard>
+  );
+}
+
+/**
+ * Display name (E4).
+ *
+ * Manual accounts are created as "Fresh Import 1786839868960" and every page
+ * title inherits that. Renaming touches ONLY the display name — the account's
+ * generated id stays the stable key every table joins on, and is shown here
+ * so the rename never reads as changing the account's identity.
+ */
+export function AccountNameSection({ accountId, currentName }: { accountId: string; currentName: string }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [draft, setDraft] = useState(currentName);
+  const mutation = useSetAccountDisplayName({
+    mutation: {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+        toast({ title: "Account renamed" });
+      },
+      onError: (err: unknown) => {
+        toast({
+          variant: "destructive",
+          title: "Couldn't rename the account",
+          description: err instanceof ApiError ? err.message : "Please try again.",
+        });
+      },
+    },
+  });
+
+  const trimmed = draft.trim();
+  // Same rule the server enforces, stated here so the button explains itself
+  // rather than the user discovering it through a 400.
+  const tooLong = trimmed.length > 80;
+  const dirty = trimmed !== currentName.trim();
+  const canSave = dirty && trimmed.length > 0 && !tooLong && !mutation.isPending;
+
+  return (
+    <SectionCard title="Account name" desc="Display name only · the account id never changes">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <input
+            data-testid="input-account-name"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            disabled={mutation.isPending}
+            aria-label="Account display name"
+            aria-invalid={tooLong || undefined}
+            className={cn(
+              "w-full rounded-lg border bg-white/[0.02] px-3 py-2 text-body text-foreground",
+              "placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/45 disabled:opacity-60",
+              tooLong ? "border-red-400/50" : "border-border/40"
+            )}
+          />
+          <div className="text-label font-mono text-muted-foreground/60">
+            {tooLong ? `${trimmed.length}/80 — too long` : `id · ${accountId}`}
+          </div>
+        </div>
+        <button
+          data-testid="button-save-account-name"
+          onClick={() => mutation.mutate({ accountId, data: { name: trimmed } })}
+          disabled={!canSave}
+          className={cn(
+            "shrink-0 rounded-lg border px-3 py-2 text-body transition-colors",
+            canSave
+              ? "border-primary/45 bg-primary/[0.06] hover:bg-primary/[0.1] text-foreground"
+              : "border-border/40 bg-white/[0.02] text-muted-foreground/60 cursor-not-allowed"
+          )}
+        >
+          {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+        </button>
       </div>
     </SectionCard>
   );
@@ -381,6 +456,7 @@ export function GeneralView() {
           </div>
         </SectionCard>
 
+        <AccountNameSection accountId={account.id} currentName={String(account.name ?? account.id)} />
         {configured && <ObjectivesSection accountId={account.id} currentObjectives={account.objectives} />}
 
         {configured && (

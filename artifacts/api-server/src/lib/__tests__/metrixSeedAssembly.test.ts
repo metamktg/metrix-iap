@@ -38,6 +38,7 @@ const emptyTables = (): AccountTables => ({
   adsRegistry: new Map(),
   cellCreativeOverrides: new Map(),
   creativeDeconstructions: new Map(),
+  generationRuns: new Map(),
   accountModules: [],
   signalCards: [],
 });
@@ -649,5 +650,306 @@ describe("detectAccountsNeedingCreativeSync", () => {
     ];
     const ads: Row[] = [];
     expect(detectAccountsNeedingCreativeSync(manualImports, ads)).toEqual([]);
+  });
+});
+
+// ── GAP-01: generated sets are archived, not destroyed ──────────────────────
+//
+// Generation runs used to delete the set they superseded, so "a generated row
+// exists" and "this is the current generated set" were the same statement. They
+// are not any more: runs keep their output and an account can hold several sets
+// at once. The read path must therefore resolve exactly ONE current set per
+// kind — the newest successful run's — and never merge or blend them.
+//
+// 15 successful runs had already lost every artifact they produced by the time
+// this landed (7 briefs, 8 strategy), which is what made the delete worth
+// removing; these tests are what stop the read path fabricating a merged
+// strategy in its place.
+
+describe("generated output currency (GAP-01)", () => {
+  const acct = "gen_acct";
+  const RUN_OLD = "11111111-1111-4111-8111-111111111111";
+  const RUN_NEW = "22222222-2222-4222-8222-222222222222";
+  const RUN_BRIEFS = "33333333-3333-4333-8333-333333333333";
+
+  const pillar = (runId: string, id: string, name: string): Row => ({
+    account_id: acct,
+    pillar_id: id,
+    pillar_name: name,
+    source: "generated",
+    generation_run_id: runId,
+    payload: { pillar_id: id, pillar_name: name },
+  });
+
+  const brief = (runId: string, id: string): Row => ({
+    account_id: acct,
+    brief_id: id,
+    source: "generated",
+    generation_run_id: runId,
+    payload: { brief_metadata: { brief_id: id, asset_type: "static" }, strategic_foundation: {} },
+  });
+
+  const run = (id: string, kind: string, startedAt: string): Row => ({
+    id,
+    account_id: acct,
+    kind,
+    status: "success",
+    started_at: startedAt,
+  });
+
+  const baseTables = () => {
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(acct)]);
+    return t;
+  };
+
+  const build = (t: AccountTables) =>
+    buildAccountObject({ id: acct, name: "Gen", status: "configured" }, t);
+
+  it("renders only the newest successful run's pillars when several sets survive", () => {
+    const t = baseTables();
+    t.messagePillars = groupByAccount([
+      pillar(RUN_OLD, "GEN_PILLAR_old_1", "Superseded"),
+      pillar(RUN_NEW, "GEN_PILLAR_new_1", "Current"),
+    ]);
+    t.generationRuns = groupByAccount([
+      run(RUN_OLD, "strategy", "2026-08-01T10:00:00Z"),
+      run(RUN_NEW, "strategy", "2026-08-20T10:00:00Z"),
+    ]);
+
+    const pillars = build(t)["iap"]["strategy"]["message_pillars"] as Row[];
+    // The archived set is retained in the table but never blended into the
+    // live one — two sets on disk, exactly one on screen.
+    expect(pillars).toHaveLength(1);
+    expect(pillars[0]["label"]).toBe("Current");
+  });
+
+  it("keeps a single generated set rendering exactly as before run scoping", () => {
+    const t = baseTables();
+    t.messagePillars = groupByAccount([pillar(RUN_NEW, "GEN_PILLAR_new_1", "Only")]);
+    t.generationRuns = groupByAccount([run(RUN_NEW, "strategy", "2026-08-20T10:00:00Z")]);
+
+    const strategy = build(t)["iap"]["strategy"] as Row;
+    expect(strategy["provenance"]).toBe("generated");
+    expect((strategy["message_pillars"] as Row[]).map((p) => p["label"])).toEqual(["Only"]);
+  });
+
+  it("still renders generated rows that map to no successful run, rather than dropping them", () => {
+    // Pre-lineage rows, or a run row since removed. Scoping must never turn
+    // output that is really there into "no generated strategy".
+    const t = baseTables();
+    t.messagePillars = groupByAccount([pillar(RUN_OLD, "GEN_PILLAR_x_1", "Orphaned")]);
+    t.generationRuns = groupByAccount([]);
+
+    const strategy = build(t)["iap"]["strategy"] as Row;
+    expect(strategy["provenance"]).toBe("generated");
+    expect((strategy["message_pillars"] as Row[])[0]["label"]).toBe("Orphaned");
+  });
+
+  it("demotes a brief set that predates the strategy now rendering, without deleting it", () => {
+    // This is the case the strategy run's deletePriorGenerated(…, 'briefs')
+    // used to handle by destruction: the briefs describe pillars that have
+    // been superseded, so they must stop rendering as live — and the seed
+    // falls back to the imported briefs, exactly as the delete produced.
+    const t = baseTables();
+    t.messagePillars = groupByAccount([pillar(RUN_NEW, "GEN_PILLAR_new_1", "Current")]);
+    t.creativeBriefs = groupByAccount([
+      brief(RUN_BRIEFS, "GEN_BRIEF_old_1"),
+      { account_id: acct, brief_id: "IMPORTED_1", source: "imported", payload: { brief_metadata: { brief_id: "IMPORTED_1" }, strategic_foundation: {} } },
+    ]);
+    t.generationRuns = groupByAccount([
+      run(RUN_BRIEFS, "briefs", "2026-08-10T10:00:00Z"),
+      run(RUN_NEW, "strategy", "2026-08-20T10:00:00Z"), // strategy is NEWER
+    ]);
+
+    const bb = build(t)["iap"]["brief_builder"] as Row;
+    expect(bb["provenance"]).toBe("imported");
+    expect((bb["draft_briefs"] as Row[]).map((b) => b["id"])).toEqual(["IMPORTED_1"]);
+  });
+
+  it("keeps a brief set that was generated after the strategy now rendering", () => {
+    const t = baseTables();
+    t.messagePillars = groupByAccount([pillar(RUN_NEW, "GEN_PILLAR_new_1", "Current")]);
+    t.creativeBriefs = groupByAccount([
+      brief(RUN_BRIEFS, "GEN_BRIEF_new_1"),
+      { account_id: acct, brief_id: "IMPORTED_1", source: "imported", payload: { brief_metadata: { brief_id: "IMPORTED_1" }, strategic_foundation: {} } },
+    ]);
+    t.generationRuns = groupByAccount([
+      run(RUN_NEW, "strategy", "2026-08-20T10:00:00Z"),
+      run(RUN_BRIEFS, "briefs", "2026-08-21T10:00:00Z"), // briefs are NEWER
+    ]);
+
+    const bb = build(t)["iap"]["brief_builder"] as Row;
+    expect(bb["provenance"]).toBe("generated");
+    expect((bb["draft_briefs"] as Row[]).map((b) => b["id"])).toEqual(["GEN_BRIEF_new_1"]);
+  });
+});
+
+// ── E1: the structured signal contract ──────────────────────────────────────
+//
+// Signal cards carry their analysis as prose, so a card face can only render
+// sentences. The structured fields state the parts a face needs — the number,
+// its baseline, the one-line reading — ALONGSIDE the prose, which becomes the
+// disclosure-layer body.
+//
+// The honesty rule this pins: nothing is derived from the prose. A producer
+// that supplies structure gets it through untouched; one that does not leaves
+// nulls, and the face falls back to today's title/rationale rendering. A
+// headline regexed out of "Spend recorded ($57.97) is 5.8% of…" would be a
+// fabricated headline, and a card face is where that does the most damage.
+
+describe("structured signal contract (E1)", () => {
+  const acct = "sig_acct";
+
+  const card = (over: Row = {}): Row => ({
+    card_id: "SIG_1",
+    account_id: acct,
+    surface: "listen",
+    scope: "creative",
+    title: "C4E is the current checkout-depth control",
+    rationale: "C4E's aspirational authority/static system generated the majority of checkout volume.",
+    impact: "high",
+    confidence: "medium",
+    source_path: "analysis.creative.C4E",
+    recommended_action: "Build challenger variants before scaling",
+    ...over,
+  });
+
+  const listenCards = (rows: Row[]): Row[] => {
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(acct)]);
+    t.signalCards = rows;
+    const obj = buildAccountObject({ id: acct, name: "Sig", status: "configured" }, t);
+    return obj["listen"]["signal_cards"] as Row[];
+  };
+
+  it("leaves structured fields null when the producer supplies only prose", () => {
+    const [c] = listenCards([card()]);
+    expect(c!["headline"]).toBeNull();
+    expect(c!["metric_value"]).toBeNull();
+    expect(c!["metric_context"]).toBeNull();
+    expect(c!["delta_pct"]).toBeNull();
+    expect(c!["implication"]).toBeNull();
+    // …and the prose the face falls back to is untouched.
+    expect(c!["title"]).toBe("C4E is the current checkout-depth control");
+    expect(c!["rationale"]).toContain("aspirational authority");
+  });
+
+  it("never derives a headline or a metric from the prose", () => {
+    // The prose here is exactly the shape a regex would be tempted by.
+    const [c] = listenCards([
+      card({ rationale: "Spend recorded ($57.97) is 5.8% of the committed ~$1,000 pilot budget." }),
+    ]);
+    expect(c!["headline"]).toBeNull();
+    expect(c!["metric_value"]).toBeNull();
+    expect(c!["delta_pct"]).toBeNull();
+  });
+
+  it("exposes the prose as `body` and mirrors action/evidence under the contract names", () => {
+    const [c] = listenCards([card()]);
+    expect(c!["body"]).toBe(c!["rationale"]);
+    expect(c!["action"]).toBe("Build challenger variants before scaling");
+    expect(c!["evidence_ref"]).toBe("analysis.creative.C4E");
+    // The original keys stay for callers already reading them.
+    expect(c!["recommended_action"]).toBe(c!["action"]);
+    expect(c!["source_path"]).toBe(c!["evidence_ref"]);
+  });
+
+  it("passes a producer's structured fields through untouched", () => {
+    const [c] = listenCards([
+      card({
+        headline: "Underspend",
+        metric_value: "$57.97",
+        metric_context: "of $1,000 committed",
+        delta_pct: -94.2,
+        implication: "Delivery stalled before the test could read.",
+      }),
+    ]);
+    expect(c!["headline"]).toBe("Underspend");
+    expect(c!["metric_value"]).toBe("$57.97");
+    expect(c!["metric_context"]).toBe("of $1,000 committed");
+    expect(c!["delta_pct"]).toBe(-94.2);
+    expect(c!["implication"]).toBe("Delivery stalled before the test could read.");
+    // Structure is added ALONGSIDE the prose, never instead of it.
+    expect(c!["body"]).toBe(c!["rationale"]);
+  });
+
+  it("keeps delta_pct numeric and distinguishes a real 0 from absent", () => {
+    const [zero] = listenCards([card({ delta_pct: 0 })]);
+    expect(zero!["delta_pct"]).toBe(0);          // a measured zero
+    const [absent] = listenCards([card()]);
+    expect(absent!["delta_pct"]).toBeNull();     // not measured — never 0
+  });
+});
+
+// ── E3: normalized status axes served alongside the raw values ──────────────
+describe("normalized status axes (E3)", () => {
+  const acct = "status_acct";
+
+  const build = (cardOver: Row = {}, flags: Row[] = []): Row => {
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(acct)]);
+    t.dataQualityFlags = groupByAccount(flags);
+    t.signalCards = [{
+      card_id: "S1", account_id: acct, surface: "listen", scope: "creative",
+      title: "t", rationale: "r", impact: "high", confidence: "medium",
+      recommended_action: "do it", ...cardOver,
+    }];
+    return buildAccountObject({ id: acct, name: "S", status: "configured" }, t);
+  };
+
+  it("adds priority/confidence_level/needs_validation without touching impact or confidence", () => {
+    const c = (build()["listen"] as Row)["signal_cards"][0] as Row;
+    expect(c["priority"]).toBe("critical");
+    expect(c["confidence_level"]).toBe("medium");
+    expect(c["needs_validation"]).toBe(false);
+    // The raw values are a projection source, not something to rewrite.
+    expect(c["impact"]).toBe("high");
+    expect(c["confidence"]).toBe("medium");
+  });
+
+  it("keeps 'not established' distinct from 'weak' on a real card", () => {
+    const c = (build({ confidence: "validation_required" })["listen"] as Row)["signal_cards"][0] as Row;
+    expect(c["confidence_level"]).toBe("low");
+    expect(c["needs_validation"]).toBe(true);
+    expect(c["confidence"]).toBe("validation_required");
+  });
+
+  it("leaves an axis null when the raw value does not determine it", () => {
+    const c = (build({ impact: "catastrophic", confidence: "system" })["listen"] as Row)["signal_cards"][0] as Row;
+    expect(c["priority"]).toBeNull();
+    expect(c["confidence_level"]).toBeNull();
+    // …and the raw values survive for the surface to fall back to.
+    expect(c["impact"]).toBe("catastrophic");
+    expect(c["confidence"]).toBe("system");
+  });
+
+  it("serves a priority on data-quality flags so the UI need not re-derive the tier", () => {
+    const obj = build({}, [
+      { account_id: acct, kind: "anomaly", payload: { note: "x" } },
+      { account_id: acct, kind: "attribution_window", payload: { note: "y" } },
+    ]);
+    const dq = obj["iap"]["data_quality"] as Row[];
+    expect(dq.map((f) => f["priority"])).toEqual(["critical", "informational"]);
+    expect(dq.map((f) => f["kind"])).toEqual(["anomaly", "attribution_window"]);
+  });
+});
+
+// A payload key must not be able to shadow a derived axis. Nothing carries a
+// `priority` payload key today; this is what keeps that from becoming a bug
+// the day something does — the UI would otherwise render a priority the
+// mapping never produced.
+describe("derived axes are not shadowable by payload keys", () => {
+  it("keeps the kind-derived priority when a flag payload carries its own", () => {
+    const acct = "shadow_acct";
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(acct)]);
+    t.dataQualityFlags = groupByAccount([
+      { account_id: acct, kind: "anomaly", payload: { priority: "informational", note: "x" } },
+    ]);
+    const obj = buildAccountObject({ id: acct, name: "S", status: "configured" }, t);
+    const dq = (obj["iap"]["data_quality"] as Row[])[0]!;
+    expect(dq["priority"]).toBe("critical");  // derived from kind='anomaly'
+    expect(dq["note"]).toBe("x");             // the rest of the payload survives
   });
 });

@@ -18,6 +18,7 @@
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { z } from "zod";
 import { getSupabase } from "./supabase";
+import { fetchSuccessfulRuns, splitBySource } from "./generatedCurrency";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
 import { startRunHeartbeat, lastSignOfLife, reclaimedRunMessage } from "./runHeartbeat";
@@ -272,7 +273,7 @@ async function buildStrategyEvidence(
       rowsForRuns("platform_performance", accountId, runIds),
       rowsForRuns("placement_performance", accountId, runIds),
       rowsForRuns("concept_performance", accountId, runIds),
-      rowsFor("icp_profiles", accountId), // imported + generated, not run-scoped
+      rowsFor("icp_profiles", accountId), // narrowed to the current generated set below
       rowsFor("account_modules", accountId, (q) => q.eq("module", "iap_metadata")),
       rowsForRuns("ad_performance", accountId, runIds),
     ]);
@@ -341,7 +342,13 @@ async function buildStrategyEvidence(
       }))
       .slice(0, 20);
 
-  const icps = icpRows.map((r) => r["payload"] as Row).slice(0, 8);
+  // Archived generated sets are excluded (GAP-01): evidence must describe the
+  // ICPs that are live, or the model is told not to duplicate profile names
+  // that no longer exist and `icpIds` accepts pillar targets pointing at
+  // superseded profiles.
+  const icps = splitBySource(icpRows, await fetchSuccessfulRuns(accountId, "strategy"))
+    .active.map((r) => r["payload"] as Row)
+    .slice(0, 8);
   const metadata = moduleRows[0]?.["payload"] ?? null;
 
   // Join coverage measured by the analysis run(s) this strategy is grounded
@@ -416,11 +423,18 @@ async function buildStrategyEvidence(
   };
 }
 
-/** The pillar set briefs are built from: generated set if present, else imported. */
+/**
+ * The pillar set briefs are built from: the CURRENT generated set if one
+ * exists, else the imported set.
+ *
+ * Generated sets are archived rather than deleted (GAP-01), so filtering on
+ * `source` alone would hand the model pillars from several runs at once and
+ * let a brief cite a pillar that was superseded three runs ago. Currency is
+ * derived here rather than assumed from the writer having deleted the rest.
+ */
 async function storedPillars(accountId: string): Promise<Row[]> {
   const all = await rowsFor("message_pillars", accountId);
-  const generated = all.filter((r) => r["source"] === "generated");
-  return generated.length > 0 ? generated : all;
+  return splitBySource(all, await fetchSuccessfulRuns(accountId, "strategy")).active;
 }
 
 // ─── placeholder sanitization ─────────────────────────────────────────
@@ -1125,20 +1139,6 @@ async function deleteRunOutputs(runId: string, kind: GenerationKind): Promise<vo
   }
 }
 
-async function deletePriorGenerated(accountId: string, kind: Exclude<GenerationKind, "deconstruct">): Promise<void> {
-  const supabase = getSupabase();
-  const tables =
-    kind === "strategy" ? ["message_pillars", "testing_hypotheses", "icp_profiles"] : ["imported_creative_briefs"];
-  for (const table of tables) {
-    const { error } = await supabase
-      .from(table)
-      .delete()
-      .eq("account_id", accountId)
-      .eq("source", "generated");
-    if (error) throw new Error(error.message);
-  }
-}
-
 async function upsertLoopStage(accountId: string, stage: string, runId: string): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.from("iap_runs").upsert(
@@ -1226,8 +1226,13 @@ async function startStrategyGenerationInner(
         model: GENERATION_MODEL,
       }));
 
-      await deletePriorGenerated(accountId, "strategy");
-
+      // Prior generated sets are NOT deleted (GAP-01). Every generated id is
+      // run-scoped (GEN_PILLAR_<runTag>_<n>), so sets from different runs
+      // coexist under UNIQUE (account_id, pillar_id) without collision, and
+      // `generation_run_id` already records which run wrote each row. The
+      // seed read path resolves exactly one CURRENT set per kind; the rest
+      // are archive. Deleting made a successful run unable to show its own
+      // output — 15 successful runs had none left by the time this landed.
       const supabase = getSupabase();
       const pillarInsert = await supabase.from("message_pillars").insert(
         pillars.map((p) => ({
@@ -1302,11 +1307,13 @@ async function startStrategyGenerationInner(
       }
 
       // Generated briefs were built from the pillars this run just
-      // replaced — they'd reference pillars that no longer exist. Remove
-      // them so the seed falls back to the imported briefs honestly;
-      // the user can regenerate briefs from the new strategy.
+      // superseded, so they must stop rendering as live — but they are no
+      // longer DELETED to achieve that. The seed read path treats a brief
+      // set as current only when its run started after the strategy run
+      // whose pillars are being rendered, so this run demotes them by
+      // existing. Same visible outcome as the old delete, minus the
+      // destruction of what the user actually shipped.
       await setRunProgressPhase(runId, 92, "Finalizing…");
-      await deletePriorGenerated(accountId, "briefs");
 
       await upsertLoopStage(accountId, "strategy_map", runId);
       await finishRun(runId, "success");
@@ -1462,8 +1469,10 @@ async function startBriefsGenerationInner(accountId: string, createdBy: string):
         );
       }
 
+      // Prior brief sets are retained as archive (GAP-01); ids are
+      // run-scoped (GEN_BRIEF_<runTag>_<n>) so they coexist, and the seed
+      // renders only the set from the latest successful briefs run.
       await setRunProgressPhase(runId, 80, "Persisting briefs…");
-      await deletePriorGenerated(accountId, "briefs");
 
       const supabase = getSupabase();
       const columnRoleById = new Map(columns.map((c) => [c.column_id, c.role] as const));
