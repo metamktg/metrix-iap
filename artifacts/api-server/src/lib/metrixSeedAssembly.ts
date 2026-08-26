@@ -862,8 +862,13 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       // payload are unchanged.
       data_quality: dataQualityFlags.map((r) => ({
         kind: r["kind"],
-        priority: normalizeStatus({ flagKind: r["kind"] }).priority,
         ...r["payload"],
+        // AFTER the payload spread on purpose. `priority` is derived from the
+        // row's real `kind`; a payload that happened to carry its own
+        // `priority` key would otherwise shadow it silently and the UI would
+        // render a value the mapping never produced. No payload carries one
+        // today — this keeps that from becoming a bug the day one does.
+        priority: normalizeStatus({ flagKind: r["kind"] }).priority,
       })),
       loop_status: loopStatus,
     },

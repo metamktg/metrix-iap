@@ -1550,7 +1550,7 @@ export async function startManualAnalysis(
     const missing = [
       demoImports.length === 0 ? "Demographics export" : null,
       placementImports.length === 0 ? "Placements export" : null,
-    ].filter(Boolean);
+    ].filter((m): m is string => m !== null);
 
     // BUG-08: a run consumes the STAGED batch, so a successful run leaves its
     // files `processed` and the next run reports them missing. That is by
@@ -1566,17 +1566,27 @@ export async function startManualAnalysis(
     // Deliberately a SECOND query rather than widening the one above: that
     // one selects `content`, and pulling bytea for every processed file is
     // what hung production once already. This selects `kind` alone.
-    let restagable = 0;
-    const { data: processedRows } = await supabase
+    //
+    // A failure counting them degrades to omitting the hint, deliberately: the
+    // caller's real answer is the 422 about the missing reports, and turning
+    // that into a 502 because an optional sentence could not be assembled
+    // would be worse than saying less. It is logged, not swallowed.
+    const { data: processedRows, error: processedErr } = await supabase
       .from("manual_imports")
       .select("kind")
       .eq("account_id", accountId)
       .eq("status", "processed")
       .in("kind", missingKinds);
-    restagable = (processedRows ?? []).length;
+    if (processedErr) {
+      logger.warn(
+        { accountId, err: processedErr.message },
+        "Could not count re-stageable imports; omitting the restage hint",
+      );
+    }
+    const restagable = processedRows?.length ?? 0;
 
     throw new AnalysisError(
-      missingReportsMessage(missing as string[], restagable, missingKinds.length),
+      missingReportsMessage(missing, restagable, missingKinds.length),
       422,
     );
   }

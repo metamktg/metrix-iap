@@ -934,3 +934,22 @@ describe("normalized status axes (E3)", () => {
     expect(dq.map((f) => f["kind"])).toEqual(["anomaly", "attribution_window"]);
   });
 });
+
+// A payload key must not be able to shadow a derived axis. Nothing carries a
+// `priority` payload key today; this is what keeps that from becoming a bug
+// the day something does — the UI would otherwise render a priority the
+// mapping never produced.
+describe("derived axes are not shadowable by payload keys", () => {
+  it("keeps the kind-derived priority when a flag payload carries its own", () => {
+    const acct = "shadow_acct";
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(acct)]);
+    t.dataQualityFlags = groupByAccount([
+      { account_id: acct, kind: "anomaly", payload: { priority: "informational", note: "x" } },
+    ]);
+    const obj = buildAccountObject({ id: acct, name: "S", status: "configured" }, t);
+    const dq = (obj["iap"]["data_quality"] as Row[])[0]!;
+    expect(dq["priority"]).toBe("critical");  // derived from kind='anomaly'
+    expect(dq["note"]).toBe("x");             // the rest of the payload survives
+  });
+});
