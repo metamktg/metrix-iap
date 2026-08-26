@@ -280,6 +280,8 @@ interface AgeBucket {
   maleCpa: number | null; femaleCpa: number | null;
   maleCtr: number | null; femaleCtr: number | null;
   maleReach: number; femaleReach: number;
+  maleImpressions: number; femaleImpressions: number;
+  maleLinkClicks: number; femaleLinkClicks: number;
   maleGender: string | null; femaleGender: string | null;
 }
 
@@ -305,25 +307,41 @@ function DemographicsTab({
         maleCpa: null, femaleCpa: null,
         maleCtr: null, femaleCtr: null,
         maleReach: 0, femaleReach: 0,
+        maleImpressions: 0, femaleImpressions: 0,
+        maleLinkClicks: 0, femaleLinkClicks: 0,
         maleGender: null, femaleGender: null,
       };
+      // CPA and CTR used to be ASSIGNED here from each row's own rate —
+      // inside a loop over every row in the age×gender bucket, so the last
+      // row silently won and the dialog reported one ad's rate as the
+      // bucket's (F-c). They are ratios; averaging or picking them across
+      // rows is not the blend. Accumulate the denominators and derive once
+      // below, which is what every other audience surface already does.
       if (g === "male") {
         b.male += r["Amount spent (USD)"];
         b.maleResults += r.Results;
-        b.maleCpa = r.CPA_result;
-        b.maleCtr = r.CTR_link_pct;
         b.maleReach += r.Reach;
+        b.maleImpressions += r.Impressions;
+        b.maleLinkClicks += r["Link clicks"];
         b.maleGender = r.Gender;
       } else {
         b.female += r["Amount spent (USD)"];
         b.femaleResults += r.Results;
-        b.femaleCpa = r.CPA_result;
-        b.femaleCtr = r.CTR_link_pct;
         b.femaleReach += r.Reach;
+        b.femaleImpressions += r.Impressions;
+        b.femaleLinkClicks += r["Link clicks"];
         b.femaleGender = r.Gender;
       }
       b.total += r["Amount spent (USD)"];
       map.set(r.Age, b);
+    }
+    for (const b of map.values()) {
+      // Null, not 0, on a zero denominator: a bucket with no results has
+      // no CPA, and $0.00 would assert one.
+      b.maleCpa = b.maleResults > 0 ? b.male / b.maleResults : null;
+      b.femaleCpa = b.femaleResults > 0 ? b.female / b.femaleResults : null;
+      b.maleCtr = b.maleImpressions > 0 ? (b.maleLinkClicks / b.maleImpressions) * 100 : null;
+      b.femaleCtr = b.femaleImpressions > 0 ? (b.femaleLinkClicks / b.femaleImpressions) * 100 : null;
     }
     return Array.from(map.values()).sort((a, b) => (parseInt(a.age) || 999) - (parseInt(b.age) || 999));
   }, [rows]);

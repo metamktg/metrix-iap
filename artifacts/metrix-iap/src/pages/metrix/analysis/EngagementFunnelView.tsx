@@ -65,7 +65,13 @@ function safe(n: number | null | undefined, d = 0): number | null {
   return n == null ? null : n;
 }
 function ratio(a: number | null | undefined, b: number | null | undefined): number | null {
-  if (!a || !b) return null;
+  // `!a` nulled a MEASURED zero numerator (C7): an ad set with a real,
+  // recorded 0 adds-to-cart reported "not measured" instead of 0%, which
+  // is the honesty invariant inverted — the platform's whole convention is
+  // that zero and unknown are different facts. Only the numerator being
+  // absent, or the denominator being absent or zero, makes the ratio
+  // unknowable.
+  if (a == null || b == null || b === 0) return null;
   return a / b;
 }
 function pct(a: number | null | undefined, b: number | null | undefined): number | null {
