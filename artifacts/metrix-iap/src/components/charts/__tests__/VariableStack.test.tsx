@@ -75,6 +75,18 @@ describe("VariableStack — a marginal read is not an attribution", () => {
     expect(screen.queryByText("$0.00")).toBeNull();
     expect(screen.queryByText("0")).toBeNull();
   });
+
+  it("dashes a filled family that has no measurement, and says why", () => {
+    // Sizing the read column to its content put a read, an em-dash read, an
+    // absent read and an unfilled family at four different widths, so nine
+    // rows of one column read as four kinds of row. It is reserved on every
+    // row once any read exists — which means an unmeasured variable needs a
+    // mark of its own rather than a blank that looks like a layout gap.
+    render(<VariableStack stack={STACK} marginal={marginal} marginalLabel="CPA" />);
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThan(0);
+    expect(dashes[0]!.getAttribute("title")).toContain("No measurement");
+  });
 });
 
 describe("VariableStack — selection", () => {

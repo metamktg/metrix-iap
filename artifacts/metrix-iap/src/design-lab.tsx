@@ -399,7 +399,7 @@ function App() {
           </div>
         </Panel>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           <Panel title="Variable stack" note="one slot per family · reads are marginal, never attributed">
             <VariableStack
               stack={{ hook: "HK_ProofFirst", tone: "TN_Direct", framework: "FW_PAS", cta: "CTA_StartFree" }}

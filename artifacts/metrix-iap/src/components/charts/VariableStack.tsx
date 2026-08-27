@@ -78,15 +78,21 @@ export function VariableStack({
               >
                 {code ? resolveVariableLabel(code) : "not set"}
               </span>
-              {read && (
+              {marginal && (
                 <span
-                  className="shrink-0 text-caption font-body tabular-nums text-muted-foreground"
+                  className="shrink-0 w-16 text-right text-caption font-body tabular-nums text-muted-foreground"
                   // The number belongs to the VARIABLE, not to this stack's
                   // performance. Saying so on the element itself is the only
                   // thing standing between a marginal read and an attribution.
-                  title={`${read.label} — measured across every creative carrying ${code}, not this stack's own result`}
+                  title={
+                    read
+                      ? `${read.label} — measured across every creative carrying ${code}, not this stack's own result`
+                      : code
+                        ? "No measurement for this variable in the current window."
+                        : undefined
+                  }
                 >
-                  {read.value}
+                  {read?.value ?? (code ? "—" : "")}
                 </span>
               )}
             </>
