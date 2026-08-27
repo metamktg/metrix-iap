@@ -24,6 +24,7 @@ import { syncAllCreativeLinksForAccount } from "./analysisEngine";
 import { resolveAccountObjectives } from "./cohortConfig";
 import { logger } from "./logger";
 import { createCoalescedCache } from "./coalescedCache";
+import { selectAllRows } from "./paginatedSelect";
 
 type Row = Record<string, any>;
 
@@ -34,36 +35,18 @@ const round = (v: number, dp = 2) => {
   return Math.round(v * f) / f;
 };
 
+/**
+ * Read every row of `table`, following PostgREST's 1000-row pages.
+ *
+ * Thin alias for lib/paginatedSelect's selectAllRows, kept under this name
+ * because the seed assembly and its pagination regression test have always
+ * called it this. The implementation moved out when the analysis summary
+ * turned out to have eight unpaginated reads of the same rollup tables —
+ * one reader means a table cannot be paginated on one path and silently
+ * truncated on another.
+ */
 export async function selectAll(table: string, build?: (q: any) => any, columns = "*"): Promise<Row[]> {
-  const supabase = getSupabase();
-  // Paginate in 1000-row pages so large tables (device_performance,
-  // demographic_performance, etc.) are fetched in full even when the
-  // Supabase / PostgREST server-side row limit is 1000.
-  //
-  // `columns` exists for tables carrying bytea payloads: select("*") on
-  // manual_imports dragged every uploaded file's full content through
-  // PostgREST on each seed assembly — fine at a handful of assets, fatal at
-  // a real creative library (observed live: 125 assets ≈ 257 MB of bytea ≈
-  // half a gigabyte of hex JSON in one page; the seed request never
-  // completed and production hung on the splash screen). Callers touching
-  // such tables MUST enumerate the metadata columns they need.
-  const PAGE_SIZE = 1000;
-  let offset = 0;
-  const allRows: Row[] = [];
-  for (;;) {
-    let query: any = supabase.from(table).select(columns);
-    if (build) query = build(query);
-    query = query.range(offset, offset + PAGE_SIZE - 1);
-    const { data, error } = await query;
-    if (error) {
-      throw new Error(`Supabase query failed for "${table}": ${error.message}`);
-    }
-    const rows: Row[] = data ?? [];
-    allRows.push(...rows);
-    if (rows.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
-  }
-  return allRows;
+  return selectAllRows(table, build, columns);
 }
 
 /** Group rows by account_id, preserving the fetch order within each group. */

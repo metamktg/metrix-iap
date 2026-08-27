@@ -23,6 +23,7 @@
 
 import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
+import { selectAllRows } from "./paginatedSelect";
 import { logger } from "./logger";
 import { startRunHeartbeat, lastSignOfLife, reclaimedRunMessage } from "./runHeartbeat";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow, type IapCsvParseResult } from "./iapCsvParser";
@@ -1478,13 +1479,12 @@ export async function computeCreativeLinkageSummary(accountId: string): Promise<
     return { linked: 0, total: 0, unlinked_names: [] };
   }
 
-  const adsResult = await supabase
-    .from("ads")
-    .select("ad_name")
-    .eq("account_id", accountId)
-    .not("creative_asset_url", "is", null)
-    .in("ad_name", allMappedNames);
-  if (adsResult.error) throw new Error(adsResult.error.message);
+  const adsRows = await selectAllRows(
+    "ads",
+    (q) => q.eq("account_id", accountId).not("creative_asset_url", "is", null).in("ad_name", allMappedNames).order("id"),
+    "ad_name",
+  );
+  const adsResult = { data: adsRows, error: null as { message: string } | null };
 
   const linkedSet = new Set((adsResult.data ?? []).map((r) => r["ad_name"] as string));
   const unlinkedNames = allMappedNames.filter((n) => !linkedSet.has(n));
@@ -2755,11 +2755,11 @@ export async function getAnalysisSummaryByPreset(
   const supabase = getSupabase();
 
   // ── Fetch ad_performance rows ─────────────────────────────────────
-  const { data: adRows, error: adErr } = await supabase
-    .from("ad_performance")
-    .select("date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all, ad_name")
-    .eq("account_id", accountId);
-  if (adErr) throw new Error(adErr.message);
+  const adRows = await selectAllRows(
+    "ad_performance",
+    (q) => q.eq("account_id", accountId),
+    "date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all, ad_name",
+  );
 
   if (!adRows || adRows.length === 0) {
     return {
@@ -2853,11 +2853,11 @@ export async function getAnalysisSummaryByPreset(
   }));
 
   // ── Demographic rows ───────────────────────────────────────────────
-  const { data: demoRows, error: demoErr } = await supabase
-    .from("demographic_performance")
-    .select("date_start, age, gender, spend, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value")
-    .eq("account_id", accountId);
-  if (demoErr) throw new Error(demoErr.message);
+  const demoRows = await selectAllRows(
+    "demographic_performance",
+    (q) => q.eq("account_id", accountId),
+    "date_start, age, gender, spend, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value",
+  );
 
   const demoMap = new Map<string, { spend: number; results: number; link_clicks: number; adds_to_cart: number | null; checkouts_initiated: number | null; purchases: number | null; adds_to_cart_value: number | null }>();
   for (const r of demoRows ?? []) {
@@ -2889,11 +2889,11 @@ export async function getAnalysisSummaryByPreset(
   });
 
   // ── Placement rows (delivery-based only) ──────────────────────────
-  const { data: placRows, error: placErr } = await supabase
-    .from("placement_performance")
-    .select("date_start, placement, spend, impressions, link_clicks, results, tracking_basis")
-    .eq("account_id", accountId);
-  if (placErr) throw new Error(placErr.message);
+  const placRows = await selectAllRows(
+    "placement_performance",
+    (q) => q.eq("account_id", accountId),
+    "date_start, placement, spend, impressions, link_clicks, results, tracking_basis",
+  );
 
   const placMap = new Map<string, { spend: number; impressions: number; link_clicks: number; results: number }>();
   for (const r of placRows ?? []) {
@@ -2972,13 +2972,11 @@ async function _computeAnalysisSummaryForDateRange(
   const available_window: AnalysisSummaryWindow = { start, end };
 
   // ── ad_performance ────────────────────────────────────────────────
-  const { data: adRows, error: adErr } = await supabase
-    .from("ad_performance")
-    .select("date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all, ad_name")
-    .eq("account_id", accountId)
-    .gte("date_start", start)
-    .lte("date_start", end);
-  if (adErr) throw new Error(adErr.message);
+  const adRows = await selectAllRows(
+    "ad_performance",
+    (q) => q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end),
+    "date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all, ad_name",
+  );
 
   if (!adRows || adRows.length === 0) {
     return {
@@ -3043,13 +3041,11 @@ async function _computeAnalysisSummaryForDateRange(
   }));
 
   // ── Demographic rows ──────────────────────────────────────────────
-  const { data: demoRows, error: demoErr } = await supabase
-    .from("demographic_performance")
-    .select("date_start, age, gender, spend, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value")
-    .eq("account_id", accountId)
-    .gte("date_start", start)
-    .lte("date_start", end);
-  if (demoErr) throw new Error(demoErr.message);
+  const demoRows = await selectAllRows(
+    "demographic_performance",
+    (q) => q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end),
+    "date_start, age, gender, spend, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value",
+  );
 
   const demoMap = new Map<string, { spend: number; results: number; link_clicks: number; adds_to_cart: number | null; checkouts_initiated: number | null; purchases: number | null; adds_to_cart_value: number | null }>();
   for (const r of demoRows ?? []) {
@@ -3080,13 +3076,11 @@ async function _computeAnalysisSummaryForDateRange(
   });
 
   // ── Placement rows ────────────────────────────────────────────────
-  const { data: placRows, error: placErr } = await supabase
-    .from("placement_performance")
-    .select("date_start, placement, spend, impressions, link_clicks, results, tracking_basis")
-    .eq("account_id", accountId)
-    .gte("date_start", start)
-    .lte("date_start", end);
-  if (placErr) throw new Error(placErr.message);
+  const placRows = await selectAllRows(
+    "placement_performance",
+    (q) => q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end),
+    "date_start, placement, spend, impressions, link_clicks, results, tracking_basis",
+  );
 
   const placMap = new Map<string, { spend: number; impressions: number; link_clicks: number; results: number }>();
   for (const r of placRows ?? []) {
@@ -3118,13 +3112,11 @@ async function _computeAnalysisSummaryForDateRange(
   const pw = priorWindowFor(start, end);
   let prior_totals: AnalysisSummaryTotals | null = null;
   let prior_window: AnalysisSummaryWindow | null = null;
-  const { data: priorRows, error: priorErr } = await supabase
-    .from("ad_performance")
-    .select("date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all")
-    .eq("account_id", accountId)
-    .gte("date_start", pw.start)
-    .lte("date_start", pw.end);
-  if (priorErr) throw new Error(priorErr.message);
+  const priorRows = await selectAllRows(
+    "ad_performance",
+    (q) => q.eq("account_id", accountId).gte("date_start", pw.start).lte("date_start", pw.end),
+    "date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all",
+  );
   if (priorRows && priorRows.length > 0) {
     prior_totals = buildTotals(priorRows);
     prior_window = pw;
@@ -3207,12 +3199,16 @@ export async function getAccountAnalysisDataWindows(
 ): Promise<AccountAnalysisDataWindowsResult> {
   const supabase = getSupabase();
 
-  const { data, error } = await supabase
-    .from("ad_performance")
-    .select("date_start, spend")
-    .eq("account_id", accountId)
-    .order("date_start");
-  if (error) throw new AnalysisError(error.message, 500);
+  // An account's ENTIRE history, so this is the read most certain to pass
+  // 1000 rows — and the windows it derives are what the date picker offers,
+  // so truncation here hides real data from the user before they can ask
+  // for it. Ordered by (date_start, id) because offset pagination is only
+  // stable under a deterministic sort.
+  const data = await selectAllRows(
+    "ad_performance",
+    (q) => q.eq("account_id", accountId).order("date_start").order("id"),
+    "date_start, spend",
+  );
   if (!data || data.length === 0) return { windows: [], total_span_days: 0 };
 
   // Aggregate spend + row count per distinct date
