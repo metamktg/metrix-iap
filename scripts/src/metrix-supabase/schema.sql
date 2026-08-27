@@ -1360,3 +1360,103 @@ update manual_imports mi
 
 alter table if exists generation_runs      add column if not exists heartbeat_at timestamptz;
 alter table if exists manual_analysis_runs add column if not exists heartbeat_at timestamptz;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- ad_performance aggregate views (seed assembly)
+--
+-- The seed reads ad_performance for four things and nothing else:
+--
+--   1. totals per result_type, per account
+--   2. the account's window — min(date_start), max(date_end)
+--   3. the distinct book labels present
+--   4. totals per ad_name, per account
+--
+-- Every one is a GROUP BY, and the server was doing all four in Node over
+-- every row of the widest and fastest-growing table in the schema — one row
+-- per ad, per result type, per day, retained across every analysis window.
+-- At ten accounts, a hundred ads and half a year of retained windows that is
+-- on the order of a hundred thousand rows paginated out of PostgREST a
+-- thousand at a time, deserialized, summed, and thrown away, on every
+-- five-minute cache miss.
+--
+-- These are VIEWS, not materialized views: no refresh job, no staleness
+-- window, and the analysis pipeline already invalidates the seed cache on
+-- every write. Postgres computes them on read against the indexes below.
+--
+-- ── SECURITY ─────────────────────────────────────────────────────────
+-- security_invoker = on is not optional here. A view created by a superuser
+-- runs with the VIEW OWNER's privileges by default, which means it would
+-- read ad_performance with RLS bypassed and hand the rows to whoever can
+-- select the view — including the browser-embedded anon key. That is exactly
+-- the hole the RLS block above exists to close, reopened through a side
+-- door. With security_invoker the view runs as the CALLER, so anon hits the
+-- same denial it hits on the base table, and the REVOKE below is the second
+-- layer.
+--
+-- ── STATUS ───────────────────────────────────────────────────────────
+-- NOT YET EXECUTED against any database. Written and reviewed, never run:
+-- this environment has no SUPABASE_DB_URL. The server still reads the base
+-- table — nothing switches over until someone applies this and changes
+-- metrixSeedAssembly, deliberately, with the ability to verify it.
+-- ─────────────────────────────────────────────────────────────────────
+
+-- Supports the per-result_type roll-up. The table's unique constraint is
+-- (account_id, ad_name, campaign_name, result_type, date_start, date_end),
+-- whose prefix already serves the per-ad_name grouping — result_type sits
+-- fourth, so it is not a usable prefix and needs its own index.
+create index if not exists ad_performance_account_result_type_idx
+  on ad_performance (account_id, result_type);
+
+create or replace view ad_performance_event_totals
+with (security_invoker = on) as
+  select
+    account_id,
+    result_type,
+    sum(coalesce(spend, 0))       as spend,
+    sum(coalesce(reach, 0))       as reach,
+    sum(coalesce(impressions, 0)) as impressions,
+    sum(coalesce(results, 0))     as results,
+    sum(coalesce(clicks_all, 0))  as clicks_all,
+    sum(coalesce(link_clicks, 0)) as link_clicks
+  from ad_performance
+  group by account_id, result_type;
+
+-- The window and the book list in one row per account. Both are read
+-- together and neither is worth its own round trip.
+create or replace view ad_performance_account_summary
+with (security_invoker = on) as
+  select
+    account_id,
+    min(date_start) as window_start,
+    max(date_end)   as window_end,
+    array_remove(array_agg(distinct book order by book), null) as books,
+    count(*)        as row_count
+  from ad_performance
+  group by account_id;
+
+-- Per-ad totals. result_type is min() rather than grouped: the seed reads a
+-- single representative type per ad name (`s.result_type ??= ...` — first
+-- one wins), and grouping by it would split one ad across several rows,
+-- which is a different shape from what the caller expects.
+create or replace view ad_performance_ad_totals
+with (security_invoker = on) as
+  select
+    account_id,
+    ad_name,
+    min(result_type)              as result_type,
+    sum(coalesce(spend, 0))       as spend,
+    sum(coalesce(results, 0))     as results,
+    sum(coalesce(impressions, 0)) as impressions,
+    sum(coalesce(link_clicks, 0)) as link_clicks
+  from ad_performance
+  where ad_name is not null and ad_name <> ''
+  group by account_id, ad_name;
+
+-- Second layer, matching the base-table treatment above: strip the default
+-- PostgREST grants so anon and authenticated get a hard permission denial
+-- rather than an empty result. RLS itself is not enablable on a view; the
+-- security_invoker setting above is what carries the base table's policy
+-- through, and this is the belt to its braces.
+revoke all on ad_performance_event_totals    from anon, authenticated;
+revoke all on ad_performance_account_summary from anon, authenticated;
+revoke all on ad_performance_ad_totals       from anon, authenticated;
