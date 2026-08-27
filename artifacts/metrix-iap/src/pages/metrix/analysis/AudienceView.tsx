@@ -185,12 +185,51 @@ function SegmentByToggle({ mode, onChange }: { mode: SegmentByMode; onChange: (m
 // (scalingBuckets.ts: Scale / Optimize / Explore / Avoid) rather than a
 // second parallel vocabulary — see audience-clusters.ts classifyQuadrant.
 
+// ─── Why a grouping is empty ──────────────────────────────────────────
+//
+// Cluster mode is built from CPA and CVR, and both need results — so an
+// account that is spending but has not converted yet has NO clusterable
+// segments, and all three cluster cards come back empty. They used to say
+// "No spend to allocate", which is not merely unhelpful but false: the
+// spend is real, the segments are real, and the same account shows them
+// immediately in Age view.
+//
+// That is the honesty invariant in miniature. An empty state is a claim
+// about the data, and this one claimed the opposite of the truth. It now
+// names the actual reason and offers the view that does work.
+
+function GroupingEmptyState({ hint, fallback }: { hint?: GroupingEmptyHint; fallback: string }) {
+  if (!hint) {
+    return <p className={cn(TYPE.body, "text-muted-foreground/50 py-6 text-center")}>{fallback}</p>;
+  }
+  return (
+    <div className="py-6 text-center space-y-2">
+      <p className={cn(TYPE.body, "text-muted-foreground/70")}>{hint.reason}</p>
+      <button
+        type="button"
+        onClick={hint.onSwitch}
+        className="inline-flex items-center gap-1.5 text-body font-medium text-interactive border border-primary/30 hover:bg-primary/10 active:bg-primary/20 rounded-lg px-3 py-1.5 transition-colors"
+      >
+        {hint.actionLabel}
+      </button>
+    </div>
+  );
+}
+
+export interface GroupingEmptyHint {
+  /** The real reason this grouping is empty, in the user's terms. */
+  reason: string;
+  actionLabel: string;
+  onSwitch: () => void;
+}
+
 function PositioningMapCard({
-  groups, resultPlural, groupNoun,
+  groups, resultPlural, groupNoun, emptyHint,
 }: {
   groups: AudienceGroup<SegmentEntry>[];
   resultPlural: string;
   groupNoun: string;
+  emptyHint?: GroupingEmptyHint;
 }) {
   const plotted = groups.filter((g) => g.derived.cpa != null && g.totals.results != null);
 
@@ -270,10 +309,14 @@ function PositioningMapCard({
       right={<SectionInfoIcon tip={`Each bubble is one real ${groupNoun}. X = cost per result, Y = ${resultPlural.toLowerCase()}, bubble size = spend. Quadrant cutoffs are the real median across plotted ${groupNoun}s.`} />}
     >
       {plotData.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground/50 gap-2">
-          <TrendingUp className="w-8 h-8" />
-          <p className={TYPE.body}>Not enough real results data to plot {groupNoun}s.</p>
-        </div>
+        emptyHint ? (
+          <GroupingEmptyState hint={emptyHint} fallback="" />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground/50 gap-2">
+            <TrendingUp className="w-8 h-8" />
+            <p className={TYPE.body}>Not enough real results data to plot {groupNoun}s.</p>
+          </div>
+        )
       ) : (
         <div className="relative w-full rounded-xl border border-border/20 bg-white/[0.01] overflow-hidden" style={{ height: 380 }}>
           <div
@@ -367,11 +410,12 @@ function PositioningMapCard({
 // ── Share of spend vs. share of results ────────────────────────────────
 
 function ShareOfSpendCard({
-  groups, resultPlural, groupNoun,
+  groups, resultPlural, groupNoun, emptyHint,
 }: {
   groups: AudienceGroup<SegmentEntry>[];
   resultPlural: string;
   groupNoun: string;
+  emptyHint?: GroupingEmptyHint;
 }) {
   const totalSpend = groups.reduce((n, g) => n + (g.totals.spend ?? 0), 0);
   const totalResults = groups.reduce((n, g) => n + (g.totals.results ?? 0), 0);
@@ -391,7 +435,7 @@ function ShareOfSpendCard({
       right={<SectionInfoIcon tip={`Each ${groupNoun}'s share of scoped spend next to its share of scoped ${resultPlural.toLowerCase()}. A positive gap returns more than its budget share; a negative gap takes more budget than it returns.`} />}
     >
       {totalSpend <= 0 ? (
-        <p className={cn(TYPE.body, "text-muted-foreground/50 py-6 text-center")}>No spend to allocate.</p>
+        <GroupingEmptyState hint={emptyHint} fallback="No spend to allocate." />
       ) : (
         <div className="space-y-2.5" data-testid="share-of-spend-rows">
           {rows.map(({ g, spendShare, resultShare, gap }) => (
@@ -541,7 +585,7 @@ function GroupDetailRow({
 }
 
 function GroupDetailCard({
-  title, groups, accountDerived, onSelectMember, resultPlural, groupNoun,
+  title, groups, accountDerived, onSelectMember, resultPlural, groupNoun, emptyHint,
 }: {
   title: string;
   groups: AudienceGroup<SegmentEntry>[];
@@ -549,6 +593,7 @@ function GroupDetailCard({
   onSelectMember: (seg: SegmentId) => void;
   resultPlural: string;
   groupNoun: string;
+  emptyHint?: GroupingEmptyHint;
 }) {
   return (
     <SectionCard
@@ -558,7 +603,7 @@ function GroupDetailCard({
       right={<SectionInfoIcon tip="CPA/CVR index shows each group's rate relative to the real account-wide blended rate — 100% is the account average, under 100% CPA is cheaper than average, over 100% CVR is better than average." />}
     >
       {groups.length === 0 ? (
-        <p className={cn(TYPE.body, "text-muted-foreground/50 py-4 text-center")}>No {groupNoun}s to show.</p>
+        <GroupingEmptyState hint={emptyHint} fallback={`No ${groupNoun}s to show.`} />
       ) : (
         <div>
           {groups.map((g) => (
@@ -828,6 +873,25 @@ export function AudienceView() {
   const activeGroups = mode === "cluster" ? clusterGroups : mode === "age" ? ageGroups : [];
   const groupNoun = mode === "cluster" ? "cluster" : "age group";
 
+  // Clustering needs CPA and CVR, and both need results — so an account
+  // that is spending but has not converted yet produces NO clusters, and
+  // every cluster card renders empty. The old copy for that state said
+  // "No spend to allocate", which is the opposite of true: the spend is
+  // real, the segments are real, and Age view shows them immediately.
+  // Name the real reason, and offer the view that works.
+  const groupingEmptyHint = useMemo((): GroupingEmptyHint | undefined => {
+    if (mode !== "cluster" || activeGroups.length > 0 || entries.length === 0) return undefined;
+    const withSpend = entries.filter((e) => (e.totals.spend ?? 0) > 0).length;
+    return {
+      reason:
+        `Clusters are built from cost per result and conversion rate, so they need results. ` +
+        `${withSpend} segment${withSpend === 1 ? "" : "s"} here ${withSpend === 1 ? "has" : "have"} spend but no results yet, ` +
+        `so there is nothing to cluster on — the spend itself is real and Age view shows it.`,
+      actionLabel: "Switch to Age view",
+      onSwitch: () => setMode("age"),
+    };
+  }, [mode, activeGroups.length, entries]);
+
   return (
     <>
       <ModuleScopeGate section={SECTION} title="Audience" account={account}>
@@ -923,8 +987,8 @@ export function AudienceView() {
                     ) : (
                       <>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                          <PositioningMapCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} />
-                          <ShareOfSpendCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} />
+                          <PositioningMapCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} emptyHint={groupingEmptyHint} />
+                          <ShareOfSpendCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} emptyHint={groupingEmptyHint} />
                         </div>
                         <GroupDetailCard
                           title={mode === "cluster" ? "Cluster detail" : "Age detail"}
@@ -933,6 +997,7 @@ export function AudienceView() {
                           onSelectMember={setSelectedSeg}
                           resultPlural={term.Plural}
                           groupNoun={groupNoun}
+                          emptyHint={groupingEmptyHint}
                         />
                       </>
                     )}
