@@ -214,7 +214,7 @@ export function MetricTable<Row>({
           {query ? `No rows match "${query}"` : emptyLabel}
         </p>
       ) : (
-        <div className="overflow-x-auto -mx-1 px-1">
+        <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain">
           <table className="w-full border-collapse">
             {caption && <caption className="sr-only">{caption}</caption>}
             <thead>

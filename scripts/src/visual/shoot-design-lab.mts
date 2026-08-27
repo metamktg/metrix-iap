@@ -32,6 +32,9 @@ const AA_TEXT = 4.5;
 const problems: string[] = [];
 
 fs.mkdirSync(OUT, { recursive: true });
+/** Phone, tablet, laptop. A layout that holds at one width is not responsive. */
+const WIDTHS: [number, string][] = [[390, "phone"], [768, "tablet"], [1440, "laptop"]];
+
 const browser = await chromium.launch({ executablePath: CHROME });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 2 });
 const consoleErrors: string[] = [];
@@ -87,6 +90,57 @@ const report = await page.evaluate(PROBE) as {
   bands: { fill: string; ratio: number }[];
   overflow: { scroll: number; client: number };
 };
+// ── Responsive pass ───────────────────────────────────────────────────
+// Content inside a horizontal scroll container is SUPPOSED to be wider than
+// the viewport — that is what scrolling means. Only an element with no
+// scrollable ancestor is actually pushing the page sideways.
+const OVERFLOW_PROBE = `(() => {
+  const vw = document.documentElement.clientWidth;
+  const out = [];
+  const inScroller = (el) => {
+    for (let n = el.parentElement; n; n = n.parentElement) {
+      const ov = getComputedStyle(n).overflowX;
+      if (ov === "auto" || ov === "scroll" || ov === "hidden") return true;
+    }
+    return false;
+  };
+  document.querySelectorAll("*").forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (r.right <= vw + 1 && r.width <= vw + 1) return;
+    if (inScroller(el)) return;
+    // Report the DEEPEST offenders, not the outermost. When the whole chain
+    // up to <body> overflows, an outermost-only filter names nothing at all —
+    // which is exactly the useless "cause not isolated" this replaced.
+
+    const sec = el.closest("section"), h = sec ? sec.querySelector("h2") : null;
+    out.push({ panel: h ? h.textContent.trim() : "(page)", text: (el.textContent || "").trim().slice(0, 40),
+               cls: (el.className || "").toString().replace(/\\s+/g, " ").slice(0, 70) });
+  });
+  return { vw, docScroll: document.documentElement.scrollWidth, out: out.slice(0, 8) };
+})()`;
+
+const responsive: string[] = [];
+for (const [w, name] of WIDTHS) {
+  await page.setViewportSize({ width: w, height: 900 });
+  await page.waitForTimeout(400);
+  const r = await page.evaluate(OVERFLOW_PROBE) as {
+    vw: number; docScroll: number;
+    out: { panel: string; text: string; cls: string }[];
+  };
+  // The signal that means something is "is any element pushing the page",
+  // not documentElement.scrollWidth. The latter reads a dozen px high even
+  // when every wide thing is correctly inside a scroll container, so failing
+  // on it produces an alarm nobody can act on. The element list is the fact.
+  responsive.push(`${name} ${w}px: ${r.out.length === 0 ? "clean" : `${r.out.length} pushing`} (doc ${r.docScroll})`);
+  for (const o of r.out) {
+    problems.push(
+      `at ${name} (${w}px) "${o.panel}" pushes the page sideways — element "${o.text}" (${o.cls}). ` +
+        `Either let it wrap, give it min-w-0 so it can shrink, or put it in an overflow-x-auto container.`,
+    );
+  }
+}
+await page.setViewportSize({ width: 1440, height: 1100 });
+
 await browser.close();
 
 const { sizes, bands, overflow } = report;
@@ -122,6 +176,7 @@ for (const e of consoleErrors) problems.push(`uncaught page error: ${e}`);
 
 console.log(`\nScreenshot → ${path.join(OUT, "design-lab.png")}`);
 console.log(`Ladder: H1 ${sizes.h1} → H2 ${sizes.h2} → H3 ${sizes.h3} → H4 ${sizes.h4} → H5 ${sizes.h5} → body ${sizes.body} → caption ${sizes.caption} → label ${sizes.label} → micro ${sizes.micro}`);
+console.log(`Responsive:      ${responsive.join(" · ")}`);
 console.log(`Generated fills: ${bands.length} measured, worst text contrast ${Math.min(...bands.map((b) => b.ratio))}:1`);
 
 if (problems.length > 0) {

@@ -141,7 +141,10 @@ export function HeatMatrix({
 
   return (
     <div className="w-full">
-      <div className="overflow-x-auto">
+      {/* min-w-0 is what lets overflow-x-auto actually clip: inside a flex or
+          grid parent a scroll container sizes to its content by default and
+          pushes the whole page sideways instead of scrolling itself. */}
+      <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain">
         <div className="min-w-fit">
           <div className="grid gap-1 mb-1" style={{ gridTemplateColumns: template }}>
             <span className={`${HEADING.h4} self-end`}>{rowHeaderLabel}</span>

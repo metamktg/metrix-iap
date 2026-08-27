@@ -26,6 +26,8 @@ import { SharePieChart } from "@/components/charts/SharePieChart";
 import { FunnelChart } from "@/components/charts/FunnelChart";
 import { HeatMatrix } from "@/components/charts/HeatMatrix";
 import { ViewSwitcher } from "@/components/data-module/ViewSwitcher";
+import { SignalDeck } from "@/components/signals/SignalDeck";
+import type { SignalCard } from "@/lib/data/seedTypes";
 import { ChartTooltip, ChartEmpty, ChartSkeleton } from "@/components/charts/chartChrome";
 import { SERIES_VARS, seriesColor, divergingFill, divergingLegend, magnitudeFill, magnitudeLegend, VERDICT } from "@/components/charts/chartTokens";
 
@@ -90,7 +92,7 @@ const TYPE_LADDER: [string, string, string][] = [
 function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <h1 className="mx-section-header__title">Design Lab</h1>
         <p className="mx-section-header__sub mb-6">
           The real stylesheet, the real tokens, fixture data · everything jsdom cannot see
@@ -139,7 +141,7 @@ function App() {
               <span className="text-micro font-mono text-muted-foreground/60">n/a</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-label">Legend</span>
             {divergingLegend().map((l, i) => (
               <div key={i} className="flex items-center gap-1">
@@ -196,7 +198,7 @@ function App() {
           <MetricBarChart data={BARS} format={money} measureLabel="Spend" height={240} />
         </Panel>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Panel title="Trend — one series" note="Days 13–14 have no rows: the line breaks">
             <TrendChart
               days={DAYS}
@@ -218,6 +220,38 @@ function App() {
             />
           </Panel>
         </div>
+
+        <Panel title="Signal deck" note="Priority is the only thing colour encodes · a delta is shown with its sign but never judged · nothing is derived from prose">
+          <SignalDeck
+            actionLabel="Detail"
+            onOpen={() => {}}
+            cards={[
+              {
+                id: "1", account_id: "a", scope: "creative", impact: "high", confidence: "high",
+                title: "Testimonial hook", headline: "Testimonial problem-hook is the cheapest route to a result",
+                metric_value: "$18.40", metric_context: "vs $23.10 account mean", delta_pct: -20.3,
+                priority: "critical", confidence_level: "high", evidence_ref: "cell/AAFE_HK_v3",
+                implication: "Three of the four lowest-cost cells this window share the testimonial problem-hook opening. The pattern holds across both avatars it ran against, which is what separates it from a single-cell fluke.",
+                rationale: "", recommended_action: "Brief two more variants on this opening before the next sprint closes.",
+                action: "Brief two more variants on this opening before the next sprint closes.",
+              },
+              {
+                id: "2", account_id: "a", scope: "audience", impact: "medium", confidence: "medium",
+                title: "Frequency", headline: "Frequency is climbing on the 45–54 pocket",
+                priority: "important", confidence_level: "medium", needs_validation: true,
+                implication: "Delivery to this segment has narrowed while spend held, so the same people are seeing more. No CTR decay yet — this is early enough to act on rather than a diagnosis of fatigue.",
+                rationale: "", recommended_action: "Widen the exclusion window or add a second creative to the set.",
+              },
+              {
+                id: "3", account_id: "a", scope: "placement", impact: "low", confidence: "low",
+                title: "Audience Network delivered no measurable results this window",
+                rationale: "Spend registered but no result events were attributed. Whether that is a tracking gap or genuine non-performance cannot be told from this export alone.",
+                recommended_action: "Check the pixel on the destination before drawing a conclusion.",
+                evidence_ref: "placement/audience_network",
+              },
+            ] as SignalCard[]}
+          />
+        </Panel>
 
         <Panel title="View switcher" note="Every view always present · unsupported ones disabled WITH the reason, never hidden">
           <div className="flex flex-col gap-3">
@@ -244,7 +278,7 @@ function App() {
           />
         </Panel>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Panel title="Map — verdict scale" note="CPA against a $20 goal · lower is better · diverging">
             <HeatMatrix
               rows={["18–24", "25–34", "35–44", "45–54", "55+"]}
@@ -295,7 +329,7 @@ function App() {
           />
         </Panel>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Panel title="Donut">
             <SharePieChart
               data={BARS.filter((b) => b.value != null).map((b) => ({ name: b.label, value: b.value! }))}

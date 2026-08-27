@@ -52,7 +52,12 @@ export function ViewSwitcher({
       aria-label={`${label} — chart type`}
       // Outer rail rounded-xl (12px) with p-1 (4px) puts the inner buttons at
       // rounded-lg (8px): concentric, not the same radius as the rail.
-      className="inline-flex items-center gap-0.5 rounded-xl bg-input/30 p-1"
+      // Scrolls rather than overflowing: six views is 508px, wider than a
+      // phone. A segmented control that scrolls is the standard move; one
+      // that pushes the page sideways is a bug.
+      className="flex items-center gap-0.5 rounded-xl bg-input/30 p-1 max-w-full
+                 overflow-x-auto overscroll-x-contain [scrollbar-width:none]
+                 [&::-webkit-scrollbar]:hidden"
     >
       {views.map((v) => {
         const reason = whyNot(shape, v);
@@ -71,7 +76,7 @@ export function ViewSwitcher({
             // tooltip a keyboard user never opens.
             title={reason ?? undefined}
             aria-describedby={undefined}
-            className={`h-10 px-2.5 inline-flex items-center gap-1.5 rounded-lg text-caption
+            className={`h-10 px-2.5 inline-flex items-center gap-1.5 rounded-lg text-caption shrink-0
                         transition-[background-color,color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
                         ${
