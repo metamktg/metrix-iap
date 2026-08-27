@@ -49,6 +49,8 @@ export const CREATIVE_FILE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
 export interface CreativeFile {
   buf: Buffer;
   contentType: string;
+  /** Original upload filename, used to name a downgraded download. */
+  filename?: string | null;
 }
 
 interface CacheEntry extends CreativeFile {

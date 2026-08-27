@@ -27,6 +27,7 @@ import {
   findStagedByteDuplicate,
 } from "./shared";
 import { getCreativeFile, type CreativeFile } from "../../lib/creativeFileCache";
+import { resolveServedAsset, isInlineVideo } from "../../lib/assetContentType";
 // Staged-file bytes are served through lib/creativeFileCache, which owns
 // both the performance behaviour (TTL cache + in-flight coalescing) and the
 // tenancy rule that makes its key (account, import) rather than import
@@ -39,7 +40,7 @@ async function fetchAndCacheCreativeFile(
     const supabase = getSupabase();
     const result = await supabase
       .from("manual_imports")
-      .select("id, content_type, content")
+      .select("id, content_type, content, filename")
       .eq("id", importId)
       .eq("account_id", accountId)
       .limit(1);
@@ -50,7 +51,7 @@ async function fetchAndCacheCreativeFile(
     // bytes in manual_import_chunks — loadImportContentBuffer handles both.
     const buf = await loadImportContentBuffer(row);
     const contentType = (row["content_type"] as string | null) ?? "application/octet-stream";
-    return { buf, contentType };
+    return { buf, contentType, filename: (row["filename"] as string | null) ?? null };
   });
 }
 
@@ -575,7 +576,7 @@ router.get("/metrix/accounts/:accountId/manual-imports/:importId/file", requireA
       res.status(403).json({ message: "You don't have access to this ad account." });
       return;
     }
-    let file: { buf: Buffer; contentType: string };
+    let file: CreativeFile;
     try {
       file = await fetchAndCacheCreativeFile(importId, accountId);
     } catch (err) {
@@ -585,8 +586,15 @@ router.get("/metrix/accounts/:accountId/manual-imports/:importId/file", requireA
       }
       throw err;
     }
-    const { buf, contentType } = file;
+    // The uploader's declared content type is advisory: it is echoed back
+    // only when it names a type that cannot execute (see
+    // lib/assetContentType). Anything else — html, svg, unrecognised —
+    // becomes an opaque download rather than a live same-origin document.
+    const served = resolveServedAsset(file.contentType, file.filename);
+    const { buf } = file;
+    const contentType = served.contentType;
     res.setHeader("Content-Type", contentType);
+    if (served.disposition) res.setHeader("Content-Disposition", served.disposition);
     // Creative imports are immutable: each upload gets its own importId URL,
     // and replacing a creative creates a new URL. Keep the bytes in the
     // browser's disk cache so revisiting the library or refreshing the page
@@ -598,7 +606,7 @@ router.get("/metrix/accounts/:accountId/manual-imports/:importId/file", requireA
     // silently fail to load even though the plain GET works fine.
     res.setHeader("Accept-Ranges", "bytes");
     const rangeHeader = req.headers.range;
-    if (rangeHeader && contentType.startsWith("video/")) {
+    if (rangeHeader && isInlineVideo(contentType)) {
       const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader);
       const total = buf.length;
       const start = match?.[1] ? parseInt(match[1], 10) : 0;

@@ -4,6 +4,7 @@
 // the original order too, so Express matching is unchanged.
 
 import { Router, type IRouter } from "express";
+import { resolveServedAsset, isInlineVideo } from "../../lib/assetContentType";
 import { JoinAgentWaitlistBody, JoinAgentWaitlistResponse } from "@workspace/api-zod";
 import { db, agentWaitlistTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -40,12 +41,19 @@ router.get("/metrix/accounts/:accountId/cells/:cellId/creative", requireAuth, as
     }
     const hexStr = String(row.data["asset_bytes"] ?? "");
     const buf = Buffer.from(hexStr.replace(/^\\x/, ""), "hex");
-    const contentType = String(row.data["content_type"] ?? "application/octet-stream");
+    // The uploader's declared content type is advisory — echoed back only
+    // when it names a type that cannot execute (see lib/assetContentType).
+    // This endpoint matters most of the three: its URL carries no
+    // unguessable id (cell ids are matrix codes like C2B), so a link to it
+    // is trivially constructible and looks entirely legitimate.
+    const served = resolveServedAsset(row.data["content_type"] as string | null, row.data["filename"] as string | null);
+    const contentType = served.contentType;
     res.setHeader("Content-Type", contentType);
+    if (served.disposition) res.setHeader("Content-Disposition", served.disposition);
     res.setHeader("Cache-Control", "private, max-age=3600");
     res.setHeader("Accept-Ranges", "bytes");
     const rangeHeader = req.headers.range;
-    if (rangeHeader && contentType.startsWith("video/")) {
+    if (rangeHeader && isInlineVideo(contentType)) {
       const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader);
       const total = buf.length;
       const start = match?.[1] ? parseInt(match[1], 10) : 0;
