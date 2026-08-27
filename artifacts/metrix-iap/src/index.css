@@ -427,8 +427,10 @@
   }
 
   .mx-section-header__title {
-    font-size: 1.75rem;    /* 28px — matches text-bignum; second bump for page-title
-                               authority over 14px card/section titles */
+    font-size: 2rem;       /* 32px — matches text-bignum. 11px clear of the
+                               21px H2 below it, so the page title reads as
+                               the page's one anchor rather than competing
+                               with the first card. */
     font-weight: 700;
     color: hsl(var(--text-primary));
     letter-spacing: -0.02em;
@@ -436,35 +438,62 @@
   }
 
   .mx-section-header__sub {
-    font-size: 0.6875rem;  /* text-caption = 11px */
+    /* This is the page's one-line explanation of itself — a sentence, so
+       it sits at the body floor rather than in the chrome band. */
+    font-size: 0.875rem;   /* 14px — text-body */
     color: hsl(var(--text-muted));
-    line-height: 1.5;
+    line-height: 1.6;
   }
 }
 
 @layer utilities {
   /* ── Formal type scale — matches TYPE constants in typography.ts ──────
      Add sizes here instead of using arbitrary text-[Npx] in components.
-     Use text-sm (14px) and text-lg (18px) from Tailwind's built-in scale.
-     Scale: micro(9) · label(10) · caption(11) · body(12) · title(14) ·
-            text-sm(14) · callout(15) · text-base(16) · text-lg(18) ·
-            display(21) · section(22) · stat(26) · bignum(28)
+
+     REBUILT for the readability pass. Two things changed and both are
+     deliberate:
+
+     1. THE BODY FLOOR IS 14px. Any text the user reads as a sentence sits
+        at 14px or above. The old scale put body prose at 12px and card
+        titles at 14px, which is a 2px step — a title that barely outranks
+        its own paragraph, so the eye has to work out the hierarchy instead
+        of being handed it.
+
+     2. A HEADER IS AT LEAST 3px ABOVE THE CONTENT IT LABELS.
+          H1 32 -> H2 21 (11) -> H3 17 (4) -> body 14 (3)
+          dialog 18 -> body 14 (4)
+        Below 12px the rule stops applying, because 3px steps there run out
+        of readable sizes almost immediately (12 -> 9 -> 6). That band is
+        CHROME, not reading material: uppercase micro-labels and eyebrows
+        that separate by case, weight, tracking and colour instead. Nothing
+        that carries a sentence belongs there.
+
+     Line-height falls as size rises (1.6 at body, 1.05 at hero) and
+     tracking follows it — positive on the small uppercase chrome so the
+     caps can breathe, negative on large text so headings hold together
+     rather than sprawling. This is the difference between text that is
+     merely bigger and text that is properly set.
+
+     Scale: micro(10) · label(11) · caption(12) · body(14) · title(17) ·
+            callout(18) · cardtitle(21) · display(24) · section(26) ·
+            stat(30) · bignum(32) · hero(44)
      ─────────────────────────────────────────────────────────────────── */
-  .text-micro   { font-size: 0.5625rem;  line-height: 1.4; }  /* 9px — micro mono
-                                                                   index/eyebrow labels,
-                                                                   below text-label */
-  .text-label   { font-size: 0.625rem;   line-height: 1.4; }  /* 10px */
-  .text-caption { font-size: 0.6875rem;  line-height: 1.5; }  /* 11px */
-  .text-body    { font-size: 0.75rem;    line-height: 1.5; }  /* 12px ≡ text-xs */
-  .text-title   { font-size: 0.875rem;   line-height: 1.35; } /* 14px — bumped from 13px for title authority */
-  /* text-sm = 14px, text-base = 16px, text-lg = 18px (Tailwind built-ins) */
-  .text-callout { font-size: 0.9375rem;  line-height: 1.4; }  /* 15px */
-  .text-display { font-size: 1.3125rem;  line-height: 1.2; }  /* 21px */
-  .text-section { font-size: 1.375rem;   line-height: 1.2; }  /* 22px */
-  .text-stat    { font-size: 1.625rem;   line-height: 1.1; }  /* 26px */
-  .text-bignum  { font-size: 1.75rem;    line-height: 1.1; }  /* 28px */
-  .text-hero    { font-size: 2.5rem;     line-height: 1.0; }  /* 40px — oversized creative/display */
-  .text-cardtitle { font-size: 1.0625rem; line-height: 1.2; } /* 17px — Nocturne canvas card-title */
+
+  /* ── Chrome band — labels and indices, never sentences ───────────── */
+  .text-micro   { font-size: 0.625rem;   line-height: 1.4;  letter-spacing: 0.1em; }    /* 10px */
+  .text-label   { font-size: 0.6875rem;  line-height: 1.45; letter-spacing: 0.08em; }   /* 11px */
+
+  /* ── Reading band — 14px floor for anything phrased as a sentence ── */
+  .text-caption { font-size: 0.75rem;    line-height: 1.5;  letter-spacing: 0; }        /* 12px — non-sentence metadata only */
+  .text-body    { font-size: 0.875rem;   line-height: 1.6;  letter-spacing: 0; }        /* 14px — BODY FLOOR */
+  .text-title   { font-size: 1.0625rem;  line-height: 1.35; letter-spacing: -0.006em; } /* 17px — H3 */
+  .text-callout { font-size: 1.125rem;   line-height: 1.4;  letter-spacing: -0.008em; } /* 18px — dialog title */
+  .text-display { font-size: 1.5rem;     line-height: 1.2;  letter-spacing: -0.014em; } /* 24px */
+  .text-section { font-size: 1.625rem;   line-height: 1.2;  letter-spacing: -0.014em; } /* 26px */
+  .text-stat    { font-size: 1.875rem;   line-height: 1.1;  letter-spacing: -0.02em; }  /* 30px */
+  .text-bignum  { font-size: 2rem;       line-height: 1.05; letter-spacing: -0.022em; } /* 32px — H1 / hero number */
+  .text-hero    { font-size: 2.75rem;    line-height: 1.0;  letter-spacing: -0.025em; } /* 44px */
+  .text-cardtitle { font-size: 1.3125rem; line-height: 1.25; letter-spacing: -0.012em; } /* 21px — H2 */
 
   /* ── Data text hierarchy — DS-derived steps, predictable contrast ──
        text-data-primary  foreground            — values, headings
@@ -760,18 +789,28 @@
 .nc-table { width: 100%; border-collapse: collapse; }
 .nc-table th {
   text-align: left;
-  font-size: 0.6875rem; /* 11px — canvas th size; matches text-caption */
+  /* Column headers are CHROME, not a heading: uppercase, tracked and
+     weighted, sitting above 14px data cells. They label a column rather
+     than titling a section, which is why they sit below the body floor
+     instead of 3px above it — the near-universal dense-table convention.
+     Matches text-label (11px). */
+  font-size: 0.6875rem; /* 11px — matches text-label */
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: hsl(var(--muted-foreground) / 0.75);
-  font-weight: 500;
-  padding: 8px 10px;
+  color: hsl(var(--muted-foreground) / 0.8);
+  font-weight: 600;
+  padding: 10px 12px;
   border-bottom: 1px solid transparent; /* layout only; the row paints the fading rule */
 }
 .nc-table td {
-  padding: 8px 10px;
+  /* Was 13px — an orphan that belonged to no scale step and sat below the
+     body floor. Table cells are the primary content of an analytics
+     product; they get the floor, and the density comes from padding
+     rather than from shrinking the numbers people are here to read. */
+  padding: 10px 12px;
   border-bottom: 1px solid transparent;
-  font-size: 0.8125rem; /* 13px — canvas body size within tables */
+  font-size: 0.875rem;  /* 14px — text-body */
+  line-height: 1.45;
 }
 .nc-table thead tr {
   background: linear-gradient(to right,

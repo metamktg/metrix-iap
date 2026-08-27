@@ -82,6 +82,10 @@ args = "signal-weights-drift"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
+args = "type-scale"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
 args = "command-deck-token-drift"
 
 [[workflows.workflow.tasks]]
@@ -253,6 +257,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run check:signal-weights-drift"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "type-scale"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:type-scale"
 
 [workflows.workflow.metadata]
 isValidation = true

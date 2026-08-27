@@ -14,6 +14,7 @@
     "check:text-muted-contrast": "tsx ./src/check-text-muted-contrast.ts",
     "check:disclosure-rulebook": "tsx ./src/check-disclosure-rulebook.ts",
     "check:signal-weights-drift": "tsx ./src/check-signal-weights-drift.ts",
+    "check:type-scale": "tsx ./src/check-type-scale.ts",
     "check:communications-section-icons": "tsx ./src/check-communications-section-icons.ts",
     "check:generation-runs-migration": "tsx ./src/check-generation-runs-migration.ts",
     "check:db-credentials": "tsx ./src/check-db-credentials.ts",
