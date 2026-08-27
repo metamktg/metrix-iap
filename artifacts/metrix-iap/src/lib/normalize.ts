@@ -304,3 +304,64 @@ export function normalizeConfidence(value: string | null | undefined): Normalize
   const label = level === "unknown" && raw ? raw : LEVEL_LABEL[level];
   return { level, qualifier, polarity, label };
 }
+
+// ─── Calendar days vs instants ────────────────────────────────────────
+//
+// The platform stores two different kinds of time and they must not be
+// rendered the same way.
+//
+// `date_start`, `date_end`, `window_start`, `window_end` are Postgres
+// `date` columns. They arrive as "YYYY-MM-DD" and mean a CALENDAR DAY —
+// the day Meta attributed the spend to. They carry no timezone because
+// they are not instants.
+//
+// `started_at`, `finished_at`, `generated_at`, `created_at` are
+// `timestamptz`. They are instants, and rendering them in the reader's
+// local timezone is correct.
+//
+// Every date-only value was being passed through `new Date(s)
+// .toLocaleDateString(...)`, in four separate files. `new Date("2026-08-01")`
+// parses as UTC midnight, and `toLocaleDateString` then renders it in the
+// BROWSER's timezone — so for every user west of UTC, which is all of the
+// Americas, an analysis window covering Aug 1-31 was labelled "Jul 31 -
+// Aug 30". Off by one day, on the exact control a user consults to know
+// what window they are looking at, and completely invisible to anyone
+// developing in UTC.
+//
+// `fmtDay` is for the calendar days. Instants keep using a local-time
+// formatter — see the call sites, which now say which kind they hold.
+
+/**
+ * Render a date-only value ("YYYY-MM-DD") as a calendar day.
+ *
+ * Pinned to UTC because the value has no timezone: it names a day, and
+ * that day must read the same for every viewer. Passing a full timestamp
+ * here is a mistake — use a local-time formatter for instants.
+ */
+export function fmtDay(
+  iso: string | null | undefined,
+  opts: { year?: boolean } = {},
+): string {
+  if (!iso) return "";
+  const value = String(iso).slice(0, 10);
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return String(iso);
+  return parsed.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(opts.year ? { year: "numeric" as const } : {}),
+    timeZone: "UTC",
+  });
+}
+
+/** A "start – end" calendar-day range, with an en dash and no stray separator. */
+export function fmtDayRange(
+  start: string | null | undefined,
+  end: string | null | undefined,
+  opts: { year?: boolean } = {},
+): string {
+  const s = fmtDay(start, opts);
+  const e = fmtDay(end, opts);
+  if (s && e) return `${s} – ${e}`;
+  return s || e;
+}

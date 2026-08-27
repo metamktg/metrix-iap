@@ -5,6 +5,7 @@
 
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { CsvWarningsPanel } from "@/components/analysis/CsvWarningsPanel";
+import { fmtDay } from "@/lib/normalize";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useListAnalysisRuns, getListAnalysisRunsQueryKey, type AnalysisRun } from "@workspace/api-client-react";
@@ -29,9 +30,7 @@ import { cn } from "@workspace/command-deck/lib/utils";
 
 const SECTION = "Analysis · 03";
 
-function fmtDate(s: string): string {
-  return new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
+/** An INSTANT (started_at / finished_at) — local time is correct here. */
 function fmtDateTime(s: string): string {
   return new Date(s).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
@@ -45,7 +44,8 @@ function RunStatusIcon({ status }: { status: AnalysisRun["status"] }) {
 function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; isLatest: boolean }) {
   const coverageLabel =
     run.date_start && run.date_end
-      ? `${fmtDate(run.date_start)} → ${fmtDate(run.date_end)}`
+      // Calendar days, not instants — see fmtDay in lib/normalize.
+      ? `${fmtDay(run.date_start, { year: true })} → ${fmtDay(run.date_end, { year: true })}`
       : null;
 
   return (

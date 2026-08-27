@@ -9,6 +9,7 @@
 // failure_patterns) with fallback to optimization_loop recommendation_cards.
 
 import { useMemo } from "react";
+import { fmtDayRange } from "@/lib/normalize";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -83,15 +84,6 @@ interface Intelligence {
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
-function fmtDate(d: string | undefined): string {
-  if (!d) return "";
-  try {
-    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return d;
-  }
-}
-
 function tierBadge(tier: string | undefined): { label: string; cls: string } {
   if (!tier) return { label: "—", cls: "bg-muted/40 text-muted-foreground/50 border-border/30" };
   const t = tier.toLowerCase();
@@ -159,9 +151,9 @@ function VerdictBanner({
           )}
           {dateRange && (dateRange.start || dateRange.end) && (
             <span className="text-label text-muted-foreground/50 font-mono ml-auto">
-              {dateRange.start ? fmtDate(dateRange.start) : ""}
-              {dateRange.start && dateRange.end ? " – " : ""}
-              {dateRange.end ? fmtDate(dateRange.end) : ""}
+              {/* window_start/window_end are calendar days, not instants
+                  — see fmtDay in lib/normalize. */}
+              {fmtDayRange(dateRange.start, dateRange.end, { year: true })}
             </span>
           )}
         </div>

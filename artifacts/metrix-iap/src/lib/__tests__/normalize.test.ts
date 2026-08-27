@@ -44,6 +44,8 @@ const RUNTIME_EXPORTS: Array<keyof typeof normalize> = [
   "compactIcpName",
   "fmtCount",
   "fmtMetric",
+  "fmtDay",
+  "fmtDayRange",
   "normalizeConfidence",
 ];
 

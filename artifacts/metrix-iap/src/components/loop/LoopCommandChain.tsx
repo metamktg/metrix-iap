@@ -30,6 +30,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { fmtDayRange } from "@/lib/normalize";
 import {
   useGetLatestAnalysisRun, getGetLatestAnalysisRunQueryKey,
   useListAnalysisRuns,
@@ -119,7 +120,17 @@ type AnalysisDateRange = "7d" | "14d" | "30d" | "all";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-function fmtDate(iso: string): string {
+/**
+ * An INSTANT (finished_at / generated_at) rendered as a short local date.
+ *
+ * This used to serve calendar days too — date_start/date_end/window_start/
+ * window_end are Postgres `date` columns, and running them through a
+ * local-timezone formatter labelled every analysis window a day early for
+ * every viewer west of UTC. Those call sites now use fmtDay/fmtDayRange
+ * from lib/normalize; this one keeps local time, which is correct for an
+ * instant.
+ */
+function fmtInstantDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
@@ -465,7 +476,7 @@ function StageIntelligence({
             {cellCount > 0 && <StatPill value={cellCount} label="cells" />}
             {variableCount > 0 && <StatPill value={variableCount} label="variables" />}
             {windowStart && windowEnd && (
-              <StatPill value={`${fmtDate(windowStart)} – ${fmtDate(windowEnd)}`} />
+              <StatPill value={fmtDayRange(windowStart, windowEnd)} />
             )}
             {analysisRun?.rows_ingested != null && (
               <StatPill value={analysisRun.rows_ingested.toLocaleString()} label="rows" />
@@ -495,7 +506,7 @@ function StageIntelligence({
     const analysisWindow = (() => {
       const s = analysisRun?.date_start ?? analysisLS?.window_start;
       const e = analysisRun?.date_end   ?? analysisLS?.window_end;
-      if (s && e) return `${fmtDate(s)} – ${fmtDate(e)}`;
+      if (s && e) return fmtDayRange(s, e);
       return null;
     })();
     const genDate  = strategyLastRun?.finished_at ?? strategyLS?.generated_at ?? null;
@@ -570,7 +581,7 @@ function StageIntelligence({
       {/* Causal dependency */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <DepBadge
-          label={`Strategy${stratGenDate ? `: ${fmtDate(stratGenDate)}` : ""}`}
+          label={`Strategy${stratGenDate ? `: ${fmtInstantDate(stratGenDate)}` : ""}`}
           satisfied={strategyComplete}
         />
       </div>
@@ -983,7 +994,7 @@ function CommandHub({
                 )}
                 {analysisRun.date_start && analysisRun.date_end && (
                   <span className="text-label text-foreground/55">
-                    {fmtDate(analysisRun.date_start)} – {fmtDate(analysisRun.date_end)}
+                    {fmtDayRange(analysisRun.date_start, analysisRun.date_end)}
                   </span>
                 )}
                 {analysisRun.rows_ingested != null && (
@@ -1259,7 +1270,7 @@ function CommandHub({
           <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Grounded in</p>
           <p className="text-label text-foreground/70 leading-relaxed">
             Strategy
-            {strategyLastRun?.finished_at ? ` · generated ${fmtDate(strategyLastRun.finished_at)}` : ""}
+            {strategyLastRun?.finished_at ? ` · generated ${fmtInstantDate(strategyLastRun.finished_at)}` : ""}
             {strategyLastRun?.model ? ` · ${strategyLastRun.model}` : ""}
           </p>
           {(pillarCount > 0 || hypothesisCount > 0 || icpCount > 0) && (

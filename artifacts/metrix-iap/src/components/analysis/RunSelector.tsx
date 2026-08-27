@@ -12,6 +12,7 @@
 // one is this" label — it is never used to filter anything here.
 
 import { useState } from "react";
+import { fmtDayRange } from "@/lib/normalize";
 import { Checkbox } from "@workspace/command-deck/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -26,12 +27,11 @@ export interface RunSelectorValue {
 
 export const ALL_TIME_SELECTION: RunSelectorValue = { allTime: true, selectedRunIds: [] };
 
-function fmtRunDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 function runLabel(run: AnalysisRun): string {
-  if (run.date_start && run.date_end) return `${fmtRunDate(run.date_start)} – ${fmtRunDate(run.date_end)}`;
+  // date_start/date_end are Postgres `date` columns — calendar days, not
+  // instants. Rendered through a local-timezone formatter they read a day
+  // early for every viewer west of UTC. See fmtDay in lib/normalize.
+  if (run.date_start && run.date_end) return fmtDayRange(run.date_start, run.date_end);
   return run.date_range ?? "Analysis run";
 }
 
