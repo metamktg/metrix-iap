@@ -8,6 +8,7 @@
 // Approved cards NEVER auto-edit campaigns.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Check,
@@ -400,30 +401,13 @@ export function RecommendationDeck({
 
   return (
     <div className="flex flex-col">
-      {/* Tabs */}
-      <div className="flex items-center gap-0 border-b border-border/40 mb-4">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={cn(
-              "flex items-center gap-1.5 h-9 px-3 text-body font-medium border-b-2 transition-colors",
-              tab === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground/60 hover:text-foreground"
-            )}
-          >
-            <t.Icon className="w-3.5 h-3.5" />
-            {t.label}
-            {t.count > 0 && (
-              <span className={cn(
-                "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
-                t.id === "tray" ? "bg-status-success/15 text-status-success"
-                  : t.id === "dismissed" ? "bg-muted text-muted-foreground/60"
-                  : "bg-primary/15 text-interactive"
-              )}>{t.count}</span>
-            )}
-          </button>
-        ))}
-      </div>
+      <TabRail<TabId>
+        tabs={TABS}
+        active={tab}
+        onChange={setTab}
+        label="Recommendation state"
+        className="mb-4"
+      />
 
       {tab === "deck" && (
         pending.length === 0 ? (

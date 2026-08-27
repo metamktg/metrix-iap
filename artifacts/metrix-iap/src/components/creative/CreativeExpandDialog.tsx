@@ -6,6 +6,7 @@
 // CreativeCard to avoid circular deps; types only via import type.
 
 import { useState, useMemo } from "react";
+import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
 import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle, TrendingDown } from "lucide-react";
@@ -140,36 +141,15 @@ function pct(n: number | null | undefined): string {
 }
 
 // ─── Tab chrome ────────────────────────────────────────────────────────
+//
+// The local TabBar is gone — see components/nav/TabRail.tsx. Its tabs stay
+// ENABLED when their panel has nothing to show: each panel takes an
+// emptyReason and explains itself, which tells the reader why this creative
+// has no placement rows. A disabled tab would only say "no".
 
 type Tab = "overview" | "demographics" | "placements" | "funnel";
 type DemoMetric = "spend" | "results";
 type PlacementMetric = "spend" | "cpa";
-
-function TabBar({ tabs, active, onChange }: {
-  tabs: { id: Tab; label: string; icon: React.ReactNode }[];
-  active: Tab;
-  onChange: (t: Tab) => void;
-}) {
-  return (
-    <div className="flex border-b border-border/30 shrink-0 px-1">
-      {tabs.map((t) => (
-        <button
-          key={t.id}
-          onClick={() => onChange(t.id)}
-          className={cn(
-            "flex items-center gap-1.5 px-3.5 py-2.5 text-label font-medium transition-colors border-b-2 -mb-px",
-            active === t.id
-              ? "text-foreground border-primary"
-              : "text-muted-foreground/50 border-transparent hover:text-muted-foreground/80"
-          )}
-        >
-          {t.icon}
-          {t.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function MetricToggle({ options, value, onChange }: {
   options: { value: string; label: string }[];
@@ -702,11 +682,11 @@ export function CreativeExpandDialog({
   const placeReason = placementsEmptyReason ?? derivedReasons.placements;
   const funnelReason = funnelEmptyReason ?? derivedReasons.funnel;
 
-  const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "overview",      label: "Overview",      icon: <BarChart2    className="w-3.5 h-3.5" /> },
-    { id: "demographics",  label: "Demographics",  icon: <Users        className="w-3.5 h-3.5" /> },
-    { id: "placements",    label: "Placements",    icon: <Monitor      className="w-3.5 h-3.5" /> },
-    { id: "funnel",        label: "Funnel",        icon: <TrendingDown className="w-3.5 h-3.5" /> },
+  const TABS: { id: Tab; label: string; Icon: typeof BarChart2 }[] = [
+    { id: "overview",     label: "Overview",     Icon: BarChart2 },
+    { id: "demographics", label: "Demographics", Icon: Users },
+    { id: "placements",   label: "Placements",   Icon: Monitor },
+    { id: "funnel",       label: "Funnel",       Icon: TrendingDown },
   ];
 
   return (
@@ -751,7 +731,7 @@ export function CreativeExpandDialog({
             </div>
 
             {/* Tab bar */}
-            <TabBar tabs={TABS} active={tab} onChange={setTab} />
+            <TabRail<Tab> tabs={TABS} active={tab} onChange={setTab} label="Creative detail section" className="shrink-0 px-1" />
 
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">

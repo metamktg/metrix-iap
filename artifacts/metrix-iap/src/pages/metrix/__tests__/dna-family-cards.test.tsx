@@ -137,7 +137,7 @@ function renderLibrary() {
 async function switchToVariablesTab(user: ReturnType<typeof userEvent.setup>) {
   // Tab labels: "Variable performance" — use a case-insensitive text match so
   // the test doesn't break if a count badge is appended to the button label.
-  const dnaTabBtn = screen.getByRole("button", { name: /variable performance/i });
+  const dnaTabBtn = screen.getByRole("tab", { name: /variable performance/i });
   await user.click(dnaTabBtn);
 }
 

@@ -68,6 +68,7 @@
 //   <HypothesisCodeChipsRow> + a line-clamp-1 caption, drawer keeps prose.
 
 import { useState, useCallback } from "react";
+import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
@@ -1030,36 +1031,24 @@ export function MetricTile({
 }
 
 // ─── In-page module tabs (sub-navigation) ────────────────────────────
-// Restores the layered feel inside a module without URL sub-routes.
+//
+// Kept as a named wrapper because ~20 call sites read as ModuleTabs and the
+// module-level left padding is this rail's own convention. The behaviour is
+// TabRail's — see components/nav/TabRail.tsx for why four hand-rolled rails
+// became one.
 
 export function ModuleTabs<T extends string>({
   tabs,
   active,
   onChange,
+  label = "Section",
 }: {
   tabs: { id: T; label: string; count?: number; Icon?: React.ComponentType<{ className?: string }> }[];
   active: T;
   onChange: (id: T) => void;
+  label?: string;
 }) {
-  return (
-    <div className="px-6 border-b border-border/40 flex items-center gap-0 overflow-x-auto">
-      {tabs.map((t) => (
-        <button
-          key={t.id}
-          onClick={() => onChange(t.id)}
-          aria-current={active === t.id ? "page" : undefined}
-          className={cn(
-            "flex items-center gap-1.5 h-10 px-3 text-title font-medium border-b-2 transition-colors whitespace-nowrap shrink-0",
-            active === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground/70 hover:text-foreground"
-          )}
-        >
-          {t.Icon && <t.Icon className="w-3.5 h-3.5" />}
-          {t.label}
-          {t.count != null && <span className="text-label font-mono text-muted-foreground/60">{t.count}</span>}
-        </button>
-      ))}
-    </div>
-  );
+  return <TabRail tabs={tabs} active={active} onChange={onChange} label={label} className="px-6" />;
 }
 
 // ─── Module scope gate ────────────────────────────────────────────────

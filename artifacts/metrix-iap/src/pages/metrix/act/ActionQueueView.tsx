@@ -5,6 +5,7 @@
 // full rationale and recommended_action.
 
 import { useState, useMemo, useCallback } from "react";
+import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -401,37 +402,7 @@ export function ActionQueueView() {
 
         {/* ── Tabs ────────────────────────────────────────────────────── */}
         {allCards.length > 0 && (
-          <div className="flex items-center gap-0 border-b border-border/40">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "flex items-center gap-1.5 h-9 px-3 text-body font-medium border-b-2 transition-colors",
-                  tab === t.id
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground/60 hover:text-foreground"
-                )}
-              >
-                {t.label}
-                {t.count > 0 && (
-                  <span
-                    className={cn(
-                      "text-label font-bold px-1.5 py-0.5 rounded-full",
-                      t.id === "approved"
-                        ? "bg-status-success/15 text-status-success"
-                        : t.id === "dismissed"
-                        ? "bg-muted text-muted-foreground/60"
-                        : "bg-primary/15 text-interactive"
-                    )}
-                  >
-                    {t.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+          <TabRail<QueueTab> tabs={TABS} active={tab} onChange={setTab} label="Queue status" />
         )}
 
         {/* ── Card list ───────────────────────────────────────────────── */}
