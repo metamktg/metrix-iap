@@ -181,8 +181,13 @@ console.log(
 if (failed) {
   console.error(
     `\nFAIL  The aggregate views are not in the state schema.sql describes.\n` +
-      `      Apply it with: pnpm --filter @workspace/scripts run import:metrix\n` +
-      `      (idempotent — the view block is create-or-replace and the REVOKEs re-run safely)\n`,
+      `      Apply them with:\n` +
+      `        pnpm --filter @workspace/scripts run apply:ad-performance-views\n` +
+      `      (additive and idempotent, one transaction, touches no row data; add\n` +
+      `       -- --dry-run to print the SQL without executing it)\n\n` +
+      `      NOT with import:metrix. That re-imports the source data packages and in\n` +
+      `      prod mode DELETES AND REPLACES all managed-account data — the wrong tool\n` +
+      `      by orders of magnitude for adding three views.\n`,
   );
   process.exit(1);
 }

@@ -1394,12 +1394,26 @@ alter table if exists manual_analysis_runs add column if not exists heartbeat_at
 -- layer.
 --
 -- ── STATUS ───────────────────────────────────────────────────────────
--- NOT YET EXECUTED against any database. Written and reviewed, never run:
--- this environment has no SUPABASE_DB_URL. The server still reads the base
--- table — nothing switches over until someone applies this and changes
--- metrixSeedAssembly, deliberately, with the ability to verify it.
+-- EXECUTED and behaviour-verified against a throwaway Postgres 16: applies
+-- clean, re-applies twice more with only a NOTICE, min(result_type) collapses
+-- a multi-type ad to one row, array_remove strips NULL from books, and the
+-- output matches aggregateFromRows byte-for-byte under both JSON-number and
+-- PostgREST string-numeric transports.
+--
+-- NOT YET APPLIED to the live Supabase project (checked 2026-08-27: all three
+-- views absent). Nothing depends on them — metrixSeedAssembly still reads the
+-- base table, and loadAdPerformanceAggregates falls back to rows — so their
+-- absence is inert, not broken.
+--
+-- Apply with `apply:ad-performance-views`, NOT with `import:metrix`. The
+-- importer re-imports source data packages and in prod mode deletes and
+-- replaces all managed-account data; it is the wrong tool by orders of
+-- magnitude for adding three views. Verify with `check:ad-performance-views`.
 -- ─────────────────────────────────────────────────────────────────────
 
+-- >>> AD_PERFORMANCE_AGGREGATE_VIEWS_BEGIN  (extracted verbatim by
+--     apply:ad-performance-views — keep this block additive and
+--     idempotent; it is executed on its own, outside the importer)
 -- Supports the per-result_type roll-up. The table's unique constraint is
 -- (account_id, ad_name, campaign_name, result_type, date_start, date_end),
 -- whose prefix already serves the per-ad_name grouping — result_type sits
@@ -1460,3 +1474,4 @@ with (security_invoker = on) as
 revoke all on ad_performance_event_totals    from anon, authenticated;
 revoke all on ad_performance_account_summary from anon, authenticated;
 revoke all on ad_performance_ad_totals       from anon, authenticated;
+-- <<< AD_PERFORMANCE_AGGREGATE_VIEWS_END
