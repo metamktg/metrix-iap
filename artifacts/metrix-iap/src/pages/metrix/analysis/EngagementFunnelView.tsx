@@ -23,6 +23,7 @@
 // which is not currently in the import spec — shown as "not available".
 
 import { useEffect, useMemo, useState } from "react";
+import { VERDICT } from "@/components/charts/chartTokens";
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, Tooltip as RechartTooltip, ReferenceLine,
@@ -563,7 +564,15 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
             {plotData.map((p, i) => {
               const highFreq = p.x >= medFreq;
               const highCtr  = p.y >= medCtr;
-              const color = highFreq && highCtr ? "hsl(var(--chart-1))" : highFreq && !highCtr ? "hsl(var(--destructive))" : !highFreq && highCtr ? "hsl(var(--chart-3))" : "hsl(var(--chart-5))";
+              // Each quadrant is a VERDICT on the segment, not a category:
+              //   low freq + high CTR  -> fresh audience still converting (good)
+              //   high freq + high CTR -> working but saturating (neutral)
+              //   high freq + low CTR  -> fatigue (bad)
+              //   low freq + low CTR   -> too little delivery to read yet
+              const color = !highFreq && highCtr ? VERDICT.good
+                : highFreq && highCtr ? VERDICT.neutral
+                : highFreq && !highCtr ? VERDICT.bad
+                : VERDICT.unmeasured;
               return (
                 <Cell
                   key={i}

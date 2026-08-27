@@ -31,6 +31,7 @@ import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import { TrendSection } from "@/components/analysis/TrendSection";
+import { divergingFill, VERDICT } from "@/components/charts/chartTokens";
 import { KpiTileRow } from "@/components/metrics/KpiTile";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import {
@@ -470,19 +471,20 @@ function DemoHeatmapGrid({
     return 1 - (cpa - minCpa) / (maxCpa - minCpa);
   }
 
+  // A cell states a VERDICT — at goal, near it, above it — so it wears the
+  // diverging scale: two reserved status hues with a grey midpoint. It used
+  // to reach for chart slots, which only worked while slot 3 happened to be
+  // teal and slot 4 amber; re-stepping the categorical palette made both
+  // ends green and the two verdicts identical.
   function cellBg(cpa: number | null): string {
-    if (cpa == null) return "rgba(255,255,255,0.02)";
-    // Goal-relative coloring when goalCpa is provided
+    if (cpa == null) return divergingFill(null);
     if (goalCpa != null && goalCpa > 0) {
-      if (cpa <= goalCpa * 0.9)  return "hsl(var(--chart-3) / 0.32)";  // emerald — at/below goal
-      if (cpa >= goalCpa * 1.1)  return "hsl(var(--chart-4) / 0.24)";  // amber — above goal
-      return "hsl(var(--chart-1) / 0.20)";                             // indigo — neutral band ±10%
+      // Goal-relative: at/below goal is good, above it is not, ±10% neutral.
+      if (cpa <= goalCpa * 0.9) return divergingFill(1);
+      if (cpa >= goalCpa * 1.1) return divergingFill(0);
+      return divergingFill(0.5);
     }
-    // Fallback: min/max relative coloring
-    const t = intensity(cpa);
-    if (t >= 0.65) return `hsl(var(--chart-3) / ${0.08 + t * 0.26})`; // emerald
-    if (t >= 0.35) return `hsl(var(--chart-1) / ${0.06 + t * 0.14})`; // indigo mid
-    return `hsl(var(--chart-4) / ${0.06 + (1 - t) * 0.14})`; // amber
+    return divergingFill(intensity(cpa));
   }
 
   // Build the gridTemplateColumns string: label col + one col per gender.
@@ -568,11 +570,11 @@ function DemoHeatmapGrid({
           </span>
           <div className="flex items-center gap-1.5">
             <span className={cn(TYPE.label, "text-muted-foreground/45")}>CPA:</span>
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(var(--chart-4) / 0.25)" }} />
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: VERDICT.bad }} />
             <span className={cn(TYPE.label)}>High</span>
-            <div className="w-10 h-1 rounded-full mx-0.5" style={{ background: "linear-gradient(to right, hsl(var(--chart-4) / 0.25), hsl(var(--chart-3) / 0.35))" }} />
+            <div className="w-10 h-1 rounded-full mx-0.5" style={{ background: "linear-gradient(to right, hsl(var(--status-warning) / 0.30), hsl(var(--muted-foreground) / 0.10), hsl(var(--status-success) / 0.30))" }} />
             <span className={cn(TYPE.label)}>Low</span>
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(var(--chart-3) / 0.35)" }} />
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: VERDICT.good }} />
           </div>
         </div>
       </div>

@@ -82,7 +82,9 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
 
   const hasChart = concepts.length >= 2;
   const chartConfig = isCpa ? CPA_CONFIG : DEFAULT_CONFIG;
-  const barColor = isCpa ? "hsl(var(--chart-4))" : "hsl(var(--interactive))";
+  // Cost carries a warning polarity, not a series identity — the reserved
+  // status token, so a categorical re-step cannot repaint it.
+  const barColor = isCpa ? "hsl(var(--status-warning))" : "hsl(var(--interactive))";
 
   // Truncate concept names for Y-axis
   const chartData = concepts.map((c) => ({

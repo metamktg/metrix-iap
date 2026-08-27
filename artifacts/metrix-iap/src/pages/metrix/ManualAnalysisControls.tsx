@@ -736,7 +736,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
   const hasRequired = requiredMissing.length > 0;
 
   const renderProblemRow = (p: ProblemEntry, i: number) => (
-    <li key={i} className="text-label leading-relaxed" style={{ color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive) / 0.85)" : "hsl(var(--chart-4) / 0.75)" }}>
+    <li key={i} className="text-label leading-relaxed" style={{ color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive) / 0.85)" : "hsl(var(--status-warning) / 0.75)" }}>
       <span
         className={cn(
           "inline-block mr-1.5 px-1 py-px rounded text-label font-semibold uppercase tracking-wide border",
@@ -747,11 +747,11 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
       >
         {p.tier === "missing" ? "missing" : "low confidence"}
       </span>
-      <span className="font-medium" style={{ color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive))" : "hsl(var(--chart-4) / 0.9)" }}>{p.canonical}</span>
+      <span className="font-medium" style={{ color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive))" : "hsl(var(--status-warning) / 0.9)" }}>{p.canonical}</span>
       {p.found_as && p.tier === "inferred" && (
-        <span style={{ color: "hsl(var(--chart-4) / 0.55)" }}> (found as &ldquo;{p.found_as}&rdquo;)</span>
+        <span style={{ color: "hsl(var(--status-warning) / 0.55)" }}> (found as &ldquo;{p.found_as}&rdquo;)</span>
       )}
-      <span style={{ marginLeft: "0.25rem", color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive) / 0.45)" : "hsl(var(--chart-4) / 0.45)" }}>· {p.csvLabel}</span>
+      <span style={{ marginLeft: "0.25rem", color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive) / 0.45)" : "hsl(var(--status-warning) / 0.45)" }}>· {p.csvLabel}</span>
     </li>
   );
 

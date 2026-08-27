@@ -15,6 +15,7 @@
 // widths remain normal table layout (no absolute positioning hacks).
 
 import { useMemo, useRef, useState } from "react";
+import { divergingFill, magnitudeFill } from "@/components/charts/chartTokens";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -289,11 +290,11 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
           <VariableCodeChips row={r} />
         </Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <Td right style={spendIntensity > 0 ? { background: `hsl(var(--chart-1) / ${(spendIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={spendIntensity > 0 ? { background: magnitudeFill(spendIntensity, 0) } : undefined}>
           {fmtUSD(r["Amount spent (USD)"])}
         </Td>
         <Td right>{fmtNum(r.Results)}</Td>
-        <Td right style={cpaIntensity > 0 ? { background: `hsl(var(--chart-3) / ${(cpaIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={cpaIntensity > 0 ? { background: divergingFill(cpaIntensity) } : undefined}>
           {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
         </Td>
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
@@ -326,8 +327,8 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
             <span>Spend intensity</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-3) / 0.04) 0%, hsl(var(--chart-3) / 0.22) 100%)" }} />
-            <span>Low → high CPA efficiency</span>
+            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--status-warning) / 0.28) 0%, hsl(var(--muted-foreground) / 0.08) 50%, hsl(var(--status-success) / 0.28) 100%)" }} />
+            <span>Above goal → at goal</span>
           </div>
         </div>
       )}
@@ -399,7 +400,7 @@ export function VariableTable({
         </Td>
         <Td className="capitalize">{r.variable_family}</Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <Td right style={spendIntensity > 0 ? { background: `hsl(var(--chart-1) / ${(spendIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={spendIntensity > 0 ? { background: magnitudeFill(spendIntensity, 0) } : undefined}>
           <div className="flex flex-col gap-0.5">
             <span>{fmtUSD(r["Amount spent (USD)"])}</span>
             {heatmapOn && maxSpend > 0 && (
@@ -414,7 +415,7 @@ export function VariableTable({
         </Td>
         <Td right>{fmtNum(r.unique_ads)}</Td>
         <Td right>{fmtNum(r.Results)}</Td>
-        <Td right style={cpaIntensity > 0 ? { background: `hsl(var(--chart-3) / ${(cpaIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={cpaIntensity > 0 ? { background: divergingFill(cpaIntensity) } : undefined}>
           {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
         </Td>
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
@@ -447,8 +448,8 @@ export function VariableTable({
             <span>Spend intensity</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-3) / 0.04) 0%, hsl(var(--chart-3) / 0.22) 100%)" }} />
-            <span>Low → high CPA efficiency</span>
+            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--status-warning) / 0.28) 0%, hsl(var(--muted-foreground) / 0.08) 50%, hsl(var(--status-success) / 0.28) 100%)" }} />
+            <span>Above goal → at goal</span>
           </div>
         </div>
       )}
@@ -536,7 +537,7 @@ export function DemographicTable({
                 <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
                 <Td
                   right
-                  style={intensity > 0 ? { background: `hsl(var(--chart-3) / ${(intensity * 0.28).toFixed(3)})` } : undefined}
+                  style={intensity > 0 ? { background: divergingFill(intensity) } : undefined}
                 >
                   {fmtPct(r.Result_per_link_click_pct)}
                 </Td>

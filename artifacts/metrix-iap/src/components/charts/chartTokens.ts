@@ -98,3 +98,61 @@ export const AXIS = {
 
 /** Chart surface, for anything that needs to punch a gap out of a fill. */
 export const SURFACE_VAR = "hsl(var(--card))";
+
+// ─── Diverging scale: good ←→ bad ─────────────────────────────────────
+//
+// Not a categorical palette. A performance read — at goal / near goal /
+// above goal, efficient / average / costly — is a POLARITY, and polarity
+// has its own rules: two hues, a neutral GREY midpoint, and never a third
+// hue in the middle.
+//
+// These sites used to reach for chart slots (`--chart-3` for good,
+// `--chart-4` for bad, `--chart-1` in the middle). That worked only while
+// slot 3 happened to be teal and slot 4 happened to be amber — an accident
+// the categorical palette was under no obligation to preserve, and did not:
+// re-stepping the scale made both ends green and the two verdicts
+// indistinguishable. Polarity belongs on the reserved status tokens, which
+// exist precisely so a palette change cannot repaint a verdict.
+
+/** Good end. */
+export const GOOD_VAR = "hsl(var(--status-success)";
+/** Bad end. */
+export const BAD_VAR = "hsl(var(--status-warning)";
+/** The midpoint is grey on purpose — a hue there reads as a third category. */
+export const MID_VAR = "hsl(var(--muted-foreground)";
+
+/**
+ * A fill for a diverging cell.
+ *
+ * @param t   0 = worst, 1 = best, 0.5 = neutral. Null when unmeasured.
+ * @param max peak opacity at either end.
+ */
+export function divergingFill(t: number | null, max = 0.30): string {
+  // Unmeasured is not "average". It gets the faintest possible surface, so
+  // an absent cell never reads as a middling result.
+  if (t == null || !Number.isFinite(t)) return "hsl(var(--muted-foreground) / 0.05)";
+  const clamped = Math.min(1, Math.max(0, t));
+  const distance = Math.abs(clamped - 0.5) * 2;       // 0 at the midpoint, 1 at either end
+  const alpha = (0.05 + distance * (max - 0.05)).toFixed(3);
+  if (distance < 0.12) return `${MID_VAR} / ${alpha})`;
+  return `${clamped > 0.5 ? GOOD_VAR : BAD_VAR} / ${alpha})`;
+}
+
+/** Discrete verdict colours, for legends and chips. */
+export const VERDICT = {
+  good: "hsl(var(--status-success))",
+  neutral: "hsl(var(--muted-foreground))",
+  bad: "hsl(var(--status-warning))",
+  unmeasured: "hsl(var(--muted-foreground) / 0.35)",
+} as const;
+
+/**
+ * A single-hue sequential ramp for MAGNITUDE (spend, impressions, volume).
+ * One hue, stepped by opacity — never a rainbow, and never the diverging
+ * pair, because magnitude has no good end.
+ */
+export function magnitudeFill(t: number | null, slot = 0, max = 0.28): string {
+  if (t == null || !Number.isFinite(t)) return "transparent";
+  const clamped = Math.min(1, Math.max(0, t));
+  return `color-mix(in srgb, ${seriesColor(slot)} ${(clamped * max * 100).toFixed(1)}%, transparent)`;
+}

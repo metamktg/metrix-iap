@@ -24,6 +24,7 @@
 // from audience-clusters.ts, so the same honesty rules apply to both.
 
 import { useMemo, useState, useCallback } from "react";
+import { VERDICT, divergingFill } from "@/components/charts/chartTokens";
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
   ReferenceLine, Tooltip, ResponsiveContainer,
@@ -99,17 +100,23 @@ function cpaEff(cpa: number | null, med: number): CpaEff {
 }
 
 const EFF_COLOR: Record<CpaEff, string> = {
-  efficient: "hsl(var(--chart-3))",
-  average:   "hsl(var(--chart-1))",
-  costly:    "hsl(var(--chart-4))",
-  unknown:   "hsl(var(--chart-5))",
+  // A cluster's profile is a verdict on efficiency, not a category — so it
+  // wears the reserved diverging scale (good / neutral / bad), never chart
+  // slots. Slots 3 and 4 were teal and amber when this was written; the
+  // categorical palette is free to re-step, and did.
+  efficient: VERDICT.good,
+  average:   VERDICT.neutral,
+  costly:    VERDICT.bad,
+  unknown:   VERDICT.unmeasured,
 };
 
 const QUADRANT_COLOR: Record<PositioningQuadrant, string> = {
-  scale:    "hsl(var(--chart-3))",
-  optimize: "hsl(var(--chart-1))",
-  explore:  "hsl(var(--chart-2))",
-  avoid:    "hsl(var(--chart-4))",
+  // Ordered good -> bad, so the same diverging rule applies. "Explore" is
+  // deliberately the neutral: it is neither a win nor a loss yet.
+  scale:    VERDICT.good,
+  optimize: divergingFill(0.72, 1),
+  explore:  VERDICT.neutral,
+  avoid:    VERDICT.bad,
 };
 
 function buildRankMetrics(resultPlural: string): RankMetric<SegmentEntry>[] {

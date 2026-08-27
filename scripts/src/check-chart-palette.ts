@@ -161,6 +161,41 @@ for (const file of walk(APP_SRC)) {
   }
 }
 
+// ── Rule 3: a chart slot may not carry a verdict ──────────────────────
+//
+// This is the rule the other two could not see. The heat grids, cluster
+// chips and quadrant scatters all encoded a JUDGEMENT — at goal / above
+// goal, efficient / costly, fresh / fatigued — and reached for `--chart-3`
+// and `--chart-4` to do it, because slot 3 happened to be teal and slot 4
+// happened to be amber. That was never a promise the categorical palette
+// made. Re-stepping the scale turned both ends green and made "good" and
+// "bad" the same colour, in five files at once, with every test passing.
+//
+// A verdict wears the reserved diverging scale. The check is deliberately
+// a smell test on the surrounding line rather than a semantic analysis:
+// the pattern that broke is a slot reference sitting next to a verdict
+// word, and that is exactly what this looks for.
+const VERDICT_WORDS = /\b(good|bad|better|worse|efficient|costly|success|warn(?:ing)?|danger|goal|avoid|scale|fatigue|healthy|emerald|amber|green|red)\b/i;
+const SLOT_REF = /var\(\s*--(?:color-)?chart-\d\s*\)/;
+
+for (const file of walk(APP_SRC)) {
+  const rel = path.relative(repoRoot, file);
+  // chartTokens itself names the scales it defines.
+  if (rel.endsWith("chartTokens.ts")) continue;
+  const lines = fs.readFileSync(file, "utf-8").split("\n");
+  lines.forEach((line, i) => {
+    // Skip comments — prose about the rule is not a violation of it.
+    const code = line.replace(/\/\/.*$/, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    if (!SLOT_REF.test(code) || !VERDICT_WORDS.test(code)) return;
+    problems.push(
+      `${rel}:${i + 1}: a chart slot is used on a line that reads as a verdict — ` +
+        `"${line.trim().slice(0, 90)}". Judgements use the diverging scale ` +
+        `(divergingFill / VERDICT in components/charts/chartTokens), never a categorical slot: ` +
+        `a slot is free to change hue and will silently repaint the verdict.`,
+    );
+  });
+}
+
 if (problems.length > 0) {
   console.error("\nFAIL  Chart palette violations:\n");
   for (const p of problems) console.error(`      · ${p}`);
