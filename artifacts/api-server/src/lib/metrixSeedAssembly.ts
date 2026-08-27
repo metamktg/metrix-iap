@@ -23,6 +23,7 @@ import {
 import { syncAllCreativeLinksForAccount } from "./analysisEngine";
 import { resolveAccountObjectives } from "./cohortConfig";
 import { logger } from "./logger";
+import { createCoalescedCache } from "./coalescedCache";
 
 type Row = Record<string, any>;
 
@@ -1387,19 +1388,28 @@ export async function assembleMetrixSeed(): Promise<Row> {
 // out-of-band writes (direct DB edits, the importer) while cutting the
 // ~25-parallel-query rebuild from twice a minute to at most every 5 —
 // the dominant steady-state Supabase load for idle viewers.
-let cached: { at: number; data: Row } | null = null;
 const CACHE_TTL_MS = 5 * 60_000;
 
+/**
+ * The assembled bundle, rebuilt at most once per miss however many callers
+ * are waiting. See lib/coalescedCache for why the coalescing matters here
+ * specifically: assembleMetrixSeed is ~29 unfiltered table scans building
+ * every account in the deployment, and twenty mutation paths invalidate it.
+ */
+const seedCache = createCoalescedCache<Row>(() => assembleMetrixSeed(), CACHE_TTL_MS);
+
 export async function getMetrixSeedFromSupabase(): Promise<Row> {
-  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.data;
-  const data = await assembleMetrixSeed();
-  cached = { at: Date.now(), data };
-  return data;
+  return seedCache.get();
 }
 
 /** Drop the cached bundle (e.g. after a new account is registered). */
 export function invalidateMetrixSeedCache(): void {
-  cached = null;
+  seedCache.invalidate();
+}
+
+/** Test-only: clear both the entry and any in-flight rebuild. */
+export function __resetMetrixSeedCacheForTests(): void {
+  seedCache.reset();
 }
 
 // ─── per-user authorization view ──────────────────────────────────────
