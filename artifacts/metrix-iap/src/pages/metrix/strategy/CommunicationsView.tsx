@@ -17,6 +17,7 @@
 //      not a single-column list.
 
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
@@ -54,11 +55,16 @@ const TIER_LABEL: Record<string, string> = {
 // expressed as a weight (not a literal percentage — source_cells.length has
 // no fixed upper bound across accounts, so a weight-per-tier is the honest
 // representation, the same pattern the tier itself already used for color).
-const TIER_FILL_PCT: Record<string, number> = { high: 88, medium: 55, low: 20 };
-const TIER_FILL_COLOR: Record<string, string> = {
-  high:   "bg-status-success/70",
-  medium: "bg-status-warning/60",
-  low:    "bg-muted-foreground/30",
+// The tier is ORDINAL — three positions, nothing between them. It used to
+// fill a smooth bar to 88 / 55 / 20 percent; those numbers were chosen to
+// make the bar look right and nothing measured them, so a reader had every
+// reason to take 88% for a measurement. Three discrete steps say exactly as
+// much and claim only what is true.
+const TIER_STEPS: Record<string, number> = { high: 3, medium: 2, low: 1 };
+const TIER_FILL: Record<string, string> = {
+  high:   "hsl(var(--status-success) / 0.70)",
+  medium: "hsl(var(--status-warning) / 0.60)",
+  low:    "hsl(var(--muted-foreground) / 0.45)",
 };
 
 /** Confidence progress bar — replaces the categorical badge with a
@@ -66,19 +72,21 @@ const TIER_FILL_COLOR: Record<string, string> = {
  *  tier. Hoverable for the exact cell count behind the read. */
 function ConfidenceBar({ cells }: { cells: string[] }) {
   const tier = pillarTier(cells);
-  const pct = TIER_FILL_PCT[tier];
+  const step = TIER_STEPS[tier] ?? null;
   return (
     <div title={`${cells.length} source cell${cells.length !== 1 ? "s" : ""} behind this pillar`}>
       <div className="flex items-center justify-between gap-2 mb-1">
         <span className={cn(TYPE.label, "text-muted-foreground/60")}>Confidence</span>
         <span className={cn(TYPE.label, "text-muted-foreground/60")}>{TIER_LABEL[tier]}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-foreground/[0.06] overflow-hidden">
-        <div
-          className={cn("h-full rounded-full", TIER_FILL_COLOR[tier])}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <ProgressMeter
+        value={step}
+        total={3}
+        segments={3}
+        label={`Confidence — ${TIER_LABEL[tier]}`}
+        fill={TIER_FILL[tier]}
+        size="md"
+      />
     </div>
   );
 }

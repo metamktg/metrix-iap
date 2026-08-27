@@ -24,6 +24,7 @@
 // from audience-clusters.ts, so the same honesty rules apply to both.
 
 import { useMemo, useState, useCallback } from "react";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { VERDICT, divergingFill } from "@/components/charts/chartTokens";
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
@@ -463,18 +464,20 @@ function ShareOfSpendCard({
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>Spend</span>
-                  <div className="flex-1 h-[3px] rounded-full bg-foreground/[0.04] overflow-hidden">
-                    <div className="h-full rounded-full bg-primary/60" style={{ width: `${Math.min(spendShare, 100)}%` }} />
-                  </div>
+                  <ProgressMeter value={spendShare} total={100} label="Spend share" className="flex-1" colorIndex={0} />
                   <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
                     {spendShare.toFixed(0)}%
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>{totalResults > 0 ? "Results" : "Results —"}</span>
-                  <div className="flex-1 h-[3px] rounded-full bg-foreground/[0.04] overflow-hidden">
-                    <div className="h-full rounded-full bg-chart-2/70" style={{ width: `${Math.min(resultShare, 100)}%` }} />
-                  </div>
+                  <ProgressMeter
+                    value={totalResults > 0 ? resultShare : null}
+                    total={100}
+                    label="Result share"
+                    className="flex-1"
+                    colorIndex={1}
+                  />
                   <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
                     {totalResults > 0 ? `${resultShare.toFixed(0)}%` : "n/a"}
                   </span>

@@ -5,6 +5,7 @@
 // best-performing cells rise to the top immediately.
 
 import { useState } from "react";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { divergingFill, magnitudeFill } from "@/components/charts/chartTokens";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -202,9 +203,7 @@ export function CrossmapResultsView({
                 <span>Matrix coverage</span>
                 <span className="tabular-nums">{fmtNum(ran.length)} of {fmtNum(planned)} cells · {coveragePct.toFixed(0)}%</span>
               </div>
-              <div className="h-[3px] rounded-full overflow-hidden bg-border/30">
-                <div className="h-full rounded-full bg-primary/60" style={{ width: `${Math.min(coveragePct, 100)}%` }} />
-              </div>
+              <ProgressMeter value={ran.length} total={planned} label="Matrix coverage" size="sm" />
             </div>
 
             <div className="px-6 py-5 space-y-4">

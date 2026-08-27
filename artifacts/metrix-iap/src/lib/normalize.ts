@@ -253,6 +253,29 @@ export function fmtMetric(kind: MetricKind, n: number | null | undefined): strin
   }
 }
 
+/**
+ * A signed change, as ONE string.
+ *
+ * Two separate reasons this is a function and not `{sign}{n.toFixed(1)}%`
+ * inline:
+ *
+ *   · A null is not a zero. "Nothing changed" and "we did not measure the
+ *     change" are different facts, and returning null forces the caller to
+ *     decide what to render rather than defaulting to "0%".
+ *   · Built inline in JSX it renders as three adjacent text nodes, so the
+ *     value is not addressable as one string — a test looking for "+12.5%"
+ *     finds nothing, and so does a reader's find-in-page.
+ *
+ * It carries the SIGN and no verdict. Whether a rise is good depends on the
+ * metric, and this function is not told which metric it is.
+ */
+export function fmtDelta(n: number | null | undefined): string | null {
+  if (n == null || !Number.isFinite(n)) return null;
+  // No leading "+" on zero — there is no direction to signal.
+  const sign = n > 0 ? "+" : "";
+  return `${sign}${n.toFixed(Math.abs(n) < 10 ? 1 : 0)}%`;
+}
+
 // ─── Confidence ───────────────────────────────────────────────────────
 
 export type ConfidenceLevel = "high" | "medium" | "low" | "directional" | "unknown";

@@ -27,6 +27,7 @@ import { ArrowRight, ShieldAlert, CircleDot, Info, TriangleAlert } from "lucide-
 import type { SignalCard } from "@/lib/data/seedTypes";
 import { TYPE, HEADING } from "@/pages/metrix/typography";
 import { DenseText } from "@/pages/metrix/shared";
+import { fmtDelta } from "@/lib/normalize";
 
 type Priority = "critical" | "important" | "informational";
 
@@ -69,13 +70,6 @@ const UNRANKED = {
 
 function isPriority(v: unknown): v is Priority {
   return v === "critical" || v === "important" || v === "informational";
-}
-
-/** Signed delta, formatted. Null stays null — 0 and "not measured" differ. */
-function deltaText(n: number | null | undefined): string | null {
-  if (n == null || !Number.isFinite(n)) return null;
-  const sign = n > 0 ? "+" : "";
-  return `${sign}${n.toFixed(Math.abs(n) < 10 ? 1 : 0)}%`;
 }
 
 export interface SignalDeckProps {
@@ -127,7 +121,7 @@ export function SignalDeck({
           const p = isPriority(c.priority) ? TONE[c.priority] : null;
           const tone = p ?? UNRANKED;
           const Icon = tone.icon;
-          const delta = deltaText(c.delta_pct);
+          const delta = fmtDelta(c.delta_pct);
           const lead = c.metric_value ?? null;
           const heading = c.headline ?? c.title;
           const prose = c.implication ?? c.body ?? c.rationale ?? null;

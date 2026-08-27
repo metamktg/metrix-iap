@@ -14,6 +14,7 @@
 // not listed there has weight 0 and does not affect the grade.
 
 import { useState } from "react";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { AlertTriangle, ChevronDown, ChevronRight, TrendingDown } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import type { ManualImport } from "@workspace/api-client-react";
@@ -87,19 +88,16 @@ function TierBadge({ tier, isRequired }: { tier: MappingEntry["tier"]; isRequire
 
 function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
-  const color =
-    pct >= 90 ? "bg-status-success/60" :
-    pct >= 70 ? "bg-chart-1/60" :
-    pct >= 50 ? "bg-status-warning/60" :
-    "bg-status-danger/60";
+  // Graded state, so the reserved status tones are correct here — this IS a
+  // verdict on the import, not an identity.
+  const fill =
+    pct >= 90 ? "hsl(var(--status-success) / 0.60)" :
+    pct >= 70 ? "hsl(var(--chart-1) / 0.60)" :
+    pct >= 50 ? "hsl(var(--status-warning) / 0.60)" :
+    "hsl(var(--status-danger) / 0.60)";
   return (
     <div className="flex items-center gap-1.5">
-      <div className="flex-1 h-1 rounded-full bg-foreground/[0.06] overflow-hidden">
-        <div
-          className={cn("h-full rounded-full transition-[width]", color)}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <ProgressMeter value={pct} total={100} label="Import confidence" fill={fill} className="flex-1" />
       <span className="text-label tabular-nums text-muted-foreground/70 w-8 text-right">{pct}%</span>
     </div>
   );

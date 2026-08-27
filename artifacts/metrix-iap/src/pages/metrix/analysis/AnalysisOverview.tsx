@@ -4,6 +4,7 @@
 // then the core control reads and drill-in module cards.
 
 import { useState, useMemo, useEffect } from "react";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { rollupPlacements, derivePlacementRollup, type PlacementRollup } from "@/lib/placement-rollup";
 import { useAnalysisView } from "@/contexts/AnalysisViewContext";
 import { TYPE } from "../typography";
@@ -413,15 +414,7 @@ function PlacementTable({ placements }: {
                 {fmtUSD(p.spend, 0)}
               </span>
             </div>
-            <div className="h-1.5 rounded-full bg-foreground/[0.06] overflow-hidden">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${(p.spend / maxSpend) * 100}%`,
-                  background: "hsl(var(--metrix-cyan) / 0.75)",
-                }}
-              />
-            </div>
+            <ProgressMeter value={p.spend} total={maxSpend} label={`${p.placement} share of top placement spend`} size="md" colorIndex={1} />
           </div>
           {/* CPA badge */}
           <div className="text-right shrink-0 w-[52px]">
