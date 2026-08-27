@@ -170,13 +170,13 @@ export function LoginPage() {
             <div className="flex items-center gap-3">
               <a
                 href="/waitlist/#request-access"
-                className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 shadow-md shadow-primary/25 transition-all"
+                className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 shadow-md shadow-primary/25 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
               >
                 Request Demo Access <ArrowRight className="w-3.5 h-3.5" />
               </a>
               <a
                 href="/waitlist/"
-                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl border border-border/40 text-body text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl border border-border/40 text-body text-muted-foreground hover:text-foreground hover:border-border/60 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
               >
                 See More <ArrowRight className="w-3.5 h-3.5" />
               </a>
@@ -293,7 +293,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoggingIn || !email.trim() || !password}
-                className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 active:scale-[0.99] shadow-md shadow-primary/25 transition-all disabled:opacity-35 disabled:pointer-events-none flex items-center justify-center gap-2 mt-1"
+                className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 active:scale-[0.99] shadow-md shadow-primary/25 transition-[color,background-color,border-color,box-shadow,opacity,transform] disabled:opacity-35 disabled:pointer-events-none flex items-center justify-center gap-2 mt-1"
                 data-testid="button-login"
               >
                 {isLoggingIn ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -310,7 +310,7 @@ export function LoginPage() {
               </p>
               <a
                 href="/waitlist/#request-access"
-                className="w-full h-11 rounded-xl border border-primary/30 bg-primary/10 text-body font-semibold text-interactive hover:bg-primary/20 hover:border-primary/50 transition-all flex items-center justify-center gap-2"
+                className="w-full h-11 rounded-xl border border-primary/30 bg-primary/10 text-body font-semibold text-interactive hover:bg-primary/20 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex items-center justify-center gap-2"
                 data-testid="link-request-access"
               >
                 Request access <ArrowRight className="w-3.5 h-3.5" />
@@ -320,7 +320,7 @@ export function LoginPage() {
               </p>
               <button
                 type="button" onClick={() => navigate(CREATE_ACCOUNT_PATH)}
-                className="w-full h-10 rounded-xl border border-border/40 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 hover:border-border/60 transition-all flex items-center justify-center"
+                className="w-full h-10 rounded-xl border border-border/40 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 hover:border-border/60 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex items-center justify-center"
                 data-testid="button-create-account"
               >
                 Create Account

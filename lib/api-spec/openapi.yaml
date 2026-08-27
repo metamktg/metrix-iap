@@ -975,6 +975,66 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/timeseries/{start}/{end}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: start
+        in: path
+        required: true
+        description: Start date YYYY-MM-DD
+        schema:
+          type: string
+      - name: end
+        in: path
+        required: true
+        description: End date YYYY-MM-DD
+        schema:
+          type: string
+    get:
+      operationId: getAccountDailySeries
+      tags: [metrix]
+      summary: Daily metric series for an account over a date range
+      description: >-
+        ad_performance is stored one row per ad per day; the seed aggregates that
+        grain away into window totals. This returns it, day by day, for trend
+        charts. Rates are recomputed from the summed numerator and denominator,
+        never averaged across ads. Reach is per-day as measured and must not be
+        summed across days (it is a deduplicated people count). Days inside the
+        span with no rows are reported in missing_days rather than emitted as
+        zeroes, so a trend line never implies continuity the data lacks.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Daily series for the given date range
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailySeriesResult"
+        "400":
+          description: Missing or invalid date params
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/analysis-data-windows:
     parameters:
       - name: accountId
@@ -4816,6 +4876,64 @@ components:
         rows:
           type: integer
           description: Number of ad_performance rows in this window
+    DailySeriesPoint:
+      type: object
+      required: [day, spend, impressions, reach, clicks_all, link_clicks, results, cpa, ctr_link_pct, cvr_link_pct, ads]
+      properties:
+        day:
+          type: string
+          description: YYYY-MM-DD
+        spend:
+          type: number
+          nullable: true
+        impressions:
+          type: number
+          nullable: true
+        reach:
+          type: number
+          nullable: true
+          description: Per-day deduplicated people count. Never sum across days.
+        clicks_all:
+          type: number
+          nullable: true
+        link_clicks:
+          type: number
+          nullable: true
+        results:
+          type: number
+          nullable: true
+        cpa:
+          type: number
+          nullable: true
+          description: spend / results, recomputed from the day's sums.
+        ctr_link_pct:
+          type: number
+          nullable: true
+        cvr_link_pct:
+          type: number
+          nullable: true
+        ads:
+          type: integer
+          description: Ad rows contributing to this day.
+    DailySeriesResult:
+      type: object
+      required: [points, date_start, date_end, missing_days]
+      properties:
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailySeriesPoint"
+        date_start:
+          type: string
+          nullable: true
+        date_end:
+          type: string
+          nullable: true
+        missing_days:
+          type: array
+          description: Days inside the span with no rows at all — a real gap, not a zero.
+          items:
+            type: string
     AccountAnalysisDataWindowsResult:
       type: object
       required: [windows, total_span_days]

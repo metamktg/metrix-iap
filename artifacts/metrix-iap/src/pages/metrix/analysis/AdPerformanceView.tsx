@@ -690,7 +690,7 @@ function BuyerIntentFunnelCard({
                   {stage.label}
                 </span>
                 <div className="flex-1 h-4 bg-white/[0.04] rounded overflow-hidden">
-                  <div className={cn("h-full rounded transition-all", c.bar)} style={{ width: `${barW}%` }} />
+                  <div className={cn("h-full rounded transition-[color,background-color,border-color,box-shadow,opacity,transform]", c.bar)} style={{ width: `${barW}%` }} />
                 </div>
                 <span className={cn(TYPE.body, "font-semibold text-foreground tabular-nums w-20 text-right shrink-0")}>
                   {fmtNum(stage.value!)}

@@ -801,7 +801,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
         (doneCount > 0 && (<div className="px-3 pt-2 pb-0">
           <div className="h-0.5 rounded-full bg-border/30 overflow-hidden">
             <div
-              className="h-full bg-emerald-400/50 rounded-full transition-all"
+              className="h-full bg-emerald-400/50 rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform]"
               style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }}
             />
           </div>
@@ -1116,7 +1116,7 @@ export function CrossLink({ to, label, srNote }: { to: string; label: string; sr
   return (
     <button
       onClick={() => navigate(to)}
-      className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-interactive hover:bg-primary/20 hover:border-primary/50 transition-all shadow-sm shadow-primary/5"
+      className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-interactive hover:bg-primary/20 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] shadow-sm shadow-primary/5"
     >
       {label}
       {srNote && <span className="sr-only">{` — ${srNote}`}</span>}
@@ -1155,7 +1155,7 @@ export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; 
             key={c.to}
             type="button"
             onClick={() => navigate(c.to)}
-            className="group relative flex items-start gap-3 text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 pr-8 transition-all hover:border-primary/35 hover:bg-primary/[0.05] hover:-translate-y-px"
+            className="group relative flex items-start gap-3 text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 pr-8 transition-[color,background-color,border-color,box-shadow,opacity,transform] hover:border-primary/35 hover:bg-primary/[0.05] hover:-translate-y-px"
           >
             <span className="shrink-0 w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center transition-colors group-hover:bg-primary/20 group-hover:border-primary/35">
               <c.Icon className="w-4 h-4 text-interactive" />
@@ -1167,7 +1167,7 @@ export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; 
                 <p className={cn(TYPE.microLabel, "text-muted-foreground/40 mt-1 truncate")} data-testid="hub-nav-lineage">{c.lineage}</p>
               )}
             </div>
-            <ArrowRight className="absolute right-3.5 top-4 w-3.5 h-3.5 text-muted-foreground/30 transition-all group-hover:text-interactive group-hover:translate-x-0.5" aria-hidden />
+            <ArrowRight className="absolute right-3.5 top-4 w-3.5 h-3.5 text-muted-foreground/30 transition-[color,background-color,border-color,box-shadow,opacity,transform] group-hover:text-interactive group-hover:translate-x-0.5" aria-hidden />
           </button>
         ))}
       </div>
@@ -1193,7 +1193,7 @@ export function LoopAction({
     <button
       onClick={() => navigate(to)}
       className={cn(
-        "inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-all",
+        "inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-[color,background-color,border-color,box-shadow,opacity,transform]",
         variant === "primary"
           ? "bg-primary text-white border-primary hover:bg-primary/90 shadow-md shadow-primary/25 hover:shadow-primary/35"
           : "bg-white/[0.07] border-border/55 text-foreground/90 hover:bg-white/[0.11] hover:text-foreground hover:border-border/75 shadow-sm",

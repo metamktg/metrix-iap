@@ -255,7 +255,7 @@ export function MetricPickerTile({
               {active.label}
             </span>
             <ChevronDown className={cn(
-              "w-2.5 h-2.5 shrink-0 transition-all",
+              "w-2.5 h-2.5 shrink-0 transition-[color,background-color,border-color,box-shadow,opacity,transform]",
               open ? "rotate-180 text-interactive" : "text-muted-foreground/35 group-hover/lbl:text-muted-foreground/65"
             )} />
           </button>

@@ -111,7 +111,7 @@ function PillarCoverageStrip({
               </div>
               <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
                 <div
-                  className="h-full rounded-full transition-all duration-300"
+                  className="h-full rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300"
                   style={{
                     width: `${pct}%`,
                     background:
@@ -662,7 +662,7 @@ export function StrategyOverview() {
                         window.history.pushState({}, "", s.to);
                         window.dispatchEvent(new PopStateEvent("popstate"));
                       }}
-                      className="group rounded-xl border border-border/40 bg-white/[0.02] hover:bg-white/[0.045] hover:border-border/70 p-4 flex flex-col gap-3 transition-all no-underline"
+                      className="group rounded-xl border border-border/40 bg-white/[0.02] hover:bg-white/[0.045] hover:border-border/70 p-4 flex flex-col gap-3 transition-[color,background-color,border-color,box-shadow,opacity,transform] no-underline"
                     >
                       {/* Icon + label */}
                       <div className="flex items-center gap-2">

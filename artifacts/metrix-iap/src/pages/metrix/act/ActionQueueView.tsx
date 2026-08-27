@@ -173,7 +173,7 @@ function QueueCard({
   return (
     <div
       className={cn(
-        "rounded-xl border transition-all",
+        "rounded-xl border transition-[color,background-color,border-color,box-shadow,opacity,transform]",
         isApproved
           ? "border-emerald-400/25 bg-emerald-400/[0.04]"
           : isDismissed

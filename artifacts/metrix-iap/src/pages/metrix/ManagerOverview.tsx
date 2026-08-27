@@ -178,7 +178,7 @@ function AdAccountCard({
     <button
       onClick={onOpen}
       className={cn(
-        "flex items-start gap-3 p-3.5 rounded-lg border text-left transition-all group",
+        "flex items-start gap-3 p-3.5 rounded-lg border text-left transition-[color,background-color,border-color,box-shadow,opacity,transform] group",
         configured
           ? "border-border/40 bg-white/[0.02] hover:border-border/60 hover:bg-white/[0.04]"
           : "border-border/25 bg-transparent opacity-55 hover:opacity-75",

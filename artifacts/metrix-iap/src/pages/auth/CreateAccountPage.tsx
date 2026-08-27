@@ -197,7 +197,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
           <button
             type="submit"
             disabled={!canSubmit}
-            className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+            className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 transition-[color,background-color,border-color,box-shadow,opacity,transform] disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
             style={{ boxShadow: "0 0 16px hsl(222 100% 54% / 0.25)" }}
             data-testid="button-create-account-submit"
           >

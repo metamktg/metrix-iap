@@ -403,7 +403,7 @@ function DemographicsTab({
               key={b.age}
               onClick={() => setSelectedAge(b.age)}
               className={cn(
-                "w-full text-left rounded-lg border px-3 py-2.5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
+                "w-full text-left rounded-lg border px-3 py-2.5 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
                 isActive
                   ? "border-primary/40 bg-primary/[0.06]"
                   : "border-border/30 bg-white/[0.015] hover:border-border/50 hover:bg-white/[0.03]"
@@ -422,7 +422,7 @@ function DemographicsTab({
               {/* Stacked bar */}
               <div className="h-4 rounded-md bg-white/[0.04] overflow-hidden">
                 <div
-                  className="h-full flex rounded-md overflow-hidden transition-all duration-500"
+                  className="h-full flex rounded-md overflow-hidden transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-500"
                   style={{ width: `${barW}%` }}
                 >
                   <div
@@ -606,7 +606,7 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
               </div>
               <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-primary/50 transition-all duration-700"
+                  className="h-full rounded-full bg-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-700"
                   style={{ width: `${barW}%` }}
                 />
               </div>

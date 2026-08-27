@@ -3192,6 +3192,142 @@ export async function getAnalysisSummaryByDateRange(
   return _computeAnalysisSummaryForDateRange(accountId, start, end);
 }
 
+// ─── Daily series ─────────────────────────────────────────────────────────────
+// `ad_performance` is stored one row per ad per DAY (buildAdPerformanceRows
+// writes date_start === date_end === the normalized Day cell, and the
+// uniqueness tuple includes the day). That day grain never reaches the
+// client: the seed aggregates it away into window totals, which is correct
+// for the seed — it is a bootstrap payload for every account at once and
+// already ~1.2 MB — but it means the product has daily data and no way to
+// draw a trend from it.
+//
+// This is that read, on demand and account-scoped. Rates are recomputed from
+// the summed numerator and denominator, never averaged across ads: the mean
+// of per-ad CPAs is not the day's CPA, and quietly shipping one for the other
+// is the kind of error a chart makes look authoritative.
+//
+// Reach is reported per day as measured. It is deliberately NOT summed
+// anywhere downstream — reach is a deduplicated people count, so adding two
+// days double-counts anyone present on both.
+
+export type DailySeriesPoint = {
+  day: string;              // YYYY-MM-DD
+  spend: number | null;
+  impressions: number | null;
+  reach: number | null;
+  clicks_all: number | null;
+  link_clicks: number | null;
+  results: number | null;
+  cpa: number | null;              // spend / results
+  ctr_link_pct: number | null;     // link_clicks / impressions
+  cvr_link_pct: number | null;     // results / link_clicks
+  ads: number;                     // ad rows contributing to this day
+};
+
+export type DailySeriesResult = {
+  points: DailySeriesPoint[];
+  date_start: string | null;
+  date_end: string | null;
+  /** Days inside the requested span with no rows at all — a real gap, not a zero. */
+  missing_days: string[];
+};
+
+/** Sum that stays null when nothing measurable contributed. */
+function sumOrNull(values: (number | null | undefined)[]): number | null {
+  let seen = false;
+  let total = 0;
+  for (const v of values) {
+    if (v == null || !Number.isFinite(Number(v))) continue;
+    seen = true;
+    total += Number(v);
+  }
+  return seen ? total : null;
+}
+
+const ratio = (num: number | null, den: number | null, scale = 1): number | null =>
+  num != null && den != null && den > 0 ? (num / den) * scale : null;
+
+export async function getAccountDailySeries(
+  accountId: string,
+  start: string,
+  end: string,
+): Promise<DailySeriesResult> {
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  if (!ISO.test(start) || !ISO.test(end)) {
+    throw new AnalysisError("start and end must be ISO dates (YYYY-MM-DD).", 400);
+  }
+  if (start > end) throw new AnalysisError("start must not be after end.", 400);
+
+  const rows = await selectAllRows(
+    "ad_performance",
+    (q) =>
+      q.eq("account_id", accountId)
+        .gte("date_start", start)
+        .lte("date_start", end)
+        .order("date_start")
+        .order("id"),
+    "date_start, spend, impressions, reach, clicks_all, link_clicks, results",
+  );
+  return aggregateDailySeries(rows ?? []);
+}
+
+/**
+ * The aggregation, separated from the query so the arithmetic can be tested
+ * without a database. This is where the two easy mistakes live — averaging a
+ * rate across ads instead of recomputing it from the day's sums, and turning
+ * "not measured" into a zero — so it is the part that is worth pinning.
+ */
+export function aggregateDailySeries(rows: Record<string, unknown>[]): DailySeriesResult {
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  if (rows.length === 0) {
+    return { points: [], date_start: null, date_end: null, missing_days: [] };
+  }
+
+  const byDay = new Map<string, Record<string, unknown>[]>();
+  for (const r of rows) {
+    const day = String(r["date_start"] ?? "").slice(0, 10);
+    if (!ISO.test(day)) continue;
+    (byDay.get(day) ?? byDay.set(day, []).get(day)!).push(r);
+  }
+
+  const points: DailySeriesPoint[] = [...byDay.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([day, dayRows]) => {
+      const pick = (k: string) => dayRows.map((r) => r[k] as number | null);
+      const spend = sumOrNull(pick("spend"));
+      const impressions = sumOrNull(pick("impressions"));
+      const linkClicks = sumOrNull(pick("link_clicks"));
+      const results = sumOrNull(pick("results"));
+      return {
+        day,
+        spend,
+        impressions,
+        reach: sumOrNull(pick("reach")),
+        clicks_all: sumOrNull(pick("clicks_all")),
+        link_clicks: linkClicks,
+        results,
+        cpa: ratio(spend, results),
+        ctr_link_pct: ratio(linkClicks, impressions, 100),
+        cvr_link_pct: ratio(results, linkClicks, 100),
+        ads: dayRows.length,
+      };
+    });
+
+  // Name the gaps. A trend line that bridges a day with no data implies
+  // continuity the data does not have, so the caller is told which days are
+  // absent rather than being handed a line that quietly interpolates.
+  const missing: string[] = [];
+  const first = points[0]!.day;
+  const last = points[points.length - 1]!.day;
+  const present = new Set(points.map((p) => p.day));
+  for (let t = Date.parse(first + "T00:00:00Z"); t <= Date.parse(last + "T00:00:00Z"); t += 86_400_000) {
+    const d = new Date(t).toISOString().slice(0, 10);
+    if (!present.has(d)) missing.push(d);
+  }
+
+  return { points, date_start: first, date_end: last, missing_days: missing };
+}
+
 // ─── Data-window discovery ────────────────────────────────────────────────────
 // Queries ad_performance DIRECTLY to return the actual available date windows
 // for an account. Source of truth for DataWindowBar — does NOT depend on

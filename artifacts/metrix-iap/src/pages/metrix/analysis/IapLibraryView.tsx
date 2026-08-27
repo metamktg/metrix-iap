@@ -679,8 +679,8 @@ export function IapLibraryView() {
                                     data-concept-cell={row.cell_id}
                                     className={
                                       highlightedCell === row.cell_id
-                                        ? "rounded-xl ring-2 ring-primary/70 ring-offset-1 ring-offset-background transition-all duration-300"
-                                        : "transition-all duration-300"
+                                        ? "rounded-xl ring-2 ring-primary/70 ring-offset-1 ring-offset-background transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300"
+                                        : "transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300"
                                     }
                                   >
                                     <CreativeCard
@@ -702,7 +702,7 @@ export function IapLibraryView() {
                                         <button
                                           onClick={() => { close(); setDetail(row); }}
                                           data-testid={`button-full-detail-${row.cell_id}`}
-                                          className="inline-flex items-center gap-1.5 text-title font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
+                                          className="inline-flex items-center gap-1.5 text-title font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                         >
                                           Full detail →
                                         </button>
@@ -972,7 +972,7 @@ export function IapLibraryView() {
                                 <button
                                   onClick={() => { close(); setDetail(row); }}
                                   data-testid={`button-full-detail-top-${row.cell_id}`}
-                                  className="inline-flex items-center gap-1.5 text-title font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
+                                  className="inline-flex items-center gap-1.5 text-title font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                 >
                                   Full detail →
                                 </button>

@@ -313,7 +313,7 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
               </span>
               <div className="flex-1 h-5 bg-white/[0.04] rounded overflow-hidden">
                 <div
-                  className={cn("h-full rounded transition-all", c.bar)}
+                  className={cn("h-full rounded transition-[color,background-color,border-color,box-shadow,opacity,transform]", c.bar)}
                   style={{ width: `${barW}%` }}
                 />
               </div>
@@ -449,7 +449,7 @@ export function BreakdownTable({
                   <td className="w-32">
                     <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden w-full">
                       <div
-                        className="h-full bg-interactive/50 rounded-full transition-all"
+                        className="h-full bg-interactive/50 rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                         style={{ width: `${bar}%` }}
                       />
                     </div>

@@ -946,6 +946,32 @@ export interface AccountAnalysisDataWindow {
   rows: number;
 }
 
+export interface DailySeriesPoint {
+  /** YYYY-MM-DD */
+  day: string;
+  spend: number | null;
+  impressions: number | null;
+  /** Per-day deduplicated people count. Never sum across days. */
+  reach: number | null;
+  clicks_all: number | null;
+  link_clicks: number | null;
+  results: number | null;
+  /** spend / results, recomputed from the day's sums. */
+  cpa: number | null;
+  ctr_link_pct: number | null;
+  cvr_link_pct: number | null;
+  /** Ad rows contributing to this day. */
+  ads: number;
+}
+
+export interface DailySeriesResult {
+  points: DailySeriesPoint[];
+  date_start: string | null;
+  date_end: string | null;
+  /** Days inside the span with no rows at all — a real gap, not a zero. */
+  missing_days: string[];
+}
+
 export interface AccountAnalysisDataWindowsResult {
   windows: AccountAnalysisDataWindow[];
   /** Days from earliest to latest data point */

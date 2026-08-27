@@ -80,7 +80,7 @@ export function FunnelStepsChart({ steps }: { steps: FunnelStep[] }) {
               <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
                 <div
                   className={cn(
-                    "h-full rounded-full transition-all duration-700",
+                    "h-full rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-700",
                     hasData ? "bg-primary/50" : "bg-muted/20"
                   )}
                   style={{ width: hasData ? `${barW}%` : "0%" }}

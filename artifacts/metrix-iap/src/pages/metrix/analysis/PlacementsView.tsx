@@ -512,7 +512,7 @@ export function PlacementsView() {
                           <div className="h-3 rounded bg-white/[0.04] overflow-hidden">
                             {v != null && (
                               <div
-                                className={cn("h-full rounded transition-all", barFill(v))}
+                                className={cn("h-full rounded transition-[color,background-color,border-color,box-shadow,opacity,transform]", barFill(v))}
                                 style={{ width: `${Math.max(width, 1.5)}%` }}
                               />
                             )}

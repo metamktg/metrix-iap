@@ -181,7 +181,7 @@ function ChildRow({
         }}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-all",
+          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-[color,background-color,border-color,box-shadow,opacity,transform]",
           active
             ? "font-semibold text-foreground bg-primary/8"
             : "text-foreground/65 hover:text-foreground hover:bg-primary/10"
@@ -244,7 +244,7 @@ function CollapsedItem({
           aria-label={section.label}
           title={section.label}
           className={cn(
-            "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all relative overflow-hidden",
+            "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] relative overflow-hidden",
             active
               ? "bg-primary/20 text-interactive border border-primary/30"
               : "text-foreground/45 hover:text-foreground/90 hover:bg-white/[0.07]",
@@ -314,7 +314,7 @@ function ExpandableSection({
         onClick={handleClick}
         title={landing ? `Click to expand · double-click to open ${section.label}` : undefined}
         className={cn(
-          "w-full flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-all select-none",
+          "w-full flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-[color,background-color,border-color,box-shadow,opacity,transform] select-none",
           landingActive
             ? "mx-nav-active font-medium"
             : sectionActive
@@ -390,7 +390,7 @@ function LeafSection({
         onClick={(e) => navigate(to, e)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-all",
+          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-[color,background-color,border-color,box-shadow,opacity,transform]",
           active
             ? "mx-nav-active font-medium"
             : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10",
@@ -521,7 +521,7 @@ export function Sidebar() {
     >
       {/* Logo row — collapse toggle lives here as a small icon button */}
       <div className={cn(
-        "border-b border-border/40 shrink-0 transition-all duration-200",
+        "border-b border-border/40 shrink-0 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200",
         collapsed
           ? "px-0 pt-3 pb-2.5 flex flex-col items-center gap-2"
           : "px-4 pt-4 pb-3"

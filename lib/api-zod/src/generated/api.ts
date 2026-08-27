@@ -795,6 +795,39 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
 
 
 /**
+ * ad_performance is stored one row per ad per day; the seed aggregates that grain away into window totals. This returns it, day by day, for trend charts. Rates are recomputed from the summed numerator and denominator, never averaged across ads. Reach is per-day as measured and must not be summed across days (it is a deduplicated people count). Days inside the span with no rows are reported in missing_days rather than emitted as zeroes, so a trend line never implies continuity the data lacks.
+ * @summary Daily metric series for an account over a date range
+ */
+
+
+
+export const GetAccountDailySeriesParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "start": zod.coerce.string().describe('Start date YYYY-MM-DD'),
+  "end": zod.coerce.string().describe('End date YYYY-MM-DD')
+})
+
+export const GetAccountDailySeriesResponse = zod.object({
+  "points": zod.array(zod.object({
+  "day": zod.string().describe('YYYY-MM-DD'),
+  "spend": zod.number().nullable(),
+  "impressions": zod.number().nullable(),
+  "reach": zod.number().nullable().describe('Per-day deduplicated people count. Never sum across days.'),
+  "clicks_all": zod.number().nullable(),
+  "link_clicks": zod.number().nullable(),
+  "results": zod.number().nullable(),
+  "cpa": zod.number().nullable().describe('spend \/ results, recomputed from the day\'s sums.'),
+  "ctr_link_pct": zod.number().nullable(),
+  "cvr_link_pct": zod.number().nullable(),
+  "ads": zod.number().describe('Ad rows contributing to this day.')
+})),
+  "date_start": zod.string().nullable(),
+  "date_end": zod.string().nullable(),
+  "missing_days": zod.array(zod.string()).describe('Days inside the span with no rows at all — a real gap, not a zero.')
+})
+
+
+/**
  * Queries ad_performance directly to find the actual available date windows for an account. Groups into monthly buckets when data spans > 60 days. Does NOT use manual_analysis_runs metadata. Used by DataWindowBar on Analysis Overview.
  * @summary List available date windows from actual ad_performance data
  */

@@ -67,7 +67,7 @@ export function InfoDrawer({
           </div>
           <button
             onClick={onClose}
-            className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/[0.06] border border-transparent hover:border-border/30 transition-all shrink-0"
+            className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/[0.06] border border-transparent hover:border-border/30 transition-[color,background-color,border-color,box-shadow,opacity,transform] shrink-0"
             aria-label="Close"
           >
             <X className="w-4 h-4" />

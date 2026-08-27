@@ -121,7 +121,7 @@ function PillarListCard({
       onClick={onClick}
       aria-pressed={selected}
       className={cn(
-        "w-full text-left px-3 py-2.5 border-l-2 transition-all flex flex-col gap-1",
+        "w-full text-left px-3 py-2.5 border-l-2 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex flex-col gap-1",
         accentBorder,
         selected
           ? "bg-primary/[0.09] border-r border-r-transparent shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.08)]"

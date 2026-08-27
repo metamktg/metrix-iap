@@ -1457,7 +1457,7 @@ function CommandHub({
                   onClick={() => isAccessible && goTo(r.path)}
                   disabled={!isAccessible}
                   className={cn(
-                    "group flex flex-col gap-0.5 text-left px-3 py-2 rounded-lg transition-all",
+                    "group flex flex-col gap-0.5 text-left px-3 py-2 rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform]",
                     !isAccessible
                       ? "opacity-25 cursor-not-allowed"
                       : isCurrent

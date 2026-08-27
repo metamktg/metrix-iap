@@ -228,11 +228,11 @@
   --info-foreground: 233 26.7% 11.8%;
   --input: 218 35.3% 26.7%;
   --ring: 249 52.8% 68.4%;
-  --chart-1: 249 52.8% 68.4%;
-  --chart-2: 190 100% 50%;
-  --chart-3: 166 60.2% 52.7%;
-  --chart-4: 36 78.8% 57.5%;
-  --chart-5: 230 12.5% 62.4%;
+  --chart-1: 253 58.4% 61.4%;
+  --chart-2: 71 73.8% 35.9%;
+  --chart-3: 197 56.7% 49.8%;
+  --chart-4: 165 100% 25.7%;
+  --chart-5: 334 93.1% 60.2%;
 
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);

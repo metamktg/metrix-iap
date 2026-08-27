@@ -657,7 +657,7 @@ function RankedListTab({
               className={cn(
                 "w-full text-left rounded-lg px-4 py-3.5 border border-border/30 bg-white/[0.01]",
                 "hover:border-primary/30 hover:bg-primary/[0.03] active:scale-[0.998]",
-                "transition-all duration-100 group"
+                "transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-100 group"
               )}
               style={{ borderLeftColor: accentColor, borderLeftWidth: "3px" }}
             >

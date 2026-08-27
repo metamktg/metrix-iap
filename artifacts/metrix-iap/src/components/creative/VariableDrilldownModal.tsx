@@ -196,7 +196,7 @@ export function VariableDrilldownModal({
                         <span className="text-label tabular-nums text-foreground/80 w-20 text-right shrink-0">
                           {derived.cpa != null ? `${fmtUSD(derived.cpa)} CPA` : "— CPA"}
                         </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/35 group-hover:text-primary/80 group-hover:translate-x-0.5 transition-all shrink-0" />
+                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/35 group-hover:text-primary/80 group-hover:translate-x-0.5 transition-[color,background-color,border-color,box-shadow,opacity,transform] shrink-0" />
                       </button>
                     );
                   })}

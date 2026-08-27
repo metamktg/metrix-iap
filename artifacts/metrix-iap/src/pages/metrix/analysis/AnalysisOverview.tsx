@@ -30,6 +30,7 @@ import { RunScopePicker } from "@/components/analysis/RunSelector";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
+import { TrendSection } from "@/components/analysis/TrendSection";
 import { KpiTileRow } from "@/components/metrics/KpiTile";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import {
@@ -1072,6 +1073,17 @@ export function AnalysisOverview() {
                     )}
                   </div>
                 )}
+
+                {/* ── Daily trend ─────────────────────────────────────
+                    The first time-based read in the product: the window
+                    totals above say how much, this says when. Fetched on
+                    demand rather than carried in the seed — a daily series
+                    is O(days x accounts). */}
+                <TrendSection
+                  accountId={adAccountId ?? null}
+                  start={queryWindow?.start ?? null}
+                  end={queryWindow?.end ?? null}
+                />
 
                 <KpiDrilldownModal
                   open={drillMetricId != null}
