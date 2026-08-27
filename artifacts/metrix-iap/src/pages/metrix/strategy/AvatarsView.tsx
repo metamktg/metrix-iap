@@ -300,8 +300,8 @@ function ProfileDetailFold({
                           )}
                           {h.risk && (
                             <div className="flex items-start gap-1.5 pt-1.5 border-t border-border/15">
-                              <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-0.5" />
-                              <p className="text-caption text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
+                              <AlertTriangle className="w-3.5 h-3.5 text-status-warning/70 shrink-0 mt-0.5" />
+                              <p className="text-caption text-status-warning/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
                             </div>
                           )}
                         </div>
@@ -372,16 +372,16 @@ function IcpProfileCard({
   function cpaColor(cpa: number | null): string {
     if (cpa == null || avgCpa == null || avgCpa <= 0) return "text-foreground/90";
     const ratio = cpa / avgCpa;
-    if (ratio < 0.85) return "text-emerald-400";
-    if (ratio <= 1.15) return "text-amber-300";
-    return "text-red-300";
+    if (ratio < 0.85) return "text-status-success";
+    if (ratio <= 1.15) return "text-status-warning";
+    return "text-status-danger";
   }
   function cvrColor(cvr: number | null): string {
     if (cvr == null || avgCvr == null || avgCvr <= 0) return "text-foreground/90";
     const ratio = cvr / avgCvr;
-    if (ratio > 1.15) return "text-emerald-400";
-    if (ratio >= 0.85) return "text-amber-300";
-    return "text-red-300";
+    if (ratio > 1.15) return "text-status-success";
+    if (ratio >= 0.85) return "text-status-warning";
+    return "text-status-danger";
   }
 
   return (
@@ -465,9 +465,9 @@ function IcpProfileCard({
                   {(() => {
                     const pct = Math.min(Math.max((perf.cpa / (2 * avgCpa)) * 100, 0), 100);
                     return perf.cpa < avgCpa ? (
-                      <div className="absolute inset-y-0 bg-emerald-400/50" style={{ left: `${pct}%`, right: "50%" }} />
+                      <div className="absolute inset-y-0 bg-status-success/50" style={{ left: `${pct}%`, right: "50%" }} />
                     ) : (
-                      <div className="absolute inset-y-0 bg-red-400/40" style={{ left: "50%", right: `${100 - pct}%` }} />
+                      <div className="absolute inset-y-0 bg-status-danger/40" style={{ left: "50%", right: `${100 - pct}%` }} />
                     );
                   })()}
                 </div>
@@ -557,8 +557,8 @@ function AudienceSegmentTile({
                   signal.state === "insufficient_coverage"
                     ? "border-border/60 bg-white/[0.04] text-muted-foreground/70"
                     : signal.low
-                    ? "border-amber-400/30 bg-amber-400/[0.08] text-amber-400"
-                    : "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-400",
+                    ? "border-status-warning/30 bg-status-warning/[0.08] text-status-warning"
+                    : "border-status-success/30 bg-status-success/[0.08] text-status-success",
                 )}
               >
                 {signal.state === "insufficient_coverage" ? "insufficient join coverage" : signal.low ? "low signal" : "signal ✓"}
@@ -777,7 +777,7 @@ function CombosPanel({ analysis, resultNoun }: { analysis: AnalysisData | null |
 type CoverageLevel = "proven" | "tested" | "untested";
 
 const COVERAGE_STYLE: Record<CoverageLevel, string> = {
-  proven: "bg-emerald-400/15 border-emerald-400/35 text-emerald-300",
+  proven: "bg-status-success/15 border-status-success/35 text-status-success",
   tested: "bg-accent/10 border-accent/25 text-foreground/80",
   untested: "border-border/25 text-muted-foreground/35",
 };

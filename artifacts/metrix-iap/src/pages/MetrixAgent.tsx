@@ -55,13 +55,13 @@ function WaitlistForm() {
 
   if (result) {
     return (
-      <div className="p-4 rounded-xl border border-emerald-400/25 bg-emerald-400/[0.05] flex items-start gap-3">
-        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+      <div className="p-4 rounded-xl border border-status-success/25 bg-status-success/[0.05] flex items-start gap-3">
+        <CheckCircle2 className="w-4 h-4 text-status-success shrink-0 mt-0.5" />
         <div>
-          <p className="text-body font-semibold text-emerald-300">
+          <p className="text-body font-semibold text-status-success">
             {result === "joined" ? "You're on the waitlist" : "You're already on the waitlist"}
           </p>
-          <p className="text-caption text-emerald-400/70 mt-0.5 leading-relaxed">
+          <p className="text-caption text-status-success/70 mt-0.5 leading-relaxed">
             We'll notify {email.trim()} when Metrix Agent goes live.
           </p>
         </div>
@@ -100,8 +100,8 @@ function WaitlistForm() {
       </div>
       {error && (
         <div className="flex items-center gap-1.5 mt-2">
-          <AlertTriangle className="w-3.5 h-3.5 text-red-400/80" />
-          <p className="text-label text-red-400/80">{error}</p>
+          <AlertTriangle className="w-3.5 h-3.5 text-status-danger/80" />
+          <p className="text-label text-status-danger/80">{error}</p>
         </div>
       )}
     </form>

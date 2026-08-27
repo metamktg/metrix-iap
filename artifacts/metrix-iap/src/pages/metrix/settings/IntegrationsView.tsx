@@ -73,7 +73,7 @@ export function IntegrationsView() {
                       const configured = a.status === "configured";
                       return (
                         <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-                          {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
+                          {configured ? <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
                           <div className="flex-1 min-w-0">
                             <div className="text-body font-medium text-foreground">{a.name}</div>
                             <div className="text-label text-muted-foreground/85">
@@ -84,7 +84,7 @@ export function IntegrationsView() {
                             className={cn(
                               "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none shrink-0",
                               configured
-                                ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
+                                ? "text-status-success border-status-success/25 bg-status-success/10"
                                 : "text-muted-foreground/85 border-border/40 bg-white/[0.03]"
                             )}
                           >

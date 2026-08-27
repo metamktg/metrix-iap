@@ -118,11 +118,11 @@ function MenuItem({
       className={cn(
         "w-full flex items-center gap-2.5 px-3.5 py-1.5 text-body font-medium transition-colors text-left",
         danger
-          ? "text-red-400/80 hover:text-red-400 hover:bg-red-400/[0.06]"
+          ? "text-status-danger/80 hover:text-status-danger hover:bg-status-danger/[0.06]"
           : "text-foreground/70 hover:text-foreground hover:bg-white/[0.04]"
       )}
     >
-      <Icon className={cn("w-3.5 h-3.5 shrink-0", danger ? "text-red-400/70" : "text-muted-foreground/50")} />
+      <Icon className={cn("w-3.5 h-3.5 shrink-0", danger ? "text-status-danger/70" : "text-muted-foreground/50")} />
       {label}
     </button>
   );
@@ -194,7 +194,7 @@ export function Topbar() {
           <span>Setup required</span>
         </div>
       ) : (
-        <div className="flex items-center gap-1 text-caption font-medium text-emerald-400 shrink-0">
+        <div className="flex items-center gap-1 text-caption font-medium text-status-success shrink-0">
           <CheckCircle2 className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Connected</span>
         </div>

@@ -120,7 +120,7 @@ export function RunScopePicker({
           className={cn(
             "w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-colors",
             value.allTime
-              ? "border-emerald-400/30 bg-emerald-400/[0.07] text-foreground/90"
+              ? "border-status-success/30 bg-status-success/[0.07] text-foreground/90"
               : "border-border/40 bg-transparent text-foreground/70 hover:bg-muted/30",
           )}
         >
@@ -142,7 +142,7 @@ export function RunScopePicker({
                 className={cn(
                   "w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
                   isSel
-                    ? "bg-emerald-400/[0.07] text-foreground/90"
+                    ? "bg-status-success/[0.07] text-foreground/90"
                     : "bg-transparent text-foreground/55 hover:bg-muted/30",
                 )}
               >
@@ -153,7 +153,7 @@ export function RunScopePicker({
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {idx === 0 && (
-                    <span className="text-[8px] font-semibold uppercase tracking-wider text-emerald-400/60 bg-emerald-400/[0.08] border border-emerald-400/15 rounded px-1 py-0.5 leading-none">
+                    <span className="text-[8px] font-semibold uppercase tracking-wider text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none">
                       Latest
                     </span>
                   )}
@@ -168,7 +168,7 @@ export function RunScopePicker({
           })}
         </div>
         {capHit && (
-          <p data-testid="text-run-cap" className="text-[10px] text-amber-300/80 px-1 pt-2">
+          <p data-testid="text-run-cap" className="text-[10px] text-status-warning/80 px-1 pt-2">
             Up to {RUN_SCOPE_MAX} runs at a time — deselect one to add another.
           </p>
         )}
@@ -206,7 +206,7 @@ export function RunSelector({
         className={cn(
           "w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-colors",
           value.allTime
-            ? "border-emerald-400/30 bg-emerald-400/[0.07] text-foreground/90"
+            ? "border-status-success/30 bg-status-success/[0.07] text-foreground/90"
             : "border-border/40 bg-transparent text-foreground/70 hover:bg-muted/30",
         )}
       >
@@ -235,7 +235,7 @@ export function RunSelector({
                 className={cn(
                   "w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
                   isSel
-                    ? "bg-emerald-400/[0.07] text-foreground/90"
+                    ? "bg-status-success/[0.07] text-foreground/90"
                     : "bg-transparent text-foreground/55 hover:bg-muted/30",
                 )}
               >
@@ -243,7 +243,7 @@ export function RunSelector({
                 <span className="text-label font-medium flex-1 truncate">{runLabel(run)}</span>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {idx === 0 && (
-                    <span className="text-[8px] font-semibold uppercase tracking-wider text-emerald-400/60 bg-emerald-400/[0.08] border border-emerald-400/15 rounded px-1 py-0.5 leading-none">
+                    <span className="text-[8px] font-semibold uppercase tracking-wider text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none">
                       Latest
                     </span>
                   )}

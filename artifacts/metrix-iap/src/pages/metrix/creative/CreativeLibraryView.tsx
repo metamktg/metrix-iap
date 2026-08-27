@@ -47,9 +47,9 @@ const SECTION = "Creative · 05";
 // verb chips instead of inventing a new palette.
 function kindOf(recommended_action: string): { label: string; cls: string } {
   const a = recommended_action.toLowerCase();
-  if (a.includes("scale")) return { label: "Scale", cls: "text-emerald-400 border-emerald-400/25" };
-  if (a.includes("pause") || a.includes("kill") || a.includes("stop")) return { label: "Retire", cls: "text-red-300 border-red-400/25" };
-  return { label: "Fix", cls: "text-amber-400 border-amber-400/25" };
+  if (a.includes("scale")) return { label: "Scale", cls: "text-status-success border-status-success/25" };
+  if (a.includes("pause") || a.includes("kill") || a.includes("stop")) return { label: "Retire", cls: "text-status-danger border-status-danger/25" };
+  return { label: "Fix", cls: "text-status-warning border-status-warning/25" };
 }
 
 /** Cell ids (e.g. "C2B") a recommendation references in its own evidence text — same
@@ -342,7 +342,7 @@ export function CreativeLibraryView() {
                                     cell.tested
                                       ? "border-border/30 bg-white/[0.015] text-foreground/85 hover:border-primary/35 hover:bg-white/[0.04] cursor-pointer disabled:cursor-default disabled:hover:border-border/30 disabled:hover:bg-white/[0.015]"
                                       : queued
-                                      ? "border-amber-400/30 bg-amber-400/[0.06] text-amber-300 hover:bg-amber-400/10 cursor-pointer"
+                                      ? "border-status-warning/30 bg-status-warning/[0.06] text-status-warning hover:bg-status-warning/10 cursor-pointer"
                                       : "border-border/20 bg-white/[0.008] text-muted-foreground/40 hover:border-border/40 hover:bg-white/[0.02] hover:text-muted-foreground/70 cursor-pointer"
                                   }`}
                                 >

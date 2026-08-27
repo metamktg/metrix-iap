@@ -90,6 +90,10 @@ args = "chart-palette"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
+args = "token-colors"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
 args = "command-deck-token-drift"
 
 [[workflows.workflow.tasks]]
@@ -283,6 +287,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run check:chart-palette"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "token-colors"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:token-colors"
 
 [workflows.workflow.metadata]
 isValidation = true

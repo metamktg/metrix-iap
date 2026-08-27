@@ -311,20 +311,20 @@ function AddMemberDialog({
           </div>
 
           {atSeatLimit && (
-            <div className="text-caption text-amber-400/90" data-testid="text-seat-limit-warning">
+            <div className="text-caption text-status-warning/90" data-testid="text-seat-limit-warning">
               This workspace is full: all {seatLimit} seats are in use. Remove a member or cancel a
               pending invite before adding someone new.
             </div>
           )}
 
           {feedback && (
-            <div className="text-caption text-amber-400/90" data-testid="text-invite-feedback">
+            <div className="text-caption text-status-warning/90" data-testid="text-invite-feedback">
               {feedback}
             </div>
           )}
 
           {successNotice && (
-            <div className="text-caption text-emerald-400/90" data-testid="text-invite-success">
+            <div className="text-caption text-status-success/90" data-testid="text-invite-success">
               {successNotice}
             </div>
           )}
@@ -413,7 +413,7 @@ function PendingInviteRow({
         </div>
         <div className="text-label text-muted-foreground/70 truncate">
           {error ? (
-            <span className="text-red-400/90" data-testid={`text-invite-error-${invite.email}`}>{error}</span>
+            <span className="text-status-danger/90" data-testid={`text-invite-error-${invite.email}`}>{error}</span>
           ) : (
             <>
               {resent ? "Resent" : "Invited"}{" "}
@@ -442,7 +442,7 @@ function PendingInviteRow({
           onClick={() => setConfirmRevoke(true)}
           disabled={isRevoking || isResending}
           title="Revoke invite"
-          className="flex items-center gap-1 h-6 px-2 rounded border border-red-400/25 bg-red-400/[0.06] text-label font-medium text-red-400/90 hover:bg-red-400/[0.12] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          className="flex items-center gap-1 h-6 px-2 rounded border border-status-danger/25 bg-status-danger/[0.06] text-label font-medium text-status-danger/90 hover:bg-status-danger/[0.12] transition-colors disabled:opacity-40 disabled:pointer-events-none"
           data-testid={`button-revoke-invite-${invite.email}`}
         >
           {isRevoking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
@@ -462,7 +462,7 @@ function PendingInviteRow({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRevoke}
-              className="bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-600"
+              className="bg-status-danger hover:bg-status-danger text-white focus-visible:ring-status-danger"
             >
               Revoke invite
             </AlertDialogAction>
@@ -534,7 +534,7 @@ function MemberPermissionsCell({
         View rollups
       </button>
       {error && (
-        <span className="text-label text-red-400/90 w-full" data-testid={`text-permissions-error-${email}`}>
+        <span className="text-label text-status-danger/90 w-full" data-testid={`text-permissions-error-${email}`}>
           {error}
         </span>
       )}
@@ -660,7 +660,7 @@ function MemberAdAccountsCell({
       )}
 
       {error && (
-        <span className="text-label text-red-400/90" data-testid={`text-account-access-error-${email}`}>
+        <span className="text-label text-status-danger/90" data-testid={`text-account-access-error-${email}`}>
           {error}
         </span>
       )}
@@ -756,8 +756,8 @@ function MemberActionsCell({
         className={cn(
           "flex items-center gap-1 h-6 px-2 rounded border text-label font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
           disabled
-            ? "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400/90 hover:bg-emerald-400/[0.12]"
-            : "border-red-400/25 bg-red-400/[0.06] text-red-400/90 hover:bg-red-400/[0.12]",
+            ? "border-status-success/25 bg-status-success/[0.06] text-status-success/90 hover:bg-status-success/[0.12]"
+            : "border-status-danger/25 bg-status-danger/[0.06] text-status-danger/90 hover:bg-status-danger/[0.12]",
         )}
         data-testid={disabled ? `button-restore-member-${email}` : `button-remove-member-${email}`}
       >
@@ -772,19 +772,19 @@ function MemberActionsCell({
       </button>
       {tempPassword && (
         <span
-          className="text-label text-amber-400/90 font-mono w-full"
+          className="text-label text-status-warning/90 font-mono w-full"
           data-testid={`text-temp-password-${email}`}
         >
           Email didn't send — temp password: {tempPassword}
         </span>
       )}
       {resent && !tempPassword && !error && (
-        <span className="text-label text-emerald-400/90 w-full" data-testid={`text-resend-success-${email}`}>
+        <span className="text-label text-status-success/90 w-full" data-testid={`text-resend-success-${email}`}>
           New temp password sent.
         </span>
       )}
       {error && (
-        <span className="text-label text-red-400/90 w-full" data-testid={`text-actions-error-${email}`}>
+        <span className="text-label text-status-danger/90 w-full" data-testid={`text-actions-error-${email}`}>
           {error}
         </span>
       )}
@@ -801,7 +801,7 @@ function MemberActionsCell({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => doStatusChange("disabled")}
-              className="bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-600"
+              className="bg-status-danger hover:bg-status-danger text-white focus-visible:ring-status-danger"
             >
               Remove access
             </AlertDialogAction>
@@ -987,7 +987,7 @@ function TeamAccessViewInner() {
               ))}
               {invitesFailed && (
                 <div
-                  className="px-3 py-2.5 text-caption text-amber-400/90 bg-amber-400/[0.05]"
+                  className="px-3 py-2.5 text-caption text-status-warning/90 bg-status-warning/[0.05]"
                   data-testid="text-invites-load-error"
                 >
                   Couldn't load pending invites — this list may be incomplete. Refresh to try again.
@@ -1012,8 +1012,8 @@ function TeamAccessViewInner() {
         </SectionCard>
 
         <SectionCard title="Access policy" desc="Ad-account access grants">
-          <div className="flex items-start gap-2.5 p-3 rounded-lg border border-emerald-400/15 bg-emerald-400/[0.03]">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2.5 p-3 rounded-lg border border-status-success/15 bg-status-success/[0.03]">
+            <ShieldCheck className="w-4 h-4 text-status-success shrink-0 mt-0.5" />
             <DetailReveal
               label={deriveLabel(team.access_policy, 72)}
               labelClassName={TYPE.caption}

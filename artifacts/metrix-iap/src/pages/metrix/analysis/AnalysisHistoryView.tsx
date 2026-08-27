@@ -36,9 +36,9 @@ function fmtDateTime(s: string): string {
 }
 
 function RunStatusIcon({ status }: { status: AnalysisRun["status"] }) {
-  if (status === "running") return <Loader2 className="w-4 h-4 text-amber-400 animate-spin shrink-0" />;
-  if (status === "success") return <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />;
-  return <XCircle className="w-4 h-4 text-red-400 shrink-0" />;
+  if (status === "running") return <Loader2 className="w-4 h-4 text-status-warning animate-spin shrink-0" />;
+  if (status === "success") return <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" />;
+  return <XCircle className="w-4 h-4 text-status-danger shrink-0" />;
 }
 
 function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; isLatest: boolean }) {
@@ -55,8 +55,8 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
         run.status === "success"
           ? "border-border/40 bg-white/[0.02]"
           : run.status === "running"
-          ? "border-amber-400/25 bg-amber-400/[0.03]"
-          : "border-red-400/20 bg-red-500/[0.03]"
+          ? "border-status-warning/25 bg-status-warning/[0.03]"
+          : "border-status-danger/20 bg-status-danger/[0.03]"
       )}
     >
       {/* Header row */}
@@ -66,7 +66,7 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-title font-semibold text-foreground capitalize">{run.status}</span>
             {isLatest && (
-              <span className="text-micro font-semibold uppercase tracking-wider text-emerald-400/70 bg-emerald-400/[0.08] border border-emerald-400/15 rounded px-1.5 py-0.5 leading-none">
+              <span className="text-micro font-semibold uppercase tracking-wider text-status-success/70 bg-status-success/[0.08] border border-status-success/15 rounded px-1.5 py-0.5 leading-none">
                 Latest
               </span>
             )}
@@ -118,8 +118,8 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
       </div>
 
       {run.error_message && (
-        <div className="flex items-start gap-2 text-caption text-red-400/80 leading-relaxed">
-          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-400" />
+        <div className="flex items-start gap-2 text-caption text-status-danger/80 leading-relaxed">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-status-danger" />
           {run.error_message}
         </div>
       )}
@@ -153,7 +153,7 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
             >
               {r.flagged
                 ? <AlertTriangle className="w-3 h-3 text-status-warning shrink-0" />
-                : <CheckCircle2 className="w-3 h-3 text-emerald-400/60 shrink-0" />}
+                : <CheckCircle2 className="w-3 h-3 text-status-success/60 shrink-0" />}
               <span className="font-medium text-foreground/80">
                 {r.metric_key === "spend" ? "Spend" : r.metric_key === "results" ? "Results" : r.metric_key}
               </span>

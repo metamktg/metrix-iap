@@ -38,11 +38,11 @@ function computeGrade(present: number, total: number): { grade: "A" | "B" | "C" 
 
 function GradeBadge({ grade }: { grade: "A" | "B" | "C" | "D" | "F" }) {
   const colors: Record<string, string> = {
-    A: "bg-emerald-400/15 border-emerald-400/40 text-emerald-300",
-    B: "bg-chart-1/15 border-blue-400/40 text-blue-300",
-    C: "bg-amber-400/15 border-amber-400/40 text-amber-300",
-    D: "bg-orange-400/15 border-orange-400/40 text-orange-300",
-    F: "bg-red-500/15 border-red-400/40 text-red-300",
+    A: "bg-status-success/15 border-status-success/40 text-status-success",
+    B: "bg-chart-1/15 border-primary/40 text-interactive",
+    C: "bg-status-warning/15 border-status-warning/40 text-status-warning",
+    D: "bg-status-warning/15 border-status-warning/40 text-status-warning",
+    F: "bg-status-danger/15 border-status-danger/40 text-status-danger",
   };
   return (
     <span
@@ -68,10 +68,10 @@ function TierBadge({ tier, isRequired }: { tier: MappingEntry["tier"]; isRequire
     );
   }
   const styles: Record<string, string> = {
-    exact: "bg-emerald-400/10 border-emerald-400/25 text-emerald-400",
-    resolved: "bg-chart-1/10 border-blue-400/25 text-blue-300",
-    inferred: "bg-amber-400/10 border-amber-400/25 text-amber-300",
-    missing: "bg-red-500/10 border-red-400/30 text-red-300",
+    exact: "bg-status-success/10 border-status-success/25 text-status-success",
+    resolved: "bg-chart-1/10 border-primary/25 text-interactive",
+    inferred: "bg-status-warning/10 border-status-warning/25 text-status-warning",
+    missing: "bg-status-danger/10 border-status-danger/30 text-status-danger",
   };
   return (
     <span
@@ -88,10 +88,10 @@ function TierBadge({ tier, isRequired }: { tier: MappingEntry["tier"]; isRequire
 function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
   const color =
-    pct >= 90 ? "bg-emerald-400/60" :
+    pct >= 90 ? "bg-status-success/60" :
     pct >= 70 ? "bg-chart-1/60" :
-    pct >= 50 ? "bg-amber-400/60" :
-    "bg-red-400/60";
+    pct >= 50 ? "bg-status-warning/60" :
+    "bg-status-danger/60";
   return (
     <div className="flex items-center gap-1.5">
       <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
@@ -218,7 +218,7 @@ function SingleCsvConfidenceReport({
               {missingColumns.map((col) => (
                 <div key={col.canonical} className="flex items-center gap-2">
                   <span className="flex-1 text-label text-foreground/80 truncate">{col.canonical}</span>
-                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/10 border border-red-400/25 text-label text-red-300 font-mono shrink-0">
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-status-danger/10 border border-status-danger/25 text-label text-status-danger font-mono shrink-0">
                     <TrendingDown className="w-3 h-3" />
                     −{Math.round(col.signalWeight * 100)}% signal
                   </span>
@@ -251,7 +251,7 @@ function SingleCsvConfidenceReport({
                   ) : col.tier === "missing" ? (
                     <span className="text-label text-muted-foreground/40 w-20 shrink-0 text-right">—</span>
                   ) : (
-                    <span className="text-label text-emerald-400/60 w-20 shrink-0 text-right">100%</span>
+                    <span className="text-label text-status-success/60 w-20 shrink-0 text-right">100%</span>
                   )}
                 </div>
               ))}

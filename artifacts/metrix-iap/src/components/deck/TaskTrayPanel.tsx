@@ -38,7 +38,7 @@ export function TaskTrayPanel({
         </span>
         <div className="ml-auto flex items-center gap-1">
           {approved.length > 0 && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-400/15 text-emerald-400 border border-emerald-400/25 tabular-nums shrink-0">
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-status-success/15 text-status-success border border-status-success/25 tabular-nums shrink-0">
               {approved.length}
             </span>
           )}
@@ -82,7 +82,7 @@ export function TaskTrayPanel({
                   className={cn(
                     "flex items-start gap-2 rounded-lg border bg-white/[0.02] transition-opacity",
                     compact ? "p-2" : "p-2.5",
-                    done ? "border-emerald-400/20 opacity-55" : "border-border/40 hover:border-border/60"
+                    done ? "border-status-success/20 opacity-55" : "border-border/40 hover:border-border/60"
                   )}
                 >
                   <button
@@ -90,7 +90,7 @@ export function TaskTrayPanel({
                     className={cn(
                       "mt-px w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors",
                       done
-                        ? "bg-emerald-400/20 border-emerald-400/40 text-emerald-400"
+                        ? "bg-status-success/20 border-status-success/40 text-status-success"
                         : "border-border/50 text-transparent hover:border-primary/50"
                     )}
                     aria-label={done ? "Mark not done" : "Mark done"}

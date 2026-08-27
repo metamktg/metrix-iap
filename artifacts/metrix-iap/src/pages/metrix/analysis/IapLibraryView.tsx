@@ -482,7 +482,7 @@ export function IapLibraryView() {
                         syncMutation.isPending
                           ? "border-border/30 text-muted-foreground/40 cursor-not-allowed"
                           : syncResult
-                          ? "border-emerald-400/30 text-emerald-400/80 bg-emerald-400/[0.04] hover:bg-emerald-400/[0.08]"
+                          ? "border-status-success/30 text-status-success/80 bg-status-success/[0.04] hover:bg-status-success/[0.08]"
                           : "border-border/40 text-muted-foreground/70 hover:text-foreground bg-white/[0.02] hover:bg-white/[0.04] hover:border-border/60",
                       ].join(" ")}
                     >
@@ -889,8 +889,8 @@ export function IapLibraryView() {
                       if (cpa == null || rankedCpas.length < 2) {
                         return { label: "Unranked", cls: "bg-white/[0.05] text-muted-foreground/55 border-border/30" };
                       }
-                      if (cpa <= p25) return { label: "Top 25%", cls: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25" };
-                      if (cpa >= p75) return { label: "Bottom 25%", cls: "bg-amber-400/10 text-amber-400 border-amber-400/25" };
+                      if (cpa <= p25) return { label: "Top 25%", cls: "bg-status-success/10 text-status-success border-status-success/25" };
+                      if (cpa >= p75) return { label: "Bottom 25%", cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
                       return { label: "Mid 50%", cls: "bg-white/[0.05] text-muted-foreground/70 border-border/30" };
                     };
 

@@ -88,13 +88,13 @@ function tierBadge(tier: string | undefined): { label: string; cls: string } {
   if (!tier) return { label: "—", cls: "bg-muted/40 text-muted-foreground/50 border-border/30" };
   const t = tier.toLowerCase();
   if (t.includes("1") || t.includes("scale") || t.includes("winner"))
-    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25" };
+    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-status-success/10 text-status-success border-status-success/25" };
   if (t.includes("2") || t.includes("watch") || t.includes("test"))
-    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-sky-400/10 text-sky-400 border-sky-400/25" };
+    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-primary/10 text-interactive border-primary/25" };
   if (t.includes("3") || t.includes("optim") || t.includes("limit"))
-    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-amber-400/10 text-amber-400 border-amber-400/25" };
+    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
   if (t.includes("4") || t.includes("elim") || t.includes("kill") || t.includes("fail"))
-    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-red-400/10 text-red-300 border-red-400/25" };
+    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-status-danger/10 text-status-danger border-status-danger/25" };
   return { label: tier, cls: "bg-muted/40 text-muted-foreground/60 border-border/30" };
 }
 
@@ -105,8 +105,8 @@ function liftIcon(lift: string | number | null | undefined) {
   if (lift == null) return null;
   const n = typeof lift === "number" ? lift : parseFloat(String(lift));
   if (isNaN(n)) return null;
-  if (n > 0.05)  return <TrendingUp   className="w-3 h-3 text-emerald-400 shrink-0" />;
-  if (n < -0.05) return <TrendingDown className="w-3 h-3 text-red-400 shrink-0" />;
+  if (n > 0.05)  return <TrendingUp   className="w-3 h-3 text-status-success shrink-0" />;
+  if (n < -0.05) return <TrendingDown className="w-3 h-3 text-status-danger shrink-0" />;
   return <Minus className="w-3 h-3 text-muted-foreground/40 shrink-0" />;
 }
 

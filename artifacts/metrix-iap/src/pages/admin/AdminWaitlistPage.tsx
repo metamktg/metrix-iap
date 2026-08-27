@@ -69,10 +69,10 @@ const INPUT_CLS =
 function StatusBadge({ status }: { status: string }) {
   const cls =
     status === "approved"
-      ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
+      ? "text-status-success border-status-success/25 bg-status-success/10"
       : status === "rejected"
-        ? "text-red-400 border-red-400/25 bg-red-400/10"
-        : "text-amber-400 border-amber-400/25 bg-amber-400/10";
+        ? "text-status-danger border-status-danger/25 bg-status-danger/10"
+        : "text-status-warning border-status-warning/25 bg-status-warning/10";
   return (
     <span
       className={cn(
@@ -115,7 +115,7 @@ function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
   if (outcome.email_sent) {
     return (
       <div
-        className="flex items-center gap-1.5 text-caption text-emerald-400"
+        className="flex items-center gap-1.5 text-caption text-status-success"
         data-testid="text-approve-emailed"
       >
         <CheckCircle2 className="w-3.5 h-3.5" /> Temporary password emailed to {outcome.email}
@@ -125,10 +125,10 @@ function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
   if (outcome.temp_password) {
     return (
       <div
-        className="space-y-1 rounded-md border border-amber-400/25 bg-amber-400/5 p-2"
+        className="space-y-1 rounded-md border border-status-warning/25 bg-status-warning/5 p-2"
         data-testid="panel-temp-password"
       >
-        <div className="text-caption text-amber-400">
+        <div className="text-caption text-status-warning">
           Email could not be sent — share this temporary password with {outcome.email} manually:
         </div>
         <div className="flex items-center gap-2">
@@ -171,7 +171,7 @@ function ActionButtons({
       <button
         onClick={onApprove}
         disabled={busy !== null}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-caption font-medium text-emerald-400 hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-status-success/15 border border-status-success/30 text-caption font-medium text-status-success hover:bg-status-success/25 transition-colors disabled:opacity-50 disabled:pointer-events-none"
         data-testid={`button-approve-${idKey}`}
       >
         {busy === "approve" ? (
@@ -184,7 +184,7 @@ function ActionButtons({
       <button
         onClick={onReject}
         disabled={busy !== null}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-red-500/10 border border-red-500/25 text-caption font-medium text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-status-danger/10 border border-status-danger/25 text-caption font-medium text-status-danger hover:bg-status-danger/20 transition-colors disabled:opacity-50 disabled:pointer-events-none"
         data-testid={`button-reject-${idKey}`}
       >
         {busy === "reject" ? (
@@ -215,10 +215,10 @@ function EmailStatusBanner() {
   if (mode === "configured") {
     return (
       <div
-        className="flex items-center gap-2 rounded-md border border-emerald-400/20 bg-emerald-400/5 px-3 py-2"
+        className="flex items-center gap-2 rounded-md border border-status-success/20 bg-status-success/5 px-3 py-2"
         data-testid="banner-email-status"
       >
-        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+        <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
         <div className="text-caption text-muted-foreground">
           Email delivery is configured (sending as <span className="text-foreground">{from}</span>).
           {" "}Environment: <span className="text-foreground">{environment}</span> — approvals create
@@ -230,20 +230,20 @@ function EmailStatusBanner() {
 
   return (
     <div
-      className="flex items-start gap-2 rounded-md border border-amber-400/25 bg-amber-400/5 px-3 py-2"
+      className="flex items-start gap-2 rounded-md border border-status-warning/25 bg-status-warning/5 px-3 py-2"
       data-testid="banner-email-status"
     >
-      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+      <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
       <div className="text-caption text-muted-foreground space-y-0.5">
         {mode === "missing_key" ? (
           <div>
-            <span className="text-amber-400 font-medium">Email delivery is disabled</span> — no
+            <span className="text-status-warning font-medium">Email delivery is disabled</span> — no
             email API key is set. Temporary passwords and reset links will be shown here for you
             to share manually.
           </div>
         ) : (
           <div>
-            <span className="text-amber-400 font-medium">Email delivery is in sandbox mode</span>
+            <span className="text-status-warning font-medium">Email delivery is in sandbox mode</span>
             {" "}— the sandbox sender ({from}) only delivers to the email account owner's inbox.
             Emails to anyone else will fail, and their credentials will be shown here instead.
             To fix: verify a domain at resend.com/domains and set REQUEST_ACCESS_FROM_EMAIL to a
@@ -265,10 +265,10 @@ function EmailStatusBanner() {
 function UserStatusBadge({ status }: { status: AdminUser["status"] }) {
   const cls =
     status === "active"
-      ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
+      ? "text-status-success border-status-success/25 bg-status-success/10"
       : status === "disabled"
-        ? "text-red-400 border-red-400/25 bg-red-400/10"
-        : "text-sky-400 border-sky-400/25 bg-sky-400/10";
+        ? "text-status-danger border-status-danger/25 bg-status-danger/10"
+        : "text-interactive border-primary/25 bg-primary/10";
   return (
     <span
       className={cn(
@@ -291,7 +291,7 @@ function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email:
   if (outcome.email_sent) {
     return (
       <div
-        className="flex items-center gap-1.5 text-caption text-emerald-400"
+        className="flex items-center gap-1.5 text-caption text-status-success"
         data-testid="text-user-action-emailed"
       >
         <CheckCircle2 className="w-3.5 h-3.5" /> New {noun} emailed to {email}
@@ -300,10 +300,10 @@ function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email:
   }
   return (
     <div
-      className="space-y-1 rounded-md border border-amber-400/25 bg-amber-400/5 p-2"
+      className="space-y-1 rounded-md border border-status-warning/25 bg-status-warning/5 p-2"
       data-testid="panel-user-action-fallback"
     >
-      <div className="text-caption text-amber-400">
+      <div className="text-caption text-status-warning">
         Email could not be sent — share this {noun} with {email} manually
         {outcome.kind === "reset_link" ? " (expires in 1 hour)" : ""}:
       </div>
@@ -431,10 +431,10 @@ function ManageAccessPanel({
           )}
         </div>
         {saveError && (
-          <div className="px-4 pb-2 text-caption text-red-400/90">{saveError}</div>
+          <div className="px-4 pb-2 text-caption text-status-danger/90">{saveError}</div>
         )}
         {saved && (
-          <div className="px-4 pb-2 flex items-center gap-1.5 text-caption text-emerald-400">
+          <div className="px-4 pb-2 flex items-center gap-1.5 text-caption text-status-success">
             <CheckCircle2 className="w-3.5 h-3.5" /> Saved
           </div>
         )}
@@ -507,9 +507,9 @@ function DeleteConfirmModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
       data-testid="modal-delete-confirm"
     >
-      <div className="w-full max-w-sm rounded-xl border border-red-500/30 bg-background shadow-2xl">
+      <div className="w-full max-w-sm rounded-xl border border-status-danger/30 bg-background shadow-2xl">
         <div className="px-4 py-3 border-b border-border/30 flex items-center gap-2">
-          <Trash2 className="w-4 h-4 text-red-400 shrink-0" />
+          <Trash2 className="w-4 h-4 text-status-danger shrink-0" />
           <span className="text-body font-semibold text-foreground">Delete account</span>
         </div>
         <form onSubmit={submit} className="p-4 space-y-3">
@@ -532,7 +532,7 @@ function DeleteConfirmModal({
               autoComplete="off"
             />
           </div>
-          {error && <div className="text-caption text-red-400/90">{error}</div>}
+          {error && <div className="text-caption text-status-danger/90">{error}</div>}
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
@@ -544,7 +544,7 @@ function DeleteConfirmModal({
             <button
               type="submit"
               disabled={!canDelete}
-              className="h-8 px-3 rounded-md bg-red-500/20 border border-red-500/40 text-caption font-medium text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
+              className="h-8 px-3 rounded-md bg-status-danger/20 border border-status-danger/40 text-caption font-medium text-status-danger hover:bg-status-danger/30 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
               data-testid="button-delete-confirm-submit"
             >
               {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -627,12 +627,12 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
         {outcome ? (
           <div className="p-4 space-y-3">
             {outcome.email_sent ? (
-              <div className="flex items-center gap-1.5 text-caption text-emerald-400">
+              <div className="flex items-center gap-1.5 text-caption text-status-success">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Temporary password emailed to {outcome.email}
               </div>
             ) : outcome.temp_password ? (
-              <div className="space-y-1 rounded-md border border-amber-400/25 bg-amber-400/5 p-2">
-                <div className="text-caption text-amber-400">
+              <div className="space-y-1 rounded-md border border-status-warning/25 bg-status-warning/5 p-2">
+                <div className="text-caption text-status-warning">
                   Email could not be sent — share this temporary password with {outcome.email} manually:
                 </div>
                 <div className="flex items-center gap-2">
@@ -772,7 +772,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
               </div>
             )}
 
-            {error && <div className="text-caption text-red-400/90">{error}</div>}
+            {error && <div className="text-caption text-status-danger/90">{error}</div>}
 
             <div className="flex items-center justify-end gap-2 pt-1">
               <button
@@ -958,7 +958,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
               </button>
               {confirmRevoke ? (
                 <span className="flex items-center gap-1.5">
-                  <span className="text-label text-red-400">Revoke access and sign them out?</span>
+                  <span className="text-label text-status-danger">Revoke access and sign them out?</span>
                   <button
                     onClick={() => {
                       setConfirmRevoke(false);
@@ -973,7 +973,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                       );
                     }}
                     disabled={busy}
-                    className={cn(actionBtn, "border-red-500/30 bg-red-500/15 text-red-400 hover:bg-red-500/25")}
+                    className={cn(actionBtn, "border-status-danger/30 bg-status-danger/15 text-status-danger hover:bg-status-danger/25")}
                     data-testid={`button-revoke-confirm-${user.id}`}
                   >
                     {revoke.isPending ? (
@@ -998,7 +998,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                   disabled={busy}
                   className={cn(
                     actionBtn,
-                    "border-red-500/25 text-red-400/90 hover:bg-red-500/10",
+                    "border-status-danger/25 text-status-danger/90 hover:bg-status-danger/10",
                   )}
                   data-testid={`button-revoke-${user.id}`}
                 >
@@ -1024,7 +1024,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
               disabled={busy}
               className={cn(
                 actionBtn,
-                "border-emerald-500/30 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25",
+                "border-status-success/30 bg-status-success/15 text-status-success hover:bg-status-success/25",
               )}
               data-testid={`button-restore-${user.id}`}
             >
@@ -1057,7 +1057,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
             disabled={busy}
             className={cn(
               actionBtn,
-              "border-red-500/20 text-red-400/70 hover:text-red-400 hover:bg-red-500/10",
+              "border-status-danger/20 text-status-danger/70 hover:text-status-danger hover:bg-status-danger/10",
             )}
             data-testid={`button-delete-${user.id}`}
           >
@@ -1067,7 +1067,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
         </div>
 
         {outcome && <UserActionNote outcome={outcome} email={user.email} />}
-        {error && <div className="text-caption text-red-400/90">{error}</div>}
+        {error && <div className="text-caption text-status-danger/90">{error}</div>}
       </div>
     </>
   );
@@ -1107,7 +1107,7 @@ function UsersSection() {
           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading users…
         </div>
       ) : users.isError ? (
-        <div className="text-caption text-red-400/90 py-4">
+        <div className="text-caption text-status-danger/90 py-4">
           Could not load users. Refresh to try again.
         </div>
       ) : list.length === 0 ? (
@@ -1175,7 +1175,7 @@ function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChange
       </div>
 
       {outcome && <ApproveResultNote outcome={outcome} />}
-      {error && <div className="text-caption text-red-400/90">{error}</div>}
+      {error && <div className="text-caption text-status-danger/90">{error}</div>}
 
       <ActionButtons
         status={outcome ? "handled" : entry.status}
@@ -1262,7 +1262,7 @@ function WaitlistRow({ entry, onChanged }: { entry: WaitlistEntry; onChanged: ()
         />
       </div>
       {outcome && <ApproveResultNote outcome={outcome} />}
-      {error && <div className="text-caption text-red-400/90">{error}</div>}
+      {error && <div className="text-caption text-status-danger/90">{error}</div>}
     </div>
   );
 }
@@ -1319,7 +1319,7 @@ function AdminLoginForm({ onSuccess }: { onSuccess: () => void }) {
             />
           </div>
           {error && (
-            <div className="text-caption text-red-400/90" data-testid="text-admin-login-error">
+            <div className="text-caption text-status-danger/90" data-testid="text-admin-login-error">
               {error}
             </div>
           )}
@@ -1350,8 +1350,8 @@ function EnvironmentPill() {
       className={cn(
         "text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border leading-none",
         isProd
-          ? "text-red-400 border-red-400/40 bg-red-400/10"
-          : "text-amber-400 border-amber-400/40 bg-amber-400/10",
+          ? "text-status-danger border-status-danger/40 bg-status-danger/10"
+          : "text-status-warning border-status-warning/40 bg-status-warning/10",
       )}
       data-testid="pill-environment"
       title={`Operating against the ${env} database`}
@@ -1418,7 +1418,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading access requests…
             </div>
           ) : requests.isError ? (
-            <div className="text-caption text-red-400/90 py-4">
+            <div className="text-caption text-status-danger/90 py-4">
               Could not load access requests. Refresh to try again.
             </div>
           ) : requestEntries.length === 0 ? (
@@ -1450,7 +1450,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading waitlist…
             </div>
           ) : waitlist.isError ? (
-            <div className="text-caption text-red-400/90 py-4">
+            <div className="text-caption text-status-danger/90 py-4">
               Could not load the waitlist. Refresh to try again.
             </div>
           ) : waitlistEntries.length === 0 ? (

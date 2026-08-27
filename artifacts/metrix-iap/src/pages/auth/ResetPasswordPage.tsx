@@ -56,10 +56,10 @@ export function ResetPasswordPage({ onBackToLogin }: { onBackToLogin: () => void
         {state === "done" ? (
           <div className="space-y-4">
             <div
-              className="flex items-start gap-2.5 p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06]"
+              className="flex items-start gap-2.5 p-3 rounded-lg border border-status-success/20 bg-status-success/[0.06]"
               data-testid="text-reset-success"
             >
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-4 h-4 text-status-success shrink-0 mt-0.5" />
               <div className="text-body text-foreground">
                 Your password has been reset. Sign in with your new password to
                 continue.
@@ -76,10 +76,10 @@ export function ResetPasswordPage({ onBackToLogin }: { onBackToLogin: () => void
         ) : state === "invalid" ? (
           <div className="space-y-4">
             <div
-              className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.06]"
+              className="flex items-start gap-2.5 p-3 rounded-lg border border-status-warning/20 bg-status-warning/[0.06]"
               data-testid="text-reset-invalid"
             >
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
               <div className="text-body text-foreground">
                 This reset link is invalid, expired, or has already been used.
                 Request a new one from the login page.
@@ -127,7 +127,7 @@ export function ResetPasswordPage({ onBackToLogin }: { onBackToLogin: () => void
               />
             </div>
             {error && (
-              <div className="text-caption text-red-400/90" data-testid="text-reset-error">
+              <div className="text-caption text-status-danger/90" data-testid="text-reset-error">
                 {error}
               </div>
             )}

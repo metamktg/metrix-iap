@@ -110,7 +110,7 @@ function SegmentMetricPicker({
               );
             })}
             {atCap && (
-              <p className={cn(TYPE.caption, "text-amber-300/80 pt-0.5")}>
+              <p className={cn(TYPE.caption, "text-status-warning/80 pt-0.5")}>
                 Maximum of {MAX_VISIBLE_SEGMENT_METRICS} metrics — remove one to add another.
               </p>
             )}
@@ -244,10 +244,10 @@ function CompareLowSignalBanner({ data, label }: { data: SegmentDrilldownData; l
   if (!data.signal.low) return null;
   return (
     <div
-      className="flex items-start gap-2 text-caption text-amber-200/90 leading-relaxed rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-2.5"
+      className="flex items-start gap-2 text-caption text-status-warning/90 leading-relaxed rounded-lg border border-status-warning/25 bg-status-warning/[0.06] p-2.5"
       data-testid={`banner-low-signal-${segmentKey(data.segment)}`}
     >
-      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-300" />
+      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-status-warning" />
       <span>
         <span className="font-semibold">{label}: low signal.</span> {data.signal.reasons.join(" ")}
       </span>
@@ -334,7 +334,7 @@ function CompareMetricCell({
     );
   }
   return (
-    <span className={cn("font-semibold", isWinner ? "text-emerald-300" : "text-foreground")}>
+    <span className={cn("font-semibold", isWinner ? "text-status-success" : "text-foreground")}>
       {m.formatted}
     </span>
   );
@@ -384,8 +384,8 @@ function WinnerDiffBadge({
           className={cn(
             "inline-flex items-center gap-0.5 text-micro font-semibold px-1.5 py-0.5 rounded border cursor-default tabular-nums",
             isAWins
-              ? "text-emerald-300/90 border-emerald-500/25 bg-emerald-500/[0.07]"
-              : "text-sky-300/90 border-sky-500/25 bg-sky-500/[0.07]",
+              ? "text-status-success/90 border-status-success/25 bg-status-success/[0.07]"
+              : "text-interactive/90 border-primary/25 bg-primary/[0.07]",
           )}
           data-testid={`winner-badge-${isAWins ? "a" : "b"}`}
         >
@@ -607,7 +607,7 @@ function CompareMetricTable({
                   <td className="px-3 py-2 text-label font-mono uppercase tracking-widest text-muted-foreground/60">
                     {m.label}
                   </td>
-                  <td className={cn("px-3 py-2 text-right text-title tabular-nums", aWins && "bg-emerald-500/[0.04]")} data-testid={`cell-compare-metric-${id}-a`}>
+                  <td className={cn("px-3 py-2 text-right text-title tabular-nums", aWins && "bg-status-success/[0.04]")} data-testid={`cell-compare-metric-${id}-a`}>
                     <CompareMetricCell catalog={catalog} id={id} isWinner={aWins} />
                   </td>
                   <td className="px-2 py-2 text-center w-[64px]" data-testid={`cell-compare-diff-${id}`}>
@@ -623,7 +623,7 @@ function CompareMetricTable({
                       <span className="text-micro text-muted-foreground/25">—</span>
                     )}
                   </td>
-                  <td className={cn("px-3 py-2 text-right text-title tabular-nums", bWins && "bg-sky-500/[0.04]")} data-testid={`cell-compare-metric-${id}-b`}>
+                  <td className={cn("px-3 py-2 text-right text-title tabular-nums", bWins && "bg-primary/[0.04]")} data-testid={`cell-compare-metric-${id}-b`}>
                     <CompareMetricCell catalog={compareCatalog} id={id} isWinner={bWins} />
                   </td>
                 </tr>
@@ -821,8 +821,8 @@ export function SegmentDrilldownModal({
           ) : (
             <div className="space-y-4">
               {data.signal.low && (
-                <div className="flex items-start gap-2 text-caption text-amber-200/90 leading-relaxed rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-3" data-testid="banner-low-signal">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-300" />
+                <div className="flex items-start gap-2 text-caption text-status-warning/90 leading-relaxed rounded-lg border border-status-warning/25 bg-status-warning/[0.06] p-3" data-testid="banner-low-signal">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-status-warning" />
                   <span>
                     <span className="font-semibold">Low signal.</span>{" "}
                     {data.signal.reasons.join(" ")} Read these numbers as directional, not conclusive.
@@ -908,7 +908,7 @@ export function SegmentDrilldownModal({
                             </div>
                             {/* Results share bar */}
                             <div className="h-[5px] rounded-full bg-white/[0.05] overflow-hidden">
-                              <div className="h-full rounded-full bg-gradient-to-r from-primary/55 to-violet-500/55" style={{ width: `${barPct}%` }} />
+                              <div className="h-full rounded-full bg-gradient-to-r from-primary/55 to-primary/55" style={{ width: `${barPct}%` }} />
                             </div>
                             {/* Copy preview */}
                             {c.copy?.primary && (

@@ -501,7 +501,7 @@ export function DemographicTable({
           <span className="text-muted-foreground/65">low</span>
           <div
             className="w-20 h-2 rounded-full"
-            style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.04) 0%, hsl(var(--chart-3) / 0.30) 100%)" }}
+            style={{ background: "linear-gradient(90deg, hsl(var(--foreground) / 0.04) 0%, hsl(var(--chart-3) / 0.30) 100%)" }}
           />
           <span className="text-muted-foreground/65">high</span>
         </div>

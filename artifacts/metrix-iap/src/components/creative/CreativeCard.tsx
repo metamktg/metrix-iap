@@ -287,7 +287,7 @@ export function CreativeCard({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
           "hover:shadow-lg hover:shadow-black/30",
           unmapped
-            ? "border-amber-400/30 hover:border-amber-400/50"
+            ? "border-status-warning/30 hover:border-status-warning/50"
             : "border-white/[0.09] hover:border-primary/30",
           className
         )}
@@ -308,9 +308,9 @@ export function CreativeCard({
                 onUploadCreatives?.();
               }}
               title="Map this creative to an IAP library entry"
-              className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-amber-500/20 border border-amber-400/35 text-amber-300 text-[8px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm hover:bg-amber-500/30 transition-colors"
+              className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-status-warning/20 border border-status-warning/35 text-status-warning text-[8px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm hover:bg-status-warning/30 transition-colors"
             >
-              <span className="w-1 h-1 rounded-full bg-amber-400 shrink-0" />
+              <span className="w-1 h-1 rounded-full bg-status-warning shrink-0" />
               Map creative
             </button>
           )}
@@ -363,7 +363,7 @@ export function CreativeCard({
               {qaFlagged && (
                 <span
                   title={`QA mapping: ${data.qaMappingStatus}`}
-                  className="flex items-center gap-0.5 text-[8px] font-semibold uppercase text-amber-300 border border-amber-400/30 bg-amber-400/10 px-1 py-0.5 rounded leading-none"
+                  className="flex items-center gap-0.5 text-[8px] font-semibold uppercase text-status-warning border border-status-warning/30 bg-status-warning/10 px-1 py-0.5 rounded leading-none"
                 >
                   <AlertTriangle className="w-2.5 h-2.5" />
                   QA

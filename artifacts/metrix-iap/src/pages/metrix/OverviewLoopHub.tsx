@@ -90,9 +90,9 @@ export function OverviewLoopSummary() {
                 className={cn(
                   TYPE.label,
                   s.done === s.total && s.total > 0
-                    ? "text-emerald-400/90"
+                    ? "text-status-success/90"
                     : s.done > 0
-                      ? "text-amber-400/80"
+                      ? "text-status-warning/80"
                       : "text-muted-foreground/55"
                 )}
               >

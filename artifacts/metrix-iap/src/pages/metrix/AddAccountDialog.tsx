@@ -146,7 +146,7 @@ export function AddAccountDialog({
                     key={n}
                     className={cn(
                       "w-1.5 h-1.5 rounded-full transition-colors",
-                      n < stepNumber ? "bg-emerald-400/60"
+                      n < stepNumber ? "bg-status-success/60"
                         : n === stepNumber ? "bg-primary/70"
                         : "bg-border/40"
                     )}
@@ -250,13 +250,13 @@ export function AddAccountDialog({
                 className={cn(
                   "w-full h-10 px-3 rounded-md bg-white/[0.03] border text-title text-foreground",
                   "placeholder:text-muted-foreground/75 focus:outline-none focus:ring-1",
-                  error ? "border-red-400/40 focus:ring-red-400/40" : "border-border/50 focus:ring-primary/40 focus:border-primary/40"
+                  error ? "border-status-danger/40 focus:ring-status-danger/40" : "border-border/50 focus:ring-primary/40 focus:border-primary/40"
                 )}
               />
               {error && (
-                <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                  <p className="text-caption text-red-300 leading-relaxed">{error}</p>
+                <div className="flex items-start gap-2 p-2.5 rounded-lg border border-status-danger/25 bg-status-danger/[0.06]">
+                  <AlertTriangle className="w-3.5 h-3.5 text-status-danger shrink-0 mt-0.5" />
+                  <p className="text-caption text-status-danger leading-relaxed">{error}</p>
                 </div>
               )}
               <div className="flex items-center justify-between pt-1">
@@ -283,8 +283,8 @@ export function AddAccountDialog({
           <>
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg border border-emerald-400/25 bg-emerald-400/[0.08] flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <div className="w-8 h-8 rounded-lg border border-status-success/25 bg-status-success/[0.08] flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 text-status-success" />
                 </div>
               </div>
               <DialogTitle className={DIALOG.title}>{created.name} created</DialogTitle>

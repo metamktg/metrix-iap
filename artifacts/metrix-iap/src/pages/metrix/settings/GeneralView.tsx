@@ -98,7 +98,7 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
             className={cn(
               "w-full rounded-lg border bg-white/[0.02] px-3 py-2 text-body text-foreground",
               "placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/45 disabled:opacity-60",
-              tooLong ? "border-red-400/50" : "border-border/40"
+              tooLong ? "border-status-danger/50" : "border-border/40"
             )}
           />
           <div className="text-label font-mono text-muted-foreground/60">
@@ -195,7 +195,7 @@ function ObjectivesSection({ accountId, currentObjectives }: { accountId: string
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <div className="text-body font-medium text-foreground">{c.label}</div>
-                  {active && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                  {active && <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />}
                 </div>
                 <div className="text-label text-muted-foreground/70 mt-0.5">{c.desc}</div>
               </div>
@@ -231,13 +231,13 @@ function PrefToggle({
       className={cn(
         "inline-flex items-center justify-center w-5 h-5 rounded border transition-colors",
         on
-          ? "border-emerald-400/25 bg-emerald-400/10 hover:bg-emerald-400/20"
+          ? "border-status-success/25 bg-status-success/10 hover:bg-status-success/20"
           : "border-border/40 bg-white/[0.02] hover:bg-white/[0.06]",
         disabled && "opacity-50 pointer-events-none"
       )}
     >
       {on ? (
-        <Check className="w-3 h-3 text-emerald-400" />
+        <Check className="w-3 h-3 text-status-success" />
       ) : (
         <Minus className="w-3 h-3 text-muted-foreground/70" />
       )}
@@ -321,7 +321,7 @@ function NotificationPrefsSections() {
                 className={cn(
                   "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none transition-colors",
                   c.enabled
-                    ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10 hover:bg-emerald-400/20"
+                    ? "text-status-success border-status-success/25 bg-status-success/10 hover:bg-status-success/20"
                     : "text-muted-foreground/70 border-border/40 bg-white/[0.03] hover:bg-white/[0.08]",
                   isPending && "opacity-60 pointer-events-none"
                 )}
@@ -406,7 +406,7 @@ export function GeneralView() {
         <SectionCard title="Data connection" desc="Meta ad account connection and manual import status.">
           <div className="space-y-2.5">
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-              {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
+              {configured ? <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
               <div className="flex-1 min-w-0">
                 <div className="text-body font-medium text-foreground">Meta ad account</div>
                 <div className="text-label text-muted-foreground/85">{configured ? `${account.platform} · connected` : "Not connected"}</div>
@@ -485,8 +485,8 @@ export function GeneralView() {
         )}
 
         <SectionCard title="Data isolation" desc="How this account's data is scoped within the manager.">
-          <div className="flex items-start gap-2.5 p-3 rounded-lg border border-emerald-400/15 bg-emerald-400/[0.03]">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2.5 p-3 rounded-lg border border-status-success/15 bg-status-success/[0.03]">
+            <ShieldCheck className="w-4 h-4 text-status-success shrink-0 mt-0.5" />
             <DetailReveal
               label={deriveLabel(`All analysis, strategy, briefs, reports, and MST data are isolated to ${account.name}.`, 72)}
               labelClassName="text-caption text-foreground/75 leading-relaxed"

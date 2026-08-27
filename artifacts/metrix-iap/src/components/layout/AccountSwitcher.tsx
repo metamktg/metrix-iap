@@ -81,7 +81,7 @@ function AccountAvatar({
             "absolute rounded-full ring-[1.5px] ring-surface-sidebar",
             dotSize[size],
             dotOffset[size],
-            status === "configured" ? "bg-emerald-500" : "bg-muted-foreground/40"
+            status === "configured" ? "bg-status-success" : "bg-muted-foreground/40"
           )}
         />
       )}
@@ -172,7 +172,7 @@ function SwitcherPanel({
       className={cn(
         "flex flex-col rounded-xl overflow-hidden",
         "bg-surface-sidebar border border-border/50",
-        "shadow-[0_8px_40px_rgba(0,0,0,0.55)]",
+        "shadow-[0_8px_40px_hsl(0 0% 0% / 0.55)]",
         "animate-in fade-in-0 zoom-in-95 duration-100"
       )}
       role="dialog"
@@ -277,10 +277,10 @@ function SwitcherPanel({
                   </div>
                   {isUnconfigured ? (
                     <div className="flex items-center gap-1 mt-0.5">
-                      <span className="text-[9px] text-amber-400/70 leading-tight">
+                      <span className="text-[9px] text-status-warning/70 leading-tight">
                         Needs setup
                       </span>
-                      <ArrowUpRight className="w-2.5 h-2.5 text-amber-400/50" />
+                      <ArrowUpRight className="w-2.5 h-2.5 text-status-warning/50" />
                     </div>
                   ) : (
                     <div className="text-[9px] text-muted-foreground/50 leading-tight mt-0.5">

@@ -297,7 +297,7 @@ export function CreativeBriefBuilderView() {
                                 {[fbString(visual, "imagery"), fbString(visual, "composition"), fbString(visual, "typography")].filter(Boolean).join(" · ")}
                               </p>
                               {avoidList.length > 0 && (
-                                <p className={cn(TYPE.label, "text-amber-300/75 mt-1.5")}>Avoid: {avoidList.join(" · ")}</p>
+                                <p className={cn(TYPE.label, "text-status-warning/75 mt-1.5")}>Avoid: {avoidList.join(" · ")}</p>
                               )}
                             </FieldPanel>
                           )}

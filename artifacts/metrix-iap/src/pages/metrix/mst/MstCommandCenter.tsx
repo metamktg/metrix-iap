@@ -91,8 +91,8 @@ function computeColumnPerf(columnId: string, columnIds: string[], rows: CellPerf
 
 /** Stable per-avatar accent so identity reads consistently regardless of sort order. */
 const AVATAR_ACCENTS = [
-  "bg-chart-1/70", "bg-violet-400/70", "bg-amber-400/70",
-  "bg-teal-400/70", "bg-fuchsia-400/70", "bg-sky-400/70",
+  "bg-chart-1/70", "bg-primary/70", "bg-status-warning/70",
+  "bg-metrix-cyan/70", "bg-primary/70", "bg-primary/70",
 ] as const;
 function avatarAccent(index: number) {
   return AVATAR_ACCENTS[index % AVATAR_ACCENTS.length];
@@ -132,11 +132,11 @@ function DnaLociBars({ variables }: { variables: DnaVariable[] }) {
               <div className="relative flex-1 h-[5px]">
                 <div className="absolute inset-y-0 left-1/2 w-px bg-border/60" />
                 <div
-                  className={cn("absolute inset-y-0 rounded-full", good ? "bg-primary/60" : "bg-red-400/45")}
+                  className={cn("absolute inset-y-0 rounded-full", good ? "bg-primary/60" : "bg-status-danger/45")}
                   style={good ? { left: "50%", width: `${w}%` } : { right: "50%", width: `${w}%` }}
                 />
               </div>
-              <span className={cn("text-label w-12 shrink-0 text-right tabular-nums", good ? "text-emerald-400" : "text-red-300")}>
+              <span className={cn("text-label w-12 shrink-0 text-right tabular-nums", good ? "text-status-success" : "text-status-danger")}>
                 {lift > 0 ? "+" : ""}{lift.toFixed(0)}%
               </span>
             </div>

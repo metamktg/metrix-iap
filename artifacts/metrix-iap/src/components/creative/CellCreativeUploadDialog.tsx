@@ -163,7 +163,7 @@ export function CellCreativeUploadDialog({
 
         {status === "success" ? (
           <div className="flex flex-col items-center gap-3 py-6">
-            <CheckCircle className="w-8 h-8 text-emerald-400" />
+            <CheckCircle className="w-8 h-8 text-status-success" />
             <p className="text-body text-center text-muted-foreground">
               Creative filed to <span className="font-mono text-interactive">{cellId}</span> — the library will refresh automatically.
             </p>
@@ -185,10 +185,10 @@ export function CellCreativeUploadDialog({
           </div>
         ) : status === "confirm" && validation ? (
           <div className="space-y-3 py-1">
-            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <div className="space-y-1.5 text-caption text-amber-200/90">
-                <p className="font-medium text-amber-200">Doesn't match this cell's recorded DNA</p>
+            <div className="flex items-start gap-2 rounded-lg border border-status-warning/30 bg-status-warning/10 px-3 py-2.5">
+              <AlertTriangle className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
+              <div className="space-y-1.5 text-caption text-status-warning/90">
+                <p className="font-medium text-status-warning">Doesn't match this cell's recorded DNA</p>
                 {validation.missing.length > 0 && (
                   <p>Missing: <span className="font-mono">{validation.missing.join(", ")}</span></p>
                 )}
@@ -214,7 +214,7 @@ export function CellCreativeUploadDialog({
               <button
                 type="button"
                 onClick={() => void upload(true)}
-                className="flex-1 py-2 rounded-lg text-body font-medium bg-amber-500/90 text-black hover:bg-amber-500 transition-colors"
+                className="flex-1 py-2 rounded-lg text-body font-medium bg-status-warning/90 text-black hover:bg-status-warning transition-colors"
               >
                 Upload anyway
               </button>

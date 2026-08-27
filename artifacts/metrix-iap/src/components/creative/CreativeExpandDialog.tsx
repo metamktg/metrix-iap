@@ -23,10 +23,10 @@ import { useCreativeEmptyReasons } from "@/hooks/useCreativeEmptyReasons";
 // (needs attention). Unrecognized values fall back to neutral styling.
 
 const QA_STATUS_STYLE: Record<string, string> = {
-  pass: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25",
-  mapped_to_performance: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25",
-  flagged: "bg-red-400/10 text-red-300 border-red-400/25",
-  library_only_no_export_match: "bg-amber-400/10 text-amber-300 border-amber-400/25",
+  pass: "bg-status-success/10 text-status-success border-status-success/25",
+  mapped_to_performance: "bg-status-success/10 text-status-success border-status-success/25",
+  flagged: "bg-status-danger/10 text-status-danger border-status-danger/25",
+  library_only_no_export_match: "bg-status-warning/10 text-status-warning border-status-warning/25",
 };
 
 const QA_STATUS_LABEL: Record<string, string> = {
@@ -431,7 +431,7 @@ function DemographicsTab({
                     title={`Male: ${metric === "spend" ? usd(mSpend) : num(mRes)}`}
                   />
                   <div
-                    className="h-full bg-rose-400/50"
+                    className="h-full bg-status-danger/50"
                     style={{ width: `${fBarPct}%` }}
                     title={`Female: ${metric === "spend" ? usd(fSpend) : num(fRes)}`}
                   />
@@ -444,8 +444,8 @@ function DemographicsTab({
                   <span className="w-1.5 h-1.5 rounded-full bg-chart-1/60 shrink-0" />
                   M {metric === "spend" ? usd(mSpend) : num(mRes)}
                 </span>
-                <span className="flex items-center gap-1 text-label text-rose-300/80">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400/60 shrink-0" />
+                <span className="flex items-center gap-1 text-label text-status-danger/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-status-danger/60 shrink-0" />
                   F {metric === "spend" ? usd(fSpend) : num(fRes)}
                 </span>
                 {isActive && (
@@ -480,7 +480,7 @@ function DemographicsTab({
                 reach: activeBucket.maleReach, gender: activeBucket.maleGender,
               },
               {
-                label: "Female", dot: "bg-rose-400", color: "text-rose-300",
+                label: "Female", dot: "bg-status-danger", color: "text-status-danger",
                 spend: activeBucket.female, results: activeBucket.femaleResults,
                 cpa: activeBucket.femaleCpa, ctr: activeBucket.femaleCtr,
                 reach: activeBucket.femaleReach, gender: activeBucket.femaleGender,
@@ -518,7 +518,7 @@ function DemographicsTab({
                       "w-full text-label font-medium rounded-md border py-1.5 transition-colors",
                       g.label === "Male"
                         ? "border-accent/25 text-accent/80 hover:bg-accent/10"
-                        : "border-rose-400/25 text-rose-300/80 hover:bg-rose-400/10"
+                        : "border-status-danger/25 text-status-danger/80 hover:bg-status-danger/10"
                     )}
                   >
                     Drill down →
@@ -721,8 +721,8 @@ export function CreativeExpandDialog({
             <ExpandVisual data={data} className="absolute inset-0" />
 
             {unmapped && (
-              <div className="absolute top-3 left-3 flex items-center gap-1 bg-amber-500/20 border border-amber-400/30 text-amber-300 text-micro font-semibold px-2 py-1 rounded-full backdrop-blur-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <div className="absolute top-3 left-3 flex items-center gap-1 bg-status-warning/20 border border-status-warning/30 text-status-warning text-micro font-semibold px-2 py-1 rounded-full backdrop-blur-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-status-warning" />
                 Unmapped
               </div>
             )}
@@ -757,17 +757,17 @@ export function CreativeExpandDialog({
             <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
               {/* Unmapped warning shown in overview */}
               {unmapped && tab === "overview" && (
-                <div className="mb-4 flex items-start gap-2.5 p-3 rounded-lg border border-amber-400/25 bg-amber-400/[0.05]">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-px" strokeWidth={1.5} />
+                <div className="mb-4 flex items-start gap-2.5 p-3 rounded-lg border border-status-warning/25 bg-status-warning/[0.05]">
+                  <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-px" strokeWidth={1.5} />
                   <div className="space-y-1.5 min-w-0">
-                    <p className="text-caption font-medium text-amber-300/90">Not fully mapped to IAP library</p>
+                    <p className="text-caption font-medium text-status-warning/90">Not fully mapped to IAP library</p>
                     <p className="text-label text-muted-foreground/70 leading-relaxed">
                       This cell has performance data but no library entry — variable codes, copy, and asset may be absent.
                     </p>
                     {onUploadCreatives && (
                       <button
                         onClick={() => { onOpenChange(false); onUploadCreatives(); }}
-                        className="flex items-center gap-1 text-label font-medium text-amber-300 hover:text-amber-200 border border-amber-400/25 bg-amber-400/[0.06] hover:bg-amber-400/10 px-2 py-1 rounded transition-colors"
+                        className="flex items-center gap-1 text-label font-medium text-status-warning hover:text-status-warning border border-status-warning/25 bg-status-warning/[0.06] hover:bg-status-warning/10 px-2 py-1 rounded transition-colors"
                       >
                         <Upload className="w-3.5 h-3.5" /> Upload creatives
                       </button>

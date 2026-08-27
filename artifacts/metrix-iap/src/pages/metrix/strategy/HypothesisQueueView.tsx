@@ -107,8 +107,8 @@ function HypothesisCardList({
 
             {h.risk && (
               <div className="flex items-start gap-1.5 mt-2.5 pt-2.5 border-t border-border/20">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-0.5" />
-                <p className="text-caption text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
+                <AlertTriangle className="w-3.5 h-3.5 text-status-warning/70 shrink-0 mt-0.5" />
+                <p className="text-caption text-status-warning/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
               </div>
             )}
           </button>

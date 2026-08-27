@@ -46,13 +46,13 @@ const PILLAR_ACCENTS = [
 ];
 
 const PILLAR_DOT = [
-  "bg-emerald-400/70",
+  "bg-status-success/70",
   "bg-chart-1/70",
-  "bg-purple-400/70",
-  "bg-amber-400/70",
-  "bg-cyan-400/70",
-  "bg-rose-400/70",
-  "bg-indigo-400/70",
+  "bg-primary/70",
+  "bg-status-warning/70",
+  "bg-metrix-cyan/70",
+  "bg-status-danger/70",
+  "bg-primary/70",
 ];
 
 // Hypothesis priority for the next-actions panel sort.
@@ -312,7 +312,7 @@ function NextActionsPanel({
         aria-expanded={open}
         className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/[0.03] transition-colors text-left"
       >
-        <Lightbulb className="w-3.5 h-3.5 text-amber-300/70 shrink-0" />
+        <Lightbulb className="w-3.5 h-3.5 text-status-warning/70 shrink-0" />
         <span className={cn(TYPE.caption, "font-semibold text-foreground/80 flex-1 truncate")}>
           Next actions · {t.main}
         </span>
@@ -349,7 +349,7 @@ function NextActionsPanel({
                     className={cn(
                       "inline-flex items-center gap-1.5 text-label font-medium border rounded px-1.5 py-1 transition-colors leading-none",
                       isQueued
-                        ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30"
+                        ? "bg-status-success/10 text-status-success border-status-success/30"
                         : "bg-white/[0.03] text-muted-foreground/70 border-border/40 hover:text-foreground hover:border-border/70"
                     )}
                   >

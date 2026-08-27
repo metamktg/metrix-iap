@@ -27,6 +27,8 @@
   --color-text-secondary: hsl(var(--text-secondary));
   --color-text-muted: hsl(var(--text-muted));
   --color-text-interactive: var(--mx-text-interactive);
+  /* Short alias, so `text-interactive` reads as what it is. */
+  --color-interactive: var(--mx-text-interactive);
   --color-status-success: hsl(var(--status-success));
   --color-status-warning: hsl(var(--status-warning));
   --color-status-danger: hsl(var(--status-danger));

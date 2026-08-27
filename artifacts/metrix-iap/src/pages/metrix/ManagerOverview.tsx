@@ -187,10 +187,10 @@ function AdAccountCard({
       {/* Status icon */}
       <div className={cn(
         "w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 mt-0.5",
-        configured ? "border-emerald-400/25 bg-emerald-400/10" : "border-border/30 bg-white/[0.02]",
+        configured ? "border-status-success/25 bg-status-success/10" : "border-border/30 bg-white/[0.02]",
       )}>
         {configured
-          ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          ? <CheckCircle2 className="w-3.5 h-3.5 text-status-success" />
           : <Plug className="w-3.5 h-3.5 text-muted-foreground/50" />}
       </div>
 
@@ -244,7 +244,7 @@ function AdAccountCard({
 //   5. "Open [account] →" — prominent CTA at bottom
 
 const IMPACT_STYLE: Record<string, { borderLeft: string; accentBg: string }> = {
-  high:   { borderLeft: "border-l-[3px] border-l-amber-400/50",   accentBg: "bg-amber-400/[0.03]" },
+  high:   { borderLeft: "border-l-[3px] border-l-amber-400/50",   accentBg: "bg-status-warning/[0.03]" },
   medium: { borderLeft: "border-l-[3px] border-l-primary/30",     accentBg: "bg-primary/[0.025]" },
   setup:  { borderLeft: "border-l-[3px] border-l-blue-400/30",    accentBg: "bg-chart-1/[0.025]" },
   low:    { borderLeft: "",                                         accentBg: "" },

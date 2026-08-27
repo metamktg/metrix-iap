@@ -282,7 +282,7 @@ export function LoginPage() {
               {/* Error */}
               {loginError && (
                 <div
-                  className="text-body text-red-400/90 rounded-xl px-4 py-2.5 bg-red-500/10 border border-red-500/20"
+                  className="text-body text-status-danger/90 rounded-xl px-4 py-2.5 bg-status-danger/10 border border-status-danger/20"
                   data-testid="text-login-error"
                 >
                   {loginError}

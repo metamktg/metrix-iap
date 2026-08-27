@@ -76,7 +76,7 @@ function saveCollapsed(v: boolean) {
 
 const BADGE_STYLE: Record<string, string> = {
   alerts:      "bg-destructive/15 text-destructive border-destructive/20",
-  signals:     "text-amber-400 bg-amber-400/10 border-amber-400/20",
+  signals:     "text-status-warning bg-status-warning/10 border-status-warning/20",
   suggestions: "bg-primary/15 text-interactive border-primary/20",
   briefs:      "bg-primary/15 text-interactive border-primary/20",
   mst:         "bg-muted text-muted-foreground border-border/40",

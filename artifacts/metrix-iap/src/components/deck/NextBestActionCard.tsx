@@ -23,8 +23,8 @@ import { addToTray } from "@/lib/data/trayStore";
 import { impactRank, type DeckCard } from "./RecommendationDeck";
 
 const IMPACT_BADGE: Record<string, string> = {
-  high: "border-red-400/25 bg-red-400/10 text-red-300",
-  medium: "border-amber-400/25 bg-amber-400/10 text-amber-300",
+  high: "border-status-danger/25 bg-status-danger/10 text-status-danger",
+  medium: "border-status-warning/25 bg-status-warning/10 text-status-warning",
   low: "border-border/40 bg-muted text-muted-foreground/60",
   setup: "border-primary/25 bg-primary/10 text-interactive",
 };

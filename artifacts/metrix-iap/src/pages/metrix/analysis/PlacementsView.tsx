@@ -235,7 +235,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
                 <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-0.5">{label}</div>
                 <div className="text-stat metric-num leading-none">{value}</div>
                 {delta && (
-                  <div className={cn("text-label mt-1 leading-none", delta.good ? "text-accent" : "text-amber-300/80")}>
+                  <div className={cn("text-label mt-1 leading-none", delta.good ? "text-accent" : "text-status-warning/80")}>
                     {delta.text}
                   </div>
                 )}

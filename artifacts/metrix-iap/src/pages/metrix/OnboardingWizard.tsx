@@ -56,7 +56,7 @@ function StepIndicator({ step }: { step: Step }) {
               key={s}
               className={cn(
                 "w-1.5 h-1.5 rounded-full transition-colors",
-                n < stepNumber ? "bg-emerald-400/60" : n === stepNumber ? "bg-primary/70" : "bg-border/40"
+                n < stepNumber ? "bg-status-success/60" : n === stepNumber ? "bg-primary/70" : "bg-border/40"
               )}
             />
           );

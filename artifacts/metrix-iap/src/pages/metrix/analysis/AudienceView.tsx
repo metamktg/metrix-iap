@@ -262,12 +262,12 @@ function PositioningMapCard({
       return (
         <g role="img" aria-label={payload.group.label} style={{ cursor: "default" }}>
           <circle cx={cx} cy={cy} r={r + 4} fill={fill} fillOpacity={0.08} />
-          <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.72} stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />
+          <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.72} stroke="hsl(var(--foreground) / 0.15)" strokeWidth={1.5} />
           <text
             x={cx} y={cy + 0.5}
             textAnchor="middle" dominantBaseline="middle"
             fontSize={9} fontWeight={700}
-            fill="rgba(255,255,255,0.92)"
+            fill="hsl(var(--foreground) / 0.92)"
             style={{ pointerEvents: "none" }}
           >
             {payload.group.id}
@@ -354,14 +354,14 @@ function PositioningMapCard({
 
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart margin={{ top: 10, right: 20, bottom: 45, left: 60 }}>
-              <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.10)" />
+              <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--foreground) / 0.10)" />
               <XAxis
                 dataKey="x"
                 type="number"
                 domain={["auto", "auto"]}
                 tickFormatter={(v: number) => fmtUSD(v, 0)}
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                axisLine={{ stroke: "hsl(var(--foreground) / 0.08)" }}
                 tickLine={false}
                 label={{
                   value: "Cost per result →",
@@ -377,7 +377,7 @@ function PositioningMapCard({
                 domain={["auto", "auto"]}
                 tickFormatter={(v: number) => fmtNum(v)}
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                axisLine={{ stroke: "hsl(var(--foreground) / 0.08)" }}
                 tickLine={false}
                 label={{
                   value: `${resultPlural} →`,
@@ -455,7 +455,7 @@ function ShareOfSpendCard({
                 <span className={cn(
                   TYPE.label,
                   "tabular-nums shrink-0",
-                  gap >= 3 ? "text-emerald-400" : gap <= -3 ? "text-amber-300" : "text-muted-foreground/45",
+                  gap >= 3 ? "text-status-success" : gap <= -3 ? "text-status-warning" : "text-muted-foreground/45",
                 )}>
                   {gap > 0 ? "+" : ""}{gap}pts
                 </span>
@@ -685,7 +685,7 @@ function RankedListTab({
                   </span>
                 ) : e.signal.low ? (
                   <span
-                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-amber-300/65 shrink-0"
+                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-status-warning/65 shrink-0"
                     title={e.signal.reasons.join(" ")}
                   >
                     <AlertTriangle className="w-3.5 h-3.5" /> Low

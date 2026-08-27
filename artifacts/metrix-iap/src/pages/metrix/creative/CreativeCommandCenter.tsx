@@ -210,7 +210,7 @@ export function CreativeCommandCenter() {
                         <span className="inline-flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/50 px-1.5 py-0.5 rounded leading-none">
                           <FileText className="w-2.5 h-2.5" /> {b.asset_type}
                         </span>
-                        <span className="text-label font-semibold uppercase tracking-wide text-amber-200 border border-amber-400/30 bg-amber-400/20 px-1.5 py-0.5 rounded leading-none">
+                        <span className="text-label font-semibold uppercase tracking-wide text-status-warning border border-status-warning/30 bg-status-warning/20 px-1.5 py-0.5 rounded leading-none">
                           {STATUS_LABEL[b.status] ?? b.status}
                         </span>
                       </div>

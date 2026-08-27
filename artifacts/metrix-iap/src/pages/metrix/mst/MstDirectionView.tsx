@@ -28,11 +28,11 @@ const SECTION = "MST · 06";
 const BUCKET_ORDER: ScalingBucket[] = ["scale_now", "optimize", "validate", "explore", "avoid"];
 
 const BUCKET_STYLE: Record<ScalingBucket, string> = {
-  scale_now: "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400",
-  optimize: "border-amber-400/25 bg-amber-400/[0.06] text-amber-300",
+  scale_now: "border-status-success/25 bg-status-success/[0.06] text-status-success",
+  optimize: "border-status-warning/25 bg-status-warning/[0.06] text-status-warning",
   validate: "border-accent/25 bg-accent/[0.06] text-accent",
-  explore: "border-purple-400/25 bg-purple-400/[0.06] text-purple-300",
-  avoid: "border-red-400/25 bg-red-400/[0.06] text-red-300",
+  explore: "border-primary/25 bg-primary/[0.06] text-primary",
+  avoid: "border-status-danger/25 bg-status-danger/[0.06] text-status-danger",
 };
 
 const BUCKET_ICON: Record<ScalingBucket, React.ComponentType<{ className?: string }>> = {

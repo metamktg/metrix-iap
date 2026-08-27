@@ -126,7 +126,7 @@ export function AgentWaitlistSection() {
             <div className="text-body font-medium text-foreground">Admin access required</div>
           </div>
           {lastKeyRejected && (
-            <div className="text-caption text-red-400/80" data-testid="text-waitlist-unauthorized">
+            <div className="text-caption text-status-danger/80" data-testid="text-waitlist-unauthorized">
               That admin key was not accepted. Check the key and try again.
             </div>
           )}
@@ -240,14 +240,14 @@ export function AgentWaitlistSection() {
         )}
       </div>
       {exportError && (
-        <div className="mb-2 text-caption text-red-400/90 px-3 py-2 rounded-md border border-red-400/25 bg-red-400/[0.06]">
+        <div className="mb-2 text-caption text-status-danger/90 px-3 py-2 rounded-md border border-status-danger/25 bg-status-danger/[0.06]">
           {exportError}
         </div>
       )}
       {isLoading ? (
         <div className="text-caption text-muted-foreground/70 p-3">Loading waitlist…</div>
       ) : isError ? (
-        <div className="text-caption text-red-400/80 p-3">Could not load waitlist signups. Check that the API server is running.</div>
+        <div className="text-caption text-status-danger/80 p-3">Could not load waitlist signups. Check that the API server is running.</div>
       ) : entries.length === 0 ? (
         <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
           <Users className="w-4 h-4 text-muted-foreground/70 shrink-0" />
@@ -281,11 +281,11 @@ export function AgentWaitlistSection() {
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-body text-foreground truncate">{entry.email}</span>
                           {entry.status === "approved" ? (
-                            <span className="flex items-center gap-1 text-label font-medium text-emerald-400 shrink-0" data-testid={`badge-approved-${entry.email}`}>
+                            <span className="flex items-center gap-1 text-label font-medium text-status-success shrink-0" data-testid={`badge-approved-${entry.email}`}>
                               <CheckCircle2 className="w-3.5 h-3.5" /> Approved
                             </span>
                           ) : (
-                            <span className="text-label font-medium text-amber-400/80 shrink-0" data-testid={`badge-pending-${entry.email}`}>
+                            <span className="text-label font-medium text-status-warning/80 shrink-0" data-testid={`badge-pending-${entry.email}`}>
                               Pending
                             </span>
                           )}
@@ -309,14 +309,14 @@ export function AgentWaitlistSection() {
                       </div>
                       {result && result.status === "approved" && (
                         result.email_sent ? (
-                          <div className="flex items-center gap-1.5 text-caption text-emerald-400/90" data-testid={`text-approval-emailed-${entry.email}`}>
+                          <div className="flex items-center gap-1.5 text-caption text-status-success/90" data-testid={`text-approval-emailed-${entry.email}`}>
                             <MailCheck className="w-3.5 h-3.5" /> Temporary password emailed to {result.email}.
                           </div>
                         ) : result.temp_password ? (
-                          <div className="flex items-center gap-2 p-2 rounded border border-amber-500/20 bg-amber-500/[0.06]" data-testid={`panel-temp-password-${entry.email}`}>
+                          <div className="flex items-center gap-2 p-2 rounded border border-status-warning/20 bg-status-warning/[0.06]" data-testid={`panel-temp-password-${entry.email}`}>
                             <div className="text-caption text-foreground min-w-0">
                               Email not sent — share this temporary password manually:{" "}
-                              <span className="font-mono text-caption text-amber-300">{result.temp_password}</span>
+                              <span className="font-mono text-caption text-status-warning">{result.temp_password}</span>
                             </div>
                             <button
                               onClick={() => void handleCopyTempPassword(entry.id, result.temp_password!)}
@@ -344,11 +344,11 @@ export function AgentWaitlistSection() {
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-body text-foreground truncate">{entry.email}</span>
                           {entry.status === "approved" ? (
-                            <span className="flex items-center gap-1 text-label font-medium text-emerald-400 shrink-0" data-testid={`badge-approved-${entry.email}`}>
+                            <span className="flex items-center gap-1 text-label font-medium text-status-success shrink-0" data-testid={`badge-approved-${entry.email}`}>
                               <CheckCircle2 className="w-3.5 h-3.5" /> Approved
                             </span>
                           ) : (
-                            <span className="text-label font-medium text-amber-400/80 shrink-0" data-testid={`badge-pending-${entry.email}`}>
+                            <span className="text-label font-medium text-status-warning/80 shrink-0" data-testid={`badge-pending-${entry.email}`}>
                               Pending
                             </span>
                           )}
@@ -372,14 +372,14 @@ export function AgentWaitlistSection() {
                       </div>
                       {result && result.status === "approved" && (
                         result.email_sent ? (
-                          <div className="flex items-center gap-1.5 text-caption text-emerald-400/90" data-testid={`text-approval-emailed-${entry.email}`}>
+                          <div className="flex items-center gap-1.5 text-caption text-status-success/90" data-testid={`text-approval-emailed-${entry.email}`}>
                             <MailCheck className="w-3.5 h-3.5" /> Temporary password emailed to {result.email}.
                           </div>
                         ) : result.temp_password ? (
-                          <div className="flex items-center gap-2 p-2 rounded border border-amber-500/20 bg-amber-500/[0.06]" data-testid={`panel-temp-password-${entry.email}`}>
+                          <div className="flex items-center gap-2 p-2 rounded border border-status-warning/20 bg-status-warning/[0.06]" data-testid={`panel-temp-password-${entry.email}`}>
                             <div className="text-caption text-foreground min-w-0">
                               Email not sent — share this temporary password manually:{" "}
-                              <span className="font-mono text-caption text-amber-300">{result.temp_password}</span>
+                              <span className="font-mono text-caption text-status-warning">{result.temp_password}</span>
                             </div>
                             <button
                               onClick={() => void handleCopyTempPassword(entry.id, result.temp_password!)}
@@ -397,7 +397,7 @@ export function AgentWaitlistSection() {
               </div>
             )}
             {approveMutation.isError && (
-              <div className="px-3 py-2 text-caption text-red-400/80" data-testid="text-approve-error">
+              <div className="px-3 py-2 text-caption text-status-danger/80" data-testid="text-approve-error">
                 Approval failed. Check the admin key and try again.
               </div>
             )}

@@ -101,7 +101,7 @@ export function ChangePasswordPage() {
             />
           </div>
           {error && (
-            <div className="text-caption text-red-400/90" data-testid="text-change-password-error">
+            <div className="text-caption text-status-danger/90" data-testid="text-change-password-error">
               {error}
             </div>
           )}

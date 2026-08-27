@@ -147,7 +147,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
               data-testid="input-register-password"
             />
             {password.length > 0 && password.length < 8 && (
-              <p className="text-[11px] text-amber-400/70">
+              <p className="text-[11px] text-status-warning/70">
                 Password must be at least 8 characters.
               </p>
             )}
@@ -179,7 +179,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
               data-testid="input-register-confirm"
             />
             {confirm.length > 0 && !passwordsMatch && (
-              <p className="text-[11px] text-amber-400/70">
+              <p className="text-[11px] text-status-warning/70">
                 Passwords don't match.
               </p>
             )}
@@ -187,7 +187,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
 
           {error && (
             <div
-              className="text-[12px] text-red-400/90 bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2"
+              className="text-[12px] text-status-danger/90 bg-status-danger/5 border border-status-danger/10 rounded-lg px-3 py-2"
               data-testid="text-register-error"
             >
               {error}

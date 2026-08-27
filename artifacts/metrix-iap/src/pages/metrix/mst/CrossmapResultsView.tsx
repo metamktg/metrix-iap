@@ -340,7 +340,7 @@ function CrossmapRows({
                 <div className="font-medium text-foreground/75">{readableVariables(cell.concept_code)}</div>
                 {cell.plain_text.headline && <div className="text-label text-muted-foreground/60 mt-0.5">{cell.plain_text.headline}</div>}
               </Td>
-              <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-teal-300")}>{diag}</Td>
+              <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-metrix-cyan")}>{diag}</Td>
               <Td className="text-muted-foreground/40">—</Td>
               <Td right>—</Td>
               <Td right>—</Td>
@@ -371,7 +371,7 @@ function CrossmapRows({
                   </>
                 )}
               </Td>
-              <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-teal-300")}>{i === 0 ? diag : null}</Td>
+              <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-metrix-cyan")}>{i === 0 ? diag : null}</Td>
               <Td>{eventLabel(r["Result type"])}</Td>
               <Td right style={spendIntensity > 0 ? { background: magnitudeFill(spendIntensity, 0) } : undefined}>
                 {fmtUSD(r["Amount spent (USD)"])}

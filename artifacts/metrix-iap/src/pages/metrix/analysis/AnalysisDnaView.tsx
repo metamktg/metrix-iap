@@ -97,7 +97,7 @@ function LocusBar({ lift }: { lift: number | null }) {
       <div
         className={cn(
           "absolute top-0.5 h-4 rounded-sm",
-          positive ? "bg-emerald-400/50" : "bg-red-400/45"
+          positive ? "bg-status-success/50" : "bg-status-danger/45"
         )}
         style={
           positive
@@ -108,7 +108,7 @@ function LocusBar({ lift }: { lift: number | null }) {
       <span
         className={cn(
           "absolute top-0 text-label font-semibold tabular-nums whitespace-nowrap",
-          positive ? "text-emerald-400" : "text-red-300"
+          positive ? "text-status-success" : "text-status-danger"
         )}
         style={
           positive

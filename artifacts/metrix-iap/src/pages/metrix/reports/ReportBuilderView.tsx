@@ -553,18 +553,18 @@ export function ReportBuilderView() {
                         );
                       })()}
                       {rb.report_sections.length - excludedSections.size === 0 && (
-                        <p className="mt-2 text-label text-amber-400/90">Include at least one section to generate a report.</p>
+                        <p className="mt-2 text-label text-status-warning/90">Include at least one section to generate a report.</p>
                       )}
                       {generatedOk && (
                         <div className="mt-2 flex flex-col gap-1">
-                          <p className="text-caption text-emerald-400 flex items-center gap-1.5">
+                          <p className="text-caption text-status-success flex items-center gap-1.5">
                             <Check className="w-3.5 h-3.5" /> Report saved.
-                            <Link to="/app/reports/history" className="underline underline-offset-2 hover:text-emerald-300">View it in Report History</Link>
+                            <Link to="/app/reports/history" className="underline underline-offset-2 hover:text-status-success">View it in Report History</Link>
                           </p>
                           {generatedGoogleDocUrl && (
-                            <p className="text-caption text-emerald-400 flex items-center gap-1.5">
+                            <p className="text-caption text-status-success flex items-center gap-1.5">
                               <Check className="w-3.5 h-3.5" />
-                              <a href={generatedGoogleDocUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-emerald-300">Open Google Doc</a>
+                              <a href={generatedGoogleDocUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-status-success">Open Google Doc</a>
                             </p>
                           )}
                         </div>
@@ -597,7 +597,7 @@ export function ReportBuilderView() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 text-caption text-muted-foreground/80">
-                        <Check className={cn("w-3.5 h-3.5", rb.white_label_supported ? "text-emerald-400" : "text-muted-foreground/70")} />
+                        <Check className={cn("w-3.5 h-3.5", rb.white_label_supported ? "text-status-success" : "text-muted-foreground/70")} />
                         White-label {rb.white_label_supported ? "supported" : "unavailable"}
                       </div>
                     </div>
@@ -616,7 +616,7 @@ export function ReportBuilderView() {
                           className={cn(
                             "flex items-center gap-1.5 h-9 px-3.5 rounded-md border text-body font-medium transition-colors disabled:opacity-60",
                             exported === f
-                              ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/5"
+                              ? "border-status-success/30 text-status-success bg-status-success/5"
                               : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5"
                           )}
                         >
@@ -629,7 +629,7 @@ export function ReportBuilderView() {
                           )}
                           {FORMAT_LABEL[f] ?? f}
                           {exported === f && (
-                            <span className="text-label font-normal text-emerald-400/80">
+                            <span className="text-label font-normal text-status-success/80">
                               {f === "google_doc" && exportedGoogleDocUrl ? "opened" : "downloaded"}
                             </span>
                           )}
@@ -640,9 +640,9 @@ export function ReportBuilderView() {
                       Exports use the current preview mode: {mode === "internal" ? "Internal dashboard (Metrix branding)" : `Client-facing (white-labeled for ${acct.name})`}.
                     </p>
                     {exportedGoogleDocUrl && (
-                      <p className="mt-2 text-caption text-emerald-400 flex items-center gap-1.5">
+                      <p className="mt-2 text-caption text-status-success flex items-center gap-1.5">
                         <Check className="w-3.5 h-3.5" />
-                        <a href={exportedGoogleDocUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-emerald-300">Open Google Doc</a>
+                        <a href={exportedGoogleDocUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-status-success">Open Google Doc</a>
                       </p>
                     )}
                     <div className="mt-3">

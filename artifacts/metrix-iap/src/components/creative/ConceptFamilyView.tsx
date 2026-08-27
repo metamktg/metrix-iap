@@ -122,7 +122,7 @@ function AngleRow({
             {rankedCells.map((row, idx) => (
               <div key={row.cell_id} className="relative">
                 {idx === 0 && topCellId === row.cell_id && (
-                  <div className="absolute -top-2 left-2 z-10 flex items-center gap-1 bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[8px] font-semibold px-1.5 py-0.5 rounded-full">
+                  <div className="absolute -top-2 left-2 z-10 flex items-center gap-1 bg-status-warning/20 border border-status-warning/40 text-status-warning text-[8px] font-semibold px-1.5 py-0.5 rounded-full">
                     <Trophy className="w-3.5 h-3.5 shrink-0" />
                     Top
                   </div>

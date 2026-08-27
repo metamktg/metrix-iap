@@ -39,7 +39,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
         {/* Header row */}
         <div className="flex items-center gap-3 p-4 border-b border-border/20">
           {configured ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-status-success shrink-0" />
           ) : (
             <Circle className="w-5 h-5 text-muted-foreground/60 shrink-0" />
           )}
@@ -51,7 +51,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
             className={cn(
               "text-label font-semibold uppercase tracking-wide px-2 py-1 rounded border leading-none shrink-0",
               configured
-                ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
+                ? "text-status-success border-status-success/25 bg-status-success/10"
                 : "text-muted-foreground/85 border-border/40 bg-white/[0.03]"
             )}
           >
@@ -73,7 +73,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
                 title="Copy to clipboard"
               >
                 <Copy className="w-3.5 h-3.5" />
-                {copied && <span className="text-emerald-400 text-label">Copied</span>}
+                {copied && <span className="text-status-success text-label">Copied</span>}
               </button>
             </div>
           ) : (
@@ -95,7 +95,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
         {!configured && (
           hasLiveConnection ? (
             <div
-              className="flex items-center gap-2 h-9 px-4 rounded-md border border-emerald-400/30 bg-emerald-400/10 text-body text-emerald-400"
+              className="flex items-center gap-2 h-9 px-4 rounded-md border border-status-success/30 bg-status-success/10 text-body text-status-success"
               data-testid="live-connection-note-integrations"
             >
               <Wifi className="w-4 h-4 shrink-0" />

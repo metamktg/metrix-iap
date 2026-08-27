@@ -100,10 +100,10 @@ export interface FunnelStage {
 }
 
 export const ZONE_COLOR: Record<FunnelStage["zone"], { bar: string; text: string; bg: string; border: string }> = {
-  awareness:  { bar: "bg-chart-1/70",   text: "text-blue-300",   bg: "bg-chart-1/[0.06]",   border: "border-blue-400/25" },
-  engagement: { bar: "bg-indigo-400/70", text: "text-indigo-300", bg: "bg-indigo-400/[0.06]", border: "border-indigo-400/25" },
-  intent:     { bar: "bg-amber-400/70",  text: "text-amber-300",  bg: "bg-amber-400/[0.06]",  border: "border-amber-400/25" },
-  conversion: { bar: "bg-chart-3/70",text: "text-emerald-300",bg: "bg-emerald-400/[0.06]",border: "border-emerald-400/25" },
+  awareness:  { bar: "bg-chart-1/70",   text: "text-interactive",   bg: "bg-chart-1/[0.06]",   border: "border-primary/25" },
+  engagement: { bar: "bg-primary/70", text: "text-primary", bg: "bg-primary/[0.06]", border: "border-primary/25" },
+  intent:     { bar: "bg-status-warning/70",  text: "text-status-warning",  bg: "bg-status-warning/[0.06]",  border: "border-status-warning/25" },
+  conversion: { bar: "bg-chart-3/70",text: "text-status-success",bg: "bg-status-success/[0.06]",border: "border-status-success/25" },
 };
 
 /** Exported so callers outside this view (e.g. AdPerformanceView's compact
@@ -325,7 +325,7 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
             {stage.pctOfPrev != null && (
               <div className="flex items-center gap-1 ml-28 pl-3">
                 <ArrowRight className="w-3 h-3 text-muted-foreground/35" />
-                <span className={cn("text-label font-medium", stage.pctOfPrev >= 20 ? "text-emerald-400/70" : stage.pctOfPrev >= 5 ? c.text : "text-red-400/70")}>
+                <span className={cn("text-label font-medium", stage.pctOfPrev >= 20 ? "text-status-success/70" : stage.pctOfPrev >= 5 ? c.text : "text-status-danger/70")}>
                   {stage.pctOfPrev.toFixed(1)}% of previous stage
                 </span>
               </div>
@@ -429,7 +429,7 @@ export function BreakdownTable({
                   // honors over the class.
                   style={isTop ? {
                     background:
-                      "linear-gradient(rgba(255,255,255,0.015), rgba(255,255,255,0.015)) no-repeat 0 0 / 100% 100%, " +
+                      "linear-gradient(hsl(var(--foreground) / 0.015), hsl(var(--foreground) / 0.015)) no-repeat 0 0 / 100% 100%, " +
                       "linear-gradient(to right, transparent, hsl(var(--foreground) / 0.08) 48px, hsl(var(--foreground) / 0.08) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px",
                   } : undefined}
                 >
@@ -524,13 +524,13 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
       </div>
       <ResponsiveContainer width="100%" height={320}>
         <ScatterChart margin={{ top: 10, right: 20, bottom: 50, left: 60 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--foreground) / 0.04)" />
           <XAxis
             dataKey="x"
             type="number"
             name="Frequency"
-            label={{ value: "Frequency (impressions / reach)", position: "bottom", offset: 0, style: { fontSize: 10, fill: "rgba(255,255,255,0.4)" } }}
-            tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
+            label={{ value: "Frequency (impressions / reach)", position: "bottom", offset: 0, style: { fontSize: 10, fill: "hsl(var(--foreground) / 0.4)" } }}
+            tick={{ fontSize: 10, fill: "hsl(var(--foreground) / 0.5)" }}
             tickLine={false}
             axisLine={false}
           />
@@ -538,14 +538,14 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
             dataKey="y"
             type="number"
             name="Link CTR %"
-            label={{ value: "Link CTR %", angle: -90, position: "left", offset: -10, style: { fontSize: 10, fill: "rgba(255,255,255,0.4)" } }}
-            tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
+            label={{ value: "Link CTR %", angle: -90, position: "left", offset: -10, style: { fontSize: 10, fill: "hsl(var(--foreground) / 0.4)" } }}
+            tick={{ fontSize: 10, fill: "hsl(var(--foreground) / 0.5)" }}
             tickFormatter={(v) => `${v.toFixed(1)}%`}
             tickLine={false}
             axisLine={false}
           />
-          <ReferenceLine x={medFreq} stroke="rgba(255,255,255,0.12)" strokeDasharray="4 3" />
-          <ReferenceLine y={medCtr}  stroke="rgba(255,255,255,0.12)" strokeDasharray="4 3" />
+          <ReferenceLine x={medFreq} stroke="hsl(var(--foreground) / 0.12)" strokeDasharray="4 3" />
+          <ReferenceLine y={medCtr}  stroke="hsl(var(--foreground) / 0.12)" strokeDasharray="4 3" />
           <RechartTooltip
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;

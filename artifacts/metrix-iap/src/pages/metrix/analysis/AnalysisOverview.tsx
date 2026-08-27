@@ -197,10 +197,10 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
               <stop offset="95%" stopColor="hsl(var(--metrix-success))" stopOpacity={0.01} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--foreground) / 0.10)" vertical={false} />
           <XAxis
             dataKey="month"
-            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
           />
@@ -209,7 +209,7 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             yAxisId="spend"
             orientation="left"
             tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
             width={44}
@@ -219,13 +219,13 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             yAxisId="results"
             orientation="right"
             tickFormatter={(v: number) => fmtNum(v)}
-            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
             width={40}
           />
           <Tooltip
-            cursor={{ stroke: "rgba(255,255,255,0.08)", strokeWidth: 1 }}
+            cursor={{ stroke: "hsl(var(--foreground) / 0.08)", strokeWidth: 1 }}
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
               const d = payload[0]?.payload as MonthBucket;
@@ -284,7 +284,7 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             startIndex={brushRange.startIndex}
             endIndex={brushRange.endIndex}
             stroke="hsl(var(--primary) / 0.35)"
-            fill="rgba(0,0,0,0.25)"
+            fill="hsl(0 0% 0% / 0.25)"
             aria-label="Drag to zoom the date range"
             onChange={(range) => {
               if (range && range.startIndex != null && range.endIndex != null) {
@@ -325,11 +325,11 @@ function CellPerfBars({ items, resultNoun }: {
           margin={{ top: 0, right: 56, bottom: 4, left: 4 }}
           barSize={11}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--foreground) / 0.10)" horizontal={false} />
           <XAxis
             type="number"
             tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
           />
@@ -337,13 +337,13 @@ function CellPerfBars({ items, resultNoun }: {
             type="category"
             dataKey="name"
             width={130}
-            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 10 }}
+            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 10 }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v: string) => (v.length > 20 ? v.slice(0, 19) + "…" : v)}
           />
           <Tooltip
-            cursor={{ fill: "rgba(255,255,255,0.03)" }}
+            cursor={{ fill: "hsl(var(--foreground) / 0.03)" }}
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
               const d = payload[0]?.payload as CellBarItem;
@@ -364,7 +364,7 @@ function CellPerfBars({ items, resultNoun }: {
             {items.map((_, i) => (
               <Cell
                 key={i}
-                fill={i === 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.22)"}
+                fill={i === 0 ? "hsl(var(--primary))" : "hsl(var(--foreground) / 0.22)"}
                 fillOpacity={i === 0 ? 0.9 : 0.55}
               />
             ))}
@@ -391,9 +391,9 @@ function PlacementTable({ placements }: {
 
   function cpaBadgeCls(cpa: number | null) {
     if (cpa == null || medCpa == null) return "text-muted-foreground/50";
-    if (cpa <= medCpa * 0.85) return "text-emerald-400";
+    if (cpa <= medCpa * 0.85) return "text-status-success";
     if (cpa <= medCpa * 1.15) return "text-foreground/70";
-    return "text-rose-400";
+    return "text-status-danger";
   }
 
   return (

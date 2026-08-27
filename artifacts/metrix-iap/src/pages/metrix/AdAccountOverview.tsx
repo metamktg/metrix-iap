@@ -292,13 +292,13 @@ export function AdAccountOverview() {
             >
               <div className="rounded-lg border border-border/30 bg-white/[0.015] p-2.5 hover:border-border/50 transition-colors">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Grid3x3 className="w-3 h-3 text-purple-300/60" />
+                  <Grid3x3 className="w-3 h-3 text-primary/60" />
                   <span className="text-caption font-medium text-foreground/75">MST active</span>
                 </div>
                 <p className="text-caption text-muted-foreground/70 leading-relaxed">
                   <span className="font-medium text-foreground/75">{matrixCellCount}</span> matrix cells · <span className="font-medium text-foreground/75">{libraryCount}</span> library concepts
                 </p>
-                <button onClick={() => navigate("/app/mst")} className="mt-2 inline-flex items-center gap-1 text-caption font-medium text-purple-300/75 hover:text-purple-200 transition-colors">
+                <button onClick={() => navigate("/app/mst")} className="mt-2 inline-flex items-center gap-1 text-caption font-medium text-primary/75 hover:text-primary transition-colors">
                   Open MST <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
@@ -340,9 +340,9 @@ export function AdAccountOverview() {
           {/* Core controls */}
           <SectionCard title="Core controls" desc="Control creative per funnel stage" right={<SectionInfoIcon tip="The benchmark creatives that define performance expectations per funnel stage." />}>
             <div className="grid grid-cols-dashboard-2 gap-3">
-              <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 hover:border-emerald-400/30 transition-colors">
+              <div className="rounded-xl border border-status-success/20 bg-status-success/[0.03] p-4 hover:border-status-success/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/80" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-status-success/80" />
                   <span className="text-caption font-semibold text-foreground">Primary control</span>
                   <SectionInfoIcon tip="The top-performing creative benchmark for this funnel stage." />
                 </div>
@@ -367,7 +367,7 @@ export function AdAccountOverview() {
                 )}
               </div>
               {core.registration_control && (
-                <div className="rounded-xl border border-blue-400/20 bg-chart-1/[0.03] p-4 hover:border-blue-400/30 transition-colors">
+                <div className="rounded-xl border border-primary/20 bg-chart-1/[0.03] p-4 hover:border-primary/30 transition-colors">
                   <div className="flex items-center gap-1.5 mb-2">
                     <KeyRound className="w-3.5 h-3.5 text-accent/80" />
                     <span className="text-caption font-semibold text-foreground">{term.Singular} control</span>

@@ -182,7 +182,7 @@ export function buildSegmentModule(input: SegmentModuleInput): DeepDiveModule {
   }
 
   return {
-    id: `${dimension.id}${segmentKey}`,
+    id: `${dimension.id}\u0001${segmentKey}`,
     kicker: dimension.label,
     title: segmentLabel,
     subtitle: windowLabel ? `Data window · ${windowLabel}` : undefined,

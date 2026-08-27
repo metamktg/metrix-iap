@@ -396,12 +396,12 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
 // ─── Hypothesis status / priority ─────────────────────────────────────
 
 export const HYP_STATUS_STYLE: Record<string, string> = {
-  ready_for_brief_builder: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
+  ready_for_brief_builder: "bg-status-success/10 text-status-success border-status-success/20",
   validation_required: "bg-accent/10 text-accent border-accent/20",
-  high: "bg-red-400/10 text-red-300 border-red-400/20",
-  p1: "bg-red-400/10 text-red-300 border-red-400/20",
-  medium: "bg-amber-400/10 text-amber-300 border-amber-400/20",
-  p2: "bg-amber-400/10 text-amber-300 border-amber-400/20",
+  high: "bg-status-danger/10 text-status-danger border-status-danger/20",
+  p1: "bg-status-danger/10 text-status-danger border-status-danger/20",
+  medium: "bg-status-warning/10 text-status-warning border-status-warning/20",
+  p2: "bg-status-warning/10 text-status-warning border-status-warning/20",
   low: "bg-muted text-muted-foreground/60 border-border/40",
   p3: "bg-muted text-muted-foreground/60 border-border/40",
 };
@@ -434,10 +434,10 @@ export function HypothesisStatusBadge({ status }: { status: string }) {
 // ─── Variable combinations ────────────────────────────────────────────
 
 const RECO_STYLE: Record<string, string> = {
-  scale: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
-  optimize: "bg-amber-400/10 text-amber-300 border-amber-400/20",
+  scale: "bg-status-success/10 text-status-success border-status-success/20",
+  optimize: "bg-status-warning/10 text-status-warning border-status-warning/20",
   validate: "bg-accent/10 text-accent border-accent/20",
-  avoid: "bg-red-400/10 text-red-300 border-red-400/20",
+  avoid: "bg-status-danger/10 text-status-danger border-status-danger/20",
 };
 
 export function VariableCombinationsGrid({ combinations }: { combinations: VariableCombination[] }) {
@@ -488,11 +488,11 @@ const PLAYBOOK_LANES: Array<{
   Icon: React.ComponentType<{ className?: string }>;
   accent: string;
 }> = [
-  { key: "scale_now", label: "Scale now", Icon: ArrowUpRight, accent: "text-emerald-400 border-emerald-400/25 bg-emerald-400/[0.06]" },
-  { key: "optimize", label: "Optimize", Icon: Sparkles, accent: "text-amber-300 border-amber-400/25 bg-amber-400/[0.06]" },
+  { key: "scale_now", label: "Scale now", Icon: ArrowUpRight, accent: "text-status-success border-status-success/25 bg-status-success/[0.06]" },
+  { key: "optimize", label: "Optimize", Icon: Sparkles, accent: "text-status-warning border-status-warning/25 bg-status-warning/[0.06]" },
   { key: "validate", label: "Validate", Icon: FlaskConical, accent: "text-accent border-accent/25 bg-accent/[0.06]" },
-  { key: "explore", label: "Explore", Icon: Search, accent: "text-purple-300 border-purple-400/25 bg-purple-400/[0.06]" },
-  { key: "avoid_combinations", label: "Avoid", Icon: Ban, accent: "text-red-300 border-red-400/25 bg-red-400/[0.06]" },
+  { key: "explore", label: "Explore", Icon: Search, accent: "text-primary border-primary/25 bg-primary/[0.06]" },
+  { key: "avoid_combinations", label: "Avoid", Icon: Ban, accent: "text-status-danger border-status-danger/25 bg-status-danger/[0.06]" },
 ];
 
 export function playbookHasContent(pb: ScalingPlaybook | null | undefined): boolean {

@@ -214,7 +214,7 @@ function DepBadge({
     <span className={cn(
       "inline-flex items-center gap-1 text-label font-semibold rounded-md px-2 py-1 leading-none border",
       satisfied
-        ? "text-emerald-400 bg-emerald-400/[0.15] border-emerald-400/40"
+        ? "text-status-success bg-status-success/[0.15] border-status-success/40"
         : "text-muted-foreground/60 bg-white/[0.05] border-border/30",
     )}>
       {satisfied
@@ -279,11 +279,11 @@ function StageTile({
   const circleCls = isLocked
     ? "border-border/40 bg-transparent text-muted-foreground/40"
     : isRunning
-    ? "border-transparent bg-amber-400/20 text-amber-400"
+    ? "border-transparent bg-status-warning/20 text-status-warning"
     : isFailed
-    ? "border-transparent bg-red-400/20 text-red-400"
+    ? "border-transparent bg-status-danger/20 text-status-danger"
     : isStale
-    ? "border-transparent bg-orange-400/20 text-orange-400"
+    ? "border-transparent bg-status-warning/20 text-status-warning"
     : isComplete
     ? "border-transparent bg-primary/25 text-interactive"
     : isNext || isActive
@@ -293,11 +293,11 @@ function StageTile({
   const labelCls = isLocked
     ? "text-muted-foreground/40"
     : isRunning
-    ? "text-amber-400/90"
+    ? "text-status-warning/90"
     : isFailed
-    ? "text-red-400/90"
+    ? "text-status-danger/90"
     : isStale
-    ? "text-orange-400/85"
+    ? "text-status-warning/85"
     : isNext || isActive
     ? "text-foreground font-semibold"
     : isComplete
@@ -339,7 +339,7 @@ function StageTile({
           {isFailed ? "Failed" : label}
         </span>
         {isRunning && elapsedSeconds !== undefined && (
-          <span className="text-label font-mono tabular-nums text-amber-400/80 leading-none">
+          <span className="text-label font-mono tabular-nums text-status-warning/80 leading-none">
             {fmtElapsed(elapsedSeconds)}
           </span>
         )}
@@ -425,9 +425,9 @@ function StageIntelligence({
   // Shared: error block
   function ErrorBlock({ message }: { message: string }) {
     return (
-      <div className="flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-2 mt-1">
-        <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 mt-0.5 shrink-0" />
-        <p className="text-label text-amber-200/65 leading-relaxed">{message}</p>
+      <div className="flex items-start gap-2 rounded-lg border border-status-warning/20 bg-status-warning/[0.06] px-2.5 py-2 mt-1">
+        <AlertTriangle className="w-3.5 h-3.5 text-status-warning/70 mt-0.5 shrink-0" />
+        <p className="text-label text-status-warning/65 leading-relaxed">{message}</p>
       </div>
     );
   }
@@ -551,9 +551,9 @@ function StageIntelligence({
         )}
 
         {strategyIsStale && !strategyRunning && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-1.5">
-            <RotateCcw className="w-3 h-3 text-orange-400/70 shrink-0" />
-            <span className="text-label text-orange-200/60">Data refreshed · prev. results shown</span>
+          <div className="flex items-center gap-1.5 rounded-lg border border-status-warning/20 bg-status-warning/[0.05] px-2.5 py-1.5">
+            <RotateCcw className="w-3 h-3 text-status-warning/70 shrink-0" />
+            <span className="text-label text-status-warning/60">Data refreshed · prev. results shown</span>
           </div>
         )}
 
@@ -610,16 +610,16 @@ function StageIntelligence({
       )}
 
       {briefsIsStale && !briefsRunning && (
-        <div className="flex items-center gap-1.5 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-1.5">
-          <RotateCcw className="w-3 h-3 text-orange-400/70 shrink-0" />
-          <span className="text-label text-orange-200/60">Data refreshed · prev. results shown</span>
+        <div className="flex items-center gap-1.5 rounded-lg border border-status-warning/20 bg-status-warning/[0.05] px-2.5 py-1.5">
+          <RotateCcw className="w-3 h-3 text-status-warning/70 shrink-0" />
+          <span className="text-label text-status-warning/60">Data refreshed · prev. results shown</span>
         </div>
       )}
 
       {hasError && briefsLastRun?.error_message && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-2 mt-1">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 mt-0.5 shrink-0" />
-          <p className="text-label text-amber-200/65 leading-relaxed">{briefsLastRun.error_message}</p>
+        <div className="flex items-start gap-2 rounded-lg border border-status-warning/20 bg-status-warning/[0.06] px-2.5 py-2 mt-1">
+          <AlertTriangle className="w-3.5 h-3.5 text-status-warning/70 mt-0.5 shrink-0" />
+          <p className="text-label text-status-warning/65 leading-relaxed">{briefsLastRun.error_message}</p>
         </div>
       )}
     </div>
@@ -793,9 +793,9 @@ function CommandHub({
     : stage === "strategy" ? (analysisComplete ? "Ready to generate" : "Needs analysis")
     : (strategyComplete ? "Ready to generate" : "Needs strategy");
 
-  const statusClass = isRunning   ? "text-amber-400 bg-amber-400/[0.15] border-amber-400/40"
-    : isStale       ? "text-orange-400 bg-orange-400/[0.14] border-orange-400/35"
-    : isComplete     ? "text-emerald-400/90 bg-emerald-400/[0.14] border-emerald-400/35"
+  const statusClass = isRunning   ? "text-status-warning bg-status-warning/[0.15] border-status-warning/40"
+    : isStale       ? "text-status-warning bg-status-warning/[0.14] border-status-warning/35"
+    : isComplete     ? "text-status-success/90 bg-status-success/[0.14] border-status-success/35"
     : (analysisComplete && stage === "strategy")
       || (strategyComplete && stage === "briefs")
       || (briefsComplete && stage === "report")
@@ -863,26 +863,26 @@ function CommandHub({
           {/* Phase label + percentage + elapsed */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              <Loader2 className="w-3.5 h-3.5 text-amber-400/70 animate-spin shrink-0" />
-              <span className="text-label text-amber-400/65 font-medium truncate">{phaseLabel}</span>
+              <Loader2 className="w-3.5 h-3.5 text-status-warning/70 animate-spin shrink-0" />
+              <span className="text-label text-status-warning/65 font-medium truncate">{phaseLabel}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[9px] font-bold tabular-nums text-amber-400/65">{progressPct}%</span>
+              <span className="text-[9px] font-bold tabular-nums text-status-warning/65">{progressPct}%</span>
               {elapsedSeconds > 0 && (
-                <span className="text-[9px] font-mono tabular-nums text-amber-400/35 leading-none">
+                <span className="text-[9px] font-mono tabular-nums text-status-warning/35 leading-none">
                   {fmtElapsed(elapsedSeconds)}
                 </span>
               )}
             </div>
           </div>
           {/* Deterministic progress bar */}
-          <div className="relative h-[4px] rounded-full overflow-hidden bg-amber-400/10">
+          <div className="relative h-[4px] rounded-full overflow-hidden bg-status-warning/10">
             <span
-              className="absolute inset-y-0 left-0 bg-amber-400/50 rounded-full transition-[width] duration-1000 ease-out"
+              className="absolute inset-y-0 left-0 bg-status-warning/50 rounded-full transition-[width] duration-1000 ease-out"
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <p className="text-[9px] text-amber-400/40 leading-none">Views update automatically on completion</p>
+          <p className="text-[9px] text-status-warning/40 leading-none">Views update automatically on completion</p>
         </div>
       );
       // Strategy and Briefs: keep the generate button visible but disabled while
@@ -918,8 +918,8 @@ function CommandHub({
         return (
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
-              <Loader2 className="w-3.5 h-3.5 text-amber-400/70 animate-spin shrink-0" />
-              <span className="text-label text-amber-400/65 font-medium">Composing report…</span>
+              <Loader2 className="w-3.5 h-3.5 text-status-warning/70 animate-spin shrink-0" />
+              <span className="text-label text-status-warning/65 font-medium">Composing report…</span>
             </div>
             <button
               disabled
@@ -936,9 +936,9 @@ function CommandHub({
     if (stage === "data") {
       if (isLiveMeta) return (
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.05] px-2.5 py-2">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/70 shrink-0" />
-            <span className="text-label text-emerald-200/70 font-medium">Live Meta — connected</span>
+          <div className="flex items-center gap-1.5 rounded-lg border border-status-success/20 bg-status-success/[0.05] px-2.5 py-2">
+            <CheckCircle2 className="w-3.5 h-3.5 text-status-success/70 shrink-0" />
+            <span className="text-label text-status-success/70 font-medium">Live Meta — connected</span>
           </div>
           <button
             onClick={() => goTo("/app/settings/integrations")}
@@ -952,9 +952,9 @@ function CommandHub({
       return (
         <div className="flex flex-col gap-1.5">
           {stagedImportCount > 0 && (
-            <div className="flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.05] px-2.5 py-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/70 shrink-0" />
-              <span className="text-label text-emerald-200/70 font-medium">
+            <div className="flex items-center gap-1.5 rounded-lg border border-status-success/20 bg-status-success/[0.05] px-2.5 py-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-status-success/70 shrink-0" />
+              <span className="text-label text-status-success/70 font-medium">
                 {stagedImportCount} file{stagedImportCount === 1 ? "" : "s"} staged · awaiting analysis run
               </span>
             </div>
@@ -984,11 +984,11 @@ function CommandHub({
               <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Last run</p>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {analysisRun.status === "success" ? (
-                  <span className="flex items-center gap-1 text-[9px] font-semibold text-emerald-400/70">
+                  <span className="flex items-center gap-1 text-[9px] font-semibold text-status-success/70">
                     <CheckCircle2 className="w-3 h-3" /> Complete
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-[9px] font-semibold text-red-400/70">
+                  <span className="flex items-center gap-1 text-[9px] font-semibold text-status-danger/70">
                     <XCircle className="w-3 h-3" /> Failed
                   </span>
                 )}
@@ -1051,7 +1051,7 @@ function CommandHub({
 
           {/* Error message */}
           {analysisStartError && (
-            <p className="text-label text-red-400 leading-relaxed">{analysisStartError}</p>
+            <p className="text-label text-status-danger leading-relaxed">{analysisStartError}</p>
           )}
 
           {/* Confirm / Cancel */}
@@ -1165,8 +1165,8 @@ function CommandHub({
       if (reportDone) return (
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/70 shrink-0" />
-            <span className="text-label text-emerald-400/65 font-medium">Report saved &amp; downloaded</span>
+            <CheckCircle2 className="w-3.5 h-3.5 text-status-success/70 shrink-0" />
+            <span className="text-label text-status-success/65 font-medium">Report saved &amp; downloaded</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             <button
@@ -1213,7 +1213,7 @@ function CommandHub({
             </p>
           </div>
           {reportError && (
-            <p className="text-label text-red-400 leading-relaxed">{reportError}</p>
+            <p className="text-label text-status-danger leading-relaxed">{reportError}</p>
           )}
           <div className="flex gap-1.5">
             <button
@@ -1295,9 +1295,9 @@ function CommandHub({
         </div>
         {/* Replacement warning */}
         {briefCount > 0 && (
-          <div className="flex items-start gap-1.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-2.5 py-2">
-            <AlertTriangle className="w-3 h-3 text-amber-400/60 mt-0.5 shrink-0" />
-            <p className="text-[9px] text-amber-400/70 leading-relaxed">
+          <div className="flex items-start gap-1.5 rounded-lg border border-status-warning/20 bg-status-warning/[0.04] px-2.5 py-2">
+            <AlertTriangle className="w-3 h-3 text-status-warning/60 mt-0.5 shrink-0" />
+            <p className="text-[9px] text-status-warning/70 leading-relaxed">
               Replaces {briefCount} existing brief{briefCount === 1 ? "" : "s"} for this account
             </p>
           </div>
@@ -1355,7 +1355,7 @@ function CommandHub({
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] px-4"
-      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }}
+      style={{ background: "hsl(0 0% 0% / 0.6)", backdropFilter: "blur(6px)" }}
       onClick={onClose}
     >
       <div
@@ -1372,14 +1372,14 @@ function CommandHub({
           {/* Icon badge */}
           <div className={cn(
             "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border",
-            isRunning   ? "bg-amber-400/10 border-amber-400/20"
-              : isComplete ? "bg-emerald-400/[0.08] border-emerald-400/15"
+            isRunning   ? "bg-status-warning/10 border-status-warning/20"
+              : isComplete ? "bg-status-success/[0.08] border-status-success/15"
               : "bg-white/[0.04] border-border/20",
           )}>
             <Icon className={cn(
               "w-4 h-4",
-              isRunning   ? "text-amber-400/80"
-                : isComplete ? "text-emerald-400/70"
+              isRunning   ? "text-status-warning/80"
+                : isComplete ? "text-status-success/70"
                 : "text-muted-foreground/35",
             )} />
           </div>
@@ -1855,24 +1855,24 @@ export function LoopCommandChain({
           const phase = (serverPct !== null && serverStage) ? serverStage : getPhaseLabel(activeKind, pct);
           const stageLabel = activeKind.charAt(0).toUpperCase() + activeKind.slice(1);
           return (
-            <div className="flex flex-col gap-1.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-2.5 py-2">
+            <div className="flex flex-col gap-1.5 rounded-lg border border-status-warning/20 bg-status-warning/[0.04] px-2.5 py-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <Loader2 className="w-3 h-3 text-amber-400/70 animate-spin shrink-0" />
-                  <span className="text-label text-amber-400/65 font-medium truncate">
-                    <span className="text-amber-400/45">{stageLabel} · </span>{phase}
+                  <Loader2 className="w-3 h-3 text-status-warning/70 animate-spin shrink-0" />
+                  <span className="text-label text-status-warning/65 font-medium truncate">
+                    <span className="text-status-warning/45">{stageLabel} · </span>{phase}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[9px] font-bold tabular-nums text-amber-400/65">{pct}%</span>
-                  <span className="text-[9px] font-mono tabular-nums text-amber-400/35 leading-none">
+                  <span className="text-[9px] font-bold tabular-nums text-status-warning/65">{pct}%</span>
+                  <span className="text-[9px] font-mono tabular-nums text-status-warning/35 leading-none">
                     {fmtElapsed(activeElapsed)}
                   </span>
                 </div>
               </div>
-              <div className="relative h-[3px] rounded-full overflow-hidden bg-amber-400/[0.08]">
+              <div className="relative h-[3px] rounded-full overflow-hidden bg-status-warning/[0.08]">
                 <span
-                  className="absolute inset-y-0 left-0 bg-amber-400/50 rounded-full transition-[width] duration-1000 ease-out"
+                  className="absolute inset-y-0 left-0 bg-status-warning/50 rounded-full transition-[width] duration-1000 ease-out"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -1902,21 +1902,21 @@ export function LoopCommandChain({
                 : (briefsGen.lastError ?? "Brief generation ended with an error.");
           const stageLabel = failedKind.charAt(0).toUpperCase() + failedKind.slice(1);
           return (
-            <div className="flex flex-col gap-1.5 rounded-lg border border-red-400/25 bg-red-400/[0.05] px-2.5 py-2">
+            <div className="flex flex-col gap-1.5 rounded-lg border border-status-danger/25 bg-status-danger/[0.05] px-2.5 py-2">
               <div className="flex items-start gap-1.5 min-w-0">
-                <XCircle className="w-3.5 h-3.5 text-red-400/80 shrink-0 mt-0.5" />
+                <XCircle className="w-3.5 h-3.5 text-status-danger/80 shrink-0 mt-0.5" />
                 <div className="flex flex-col min-w-0 gap-0.5">
-                  <span className="text-label text-red-400/80 font-semibold">
+                  <span className="text-label text-status-danger/80 font-semibold">
                     {stageLabel} failed — not running
                   </span>
-                  <span className="text-label text-red-400/55 font-normal break-words">
+                  <span className="text-label text-status-danger/55 font-normal break-words">
                     {message}
                   </span>
                 </div>
               </div>
               <button
                 onClick={() => setActiveStage(failedKind)}
-                className="self-start text-label font-semibold text-red-400/80 hover:text-red-400 underline underline-offset-2"
+                className="self-start text-label font-semibold text-status-danger/80 hover:text-status-danger underline underline-offset-2"
               >
                 Review &amp; retry
               </button>

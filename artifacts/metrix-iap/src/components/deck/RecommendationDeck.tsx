@@ -46,8 +46,8 @@ export interface DeckCard {
 }
 
 const IMPACT_STYLE: Record<string, string> = {
-  high: "bg-red-400/10 text-red-300 border-red-400/20",
-  medium: "bg-amber-400/10 text-amber-300 border-amber-400/20",
+  high: "bg-status-danger/10 text-status-danger border-status-danger/20",
+  medium: "bg-status-warning/10 text-status-warning border-status-warning/20",
   low: "bg-muted text-muted-foreground/60 border-border/40",
   setup: "bg-primary/10 text-interactive border-primary/20",
 };
@@ -67,9 +67,9 @@ export function impactRank(impact: string): number {
 }
 
 const SCOPE_STYLE: Record<string, string> = {
-  creative: "bg-amber-500/10 text-amber-300 border-amber-500/20",
-  funnel: "bg-teal-500/10 text-teal-300 border-teal-500/20",
-  placement: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+  creative: "bg-status-warning/10 text-status-warning border-status-warning/20",
+  funnel: "bg-metrix-cyan/10 text-metrix-cyan border-metrix-cyan/20",
+  placement: "bg-status-success/10 text-status-success border-status-success/20",
   ad_account: "bg-primary/10 text-interactive border-primary/20",
   campaign: "bg-primary/10 text-interactive border-primary/20",
 };
@@ -162,9 +162,9 @@ function DetailDrawer({
             </div>
           )}
 
-          <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-400/15 bg-amber-400/[0.04]">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-label text-amber-400/80 leading-relaxed">
+          <div className="flex items-start gap-2 p-3 rounded-lg border border-status-warning/15 bg-status-warning/[0.04]">
+            <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
+            <p className="text-label text-status-warning/80 leading-relaxed">
               Approving adds a manual implementation task. No auto-changes are applied to live campaigns.
             </p>
           </div>
@@ -278,13 +278,13 @@ function SwipeCard({
         {isTop && (
           <>
             <div
-              className="absolute top-4 left-4 text-caption font-bold uppercase tracking-widest text-emerald-400 border-2 border-emerald-400 rounded px-2 py-1 rotate-[-12deg]"
+              className="absolute top-4 left-4 text-caption font-bold uppercase tracking-widest text-status-success border-2 border-status-success rounded px-2 py-1 rotate-[-12deg]"
               style={{ opacity: approveOpacity }}
             >
               Add to Tray
             </div>
             <div
-              className="absolute top-4 right-4 text-caption font-bold uppercase tracking-widest text-red-400 border-2 border-red-400 rounded px-2 py-1 rotate-[12deg]"
+              className="absolute top-4 right-4 text-caption font-bold uppercase tracking-widest text-status-danger border-2 border-status-danger rounded px-2 py-1 rotate-[12deg]"
               style={{ opacity: rejectOpacity }}
             >
               Reject
@@ -416,7 +416,7 @@ export function RecommendationDeck({
             {t.count > 0 && (
               <span className={cn(
                 "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
-                t.id === "tray" ? "bg-emerald-400/15 text-emerald-400"
+                t.id === "tray" ? "bg-status-success/15 text-status-success"
                   : t.id === "dismissed" ? "bg-muted text-muted-foreground/60"
                   : "bg-primary/15 text-interactive"
               )}>{t.count}</span>
@@ -429,7 +429,7 @@ export function RecommendationDeck({
         pending.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
             <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400/60" />
+              <CheckCircle2 className="w-4 h-4 text-status-success/60" />
             </div>
             <p className="text-title font-medium text-foreground/60">{emptyLabel}</p>
             <p className="text-caption text-muted-foreground/60">Check the Task Tray for items you added.</p>
@@ -459,7 +459,7 @@ export function RecommendationDeck({
             <div className="flex items-center justify-center gap-3 mt-5">
               <button
                 onClick={() => reject(pending[0].id)}
-                className="w-11 h-11 rounded-full flex items-center justify-center border border-red-400/30 text-red-400 hover:bg-red-400/10 transition-colors"
+                className="w-11 h-11 rounded-full flex items-center justify-center border border-status-danger/30 text-status-danger hover:bg-status-danger/10 transition-colors"
                 aria-label="Reject"
               >
                 <X className="w-5 h-5" />
@@ -473,7 +473,7 @@ export function RecommendationDeck({
               </button>
               <button
                 onClick={() => approve(pending[0].id)}
-                className="w-11 h-11 rounded-full flex items-center justify-center border border-emerald-400/30 text-emerald-400 hover:bg-emerald-400/10 transition-colors"
+                className="w-11 h-11 rounded-full flex items-center justify-center border border-status-success/30 text-status-success hover:bg-status-success/10 transition-colors"
                 aria-label="Add to Tray"
               >
                 <Check className="w-5 h-5" />
@@ -545,10 +545,10 @@ function TaskTray({
             {g.rows.map((s) => {
               const done = isDone(scopeId, s.id);
               return (
-                <div key={s.id} className={cn("flex items-start gap-3 p-3 rounded-lg border bg-white/[0.02]", done ? "border-emerald-400/20 opacity-60" : "border-border/40")}>
+                <div key={s.id} className={cn("flex items-start gap-3 p-3 rounded-lg border bg-white/[0.02]", done ? "border-status-success/20 opacity-60" : "border-border/40")}>
                   <button
                     onClick={() => toggleDone(scopeId, s.id)}
-                    className={cn("mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors", done ? "bg-emerald-400/20 border-emerald-400/40 text-emerald-400" : "border-border/50 text-transparent hover:border-border/70")}
+                    className={cn("mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors", done ? "bg-status-success/20 border-status-success/40 text-status-success" : "border-border/50 text-transparent hover:border-border/70")}
                     aria-label={done ? "Mark not done" : "Mark done"}
                   >
                     <Check className="w-3.5 h-3.5" />

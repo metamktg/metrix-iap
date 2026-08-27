@@ -269,7 +269,7 @@ export function DeepDivePanel() {
       role="dialog"
       aria-label={`Deep dive · ${current.title}`}
       data-testid="deep-dive-panel"
-      className="fixed inset-y-0 right-0 z-50 w-full sm:w-[560px] max-w-[760px] flex flex-col bg-surface-deep border-l border-[var(--mx-edge-strong)] shadow-[0_0_60px_rgba(0,0,0,0.5)] focus-visible:outline-none"
+      className="fixed inset-y-0 right-0 z-50 w-full sm:w-[560px] max-w-[760px] flex flex-col bg-surface-deep border-l border-[var(--mx-edge-strong)] shadow-[0_0_60px_hsl(0 0% 0% / 0.5)] focus-visible:outline-none"
     >
       {/* ── Header: breadcrumbs + controls ─────────────────────────── */}
       <div className="shrink-0 px-4 pt-3 pb-2.5 border-b border-[var(--mx-edge-soft)] space-y-1.5">

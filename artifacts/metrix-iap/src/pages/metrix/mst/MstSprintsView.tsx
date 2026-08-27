@@ -37,10 +37,10 @@ const SECTION = "MST · 06";
 const TIER_ORDER: ScalingBucket[] = ["scale_now", "optimize", "validate", "explore", "avoid"];
 
 const ROW_COLOR: Record<string, string> = {
-  "var(--green)": "border-emerald-400/30 bg-emerald-400/[0.04]",
-  "var(--blue)": "border-blue-400/30 bg-chart-1/[0.04]",
-  "var(--amber)": "border-amber-400/30 bg-amber-400/[0.04]",
-  "var(--purple)": "border-purple-400/30 bg-purple-400/[0.04]",
+  "var(--green)": "border-status-success/30 bg-status-success/[0.04]",
+  "var(--blue)": "border-primary/30 bg-chart-1/[0.04]",
+  "var(--amber)": "border-status-warning/30 bg-status-warning/[0.04]",
+  "var(--purple)": "border-primary/30 bg-primary/[0.04]",
 };
 
 // ─── Matrix ↔ rollup linkage ───────────────────────────────────────────
@@ -120,7 +120,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                 <div className="text-micro font-mono text-muted-foreground/40 mt-1">
                   {c.id}
                   {perf && (
-                    <span className={cn("ml-1.5", (perf.results ?? 0) === 0 ? "text-amber-300/70" : "text-interactive/80")} data-testid={`matrix-col-perf-${c.id}`}>
+                    <span className={cn("ml-1.5", (perf.results ?? 0) === 0 ? "text-status-warning/70" : "text-interactive/80")} data-testid={`matrix-col-perf-${c.id}`}>
                       {perf.cpa != null ? `${fmtUSD(perf.cpa)} CPA` : "no conv."}
                     </span>
                   )}
@@ -161,7 +161,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                       "m-0.5 p-2.5 rounded-lg border text-left min-h-[112px] flex flex-col gap-1.5 transition-opacity",
                       isScale ? "border-primary/50 bg-primary/[0.06]" : "bg-white/[0.02]",
                       !isScale && diag === "diag_down" && "border-primary/40 ring-1 ring-primary/15",
-                      !isScale && diag === "diag_up" && "border-teal-400/40 ring-1 ring-teal-400/15",
+                      !isScale && diag === "diag_up" && "border-metrix-cyan/40 ring-1 ring-metrix-cyan/15",
                       !isScale && !diag && "border-border/40",
                       clickable && "cursor-pointer hover:bg-white/[0.05] hover:border-primary/40 transition-colors",
                       dimmedCol(col.id) && "opacity-30"
@@ -191,7 +191,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                               isScale
                                 ? "bg-primary/25 text-interactive"
                                 : isAvoid
-                                  ? "bg-red-400/25 text-red-300"
+                                  ? "bg-status-danger/25 text-status-danger"
                                   : bucket
                                     ? "bg-white/[0.06] text-foreground/70"
                                     : "text-muted-foreground/35",
@@ -254,7 +254,7 @@ function TopConceptsTable({ rollup, book }: { rollup: ConceptRollupRow[]; book: 
                 <tr key={`${r.book}:${r.concept}`}>
                   <td className="font-medium text-foreground/90">{r.book} · {r.concept}</td>
                   <td className="text-right tabular-nums text-foreground/85">{fmtUSD(r.cpa!)}</td>
-                  <td className={cn("text-right tabular-nums", lift == null ? "text-muted-foreground/40" : lift >= 0 ? "text-emerald-400" : "text-red-300")}>
+                  <td className={cn("text-right tabular-nums", lift == null ? "text-muted-foreground/40" : lift >= 0 ? "text-status-success" : "text-status-danger")}>
                     {lift == null ? "—" : `${lift >= 0 ? "+" : ""}${fmtPct(lift)}`}
                   </td>
                   <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : <span className={cn(TYPE.label, "text-muted-foreground/35")}>—</span>}</td>
@@ -388,7 +388,7 @@ export function MstSprintsView() {
               />
               <div className="flex items-center gap-4 text-caption text-muted-foreground/75 flex-wrap">
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-primary/40 ring-1 ring-primary/15 inline-block" /> Primary diagonal (↘)</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-teal-400/40 ring-1 ring-teal-400/15 inline-block" /> Counter diagonal (↗)</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-metrix-cyan/40 ring-1 ring-metrix-cyan/15 inline-block" /> Counter diagonal (↗)</span>
                 <span className="text-muted-foreground/60">Tier tags come from the scaling playbook at concept level · click any cell for granular performance</span>
                 <span className="ml-auto"><CrossLink to="/app/mst/cross-map" label="See crossmap results" /></span>
               </div>

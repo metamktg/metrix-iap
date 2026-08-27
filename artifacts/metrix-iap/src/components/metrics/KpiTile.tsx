@@ -280,7 +280,7 @@ export function KpiTile({
           <span className={cn(
             TYPE.body,
             "tabular-nums font-medium",
-            trend.improved ? "text-emerald-400" : "text-amber-300",
+            trend.improved ? "text-status-success" : "text-status-warning",
           )}>
             {trend.deltaPct >= 0 ? "▲" : "▼"} {Math.abs(trend.deltaPct).toFixed(1)}%
           </span>

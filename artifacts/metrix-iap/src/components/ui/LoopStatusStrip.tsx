@@ -48,7 +48,7 @@ export function LoopStatusStrip({ adAccountId, className }: LoopStatusStripProps
               <span
                 className={cn(
                   "w-3 h-px transition-colors",
-                  done ? "bg-emerald-400/50" : "bg-border/40"
+                  done ? "bg-status-success/50" : "bg-border/40"
                 )}
               />
             )}
@@ -56,7 +56,7 @@ export function LoopStatusStrip({ adAccountId, className }: LoopStatusStripProps
               className={cn(
                 "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none",
                 done
-                  ? "text-emerald-400/90"
+                  ? "text-status-success/90"
                   : "text-muted-foreground/40"
               )}
               title={stage.label}

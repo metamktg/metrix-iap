@@ -36,10 +36,10 @@ import {
 
 function actionVerb(recommended_action: string): { label: string; cls: string } {
   const a = recommended_action.toLowerCase();
-  if (a.includes("scale")) return { label: "Scale", cls: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25" };
+  if (a.includes("scale")) return { label: "Scale", cls: "bg-status-success/10 text-status-success border-status-success/25" };
   if (a.includes("pause") || a.includes("kill") || a.includes("stop"))
-    return { label: "Kill", cls: "bg-red-400/10 text-red-300 border-red-400/25" };
-  return { label: "Fix", cls: "bg-amber-400/10 text-amber-400 border-amber-400/25" };
+    return { label: "Kill", cls: "bg-status-danger/10 text-status-danger border-status-danger/25" };
+  return { label: "Fix", cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
 }
 
 function scopeToActionGroup(scope: string): string {
@@ -113,9 +113,9 @@ function InlineDrawer({
       )}
 
       {/* Safety notice */}
-      <div className="flex items-start gap-2 rounded-lg border border-amber-400/15 bg-amber-400/[0.04] px-3 py-2">
-        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-        <p className="text-caption text-amber-400/80 leading-relaxed">
+      <div className="flex items-start gap-2 rounded-lg border border-status-warning/15 bg-status-warning/[0.04] px-3 py-2">
+        <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
+        <p className="text-caption text-status-warning/80 leading-relaxed">
           Adding to the tray files a manual implementation task in the Task Tray. No changes are applied automatically.
         </p>
       </div>
@@ -175,7 +175,7 @@ function QueueCard({
       className={cn(
         "rounded-xl border transition-[color,background-color,border-color,box-shadow,opacity,transform]",
         isApproved
-          ? "border-emerald-400/25 bg-emerald-400/[0.04]"
+          ? "border-status-success/25 bg-status-success/[0.04]"
           : isDismissed
           ? "border-[hsl(var(--border))] bg-white/[0.01] opacity-50"
           : "border-[hsl(var(--border))] bg-secondary"
@@ -209,7 +209,7 @@ function QueueCard({
             </span>
           )}
           {isApproved && (
-            <span className="flex items-center gap-1 text-label text-emerald-400 font-semibold">
+            <span className="flex items-center gap-1 text-label text-status-success font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" /> In Tray
             </span>
           )}
@@ -308,7 +308,7 @@ function EmptyQueue({ reason }: { reason: "no-loop" | "all-done" }) {
     <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border/40 py-16 text-center px-6">
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
         {reason === "all-done" ? (
-          <CheckCircle2 className="w-5 h-5 text-emerald-400/60" />
+          <CheckCircle2 className="w-5 h-5 text-status-success/60" />
         ) : (
           <Zap className="w-5 h-5 text-muted-foreground/30" />
         )}
@@ -420,7 +420,7 @@ export function ActionQueueView() {
                     className={cn(
                       "text-label font-bold px-1.5 py-0.5 rounded-full",
                       t.id === "approved"
-                        ? "bg-emerald-400/15 text-emerald-400"
+                        ? "bg-status-success/15 text-status-success"
                         : t.id === "dismissed"
                         ? "bg-muted text-muted-foreground/60"
                         : "bg-primary/15 text-interactive"

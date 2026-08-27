@@ -93,10 +93,10 @@ export function AlertsView() {
                           <button
                             key={s.id}
                             onClick={() => setDetail(s)}
-                            className="w-full text-left rounded-xl border border-red-400/20 bg-red-400/[0.03] p-4 hover:border-red-400/35 transition-colors"
+                            className="w-full text-left rounded-xl border border-status-danger/20 bg-status-danger/[0.03] p-4 hover:border-status-danger/35 transition-colors"
                           >
                             <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                              <AlertTriangle className="w-3.5 h-3.5 text-red-300/80" />
+                              <AlertTriangle className="w-3.5 h-3.5 text-status-danger/80" />
                               <ScopeBadge scope={s.scope} />
                               <ImpactBadge impact={s.impact} />
                               <ConfidenceBadge value={s.confidence} />

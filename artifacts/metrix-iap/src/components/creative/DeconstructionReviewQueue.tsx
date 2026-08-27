@@ -25,7 +25,7 @@ function ConfidenceBadge({ value }: { value: number | null | undefined }) {
     <span
       className={[
         "inline-flex items-center px-1.5 py-0.5 rounded text-label font-semibold tabular-nums",
-        high ? "bg-emerald-400/10 text-emerald-400" : "bg-amber-400/10 text-amber-400",
+        high ? "bg-status-success/10 text-status-success" : "bg-status-warning/10 text-status-warning",
       ].join(" ")}
     >
       {pct(value)}
@@ -68,7 +68,7 @@ function VariableEditorRow({
         aria-label="Variable code"
         className={[
           "h-7 flex-1 min-w-0 rounded border bg-background text-label text-foreground px-2 font-mono",
-          valid ? "border-border/50" : "border-red-400/50",
+          valid ? "border-border/50" : "border-status-danger/50",
         ].join(" ")}
       />
       <datalist id={`codes-${variable.family}`}>
@@ -79,7 +79,7 @@ function VariableEditorRow({
       <button
         onClick={onRemove}
         aria-label={`Remove ${variable.code}`}
-        className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-muted-foreground/70 hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
+        className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-muted-foreground/70 hover:text-status-danger hover:bg-status-danger/10 transition-colors cursor-pointer"
       >
         <X className="w-3.5 h-3.5" />
       </button>
@@ -125,7 +125,7 @@ function ReviewItem({
   return (
     <div
       data-testid={`review-item-${item.id}`}
-      className="rounded-lg border border-amber-400/25 bg-amber-400/[0.03] p-4 space-y-3"
+      className="rounded-lg border border-status-warning/25 bg-status-warning/[0.03] p-4 space-y-3"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -188,7 +188,7 @@ function ReviewItem({
                 </button>
               </div>
               {!draftValid && (
-                <p className="text-label text-red-400">
+                <p className="text-label text-status-danger">
                   Each code must use its family's registry prefix (e.g. CN_, FW_, TN_, HK_).
                 </p>
               )}
@@ -222,8 +222,8 @@ function ReviewItem({
                     className={[
                       "inline-flex items-center gap-1 px-2 py-1 rounded border text-label font-mono",
                       matched
-                        ? "border-emerald-400/30 bg-emerald-400/[0.05] text-emerald-300"
-                        : "border-amber-400/30 bg-amber-400/[0.05] text-amber-300",
+                        ? "border-status-success/30 bg-status-success/[0.05] text-status-success"
+                        : "border-status-warning/30 bg-status-warning/[0.05] text-status-warning",
                     ].join(" ")}
                     title={matched ? "Also detected in the creative" : "Planned in the brief but not detected"}
                   >
@@ -238,7 +238,7 @@ function ReviewItem({
       </div>
 
       {error && (
-        <p className="text-caption text-red-400 flex items-center gap-1.5">
+        <p className="text-caption text-status-danger flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {error}
         </p>
       )}
@@ -257,13 +257,13 @@ function ReviewItem({
           </button>
           {confirmBypass ? (
             <span className="flex items-center gap-2 text-label">
-              <span className="text-amber-300">
+              <span className="text-status-warning">
                 Accept below the 80% gate? This is recorded as a user override.
               </span>
               <button
                 onClick={() => void act("bypass")}
                 disabled={reviewPending}
-                className="h-7 px-2.5 rounded border border-amber-400/40 bg-amber-400/10 font-medium text-amber-300 hover:bg-amber-400/20 transition-colors disabled:opacity-50 cursor-pointer"
+                className="h-7 px-2.5 rounded border border-status-warning/40 bg-status-warning/10 font-medium text-status-warning hover:bg-status-warning/20 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {reviewPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Yes, accept anyway"}
               </button>
@@ -277,7 +277,7 @@ function ReviewItem({
           ) : (
             <button
               onClick={() => setConfirmBypass(true)}
-              className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-amber-400/40 bg-amber-400/[0.06] text-label font-medium text-amber-300 hover:bg-amber-400/[0.12] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-status-warning/40 bg-status-warning/[0.06] text-label font-medium text-status-warning hover:bg-status-warning/[0.12] transition-colors cursor-pointer"
             >
               <ShieldAlert className="w-3.5 h-3.5" /> Accept anyway
             </button>
@@ -285,7 +285,7 @@ function ReviewItem({
           <button
             onClick={() => void act("discard")}
             disabled={reviewPending}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-red-400/30 text-label font-medium text-red-400/90 hover:bg-red-400/10 transition-colors disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-status-danger/30 text-label font-medium text-status-danger/90 hover:bg-status-danger/10 transition-colors disabled:opacity-50 cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" /> Discard
           </button>

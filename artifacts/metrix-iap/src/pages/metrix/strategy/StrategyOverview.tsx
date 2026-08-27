@@ -38,8 +38,8 @@ function pillarTier(cells: string[]): "high" | "medium" | "low" {
 }
 
 const TIER_STYLE: Record<string, string> = {
-  high:   "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
-  medium: "bg-amber-400/10 text-amber-300 border-amber-400/20",
+  high:   "bg-status-success/10 text-status-success border-status-success/20",
+  medium: "bg-status-warning/10 text-status-warning border-status-warning/20",
   low:    "bg-muted text-muted-foreground/60 border-border/40",
 };
 
@@ -119,7 +119,7 @@ function PillarCoverageStrip({
                         ? "hsl(var(--metrix-success) / 0.8)"
                         : tier === "medium"
                           ? "hsl(var(--metrix-gold) / 0.8)"
-                          : "rgba(255,255,255,0.18)",
+                          : "hsl(var(--foreground) / 0.18)",
                   }}
                 />
               </div>
@@ -140,7 +140,7 @@ function PillarCoverageStrip({
                     ? "hsl(var(--metrix-success) / 0.8)"
                     : tier === "medium"
                       ? "hsl(var(--metrix-gold) / 0.8)"
-                      : "rgba(255,255,255,0.18)",
+                      : "hsl(var(--foreground) / 0.18)",
               }}
             />
             <span className={TYPE.label}>{TIER_LABEL[tier]}</span>
@@ -238,11 +238,11 @@ function VariableFamilyHeatmap({ pillars }: { pillars: MessagePillar[] }) {
 // ─── Per-lane playbook with individual collapse ───────────────────────
 
 const COLLAPSIBLE_LANE_CONFIG: readonly { key: string; label: string; accent: string }[] = [
-  { key: "scale_now",          label: "Scale now", accent: "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400" },
-  { key: "optimize",           label: "Optimize",  accent: "border-amber-400/25 bg-amber-400/[0.06] text-amber-300" },
+  { key: "scale_now",          label: "Scale now", accent: "border-status-success/25 bg-status-success/[0.06] text-status-success" },
+  { key: "optimize",           label: "Optimize",  accent: "border-status-warning/25 bg-status-warning/[0.06] text-status-warning" },
   { key: "validate",           label: "Validate",  accent: "border-accent/25 bg-accent/[0.06] text-accent" },
-  { key: "explore",            label: "Explore",   accent: "border-purple-400/25 bg-purple-400/[0.06] text-purple-300" },
-  { key: "avoid_combinations", label: "Avoid",     accent: "border-red-400/25 bg-red-400/[0.06] text-red-300" },
+  { key: "explore",            label: "Explore",   accent: "border-primary/25 bg-primary/[0.06] text-primary" },
+  { key: "avoid_combinations", label: "Avoid",     accent: "border-status-danger/25 bg-status-danger/[0.06] text-status-danger" },
 ];
 
 function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<typeof getStrategyData>>["scaling_playbook"] }) {

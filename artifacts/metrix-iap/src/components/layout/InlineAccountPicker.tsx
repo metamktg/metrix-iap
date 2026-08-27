@@ -19,7 +19,7 @@ import {
 import { useAccount } from "@/contexts/AccountContext";
 
 const STATUS_DOT: Record<string, string> = {
-  configured: "bg-emerald-500",
+  configured: "bg-status-success",
   unconfigured: "bg-muted-foreground/60",
 };
 

@@ -40,10 +40,10 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
 
         {state === "sent" ? (
           <div
-            className="flex items-start gap-2.5 p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06]"
+            className="flex items-start gap-2.5 p-3 rounded-lg border border-status-success/20 bg-status-success/[0.06]"
             data-testid="text-reset-request-success"
           >
-            <MailCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <MailCheck className="w-4 h-4 text-status-success shrink-0 mt-0.5" />
             <div className="text-body text-foreground">
               If an account exists for that email, we sent a password reset link.
               The link works once and expires in 1 hour.
@@ -72,7 +72,7 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
               />
             </div>
             {error && (
-              <div className="text-caption text-red-400/90" data-testid="text-forgot-error">
+              <div className="text-caption text-status-danger/90" data-testid="text-forgot-error">
                 {error}
               </div>
             )}

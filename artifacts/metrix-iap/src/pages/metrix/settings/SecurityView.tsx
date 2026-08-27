@@ -81,7 +81,7 @@ function ActiveSessionsSection() {
                     {s.is_current ? "This device" : "Other session"}
                   </span>
                   {s.is_current && (
-                    <span className="text-micro font-semibold uppercase tracking-wide text-emerald-400 border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 rounded leading-none">
+                    <span className="text-micro font-semibold uppercase tracking-wide text-status-success border border-status-success/25 bg-status-success/10 px-1.5 py-0.5 rounded leading-none">
                       Current
                     </span>
                   )}
@@ -96,7 +96,7 @@ function ActiveSessionsSection() {
                 className={cn(
                   "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-label font-medium transition-colors shrink-0",
                   s.is_current
-                    ? "border-red-400/30 text-red-300 hover:bg-red-400/10"
+                    ? "border-status-danger/30 text-status-danger hover:bg-status-danger/10"
                     : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5",
                   revoke.isPending && "opacity-50 pointer-events-none"
                 )}
@@ -235,12 +235,12 @@ function PasswordSection() {
             />
           </div>
           {error && (
-            <div className="text-caption text-red-400/90" data-testid="text-account-change-password-error">
+            <div className="text-caption text-status-danger/90" data-testid="text-account-change-password-error">
               {error}
             </div>
           )}
           {success && (
-            <div className="flex items-center gap-1.5 text-caption text-emerald-400/90" data-testid="text-account-change-password-success">
+            <div className="flex items-center gap-1.5 text-caption text-status-success/90" data-testid="text-account-change-password-success">
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Password updated. Other sessions have been signed out.
             </div>
           )}

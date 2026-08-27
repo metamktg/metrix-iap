@@ -186,7 +186,7 @@ export function VariableDrilldownModal({
                         </span>
                         <span className="flex-1 h-2.5 rounded-full bg-white/[0.06] overflow-hidden">
                           <span
-                            className="block h-full rounded-full bg-gradient-to-r from-primary/60 to-violet-500/60 group-hover:from-primary/85 group-hover:to-violet-500/85 transition-colors"
+                            className="block h-full rounded-full bg-gradient-to-r from-primary/60 to-primary/60 group-hover:from-primary/85 group-hover:to-primary/85 transition-colors"
                             style={{ width: `${Math.max(share * 100, 2)}%` }}
                           />
                         </span>

@@ -62,12 +62,12 @@ const DATE_PRESETS = [
 
 // Left-accent stripe colors keyed to item type
 const ACCENT = {
-  approved: "before:bg-emerald-400",
-  recommendation: "before:bg-emerald-400",
-  hypothesis: "before:bg-violet-400",
+  approved: "before:bg-status-success",
+  recommendation: "before:bg-status-success",
+  hypothesis: "before:bg-primary",
   brief: "before:bg-chart-1",
-  signal: "before:bg-amber-400",
-  custom: "before:bg-emerald-400",
+  signal: "before:bg-status-warning",
+  custom: "before:bg-status-success",
   nav: "",
 } as const;
 
@@ -119,7 +119,7 @@ function TrayAnalysisUnconfigured({ accountId }: { accountId: string }) {
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30 bg-primary/[0.04]">
         <CalendarRange className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
         <span className="text-caption font-semibold text-foreground/80 flex-1">IAP Analysis</span>
-        <span className="text-[9px] font-mono uppercase tracking-widest text-amber-400/70 border border-amber-400/25 bg-amber-400/[0.08] rounded px-1.5 py-0.5 leading-none">
+        <span className="text-[9px] font-mono uppercase tracking-widest text-status-warning/70 border border-status-warning/25 bg-status-warning/[0.08] rounded px-1.5 py-0.5 leading-none">
           Setup required
         </span>
       </div>
@@ -217,17 +217,17 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
         <CalendarRange className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
         <span className="text-caption font-semibold text-foreground/80 flex-1">Run Analysis</span>
         {run?.status === "success" && (
-          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-emerald-400">
+          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-status-success">
             <CheckCircle2 className="w-3.5 h-3.5" /> Complete
           </span>
         )}
         {run?.status === "running" && (
-          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-amber-400">
+          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-status-warning">
             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Running
           </span>
         )}
         {run?.status === "error" && (
-          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-red-400">
+          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-status-danger">
             <XCircle className="w-3.5 h-3.5" /> Failed
           </span>
         )}
@@ -236,8 +236,8 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
       <div className="px-3 py-2.5 space-y-2.5">
         {/* Last run summary */}
         {run?.status === "success" && run.date_start && run.date_end && (
-          <div className="text-label text-muted-foreground/60 bg-emerald-400/[0.05] border border-emerald-400/15 rounded-lg px-2.5 py-1.5 leading-snug">
-            <span className="text-emerald-400/80 font-medium">Last run:</span>{" "}
+          <div className="text-label text-muted-foreground/60 bg-status-success/[0.05] border border-status-success/15 rounded-lg px-2.5 py-1.5 leading-snug">
+            <span className="text-status-success/80 font-medium">Last run:</span>{" "}
             {run.date_start} → {run.date_end}
             {run.rows_ingested != null && (
               <span className="text-muted-foreground/40"> · {run.rows_ingested} rows</span>
@@ -245,7 +245,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
           </div>
         )}
         {run?.status === "error" && run.error_message && (
-          <div className="text-label text-red-400/80 bg-red-400/[0.05] border border-red-400/15 rounded-lg px-2.5 py-1.5 leading-snug line-clamp-2">
+          <div className="text-label text-status-danger/80 bg-status-danger/[0.05] border border-status-danger/15 rounded-lg px-2.5 py-1.5 leading-snug line-clamp-2">
             {run.error_message}
           </div>
         )}
@@ -276,7 +276,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
         </div>
 
         {error && (
-          <p className="text-label text-red-400 leading-snug">{error}</p>
+          <p className="text-label text-status-danger leading-snug">{error}</p>
         )}
 
         {/* Run / Re-run button — de-emphasised when recently run */}
@@ -461,7 +461,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             onClick={() => setTrayItemStatus(scopeId, id, "done")}
             aria-label="Mark complete"
             title="Mark complete"
-            className="mt-0.5 w-4 h-4 rounded border border-border/50 text-transparent hover:border-emerald-400/60 hover:bg-emerald-400/5 hover:text-emerald-400/60 flex items-center justify-center shrink-0 transition-colors"
+            className="mt-0.5 w-4 h-4 rounded border border-border/50 text-transparent hover:border-status-success/60 hover:bg-status-success/5 hover:text-status-success/60 flex items-center justify-center shrink-0 transition-colors"
           >
             <Check className="w-3.5 h-3.5" />
           </button>
@@ -494,7 +494,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
                 className={cn(
                   "text-[8px] font-semibold px-1.5 py-0.5 rounded leading-none border",
                   status === "done"
-                    ? "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-400/80"
+                    ? "border-status-success/20 bg-status-success/[0.07] text-status-success/80"
                     : "border-border/30 bg-white/[0.04] text-muted-foreground/60"
                 )}
               >
@@ -715,7 +715,7 @@ export function TaskTray() {
                 <ClipboardList
                   className={cn(
                     "w-4 h-4 transition-transform group-hover:scale-110",
-                    hasPriorityItems ? "text-emerald-400" : "text-muted-foreground/70"
+                    hasPriorityItems ? "text-status-success" : "text-muted-foreground/70"
                   )}
                 />
               </div>
@@ -723,7 +723,7 @@ export function TaskTray() {
                 <span className={cn(
                   "absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold leading-none px-1 tabular-nums border",
                   hasPriorityItems
-                    ? "bg-emerald-500 text-white border-emerald-400/50"
+                    ? "bg-status-success text-white border-status-success/50"
                     : "bg-primary text-primary-foreground border-primary/50"
                 )}>
                   {Math.min(totalItems, 9)}
@@ -789,7 +789,7 @@ export function TaskTray() {
         )}
 
         {/* ── My Tray — user-added actionable items ─────────────────── */}
-        <TraySection title="My Tray" count={openItems.length} accentColor="bg-emerald-400">
+        <TraySection title="My Tray" count={openItems.length} accentColor="bg-status-success">
           {openItems.length === 0 ? (
             <EmptySlot
               message='Nothing in your tray yet. Use "Add to Tray" on recommendations, hypotheses, and briefs as you browse.'
@@ -826,7 +826,7 @@ export function TaskTray() {
         <Divider />
 
         {/* ── Hypotheses ready to brief ─────────────────────────────── */}
-        <TraySection title="Ready to Brief" count={topHyps.length} accentColor="bg-violet-400">
+        <TraySection title="Ready to Brief" count={topHyps.length} accentColor="bg-primary">
           {topHyps.length === 0 ? (
             <EmptySlot
               message="No hypotheses queued for briefing"
@@ -876,7 +876,7 @@ export function TaskTray() {
         <Divider />
 
         {/* ── Top signals ───────────────────────────────────────────── */}
-        <TraySection title="Top Signals" count={topSignals.length} accentColor="bg-amber-400">
+        <TraySection title="Top Signals" count={topSignals.length} accentColor="bg-status-warning">
           {topSignals.length === 0 ? (
             <EmptySlot
               message="No active signals at this time"

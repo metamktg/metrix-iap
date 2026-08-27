@@ -294,7 +294,7 @@ const BUCKET_TAG_CLS: Record<string, string> = {
   optimize: "border-border/40 bg-white/[0.04] text-foreground/75",
   validate: "border-border/40 bg-white/[0.04] text-muted-foreground/70",
   explore: "border-border/40 bg-white/[0.04] text-muted-foreground/70",
-  avoid: "border-red-400/30 bg-red-400/10 text-red-300",
+  avoid: "border-status-danger/30 bg-status-danger/10 text-status-danger",
 };
 
 // Real tier vocabulary only — the strategy map classifies into these five
@@ -572,7 +572,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
                     <td className="text-right tabular-nums text-muted-foreground/75">{r.spend != null ? fmtUSD(r.spend, 0) : "n/a"}</td>
                     <td className="text-right tabular-nums text-foreground/80">{r.cpa != null ? fmtUSD(r.cpa) : zero ? `no ${resultNoun}` : "n/a"}</td>
                     <td className="text-right tabular-nums text-muted-foreground/75">{r.cvr_link_pct != null ? fmtPct(r.cvr_link_pct) : "n/a"}</td>
-                    <td className={cn("text-right tabular-nums", r.lift == null ? "text-muted-foreground/40" : r.lift >= 0 ? "text-emerald-400" : "text-red-300")}>
+                    <td className={cn("text-right tabular-nums", r.lift == null ? "text-muted-foreground/40" : r.lift >= 0 ? "text-status-success" : "text-status-danger")}>
                       {r.lift == null ? "—" : `${r.lift >= 0 ? "+" : ""}${fmtPct(r.lift)}`}
                     </td>
                     <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : <span className={cn(TYPE.label, "text-muted-foreground/35")}>—</span>}</td>
@@ -699,7 +699,7 @@ function BuyerIntentFunnelCard({
               {stage.pctOfPrev != null && (
                 <div className="flex items-center gap-1 ml-28 pl-3 mt-1">
                   <ArrowRight className="w-3 h-3 text-muted-foreground/35" />
-                  <span className={cn(TYPE.microLabel, stage.pctOfPrev >= 20 ? "text-emerald-400/70" : stage.pctOfPrev >= 5 ? c.text : "text-red-400/70")}>
+                  <span className={cn(TYPE.microLabel, stage.pctOfPrev >= 20 ? "text-status-success/70" : stage.pctOfPrev >= 5 ? c.text : "text-status-danger/70")}>
                     {stage.pctOfPrev.toFixed(1)}% of previous stage
                   </span>
                 </div>
@@ -774,13 +774,13 @@ function CostPerResultCard({ adAccountId, accountConfigured }: { adAccountId: st
             <div className="flex flex-col items-center gap-1.5 w-16">
               <span className={cn(TYPE.caption, "font-semibold text-foreground tabular-nums")}>{fmtUSD(trend.current)}</span>
               <div
-                className={cn("w-8 rounded-t", trend.improved ? "bg-emerald-400/70" : "bg-status-warning/70")}
+                className={cn("w-8 rounded-t", trend.improved ? "bg-status-success/70" : "bg-status-warning/70")}
                 style={{ height: `${barHeightPx(trend.current, maxVal)}px` }}
               />
               <span className={cn(TYPE.microLabel, "text-muted-foreground/55")}>Current window</span>
             </div>
           </div>
-          <div className={cn(TYPE.body, "font-semibold pb-1", trend.improved ? "text-emerald-400" : "text-red-300")}>
+          <div className={cn(TYPE.body, "font-semibold pb-1", trend.improved ? "text-status-success" : "text-status-danger")}>
             {trend.deltaPct >= 0 ? "+" : ""}{trend.deltaPct.toFixed(1)}%
             {delta != null && <span className="text-muted-foreground/60 font-normal"> ({delta >= 0 ? "+" : "−"}{fmtUSD(Math.abs(delta))})</span>}
           </div>

@@ -162,9 +162,9 @@ describe("MappingHealthBanner — severity styling", () => {
     renderControls();
 
     const badge = screen.getByText("missing");
-    expect(badge.className).toContain("bg-red-500/15");
-    expect(badge.className).toContain("border-red-400/40");
-    expect(badge.className).toContain("text-red-300");
+    expect(badge.className).toContain("bg-status-danger/15");
+    expect(badge.className).toContain("border-status-danger/40");
+    expect(badge.className).toContain("text-status-danger");
     expect(badge.className).not.toContain("status-warning");
   });
 

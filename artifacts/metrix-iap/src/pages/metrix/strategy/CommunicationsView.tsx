@@ -56,8 +56,8 @@ const TIER_LABEL: Record<string, string> = {
 // representation, the same pattern the tier itself already used for color).
 const TIER_FILL_PCT: Record<string, number> = { high: 88, medium: 55, low: 20 };
 const TIER_FILL_COLOR: Record<string, string> = {
-  high:   "bg-emerald-400/70",
-  medium: "bg-amber-400/60",
+  high:   "bg-status-success/70",
+  medium: "bg-status-warning/60",
   low:    "bg-muted-foreground/30",
 };
 
