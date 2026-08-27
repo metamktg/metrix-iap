@@ -48,7 +48,8 @@
     "migrate:metrix-official": "tsx ./src/metrix-official/migrate.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --config vitest.config.ts",
-    "check:interaction": "tsx ./src/check-interaction.ts"
+    "check:interaction": "tsx ./src/check-interaction.ts",
+    "check:locator-ambiguity": "tsx ./src/check-locator-ambiguity.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",

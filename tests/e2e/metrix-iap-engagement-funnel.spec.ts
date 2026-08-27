@@ -294,7 +294,7 @@ async function gotoFunnel(page: Page): Promise<void> {
   // The Funnel/Breakdown/Scatter toggle buttons are present once the main
   // content area has rendered (past the ModuleScopeGate loading state).
   await page
-    .getByRole("button", { name: "Funnel" })
+    .getByRole("button", { name: "Funnel", exact: true })
     .waitFor({ state: "visible", timeout: 30_000 });
 }
 
@@ -344,8 +344,14 @@ async function main() {
           console.log('       "Engagement Funnel" heading visible ✓');
 
           // All three mode toggle buttons must be present.
+          // exact:true throughout this spec: the mode and dimension toggles are
+          // named "Funnel"/"Breakdown"/"Placement"/…, and each of those is also a
+          // substring of a SectionCard header's accessible name ("Collapse
+          // section: Conversion funnel", "… Placement breakdown"). Playwright
+          // matches name by case-insensitive substring, so without exact:true
+          // these resolve to two elements and throw a strict-mode violation.
           for (const label of ["Funnel", "Breakdown", "Scatter"]) {
-            const btn = page.getByRole("button", { name: label });
+            const btn = page.getByRole("button", { name: label, exact: true });
             assert(
               await btn.isVisible(),
               `Expected "${label}" tab button to be visible`,
@@ -373,7 +379,7 @@ async function main() {
           await gotoFunnel(page);
 
           // "Funnel" is the default mode — click it explicitly to be sure.
-          await page.getByRole("button", { name: "Funnel" }).click();
+          await page.getByRole("button", { name: "Funnel", exact: true }).click();
           await page.waitForTimeout(400);
 
           // The SectionCard title for the waterfall.
@@ -421,7 +427,7 @@ async function main() {
           await gotoFunnel(page);
 
           // Switch to Breakdown mode.
-          await page.getByRole("button", { name: "Breakdown" }).click();
+          await page.getByRole("button", { name: "Breakdown", exact: true }).click();
           await page.waitForTimeout(400);
 
           // The BreakdownTable thead has a "Segment" column header (th element).
@@ -468,7 +474,7 @@ async function main() {
           await gotoFunnel(page);
 
           // Switch to Scatter mode.
-          await page.getByRole("button", { name: "Scatter" }).click();
+          await page.getByRole("button", { name: "Scatter", exact: true }).click();
           await page.waitForTimeout(400);
 
           // The SectionCard title for scatter.
@@ -507,7 +513,7 @@ async function main() {
           await gotoFunnel(page);
 
           // Switch to Scatter mode.
-          await page.getByRole("button", { name: "Scatter" }).click();
+          await page.getByRole("button", { name: "Scatter", exact: true }).click();
           await page.waitForTimeout(400);
 
           // The section card still renders (no crash).
@@ -557,10 +563,10 @@ async function main() {
           await gotoFunnel(page);
 
           // Enter Breakdown mode.
-          await page.getByRole("button", { name: "Breakdown" }).click();
+          await page.getByRole("button", { name: "Breakdown", exact: true }).click();
 
           // The "Audience" dimension button appears once Breakdown mode is active.
-          const audienceBtn = page.getByRole("button", { name: "Audience" });
+          const audienceBtn = page.getByRole("button", { name: "Audience", exact: true });
           await audienceBtn.waitFor({ state: "visible", timeout: 8_000 });
 
           // ── Audience dimension ──
@@ -591,7 +597,7 @@ async function main() {
 
           // ── Placement dimension ──
           // Click Placement and wait for its distinct section card title.
-          const placementBtn = page.getByRole("button", { name: "Placement" });
+          const placementBtn = page.getByRole("button", { name: "Placement", exact: true });
           await placementBtn.waitFor({ state: "visible", timeout: 8_000 });
           await placementBtn.click();
 
@@ -637,7 +643,7 @@ async function main() {
           await gotoFunnel(page);
 
           // Enter Breakdown mode (defaults to Audience dimension).
-          await page.getByRole("button", { name: "Breakdown" }).click();
+          await page.getByRole("button", { name: "Breakdown", exact: true }).click();
           const segmentHeader = page.locator("th").filter({ hasText: /^Segment$/ });
           await segmentHeader.waitFor({ state: "visible", timeout: 8_000 });
 
@@ -670,7 +676,7 @@ async function main() {
           console.log('       "Spend" sort active in Audience mode ✓');
 
           // Switch dimension Audience → Placement.
-          await page.getByRole("button", { name: "Placement" }).click();
+          await page.getByRole("button", { name: "Placement", exact: true }).click();
           const placementCardTitle = page.getByText("Placement breakdown").first();
           await placementCardTitle.waitFor({ state: "visible", timeout: 8_000 });
 
@@ -757,7 +763,7 @@ async function main() {
           console.log('       "No engagement data" pending state visible ✓');
 
           // The funnel tab toggle must NOT be present (we are in the pending branch).
-          const funnelTab = page.getByRole("button", { name: "Funnel" });
+          const funnelTab = page.getByRole("button", { name: "Funnel", exact: true });
           const funnelTabVisible = await funnelTab.isVisible().catch(() => false);
           assert(
             !funnelTabVisible,
@@ -792,7 +798,7 @@ async function main() {
 
           // Cycle: Funnel → Breakdown → Scatter → Funnel
           for (const label of ["Funnel", "Breakdown", "Scatter", "Funnel"]) {
-            await page.getByRole("button", { name: label }).click();
+            await page.getByRole("button", { name: label, exact: true }).click();
             await page.waitForTimeout(300);
           }
 
@@ -821,7 +827,7 @@ async function main() {
           await gotoFunnel(page);
 
           // Enter Breakdown mode (defaults to Audience dimension).
-          await page.getByRole("button", { name: "Breakdown" }).click();
+          await page.getByRole("button", { name: "Breakdown", exact: true }).click();
           const segmentHeader = page.locator("th").filter({ hasText: /^Segment$/ });
           await segmentHeader.waitFor({ state: "visible", timeout: 8_000 });
 
@@ -847,7 +853,7 @@ async function main() {
           console.log('       "Frequency" sort active in Audience mode ✓');
 
           // Switch dimension to Placement — Frequency has no values there.
-          await page.getByRole("button", { name: "Placement" }).click();
+          await page.getByRole("button", { name: "Placement", exact: true }).click();
           const placementCardTitle = page.getByText("Placement breakdown").first();
           await placementCardTitle.waitFor({ state: "visible", timeout: 8_000 });
 

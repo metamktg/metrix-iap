@@ -391,8 +391,26 @@ async function mockApis(
   return { imports };
 }
 
+/**
+ * Below 1024px the sidebar is a drawer, not a rail (AppShell). The account
+ * switcher lives inside it, so at these viewports it is rendered but
+ * translated off-canvas — visible and enabled to Playwright, permanently
+ * "outside of the viewport" to a click, which retries for the full timeout
+ * and then fails. Opening the drawer first is what a person does here, so it
+ * is what the spec does. These contexts run at 480px, so this is the live
+ * path, not a fallback.
+ */
+async function openNavIfCompact(page: Page): Promise<void> {
+  const width = page.viewportSize()?.width ?? 1440;
+  if (width >= 1024) return;
+  const toggle = page.getByRole("button", { name: "Open navigation" });
+  await toggle.waitFor({ state: "visible", timeout: 20_000 });
+  await toggle.click();
+}
+
 async function openAddAccountDialog(page: Page): Promise<void> {
   await page.goto(`${BASE}/app/account?account=bookster`, { waitUntil: "domcontentloaded" });
+  await openNavIfCompact(page);
   await page.locator('[aria-label^="Switch account"], [aria-label^="Current account"]').first().waitFor({ state: "visible", timeout: 20_000 });
   await page.locator('[aria-label^="Switch account"], [aria-label^="Current account"]').first().click();
   await page.locator("text=Connect Ad Account").first().waitFor({ state: "visible", timeout: 10_000 });
@@ -477,7 +495,13 @@ async function main() {
 
         // Pick a date range and run analysis.
         await page.locator('button:has-text("Last 7 days")').click();
-        await page.locator('button:has-text("Run analysis")').click();
+        // getByRole+exact, not `button:has-text(...)`. AnalysisCommandCenter
+        // wraps this control in <SectionCard title="Run analysis">, whose
+        // header is itself a <button> containing an <h2> with that same text —
+        // so a text-content match resolves to two elements. The header's
+        // accessible name is "Collapse section: Run analysis", so matching the
+        // accessible name exactly picks out the real control.
+        await page.getByRole("button", { name: "Run analysis", exact: true }).click();
 
         // Poll through running -> success.
         await page.locator("text=Analysis complete").first().waitFor({ state: "visible", timeout: 15_000 });

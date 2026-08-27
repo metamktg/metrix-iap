@@ -1571,7 +1571,7 @@ async function main() {
 
           // The Cross-Map surface defaults to the "Concept Map" tab —
           // switch to the "Crossmap Results" tab to mount CrossmapResultsView.
-          const crossmapTab = page.getByRole("button", { name: /Crossmap Results/i }).first();
+          const crossmapTab = page.getByRole("tab", { name: /Crossmap Results/i }).first();
           await crossmapTab.waitFor({ state: "visible", timeout: 20_000 });
           await crossmapTab.click();
 
@@ -1999,7 +1999,7 @@ async function main() {
 
           // Click the "Variable performance" tab to activate the variables panel.
           await page
-            .getByRole("button", { name: /Variable performance/i })
+            .getByRole("tab", { name: /Variable performance/i })
             .first()
             .click();
 
@@ -2193,7 +2193,7 @@ async function main() {
 
           // Click the "Variable performance" tab to activate the variables panel.
           await page
-            .getByRole("button", { name: /Variable performance/i })
+            .getByRole("tab", { name: /Variable performance/i })
             .first()
             .click();
 
