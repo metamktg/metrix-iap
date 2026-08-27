@@ -23,10 +23,10 @@ import {
 import { splitTitle } from "@/lib/normalize";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { useResizableColumn, type ResizableColumn } from "@/hooks/useResizableColumn";
 import {
   Map, ChevronDown, FlaskConical, CheckSquare,
-  Square, Lightbulb,
-} from "lucide-react";
+  Square, Lightbulb, ChevronLeft } from "lucide-react";
 import type { MessagePillar, ActiveHypothesis, VariableCombination, ScalingPlaybook } from "@/lib/data/seedTypes";
 import { ConceptChip } from "@/components/concept/ConceptChip";
 import { useConceptRegistry } from "@/lib/concept-registry-context";
@@ -74,32 +74,26 @@ function sortByPriority(hyps: ActiveHypothesis[]): ActiveHypothesis[] {
 
 // ─── Resizable column handle ─────────────────────────────────────────
 
-function ResizeHandle({ onResize }: { onResize: (dx: number) => void }) {
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      let lastX = e.clientX;
-      const onMove = (ev: MouseEvent) => {
-        const dx = ev.clientX - lastX;
-        lastX = ev.clientX;
-        onResize(dx);
-      };
-      const onUp = () => {
-        document.removeEventListener("mousemove", onMove);
-        document.removeEventListener("mouseup", onUp);
-      };
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
-    },
-    [onResize]
-  );
+/**
+ * Column splitter.
+ *
+ * All behaviour — pointer (not mouse) events, cursor lock, text-selection
+ * guard, persistence, snap-to-collapse, arrow-key operation — lives in
+ * useResizableColumn, which is the same primitive Sidebar and TaskTray
+ * already use. This is only its visual shell.
+ */
+function ResizeHandle({ handleProps, collapsed }: { handleProps: ResizableColumn["handleProps"]; collapsed?: boolean }) {
   return (
     <div
-      className="w-1.5 shrink-0 cursor-col-resize hover:bg-primary/30 active:bg-primary/60 transition-colors border-x border-border/20"
-      onMouseDown={handleMouseDown}
-      role="separator"
-      aria-orientation="vertical"
-      aria-label="Resize column"
+      {...handleProps}
+      className={cn(
+        "w-1.5 shrink-0 cursor-col-resize border-x border-border/20 transition-colors",
+        "hover:bg-primary/30 active:bg-primary/60",
+        // A keyboard user needs to see where focus landed; the strip is
+        // 1.5px wide, so the ring is the only visible affordance.
+        "focus-visible:outline-none focus-visible:bg-primary/50",
+        collapsed && "bg-primary/15",
+      )}
     />
   );
 }
@@ -446,14 +440,18 @@ export function StrategyMapView() {
 
   // Selection + panel state — must be at component top before any hook calls.
   const [selectedPillarId, setSelectedPillarId] = useState<string | null>(null);
-  const [leftWidth, setLeftWidth] = useState(210);
-  const [rightWidth, setRightWidth] = useState(260);
-  const handleLeftResize = useCallback((dx: number) => {
-    setLeftWidth((w) => Math.max(140, Math.min(320, w + dx)));
-  }, []);
-  const handleRightResize = useCallback((dx: number) => {
-    setRightWidth((w) => Math.max(180, Math.min(380, w - dx)));
-  }, []);
+  // The pillar list is this page's primary navigation, so it resizes but
+  // never collapses. The hypothesis rail is supporting context — it snaps
+  // shut when dragged narrow, and both widths survive navigation.
+  const leftCol = useResizableColumn("Resize pillar list", {
+    storageKey: "metrix.strategyMap.leftWidth",
+    defaultWidth: 210, minWidth: 140, maxWidth: 320, edge: "right",
+  });
+  const rightCol = useResizableColumn("Resize hypotheses panel", {
+    storageKey: "metrix.strategyMap.rightWidth",
+    defaultWidth: 260, minWidth: 180, maxWidth: 380, edge: "left",
+    collapseBelow: 150,
+  });
   const [queued, setQueued] = useState<Set<string>>(new Set());
   const [expandedPillarId, setExpandedPillarId] = useState<string | null>(null);
   const [segmentPillar, setSegmentPillar] = useState<MessagePillar | null>(null);
@@ -544,7 +542,7 @@ export function StrategyMapView() {
                 <div className="flex-1 flex min-h-0 overflow-hidden border-t border-border/30">
 
                   {/* Left column — Pillars list (resizable) */}
-                  <div style={{ width: leftWidth }} className="shrink-0 overflow-y-auto bg-white/[0.005]">
+                  <div style={{ width: leftCol.width }} className="shrink-0 overflow-y-auto bg-white/[0.005]">
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
                       <div className="flex items-center gap-1 mb-0.5">
                         <p className={cn(TYPE.microLabel, "text-muted-foreground/35")}>Pillars</p>
@@ -565,7 +563,7 @@ export function StrategyMapView() {
                     ))}
                   </div>
 
-                  <ResizeHandle onResize={handleLeftResize} />
+                  <ResizeHandle handleProps={leftCol.handleProps} />
 
                   {/* Centre column — Source cells + variable legend */}
                   <div className="flex-1 overflow-y-auto">
@@ -689,10 +687,35 @@ export function StrategyMapView() {
                     </div>
                   </div>
 
-                  <ResizeHandle onResize={handleRightResize} />
+                  <ResizeHandle handleProps={rightCol.handleProps} collapsed={rightCol.collapsed} />
+
+                  {/* Reopen tab. A collapsed panel whose only affordance is a
+                      1.5px splitter is a panel the user has lost — the rail
+                      needs to advertise itself, and say what is inside it. */}
+                  {rightCol.collapsed && (
+                    <button
+                      type="button"
+                      onClick={() => rightCol.setCollapsed(false)}
+                      title={`Show hypotheses (${selectedHyps.length} active)`}
+                      className="shrink-0 w-7 flex flex-col items-center justify-center gap-2 border-l border-border/20 bg-white/[0.01] hover:bg-primary/[0.06] transition-colors group/reopen"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground/50 group-hover/reopen:text-interactive" />
+                      <span
+                        className={cn(TYPE.microLabel, "text-muted-foreground/45 group-hover/reopen:text-interactive")}
+                        style={{ writingMode: "vertical-rl" }}
+                      >
+                        Hypotheses
+                      </span>
+                      {selectedHyps.length > 0 && (
+                        <span className={cn(TYPE.microLabel, "text-interactive/70 tabular-nums")}>
+                          {selectedHyps.length}
+                        </span>
+                      )}
+                    </button>
+                  )}
 
                   {/* Right column — Hypotheses (resizable) */}
-                  <div style={{ width: rightWidth }} className="shrink-0 overflow-y-auto">
+                  <div style={{ width: rightCol.collapsed ? 0 : rightCol.width }} className={cn("shrink-0 overflow-y-auto", rightCol.collapsed && "invisible")} aria-hidden={rightCol.collapsed}>
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
