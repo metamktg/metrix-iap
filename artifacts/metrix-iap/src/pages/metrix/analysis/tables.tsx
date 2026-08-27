@@ -15,7 +15,8 @@
 // widths remain normal table layout (no absolute positioning hacks).
 
 import { useMemo, useRef, useState } from "react";
-import { divergingFill, divergingLegend, magnitudeFill } from "@/components/charts/chartTokens";
+import { divergingFill, magnitudeFill } from "@/components/charts/chartTokens";
+import { MagnitudeLegend, VerdictLegend } from "@/components/charts/chartChrome";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -322,16 +323,8 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
       <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
       {heatmapOn && (
         <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
-          <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-1) / 0.04) 0%, hsl(var(--chart-1) / 0.22) 100%)" }} />
-            <span>Spend intensity</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="inline-flex gap-px">{divergingLegend().filter((l) => l.label !== "Not measured").map((l, i) => (
-              <span key={i} className="w-3 h-2.5 first:rounded-l-sm last:rounded-r-sm" style={{ background: l.fill }} />
-            ))}</span>
-            <span>Above goal → at goal</span>
-          </div>
+          <MagnitudeLegend label="Spend" colorIndex={0} />
+          <VerdictLegend lowLabel="Above goal" highLabel="At goal" />
         </div>
       )}
       <TableShellInner scrollRef={scrollRef}>
@@ -445,16 +438,8 @@ export function VariableTable({
       <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
       {heatmapOn && (
         <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
-          <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-1) / 0.04) 0%, hsl(var(--chart-1) / 0.22) 100%)" }} />
-            <span>Spend intensity</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="inline-flex gap-px">{divergingLegend().filter((l) => l.label !== "Not measured").map((l, i) => (
-              <span key={i} className="w-3 h-2.5 first:rounded-l-sm last:rounded-r-sm" style={{ background: l.fill }} />
-            ))}</span>
-            <span>Above goal → at goal</span>
-          </div>
+          <MagnitudeLegend label="Spend" colorIndex={0} />
+          <VerdictLegend lowLabel="Above goal" highLabel="At goal" />
         </div>
       )}
       <TableShellInner scrollRef={scrollRef}>
@@ -496,14 +481,8 @@ export function DemographicTable({
   return (
     <div>
       {heatmap && maxCvr > 0 && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-foreground/[0.01] text-label text-muted-foreground/65 font-mono">
-          <span className="uppercase tracking-widest">CVR</span>
-          <span className="text-muted-foreground/65">low</span>
-          <div
-            className="w-20 h-2 rounded-full"
-            style={{ background: "linear-gradient(90deg, hsl(var(--foreground) / 0.04) 0%, hsl(var(--chart-3) / 0.30) 100%)" }}
-          />
-          <span className="text-muted-foreground/65">high</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-foreground/[0.01]">
+          <MagnitudeLegend label="Result / click" colorIndex={0} />
         </div>
       )}
       <TableShell>
@@ -541,7 +520,7 @@ export function DemographicTable({
                 <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
                 <Td
                   right
-                  style={intensity > 0 ? { background: divergingFill(intensity) } : undefined}
+                  style={intensity > 0 ? { background: magnitudeFill(intensity, 0) } : undefined}
                 >
                   {fmtPct(r.Result_per_link_click_pct)}
                 </Td>

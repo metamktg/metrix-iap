@@ -15,6 +15,7 @@
 //     values twitch horizontally as they change.
 
 import type { ReactNode } from "react";
+import { magnitudeLegend, divergingLegend } from "./chartTokens";
 
 export interface TooltipRow {
   label: string;
@@ -100,5 +101,77 @@ export function ChartSkeleton({ height }: { height: number }) {
         />
       ))}
     </div>
+  );
+}
+
+// ─── Scale legends ────────────────────────────────────────────────────
+//
+// Both of these render the SAME function that fills the marks. That is the
+// whole point of them existing.
+//
+// Hand-drawn legends had gone stale in four places: a two-stop CSS gradient
+// from `chart-1/0.04` to `chart-1/0.22` sitting beside cells painted from
+// ramp steps 900 down to 600, and a `foreground → chart-3/0.30` gradient
+// beside cells painted with the red/grey/green diverging scale. In each case
+// the key described a map that no longer existed, which is worse than no key
+// at all: the reader trusts it and misreads every cell.
+//
+// A legend that cannot be authored separately from the fill cannot drift
+// from it.
+
+export function MagnitudeLegend({
+  label,
+  colorIndex = 0,
+  // "Less"/"More" and not "Low"/"High": low and high are this product's
+  // CONFIDENCE vocabulary (ConfidenceBadge renders exactly those words), and
+  // a magnitude strip that borrows them puts the two scales' language on the
+  // same screen meaning different things. Caught by a test that asserted a
+  // "Low" confidence badge and found two matches.
+  lowLabel = "Less",
+  highLabel = "More",
+}: {
+  label: string;
+  colorIndex?: number;
+  lowLabel?: string;
+  highLabel?: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="text-caption text-muted-foreground/70">{lowLabel}</span>
+      <span className="inline-flex gap-px" aria-hidden="true">
+        {magnitudeLegend(colorIndex).map((fill, i) => (
+          <span
+            key={i}
+            className="w-3 h-2.5 first:rounded-l-sm last:rounded-r-sm"
+            style={{ background: fill }}
+          />
+        ))}
+      </span>
+      <span className="text-caption text-muted-foreground/70">{highLabel}</span>
+      <span className="sr-only">{label}: darker is {highLabel.toLowerCase()}</span>
+      <span className="text-caption text-muted-foreground/70">{label}</span>
+    </span>
+  );
+}
+
+export function VerdictLegend({ lowLabel, highLabel }: { lowLabel: string; highLabel: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="text-caption text-muted-foreground/70">{lowLabel}</span>
+      <span className="inline-flex gap-px" aria-hidden="true">
+        {/* The "Not measured" entry is the hatch, which belongs beside the
+            map itself rather than inside a two-ended scale strip. */}
+        {divergingLegend()
+          .filter((l) => l.label !== "Not measured")
+          .map((l, i) => (
+            <span
+              key={i}
+              className="w-3 h-2.5 first:rounded-l-sm last:rounded-r-sm"
+              style={{ background: l.fill }}
+            />
+          ))}
+      </span>
+      <span className="text-caption text-muted-foreground/70">{highLabel}</span>
+    </span>
   );
 }

@@ -35,6 +35,13 @@ export interface HeatCell {
   value: number | null;
   /** Optional second line inside the cell (e.g. a cell id or a count). */
   sub?: string;
+  /**
+   * Everything else the caller knows about this intersection, for the hover.
+   * A cell shows one number; the reader who stops on it usually wants the
+   * two or three that produced it (spend, results, sample size). Without
+   * this the callers that had it kept their own grid to keep it.
+   */
+  hint?: string;
   /** Passed back on select, so the caller can open its own detail. */
   meta?: unknown;
 }
@@ -185,7 +192,7 @@ export function HeatMatrix({
                         `${r}, ${c}: ` +
                         (isGap ? `${measureLabel} not measured` : `${measureLabel} ${format(v)}`)
                       }
-                      title={isGap ? "Not measured for this intersection" : undefined}
+                      title={isGap ? "Not measured for this intersection" : cell?.hint}
                       className="h-14 rounded-lg px-1.5 flex flex-col items-center justify-center gap-0.5
                                  enabled:hover:ring-1 enabled:hover:ring-ring/50 enabled:active:scale-[0.96]
                                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring

@@ -31,7 +31,7 @@ import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import { TrendSection } from "@/components/analysis/TrendSection";
-import { divergingFill, VERDICT } from "@/components/charts/chartTokens";
+import { HeatMatrix } from "@/components/charts/HeatMatrix";
 import { KpiTileRow } from "@/components/metrics/KpiTile";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import {
@@ -444,9 +444,26 @@ function PlacementTable({ placements }: {
 }
 
 // ─── Demographic heatmap grid ─────────────────────────────────────────
-// Age rows × gender columns coloured by CPA intensity.
-// Lower CPA = better = more green; higher CPA = worse = more amber.
-// Clicking a cell opens SegmentDrilldownModal for that age × gender segment.
+//
+// Age rows x gender columns, coloured by CPA against goal. This delegates
+// to HeatMatrix now rather than painting its own grid, which fixed three
+// things it had drifted into:
+//
+//   · The legend did not match the map. It advertised an amber-to-emerald
+//     gradient at 0.30 alpha while the cells painted from divergingFill's
+//     danger/success ramp steps 700-900 — different hues, different
+//     lightness. HeatMatrix derives its legend from the same function that
+//     fills the cells, so the two cannot disagree.
+//   · Over-goal was one flat bucket. cellBg tested `cpa >= goal * 1.1` and
+//     returned the single worst fill, so a cell 5% over goal and one 300%
+//     over rendered identically. HeatMatrix grades across a +/-100% window.
+//   · An unmeasured cell and a mid-range one shared a fill. HeatMatrix
+//     hatches the gap, so "nobody in this segment converted" cannot read as
+//     "average performer".
+//
+// One thing is deliberately dropped: the "unknown" gender column used to
+// render narrower and at 70% opacity. It is a real bucket carrying real
+// spend, and the column header already says "unknown".
 
 function DemoHeatmapGrid({
   heatmap,
@@ -457,127 +474,46 @@ function DemoHeatmapGrid({
   analysis: AnalysisData;
   goalCpa?: number | null;
 }) {
-  const { cells, ages, genders, maxCpa, minCpa } = heatmap;
+  const { cells, ages, genders } = heatmap;
   const [selectedSegment, setSelectedSegment] = useState<SegmentId | null>(null);
+
+  const matrixCells = useMemo(
+    () =>
+      cells.map((c) => ({
+        row: c.age,
+        col: c.gender,
+        value: c.cpa,
+        sub: fmtUSD(c.spend, 0),
+        hint:
+          `${c.age} / ${c.gender}: ` +
+          (c.cpa != null ? `${fmtUSD(c.cpa)} CPA` : "no CPA — no results recorded") +
+          ` \u00b7 ${fmtUSD(c.spend, 0)} spend \u00b7 ${fmtNum(c.results)} results` +
+          ` — click to drill down`,
+        meta: { age: c.age, gender: c.gender } satisfies SegmentId,
+      })),
+    [cells],
+  );
 
   if (cells.length === 0) return null;
 
-  const getCell = (age: string, gender: string) =>
-    cells.find((c) => c.age === age && c.gender === gender.toLowerCase());
-
-  // 0 = bad (high CPA, amber), 1 = good (low CPA, emerald)
-  function intensity(cpa: number | null): number {
-    if (cpa == null || maxCpa === minCpa) return 0.5;
-    return 1 - (cpa - minCpa) / (maxCpa - minCpa);
-  }
-
-  // A cell states a VERDICT — at goal, near it, above it — so it wears the
-  // diverging scale: two reserved status hues with a grey midpoint. It used
-  // to reach for chart slots, which only worked while slot 3 happened to be
-  // teal and slot 4 amber; re-stepping the categorical palette made both
-  // ends green and the two verdicts identical.
-  function cellBg(cpa: number | null): string {
-    if (cpa == null) return divergingFill(null);
-    if (goalCpa != null && goalCpa > 0) {
-      // Goal-relative: at/below goal is good, above it is not, ±10% neutral.
-      if (cpa <= goalCpa * 0.9) return divergingFill(1);
-      if (cpa >= goalCpa * 1.1) return divergingFill(0);
-      return divergingFill(0.5);
-    }
-    return divergingFill(intensity(cpa));
-  }
-
-  // Build the gridTemplateColumns string: label col + one col per gender.
-  // "unknown" gender gets a narrower 0.5fr; others get 1fr.
-  const colTemplate = [
-    "72px",
-    ...genders.map((g) => (g === "unknown" ? "0.5fr" : "1fr")),
-  ].join(" ");
-
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[320px]">
-        {/* Header */}
-        <div
-          className="grid gap-1 mb-1"
-          style={{ gridTemplateColumns: colTemplate }}
-        >
-          <div />
-          {genders.map((g) => (
-            <div
-              key={g}
-              className={cn(
-                TYPE.label, "text-center capitalize py-1",
-                g === "unknown" && "text-muted-foreground/40",
-              )}
-            >
-              {g}
-            </div>
-          ))}
-        </div>
-        {/* Rows */}
-        {ages.map((age) => (
-          <div
-            key={age}
-            className="grid gap-1 mb-1 items-stretch"
-            style={{ gridTemplateColumns: colTemplate }}
-          >
-            <div className={cn(TYPE.caption, "text-muted-foreground/70 flex items-center pr-2 truncate")}>{age}</div>
-            {genders.map((gender) => {
-              const cell = getCell(age, gender);
-              const isEmpty = !cell;
-              return (
-                <button
-                  key={gender}
-                  type="button"
-                  onClick={() => setSelectedSegment({ age, gender })}
-                  className={cn(
-                    "rounded-md px-1.5 py-2 text-center border border-foreground/[0.06] min-h-[44px] flex flex-col items-center justify-center",
-                    "cursor-pointer transition-opacity",
-                    isEmpty
-                      ? "hover:opacity-60"
-                      : "hover:brightness-125 hover:border-foreground/[0.14]",
-                    gender === "unknown" && "opacity-70 hover:opacity-90",
-                  )}
-                  style={{ backgroundColor: cellBg(cell?.cpa ?? null) }}
-                  title={
-                    cell
-                      ? `${age} / ${gender}: ${cell.cpa != null ? fmtUSD(cell.cpa) + " CPA" : "no CPA"} · ${fmtUSD(cell.spend, 0)} spend · ${fmtNum(cell.results)} results — click to drill down`
-                      : `${age} / ${gender}: No data — click to explore`
-                  }
-                >
-                  {cell ? (
-                    <>
-                      <div className="text-label font-mono font-semibold tabular-nums text-foreground/85">
-                        {cell.cpa != null ? fmtUSD(cell.cpa, 0) : "—"}
-                      </div>
-                      <div className="text-label font-mono text-muted-foreground/50 mt-0.5 tabular-nums">
-                        {fmtUSD(cell.spend, 0)}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-label text-muted-foreground/25">—</div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        ))}
-        {/* Legend */}
-        <div className="flex items-center justify-between gap-2 mt-2">
-          <span className={cn(TYPE.label, "text-muted-foreground/35 italic")}>
-            Click any cell to explore segment attribution
-          </span>
-          <div className="flex items-center gap-1.5">
-            <span className={cn(TYPE.label, "text-muted-foreground/45")}>CPA:</span>
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: VERDICT.bad }} />
-            <span className={cn(TYPE.label)}>High</span>
-            <div className="w-10 h-1 rounded-full mx-0.5" style={{ background: "linear-gradient(to right, hsl(var(--status-warning) / 0.30), hsl(var(--muted-foreground) / 0.10), hsl(var(--status-success) / 0.30))" }} />
-            <span className={cn(TYPE.label)}>Low</span>
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: VERDICT.good }} />
-          </div>
-        </div>
-      </div>
+    <div>
+      <HeatMatrix
+        rows={ages}
+        cols={genders}
+        cells={matrixCells}
+        scale="verdict"
+        lowerIsBetter
+        goal={goalCpa ?? null}
+        format={(n) => fmtUSD(n, 0)}
+        measureLabel="CPA"
+        rowHeaderLabel="Age"
+        onSelect={(cell) => setSelectedSegment(cell.meta as SegmentId)}
+        emptyLabel="No demographic rows in this window"
+      />
+      <p className={cn(TYPE.label, "text-muted-foreground/35 italic mt-2")}>
+        Click any cell to explore segment attribution
+      </p>
 
       {/* Segment drilldown modal — opened when a cell is clicked */}
       <SegmentDrilldownModal
@@ -1210,8 +1146,8 @@ export function AnalysisOverview() {
                       title="Audience heatmap"
                       desc={
                         effectiveGoalCpa != null
-                          ? `Age × gender · goal CPA ${fmtUSD(effectiveGoalCpa, 0)} · emerald ≤ goal, amber > goal`
-                          : "Age × gender · colour = CPA (green = better) · hover for detail"
+                          ? `Age × gender · CPA against a ${fmtUSD(effectiveGoalCpa, 0)} goal · hover a cell for spend and results`
+                          : "Age × gender · CPA relative to this grid's own range · hover a cell for spend and results"
                       }
                       right={
                         <div className="flex items-center gap-3">

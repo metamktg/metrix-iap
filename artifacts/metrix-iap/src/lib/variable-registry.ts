@@ -179,16 +179,43 @@ export function resolveInlineVariableCodes(text: string): string {
   return result;
 }
 
-/** Color class per prefix for badge styling */
+// ─── Variable-family chips ────────────────────────────────────────────
+//
+// Every family gets the SAME chip. That is a deliberate reversal, and the
+// reason is that the previous map could not do what it claimed.
+//
+// It assigned nine families across five hues, so CN and HP were byte-for-byte
+// identical and TN and CTA differed only in their text colour — two pairs of
+// families the palette said were different and painted the same. Four of the
+// nine also wore reserved status colours: PR was status-success and AW was
+// status-danger, which on a performance dashboard reads as a verdict on the
+// variable rather than a name for it. "Proof" is not good news and "awareness"
+// is not a failure.
+//
+// Nine categories is more than the validated categorical scale carries (five
+// slots, and a sixth is never a generated hue), so colour cannot separate
+// these at all. It does not need to: the chip always renders the code, and
+// the two-letter prefix in mono is both unambiguous and faster to scan than
+// nine near-tints would be. Colour here lifts the chip off the surface; the
+// text carries the identity.
+//
+// Pinned by lib/__tests__/variable-chip-tokens.test.ts.
+const VARIABLE_CHIP = "bg-foreground/[0.06] text-foreground/85 border-border/45";
+
+/**
+ * Chip classes for a variable code's family. Keyed by prefix so call sites
+ * read as they always did; every prefix resolves to the same treatment.
+ */
 export const PREFIX_COLORS: Record<VariablePrefix, string> = {
-  HK:      "bg-accent/10 text-accent border-accent/20",
-  TN:      "bg-primary/10 text-primary border-primary/20",
-  FW:      "bg-metrix-cyan/10 text-metrix-cyan border-metrix-cyan/20",
-  CN:      "bg-status-warning/10 text-status-warning border-status-warning/20",
-  PR:      "bg-status-success/10 text-status-success border-status-success/20",
-  CTA:     "bg-primary/10 text-interactive border-primary/20",
-  AW:      "bg-status-danger/10 text-status-danger border-status-danger/20",
-  ST:      "bg-border/10 text-muted-foreground border-border/20",
-  HP:      "bg-status-warning/10 text-status-warning border-status-warning/20",
-  unknown: "bg-muted text-muted-foreground border-border/40",
+  HK: VARIABLE_CHIP,
+  TN: VARIABLE_CHIP,
+  FW: VARIABLE_CHIP,
+  CN: VARIABLE_CHIP,
+  PR: VARIABLE_CHIP,
+  CTA: VARIABLE_CHIP,
+  AW: VARIABLE_CHIP,
+  ST: VARIABLE_CHIP,
+  HP: VARIABLE_CHIP,
+  /** Not a family — the code did not parse. Recessive on purpose. */
+  unknown: "bg-foreground/[0.03] text-muted-foreground border-border/30",
 };
