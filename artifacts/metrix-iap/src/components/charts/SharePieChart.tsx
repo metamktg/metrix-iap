@@ -1,11 +1,16 @@
 // ─── Share Pie/Donut Chart ───────────────────────────────────────────
 // Donut chart for share of spend or results across segments.
-// Interactive tooltips; "Other" bucket for small slices.
+// Interactive tooltips; neutral "Other" bucket for thin and overflow slices.
 // Accessibility: chart legend always visible; empty state instead of null;
 // loading skeleton via isLoading prop.
+//
+// The palette is the five categorical chart slots and nothing else. It is
+// NOT cycled — see lib/share-slices.ts for why the previous ten-entry,
+// modulo-indexed list painted different segments the same colour.
 
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
+import { allocateShareSlices } from "@/lib/share-slices";
 
 interface SharePieChartProps {
   data: { name: string; value: number }[];
@@ -16,20 +21,24 @@ interface SharePieChartProps {
   emptyLabel?: string;
 }
 
-// Chart palette — semantic CSS variable references for the Metrix dark theme.
-// Ordered to maximize contrast between adjacent segments.
-const PALETTE_VARS = [
+/**
+ * The categorical scale, in fixed order. Five slots, assigned by position,
+ * never cycled. A sixth segment folds into `OTHER_VAR` instead of borrowing
+ * slot 1 back.
+ */
+const SERIES_VARS = [
   "var(--color-chart-1)",
   "var(--color-chart-2)",
   "var(--color-chart-3)",
   "var(--color-chart-4)",
   "var(--color-chart-5)",
-  "hsl(var(--metrix-cyan))",
-  "hsl(var(--primary))",
-  "hsl(var(--metrix-gold))",
-  "hsl(var(--metrix-success))",
-  "hsl(var(--metrix-danger))",
-];
+] as const;
+
+/** "Other" is not a category, so it does not get a categorical hue. */
+const OTHER_VAR = "hsl(var(--muted-foreground))";
+
+const sliceFill = (i: number, namedCount: number) =>
+  i < namedCount ? SERIES_VARS[i]! : OTHER_VAR;
 
 export function SharePieChart({
   data,
@@ -74,14 +83,7 @@ export function SharePieChart({
     );
   }
 
-  const total = data.reduce((n, d) => n + d.value, 0);
-
-  // Bucket small slices into "Other" (anything < 3%)
-  const threshold = total * 0.03;
-  const main = data.filter((d) => d.value >= threshold);
-  const other = data.filter((d) => d.value < threshold);
-  const otherValue = other.reduce((n, d) => n + d.value, 0);
-  const chartData = otherValue > 0 ? [...main, { name: "Other", value: otherValue }] : main;
+  const { named, folded, other, slices, total } = allocateShareSlices(data, SERIES_VARS.length);
 
   const fmt = unit === "usd"
     ? (v: number) => fmtUSD(v, 0)
@@ -92,12 +94,16 @@ export function SharePieChart({
       className="w-full flex flex-col items-center"
       style={{ height }}
       role="img"
-      aria-label={`Donut chart: ${chartData.map((d) => `${d.name} ${fmt(d.value)}`).join(", ")}`}
+      aria-label={
+        `Donut chart: ${slices.map((d) => `${d.name} ${fmt(d.value)}`).join(", ")}` +
+        (other ? `. Other holds ${folded.length}: ${folded.map((f) => f.name).join(", ")}` : "")
+      }
     >
+      <div className="w-full flex-1 min-h-0">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
-            data={chartData}
+            data={slices}
             dataKey="value"
             nameKey="name"
             cx="50%"
@@ -107,8 +113,8 @@ export function SharePieChart({
             paddingAngle={2}
             stroke="none"
           >
-            {chartData.map((_, i) => (
-              <Cell key={i} fill={PALETTE_VARS[i % PALETTE_VARS.length]} />
+            {slices.map((d, i) => (
+              <Cell key={d.name} fill={sliceFill(i, named.length)} />
             ))}
           </Pie>
           <Tooltip
@@ -122,30 +128,27 @@ export function SharePieChart({
                 <div className="rounded-lg border border-border/50 bg-surface px-3 py-2 elevation-floating text-body">
                   <div className="font-medium text-foreground mb-1">{name}</div>
                   <div className="text-muted-foreground tabular-nums">{fmt(value)} ({pct}%)</div>
+                  {other && name === other.name && (
+                    <div className="text-caption text-muted-foreground/80 mt-1 max-w-[16rem]">
+                      {folded.length} segment{folded.length === 1 ? "" : "s"}:{" "}
+                      {folded.map((f) => f.name).join(", ")}
+                    </div>
+                  )}
                 </div>
               );
             }}
           />
-          {showLegend && (
-            <Legend
-              verticalAlign="bottom"
-              iconType="circle"
-              iconSize={8}
-              formatter={(value) => (
-                <span className="text-label text-muted-foreground/80">{value}</span>
-              )}
-            />
-          )}
         </PieChart>
       </ResponsiveContainer>
+      </div>
 
       {showLegend && (
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-1" aria-hidden="true">
-          {chartData.map((d, i) => (
+          {slices.map((d, i) => (
             <div key={d.name} className="flex items-center gap-1.5">
               <div
                 className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: PALETTE_VARS[i % PALETTE_VARS.length] }}
+                style={{ backgroundColor: sliceFill(i, named.length) }}
               />
               <span className="text-label text-muted-foreground/80">{d.name}</span>
             </div>

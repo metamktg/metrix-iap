@@ -12,6 +12,7 @@
     "check:command-deck-contrast": "tsx ./src/check-command-deck-contrast.ts",
     "check:command-deck-token-drift": "tsx ./src/check-command-deck-token-drift.ts",
     "check:text-muted-contrast": "tsx ./src/check-text-muted-contrast.ts",
+    "check:chart-palette": "tsx ./src/check-chart-palette.ts",
     "check:disclosure-rulebook": "tsx ./src/check-disclosure-rulebook.ts",
     "check:signal-weights-drift": "tsx ./src/check-signal-weights-drift.ts",
     "check:type-scale": "tsx ./src/check-type-scale.ts",

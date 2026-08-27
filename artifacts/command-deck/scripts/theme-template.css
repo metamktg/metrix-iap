@@ -47,6 +47,13 @@
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-destructive-border: var(--destructive-border);
+  /* Reserved status palette — never a chart series slot. */
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
 
   --color-chart-1: hsl(var(--chart-1));
   --color-chart-2: hsl(var(--chart-2));
@@ -139,6 +146,12 @@
   --accent-foreground: __DS_LIGHT_ACCENTFOREGROUND__;
   --destructive: __DS_LIGHT_DESTRUCTIVE__;
   --destructive-foreground: __DS_LIGHT_DESTRUCTIVEFOREGROUND__;
+  --success: __DS_LIGHT_SUCCESS__;
+  --success-foreground: __DS_LIGHT_SUCCESSFOREGROUND__;
+  --warning: __DS_LIGHT_WARNING__;
+  --warning-foreground: __DS_LIGHT_WARNINGFOREGROUND__;
+  --info: __DS_LIGHT_INFO__;
+  --info-foreground: __DS_LIGHT_INFOFOREGROUND__;
   --input: __DS_LIGHT_INPUT__;
   --ring: __DS_LIGHT_RING__;
   --chart-1: __DS_LIGHT_CHART1__;
@@ -207,6 +220,12 @@
   --accent-foreground: __DS_DARK_ACCENTFOREGROUND__;
   --destructive: __DS_DARK_DESTRUCTIVE__;
   --destructive-foreground: __DS_DARK_DESTRUCTIVEFOREGROUND__;
+  --success: __DS_DARK_SUCCESS__;
+  --success-foreground: __DS_DARK_SUCCESSFOREGROUND__;
+  --warning: __DS_DARK_WARNING__;
+  --warning-foreground: __DS_DARK_WARNINGFOREGROUND__;
+  --info: __DS_DARK_INFO__;
+  --info-foreground: __DS_DARK_INFOFOREGROUND__;
   --input: __DS_DARK_INPUT__;
   --ring: __DS_DARK_RING__;
   --chart-1: __DS_DARK_CHART1__;

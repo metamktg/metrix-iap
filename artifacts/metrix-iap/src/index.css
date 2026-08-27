@@ -61,11 +61,16 @@
   --text-primary: var(--foreground);        /* primary content, headings */
   --text-secondary: var(--foreground);      /* secondary labels, sub-titles */
   --text-muted: var(--muted-foreground);    /* muted/supportive copy */
-  /* Status palette (WCAG-safe on dark surfaces) */
-  --status-success: var(--chart-3);
-  --status-warning: var(--chart-4);
+  /* Status palette (WCAG-safe on dark surfaces).
+     RESERVED: these point at the design system's own status tokens, never at a
+     chart slot. They used to alias --chart-3 / --chart-4, which meant the
+     categorical palette could not change hue without repainting every success
+     and warning state in the product — and that two of five chart slots were
+     spoken for before a single chart was designed. Same colours, own tokens. */
+  --status-success: var(--success);
+  --status-warning: var(--warning);
   --status-danger: var(--destructive);
-  --status-info: var(--primary);
+  --status-info: var(--info);
 
   /* ── Metrix raw cockpit tokens — full-color aliases of DS vars ── */
   --mx-bg-deep: hsl(var(--background));
@@ -92,9 +97,9 @@
   /* Interactive text — DS primary (sky blue) is AA+ on the dark background */
   --mx-text-interactive: hsl(var(--primary));
 
-  --mx-success: hsl(var(--chart-3));
+  --mx-success: hsl(var(--success));
   --mx-danger: hsl(var(--destructive));
-  --mx-warning: hsl(var(--chart-4));
+  --mx-warning: hsl(var(--warning));
 
   /* ── Nocturne tonal edge system (Metrix v1 design handoff) ──
      Three edge weights plus the signature long rules that fade to
@@ -139,8 +144,8 @@
      hsl(var(--metrix-*)) and hsl(var(--metrix-*) / a) in components). */
   --metrix-blue: var(--primary);
   --metrix-cyan: var(--accent);
-  --metrix-gold: var(--chart-4);
-  --metrix-success: var(--chart-3);
+  --metrix-gold: var(--warning);
+  --metrix-success: var(--success);
   --metrix-danger: var(--destructive);
   --metrix-panel: var(--card);
 
