@@ -17,21 +17,27 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@works
 import { Funnel, Wrench, LayoutGrid, TrendingUp, Users, ArrowUpRight, Ban, FlaskConical, Search, Sparkles, ChevronDown, Dna } from "lucide-react";
 import type { MessagePillar, ICPProfile, VariableCombination, ScalingPlaybook } from "@/lib/data/seedTypes";
 import type { DnaVariable } from "@/lib/creative-dna";
+import { VARIABLE_FAMILIES } from "@/lib/variable-registry";
 
 // ─── Variable families ────────────────────────────────────────────────
 
-const FAMILY_LABEL: Record<string, string> = {
-  hook: "Hook",
-  tone: "Tone",
-  framework: "Framework",
-  concept: "Concept",
-  proof: "Proof",
-  pain_proof: "Pain point",
-  cta: "CTA",
-};
-
+/**
+ * Family name for a variable_stack key.
+ *
+ * This was a fourth local copy of the family list and it disagreed with the
+ * seed's variable_registry on three of the seven it had — "Proof" for "Proof
+ * type", "Pain point" for "Pain proof", "CTA" for "Call to action" — and it
+ * carried no short-form keys at all. Real bundles use both conventions, so
+ * familyLabel("hk") fell through to the title-case fallback and rendered the
+ * family as "Hk" in every chip tooltip and screen-reader label.
+ *
+ * VARIABLE_FAMILIES carries the registry's own names and both key forms.
+ * The fallback stays for a key no family claims, so an unrecognized stack
+ * key still reads as something rather than blank.
+ */
 export function familyLabel(family: string): string {
-  return FAMILY_LABEL[family] ?? family.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const f = VARIABLE_FAMILIES.find((x) => x.key === family || x.aliases.includes(family));
+  return f?.label ?? family.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 // ─── Pillar evidence tier ──────────────────────────────────────────────
@@ -74,8 +80,8 @@ export function VariableChip({ code, showCode = false, className }: { code: stri
         </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] space-y-0.5 text-left">
-        <p className="font-mono text-label text-primary-foreground/70">{code}</p>
-        <p className="text-label leading-relaxed text-primary-foreground/90">{resolveVariableLabel(code)}</p>
+        <p className="font-mono text-label text-muted-foreground">{code}</p>
+        <p className="text-label leading-relaxed text-foreground/90">{resolveVariableLabel(code)}</p>
       </TooltipContent>
     </Tooltip>
     </TooltipProvider>
@@ -91,7 +97,7 @@ function ChipOverflow({ count, children }: { count: number; children: React.Reac
         <button
           type="button"
           aria-label={`Show ${count} more`}
-          className="inline-flex items-center text-label font-semibold text-muted-foreground/80 border border-border/50 bg-white/[0.04] hover:bg-white/[0.08] px-1.5 py-1 rounded leading-none transition-colors"
+          className="inline-flex items-center text-label font-semibold text-muted-foreground/80 border border-border/50 bg-foreground/[0.04] hover:bg-foreground/[0.08] px-1.5 py-1 rounded leading-none transition-colors"
         >
           +{count}
         </button>
@@ -128,9 +134,9 @@ export function VariableStackChips({ stack, maxVisible = 4 }: { stack: Record<st
         </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] space-y-0.5 text-left">
-        <p className="text-label font-semibold text-primary-foreground/90">{familyLabel(family)}</p>
-        <p className="font-mono text-label text-primary-foreground/70">{code}</p>
-        <p className="text-label leading-relaxed text-primary-foreground/90">{resolveVariableLabel(code)}</p>
+        <p className="text-label font-semibold text-foreground/90">{familyLabel(family)}</p>
+        <p className="font-mono text-label text-muted-foreground">{code}</p>
+        <p className="text-label leading-relaxed text-foreground/90">{resolveVariableLabel(code)}</p>
       </TooltipContent>
     </Tooltip>
     </TooltipProvider>
@@ -175,7 +181,7 @@ export function IcpChips({ ids, profiles, maxVisible = 4 }: { ids: string[] | un
     return (
       <span
         key={id}
-        className="inline-flex items-center gap-1 text-label font-medium text-foreground/85 border border-border/40 bg-white/[0.03] px-1.5 py-1 rounded leading-none"
+        className="inline-flex items-center gap-1 text-label font-medium text-foreground/85 border border-border/40 bg-foreground/[0.03] px-1.5 py-1 rounded leading-none"
         title={compact === full ? id : `${full} · ${id}`}
       >
         <Users className="w-3.5 h-3.5 text-interactive/70" />
@@ -205,7 +211,7 @@ function RefChips({ refs }: { refs: HierarchyRef[] }) {
       {refs.map((r, i) => (
         <span
           key={i}
-          className="inline-flex items-center text-label font-mono font-semibold text-foreground/90 border border-border/50 bg-white/[0.04] px-1.5 py-0.5 rounded leading-none whitespace-nowrap"
+          className="inline-flex items-center text-label font-mono font-semibold text-foreground/90 border border-border/50 bg-foreground/[0.04] px-1.5 py-0.5 rounded leading-none whitespace-nowrap"
         >
           {formatHierarchyRef(r)}
         </span>
@@ -322,7 +328,7 @@ export function PillarDetailsFold({ pillar, profiles }: { pillar: MessagePillar;
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
+        className="pressable flex items-center gap-1.5 text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 transition-colors"
       >
         Pillar details
         <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} aria-hidden />
@@ -370,16 +376,16 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
         <div className="md:col-span-2">
           <div className="flex items-center gap-1.5 mb-1.5">
             <Users className="w-3.5 h-3.5 text-interactive/70" />
-            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">Targets</span>
+            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">Targets</span>
           </div>
           <IcpChips ids={icps} profiles={profiles} />
         </div>
       )}
       {sections.map(({ key, label, Icon }) => (
-        <div key={key} className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
+        <div key={key} className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
           <div className="flex items-center gap-1.5 mb-1">
-            <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />
-            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+            <Icon className="w-3.5 h-3.5 text-muted-foreground/75" />
+            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">{label}</span>
           </div>
           <DetailReveal
             label={deriveLabel(pillar[key] as string, 72)}
@@ -396,14 +402,14 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
 // ─── Hypothesis status / priority ─────────────────────────────────────
 
 export const HYP_STATUS_STYLE: Record<string, string> = {
-  ready_for_brief_builder: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
+  ready_for_brief_builder: "bg-status-success/10 text-status-success border-status-success/20",
   validation_required: "bg-accent/10 text-accent border-accent/20",
-  high: "bg-red-400/10 text-red-300 border-red-400/20",
-  p1: "bg-red-400/10 text-red-300 border-red-400/20",
-  medium: "bg-amber-400/10 text-amber-300 border-amber-400/20",
-  p2: "bg-amber-400/10 text-amber-300 border-amber-400/20",
-  low: "bg-muted text-muted-foreground/60 border-border/40",
-  p3: "bg-muted text-muted-foreground/60 border-border/40",
+  high: "bg-status-danger/10 text-status-danger border-status-danger/20",
+  p1: "bg-status-danger/10 text-status-danger border-status-danger/20",
+  medium: "bg-status-warning/10 text-status-warning border-status-warning/20",
+  p2: "bg-status-warning/10 text-status-warning border-status-warning/20",
+  low: "bg-muted text-muted-foreground/75 border-border/40",
+  p3: "bg-muted text-muted-foreground/75 border-border/40",
 };
 
 export const HYP_STATUS_LABEL: Record<string, string> = {
@@ -423,7 +429,7 @@ export function HypothesisStatusBadge({ status }: { status: string }) {
     <span
       className={cn(
         "inline-flex text-label font-semibold border px-1.5 py-0.5 rounded leading-none",
-        HYP_STATUS_STYLE[key] ?? "bg-muted text-muted-foreground/60 border-border/40",
+        HYP_STATUS_STYLE[key] ?? "bg-muted text-muted-foreground/75 border-border/40",
       )}
     >
       {HYP_STATUS_LABEL[key] ?? status}
@@ -434,24 +440,24 @@ export function HypothesisStatusBadge({ status }: { status: string }) {
 // ─── Variable combinations ────────────────────────────────────────────
 
 const RECO_STYLE: Record<string, string> = {
-  scale: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
-  optimize: "bg-amber-400/10 text-amber-300 border-amber-400/20",
+  scale: "bg-status-success/10 text-status-success border-status-success/20",
+  optimize: "bg-status-warning/10 text-status-warning border-status-warning/20",
   validate: "bg-accent/10 text-accent border-accent/20",
-  avoid: "bg-red-400/10 text-red-300 border-red-400/20",
+  avoid: "bg-status-danger/10 text-status-danger border-status-danger/20",
 };
 
 export function VariableCombinationsGrid({ combinations }: { combinations: VariableCombination[] }) {
   return (
     <div className="grid grid-cols-dashboard-3 gap-3">
       {combinations.map((c, i) => (
-        <div key={`${c.combination}-${i}`} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2.5">
+        <div key={`${c.combination}-${i}`} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4 flex flex-col gap-2.5">
           <div className="flex items-start justify-between gap-2">
             {c.context && <NormalizedRefItem text={c.context} eyebrow="Combination context" />}
             {c.recommendation && (
               <span
                 className={cn(
                   "shrink-0 text-label font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
-                  RECO_STYLE[c.recommendation.toLowerCase()] ?? "bg-muted text-muted-foreground/60 border-border/40",
+                  RECO_STYLE[c.recommendation.toLowerCase()] ?? "bg-muted text-muted-foreground/75 border-border/40",
                 )}
               >
                 {c.recommendation}
@@ -461,11 +467,11 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
           <CombinationChips combination={c.combination} />
           <div className="mt-auto pt-2 border-t border-border/20 flex items-center gap-4">
             <div>
-              <div className={cn(TYPE.microLabel, "text-muted-foreground/40")}>CPA</div>
+              <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>CPA</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("usd_unit", c.cpa)}</div>
             </div>
             <div>
-              <div className={cn(TYPE.microLabel, "text-muted-foreground/40")}>CVR</div>
+              <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>CVR</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("pct", c.cvr_pct)}</div>
             </div>
             {c.confidence && (
@@ -488,11 +494,11 @@ const PLAYBOOK_LANES: Array<{
   Icon: React.ComponentType<{ className?: string }>;
   accent: string;
 }> = [
-  { key: "scale_now", label: "Scale now", Icon: ArrowUpRight, accent: "text-emerald-400 border-emerald-400/25 bg-emerald-400/[0.06]" },
-  { key: "optimize", label: "Optimize", Icon: Sparkles, accent: "text-amber-300 border-amber-400/25 bg-amber-400/[0.06]" },
+  { key: "scale_now", label: "Scale now", Icon: ArrowUpRight, accent: "text-status-success border-status-success/25 bg-status-success/[0.06]" },
+  { key: "optimize", label: "Optimize", Icon: Sparkles, accent: "text-status-warning border-status-warning/25 bg-status-warning/[0.06]" },
   { key: "validate", label: "Validate", Icon: FlaskConical, accent: "text-accent border-accent/25 bg-accent/[0.06]" },
-  { key: "explore", label: "Explore", Icon: Search, accent: "text-purple-300 border-purple-400/25 bg-purple-400/[0.06]" },
-  { key: "avoid_combinations", label: "Avoid", Icon: Ban, accent: "text-red-300 border-red-400/25 bg-red-400/[0.06]" },
+  { key: "explore", label: "Explore", Icon: Search, accent: "text-interactive border-primary/25 bg-primary/[0.06]" },
+  { key: "avoid_combinations", label: "Avoid", Icon: Ban, accent: "text-status-danger border-status-danger/25 bg-status-danger/[0.06]" },
 ];
 
 export function playbookHasContent(pb: ScalingPlaybook | null | undefined): boolean {
@@ -524,8 +530,8 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
         ))}
       </div>
       {playbook.budget_reallocation_note && (
-        <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
-          <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">Budget reallocation</div>
+        <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
+          <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 mb-1">Budget reallocation</div>
           <DetailReveal
             label={deriveLabel(playbook.budget_reallocation_note, 72)}
             labelClassName={TYPE.body}
@@ -603,7 +609,7 @@ export function StatGrid({ cells, cols }: { cells: StatCell[]; cols?: number }) 
     >
       {cells.map((c, i) => (
         <div key={i} className="bg-card px-2 py-1.5 text-center min-w-0">
-          <div className={cn(TYPE.microLabel, "text-muted-foreground/45 truncate")}>{c.label}</div>
+          <div className={cn(TYPE.microLabel, "text-muted-foreground/75 truncate")}>{c.label}</div>
           <div className={cn("text-body font-semibold tabular-nums mt-0.5 truncate", c.valueClassName ?? "text-foreground/90")}>
             {c.value}
           </div>
@@ -632,7 +638,7 @@ export function AccordionToggle({
       type="button"
       onClick={onToggle}
       aria-expanded={open}
-      className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
+      className="pressable flex items-center gap-1.5 text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 transition-colors"
     >
       {Icon && <Icon className="w-3.5 h-3.5" />}
       {label}
@@ -656,7 +662,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
     <div data-testid={testId}>
       <div className="flex items-center gap-1 mb-1.5">
         <Dna className="w-3.5 h-3.5 text-interactive/70" />
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{label}</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">{label}</span>
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         {visible.map((v) => (
@@ -666,7 +672,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="rounded-full border border-border/40 bg-white/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
+            className="pressable rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
           >
             +{overflow} more
           </button>
@@ -675,7 +681,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
           <button
             type="button"
             onClick={() => setExpanded(false)}
-            className="rounded-full border border-border/40 bg-white/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
+            className="pressable rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
           >
             − less
           </button>

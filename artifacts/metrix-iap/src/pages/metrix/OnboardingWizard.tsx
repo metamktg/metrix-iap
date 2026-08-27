@@ -8,7 +8,7 @@
 // upload mutations — nothing here duplicates that logic).
 //
 // Styled against the current Nocturne system (TYPE/HEADING from
-// ./typography, the flat border/bg-white[0.0N] card treatment used
+// ./typography, the flat border/bg-foreground[0.0N] card treatment used
 // throughout shared.tsx and ConnectAccountDialogs.tsx) rather than any
 // bespoke chrome — the step-indicator dots below are the same pattern
 // AddAccountDialog's own multi-step flow already uses.
@@ -56,13 +56,13 @@ function StepIndicator({ step }: { step: Step }) {
               key={s}
               className={cn(
                 "w-1.5 h-1.5 rounded-full transition-colors",
-                n < stepNumber ? "bg-emerald-400/60" : n === stepNumber ? "bg-primary/70" : "bg-border/40"
+                n < stepNumber ? "bg-status-success/60" : n === stepNumber ? "bg-primary/70" : "bg-border/40"
               )}
             />
           );
         })}
       </div>
-      <span className={cn(TYPE.label, "font-medium text-muted-foreground/40 tabular-nums")}>
+      <span className={cn(TYPE.label, "font-medium text-muted-foreground/75 tabular-nums")}>
         Step {stepNumber} of {STEPS.length} · {STEP_TITLE[step]}
       </span>
     </div>
@@ -73,7 +73,7 @@ function StepIndicator({ step }: { step: Step }) {
 // neighbors (AddAccountDialog, ConnectMetaDialog) — flat border, no glow.
 function IconTile({ icon: Icon }: { icon: typeof Compass }) {
   return (
-    <div className="w-11 h-11 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center mx-auto">
+    <div className="w-11 h-11 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center mx-auto">
       <Icon className="w-4 h-4 text-interactive" />
     </div>
   );
@@ -97,7 +97,7 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
                 A quick orientation before you link your first ad account.
               </p>
             </div>
-            <div className="text-left space-y-3 rounded-lg border border-border/40 bg-white/[0.02] p-4">
+            <div className="text-left space-y-3 rounded-lg border border-border/40 bg-foreground/[0.02] p-4">
               <div className="flex items-start gap-2.5">
                 <LayoutGrid className="w-4 h-4 text-interactive shrink-0 mt-0.5" />
                 <p className={cn(TYPE.caption, "text-foreground/80")}>
@@ -144,7 +144,7 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
               </p>
             </div>
 
-            <div className="rounded-lg border border-border/40 bg-white/[0.02] p-4 space-y-3">
+            <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-4 space-y-3">
               <div className={cn(TYPE.caption, "font-semibold text-foreground/90")}>
                 Pulling the two required CSVs from Meta Ads Manager
               </div>
@@ -186,7 +186,7 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
               </p>
             </div>
 
-            <div className="rounded-lg border border-border/40 bg-white/[0.02] p-3 flex items-start gap-2.5">
+            <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-3 flex items-start gap-2.5">
               <Images className="w-3.5 h-3.5 text-interactive shrink-0 mt-0.5" />
               <p className={cn(TYPE.caption, "text-foreground/75")}>
                 You'll also upload your creative files (images/videos) individually — no ZIP

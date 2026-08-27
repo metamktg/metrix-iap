@@ -45,10 +45,10 @@ function OptionRow<T extends string>({
           onClick={() => onSelect(opt)}
           disabled={disabled}
           className={cn(
-            "flex items-center gap-1.5 px-2.5 h-7 rounded-md border text-caption font-medium transition-colors",
+            "pressable flex items-center gap-1.5 px-2.5 h-7 rounded-md border text-caption font-medium transition-colors",
             value === opt
               ? "border-primary/40 bg-primary/10 text-interactive"
-              : "border-border/40 text-foreground/70 hover:text-foreground hover:bg-white/5",
+              : "border-border/40 text-foreground/70 hover:text-foreground hover:bg-foreground/5",
             disabled && "opacity-50 pointer-events-none"
           )}
         >
@@ -120,7 +120,7 @@ export function ReportConfigurationView() {
                 labelFor={(v) => (v === "metrix" ? "Metrix branded" : "White label")}
               />
               {rb && !rb.white_label_supported && (
-                <p className="text-label text-muted-foreground/60">
+                <p className="text-label text-muted-foreground/75">
                   White label is not enabled for this workspace's plan; exports fall back to Metrix branding.
                 </p>
               )}
@@ -146,7 +146,7 @@ export function ReportConfigurationView() {
                 disabled={isPending}
                 labelFor={(v) => (v === "internal" ? "Internal (full detail)" : "Client-facing")}
               />
-              <div className="flex items-center gap-1.5 text-label text-muted-foreground/60">
+              <div className="flex items-center gap-1.5 text-label text-muted-foreground/75">
                 {mode === "internal" ? <Building2 className="w-3 h-3" /> : <Users className="w-3 h-3" />}
                 New reports open in this mode; it can still be switched per report.
               </div>
@@ -169,7 +169,7 @@ export function ReportConfigurationView() {
               />
               <div>
                 <p className="text-body font-medium text-foreground/85">Send reports on a schedule</p>
-                <p className="text-label text-muted-foreground/60">
+                <p className="text-label text-muted-foreground/75">
                   Compose and deliver the default report automatically.
                 </p>
               </div>
@@ -201,9 +201,9 @@ export function ReportConfigurationView() {
                       const v = e.target.value.trim();
                       if (v !== recipients) save({ schedule_recipients: v || null });
                     }}
-                    className="w-full h-8 px-2.5 rounded-md border border-border/40 bg-white/[0.03] text-body text-foreground/85 placeholder:text-muted-foreground/40"
+                    className="w-full h-8 px-2.5 rounded-md border border-border/40 bg-foreground/[0.03] text-body text-foreground/85 placeholder:text-muted-foreground/75"
                   />
-                  <p className="text-label text-muted-foreground/60">Comma-separated emails. Saved when the field loses focus.</p>
+                  <p className="text-label text-muted-foreground/75">Comma-separated emails. Saved when the field loses focus.</p>
                 </div>
               </>
             )}
@@ -213,7 +213,7 @@ export function ReportConfigurationView() {
         </SectionCard>
 
         <div className="flex items-center gap-2">
-          <FileText className="w-3 h-3 text-muted-foreground/60" />
+          <FileText className="w-3 h-3 text-muted-foreground/75" />
           <CrossLink to="/app/reports/builder" label="Compose a report with these defaults" />
         </div>
       </div>

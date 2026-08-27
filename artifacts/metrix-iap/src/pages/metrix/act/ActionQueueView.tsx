@@ -5,6 +5,7 @@
 // full rationale and recommended_action.
 
 import { useState, useMemo, useCallback } from "react";
+import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -36,10 +37,10 @@ import {
 
 function actionVerb(recommended_action: string): { label: string; cls: string } {
   const a = recommended_action.toLowerCase();
-  if (a.includes("scale")) return { label: "Scale", cls: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25" };
+  if (a.includes("scale")) return { label: "Scale", cls: "bg-status-success/10 text-status-success border-status-success/25" };
   if (a.includes("pause") || a.includes("kill") || a.includes("stop"))
-    return { label: "Kill", cls: "bg-red-400/10 text-red-300 border-red-400/25" };
-  return { label: "Fix", cls: "bg-amber-400/10 text-amber-400 border-amber-400/25" };
+    return { label: "Kill", cls: "bg-status-danger/10 text-status-danger border-status-danger/25" };
+  return { label: "Fix", cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
 }
 
 function scopeToActionGroup(scope: string): string {
@@ -81,13 +82,13 @@ function InlineDrawer({
     <div className="mt-2 rounded-xl border border-[hsl(var(--border-default))] bg-secondary p-4 space-y-3 text-left">
       {/* Close handle */}
       <div className="flex items-center justify-between">
-        <span className="text-label font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
+        <span className="text-label font-bold uppercase tracking-[0.18em] text-muted-foreground/75">
           Full Detail
         </span>
         <button
           type="button"
           onClick={onClose}
-          className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-white/5 transition-colors"
+          className="pressable w-6 h-6 rounded flex items-center justify-center text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
           aria-label="Collapse"
         >
           <ChevronUp className="w-4 h-4" />
@@ -96,14 +97,14 @@ function InlineDrawer({
 
       {/* Rationale */}
       <div className="space-y-1">
-        <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/50">Rationale</p>
+        <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/75">Rationale</p>
         <DenseText text={card.rationale} className="text-body text-foreground/80 leading-relaxed" />
       </div>
 
       {/* Recommended action */}
       {card.recommended_action && (
         <div className="space-y-1">
-          <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/50">
+          <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/75">
             Recommended action
           </p>
           <p className="text-body text-foreground/75 leading-relaxed italic">
@@ -113,9 +114,9 @@ function InlineDrawer({
       )}
 
       {/* Safety notice */}
-      <div className="flex items-start gap-2 rounded-lg border border-amber-400/15 bg-amber-400/[0.04] px-3 py-2">
-        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-        <p className="text-caption text-amber-400/80 leading-relaxed">
+      <div className="flex items-start gap-2 rounded-lg border border-status-warning/15 bg-status-warning/[0.04] px-3 py-2">
+        <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
+        <p className="text-caption text-status-warning/80 leading-relaxed">
           Adding to the tray files a manual implementation task in the Task Tray. No changes are applied automatically.
         </p>
       </div>
@@ -173,11 +174,11 @@ function QueueCard({
   return (
     <div
       className={cn(
-        "rounded-xl border transition-all",
+        "rounded-xl border transition-[color,background-color,border-color,box-shadow,opacity,transform]",
         isApproved
-          ? "border-emerald-400/25 bg-emerald-400/[0.04]"
+          ? "border-status-success/25 bg-status-success/[0.04]"
           : isDismissed
-          ? "border-[hsl(var(--border))] bg-white/[0.01] opacity-50"
+          ? "border-[hsl(var(--border))] bg-foreground/[0.01] opacity-50"
           : "border-[hsl(var(--border))] bg-secondary"
       )}
     >
@@ -187,8 +188,8 @@ function QueueCard({
         onClick={() => !isDismissed && setExpanded((v) => !v)}
         disabled={isDismissed}
         className={cn(
-          "w-full text-left p-4 transition-colors",
-          !isDismissed && "hover:bg-white/[0.02]",
+          "pressable-lg w-full text-left p-4 transition-colors",
+          !isDismissed && "hover:bg-foreground/[0.02]",
           isDismissed && "cursor-default"
         )}
       >
@@ -209,7 +210,7 @@ function QueueCard({
             </span>
           )}
           {isApproved && (
-            <span className="flex items-center gap-1 text-label text-emerald-400 font-semibold">
+            <span className="flex items-center gap-1 text-label text-status-success font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" /> In Tray
             </span>
           )}
@@ -221,13 +222,13 @@ function QueueCard({
         </p>
 
         {/* Rationale preview — always visible */}
-        <p className="text-body text-muted-foreground/70 line-clamp-2 leading-relaxed">
+        <p className="text-body text-muted-foreground/75 line-clamp-2 leading-relaxed">
           {card.rationale}
         </p>
 
         {/* Expand chevron */}
         {!isDismissed && (
-          <div className="mt-2 flex items-center gap-1 text-label text-muted-foreground/40">
+          <div className="mt-2 flex items-center gap-1 text-label text-muted-foreground/75">
             {expanded ? (
               <><ChevronUp className="w-3.5 h-3.5" /> Less</>
             ) : (
@@ -250,14 +251,14 @@ function QueueCard({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); dismiss(); }}
-            className="flex items-center gap-1.5 h-8 px-3 rounded border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <X className="w-3.5 h-3.5" /> Dismiss
           </button>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); approve(); }}
-            className="flex items-center gap-1.5 h-8 px-3 rounded bg-primary/15 border border-primary/30 text-caption font-semibold text-interactive hover:bg-primary/25 transition-colors"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded bg-primary/15 border border-primary/30 text-caption font-semibold text-interactive hover:bg-primary/25 transition-colors"
           >
             <Check className="w-3.5 h-3.5" /> Add to Tray
           </button>
@@ -270,7 +271,7 @@ function QueueCard({
           <button
             type="button"
             onClick={restore}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
+            className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <RotateCcw className="w-3 h-3" /> Restore
           </button>
@@ -280,11 +281,11 @@ function QueueCard({
       {/* Restore for approved */}
       {isApproved && (
         <div className="px-4 pb-3 flex items-center justify-between">
-          <span className="text-label text-muted-foreground/50">Added to Task Tray</span>
+          <span className="text-label text-muted-foreground/75">Added to Task Tray</span>
           <button
             type="button"
             onClick={restore}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
+            className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <RotateCcw className="w-3 h-3" /> Undo
           </button>
@@ -306,24 +307,24 @@ const SECTION = "Act";
 function EmptyQueue({ reason }: { reason: "no-loop" | "all-done" }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border/40 py-16 text-center px-6">
-      <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
+      <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
         {reason === "all-done" ? (
-          <CheckCircle2 className="w-5 h-5 text-emerald-400/60" />
+          <CheckCircle2 className="w-5 h-5 text-status-success/60" />
         ) : (
-          <Zap className="w-5 h-5 text-muted-foreground/30" />
+          <Zap className="w-5 h-5 text-muted-foreground/75" />
         )}
       </div>
       {reason === "all-done" ? (
         <>
           <p className="text-title font-medium text-foreground/60">All caught up</p>
-          <p className="text-body text-muted-foreground/50 max-w-[280px]">
+          <p className="text-body text-muted-foreground/75 max-w-[280px]">
             All recommendations have been reviewed. Approved items are in your Task Tray.
           </p>
         </>
       ) : (
         <>
           <p className="text-title font-medium text-foreground/60">No actions yet</p>
-          <p className="text-body text-muted-foreground/50 max-w-[280px]">
+          <p className="text-body text-muted-foreground/75 max-w-[280px]">
             Run analysis to generate optimization recommendations for this account.
           </p>
         </>
@@ -359,7 +360,7 @@ export function ActionQueueView() {
   if (!account) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-24 px-6">
-        <p className="text-title text-muted-foreground/70">Select an ad account to see the action queue.</p>
+        <p className="text-title text-muted-foreground/75">Select an ad account to see the action queue.</p>
       </div>
     );
   }
@@ -393,7 +394,7 @@ export function ActionQueueView() {
       <div className="px-6 py-6 space-y-5 max-w-[860px] w-full mx-auto">
 
         {/* ── Descriptive line ────────────────────────────────────────── */}
-        <p className="text-title text-muted-foreground/65 max-w-[520px] leading-relaxed">
+        <p className="text-title text-muted-foreground/75 max-w-[520px] leading-relaxed">
           {allCards.length > 0
             ? `${allCards.length} recommendation${allCards.length !== 1 ? "s" : ""} from the optimization loop, sorted by impact. Add items to your Task Tray to implement later.`
             : "Optimization loop recommendations appear here after analysis runs."}
@@ -401,37 +402,7 @@ export function ActionQueueView() {
 
         {/* ── Tabs ────────────────────────────────────────────────────── */}
         {allCards.length > 0 && (
-          <div className="flex items-center gap-0 border-b border-border/40">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "flex items-center gap-1.5 h-9 px-3 text-body font-medium border-b-2 transition-colors",
-                  tab === t.id
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground/60 hover:text-foreground"
-                )}
-              >
-                {t.label}
-                {t.count > 0 && (
-                  <span
-                    className={cn(
-                      "text-label font-bold px-1.5 py-0.5 rounded-full",
-                      t.id === "approved"
-                        ? "bg-emerald-400/15 text-emerald-400"
-                        : t.id === "dismissed"
-                        ? "bg-muted text-muted-foreground/60"
-                        : "bg-primary/15 text-interactive"
-                    )}
-                  >
-                    {t.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+          <TabRail<QueueTab> tabs={TABS} active={tab} onChange={setTab} label="Queue status" />
         )}
 
         {/* ── Card list ───────────────────────────────────────────────── */}

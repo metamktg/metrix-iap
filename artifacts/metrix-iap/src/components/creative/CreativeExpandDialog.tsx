@@ -6,6 +6,7 @@
 // CreativeCard to avoid circular deps; types only via import type.
 
 import { useState, useMemo } from "react";
+import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
 import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle, TrendingDown } from "lucide-react";
@@ -23,10 +24,10 @@ import { useCreativeEmptyReasons } from "@/hooks/useCreativeEmptyReasons";
 // (needs attention). Unrecognized values fall back to neutral styling.
 
 const QA_STATUS_STYLE: Record<string, string> = {
-  pass: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25",
-  mapped_to_performance: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25",
-  flagged: "bg-red-400/10 text-red-300 border-red-400/25",
-  library_only_no_export_match: "bg-amber-400/10 text-amber-300 border-amber-400/25",
+  pass: "bg-status-success/10 text-status-success border-status-success/25",
+  mapped_to_performance: "bg-status-success/10 text-status-success border-status-success/25",
+  flagged: "bg-status-danger/10 text-status-danger border-status-danger/25",
+  library_only_no_export_match: "bg-status-warning/10 text-status-warning border-status-warning/25",
 };
 
 const QA_STATUS_LABEL: Record<string, string> = {
@@ -71,7 +72,7 @@ function ExpandVisualInner({ data, className }: { data: CreativeCardData; classN
     return (
       <div className={cn("relative w-full h-full", className)}>
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/[0.03]">
+          <div className="absolute inset-0 flex items-center justify-center bg-foreground/[0.03]">
             <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary/50 animate-spin" />
           </div>
         )}
@@ -96,7 +97,7 @@ function ExpandVisualInner({ data, className }: { data: CreativeCardData; classN
       <span className="text-hero font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
         {data.conceptCode}
       </span>
-      <span className={cn(TYPE.microLabel, "flex items-center gap-1.5 text-white/35")}>
+      <span className={cn(TYPE.microLabel, "flex items-center gap-1.5 text-foreground/55")}>
         <ImageOff className="w-3.5 h-3.5" /> No asset in import
       </span>
     </div>
@@ -140,36 +141,15 @@ function pct(n: number | null | undefined): string {
 }
 
 // ─── Tab chrome ────────────────────────────────────────────────────────
+//
+// The local TabBar is gone — see components/nav/TabRail.tsx. Its tabs stay
+// ENABLED when their panel has nothing to show: each panel takes an
+// emptyReason and explains itself, which tells the reader why this creative
+// has no placement rows. A disabled tab would only say "no".
 
 type Tab = "overview" | "demographics" | "placements" | "funnel";
 type DemoMetric = "spend" | "results";
 type PlacementMetric = "spend" | "cpa";
-
-function TabBar({ tabs, active, onChange }: {
-  tabs: { id: Tab; label: string; icon: React.ReactNode }[];
-  active: Tab;
-  onChange: (t: Tab) => void;
-}) {
-  return (
-    <div className="flex border-b border-border/30 shrink-0 px-1">
-      {tabs.map((t) => (
-        <button
-          key={t.id}
-          onClick={() => onChange(t.id)}
-          className={cn(
-            "flex items-center gap-1.5 px-3.5 py-2.5 text-label font-medium transition-colors border-b-2 -mb-px",
-            active === t.id
-              ? "text-foreground border-primary"
-              : "text-muted-foreground/50 border-transparent hover:text-muted-foreground/80"
-          )}
-        >
-          {t.icon}
-          {t.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function MetricToggle({ options, value, onChange }: {
   options: { value: string; label: string }[];
@@ -183,10 +163,10 @@ function MetricToggle({ options, value, onChange }: {
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1 font-mono uppercase tracking-wide transition-colors",
+            "pressable px-2.5 py-1 font-mono uppercase tracking-wide transition-colors",
             value === o.value
-              ? "bg-white/10 text-foreground"
-              : "text-muted-foreground/50 hover:text-muted-foreground/70"
+              ? "bg-foreground/10 text-foreground"
+              : "text-muted-foreground/75 hover:text-muted-foreground/75"
           )}
         >
           {o.label}
@@ -210,8 +190,8 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
             { label: "CPA", value: s.cpa != null ? usd(s.cpa) : "—" },
             { label: "Link CTR", value: pct(s.ctrPct) },
           ] as const).map((item) => (
-            <div key={item.label} className="rounded-lg border border-border/30 bg-white/[0.02] px-3 py-2.5 text-center">
-              <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">{item.label}</div>
+            <div key={item.label} className="rounded-lg border border-border/30 bg-foreground/[0.02] px-3 py-2.5 text-center">
+              <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">{item.label}</div>
               <div className="text-lg font-bold text-foreground tabular-nums leading-none">{item.value}</div>
             </div>
           ))}
@@ -220,9 +200,9 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
       {(data.primaryText || data.secondaryText || data.cta) && (
         <div className="space-y-2">
-          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>Copy</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Copy</p>
           {data.primaryText && <p className="text-body text-foreground/85 leading-relaxed">{data.primaryText}</p>}
-          {data.secondaryText && <p className="text-caption text-muted-foreground/60 leading-relaxed">{data.secondaryText}</p>}
+          {data.secondaryText && <p className="text-caption text-muted-foreground/75 leading-relaxed">{data.secondaryText}</p>}
           {data.cta && (
             <span className="inline-flex text-label font-semibold text-interactive border border-primary/25 bg-primary/10 px-2 py-1 rounded">
               CTA · {data.cta}
@@ -233,27 +213,27 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
       {data.iapRead && (
         <div className="space-y-1.5">
-          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>IAP read</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>IAP read</p>
           <p className="text-caption text-foreground/80 leading-relaxed">{data.iapRead}</p>
         </div>
       )}
 
       {(data.qaMappingStatus || data.mappingConfidence) && (
         <div className="space-y-1.5">
-          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>QA mapping</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>QA mapping</p>
           <div className="flex items-center gap-1.5 flex-wrap">
             {data.qaMappingStatus && (
               <span
                 className={cn(
                   "inline-flex text-label font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
-                  QA_STATUS_STYLE[data.qaMappingStatus] ?? "bg-muted text-muted-foreground/60 border-border/40",
+                  QA_STATUS_STYLE[data.qaMappingStatus] ?? "bg-muted text-muted-foreground/75 border-border/40",
                 )}
               >
                 {QA_STATUS_LABEL[data.qaMappingStatus] ?? data.qaMappingStatus}
               </span>
             )}
             {data.mappingConfidence && (
-              <span className="text-label font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/40 px-1.5 py-0.5 rounded leading-none">
+              <span className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 border border-border/40 px-1.5 py-0.5 rounded leading-none">
                 {data.mappingConfidence} confidence
               </span>
             )}
@@ -263,7 +243,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
       {data.tags.length > 0 && (
         <div className="space-y-1.5">
-          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>Variable stack</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Variable stack</p>
           <LocalTagChips codes={data.tags} />
         </div>
       )}
@@ -280,6 +260,8 @@ interface AgeBucket {
   maleCpa: number | null; femaleCpa: number | null;
   maleCtr: number | null; femaleCtr: number | null;
   maleReach: number; femaleReach: number;
+  maleImpressions: number; femaleImpressions: number;
+  maleLinkClicks: number; femaleLinkClicks: number;
   maleGender: string | null; femaleGender: string | null;
 }
 
@@ -305,25 +287,41 @@ function DemographicsTab({
         maleCpa: null, femaleCpa: null,
         maleCtr: null, femaleCtr: null,
         maleReach: 0, femaleReach: 0,
+        maleImpressions: 0, femaleImpressions: 0,
+        maleLinkClicks: 0, femaleLinkClicks: 0,
         maleGender: null, femaleGender: null,
       };
+      // CPA and CTR used to be ASSIGNED here from each row's own rate —
+      // inside a loop over every row in the age×gender bucket, so the last
+      // row silently won and the dialog reported one ad's rate as the
+      // bucket's (F-c). They are ratios; averaging or picking them across
+      // rows is not the blend. Accumulate the denominators and derive once
+      // below, which is what every other audience surface already does.
       if (g === "male") {
         b.male += r["Amount spent (USD)"];
         b.maleResults += r.Results;
-        b.maleCpa = r.CPA_result;
-        b.maleCtr = r.CTR_link_pct;
         b.maleReach += r.Reach;
+        b.maleImpressions += r.Impressions;
+        b.maleLinkClicks += r["Link clicks"];
         b.maleGender = r.Gender;
       } else {
         b.female += r["Amount spent (USD)"];
         b.femaleResults += r.Results;
-        b.femaleCpa = r.CPA_result;
-        b.femaleCtr = r.CTR_link_pct;
         b.femaleReach += r.Reach;
+        b.femaleImpressions += r.Impressions;
+        b.femaleLinkClicks += r["Link clicks"];
         b.femaleGender = r.Gender;
       }
       b.total += r["Amount spent (USD)"];
       map.set(r.Age, b);
+    }
+    for (const b of map.values()) {
+      // Null, not 0, on a zero denominator: a bucket with no results has
+      // no CPA, and $0.00 would assert one.
+      b.maleCpa = b.maleResults > 0 ? b.male / b.maleResults : null;
+      b.femaleCpa = b.femaleResults > 0 ? b.female / b.femaleResults : null;
+      b.maleCtr = b.maleImpressions > 0 ? (b.maleLinkClicks / b.maleImpressions) * 100 : null;
+      b.femaleCtr = b.femaleImpressions > 0 ? (b.femaleLinkClicks / b.femaleImpressions) * 100 : null;
     }
     return Array.from(map.values()).sort((a, b) => (parseInt(a.age) || 999) - (parseInt(b.age) || 999));
   }, [rows]);
@@ -346,8 +344,8 @@ function DemographicsTab({
   if (rows.length === 0) {
     return (
       <div className="py-10 text-center space-y-1.5">
-        <p className="text-body font-medium text-muted-foreground/60">No demographic data for this cell</p>
-        <p className="text-label text-muted-foreground/50">
+        <p className="text-body font-medium text-muted-foreground/75">No demographic data for this cell</p>
+        <p className="text-label text-muted-foreground/75">
           {emptyReason ?? "Import a demographic pivot export to see the age × gender breakdown."}
         </p>
       </div>
@@ -358,7 +356,7 @@ function DemographicsTab({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Age × Gender</p>
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Age × Gender</p>
         <MetricToggle
           options={[{ value: "spend", label: "Spend" }, { value: "results", label: "Results" }]}
           value={metric}
@@ -385,10 +383,10 @@ function DemographicsTab({
               key={b.age}
               onClick={() => setSelectedAge(b.age)}
               className={cn(
-                "w-full text-left rounded-lg border px-3 py-2.5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
+                "pressable-lg w-full text-left rounded-lg border px-3 py-2.5 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
                 isActive
                   ? "border-primary/40 bg-primary/[0.06]"
-                  : "border-border/30 bg-white/[0.015] hover:border-border/50 hover:bg-white/[0.03]"
+                  : "border-border/30 bg-foreground/[0.015] hover:border-border/50 hover:bg-foreground/[0.03]"
               )}
             >
               {/* Row header: age + value */}
@@ -396,15 +394,15 @@ function DemographicsTab({
                 <span className={cn("text-title font-semibold", isActive ? "text-foreground" : "text-foreground/75")}>
                   {b.age}
                 </span>
-                <span className="text-body tabular-nums text-muted-foreground/70 font-medium">
+                <span className="text-body tabular-nums text-muted-foreground/75 font-medium">
                   {fmtMain(barVal(b))}
                 </span>
               </div>
 
               {/* Stacked bar */}
-              <div className="h-4 rounded-md bg-white/[0.04] overflow-hidden">
+              <div className="h-4 rounded-md bg-foreground/[0.04] overflow-hidden">
                 <div
-                  className="h-full flex rounded-md overflow-hidden transition-all duration-500"
+                  className="h-full flex rounded-md overflow-hidden transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-500"
                   style={{ width: `${barW}%` }}
                 >
                   <div
@@ -413,7 +411,7 @@ function DemographicsTab({
                     title={`Male: ${metric === "spend" ? usd(mSpend) : num(mRes)}`}
                   />
                   <div
-                    className="h-full bg-rose-400/50"
+                    className="h-full bg-status-danger/50"
                     style={{ width: `${fBarPct}%` }}
                     title={`Female: ${metric === "spend" ? usd(fSpend) : num(fRes)}`}
                   />
@@ -426,8 +424,8 @@ function DemographicsTab({
                   <span className="w-1.5 h-1.5 rounded-full bg-chart-1/60 shrink-0" />
                   M {metric === "spend" ? usd(mSpend) : num(mRes)}
                 </span>
-                <span className="flex items-center gap-1 text-label text-rose-300/80">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400/60 shrink-0" />
+                <span className="flex items-center gap-1 text-label text-status-danger/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-status-danger/60 shrink-0" />
                   F {metric === "spend" ? usd(fSpend) : num(fRes)}
                 </span>
                 {isActive && (
@@ -443,11 +441,11 @@ function DemographicsTab({
 
       {/* KPI panel for selected bucket */}
       {activeBucket && (
-        <div className="rounded-xl border border-border/40 bg-white/[0.025] overflow-hidden">
+        <div className="rounded-xl border border-border/40 bg-foreground/[0.025] overflow-hidden">
           {/* Panel header */}
           <div className="px-4 py-2.5 border-b border-border/30 flex items-center justify-between">
             <div>
-              <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Segment KPIs</span>
+              <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Segment KPIs</span>
               <span className="ml-2 text-body font-semibold text-foreground">{activeBucket.age}</span>
             </div>
           </div>
@@ -462,7 +460,7 @@ function DemographicsTab({
                 reach: activeBucket.maleReach, gender: activeBucket.maleGender,
               },
               {
-                label: "Female", dot: "bg-rose-400", color: "text-rose-300",
+                label: "Female", dot: "bg-status-danger", color: "text-status-danger",
                 spend: activeBucket.female, results: activeBucket.femaleResults,
                 cpa: activeBucket.femaleCpa, ctr: activeBucket.femaleCtr,
                 reach: activeBucket.femaleReach, gender: activeBucket.femaleGender,
@@ -485,7 +483,7 @@ function DemographicsTab({
                     { key: "reach", label: "Reach", value: num(g.reach) },
                   ] as const).map((kpi) => (
                     <div key={kpi.key} className="flex items-center justify-between">
-                      <span className="text-label text-muted-foreground/60">{kpi.label}</span>
+                      <span className="text-label text-muted-foreground/75">{kpi.label}</span>
                       <span className="text-body font-semibold tabular-nums text-foreground/90">{kpi.value}</span>
                     </div>
                   ))}
@@ -497,10 +495,10 @@ function DemographicsTab({
                     onClick={(e) => { e.stopPropagation(); onSegmentClick({ age: activeBucket.age, gender: g.gender! }); }}
                     data-testid={`chip-demo-${activeBucket.age}-${g.label.toLowerCase()}`}
                     className={cn(
-                      "w-full text-label font-medium rounded-md border py-1.5 transition-colors",
+                      "pressable-lg w-full text-label font-medium rounded-md border py-1.5 transition-colors",
                       g.label === "Male"
                         ? "border-accent/25 text-accent/80 hover:bg-accent/10"
-                        : "border-rose-400/25 text-rose-300/80 hover:bg-rose-400/10"
+                        : "border-status-danger/25 text-status-danger/80 hover:bg-status-danger/10"
                     )}
                   >
                     Drill down →
@@ -512,7 +510,7 @@ function DemographicsTab({
         </div>
       )}
 
-      <p className={cn(TYPE.caption, "text-muted-foreground/40 pt-1")}>
+      <p className={cn(TYPE.caption, "text-muted-foreground/75 pt-1")}>
         Click an age group to inspect its segment KPIs. Bar width = proportion of highest group.
       </p>
     </div>
@@ -551,8 +549,8 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
   if (rows.length === 0) {
     return (
       <div className="py-10 text-center space-y-1.5">
-        <p className="text-body font-medium text-muted-foreground/60">No placement data for this account</p>
-        <p className="text-label text-muted-foreground/50">
+        <p className="text-body font-medium text-muted-foreground/75">No placement data for this account</p>
+        <p className="text-label text-muted-foreground/75">
           {emptyReason ?? "Import a device × placement export to see placement signal."}
         </p>
       </div>
@@ -562,7 +560,7 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>Account-level placements</p>
+        <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Account-level placements</p>
         <MetricToggle
           options={[{ value: "spend", label: "Spend" }, { value: "cpa", label: "CPA" }]}
           value={metric}
@@ -580,19 +578,19 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
               <div className="flex items-center justify-between text-label">
                 <div className="min-w-0">
                   <span className="font-medium text-foreground/80">{b.Placement}</span>
-                  <span className={cn(TYPE.caption, "ml-1.5 text-muted-foreground/50 capitalize")}>{b.Platform}</span>
+                  <span className={cn(TYPE.caption, "ml-1.5 text-muted-foreground/75 capitalize")}>{b.Platform}</span>
                 </div>
-                <span className="tabular-nums text-muted-foreground/60 shrink-0 ml-2">
+                <span className="tabular-nums text-muted-foreground/75 shrink-0 ml-2">
                   {metric === "spend" ? usd(b["Amount spent (USD)"]) : cpa != null ? usd(cpa) : "—"}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+              <div className="h-1.5 rounded-full bg-foreground/[0.05] overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-primary/50 transition-all duration-700"
+                  className="h-full rounded-full bg-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-700"
                   style={{ width: `${barW}%` }}
                 />
               </div>
-              <div className={cn(TYPE.caption, "text-muted-foreground/45")}>
+              <div className={cn(TYPE.caption, "text-muted-foreground/75")}>
                 {num(b.Results)} results · {usd(b["Amount spent (USD)"])} spend
               </div>
             </div>
@@ -600,7 +598,7 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
         })}
       </div>
 
-      <p className={cn(TYPE.caption, "text-muted-foreground/40 pt-2 border-t border-border/20")}>
+      <p className={cn(TYPE.caption, "text-muted-foreground/75 pt-2 border-t border-border/20")}>
         Placement signal is account-level — not scoped to this creative cell.
       </p>
     </div>
@@ -613,8 +611,8 @@ function FunnelTab({ perfRow, emptyReason }: { perfRow: CellPerformanceRow | nul
   if (!perfRow) {
     return (
       <div className="py-10 text-center space-y-1.5">
-        <p className="text-body font-medium text-muted-foreground/60">No performance data</p>
-        <p className="text-label text-muted-foreground/50">
+        <p className="text-body font-medium text-muted-foreground/75">No performance data</p>
+        <p className="text-label text-muted-foreground/75">
           {emptyReason ?? "Funnel steps require performance data for this creative."}
         </p>
       </div>
@@ -625,11 +623,11 @@ function FunnelTab({ perfRow, emptyReason }: { perfRow: CellPerformanceRow | nul
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Conversion funnel</p>
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Conversion funnel</p>
       </div>
       <FunnelStepsChart steps={steps} />
       {!hasAnyFunnel && (
-        <p className={cn(TYPE.caption, "text-muted-foreground/40 pt-1 border-t border-border/20")}>
+        <p className={cn(TYPE.caption, "text-muted-foreground/75 pt-1 border-t border-border/20")}>
           Adds to cart, checkouts, and purchases are only available when the source export includes conversion-event columns.
         </p>
       )}
@@ -684,11 +682,11 @@ export function CreativeExpandDialog({
   const placeReason = placementsEmptyReason ?? derivedReasons.placements;
   const funnelReason = funnelEmptyReason ?? derivedReasons.funnel;
 
-  const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "overview",      label: "Overview",      icon: <BarChart2    className="w-3.5 h-3.5" /> },
-    { id: "demographics",  label: "Demographics",  icon: <Users        className="w-3.5 h-3.5" /> },
-    { id: "placements",    label: "Placements",    icon: <Monitor      className="w-3.5 h-3.5" /> },
-    { id: "funnel",        label: "Funnel",        icon: <TrendingDown className="w-3.5 h-3.5" /> },
+  const TABS: { id: Tab; label: string; Icon: typeof BarChart2 }[] = [
+    { id: "overview",     label: "Overview",     Icon: BarChart2 },
+    { id: "demographics", label: "Demographics", Icon: Users },
+    { id: "placements",   label: "Placements",   Icon: Monitor },
+    { id: "funnel",       label: "Funnel",       Icon: TrendingDown },
   ];
 
   return (
@@ -703,15 +701,15 @@ export function CreativeExpandDialog({
             <ExpandVisual data={data} className="absolute inset-0" />
 
             {unmapped && (
-              <div className="absolute top-3 left-3 flex items-center gap-1 bg-amber-500/20 border border-amber-400/30 text-amber-300 text-micro font-semibold px-2 py-1 rounded-full backdrop-blur-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <div className="absolute top-3 left-3 flex items-center gap-1 bg-status-warning/20 border border-status-warning/30 text-status-warning text-micro font-semibold px-2 py-1 rounded-full backdrop-blur-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-status-warning" />
                 Unmapped
               </div>
             )}
 
             {data.assetFormat && (
               <div className="absolute bottom-3 left-3">
-                <span className="text-[8px] font-mono uppercase text-white/50 border border-white/10 bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                <span className="text-[8px] font-mono uppercase text-foreground/55 border border-foreground/10 bg-background/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
                   {data.assetFormat}
                 </span>
               </div>
@@ -723,33 +721,33 @@ export function CreativeExpandDialog({
 
             {/* Header */}
             <div className="px-5 pt-4 pb-3 border-b border-border/30 shrink-0">
-              <div className={cn(TYPE.microLabel, "text-muted-foreground/50 mb-0.5")}>
+              <div className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-0.5")}>
                 Creative · {data.conceptCode}
               </div>
               <p className="text-sm font-semibold text-foreground leading-tight">{data.title}</p>
               {data.visualSystem && (
-                <p className="text-caption text-muted-foreground/55 mt-0.5 leading-relaxed line-clamp-2">{data.visualSystem}</p>
+                <p className="text-caption text-muted-foreground/75 mt-0.5 leading-relaxed line-clamp-2">{data.visualSystem}</p>
               )}
             </div>
 
             {/* Tab bar */}
-            <TabBar tabs={TABS} active={tab} onChange={setTab} />
+            <TabRail<Tab> tabs={TABS} active={tab} onChange={setTab} label="Creative detail section" className="shrink-0 px-1" />
 
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
               {/* Unmapped warning shown in overview */}
               {unmapped && tab === "overview" && (
-                <div className="mb-4 flex items-start gap-2.5 p-3 rounded-lg border border-amber-400/25 bg-amber-400/[0.05]">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-px" strokeWidth={1.5} />
+                <div className="mb-4 flex items-start gap-2.5 p-3 rounded-lg border border-status-warning/25 bg-status-warning/[0.05]">
+                  <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-px" strokeWidth={1.5} />
                   <div className="space-y-1.5 min-w-0">
-                    <p className="text-caption font-medium text-amber-300/90">Not fully mapped to IAP library</p>
-                    <p className="text-label text-muted-foreground/70 leading-relaxed">
+                    <p className="text-caption font-medium text-status-warning/90">Not fully mapped to IAP library</p>
+                    <p className="text-label text-muted-foreground/75 leading-relaxed">
                       This cell has performance data but no library entry — variable codes, copy, and asset may be absent.
                     </p>
                     {onUploadCreatives && (
                       <button
                         onClick={() => { onOpenChange(false); onUploadCreatives(); }}
-                        className="flex items-center gap-1 text-label font-medium text-amber-300 hover:text-amber-200 border border-amber-400/25 bg-amber-400/[0.06] hover:bg-amber-400/10 px-2 py-1 rounded transition-colors"
+                        className="pressable flex items-center gap-1 text-label font-medium text-status-warning hover:text-status-warning border border-status-warning/25 bg-status-warning/[0.06] hover:bg-status-warning/10 px-2 py-1 rounded transition-colors"
                       >
                         <Upload className="w-3.5 h-3.5" /> Upload creatives
                       </button>

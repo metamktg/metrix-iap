@@ -6,10 +6,17 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { getAppBaseUrl } from "./lib/appUrl";
+import { securityHeaders } from "./middlewares/securityHeaders";
 
 const app: Express = express();
 
 app.set("trust proxy", 1);
+
+// Baseline security headers on every response. Registered first so it
+// applies to error responses and short-circuited requests too, not just the
+// ones that reach a route. See the middleware for why nosniff in particular
+// is load-bearing rather than cosmetic here.
+app.use(securityHeaders);
 
 // Response compression: the Metrix seed bundle is a multi-megabyte JSON
 // document served on every cache miss and re-fetched by the client after

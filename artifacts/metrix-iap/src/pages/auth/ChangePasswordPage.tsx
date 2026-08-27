@@ -65,13 +65,13 @@ export function ChangePasswordPage() {
               autoComplete="current-password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
               data-testid="input-current-password"
             />
           </div>
           <div className="space-y-1.5">
             <label htmlFor="new-password" className="text-caption font-medium text-muted-foreground">
-              New password <span className="text-muted-foreground/60">(min. 8 characters)</span>
+              New password <span className="text-muted-foreground/75">(min. 8 characters)</span>
             </label>
             <input
               id="new-password"
@@ -81,7 +81,7 @@ export function ChangePasswordPage() {
               autoComplete="new-password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
               data-testid="input-new-password"
             />
           </div>
@@ -96,12 +96,12 @@ export function ChangePasswordPage() {
               autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
               data-testid="input-confirm-password"
             />
           </div>
           {error && (
-            <div className="text-caption text-red-400/90" data-testid="text-change-password-error">
+            <div className="text-caption text-status-danger/90" data-testid="text-change-password-error">
               {error}
             </div>
           )}
@@ -119,7 +119,7 @@ export function ChangePasswordPage() {
         <div className="text-center">
           <button
             onClick={() => void logout()}
-            className="text-caption text-muted-foreground hover:text-foreground transition-colors"
+            className="pressable text-caption text-muted-foreground hover:text-foreground transition-colors"
             data-testid="button-signout-change-password"
           >
             Sign out

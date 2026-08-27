@@ -60,14 +60,14 @@ export function InfoDrawer({
         )}>
 
         {/* ── Full-width header ── */}
-        <div className="flex items-start gap-3 px-6 py-5 border-b border-border/40 shrink-0 bg-white/[0.01]">
+        <div className="flex items-start gap-3 px-6 py-5 border-b border-border/40 shrink-0 bg-foreground/[0.01]">
           <div className="flex-1 min-w-0">
-            <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest mb-1.5 leading-none">{kicker}</div>
+            <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest mb-1.5 leading-none">{kicker}</div>
             <h2 className={HEADING.h2}>{title}</h2>
           </div>
           <button
             onClick={onClose}
-            className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/[0.06] border border-transparent hover:border-border/30 transition-all shrink-0"
+            className="pressable mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] border border-transparent hover:border-border/30 transition-[color,background-color,border-color,box-shadow,opacity,transform] shrink-0"
             aria-label="Close"
           >
             <X className="w-4 h-4" />
@@ -81,7 +81,7 @@ export function InfoDrawer({
           <div className="flex flex-col flex-1 min-w-0 min-h-0">
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">{children}</div>
             {footer && (
-              <div className="px-6 py-4 border-t border-border/40 bg-white/[0.01] shrink-0">
+              <div className="px-6 py-4 border-t border-border/40 bg-foreground/[0.01] shrink-0">
                 {footer}
               </div>
             )}
@@ -102,7 +102,7 @@ export function InfoDrawer({
 export function DrawerField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{label}</label>
+      <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">{label}</label>
       <div className="text-title text-foreground/90 leading-relaxed">{children}</div>
     </div>
   );

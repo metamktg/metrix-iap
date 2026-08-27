@@ -64,15 +64,15 @@ import {
 import { cn } from "@workspace/command-deck/lib/utils";
 
 const INPUT_CLS =
-  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring";
+  "w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring";
 
 function StatusBadge({ status }: { status: string }) {
   const cls =
     status === "approved"
-      ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
+      ? "text-status-success border-status-success/25 bg-status-success/10"
       : status === "rejected"
-        ? "text-red-400 border-red-400/25 bg-red-400/10"
-        : "text-amber-400 border-amber-400/25 bg-amber-400/10";
+        ? "text-status-danger border-status-danger/25 bg-status-danger/10"
+        : "text-status-warning border-status-warning/25 bg-status-warning/10";
   return (
     <span
       className={cn(
@@ -95,7 +95,7 @@ function CopyButton({ value }: { value: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="inline-flex items-center gap-1 text-label text-interactive hover:text-primary/80 transition-colors"
+      className="pressable inline-flex items-center gap-1 text-label text-interactive hover:text-primary/80 transition-colors"
       data-testid="button-copy-temp-password"
     >
       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -115,7 +115,7 @@ function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
   if (outcome.email_sent) {
     return (
       <div
-        className="flex items-center gap-1.5 text-caption text-emerald-400"
+        className="flex items-center gap-1.5 text-caption text-status-success"
         data-testid="text-approve-emailed"
       >
         <CheckCircle2 className="w-3.5 h-3.5" /> Temporary password emailed to {outcome.email}
@@ -125,14 +125,14 @@ function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
   if (outcome.temp_password) {
     return (
       <div
-        className="space-y-1 rounded-md border border-amber-400/25 bg-amber-400/5 p-2"
+        className="space-y-1 rounded-md border border-status-warning/25 bg-status-warning/5 p-2"
         data-testid="panel-temp-password"
       >
-        <div className="text-caption text-amber-400">
+        <div className="text-caption text-status-warning">
           Email could not be sent — share this temporary password with {outcome.email} manually:
         </div>
         <div className="flex items-center gap-2">
-          <code className="text-body font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded">
+          <code className="text-body font-mono text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded">
             {outcome.temp_password}
           </code>
           <CopyButton value={outcome.temp_password} />
@@ -171,7 +171,7 @@ function ActionButtons({
       <button
         onClick={onApprove}
         disabled={busy !== null}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-caption font-medium text-emerald-400 hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md bg-status-success/15 border border-status-success/30 text-caption font-medium text-status-success hover:bg-status-success/25 transition-colors disabled:opacity-50 disabled:pointer-events-none"
         data-testid={`button-approve-${idKey}`}
       >
         {busy === "approve" ? (
@@ -184,7 +184,7 @@ function ActionButtons({
       <button
         onClick={onReject}
         disabled={busy !== null}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-red-500/10 border border-red-500/25 text-caption font-medium text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md bg-status-danger/10 border border-status-danger/25 text-caption font-medium text-status-danger hover:bg-status-danger/20 transition-colors disabled:opacity-50 disabled:pointer-events-none"
         data-testid={`button-reject-${idKey}`}
       >
         {busy === "reject" ? (
@@ -215,10 +215,10 @@ function EmailStatusBanner() {
   if (mode === "configured") {
     return (
       <div
-        className="flex items-center gap-2 rounded-md border border-emerald-400/20 bg-emerald-400/5 px-3 py-2"
+        className="flex items-center gap-2 rounded-md border border-status-success/20 bg-status-success/5 px-3 py-2"
         data-testid="banner-email-status"
       >
-        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+        <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
         <div className="text-caption text-muted-foreground">
           Email delivery is configured (sending as <span className="text-foreground">{from}</span>).
           {" "}Environment: <span className="text-foreground">{environment}</span> — approvals create
@@ -230,20 +230,20 @@ function EmailStatusBanner() {
 
   return (
     <div
-      className="flex items-start gap-2 rounded-md border border-amber-400/25 bg-amber-400/5 px-3 py-2"
+      className="flex items-start gap-2 rounded-md border border-status-warning/25 bg-status-warning/5 px-3 py-2"
       data-testid="banner-email-status"
     >
-      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+      <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
       <div className="text-caption text-muted-foreground space-y-0.5">
         {mode === "missing_key" ? (
           <div>
-            <span className="text-amber-400 font-medium">Email delivery is disabled</span> — no
+            <span className="text-status-warning font-medium">Email delivery is disabled</span> — no
             email API key is set. Temporary passwords and reset links will be shown here for you
             to share manually.
           </div>
         ) : (
           <div>
-            <span className="text-amber-400 font-medium">Email delivery is in sandbox mode</span>
+            <span className="text-status-warning font-medium">Email delivery is in sandbox mode</span>
             {" "}— the sandbox sender ({from}) only delivers to the email account owner's inbox.
             Emails to anyone else will fail, and their credentials will be shown here instead.
             To fix: verify a domain at resend.com/domains and set REQUEST_ACCESS_FROM_EMAIL to a
@@ -265,10 +265,10 @@ function EmailStatusBanner() {
 function UserStatusBadge({ status }: { status: AdminUser["status"] }) {
   const cls =
     status === "active"
-      ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
+      ? "text-status-success border-status-success/25 bg-status-success/10"
       : status === "disabled"
-        ? "text-red-400 border-red-400/25 bg-red-400/10"
-        : "text-sky-400 border-sky-400/25 bg-sky-400/10";
+        ? "text-status-danger border-status-danger/25 bg-status-danger/10"
+        : "text-interactive border-primary/25 bg-primary/10";
   return (
     <span
       className={cn(
@@ -291,7 +291,7 @@ function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email:
   if (outcome.email_sent) {
     return (
       <div
-        className="flex items-center gap-1.5 text-caption text-emerald-400"
+        className="flex items-center gap-1.5 text-caption text-status-success"
         data-testid="text-user-action-emailed"
       >
         <CheckCircle2 className="w-3.5 h-3.5" /> New {noun} emailed to {email}
@@ -300,16 +300,16 @@ function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email:
   }
   return (
     <div
-      className="space-y-1 rounded-md border border-amber-400/25 bg-amber-400/5 p-2"
+      className="space-y-1 rounded-md border border-status-warning/25 bg-status-warning/5 p-2"
       data-testid="panel-user-action-fallback"
     >
-      <div className="text-caption text-amber-400">
+      <div className="text-caption text-status-warning">
         Email could not be sent — share this {noun} with {email} manually
         {outcome.kind === "reset_link" ? " (expires in 1 hour)" : ""}:
       </div>
       {outcome.value && (
         <div className="flex items-center gap-2 min-w-0">
-          <code className="text-caption font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded truncate">
+          <code className="text-caption font-mono text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded truncate">
             {outcome.value}
           </code>
           <CopyButton value={outcome.value} />
@@ -380,10 +380,10 @@ function ManageAccessPanel({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60"
       data-testid="panel-manage-access"
     >
-      <div className="w-full max-w-sm rounded-xl border border-border/40 bg-background shadow-2xl">
+      <div className="w-full max-w-sm rounded-xl border border-border/40 bg-background elevation-floating">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
           <div>
             <div className="text-body font-semibold text-foreground">Manage ad account access</div>
@@ -391,7 +391,7 @@ function ManageAccessPanel({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors"
+            className="pressable p-1 rounded hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -402,7 +402,7 @@ function ManageAccessPanel({
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading accounts…
             </div>
           ) : accounts.length === 0 ? (
-            <div className="text-caption text-muted-foreground/70 py-4">
+            <div className="text-caption text-muted-foreground/75 py-4">
               No ad accounts found in the Metrix data layer.
             </div>
           ) : (
@@ -423,7 +423,7 @@ function ManageAccessPanel({
                     {acct.name ?? acct.id}
                   </div>
                   {acct.name && (
-                    <div className="text-label text-muted-foreground/60 truncate">{acct.id}</div>
+                    <div className="text-label text-muted-foreground/75 truncate">{acct.id}</div>
                   )}
                 </div>
               </label>
@@ -431,24 +431,24 @@ function ManageAccessPanel({
           )}
         </div>
         {saveError && (
-          <div className="px-4 pb-2 text-caption text-red-400/90">{saveError}</div>
+          <div className="px-4 pb-2 text-caption text-status-danger/90">{saveError}</div>
         )}
         {saved && (
-          <div className="px-4 pb-2 flex items-center gap-1.5 text-caption text-emerald-400">
+          <div className="px-4 pb-2 flex items-center gap-1.5 text-caption text-status-success">
             <CheckCircle2 className="w-3.5 h-3.5" /> Saved
           </div>
         )}
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-border/30">
           <button
             onClick={onClose}
-            className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="pressable h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={save}
             disabled={update.isPending || loading}
-            className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-caption font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5"
+            className="pressable h-8 px-3 rounded-md bg-primary text-primary-foreground text-caption font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5"
             data-testid="button-save-access"
           >
             {update.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -504,12 +504,12 @@ function DeleteConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60"
       data-testid="modal-delete-confirm"
     >
-      <div className="w-full max-w-sm rounded-xl border border-red-500/30 bg-background shadow-2xl">
+      <div className="w-full max-w-sm rounded-xl border border-status-danger/30 bg-background elevation-floating">
         <div className="px-4 py-3 border-b border-border/30 flex items-center gap-2">
-          <Trash2 className="w-4 h-4 text-red-400 shrink-0" />
+          <Trash2 className="w-4 h-4 text-status-danger shrink-0" />
           <span className="text-body font-semibold text-foreground">Delete account</span>
         </div>
         <form onSubmit={submit} className="p-4 space-y-3">
@@ -532,19 +532,19 @@ function DeleteConfirmModal({
               autoComplete="off"
             />
           </div>
-          {error && <div className="text-caption text-red-400/90">{error}</div>}
+          {error && <div className="text-caption text-status-danger/90">{error}</div>}
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              className="pressable h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!canDelete}
-              className="h-8 px-3 rounded-md bg-red-500/20 border border-red-500/40 text-caption font-medium text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
+              className="h-8 px-3 rounded-md bg-status-danger/20 border border-status-danger/40 text-caption font-medium text-status-danger hover:bg-status-danger/30 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
               data-testid="button-delete-confirm-submit"
             >
               {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -607,10 +607,10 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60"
       data-testid="dialog-add-user"
     >
-      <div className="w-full max-w-md rounded-xl border border-border/40 bg-background shadow-2xl">
+      <div className="w-full max-w-md rounded-xl border border-border/40 bg-background elevation-floating">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
           <div className="flex items-center gap-2">
             <UserPlus className="w-4 h-4 text-interactive shrink-0" />
@@ -618,7 +618,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors"
+            className="pressable p-1 rounded hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -627,16 +627,16 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
         {outcome ? (
           <div className="p-4 space-y-3">
             {outcome.email_sent ? (
-              <div className="flex items-center gap-1.5 text-caption text-emerald-400">
+              <div className="flex items-center gap-1.5 text-caption text-status-success">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Temporary password emailed to {outcome.email}
               </div>
             ) : outcome.temp_password ? (
-              <div className="space-y-1 rounded-md border border-amber-400/25 bg-amber-400/5 p-2">
-                <div className="text-caption text-amber-400">
+              <div className="space-y-1 rounded-md border border-status-warning/25 bg-status-warning/5 p-2">
+                <div className="text-caption text-status-warning">
                   Email could not be sent — share this temporary password with {outcome.email} manually:
                 </div>
                 <div className="flex items-center gap-2">
-                  <code className="text-body font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded">
+                  <code className="text-body font-mono text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded">
                     {outcome.temp_password}
                   </code>
                   <CopyButton value={outcome.temp_password} />
@@ -648,7 +648,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
             ) : null}
             <button
               onClick={onClose}
-              className="w-full h-8 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              className="pressable-lg w-full h-8 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             >
               Close
             </button>
@@ -672,7 +672,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
             <div className="space-y-1">
               <label className="text-label font-medium text-muted-foreground">
                 Display name{" "}
-                <span className="text-muted-foreground/50">(optional)</span>
+                <span className="text-muted-foreground/75">(optional)</span>
               </label>
               <input
                 type="text"
@@ -694,10 +694,10 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
                     type="button"
                     onClick={() => setRole(r)}
                     className={cn(
-                      "h-7 px-3 rounded-md border text-label font-medium transition-colors capitalize",
+                      "pressable h-7 px-3 rounded-md border text-label font-medium transition-colors capitalize",
                       role === r
                         ? "border-primary/50 bg-primary/15 text-interactive"
-                        : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-white/5",
+                        : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
                     )}
                   >
                     {r}
@@ -710,22 +710,22 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
               <div className="space-y-1">
                 <label className="text-label font-medium text-muted-foreground">
                   Ad account access{" "}
-                  <span className="text-muted-foreground/50">(optional)</span>
+                  <span className="text-muted-foreground/75">(optional)</span>
                 </label>
                 {allAccounts.isLoading ? (
                   <div className="flex items-center gap-1.5 text-label text-muted-foreground py-1">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading accounts…
                   </div>
                 ) : accounts.length === 0 ? (
-                  <div className="text-label text-muted-foreground/60 py-1">
+                  <div className="text-label text-muted-foreground/75 py-1">
                     No ad accounts available.
                   </div>
                 ) : (
-                  <div className="rounded-md border border-border/30 bg-white/[0.02]">
+                  <div className="rounded-md border border-border/30 bg-foreground/[0.02]">
                     <button
                       type="button"
                       onClick={() => setShowAccountPicker((v) => !v)}
-                      className="w-full flex items-center justify-between px-3 h-8 text-caption text-muted-foreground hover:text-foreground transition-colors"
+                      className="pressable-lg w-full flex items-center justify-between px-3 h-8 text-caption text-muted-foreground hover:text-foreground transition-colors"
                       data-testid="button-toggle-account-picker"
                     >
                       <span>
@@ -758,7 +758,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
                                 {acct.name ?? acct.id}
                               </div>
                               {acct.name && (
-                                <div className="text-[9px] text-muted-foreground/60 truncate">
+                                <div className="text-[9px] text-muted-foreground/75 truncate">
                                   {acct.id}
                                 </div>
                               )}
@@ -772,13 +772,13 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
               </div>
             )}
 
-            {error && <div className="text-caption text-red-400/90">{error}</div>}
+            {error && <div className="text-caption text-status-danger/90">{error}</div>}
 
             <div className="flex items-center justify-end gap-2 pt-1">
               <button
                 type="button"
                 onClick={onClose}
-                className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                className="pressable h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
               >
                 Cancel
               </button>
@@ -837,23 +837,23 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
         />
       )}
       <div
-        className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-2"
+        className="rounded-lg border border-border/30 bg-foreground/[0.02] p-3 space-y-2"
         data-testid={`row-user-${user.id}`}
       >
         <div className="flex items-center gap-3 flex-wrap">
-          <Mail className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+          <Mail className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
           <div className="flex-1 min-w-0">
             {user.display_name ? (
               <>
                 <div className="text-body font-medium text-foreground truncate">
                   {user.display_name}
                 </div>
-                <div className="text-label text-muted-foreground/70 truncate">{user.email}</div>
+                <div className="text-label text-muted-foreground/75 truncate">{user.email}</div>
               </>
             ) : (
               <div className="text-body font-medium text-foreground truncate">{user.email}</div>
             )}
-            <div className="text-label text-muted-foreground/60">
+            <div className="text-label text-muted-foreground/75">
               Created {formatDate(user.created_at)}
               {user.last_login_at
                 ? ` · Last login ${formatDate(user.last_login_at)}`
@@ -864,14 +864,14 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
             {user.role !== "admin" && (
               <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                 {user.ad_account_ids.length === 0 ? (
-                  <span className="text-[9px] text-muted-foreground/40 italic">
+                  <span className="text-[9px] text-muted-foreground/75 italic">
                     No ad account access
                   </span>
                 ) : (
                   user.ad_account_ids.map((id) => (
                     <span
                       key={id}
-                      className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-border/30 text-muted-foreground/70 font-mono leading-none"
+                      className="text-[9px] px-1.5 py-0.5 rounded bg-foreground/[0.06] border border-border/30 text-muted-foreground/75 font-mono leading-none"
                     >
                       {id}
                     </span>
@@ -910,8 +910,8 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                 }}
                 disabled={busy}
                 className={cn(
-                  actionBtn,
-                  "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5",
+                  "pressable", actionBtn,
+                  "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
                 )}
                 data-testid={`button-resend-temp-${user.id}`}
               >
@@ -944,8 +944,8 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                 }}
                 disabled={busy}
                 className={cn(
-                  actionBtn,
-                  "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5",
+                  "pressable", actionBtn,
+                  "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
                 )}
                 data-testid={`button-send-reset-${user.id}`}
               >
@@ -958,7 +958,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
               </button>
               {confirmRevoke ? (
                 <span className="flex items-center gap-1.5">
-                  <span className="text-label text-red-400">Revoke access and sign them out?</span>
+                  <span className="text-label text-status-danger">Revoke access and sign them out?</span>
                   <button
                     onClick={() => {
                       setConfirmRevoke(false);
@@ -973,7 +973,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                       );
                     }}
                     disabled={busy}
-                    className={cn(actionBtn, "border-red-500/30 bg-red-500/15 text-red-400 hover:bg-red-500/25")}
+                    className={cn("pressable", actionBtn, "border-status-danger/30 bg-status-danger/15 text-status-danger hover:bg-status-danger/25")}
                     data-testid={`button-revoke-confirm-${user.id}`}
                   >
                     {revoke.isPending ? (
@@ -986,7 +986,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                   <button
                     onClick={() => setConfirmRevoke(false)}
                     disabled={busy}
-                    className={cn(actionBtn, "border-border/50 text-muted-foreground hover:text-foreground")}
+                    className={cn("pressable", actionBtn, "border-border/50 text-muted-foreground hover:text-foreground")}
                     data-testid={`button-revoke-cancel-${user.id}`}
                   >
                     Cancel
@@ -997,8 +997,8 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                   onClick={() => setConfirmRevoke(true)}
                   disabled={busy}
                   className={cn(
-                    actionBtn,
-                    "border-red-500/25 text-red-400/90 hover:bg-red-500/10",
+                    "pressable", actionBtn,
+                    "border-status-danger/25 text-status-danger/90 hover:bg-status-danger/10",
                   )}
                   data-testid={`button-revoke-${user.id}`}
                 >
@@ -1023,8 +1023,8 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
               }}
               disabled={busy}
               className={cn(
-                actionBtn,
-                "border-emerald-500/30 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25",
+                "pressable", actionBtn,
+                "border-status-success/30 bg-status-success/15 text-status-success hover:bg-status-success/25",
               )}
               data-testid={`button-restore-${user.id}`}
             >
@@ -1042,8 +1042,8 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
             onClick={() => setShowManageAccess(true)}
             disabled={busy}
             className={cn(
-              actionBtn,
-              "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5",
+              "pressable", actionBtn,
+              "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
             )}
             data-testid={`button-manage-access-${user.id}`}
           >
@@ -1056,8 +1056,8 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
             onClick={() => setShowDeleteConfirm(true)}
             disabled={busy}
             className={cn(
-              actionBtn,
-              "border-red-500/20 text-red-400/70 hover:text-red-400 hover:bg-red-500/10",
+              "pressable", actionBtn,
+              "border-status-danger/20 text-status-danger/70 hover:text-status-danger hover:bg-status-danger/10",
             )}
             data-testid={`button-delete-${user.id}`}
           >
@@ -1067,7 +1067,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
         </div>
 
         {outcome && <UserActionNote outcome={outcome} email={user.email} />}
-        {error && <div className="text-caption text-red-400/90">{error}</div>}
+        {error && <div className="text-caption text-status-danger/90">{error}</div>}
       </div>
     </>
   );
@@ -1095,7 +1095,7 @@ function UsersSection() {
         </div>
         <button
           onClick={() => setShowAddUser(true)}
-          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-primary/40 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors"
+          className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-primary/40 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors"
           data-testid="button-add-user"
         >
           <UserPlus className="w-3.5 h-3.5" />
@@ -1107,11 +1107,11 @@ function UsersSection() {
           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading users…
         </div>
       ) : users.isError ? (
-        <div className="text-caption text-red-400/90 py-4">
+        <div className="text-caption text-status-danger/90 py-4">
           Could not load users. Refresh to try again.
         </div>
       ) : list.length === 0 ? (
-        <div className="text-caption text-muted-foreground/70 py-4">
+        <div className="text-caption text-muted-foreground/75 py-4">
           No provisioned users yet — use "Add user" or approve a request to create the first
           account.
         </div>
@@ -1146,7 +1146,7 @@ function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChange
 
   return (
     <div
-      className="rounded-lg border border-border/30 bg-white/[0.02] p-4 space-y-3"
+      className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4 space-y-3"
       data-testid={`card-request-${entry.id}`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -1155,7 +1155,7 @@ function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChange
             {entry.full_name}
           </div>
           <div className="text-caption text-muted-foreground truncate">{entry.email}</div>
-          <div className="text-label text-muted-foreground/60 mt-0.5">
+          <div className="text-label text-muted-foreground/75 mt-0.5">
             Requested {formatDate(entry.created_at)}
           </div>
         </div>
@@ -1167,15 +1167,15 @@ function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChange
           .filter((d) => d.value)
           .map((d) => (
             <div key={d.label} className="flex items-center gap-1.5 min-w-0">
-              <d.icon className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
-              <span className="text-label text-muted-foreground/70 shrink-0">{d.label}:</span>
+              <d.icon className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
+              <span className="text-label text-muted-foreground/75 shrink-0">{d.label}:</span>
               <span className="text-caption text-foreground truncate">{d.value}</span>
             </div>
           ))}
       </div>
 
       {outcome && <ApproveResultNote outcome={outcome} />}
-      {error && <div className="text-caption text-red-400/90">{error}</div>}
+      {error && <div className="text-caption text-status-danger/90">{error}</div>}
 
       <ActionButtons
         status={outcome ? "handled" : entry.status}
@@ -1220,14 +1220,14 @@ function WaitlistRow({ entry, onChanged }: { entry: WaitlistEntry; onChanged: ()
 
   return (
     <div
-      className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-2"
+      className="rounded-lg border border-border/30 bg-foreground/[0.02] p-3 space-y-2"
       data-testid={`row-waitlist-${entry.id}`}
     >
       <div className="flex items-center gap-3">
-        <Mail className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+        <Mail className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-body font-medium text-foreground truncate">{entry.email}</div>
-          <div className="text-label text-muted-foreground/60">
+          <div className="text-label text-muted-foreground/75">
             Joined {formatDate(entry.joined_at)}
           </div>
         </div>
@@ -1262,7 +1262,7 @@ function WaitlistRow({ entry, onChanged }: { entry: WaitlistEntry; onChanged: ()
         />
       </div>
       {outcome && <ApproveResultNote outcome={outcome} />}
-      {error && <div className="text-caption text-red-400/90">{error}</div>}
+      {error && <div className="text-caption text-status-danger/90">{error}</div>}
     </div>
   );
 }
@@ -1319,7 +1319,7 @@ function AdminLoginForm({ onSuccess }: { onSuccess: () => void }) {
             />
           </div>
           {error && (
-            <div className="text-caption text-red-400/90" data-testid="text-admin-login-error">
+            <div className="text-caption text-status-danger/90" data-testid="text-admin-login-error">
               {error}
             </div>
           )}
@@ -1350,8 +1350,8 @@ function EnvironmentPill() {
       className={cn(
         "text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border leading-none",
         isProd
-          ? "text-red-400 border-red-400/40 bg-red-400/10"
-          : "text-amber-400 border-amber-400/40 bg-amber-400/10",
+          ? "text-status-danger border-status-danger/40 bg-status-danger/10"
+          : "text-status-warning border-status-warning/40 bg-status-warning/10",
       )}
       data-testid="pill-environment"
       title={`Operating against the ${env} database`}
@@ -1392,7 +1392,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
             onClick={() =>
               logout.mutate(undefined, { onSuccess: onLogout, onError: onLogout })
             }
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             data-testid="button-admin-logout"
           >
             <LogOut className="w-3.5 h-3.5" /> Sign out
@@ -1418,11 +1418,11 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading access requests…
             </div>
           ) : requests.isError ? (
-            <div className="text-caption text-red-400/90 py-4">
+            <div className="text-caption text-status-danger/90 py-4">
               Could not load access requests. Refresh to try again.
             </div>
           ) : requestEntries.length === 0 ? (
-            <div className="text-caption text-muted-foreground/70 py-4">
+            <div className="text-caption text-muted-foreground/75 py-4">
               No access requests yet.
             </div>
           ) : (
@@ -1450,11 +1450,11 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading waitlist…
             </div>
           ) : waitlist.isError ? (
-            <div className="text-caption text-red-400/90 py-4">
+            <div className="text-caption text-status-danger/90 py-4">
               Could not load the waitlist. Refresh to try again.
             </div>
           ) : waitlistEntries.length === 0 ? (
-            <div className="text-caption text-muted-foreground/70 py-4">
+            <div className="text-caption text-muted-foreground/75 py-4">
               No waitlist signups yet.
             </div>
           ) : (

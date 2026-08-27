@@ -10,13 +10,14 @@ import { getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ConfidenceBadge, ModuleTabs, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink, useFocusParam,
-  StaleFocusNotice, LoopAction, deriveLabel, ConnectionNudgeBanner,
+  StaleFocusNotice, LoopAction, ConnectionNudgeBanner,
 } from "../shared";
 import { useGetMetaConnection } from "@workspace/api-client-react";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { Radio, ArrowRight } from "lucide-react";
+import { Radio } from "lucide-react";
 import type { SignalCard } from "@/lib/data/seedTypes";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
+import { SignalDeck } from "@/components/signals/SignalDeck";
 
 const SCOPE_ORDER = ["creative", "funnel", "placement", "mst"];
 const SCOPE_LABEL: Record<string, string> = { creative: "Creative", funnel: "Funnel", placement: "Placement", mst: "MST" };
@@ -80,7 +81,7 @@ export function SignalView() {
               {signals.length > 0 && <ModuleTabs tabs={tabs} active={tab} onChange={setTab} />}
             </div>
 
-            <div className="px-6 py-5 max-w-3xl">
+            <div className="px-6 py-5 max-w-[1600px]">
               {signals.length === 0 ? (
                 <PendingState
                   title="No signals yet"
@@ -93,27 +94,18 @@ export function SignalView() {
                   action={<CrossLink to="/app/listen/alerts" label="View Alerts" />}
                 />
               ) : (
-                <div className="space-y-3">
-                  {shown.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setDetail(s)}
-                      className="w-full text-left rounded-xl border border-border/55 bg-white/[0.04] p-4 hover:border-border/70 hover:bg-white/[0.06] transition-colors"
-                    >
-                      <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                        <ScopeBadge scope={s.scope} />
-                        <ImpactBadge impact={s.impact} />
-                        <ConfidenceBadge value={s.confidence} />
-                      </div>
-                      <p className="text-title font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
-                      <p className="text-body text-data-label mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
-                      <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/35">
-                        <ArrowRight className="w-3.5 h-3.5 text-interactive/85 shrink-0 mt-0.5" />
-                        <p className="text-caption text-foreground/90 leading-snug line-clamp-1"><span>{deriveLabel(s.recommended_action, 80)}</span></p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                // The deck surfaces the structured contract this list used to
+                // drop on the floor: metric_value, delta_pct, priority,
+                // confidence_level, evidence_ref and needs_validation were all
+                // being carried by the seed and rendered by nothing. It also
+                // stops clamping the finding to one line — a signal's rationale
+                // is the output the reader came for, not chrome around it.
+                <SignalDeck
+                  cards={shown}
+                  onOpen={setDetail}
+                  actionLabel="Detail"
+                  emptyLabel="No signals in this scope"
+                />
               )}
 
               {signals.length > 0 && (
@@ -145,7 +137,7 @@ export function SignalView() {
                 <DrawerField label="Recommended action"><TokenizedConceptText text={detail.recommended_action} /></DrawerField>
                 {detail.source_path && (
                   <DrawerField label="Source">
-                    <span className="font-mono text-label text-muted-foreground/60">{detail.source_path}</span>
+                    <span className="font-mono text-label text-muted-foreground/75">{detail.source_path}</span>
                   </DrawerField>
                 )}
               </InfoDrawer>

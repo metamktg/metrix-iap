@@ -15,6 +15,8 @@
 // widths remain normal table layout (no absolute positioning hacks).
 
 import { useMemo, useRef, useState } from "react";
+import { divergingFill, magnitudeFill } from "@/components/charts/chartTokens";
+import { MagnitudeLegend, VerdictLegend } from "@/components/charts/chartChrome";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -110,7 +112,7 @@ export function SortableTh({
           title={active ? (sort!.dir === "asc" ? "Sorted ascending — click for descending" : "Sorted descending — click for ascending") : "Click to sort"}
           aria-label={`Sort by ${String(children)}${active ? (sort!.dir === "asc" ? ", currently ascending" : ", currently descending") : ""}`}
           className={cn(
-            "inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors",
+            "pressable inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors",
             active ? "text-foreground" : "text-muted-foreground/90 hover:text-foreground",
             right && "flex-row-reverse"
           )}
@@ -129,7 +131,7 @@ export function SortableTh({
             data-testid={`sort-reset-${sortKey}`}
             title="Clear sort"
             aria-label="Clear sort"
-            className="ml-0.5 p-0.5 rounded text-muted-foreground/35 hover:text-foreground/80 hover:bg-white/[0.06] transition-colors"
+            className="pressable ml-0.5 p-0.5 rounded text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.06] transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -153,7 +155,7 @@ export function HeatmapToggle({ on, onToggle }: { on: boolean; onToggle: () => v
         onClick={onToggle}
         aria-pressed={on}
         className={cn(
-          "h-6 px-2.5 rounded-md border text-label font-mono uppercase tracking-widest transition-colors",
+          "pressable h-6 px-2.5 rounded-md border text-label font-mono uppercase tracking-widest transition-colors",
           on ? PILL_ACTIVE : PILL_INACTIVE
         )}
       >
@@ -203,7 +205,7 @@ function VirtualTableBody<Row>({
 
 function TableShellInner({ children, scrollRef }: { children: React.ReactNode; scrollRef: React.RefObject<HTMLDivElement | null> }) {
   return (
-    <div className="rounded-xl border border-border/40 overflow-hidden bg-white/[0.015]">
+    <div className="rounded-xl border border-border/40 overflow-hidden bg-foreground/[0.015]">
       <div ref={scrollRef} className="overflow-x-auto max-h-[520px] overflow-y-auto">
         <table className="nc-table">{children}</table>
       </div>
@@ -233,7 +235,7 @@ export function VariableCodeChips({ row }: { row: CellPerformanceRow }) {
   return (
     <div className="flex flex-wrap gap-1 mt-1">
       {codes.map((c) => (
-        <span key={c} className="text-label font-mono text-muted-foreground/70 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
+        <span key={c} className="text-label font-mono text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
           {c}
         </span>
       ))}
@@ -276,7 +278,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
     return (
       <tr
         key={r.cell_id + r["Result type"]}
-        className={cn(onRowClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
+        className={cn(onRowClick && "cursor-pointer active:bg-foreground/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
         onClick={onRowClick ? () => onRowClick(r) : undefined}
         role={onRowClick ? "button" : undefined}
         tabIndex={onRowClick ? 0 : undefined}
@@ -285,15 +287,15 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
       >
         <Td>
           <div className="font-medium text-foreground">{r.book2_concept_name}</div>
-          <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
+          <div className="text-label font-mono text-muted-foreground/75 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
           <VariableCodeChips row={r} />
         </Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <Td right style={spendIntensity > 0 ? { background: `hsl(var(--chart-1) / ${(spendIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={spendIntensity > 0 ? { background: magnitudeFill(spendIntensity, 0) } : undefined}>
           {fmtUSD(r["Amount spent (USD)"])}
         </Td>
         <Td right>{fmtNum(r.Results)}</Td>
-        <Td right style={cpaIntensity > 0 ? { background: `hsl(var(--chart-3) / ${(cpaIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={cpaIntensity > 0 ? { background: divergingFill(cpaIntensity) } : undefined}>
           {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
         </Td>
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
@@ -320,15 +322,9 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
     <div className="space-y-1.5">
       <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
       {heatmapOn && (
-        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
-          <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-1) / 0.04) 0%, hsl(var(--chart-1) / 0.22) 100%)" }} />
-            <span>Spend intensity</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-3) / 0.04) 0%, hsl(var(--chart-3) / 0.22) 100%)" }} />
-            <span>Low → high CPA efficiency</span>
-          </div>
+        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/75 font-mono">
+          <MagnitudeLegend label="Spend" colorIndex={0} />
+          <VerdictLegend lowLabel="Above goal" highLabel="At goal" />
         </div>
       )}
       <TableShellInner scrollRef={scrollRef}>
@@ -385,7 +381,7 @@ export function VariableTable({
     return (
       <tr
         key={r.variable_id + r["Result type"] + i}
-        className={cn(onRowClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
+        className={cn(onRowClick && "cursor-pointer active:bg-foreground/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
         onClick={onRowClick ? () => onRowClick(r) : undefined}
         role={onRowClick ? "button" : undefined}
         tabIndex={onRowClick ? 0 : undefined}
@@ -395,15 +391,15 @@ export function VariableTable({
       >
         <Td>
           <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
-          <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
+          <div className="text-label font-mono text-muted-foreground/75 mt-0.5">{r.variable_id}</div>
         </Td>
         <Td className="capitalize">{r.variable_family}</Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <Td right style={spendIntensity > 0 ? { background: `hsl(var(--chart-1) / ${(spendIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={spendIntensity > 0 ? { background: magnitudeFill(spendIntensity, 0) } : undefined}>
           <div className="flex flex-col gap-0.5">
             <span>{fmtUSD(r["Amount spent (USD)"])}</span>
             {heatmapOn && maxSpend > 0 && (
-              <div className="h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
+              <div className="h-[3px] rounded-full bg-foreground/[0.06] overflow-hidden">
                 <div
                   className="h-full rounded-full"
                   style={{ width: `${spendIntensity * 100}%`, background: "hsl(var(--chart-1) / 0.65)" }}
@@ -414,7 +410,7 @@ export function VariableTable({
         </Td>
         <Td right>{fmtNum(r.unique_ads)}</Td>
         <Td right>{fmtNum(r.Results)}</Td>
-        <Td right style={cpaIntensity > 0 ? { background: `hsl(var(--chart-3) / ${(cpaIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={cpaIntensity > 0 ? { background: divergingFill(cpaIntensity) } : undefined}>
           {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
         </Td>
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
@@ -441,15 +437,9 @@ export function VariableTable({
     <div className="space-y-1.5">
       <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
       {heatmapOn && (
-        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
-          <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-1) / 0.04) 0%, hsl(var(--chart-1) / 0.22) 100%)" }} />
-            <span>Spend intensity</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-3) / 0.04) 0%, hsl(var(--chart-3) / 0.22) 100%)" }} />
-            <span>Low → high CPA efficiency</span>
-          </div>
+        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/75 font-mono">
+          <MagnitudeLegend label="Spend" colorIndex={0} />
+          <VerdictLegend lowLabel="Above goal" highLabel="At goal" />
         </div>
       )}
       <TableShellInner scrollRef={scrollRef}>
@@ -491,14 +481,8 @@ export function DemographicTable({
   return (
     <div>
       {heatmap && maxCvr > 0 && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-white/[0.01] text-label text-muted-foreground/65 font-mono">
-          <span className="uppercase tracking-widest">CVR</span>
-          <span className="text-muted-foreground/65">low</span>
-          <div
-            className="w-20 h-2 rounded-full"
-            style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.04) 0%, hsl(var(--chart-3) / 0.30) 100%)" }}
-          />
-          <span className="text-muted-foreground/65">high</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-foreground/[0.01]">
+          <MagnitudeLegend label="Result / click" colorIndex={0} />
         </div>
       )}
       <TableShell>
@@ -520,7 +504,7 @@ export function DemographicTable({
             return (
               <tr
                 key={r.cell_id + r.Age + r.Gender + i}
-                className={cn(onSegmentClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
+                className={cn(onSegmentClick && "cursor-pointer active:bg-foreground/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
                 onClick={onSegmentClick ? () => onSegmentClick({ age: r.Age, gender: r.Gender }) : undefined}
                 role={onSegmentClick ? "button" : undefined}
                 tabIndex={onSegmentClick ? 0 : undefined}
@@ -528,7 +512,7 @@ export function DemographicTable({
                 aria-label={onSegmentClick ? `Open segment for ${r.Age}, ${r.Gender}` : undefined}
                 data-testid={onSegmentClick ? `row-demographic-${r.Age}-${r.Gender}-${i}` : undefined}
               >
-                <Td><span className="font-mono text-label text-muted-foreground/60">{r.cell_id}</span></Td>
+                <Td><span className="font-mono text-label text-muted-foreground/75">{r.cell_id}</span></Td>
                 <Td>{r.Age}</Td>
                 <Td className="capitalize">{r.Gender}</Td>
                 <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
@@ -536,7 +520,7 @@ export function DemographicTable({
                 <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
                 <Td
                   right
-                  style={intensity > 0 ? { background: `hsl(var(--chart-3) / ${(intensity * 0.28).toFixed(3)})` } : undefined}
+                  style={intensity > 0 ? { background: magnitudeFill(intensity, 0) } : undefined}
                 >
                   {fmtPct(r.Result_per_link_click_pct)}
                 </Td>
@@ -620,7 +604,7 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
             <Td right>{r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"}</Td>
             <Td right>{r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"}</Td>
             <Td right>{r.purchases != null ? fmtNum(r.purchases) : "—"}</Td>
-            <Td>{r.confidence ? <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/60">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
+            <Td>{r.confidence ? <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/75">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
           </tr>
         ))}
       </tbody>

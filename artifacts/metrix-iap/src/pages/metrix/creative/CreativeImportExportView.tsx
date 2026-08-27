@@ -44,11 +44,11 @@ export function CreativeImportExportView() {
             ) : (
               <div className="space-y-2.5">
                 {creativeAssets.map((imp) => (
-                  <div key={imp.id} className="flex items-center gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                    <FileImage className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+                  <div key={imp.id} className="flex items-center gap-3 rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
+                    <FileImage className="w-4 h-4 text-muted-foreground/75 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-body font-medium text-foreground truncate">{imp.filename}</p>
-                      <p className="text-label text-muted-foreground/70 mt-0.5">
+                      <p className="text-label text-muted-foreground/75 mt-0.5">
                         {imp.ad_names.length > 0 ? `Mapped to ${imp.ad_names.join(", ")}` : "Unmapped"}
                       </p>
                     </div>
@@ -57,7 +57,7 @@ export function CreativeImportExportView() {
               </div>
             )}
             <div className="flex items-center gap-4 pt-2">
-              <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground/60" />
+              <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground/75" />
               <CrossLink to="/app/creative/builder" label="Build finished briefs" />
             </div>
           </div>

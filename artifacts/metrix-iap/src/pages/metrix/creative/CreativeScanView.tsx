@@ -68,13 +68,13 @@ export function CreativeScanView() {
                   <div className="grid gap-1 min-w-[660px]" style={{ gridTemplateColumns: "minmax(200px,1.6fr) repeat(5, minmax(82px, 1fr))" }} data-testid="scan-check-grid">
                     <span />
                     {SCAN_CHECKS.map((c) => (
-                      <span key={c} className={cn(TYPE.label, "text-muted-foreground/60 text-center leading-tight pb-1.5")}>{c}</span>
+                      <span key={c} className={cn(TYPE.label, "text-muted-foreground/75 text-center leading-tight pb-1.5")}>{c}</span>
                     ))}
                   </div>
                 </div>
-                <div className="flex items-center gap-2.5 rounded-lg border border-border/30 bg-white/[0.015] px-4 py-5 mt-1">
-                  <ScanSearch className="w-4 h-4 text-muted-foreground/50 shrink-0" />
-                  <p className={cn(TYPE.body, "text-muted-foreground/65")}>
+                <div className="flex items-center gap-2.5 rounded-lg border border-border/30 bg-foreground/[0.015] px-4 py-5 mt-1">
+                  <ScanSearch className="w-4 h-4 text-muted-foreground/75 shrink-0" />
+                  <p className={cn(TYPE.body, "text-muted-foreground/75")}>
                     No scan results yet — staged assets appear here, one row per asset, once the first scan runs.
                   </p>
                 </div>

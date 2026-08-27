@@ -17,7 +17,7 @@ const MetrixLoadingContext = createContext<{ isRefetching: boolean }>({ isRefetc
 
 function FullScreen({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-screen w-screen mx-app-bg flex items-center justify-center">
+    <div className="h-dvh w-full mx-app-bg flex items-center justify-center">
       <div className="text-center space-y-3 max-w-sm px-6">{children}</div>
     </div>
   );
@@ -33,9 +33,9 @@ export function MetrixDataProvider({ children }: { children: React.ReactNode }) 
   if (isError || !data) {
     return (
       <FullScreen>
-        <AlertTriangle className="w-6 h-6 text-amber-400/80 mx-auto" />
+        <AlertTriangle className="w-6 h-6 text-status-warning/80 mx-auto" />
         <p className="text-sm font-semibold text-foreground">Couldn't load Metrix data</p>
-        <p className="text-body text-muted-foreground/70 leading-relaxed">
+        <p className="text-body text-muted-foreground/75 leading-relaxed">
           The data service didn't respond. Check that the API server is running, then try again.
         </p>
         <button

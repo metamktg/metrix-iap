@@ -142,7 +142,10 @@ async function openReviewTab(
   await page.goto(`${BASE}/app/analysis/library?account=${ACCOUNT}`, {
     waitUntil: "domcontentloaded",
   });
-  const tab = page.getByRole("button", { name: /review queue/i }).first();
+  // role="tab", not "button": the library's section rail is ModuleTabs.
+  // Asking for the looser role would also match the SectionCard header
+  // ("Collapse section: …") — Playwright matches name by substring.
+  const tab = page.getByRole("tab", { name: /review queue/i }).first();
   await tab.waitFor({ state: "visible", timeout: 25_000 });
   await tab.click();
   await page

@@ -26,19 +26,19 @@ export function MetricPickerButton({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] transition-colors">
+        <button className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors">
           <Settings2 className="w-3.5 h-3.5" />
           Customize metrics
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 max-h-[420px] overflow-y-auto">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+          <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
             Metric tiles
           </span>
           <button
             onClick={onReset}
-            className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/60 hover:text-foreground transition-colors"
+            className="pressable inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Reset
           </button>
@@ -46,7 +46,7 @@ export function MetricPickerButton({
 
         {selected.length > 0 && (
           <div className="mb-3 space-y-1">
-            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">Selected order</p>
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">Selected order</p>
             {selected.map((id, i) => {
               const m = byId.get(id);
               if (!m) return null;
@@ -56,14 +56,14 @@ export function MetricPickerButton({
                   <button
                     disabled={i === 0}
                     onClick={() => onMove(id, -1)}
-                    className="p-0.5 text-muted-foreground/60 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/60"
+                    className="pressable p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
                   >
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>
                   <button
                     disabled={i === selected.length - 1}
                     onClick={() => onMove(id, 1)}
-                    className="p-0.5 text-muted-foreground/60 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/60"
+                    className="pressable p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
@@ -73,7 +73,7 @@ export function MetricPickerButton({
           </div>
         )}
 
-        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">All metrics</p>
+        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">All metrics</p>
         <div className="space-y-0.5">
           {catalog.map((m) => {
             const on = selected.includes(m.id);
@@ -82,8 +82,8 @@ export function MetricPickerButton({
                 key={m.id}
                 onClick={() => onToggle(m.id)}
                 className={cn(
-                  "w-full flex items-center gap-2 px-1.5 py-1.5 rounded-md text-left transition-colors",
-                  on ? "bg-white/[0.03]" : "hover:bg-white/[0.02]"
+                  "pressable-lg w-full flex items-center gap-2 px-1.5 py-1.5 rounded-md text-left transition-colors",
+                  on ? "bg-foreground/[0.03]" : "hover:bg-foreground/[0.02]"
                 )}
               >
                 <span
@@ -95,7 +95,7 @@ export function MetricPickerButton({
                   {on && <Check className="w-3.5 h-3.5 text-interactive" />}
                 </span>
                 <span className="text-caption text-foreground/85 flex-1 min-w-0 truncate">{m.label}</span>
-                <span className="text-label text-muted-foreground/50 tabular-nums">{m.formatted}</span>
+                <span className="text-label text-muted-foreground/75 tabular-nums">{m.formatted}</span>
               </button>
             );
           })}

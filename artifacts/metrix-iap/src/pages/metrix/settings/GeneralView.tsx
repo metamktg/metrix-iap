@@ -38,10 +38,10 @@ const SECTION = "Settings · 10";
 function SystemInfoSection() {
   return (
     <SectionCard title="System" desc="Build and data source">
-      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
         <div className="space-y-0.5">
           <div className="text-caption font-medium text-foreground/80 font-mono">METRIX IAP v2.0-rc</div>
-          <div className="text-label text-muted-foreground/60 font-mono">SAMPLE / DEMO DATA</div>
+          <div className="text-label text-muted-foreground/75 font-mono">SAMPLE / DEMO DATA</div>
         </div>
         <DataSourceBadgeToggle />
       </div>
@@ -96,12 +96,12 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
             aria-label="Account display name"
             aria-invalid={tooLong || undefined}
             className={cn(
-              "w-full rounded-lg border bg-white/[0.02] px-3 py-2 text-body text-foreground",
-              "placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/45 disabled:opacity-60",
-              tooLong ? "border-red-400/50" : "border-border/40"
+              "w-full rounded-lg border bg-foreground/[0.02] px-3 py-2 text-body text-foreground",
+              "placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/45 disabled:opacity-60",
+              tooLong ? "border-status-danger/50" : "border-border/40"
             )}
           />
-          <div className="text-label font-mono text-muted-foreground/60">
+          <div className="text-label font-mono text-muted-foreground/75">
             {tooLong ? `${trimmed.length}/80 — too long` : `id · ${accountId}`}
           </div>
         </div>
@@ -110,10 +110,10 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
           onClick={() => mutation.mutate({ accountId, data: { name: trimmed } })}
           disabled={!canSave}
           className={cn(
-            "shrink-0 rounded-lg border px-3 py-2 text-body transition-colors",
+            "pressable shrink-0 rounded-lg border px-3 py-2 text-body transition-colors",
             canSave
               ? "border-primary/45 bg-primary/[0.06] hover:bg-primary/[0.1] text-foreground"
-              : "border-border/40 bg-white/[0.02] text-muted-foreground/60 cursor-not-allowed"
+              : "border-border/40 bg-foreground/[0.02] text-muted-foreground/75 cursor-not-allowed"
           )}
         >
           {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
@@ -181,10 +181,10 @@ function ObjectivesSection({ accountId, currentObjectives }: { accountId: string
               disabled={mutation.isPending}
               aria-pressed={active}
               className={cn(
-                "flex items-center gap-2.5 p-3 rounded-lg border transition-colors text-left disabled:opacity-60",
+                "pressable-lg flex items-center gap-2.5 p-3 rounded-lg border transition-colors text-left disabled:opacity-60",
                 active
                   ? "border-primary/45 bg-primary/[0.06]"
-                  : "border-border/40 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/[0.04]"
+                  : "border-border/40 bg-foreground/[0.02] hover:border-primary/40 hover:bg-primary/[0.04]"
               )}
             >
               {pendingThis ? (
@@ -195,9 +195,9 @@ function ObjectivesSection({ accountId, currentObjectives }: { accountId: string
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <div className="text-body font-medium text-foreground">{c.label}</div>
-                  {active && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                  {active && <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />}
                 </div>
-                <div className="text-label text-muted-foreground/70 mt-0.5">{c.desc}</div>
+                <div className="text-label text-muted-foreground/75 mt-0.5">{c.desc}</div>
               </div>
             </button>
           );
@@ -229,17 +229,17 @@ function PrefToggle({
       disabled={disabled}
       data-testid={testId}
       className={cn(
-        "inline-flex items-center justify-center w-5 h-5 rounded border transition-colors",
+        "pressable inline-flex items-center justify-center w-5 hit-target-24 h-5 rounded border transition-colors",
         on
-          ? "border-emerald-400/25 bg-emerald-400/10 hover:bg-emerald-400/20"
-          : "border-border/40 bg-white/[0.02] hover:bg-white/[0.06]",
+          ? "border-status-success/25 bg-status-success/10 hover:bg-status-success/20"
+          : "border-border/40 bg-foreground/[0.02] hover:bg-foreground/[0.06]",
         disabled && "opacity-50 pointer-events-none"
       )}
     >
       {on ? (
-        <Check className="w-3 h-3 text-emerald-400" />
+        <Check className="w-3 h-3 text-status-success" />
       ) : (
-        <Minus className="w-3 h-3 text-muted-foreground/70" />
+        <Minus className="w-3 h-3 text-muted-foreground/75" />
       )}
     </button>
   );
@@ -308,8 +308,8 @@ function NotificationPrefsSections() {
       <SectionCard title="Notification channels" desc="Where notifications are delivered. Click to toggle.">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {channels.map((c) => (
-            <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-              {c.id === "email" ? <Mail className="w-4 h-4 text-muted-foreground/70 shrink-0" /> : <MonitorSmartphone className="w-4 h-4 text-muted-foreground/70 shrink-0" />}
+            <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
+              {c.id === "email" ? <Mail className="w-4 h-4 text-muted-foreground/75 shrink-0" /> : <MonitorSmartphone className="w-4 h-4 text-muted-foreground/75 shrink-0" />}
               <div className="flex-1 text-body font-medium text-foreground">{c.label}</div>
               <button
                 type="button"
@@ -319,10 +319,10 @@ function NotificationPrefsSections() {
                 disabled={isPending}
                 data-testid={`toggle-channel-${c.id}`}
                 className={cn(
-                  "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none transition-colors",
+                  "pressable text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none transition-colors",
                   c.enabled
-                    ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10 hover:bg-emerald-400/20"
-                    : "text-muted-foreground/70 border-border/40 bg-white/[0.03] hover:bg-white/[0.08]",
+                    ? "text-status-success border-status-success/25 bg-status-success/10 hover:bg-status-success/20"
+                    : "text-muted-foreground/75 border-border/40 bg-foreground/[0.03] hover:bg-foreground/[0.08]",
                   isPending && "opacity-60 pointer-events-none"
                 )}
               >
@@ -334,18 +334,18 @@ function NotificationPrefsSections() {
       </SectionCard>
 
       <SectionCard title="Notification events" desc="Which product events notify the workspace, per channel. Click a mark to toggle.">
-        <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden">
+        <div className="rounded-lg border border-border/30 bg-foreground/[0.02] overflow-hidden">
           <div className="grid grid-cols-[1fr_56px_56px] gap-2 px-3 py-2 border-b border-border/30">
-            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Event</span>
-            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium text-center">Email</span>
-            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium text-center">In-app</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium">Event</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium text-center">Email</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium text-center">In-app</span>
           </div>
           <div className="divide-y divide-border/20">
             {events.map((e) => (
               <div key={e.id} className="grid grid-cols-[1fr_56px_56px] gap-2 px-3 py-2.5 items-center">
                 <div className="min-w-0">
                   <div className="text-body font-medium text-foreground">{e.label}</div>
-                  <div className="text-label text-muted-foreground/70 leading-tight mt-0.5">{e.description}</div>
+                  <div className="text-label text-muted-foreground/75 leading-tight mt-0.5">{e.description}</div>
                 </div>
                 <div className="flex justify-center">
                   <PrefToggle on={e.email} onToggle={() => toggleEvent(e.id, "email")} disabled={isPending} label={`${e.label} via email`} testId={`toggle-event-${e.id}-email`} />
@@ -360,11 +360,11 @@ function NotificationPrefsSections() {
       </SectionCard>
 
       <SectionCard title="Digest" desc="The scheduled summary across all ad accounts.">
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
           <CalendarClock className="w-4 h-4 text-interactive shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="text-body font-medium text-foreground capitalize">{notifications.digest.frequency} · {notifications.digest.day}</div>
-            <div className="text-label text-muted-foreground/70 mt-0.5">{notifications.digest.description}</div>
+            <div className="text-label text-muted-foreground/75 mt-0.5">{notifications.digest.description}</div>
           </div>
         </div>
       </SectionCard>
@@ -405,8 +405,8 @@ export function GeneralView() {
       <div className="px-6 py-5 space-y-5 max-w-3xl">
         <SectionCard title="Data connection" desc="Meta ad account connection and manual import status.">
           <div className="space-y-2.5">
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-              {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
+              {configured ? <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
               <div className="flex-1 min-w-0">
                 <div className="text-body font-medium text-foreground">Meta ad account</div>
                 <div className="text-label text-muted-foreground/85">{configured ? `${account.platform} · connected` : "Not connected"}</div>
@@ -414,14 +414,14 @@ export function GeneralView() {
               {!configured && (
                 <button
                   onClick={() => setConnectOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors"
+                  className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors"
                   data-testid="button-connect-account"
                 >
                   <Plug className="w-3 h-3" /> Connect
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
               <FileUp className="w-4 h-4 text-muted-foreground/85 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-body font-medium text-foreground">Manual import</div>
@@ -429,14 +429,14 @@ export function GeneralView() {
               </div>
               <button
                 onClick={() => setImportOpen(true)}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
                 data-testid="button-add-import"
               >
                 <FileUp className="w-3 h-3" /> Add import
               </button>
             </div>
             {configured && (
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
                 <Images className="w-4 h-4 text-muted-foreground/85 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-body font-medium text-foreground">Creative library</div>
@@ -446,7 +446,7 @@ export function GeneralView() {
                 </div>
                 <button
                   onClick={() => setCreativeLibraryOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                  className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
                   data-testid="button-upload-creatives"
                 >
                   <Images className="w-3 h-3" /> Upload creatives
@@ -460,7 +460,7 @@ export function GeneralView() {
         {configured && <ObjectivesSection accountId={account.id} currentObjectives={account.objectives} />}
 
         {configured && (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
             <div className="min-w-0">
               <div className="text-body font-medium text-foreground">Run analysis</div>
               <div className="text-label text-muted-foreground/85">Moved to the Analysis command center.</div>
@@ -471,7 +471,7 @@ export function GeneralView() {
 
         {rb && (
           <SectionCard title="White-label & branding" desc="How reports are branded when delivered to this account's client.">
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
               <Palette className="w-4 h-4 text-interactive shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-body font-medium text-foreground capitalize">{rb.default_branding} branding</div>
@@ -485,8 +485,8 @@ export function GeneralView() {
         )}
 
         <SectionCard title="Data isolation" desc="How this account's data is scoped within the manager.">
-          <div className="flex items-start gap-2.5 p-3 rounded-lg border border-emerald-400/15 bg-emerald-400/[0.03]">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2.5 p-3 rounded-lg border border-status-success/15 bg-status-success/[0.03]">
+            <ShieldCheck className="w-4 h-4 text-status-success shrink-0 mt-0.5" />
             <DetailReveal
               label={deriveLabel(`All analysis, strategy, briefs, reports, and MST data are isolated to ${account.name}.`, 72)}
               labelClassName="text-caption text-foreground/75 leading-relaxed"

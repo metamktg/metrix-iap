@@ -67,7 +67,7 @@ function AccountMenu({
             <p className="text-caption font-semibold text-foreground/90 truncate leading-tight">
               {email ?? "My account"}
             </p>
-            <p className="text-[9px] text-muted-foreground/50 font-mono uppercase tracking-wide leading-tight mt-0.5">
+            <p className="text-[9px] text-muted-foreground/75 font-mono uppercase tracking-wide leading-tight mt-0.5">
               Workspace member
             </p>
           </div>
@@ -116,13 +116,13 @@ function MenuItem({
       onClick={onClick}
       data-testid={testId}
       className={cn(
-        "w-full flex items-center gap-2.5 px-3.5 py-1.5 text-body font-medium transition-colors text-left",
+        "pressable-lg w-full flex items-center gap-2.5 px-3.5 py-1.5 text-body font-medium transition-colors text-left",
         danger
-          ? "text-red-400/80 hover:text-red-400 hover:bg-red-400/[0.06]"
-          : "text-foreground/70 hover:text-foreground hover:bg-white/[0.04]"
+          ? "text-status-danger/80 hover:text-status-danger hover:bg-status-danger/[0.06]"
+          : "text-foreground/70 hover:text-foreground hover:bg-foreground/[0.04]"
       )}
     >
-      <Icon className={cn("w-3.5 h-3.5 shrink-0", danger ? "text-red-400/70" : "text-muted-foreground/50")} />
+      <Icon className={cn("w-3.5 h-3.5 shrink-0", danger ? "text-status-danger/70" : "text-muted-foreground/75")} />
       {label}
     </button>
   );
@@ -160,18 +160,18 @@ export function Topbar() {
             const isLast = i === crumbs.length - 1;
             return (
               <span key={i} className="flex items-center min-w-0">
-                {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0 mx-0.5" />}
+                {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0 mx-0.5" />}
                 {!isLast && crumb.to ? (
                   <Link
                     href={crumb.to}
-                    className="text-body truncate text-muted-foreground/60 hover:text-foreground focus-visible:text-foreground rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="text-body truncate text-muted-foreground/75 hover:text-foreground focus-visible:text-foreground rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {crumb.label}
                   </Link>
                 ) : (
                   <span
                     aria-current={isLast ? "page" : undefined}
-                    className={cn("text-body truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/60")}
+                    className={cn("text-body truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/75")}
                   >
                     {crumb.label}
                   </span>
@@ -185,7 +185,7 @@ export function Topbar() {
 
       {/* Status */}
       {isManager ? (
-        <div className="flex items-center gap-1 text-caption font-medium text-muted-foreground/60 shrink-0">
+        <div className="flex items-center gap-1 text-caption font-medium text-muted-foreground/75 shrink-0">
           <span className="hidden sm:inline">Agency</span>
         </div>
       ) : unconfigured ? (
@@ -194,7 +194,7 @@ export function Topbar() {
           <span>Setup required</span>
         </div>
       ) : (
-        <div className="flex items-center gap-1 text-caption font-medium text-emerald-400 shrink-0">
+        <div className="flex items-center gap-1 text-caption font-medium text-status-success shrink-0">
           <CheckCircle2 className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Connected</span>
         </div>
@@ -209,12 +209,12 @@ export function Topbar() {
         title={open ? "Close task tray" : `Pending workflow actions${trayCount > 0 ? ` (${trayCount} items)` : ""}`}
         onClick={toggle}
         className={cn(
-          "relative h-7 px-2.5 rounded-md border flex items-center gap-1.5 transition-colors text-caption font-medium",
+          "pressable relative h-7 px-2.5 rounded-md border flex items-center gap-1.5 transition-colors text-caption font-medium",
           open
             ? "bg-primary/15 border-primary/25 text-interactive hover:bg-primary/20"
             : trayCount > 0
             ? "border-primary/40 text-interactive hover:bg-primary/10"
-            : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-white/5"
+            : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-foreground/5"
         )}
       >
         {open ? (
@@ -234,7 +234,7 @@ export function Topbar() {
       <div className="flex items-center gap-1 shrink-0">
         <button
           aria-label="Notifications"
-          className="relative w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+          className="relative w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
         >
           <Bell className="w-3.5 h-3.5" />
         </button>
@@ -247,7 +247,7 @@ export function Topbar() {
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
             className={cn(
-              "w-7 h-7 rounded flex items-center justify-center transition-colors",
+              "pressable w-7 h-7 rounded flex items-center justify-center transition-colors",
               menuOpen
                 ? "bg-primary/25 border border-primary/40 text-interactive"
                 : "bg-primary/15 border border-primary/20 text-interactive hover:bg-primary/20"

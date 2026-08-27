@@ -15,6 +15,94 @@ export type VariablePrefix =
   | "HP"   // Hook position
   | "unknown";
 
+// ─── Family order ────────────────────────────────────────────────────
+//
+// Every value here is taken from the DATA — the seed's variable_registry
+// rows for prefix/family/status, and the variable_stack keys that actually
+// appear in the bundle for `key`/`aliases`. An earlier version of this list
+// was written from the prefix letters alone and got three things wrong:
+//
+//   · HP was labelled "Hook position". The registry says "Pain proof", and
+//     the stacks that use it are keyed pain_proof.
+//   · It invented keys hook_position, awareness and structure. The stacks
+//     use st for structure, nothing at all for awareness, and pain_proof.
+//   · It listed only the long key form. The bundle carries BOTH — hk and
+//     hook, tn and tone, fw and framework, cn and concept, pr and proof,
+//     hp and pain_proof — so a stack written in the short form resolved to
+//     nothing and rendered as nine empty slots.
+//
+// Three families are registry_missing: AW, CTA and ST. That is a confirmed,
+// documented gap ("no AW_ registry definition exists in the client library
+// and no AW_ performance rows appear in any source export"), not an
+// oversight, and it is a different fact from "this pillar did not set one".
+// registryStatusFor reads it from the seed so a view can tell them apart.
+//
+// Pinned against the checked-in seed bundle by
+// __tests__/variable-families-match-data.test.ts, because a list written
+// from letters rather than data is exactly what went wrong before.
+
+export interface VariableFamily {
+  /** Canonical MessagePillar.variable_stack field name. */
+  key: string;
+  /** Other keys the same family appears under in real bundles. */
+  aliases: string[];
+  /** The code prefix, per the seed's variable_registry. */
+  prefix: Exclude<VariablePrefix, "unknown">;
+  /** Family name, verbatim from variable_registry.family. */
+  label: string;
+  /** Short form for a dense chip. */
+  abbrev: string;
+}
+
+export const VARIABLE_FAMILIES: VariableFamily[] = [
+  { key: "hook",       aliases: ["hk"], prefix: "HK",  label: "Hook",            abbrev: "HK" },
+  { key: "tone",       aliases: ["tn"], prefix: "TN",  label: "Tone",            abbrev: "TN" },
+  { key: "framework",  aliases: ["fw"], prefix: "FW",  label: "Framework",       abbrev: "FW" },
+  { key: "structure",  aliases: ["st"], prefix: "ST",  label: "Structure",       abbrev: "ST" },
+  { key: "concept",    aliases: ["cn"], prefix: "CN",  label: "Concept",         abbrev: "CN" },
+  { key: "awareness",  aliases: ["aw"], prefix: "AW",  label: "Awareness level", abbrev: "AW" },
+  { key: "pain_proof", aliases: ["hp"], prefix: "HP",  label: "Pain proof",      abbrev: "HP" },
+  { key: "proof",      aliases: ["pr"], prefix: "PR",  label: "Proof type",      abbrev: "PR" },
+  { key: "cta",        aliases: [],     prefix: "CTA", label: "Call to action",  abbrev: "CTA" },
+];
+
+/**
+ * A family's value in a stack, looked up under its canonical key and every
+ * alias. Returns null when the family is unset — never an empty string,
+ * which a caller would otherwise render as a set-but-blank variable.
+ */
+export function stackValue(
+  stack: Record<string, string | null | undefined>,
+  family: VariableFamily,
+): string | null {
+  for (const k of [family.key, ...family.aliases]) {
+    const v = stack[k];
+    if (typeof v === "string" && v.trim()) return v;
+  }
+  return null;
+}
+
+/** Family for a code, by its prefix. Null when the code does not parse. */
+export function familyForCode(code: string): VariableFamily | null {
+  const p = getVariablePrefix(code);
+  return VARIABLE_FAMILIES.find((f) => f.prefix === p) ?? null;
+}
+
+/**
+ * Whether the client library defines this family at all, per the seed's
+ * variable_registry. "registry_missing" is a confirmed gap with a stated
+ * reason — a stack slot that is empty because no definition exists is a
+ * different fact from one the author left unset, and only the registry
+ * can tell them apart. Null when the seed carried no registry.
+ */
+export function registryStatusFor(
+  registry: { prefix: string; status: string; note?: string | null }[] | undefined,
+  family: VariableFamily,
+): { status: string; note: string | null } | null {
+  const row = registry?.find((r) => r.prefix === family.prefix);
+  return row ? { status: row.status, note: row.note ?? null } : null;
+}
+
 // ─── Label registry ──────────────────────────────────────────────────
 
 const LABELS: Record<string, string> = {
@@ -179,16 +267,43 @@ export function resolveInlineVariableCodes(text: string): string {
   return result;
 }
 
-/** Color class per prefix for badge styling */
+// ─── Variable-family chips ────────────────────────────────────────────
+//
+// Every family gets the SAME chip. That is a deliberate reversal, and the
+// reason is that the previous map could not do what it claimed.
+//
+// It assigned nine families across five hues, so CN and HP were byte-for-byte
+// identical and TN and CTA differed only in their text colour — two pairs of
+// families the palette said were different and painted the same. Four of the
+// nine also wore reserved status colours: PR was status-success and AW was
+// status-danger, which on a performance dashboard reads as a verdict on the
+// variable rather than a name for it. "Proof" is not good news and "awareness"
+// is not a failure.
+//
+// Nine categories is more than the validated categorical scale carries (five
+// slots, and a sixth is never a generated hue), so colour cannot separate
+// these at all. It does not need to: the chip always renders the code, and
+// the two-letter prefix in mono is both unambiguous and faster to scan than
+// nine near-tints would be. Colour here lifts the chip off the surface; the
+// text carries the identity.
+//
+// Pinned by lib/__tests__/variable-chip-tokens.test.ts.
+const VARIABLE_CHIP = "bg-foreground/[0.06] text-foreground/85 border-border/45";
+
+/**
+ * Chip classes for a variable code's family. Keyed by prefix so call sites
+ * read as they always did; every prefix resolves to the same treatment.
+ */
 export const PREFIX_COLORS: Record<VariablePrefix, string> = {
-  HK:      "bg-accent/10 text-accent border-accent/20",
-  TN:      "bg-purple-500/10 text-purple-300 border-purple-500/20",
-  FW:      "bg-teal-500/10 text-teal-300 border-teal-500/20",
-  CN:      "bg-amber-500/10 text-amber-300 border-amber-500/20",
-  PR:      "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
-  CTA:     "bg-primary/10 text-interactive border-primary/20",
-  AW:      "bg-rose-500/10 text-rose-300 border-rose-500/20",
-  ST:      "bg-slate-500/10 text-slate-300 border-slate-500/20",
-  HP:      "bg-orange-500/10 text-orange-300 border-orange-500/20",
-  unknown: "bg-muted text-muted-foreground border-border/40",
+  HK: VARIABLE_CHIP,
+  TN: VARIABLE_CHIP,
+  FW: VARIABLE_CHIP,
+  CN: VARIABLE_CHIP,
+  PR: VARIABLE_CHIP,
+  CTA: VARIABLE_CHIP,
+  AW: VARIABLE_CHIP,
+  ST: VARIABLE_CHIP,
+  HP: VARIABLE_CHIP,
+  /** Not a family — the code did not parse. Recessive on purpose. */
+  unknown: "bg-foreground/[0.03] text-muted-foreground border-border/30",
 };

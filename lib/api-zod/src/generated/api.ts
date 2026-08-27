@@ -638,6 +638,7 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
   "age": zod.string(),
   "gender": zod.string(),
   "spend": zod.number().nullable(),
+  "impressions": zod.number().nullable().describe('Impressions for this age\/gender cell. Nullable because rows ingested before demographic_performance carried the column have no measurement — null means not measured, never zero. Without it there is no demographic CTR or CPM, which is why the column was backfilled.'),
   "results": zod.number().nullable(),
   "link_clicks": zod.number().nullable(),
   "adds_to_cart": zod.number().nullable(),
@@ -748,6 +749,7 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
   "age": zod.string(),
   "gender": zod.string(),
   "spend": zod.number().nullable(),
+  "impressions": zod.number().nullable().describe('Impressions for this age\/gender cell. Nullable because rows ingested before demographic_performance carried the column have no measurement — null means not measured, never zero. Without it there is no demographic CTR or CPM, which is why the column was backfilled.'),
   "results": zod.number().nullable(),
   "link_clicks": zod.number().nullable(),
   "adds_to_cart": zod.number().nullable(),
@@ -789,6 +791,39 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
   "note": zod.string().nullable().describe('Cause + remedy text, populated when below_threshold or aggregate_shape.')
 }).describe('Join coverage measured for one report class (upload slot) at analysis time — how much of the account\'s daily-attributable activity this class\'s rows represent.'))
 }).describe('Per-report-class join coverage measured by the latest successful manual analysis run — the degraded-data honesty layer. Null for accounts without manual runs or legacy runs predating coverage measurement.').nullable().describe('Join coverage from the latest successful manual analysis run; null when no manual run has measured coverage for this account.')
+})
+
+
+/**
+ * ad_performance is stored one row per ad per day; the seed aggregates that grain away into window totals. This returns it, day by day, for trend charts. Rates are recomputed from the summed numerator and denominator, never averaged across ads. Reach is per-day as measured and must not be summed across days (it is a deduplicated people count). Days inside the span with no rows are reported in missing_days rather than emitted as zeroes, so a trend line never implies continuity the data lacks.
+ * @summary Daily metric series for an account over a date range
+ */
+
+
+
+export const GetAccountDailySeriesParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "start": zod.coerce.string().describe('Start date YYYY-MM-DD'),
+  "end": zod.coerce.string().describe('End date YYYY-MM-DD')
+})
+
+export const GetAccountDailySeriesResponse = zod.object({
+  "points": zod.array(zod.object({
+  "day": zod.string().describe('YYYY-MM-DD'),
+  "spend": zod.number().nullable(),
+  "impressions": zod.number().nullable(),
+  "reach": zod.number().nullable().describe('Per-day deduplicated people count. Never sum across days.'),
+  "clicks_all": zod.number().nullable(),
+  "link_clicks": zod.number().nullable(),
+  "results": zod.number().nullable(),
+  "cpa": zod.number().nullable().describe('spend \/ results, recomputed from the day\'s sums.'),
+  "ctr_link_pct": zod.number().nullable(),
+  "cvr_link_pct": zod.number().nullable(),
+  "ads": zod.number().describe('Ad rows contributing to this day.')
+})),
+  "date_start": zod.string().nullable(),
+  "date_end": zod.string().nullable(),
+  "missing_days": zod.array(zod.string()).describe('Days inside the span with no rows at all — a real gap, not a zero.')
 })
 
 
@@ -880,6 +915,7 @@ export const GetAnalysisSummaryResponse = zod.object({
   "age": zod.string(),
   "gender": zod.string(),
   "spend": zod.number().nullable(),
+  "impressions": zod.number().nullable().describe('Impressions for this age\/gender cell. Nullable because rows ingested before demographic_performance carried the column have no measurement — null means not measured, never zero. Without it there is no demographic CTR or CPM, which is why the column was backfilled.'),
   "results": zod.number().nullable(),
   "link_clicks": zod.number().nullable(),
   "adds_to_cart": zod.number().nullable(),

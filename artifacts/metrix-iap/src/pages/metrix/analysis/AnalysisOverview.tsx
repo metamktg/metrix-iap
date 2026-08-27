@@ -4,6 +4,8 @@
 // then the core control reads and drill-in module cards.
 
 import { useState, useMemo, useEffect } from "react";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { rollupPlacements, derivePlacementRollup, type PlacementRollup } from "@/lib/placement-rollup";
 import { useAnalysisView } from "@/contexts/AnalysisViewContext";
 import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -29,6 +31,8 @@ import { RunScopePicker } from "@/components/analysis/RunSelector";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
+import { TrendSection } from "@/components/analysis/TrendSection";
+import { HeatMatrix } from "@/components/charts/HeatMatrix";
 import { KpiTileRow } from "@/components/metrics/KpiTile";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import {
@@ -114,33 +118,6 @@ function buildMonthlyTrend(rollup: ConceptRollupRow[]): MonthBucket[] {
 
 // ─── Placement rollup (mirrors PlacementsView) ────────────────────────
 
-interface PlacementRollup {
-  placement: string;
-  spend: number;
-  results: number;
-  cpa: number | null;
-  ctr: number | null;
-}
-
-function rollupPlacements(rows: PlacementRow[]): PlacementRollup[] {
-  const map = new Map<string, { spend: number; results: number; impr: number; clicks: number }>();
-  for (const r of rows) {
-    const s = map.get(r.Placement) ?? { spend: 0, results: 0, impr: 0, clicks: 0 };
-    s.spend   += r["Amount spent (USD)"];
-    s.results += r.Results;
-    s.impr    += r.Impressions;
-    s.clicks  += r["Link clicks"];
-    map.set(r.Placement, s);
-  }
-  return [...map.entries()].map(([placement, s]) => ({
-    placement,
-    spend:   s.spend,
-    results: s.results,
-    cpa:     s.results > 0 ? s.spend / s.results : null,
-    ctr:     s.impr    > 0 ? (s.clicks / s.impr) * 100 : null,
-  }));
-}
-
 // ─── Demographic heatmap builder ──────────────────────────────────────
 
 interface DemoCell {
@@ -191,7 +168,7 @@ function buildDemoHeatmap(rows: DemographicRow[]) {
 
 function ChartTooltipCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-border/50 bg-surface-deep px-3 py-2 text-body shadow-lg elevation-floating">
+    <div className="rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm px-3 py-2 text-body elevation-floating">
       {children}
     </div>
   );
@@ -221,10 +198,10 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
               <stop offset="95%" stopColor="hsl(var(--metrix-success))" stopOpacity={0.01} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--foreground) / 0.10)" vertical={false} />
           <XAxis
             dataKey="month"
-            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
           />
@@ -233,7 +210,7 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             yAxisId="spend"
             orientation="left"
             tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
             width={44}
@@ -243,13 +220,13 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             yAxisId="results"
             orientation="right"
             tickFormatter={(v: number) => fmtNum(v)}
-            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
             width={40}
           />
           <Tooltip
-            cursor={{ stroke: "rgba(255,255,255,0.08)", strokeWidth: 1 }}
+            cursor={{ stroke: "hsl(var(--foreground) / 0.08)", strokeWidth: 1 }}
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
               const d = payload[0]?.payload as MonthBucket;
@@ -308,7 +285,7 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             startIndex={brushRange.startIndex}
             endIndex={brushRange.endIndex}
             stroke="hsl(var(--primary) / 0.35)"
-            fill="rgba(0,0,0,0.25)"
+            fill="hsl(0 0% 0% / 0.25)"
             aria-label="Drag to zoom the date range"
             onChange={(range) => {
               if (range && range.startIndex != null && range.endIndex != null) {
@@ -349,11 +326,11 @@ function CellPerfBars({ items, resultNoun }: {
           margin={{ top: 0, right: 56, bottom: 4, left: 4 }}
           barSize={11}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--foreground) / 0.10)" horizontal={false} />
           <XAxis
             type="number"
             tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
           />
@@ -361,13 +338,13 @@ function CellPerfBars({ items, resultNoun }: {
             type="category"
             dataKey="name"
             width={130}
-            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 10 }}
+            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 10 }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v: string) => (v.length > 20 ? v.slice(0, 19) + "…" : v)}
           />
           <Tooltip
-            cursor={{ fill: "rgba(255,255,255,0.03)" }}
+            cursor={{ fill: "hsl(var(--foreground) / 0.03)" }}
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
               const d = payload[0]?.payload as CellBarItem;
@@ -388,7 +365,7 @@ function CellPerfBars({ items, resultNoun }: {
             {items.map((_, i) => (
               <Cell
                 key={i}
-                fill={i === 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.22)"}
+                fill={i === 0 ? "hsl(var(--primary))" : "hsl(var(--foreground) / 0.22)"}
                 fillOpacity={i === 0 ? 0.9 : 0.55}
               />
             ))}
@@ -414,10 +391,10 @@ function PlacementTable({ placements }: {
   const medCpa = cpas.length ? cpas[Math.floor(cpas.length / 2)] : null;
 
   function cpaBadgeCls(cpa: number | null) {
-    if (cpa == null || medCpa == null) return "text-muted-foreground/50";
-    if (cpa <= medCpa * 0.85) return "text-emerald-400";
+    if (cpa == null || medCpa == null) return "text-muted-foreground/75";
+    if (cpa <= medCpa * 0.85) return "text-status-success";
     if (cpa <= medCpa * 1.15) return "text-foreground/70";
-    return "text-rose-400";
+    return "text-status-danger";
   }
 
   return (
@@ -433,30 +410,22 @@ function PlacementTable({ placements }: {
               >
                 {p.placement.length > 24 ? p.placement.slice(0, 23) + "…" : p.placement}
               </span>
-              <span className={cn(TYPE.label, "font-mono tabular-nums text-muted-foreground/60 ml-2 shrink-0")}>
+              <span className={cn(TYPE.label, "font-mono tabular-nums text-muted-foreground/75 ml-2 shrink-0")}>
                 {fmtUSD(p.spend, 0)}
               </span>
             </div>
-            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${(p.spend / maxSpend) * 100}%`,
-                  background: "hsl(var(--metrix-cyan) / 0.75)",
-                }}
-              />
-            </div>
+            <ProgressMeter value={p.spend} total={maxSpend} label={`${p.placement} share of top placement spend`} size="md" colorIndex={1} />
           </div>
           {/* CPA badge */}
           <div className="text-right shrink-0 w-[52px]">
-            <div className={cn(TYPE.label, "text-muted-foreground/40 mb-0.5")}>CPA</div>
+            <div className={cn(TYPE.label, "text-muted-foreground/75 mb-0.5")}>CPA</div>
             <div className={cn(TYPE.caption, "font-mono font-semibold tabular-nums", cpaBadgeCls(p.cpa))}>
               {p.cpa != null ? fmtUSD(p.cpa, 0) : "—"}
             </div>
           </div>
           {/* CTR badge */}
           <div className="text-right shrink-0 w-[42px]">
-            <div className={cn(TYPE.label, "text-muted-foreground/40 mb-0.5")}>CTR</div>
+            <div className={cn(TYPE.label, "text-muted-foreground/75 mb-0.5")}>CTR</div>
             <div className={cn(TYPE.caption, "font-mono tabular-nums text-foreground/60")}>
               {p.ctr != null ? fmtPct(p.ctr, 1) : "—"}
             </div>
@@ -468,9 +437,26 @@ function PlacementTable({ placements }: {
 }
 
 // ─── Demographic heatmap grid ─────────────────────────────────────────
-// Age rows × gender columns coloured by CPA intensity.
-// Lower CPA = better = more green; higher CPA = worse = more amber.
-// Clicking a cell opens SegmentDrilldownModal for that age × gender segment.
+//
+// Age rows x gender columns, coloured by CPA against goal. This delegates
+// to HeatMatrix now rather than painting its own grid, which fixed three
+// things it had drifted into:
+//
+//   · The legend did not match the map. It advertised an amber-to-emerald
+//     gradient at 0.30 alpha while the cells painted from divergingFill's
+//     danger/success ramp steps 700-900 — different hues, different
+//     lightness. HeatMatrix derives its legend from the same function that
+//     fills the cells, so the two cannot disagree.
+//   · Over-goal was one flat bucket. cellBg tested `cpa >= goal * 1.1` and
+//     returned the single worst fill, so a cell 5% over goal and one 300%
+//     over rendered identically. HeatMatrix grades across a +/-100% window.
+//   · An unmeasured cell and a mid-range one shared a fill. HeatMatrix
+//     hatches the gap, so "nobody in this segment converted" cannot read as
+//     "average performer".
+//
+// One thing is deliberately dropped: the "unknown" gender column used to
+// render narrower and at 70% opacity. It is a real bucket carrying real
+// spend, and the column header already says "unknown".
 
 function DemoHeatmapGrid({
   heatmap,
@@ -481,126 +467,46 @@ function DemoHeatmapGrid({
   analysis: AnalysisData;
   goalCpa?: number | null;
 }) {
-  const { cells, ages, genders, maxCpa, minCpa } = heatmap;
+  const { cells, ages, genders } = heatmap;
   const [selectedSegment, setSelectedSegment] = useState<SegmentId | null>(null);
+
+  const matrixCells = useMemo(
+    () =>
+      cells.map((c) => ({
+        row: c.age,
+        col: c.gender,
+        value: c.cpa,
+        sub: fmtUSD(c.spend, 0),
+        hint:
+          `${c.age} / ${c.gender}: ` +
+          (c.cpa != null ? `${fmtUSD(c.cpa)} CPA` : "no CPA — no results recorded") +
+          ` \u00b7 ${fmtUSD(c.spend, 0)} spend \u00b7 ${fmtNum(c.results)} results` +
+          ` — click to drill down`,
+        meta: { age: c.age, gender: c.gender } satisfies SegmentId,
+      })),
+    [cells],
+  );
 
   if (cells.length === 0) return null;
 
-  const getCell = (age: string, gender: string) =>
-    cells.find((c) => c.age === age && c.gender === gender.toLowerCase());
-
-  // 0 = bad (high CPA, amber), 1 = good (low CPA, emerald)
-  function intensity(cpa: number | null): number {
-    if (cpa == null || maxCpa === minCpa) return 0.5;
-    return 1 - (cpa - minCpa) / (maxCpa - minCpa);
-  }
-
-  function cellBg(cpa: number | null): string {
-    if (cpa == null) return "rgba(255,255,255,0.02)";
-    // Goal-relative coloring when goalCpa is provided
-    if (goalCpa != null && goalCpa > 0) {
-      if (cpa <= goalCpa * 0.9)  return "hsl(var(--chart-3) / 0.32)";  // emerald — at/below goal
-      if (cpa >= goalCpa * 1.1)  return "hsl(var(--chart-4) / 0.24)";  // amber — above goal
-      return "hsl(var(--chart-1) / 0.20)";                             // indigo — neutral band ±10%
-    }
-    // Fallback: min/max relative coloring
-    const t = intensity(cpa);
-    if (t >= 0.65) return `hsl(var(--chart-3) / ${0.08 + t * 0.26})`; // emerald
-    if (t >= 0.35) return `hsl(var(--chart-1) / ${0.06 + t * 0.14})`; // indigo mid
-    return `hsl(var(--chart-4) / ${0.06 + (1 - t) * 0.14})`; // amber
-  }
-
-  // Build the gridTemplateColumns string: label col + one col per gender.
-  // "unknown" gender gets a narrower 0.5fr; others get 1fr.
-  const colTemplate = [
-    "72px",
-    ...genders.map((g) => (g === "unknown" ? "0.5fr" : "1fr")),
-  ].join(" ");
-
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[320px]">
-        {/* Header */}
-        <div
-          className="grid gap-1 mb-1"
-          style={{ gridTemplateColumns: colTemplate }}
-        >
-          <div />
-          {genders.map((g) => (
-            <div
-              key={g}
-              className={cn(
-                TYPE.label, "text-center capitalize py-1",
-                g === "unknown" && "text-muted-foreground/40",
-              )}
-            >
-              {g}
-            </div>
-          ))}
-        </div>
-        {/* Rows */}
-        {ages.map((age) => (
-          <div
-            key={age}
-            className="grid gap-1 mb-1 items-stretch"
-            style={{ gridTemplateColumns: colTemplate }}
-          >
-            <div className={cn(TYPE.caption, "text-muted-foreground/70 flex items-center pr-2 truncate")}>{age}</div>
-            {genders.map((gender) => {
-              const cell = getCell(age, gender);
-              const isEmpty = !cell;
-              return (
-                <button
-                  key={gender}
-                  type="button"
-                  onClick={() => setSelectedSegment({ age, gender })}
-                  className={cn(
-                    "rounded-md px-1.5 py-2 text-center border border-white/[0.06] min-h-[44px] flex flex-col items-center justify-center",
-                    "cursor-pointer transition-opacity",
-                    isEmpty
-                      ? "hover:opacity-60"
-                      : "hover:brightness-125 hover:border-white/[0.14]",
-                    gender === "unknown" && "opacity-70 hover:opacity-90",
-                  )}
-                  style={{ backgroundColor: cellBg(cell?.cpa ?? null) }}
-                  title={
-                    cell
-                      ? `${age} / ${gender}: ${cell.cpa != null ? fmtUSD(cell.cpa) + " CPA" : "no CPA"} · ${fmtUSD(cell.spend, 0)} spend · ${fmtNum(cell.results)} results — click to drill down`
-                      : `${age} / ${gender}: No data — click to explore`
-                  }
-                >
-                  {cell ? (
-                    <>
-                      <div className="text-label font-mono font-semibold tabular-nums text-foreground/85">
-                        {cell.cpa != null ? fmtUSD(cell.cpa, 0) : "—"}
-                      </div>
-                      <div className="text-label font-mono text-muted-foreground/50 mt-0.5 tabular-nums">
-                        {fmtUSD(cell.spend, 0)}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-label text-muted-foreground/25">—</div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        ))}
-        {/* Legend */}
-        <div className="flex items-center justify-between gap-2 mt-2">
-          <span className={cn(TYPE.label, "text-muted-foreground/35 italic")}>
-            Click any cell to explore segment attribution
-          </span>
-          <div className="flex items-center gap-1.5">
-            <span className={cn(TYPE.label, "text-muted-foreground/45")}>CPA:</span>
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(var(--chart-4) / 0.25)" }} />
-            <span className={cn(TYPE.label)}>High</span>
-            <div className="w-10 h-1 rounded-full mx-0.5" style={{ background: "linear-gradient(to right, hsl(var(--chart-4) / 0.25), hsl(var(--chart-3) / 0.35))" }} />
-            <span className={cn(TYPE.label)}>Low</span>
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(var(--chart-3) / 0.35)" }} />
-          </div>
-        </div>
-      </div>
+    <div>
+      <HeatMatrix
+        rows={ages}
+        cols={genders}
+        cells={matrixCells}
+        scale="verdict"
+        lowerIsBetter
+        goal={goalCpa ?? null}
+        format={(n) => fmtUSD(n, 0)}
+        measureLabel="CPA"
+        rowHeaderLabel="Age"
+        onSelect={(cell) => setSelectedSegment(cell.meta as SegmentId)}
+        emptyLabel="No demographic rows in this window"
+      />
+      <p className={cn(TYPE.label, "text-muted-foreground/75 italic mt-2")}>
+        Click any cell to explore segment attribution
+      </p>
 
       {/* Segment drilldown modal — opened when a cell is clicked */}
       <SegmentDrilldownModal
@@ -682,10 +588,10 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
                     onClick={() => setSortKey(c.key)}
                     aria-label={`Sort by ${c.label}${active ? (dir === "asc" ? ", currently ascending" : ", currently descending") : ""}`}
                     className={cn(
-                      "inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors whitespace-nowrap",
+                      "pressable inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors whitespace-nowrap",
                       active
                         ? "text-interactive"
-                        : "text-muted-foreground/60 hover:text-foreground/80",
+                        : "text-muted-foreground/75 hover:text-foreground/80",
                     )}
                   >
                     {c.label}
@@ -702,7 +608,7 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
           {sorted.map((r, i) => (
             <tr key={r.variable_id + i}>
               <td className="font-medium text-foreground/90 whitespace-nowrap">{readableVariables(r.variable_id)}</td>
-              <td className="text-muted-foreground/70 capitalize">{r.variable_family}</td>
+              <td className="text-muted-foreground/75 capitalize">{r.variable_family}</td>
               <td className="text-right font-mono tabular-nums text-foreground/85">{fmtUSD(r["Amount spent (USD)"], 0)}</td>
               <td className="text-right font-mono tabular-nums text-foreground/85">{fmtNum(r.Results)}</td>
               <td className="text-right font-mono tabular-nums text-foreground/85">{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</td>
@@ -940,13 +846,16 @@ export function AnalysisOverview() {
         // When a run is selected and data has loaded, use the API placement rows.
         const allPlacements = (runData &&
           (selectedWindow || (a.v3_placement_signal.length === 0 && a.c4e_placement_signal.length === 0))
-          ? runData.placement_rows.map((r) => ({
-              placement: r.placement,
-              spend: r.spend,
-              results: r.results,
-              cpa: r.results > 0 ? r.spend / r.results : null,
-              ctr: r.impressions > 0 ? (r.link_clicks / r.impressions) * 100 : null,
-            }))
+          ? runData.placement_rows.map((r) =>
+              // Same derivation as the seed-row path — these rows arrive
+              // pre-aggregated from the run API, so only the ratios are
+              // computed here, and by the same function.
+              derivePlacementRollup(r.placement, {
+                spend: r.spend,
+                results: r.results,
+                impressions: r.impressions,
+                linkClicks: r.link_clicks,
+              }))
           : rollupPlacements([
               ...a.v3_placement_signal,
               ...a.c4e_placement_signal,
@@ -1078,7 +987,7 @@ export function AnalysisOverview() {
                     </div>
                     {/* Right: result type donut — inline with tiles */}
                     {resultTypePie.length > 0 && (
-                      <div className="w-[196px] shrink-0 rounded-xl border border-border/40 bg-white/[0.02] p-3 flex flex-col">
+                      <div className="w-[196px] shrink-0 rounded-xl border border-border/40 bg-foreground/[0.02] p-3 flex flex-col">
                         <div className="text-sm font-bold text-foreground mb-1.5">
                           By result type
                         </div>
@@ -1095,6 +1004,17 @@ export function AnalysisOverview() {
                     )}
                   </div>
                 )}
+
+                {/* ── Daily trend ─────────────────────────────────────
+                    The first time-based read in the product: the window
+                    totals above say how much, this says when. Fetched on
+                    demand rather than carried in the seed — a daily series
+                    is O(days x accounts). */}
+                <TrendSection
+                  accountId={adAccountId ?? null}
+                  start={queryWindow?.start ?? null}
+                  end={queryWindow?.end ?? null}
+                />
 
                 <KpiDrilldownModal
                   open={drillMetricId != null}
@@ -1120,7 +1040,7 @@ export function AnalysisOverview() {
                 <div className="px-6 py-5 space-y-4 max-w-5xl">
                   {summary.data_caveat && (
                     <div className="flex items-center gap-1">
-                      <span className="text-label text-muted-foreground/60">Data window</span>
+                      <span className="text-label text-muted-foreground/75">Data window</span>
                       <InfoTooltip content={summary.data_caveat} />
                     </div>
                   )}
@@ -1154,7 +1074,7 @@ export function AnalysisOverview() {
                           <SectionInfoIcon tip="Ranks creative concepts by spend or CPA so you can quickly see which ideas are carrying the account." />
                           {/* Top-N slider */}
                           <div className="flex items-center gap-2">
-                            <span className="text-label text-muted-foreground/60 whitespace-nowrap">
+                            <span className="text-label text-muted-foreground/75 whitespace-nowrap">
                               Top N: <span className="text-foreground/80 font-mono">{topN}</span>
                             </span>
                             <Slider
@@ -1219,8 +1139,8 @@ export function AnalysisOverview() {
                       title="Audience heatmap"
                       desc={
                         effectiveGoalCpa != null
-                          ? `Age × gender · goal CPA ${fmtUSD(effectiveGoalCpa, 0)} · emerald ≤ goal, amber > goal`
-                          : "Age × gender · colour = CPA (green = better) · hover for detail"
+                          ? `Age × gender · CPA against a ${fmtUSD(effectiveGoalCpa, 0)} goal · hover a cell for spend and results`
+                          : "Age × gender · CPA relative to this grid's own range · hover a cell for spend and results"
                       }
                       right={
                         <div className="flex items-center gap-3">
@@ -1228,7 +1148,7 @@ export function AnalysisOverview() {
                           {/* Goal-CPA slider */}
                           {medianCpa != null && (
                             <div className="flex items-center gap-2">
-                              <span className="text-label text-muted-foreground/60 whitespace-nowrap">
+                              <span className="text-label text-muted-foreground/75 whitespace-nowrap">
                                 Goal CPA: <span className="text-foreground/80 font-mono">{fmtUSD(effectiveGoalCpa ?? medianCpa, 0)}</span>
                               </span>
                               <Slider
@@ -1254,8 +1174,8 @@ export function AnalysisOverview() {
                   {controls && (
                     <SectionCard title="Core control reads" desc="Control creative · per funnel depth" right={<SectionInfoIcon tip="The benchmark creative concepts that set the efficiency floor — new tests are judged against these." />}>
                       <div className="grid grid-cols-dashboard-2 gap-3">
-                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                          <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">Primary control</div>
+                        <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
+                          <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">Primary control</div>
                           <p className="text-sm font-bold text-foreground">{resolveConceptName(controls.primary_control)}</p>
                           <div className="mt-1.5">
                             {(() => {
@@ -1271,15 +1191,15 @@ export function AnalysisOverview() {
                             })()}
                           </div>
                           {resolveConceptName(controls.primary_control) !== controls.primary_control && (
-                            <p className="text-label font-mono text-muted-foreground/40 mt-1.5">{controls.primary_control}</p>
+                            <p className="text-label font-mono text-muted-foreground/75 mt-1.5">{controls.primary_control}</p>
                           )}
                         </div>
                         {controls.registration_control && (() => {
                           const regId   = controls.registration_control!;
                           const regName = resolveConceptName(regId);
                           return (
-                            <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">{term.Singular} control</div>
+                            <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
+                              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">{term.Singular} control</div>
                               <p className="text-sm font-bold text-foreground">{regName}</p>
                               {controls.registration_control_read && (() => {
                                 const read = resolveControlText(controls.registration_control_read, regId);
@@ -1295,7 +1215,7 @@ export function AnalysisOverview() {
                                 );
                               })()}
                               {regName !== regId && (
-                                <p className="text-label font-mono text-muted-foreground/40 mt-1.5">{regId}</p>
+                                <p className="text-label font-mono text-muted-foreground/75 mt-1.5">{regId}</p>
                               )}
                             </div>
                           );
@@ -1308,14 +1228,14 @@ export function AnalysisOverview() {
                   <SectionCard title="Analysis modules" desc="Same data · different slices" right={<SectionInfoIcon tip="Deeper views of the same data sliced by library, audience, placements, and budget." />}>
                     <div className="grid grid-cols-dashboard-2 gap-3">
                       {subpages.map((s) => (
-                        <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
+                        <div key={s.to} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4 flex flex-col gap-2">
                           <div className="flex items-center gap-2">
                             <s.Icon className="w-3.5 h-3.5 text-interactive" />
                             <span className="text-sm font-bold text-foreground">{s.label}</span>
                             <InfoTooltip content={s.desc} />
                           </div>
                           <div className="flex items-center justify-between mt-auto pt-1">
-                            <span className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40">{s.stat}</span>
+                            <span className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75">{s.stat}</span>
                             <CrossLink to={s.to} label="Open" />
                           </div>
                         </div>

@@ -17,6 +17,7 @@
 // set to "/" to match the artifact's registered preview path.
 
 import { spawn, type ChildProcess } from "node:child_process";
+import { spawnGroup, killGroup } from "./lib/process-group.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,7 +46,7 @@ function runStep(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     console.log(`${label}...`);
-    const child = spawn("pnpm", args, {
+    const child = spawnGroup("pnpm", args, {
       cwd: repoRoot,
       env: env ?? process.env,
       stdio: ["ignore", "pipe", "pipe"],
@@ -187,7 +188,7 @@ async function runSmoke() {
       );
     });
   } finally {
-    previewServer?.kill();
+    killGroup(previewServer);
   }
 
   console.log(
@@ -204,7 +205,7 @@ function startPreviewServer(
 ): Promise<ChildProcess> {
   return new Promise((resolve, reject) => {
     console.log("Starting vite preview server...");
-    const child = spawn(
+    const child = spawnGroup(
       "pnpm",
       ["--filter", "@workspace/metrix-iap", "run", "serve"],
       {
@@ -245,7 +246,7 @@ function startPreviewServer(
 
     setTimeout(() => {
       if (!ready) {
-        child.kill();
+        killGroup(child);
         reject(new Error("vite preview did not become ready within 30 s"));
       }
     }, 30_000);

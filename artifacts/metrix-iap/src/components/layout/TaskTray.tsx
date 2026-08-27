@@ -62,12 +62,12 @@ const DATE_PRESETS = [
 
 // Left-accent stripe colors keyed to item type
 const ACCENT = {
-  approved: "before:bg-emerald-400",
-  recommendation: "before:bg-emerald-400",
-  hypothesis: "before:bg-violet-400",
+  approved: "before:bg-status-success",
+  recommendation: "before:bg-status-success",
+  hypothesis: "before:bg-primary",
   brief: "before:bg-chart-1",
-  signal: "before:bg-amber-400",
-  custom: "before:bg-emerald-400",
+  signal: "before:bg-status-warning",
+  custom: "before:bg-status-success",
   nav: "",
 } as const;
 
@@ -114,12 +114,12 @@ function saveTrayWidth(width: number) {
 function TrayAnalysisUnconfigured({ accountId }: { accountId: string }) {
   const [, navigate] = useLocation();
   return (
-    <div className="mx-4 rounded-xl border border-border/50 bg-white/[0.025] overflow-hidden">
+    <div className="mx-4 rounded-xl border border-border/50 bg-foreground/[0.025] overflow-hidden">
       {/* Header stripe */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30 bg-primary/[0.04]">
         <CalendarRange className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
         <span className="text-caption font-semibold text-foreground/80 flex-1">IAP Analysis</span>
-        <span className="text-[9px] font-mono uppercase tracking-widest text-amber-400/70 border border-amber-400/25 bg-amber-400/[0.08] rounded px-1.5 py-0.5 leading-none">
+        <span className="text-[9px] font-mono uppercase tracking-widest text-status-warning/70 border border-status-warning/25 bg-status-warning/[0.08] rounded px-1.5 py-0.5 leading-none">
           Setup required
         </span>
       </div>
@@ -131,14 +131,14 @@ function TrayAnalysisUnconfigured({ accountId }: { accountId: string }) {
         <div className="grid grid-cols-2 gap-1.5">
           <button
             onClick={() => navigate(`/app/account?account=${accountId}`)}
-            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg bg-primary/15 border border-primary/30 text-caption font-semibold text-interactive hover:bg-primary/25 transition-colors"
+            className="pressable flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg bg-primary/15 border border-primary/30 text-caption font-semibold text-interactive hover:bg-primary/25 transition-colors"
           >
             <UploadCloud className="w-3.5 h-3.5" />
             Upload CSV
           </button>
           <button
             onClick={() => navigate(`/app/account?account=${accountId}`)}
-            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-border/40 bg-white/[0.03] text-caption font-medium text-foreground/65 hover:text-foreground hover:bg-white/[0.06] transition-colors"
+            className="pressable flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-border/40 bg-foreground/[0.03] text-caption font-medium text-foreground/65 hover:text-foreground hover:bg-foreground/[0.06] transition-colors"
           >
             <Zap className="w-3.5 h-3.5" />
             Connect Meta
@@ -211,23 +211,23 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
   };
 
   return (
-    <div className="mx-4 rounded-xl border border-border/50 bg-white/[0.025] overflow-hidden">
+    <div className="mx-4 rounded-xl border border-border/50 bg-foreground/[0.025] overflow-hidden">
       {/* Header stripe */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30 bg-primary/[0.04]">
         <CalendarRange className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
         <span className="text-caption font-semibold text-foreground/80 flex-1">Run Analysis</span>
         {run?.status === "success" && (
-          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-emerald-400">
+          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-status-success">
             <CheckCircle2 className="w-3.5 h-3.5" /> Complete
           </span>
         )}
         {run?.status === "running" && (
-          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-amber-400">
+          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-status-warning">
             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Running
           </span>
         )}
         {run?.status === "error" && (
-          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-red-400">
+          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-status-danger">
             <XCircle className="w-3.5 h-3.5" /> Failed
           </span>
         )}
@@ -236,22 +236,22 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
       <div className="px-3 py-2.5 space-y-2.5">
         {/* Last run summary */}
         {run?.status === "success" && run.date_start && run.date_end && (
-          <div className="text-label text-muted-foreground/60 bg-emerald-400/[0.05] border border-emerald-400/15 rounded-lg px-2.5 py-1.5 leading-snug">
-            <span className="text-emerald-400/80 font-medium">Last run:</span>{" "}
+          <div className="text-label text-muted-foreground/75 bg-status-success/[0.05] border border-status-success/15 rounded-lg px-2.5 py-1.5 leading-snug">
+            <span className="text-status-success/80 font-medium">Last run:</span>{" "}
             {run.date_start} → {run.date_end}
             {run.rows_ingested != null && (
-              <span className="text-muted-foreground/40"> · {run.rows_ingested} rows</span>
+              <span className="text-muted-foreground/75"> · {run.rows_ingested} rows</span>
             )}
           </div>
         )}
         {run?.status === "error" && run.error_message && (
-          <div className="text-label text-red-400/80 bg-red-400/[0.05] border border-red-400/15 rounded-lg px-2.5 py-1.5 leading-snug line-clamp-2">
+          <div className="text-label text-status-danger/80 bg-status-danger/[0.05] border border-status-danger/15 rounded-lg px-2.5 py-1.5 leading-snug line-clamp-2">
             {run.error_message}
           </div>
         )}
 
         {/* Date range label */}
-        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/55">
+        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/75">
           Date window
         </p>
 
@@ -263,10 +263,10 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
               onClick={() => setDateRange(r.id)}
               disabled={isRunning}
               className={cn(
-                "h-7 rounded-lg border text-label font-semibold transition-colors",
+                "pressable h-7 rounded-lg border text-label font-semibold transition-colors",
                 dateRange === r.id
                   ? "border-primary/50 bg-primary/15 text-interactive"
-                  : "border-border/35 bg-white/[0.02] text-foreground/50 hover:bg-white/[0.05] hover:text-foreground/75",
+                  : "border-border/35 bg-foreground/[0.02] text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground/75",
                 isRunning && "opacity-40 cursor-not-allowed"
               )}
             >
@@ -276,7 +276,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
         </div>
 
         {error && (
-          <p className="text-label text-red-400 leading-snug">{error}</p>
+          <p className="text-label text-status-danger leading-snug">{error}</p>
         )}
 
         {/* Run / Re-run button — de-emphasised when recently run */}
@@ -285,7 +285,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
           (<button
             onClick={() => void handleRun()}
             disabled={startMutation.isPending}
-            className="w-full flex items-center justify-center gap-1.5 h-7 rounded-lg border border-border/30 bg-white/[0.02] text-caption font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.05] hover:border-border/50 transition-colors"
+            className="pressable-lg w-full flex items-center justify-center gap-1.5 h-7 rounded-lg border border-border/30 bg-foreground/[0.02] text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.05] hover:border-border/50 transition-colors"
           >
             {startMutation.isPending ? (
               <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Starting…</>
@@ -299,7 +299,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
             onClick={() => void handleRun()}
             disabled={isRunning || startMutation.isPending}
             className={cn(
-              "w-full flex items-center justify-center gap-2 h-8 rounded-lg text-body font-semibold transition-colors",
+              "pressable-lg w-full flex items-center justify-center gap-2 h-8 rounded-lg text-body font-semibold transition-colors",
               isRunning || startMutation.isPending
                 ? "bg-primary/10 border border-primary/20 text-interactive/50 cursor-not-allowed"
                 : "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -350,7 +350,7 @@ function UploadDataLink({ accountId }: { accountId: string }) {
   return (
     <button
       onClick={() => navigate(`/app/account?account=${accountId}`)}
-      className="w-full flex items-center gap-1.5 text-label text-muted-foreground/50 hover:text-foreground/70 transition-colors justify-center py-0.5"
+      className="pressable-lg w-full flex items-center gap-1.5 text-label text-muted-foreground/75 hover:text-foreground/70 transition-colors justify-center py-0.5"
     >
       <Upload className="w-3.5 h-3.5" />
       Upload / manage data files
@@ -404,7 +404,7 @@ function TrayCard({
   return (
     <div
       className={cn(
-        "relative rounded-lg border bg-white/[0.03] px-2.5 py-2 pl-[14px] pt-[4px] pb-[14px] space-y-1.5",
+        "relative rounded-lg border bg-foreground/[0.03] px-2.5 py-2 pl-[14px] pt-[4px] pb-[14px] space-y-1.5",
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:rounded-full",
         ACCENT[accent],
         muted ? "border-border/20 opacity-50" : "border-border/40"
@@ -432,14 +432,14 @@ function TrayItem({
     <TrayCard accent={accent}>
       <p className="font-medium text-foreground/90 line-clamp-2 text-[15px] pt-[4px] pb-[4px] mb-[10px] mt-[0px] pr-[40px]">{label}</p>
       {sub && (
-        <span className="inline-block font-semibold uppercase tracking-wide bg-white/[0.06] border border-border/30 rounded px-1.5 py-0.5 text-foreground/55 text-[15px]">
+        <span className="inline-block font-semibold uppercase tracking-wide bg-foreground/[0.06] border border-border/30 rounded px-1.5 py-0.5 text-foreground/55 text-[15px]">
           {sub}
         </span>
       )}
       {onAction && (
         <button
           onClick={onAction}
-          className="inline-flex items-center gap-1 font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded px-2 py-0.5 transition-colors text-[16px] pb-[4px] pt-[4px] pl-[8px] pr-[8px] ml-[2px] mr-[2px] mt-[4px] mb-[4px]"
+          className="pressable inline-flex items-center gap-1 font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded px-2 py-0.5 transition-colors text-[16px] pb-[4px] pt-[4px] pl-[8px] pr-[8px] ml-[2px] mr-[2px] mt-[4px] mb-[4px]"
         >
           {actionLabel}
           <ArrowRight className="w-3.5 h-3.5" />
@@ -461,7 +461,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             onClick={() => setTrayItemStatus(scopeId, id, "done")}
             aria-label="Mark complete"
             title="Mark complete"
-            className="mt-0.5 w-4 h-4 rounded border border-border/50 text-transparent hover:border-emerald-400/60 hover:bg-emerald-400/5 hover:text-emerald-400/60 flex items-center justify-center shrink-0 transition-colors"
+            className="pressable mt-0.5 w-4 hit-target-24 h-4 rounded border border-border/50 text-transparent hover:border-status-success/60 hover:bg-status-success/5 hover:text-status-success/60 flex items-center justify-center shrink-0 transition-colors"
           >
             <Check className="w-3.5 h-3.5" />
           </button>
@@ -472,9 +472,9 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             className={cn(
               "text-body font-medium leading-tight",
               status === "done"
-                ? "text-foreground/40 line-through"
+                ? "text-foreground/55 line-through"
                 : status === "archived"
-                  ? "text-foreground/40"
+                  ? "text-foreground/55"
                   : "text-foreground/90",
               href && !settled && "cursor-pointer hover:text-interactive transition-colors"
             )}
@@ -486,7 +486,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             <p className="text-label text-foreground/60 mt-0.5 leading-snug line-clamp-2">{sub}</p>
           )}
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <span className="text-[8px] font-semibold border border-border/30 bg-white/[0.05] px-1.5 py-0.5 rounded text-foreground/55 leading-none">
+            <span className="text-[8px] font-semibold border border-border/30 bg-foreground/[0.05] px-1.5 py-0.5 rounded text-foreground/55 leading-none">
               {KIND_LABEL[kind]}
             </span>
             {settled && (
@@ -494,8 +494,8 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
                 className={cn(
                   "text-[8px] font-semibold px-1.5 py-0.5 rounded leading-none border",
                   status === "done"
-                    ? "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-400/80"
-                    : "border-border/30 bg-white/[0.04] text-muted-foreground/60"
+                    ? "border-status-success/20 bg-status-success/[0.07] text-status-success/80"
+                    : "border-border/30 bg-foreground/[0.04] text-muted-foreground/75"
                 )}
               >
                 {status === "done" ? "Completed" : "Archived"}
@@ -511,7 +511,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
                 onClick={() => navigate(href)}
                 title="Open source"
                 aria-label={`Open source of "${title}"`}
-                className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-interactive hover:bg-white/5 transition-colors"
+                className="pressable w-5 hit-target-24 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-interactive hover:bg-foreground/5 transition-colors"
               >
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
@@ -520,7 +520,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
               onClick={() => setTrayItemStatus(scopeId, id, "archived")}
               title="Archive"
               aria-label={`Archive "${title}"`}
-              className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/5 transition-colors"
+              className="pressable w-5 hit-target-24 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/5 transition-colors"
             >
               <Archive className="w-3.5 h-3.5" />
             </button>
@@ -530,7 +530,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             onClick={() => setTrayItemStatus(scopeId, id, "open")}
             title="Move back to tray"
             aria-label={`Move "${title}" back to tray`}
-            className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/5 transition-colors shrink-0"
+            className="pressable w-5 hit-target-24 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/5 transition-colors shrink-0"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -553,9 +553,9 @@ function TrayNavLink({
   return (
     <button
       onClick={() => navigate(to)}
-      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-foreground/60 hover:text-foreground hover:bg-white/[0.04] transition-colors text-left min-w-0 text-[14px] font-semibold"
+      className="pressable-lg w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-foreground/60 hover:text-foreground hover:bg-foreground/[0.04] transition-colors text-left min-w-0 text-[14px] font-semibold"
     >
-      {Icon && <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50" />}
+      {Icon && <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/75" />}
       <span className="truncate font-extrabold text-[18px] text-metrix-cyan bg-metrix-panel border-t-[3px] border-r-[3px] border-b-[3px] border-l-[3px] rounded-tl-[8px] rounded-tr-[8px] rounded-br-[8px] rounded-bl-[8px] opacity-[0.94] ml-[14px] mr-[14px] mt-[8px] mb-[8px] pt-[8px] pb-[8px] pl-[20px] pr-[20px] border-t-[color:var(--color-sky-500)] border-r-[color:var(--color-sky-500)] border-b-[color:var(--color-sky-500)] border-l-[color:var(--color-sky-500)]">{label}</span>
       <ArrowRight className="w-3.5 h-3.5 ml-auto opacity-40 shrink-0" />
     </button>
@@ -578,11 +578,11 @@ function EmptySlot({
   const [, navigate] = useLocation();
   return (
     <div className="px-0.5 py-1.5 space-y-1">
-      <p className="text-foreground/40 text-[15px]">{message}</p>
+      <p className="text-foreground/55 text-[15px]">{message}</p>
       {nudgeLabel && nudgeTo && (
         <button
           onClick={() => navigate(nudgeTo)}
-          className="text-label text-interactive/70 hover:text-interactive font-semibold transition-colors flex items-center gap-1"
+          className="pressable text-label text-interactive/70 hover:text-interactive font-semibold transition-colors flex items-center gap-1"
         >
           {nudgeLabel}
           <ArrowRight className="w-3.5 h-3.5" />
@@ -708,14 +708,14 @@ export function TaskTray() {
             onClick={toggle}
             title="Expand task tray"
             aria-label="Expand task tray"
-            className="flex flex-col items-center gap-2 w-full px-1 text-muted-foreground/60 hover:text-primary transition-colors group"
+            className="pressable-lg flex flex-col items-center gap-2 w-full px-1 text-muted-foreground/75 hover:text-primary transition-colors group"
           >
             <div className="relative">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-white/[0.05] border border-border/40 group-hover:bg-white/[0.08] border-t-[0px] border-r-[0px] border-b-[0px] border-l-[0px]">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-foreground/[0.05] border border-border/40 group-hover:bg-foreground/[0.08] border-t-[0px] border-r-[0px] border-b-[0px] border-l-[0px]">
                 <ClipboardList
                   className={cn(
                     "w-4 h-4 transition-transform group-hover:scale-110",
-                    hasPriorityItems ? "text-emerald-400" : "text-muted-foreground/70"
+                    hasPriorityItems ? "text-status-success" : "text-muted-foreground/75"
                   )}
                 />
               </div>
@@ -723,7 +723,7 @@ export function TaskTray() {
                 <span className={cn(
                   "absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold leading-none px-1 tabular-nums border",
                   hasPriorityItems
-                    ? "bg-emerald-500 text-white border-emerald-400/50"
+                    ? "bg-status-success text-foreground border-status-success/50"
                     : "bg-primary text-primary-foreground border-primary/50"
                 )}>
                   {Math.min(totalItems, 9)}
@@ -736,13 +736,13 @@ export function TaskTray() {
             onClick={toggle}
             title="Expand task tray"
           >
-            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/25" />
+            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75" />
           </div>
           <button
             onClick={toggle}
             title="Expand"
             aria-label="Expand task tray"
-            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-white/[0.05] transition-colors"
+            className="pressable w-7 h-7 rounded flex items-center justify-center text-muted-foreground/75 hover:text-primary hover:bg-foreground/[0.05] transition-colors"
           >
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
@@ -750,12 +750,12 @@ export function TaskTray() {
       ) : (
       <>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-white/[0.02]">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-foreground/[0.02]">
         <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
           <ClipboardList className="w-4 h-4 text-interactive" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-label font-mono text-muted-foreground/50 uppercase tracking-widest leading-none mb-0.5 truncate">
+          <p className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest leading-none mb-0.5 truncate">
             Workflow
           </p>
           <p className="text-title font-semibold text-foreground leading-tight truncate">
@@ -767,7 +767,7 @@ export function TaskTray() {
         <button
           onClick={close}
           aria-label="Close task tray"
-          className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.06] transition-colors shrink-0"
+          className="pressable w-7 h-7 rounded flex items-center justify-center text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.06] transition-colors shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
@@ -789,7 +789,7 @@ export function TaskTray() {
         )}
 
         {/* ── My Tray — user-added actionable items ─────────────────── */}
-        <TraySection title="My Tray" count={openItems.length} accentColor="bg-emerald-400">
+        <TraySection title="My Tray" count={openItems.length} accentColor="bg-status-success">
           {openItems.length === 0 ? (
             <EmptySlot
               message='Nothing in your tray yet. Use "Add to Tray" on recommendations, hypotheses, and briefs as you browse.'
@@ -806,7 +806,7 @@ export function TaskTray() {
             <div className="mt-1">
               <button
                 onClick={() => setShowHistory((v) => !v)}
-                className="flex items-center gap-1 text-label text-muted-foreground/50 hover:text-foreground/60 transition-colors px-0.5 py-0.5"
+                className="pressable flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/60 transition-colors px-0.5 py-0.5"
               >
                 {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 History ({historyItems.length})
@@ -826,7 +826,7 @@ export function TaskTray() {
         <Divider />
 
         {/* ── Hypotheses ready to brief ─────────────────────────────── */}
-        <TraySection title="Ready to Brief" count={topHyps.length} accentColor="bg-violet-400">
+        <TraySection title="Ready to Brief" count={topHyps.length} accentColor="bg-primary">
           {topHyps.length === 0 ? (
             <EmptySlot
               message="No hypotheses queued for briefing"
@@ -876,7 +876,7 @@ export function TaskTray() {
         <Divider />
 
         {/* ── Top signals ───────────────────────────────────────────── */}
-        <TraySection title="Top Signals" count={topSignals.length} accentColor="bg-amber-400">
+        <TraySection title="Top Signals" count={topSignals.length} accentColor="bg-status-warning">
           {topSignals.length === 0 ? (
             <EmptySlot
               message="No active signals at this time"
@@ -910,8 +910,8 @@ export function TaskTray() {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-border/40 bg-white/[0.01]">
-        <p className="text-[9px] text-foreground/35 leading-snug">
+      <div className="px-4 py-2.5 border-t border-border/40 bg-foreground/[0.01]">
+        <p className="text-[9px] text-foreground/55 leading-snug">
           Action items update as you work through analysis, strategy &amp; briefs.
         </p>
       </div>

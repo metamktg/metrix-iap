@@ -46,7 +46,7 @@ export function FunnelStepsChart({ steps }: { steps: FunnelStep[] }) {
                     {convRate} conversion
                   </span>
                 ) : (
-                  <span className="text-[9px] font-mono text-muted-foreground/35">
+                  <span className="text-[9px] font-mono text-muted-foreground/75">
                     — no rate
                   </span>
                 )}
@@ -58,29 +58,29 @@ export function FunnelStepsChart({ steps }: { steps: FunnelStep[] }) {
               className={cn(
                 "rounded-lg border px-3 py-2.5 transition-colors",
                 hasData
-                  ? "border-border/35 bg-white/[0.02]"
-                  : "border-border/20 bg-white/[0.01] opacity-50"
+                  ? "border-border/35 bg-foreground/[0.02]"
+                  : "border-border/20 bg-foreground/[0.01] opacity-50"
               )}
             >
               <div className="flex items-center justify-between mb-1.5">
                 <span className={cn(
                   "text-label font-medium",
-                  hasData ? "text-foreground/80" : "text-muted-foreground/40"
+                  hasData ? "text-foreground/80" : "text-muted-foreground/75"
                 )}>
                   {step.label}
                 </span>
                 <span className={cn(
                   "text-body font-bold tabular-nums",
-                  hasData ? "text-foreground" : "text-muted-foreground/30"
+                  hasData ? "text-foreground" : "text-muted-foreground/75"
                 )}>
                   {hasData ? step.formatted : "No data"}
                 </span>
               </div>
               {/* Bar */}
-              <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+              <div className="h-1.5 rounded-full bg-foreground/[0.04] overflow-hidden">
                 <div
                   className={cn(
-                    "h-full rounded-full transition-all duration-700",
+                    "h-full rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-700",
                     hasData ? "bg-primary/50" : "bg-muted/20"
                   )}
                   style={{ width: hasData ? `${barW}%` : "0%" }}

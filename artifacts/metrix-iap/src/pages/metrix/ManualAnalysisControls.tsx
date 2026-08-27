@@ -36,7 +36,7 @@ import { guessedCreativeImports } from "./manualImportUtils";
 import { ImportConfidenceReport } from "./ImportConfidenceReport";
 import { InfoTooltip, DetailReveal, DenseText } from "./shared";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { splitWarningsBySeverity } from "@/lib/warningSeverity";
+import { CsvWarningsPanel } from "@/components/analysis/CsvWarningsPanel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,7 +81,7 @@ function RunAnalysisBtn({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium transition-colors",
+        "pressable flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium transition-colors",
         warning
           ? "bg-status-warning/15 border-status-warning/40 text-status-warning"
           : "bg-primary/15 border-primary/30 text-interactive",
@@ -129,17 +129,17 @@ function ColumnAliasGuide({
     <div className="rounded-md border border-border/30 overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-1.5 px-2.5 py-2 text-left hover:bg-white/[0.03] transition-colors"
+        className="pressable-lg w-full flex items-center gap-1.5 px-2.5 py-2 text-left hover:bg-foreground/[0.03] transition-colors"
       >
         {open ? (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         )}
         <span className="text-caption font-medium text-foreground/85">
           Accepted column name variants
         </span>
-        <span className="ml-auto text-label text-muted-foreground/55">
+        <span className="ml-auto text-label text-muted-foreground/75">
           common Meta UI aliases
         </span>
       </button>
@@ -154,7 +154,7 @@ function ColumnAliasGuide({
                 {aliasList.map((alias) => (
                   <span
                     key={alias}
-                    className="px-1.5 py-0.5 rounded bg-white/[0.05] border border-border/30 text-label text-muted-foreground/80 font-mono"
+                    className="px-1.5 py-0.5 rounded bg-foreground/[0.05] border border-border/30 text-label text-muted-foreground/80 font-mono"
                   >
                     {alias}
                   </span>
@@ -162,7 +162,7 @@ function ColumnAliasGuide({
               </div>
             </div>
           ))}
-          <p className="px-2.5 py-2 text-label text-muted-foreground/45 leading-relaxed">
+          <p className="px-2.5 py-2 text-label text-muted-foreground/75 leading-relaxed">
             The parser accepts these automatically — no need to rename columns before uploading.
           </p>
         </div>
@@ -194,10 +194,10 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
   };
 
   return (
-    <div className="rounded-lg border border-border/40 bg-white/[0.02] overflow-hidden">
+    <div className="rounded-lg border border-border/40 bg-foreground/[0.02] overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 p-3 text-left hover:bg-white/[0.02] transition-colors"
+        className="pressable-lg w-full flex items-center gap-2 p-3 text-left hover:bg-foreground/[0.02] transition-colors"
       >
         {open ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
@@ -216,7 +216,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
             <p className="text-caption text-muted-foreground/80">Loading format spec…</p>
           ) : (
             <>
-              <p className="text-label text-muted-foreground/70">
+              <p className="text-label text-muted-foreground/75">
                 Upload as CSV (preferred) or XLSX — same required columns either way.
               </p>
               <div className="rounded-md border border-border/30 p-2">
@@ -237,7 +237,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
                         "shrink-0 text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded",
                         g.required
                           ? "bg-primary/15 text-interactive border border-primary/25"
-                          : "bg-white/[0.04] text-muted-foreground/85 border border-border/30"
+                          : "bg-foreground/[0.04] text-muted-foreground/85 border border-border/30"
                       )}
                     >
                       {g.required ? "Required" : "Optional"}
@@ -255,7 +255,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
               </div>
               <button
                 onClick={downloadSample}
-                className="flex items-center gap-1.5 text-caption font-medium text-interactive hover:underline"
+                className="pressable flex items-center gap-1.5 text-caption font-medium text-interactive hover:underline"
               >
                 <Download className="w-3.5 h-3.5" /> Download a sample CSV
               </button>
@@ -285,91 +285,6 @@ export const DATE_RANGES: { id: AnalysisDateRange; label: string }[] = [
   { id: "all", label: "All uploaded data" },
 ];
 
-/**
- * Shows CSV column warnings from a completed analysis run.
- * Displayed when the parser auto-resolved column names (e.g. legacy "Date" → "Day"),
- * found missing columns, or spotted unrecognised columns that might map to
- * expected ones. Uses amber styling — the run succeeded, but at reduced
- * confidence for missing core metrics.
- */
-function CsvWarningsPanel({ run }: { run: AnalysisRun }) {
-  const [expanded, setExpanded] = useState(false);
-  const warnings = run.csv_warnings;
-  if (!warnings || warnings.length === 0) return null;
-
-  // Severity split (same classifier as the staging popup): routine
-  // auto-mapping notices collapse behind a count so the lines that carry a
-  // finding — coverage, ID corruption, re-run supersedes, reconciliation —
-  // are the ones a reader actually sees. Stored runs keep their warnings
-  // verbatim, so the classifier also understands older phrasings.
-  const { attention, notices } = splitWarningsBySeverity(warnings);
-  if (attention.length === 0 && notices.length === 0) return null;
-  const alarmed = attention.length > 0;
-  const hasReducedConfidence = attention.some((w) => w.includes("Reduced confidence") || w.includes("core metric"));
-
-  return (
-    <div
-      className={cn(
-        "rounded-lg border p-3 space-y-2",
-        alarmed ? "border-status-warning/30 bg-status-warning/[0.06]" : "border-border/40 bg-white/[0.02]",
-      )}
-    >
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-start gap-2 text-left"
-      >
-        <AlertTriangle className={cn("w-3.5 h-3.5 shrink-0 mt-0.5", alarmed ? "text-status-warning" : "text-muted-foreground/70")} />
-        <div className="flex-1 min-w-0">
-          <div className={cn("text-caption font-semibold", alarmed ? "text-status-warning" : "text-foreground/85")}>
-            {hasReducedConfidence
-              ? "Analysis succeeded with reduced confidence"
-              : alarmed
-                ? `Analysis succeeded — ${attention.length} warning${attention.length !== 1 ? "s" : ""} to review`
-                : "Analysis succeeded — routine column mappings only"}
-          </div>
-          <p className={cn("text-label mt-0.5", alarmed ? "text-status-warning/70" : "text-muted-foreground/70")}>
-            {hasReducedConfidence
-              ? "Some core metric columns were missing — key efficiency scores may be incomplete. "
-              : ""}
-            {attention.length > 0 && `${attention.length} warning${attention.length !== 1 ? "s" : ""}`}
-            {attention.length > 0 && notices.length > 0 && " · "}
-            {notices.length > 0 && `${notices.length} routine mapping notice${notices.length !== 1 ? "s" : ""}`}
-            {" "}
-            <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
-          </p>
-        </div>
-      </button>
-      {expanded && (
-        <div className={cn("space-y-1 pt-1 border-t", alarmed ? "border-status-warning/20" : "border-border/30")}>
-          {attention.length > 0 && (
-            <ul className="space-y-1">
-              {attention.map((w, i) => (
-                <li key={i} className="text-label text-status-warning/75 leading-relaxed">
-                  · {w}
-                </li>
-              ))}
-            </ul>
-          )}
-          {notices.length > 0 && (
-            <details className="group/run-notices pt-1">
-              <summary className="flex items-center gap-1 text-label text-muted-foreground/70 cursor-pointer hover:text-foreground/80 transition-colors [&::-webkit-details-marker]:hidden">
-                <ChevronRight className="w-3 h-3 shrink-0 transition-transform group-open/run-notices:rotate-90" />
-                {notices.length} routine notice{notices.length !== 1 ? "s" : ""} — automatic mappings &amp; optional columns (no action needed)
-              </summary>
-              <ul className="space-y-1 pl-4 pt-1">
-                {notices.map((w, i) => (
-                  <li key={i} className="text-label text-muted-foreground/70 leading-relaxed">
-                    · {w}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /**
  * Non-blocking objective coverage notices from a completed run: configured
@@ -385,21 +300,21 @@ function ObjectiveFlagsPanel({ run }: { run: AnalysisRun }) {
   const count = flags.length;
 
   return (
-    <div className="rounded-lg border border-sky-400/30 bg-sky-400/[0.06] p-3 space-y-2">
-      <button onClick={() => setExpanded((v) => !v)} className="w-full flex items-start gap-2 text-left">
-        <AlertTriangle className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
+    <div className="rounded-lg border border-primary/30 bg-primary/[0.06] p-3 space-y-2">
+      <button onClick={() => setExpanded((v) => !v)} className="pressable-lg w-full flex items-start gap-2 text-left">
+        <AlertTriangle className="w-3.5 h-3.5 text-interactive shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <div className="text-caption font-semibold text-sky-200">Objective coverage notices</div>
-          <p className="text-label text-sky-100/70 mt-0.5">
+          <div className="text-caption font-semibold text-interactive">Objective coverage notices</div>
+          <p className="text-label text-interactive/70 mt-0.5">
             {count} {count === 1 ? "notice" : "notices"} about configured objectives vs the data in this run — nothing was blocked, fabricated, or auto-enabled.{" "}
             <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
           </p>
         </div>
       </button>
       {expanded && (
-        <ul className="space-y-1 pt-1 border-t border-sky-400/20">
+        <ul className="space-y-1 pt-1 border-t border-primary/20">
           {flags.map((f, i) => (
-            <li key={i} className="text-label text-sky-100/75 leading-relaxed">
+            <li key={i} className="text-label text-interactive/75 leading-relaxed">
               · {f}
             </li>
           ))}
@@ -419,13 +334,13 @@ function StatusBadge({ run }: { run: AnalysisRun }) {
   }
   if (run.status === "success") {
     return (
-      <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-emerald-400">
+      <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-status-success">
         <CheckCircle2 className="w-3.5 h-3.5" /> Complete
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-red-400">
+    <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-status-danger">
       <XCircle className="w-3.5 h-3.5" /> Failed
     </span>
   );
@@ -506,13 +421,13 @@ export function GuessedMatchesCallout({
           </ul>
         </div>
       </div>
-      {error && <p className="text-caption text-red-400">{error}</p>}
+      {error && <p className="text-caption text-status-danger">{error}</p>}
       <div className="flex items-center gap-2 flex-wrap pt-0.5">
         <button
           onClick={() => void confirmAll()}
           disabled={confirming || updateMutation.isPending}
           className={cn(
-            "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
+            "pressable flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
             confirming || updateMutation.isPending
               ? "border-status-warning/30 text-status-warning/60 cursor-not-allowed"
               : "bg-status-warning/15 border-status-warning/40 text-status-warning hover:bg-status-warning/25"
@@ -531,7 +446,7 @@ export function GuessedMatchesCallout({
         {onReview && (
           <button
             onClick={onReview}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-status-warning/30 text-caption font-medium text-status-warning/85 hover:bg-status-warning/10 transition-colors"
+            className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-status-warning/30 text-caption font-medium text-status-warning/85 hover:bg-status-warning/10 transition-colors"
           >
             {reviewLabel ?? "Review & fix"}
           </button>
@@ -567,16 +482,16 @@ function CompletenessPanel({ accountId, runId }: { accountId: string; runId: str
       data-testid="analysis-completeness-panel"
       className={cn(
         "rounded-lg border p-3 space-y-2",
-        data.complete ? "border-emerald-400/25 bg-emerald-400/[0.05]" : "border-status-warning/30 bg-status-warning/[0.06]",
+        data.complete ? "border-status-success/25 bg-status-success/[0.05]" : "border-status-warning/30 bg-status-warning/[0.06]",
       )}
     >
       <div className="flex items-center gap-2">
         {data.complete ? (
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
         ) : (
           <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0" />
         )}
-        <span className={cn("text-caption font-semibold", data.complete ? "text-emerald-200" : "text-status-warning")}>
+        <span className={cn("text-caption font-semibold", data.complete ? "text-status-success" : "text-status-warning")}>
           {data.complete
             ? "Analysis validated — every module received data"
             : `Analysis incomplete — ${gaps.length} module${gaps.length !== 1 ? "s" : ""} missing data`}
@@ -586,14 +501,14 @@ function CompletenessPanel({ accountId, runId }: { accountId: string; runId: str
         {data.surfaces.map((s) => (
           <div key={s.key} className="flex items-center gap-1.5 min-w-0">
             {s.ok ? (
-              <CheckCircle2 className={cn("w-3 h-3 shrink-0", s.rows > 0 ? "text-emerald-400/80" : "text-muted-foreground/50")} />
+              <CheckCircle2 className={cn("w-3 h-3 shrink-0", s.rows > 0 ? "text-status-success/80" : "text-muted-foreground/75")} />
             ) : (
               <XCircle className="w-3 h-3 text-status-warning shrink-0" />
             )}
             <span className={cn("text-label truncate", s.ok ? "text-muted-foreground/80" : "text-status-warning/90")}>
               {s.label}
             </span>
-            <span className="text-label tabular-nums text-muted-foreground/50 ml-auto shrink-0">
+            <span className="text-label tabular-nums text-muted-foreground/75 ml-auto shrink-0">
               {s.rows.toLocaleString()} row{s.rows !== 1 ? "s" : ""}
             </span>
           </div>
@@ -602,7 +517,7 @@ function CompletenessPanel({ accountId, runId }: { accountId: string; runId: str
       {data.surfaces.some((s) => s.note) && (
         <div className="space-y-0.5 pt-0.5">
           {data.surfaces.filter((s) => s.note).map((s) => (
-            <p key={s.key} className="text-label text-muted-foreground/60 leading-relaxed">
+            <p key={s.key} className="text-label text-muted-foreground/75 leading-relaxed">
               {s.label}: {s.note}
             </p>
           ))}
@@ -658,9 +573,9 @@ function CreativeLinkageStatus({
       className={cn(
         "rounded-lg border p-3 space-y-2",
         allLinked
-          ? "border-emerald-400/25 bg-emerald-400/[0.04]"
+          ? "border-status-success/25 bg-status-success/[0.04]"
           : noneLinked
-          ? "border-border/40 bg-white/[0.02]"
+          ? "border-border/40 bg-foreground/[0.02]"
           : "border-status-warning/30 bg-status-warning/[0.06]"
       )}
     >
@@ -668,14 +583,14 @@ function CreativeLinkageStatus({
         <Images
           className={cn(
             "w-3.5 h-3.5 shrink-0 mt-px",
-            allLinked ? "text-emerald-400" : noneLinked ? "text-muted-foreground/70" : "text-status-warning"
+            allLinked ? "text-status-success" : noneLinked ? "text-muted-foreground/75" : "text-status-warning"
           )}
         />
         <div className="min-w-0 flex-1 space-y-1">
           <div
             className={cn(
               "text-caption font-semibold",
-              allLinked ? "text-emerald-300" : noneLinked ? "text-foreground/75" : "text-status-warning"
+              allLinked ? "text-status-success" : noneLinked ? "text-foreground/75" : "text-status-warning"
             )}
           >
             {allLinked
@@ -685,7 +600,7 @@ function CreativeLinkageStatus({
               : `${linked} of ${total} creatives linked — ${unlinked.length} ad ${unlinked.length === 1 ? "name" : "names"} unmatched`}
           </div>
           {noneLinked && (
-            <p className="text-label text-muted-foreground/70 leading-relaxed">
+            <p className="text-label text-muted-foreground/75 leading-relaxed">
               Map each staged creative file to an ad name in the upload panel, then re-sync to
               link them to this analysis run.
             </p>
@@ -715,11 +630,11 @@ function CreativeLinkageStatus({
           onClick={() => void handleResync()}
           disabled={syncMutation.isPending}
           className={cn(
-            "shrink-0 flex items-center gap-1 text-label font-medium border px-2.5 py-1.5 rounded transition-colors",
+            "pressable shrink-0 flex items-center gap-1 text-label font-medium border px-2.5 py-1.5 rounded transition-colors",
             allLinked
-              ? "border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10"
+              ? "border-status-success/30 text-status-success hover:bg-status-success/10"
               : noneLinked
-              ? "border-border/50 text-muted-foreground/80 hover:bg-white/5"
+              ? "border-border/50 text-muted-foreground/80 hover:bg-foreground/5"
               : "border-status-warning/30 text-status-warning hover:bg-status-warning/10",
             syncMutation.isPending && "opacity-50 cursor-not-allowed"
           )}
@@ -733,7 +648,7 @@ function CreativeLinkageStatus({
           Re-sync
         </button>
       </div>
-      {syncError && <p className="text-caption text-red-400">{syncError}</p>}
+      {syncError && <p className="text-caption text-status-danger">{syncError}</p>}
     </div>
   );
 }
@@ -821,22 +736,22 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
   const hasRequired = requiredMissing.length > 0;
 
   const renderProblemRow = (p: ProblemEntry, i: number) => (
-    <li key={i} className="text-label leading-relaxed" style={{ color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive) / 0.85)" : "hsl(var(--chart-4) / 0.75)" }}>
+    <li key={i} className="text-label leading-relaxed" style={{ color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive) / 0.85)" : "hsl(var(--status-warning) / 0.75)" }}>
       <span
         className={cn(
           "inline-block mr-1.5 px-1 py-px rounded text-label font-semibold uppercase tracking-wide border",
           p.isRequired && p.tier === "missing"
-            ? "bg-red-500/15 border-red-400/40 text-red-300"
+            ? "bg-status-danger/15 border-status-danger/40 text-status-danger"
             : "bg-status-warning/10 border-status-warning/30 text-status-warning"
         )}
       >
         {p.tier === "missing" ? "missing" : "low confidence"}
       </span>
-      <span className="font-medium" style={{ color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive))" : "hsl(var(--chart-4) / 0.9)" }}>{p.canonical}</span>
+      <span className="font-medium" style={{ color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive))" : "hsl(var(--status-warning) / 0.9)" }}>{p.canonical}</span>
       {p.found_as && p.tier === "inferred" && (
-        <span style={{ color: "hsl(var(--chart-4) / 0.55)" }}> (found as &ldquo;{p.found_as}&rdquo;)</span>
+        <span style={{ color: "hsl(var(--status-warning) / 0.55)" }}> (found as &ldquo;{p.found_as}&rdquo;)</span>
       )}
-      <span style={{ marginLeft: "0.25rem", color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive) / 0.45)" : "hsl(var(--chart-4) / 0.45)" }}>· {p.csvLabel}</span>
+      <span style={{ marginLeft: "0.25rem", color: p.isRequired && p.tier === "missing" ? "hsl(var(--destructive) / 0.45)" : "hsl(var(--status-warning) / 0.45)" }}>· {p.csvLabel}</span>
     </li>
   );
 
@@ -844,17 +759,17 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
     <div className="space-y-2">
       {/* ── Required-missing section (red) ─────────────────────────────── */}
       {hasRequired && (
-        <div className="rounded-lg border border-red-400/35 bg-red-500/[0.07] p-3 space-y-2">
+        <div className="rounded-lg border border-status-danger/35 bg-status-danger/[0.07] p-3 space-y-2">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="w-full flex items-start gap-2 text-left"
+            className="pressable-lg w-full flex items-start gap-2 text-left"
           >
-            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-3.5 h-3.5 text-status-danger shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <div className="text-caption font-semibold text-red-200">
+              <div className="text-caption font-semibold text-status-danger">
                 {requiredMissing.length} required breakdown column{requiredMissing.length > 1 ? "s" : ""} missing
               </div>
-              <p className="text-label text-red-100/70 mt-0.5 leading-relaxed">
+              <p className="text-label text-status-danger/70 mt-0.5 leading-relaxed">
                 These columns are load-bearing for analysis. Without them the run will likely produce
                 incomplete or failed results.{" "}
                 <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
@@ -862,7 +777,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
             </div>
           </button>
           {expanded && (
-            <ul className="space-y-1 pt-1 border-t border-red-400/20">
+            <ul className="space-y-1 pt-1 border-t border-status-danger/20">
               {requiredMissing.map((p, i) => renderProblemRow(p, i))}
             </ul>
           )}
@@ -874,7 +789,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
         <div className="rounded-lg border border-status-warning/30 bg-status-warning/[0.06] p-3 space-y-2">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="w-full flex items-start gap-2 text-left"
+            className="pressable-lg w-full flex items-start gap-2 text-left"
           >
             <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
@@ -898,18 +813,18 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
 
       {/* ── Optional columns not in this export (neutral notice) ───────── */}
       {optionalMissing.length > 0 && (
-        <div className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-2">
+        <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-3 space-y-2">
           <button
             onClick={() => setNoticesExpanded((v) => !v)}
-            className="w-full flex items-start gap-2 text-left"
+            className="pressable-lg w-full flex items-start gap-2 text-left"
           >
-            <Info className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
+            <Info className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <div className="text-caption font-medium text-foreground/75">
                 {optionalMissing.length} optional column{optionalMissing.length > 1 ? "s" : ""} not
                 included in this export
               </div>
-              <p className="text-label text-muted-foreground/65 mt-0.5 leading-relaxed">
+              <p className="text-label text-muted-foreground/75 mt-0.5 leading-relaxed">
                 Analysis proceeds without them — no action needed. Including them in a future
                 export deepens signal coverage.{" "}
                 <span className="underline cursor-pointer">{noticesExpanded ? "Hide" : "Show"} list</span>
@@ -919,12 +834,12 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
           {noticesExpanded && (
             <ul className="space-y-1 pt-1 border-t border-border/20">
               {optionalMissing.map((p, i) => (
-                <li key={i} className="text-label leading-relaxed text-muted-foreground/70">
-                  <span className="inline-block mr-1.5 px-1 py-px rounded text-label font-medium uppercase tracking-wide border bg-white/[0.03] border-border/40 text-muted-foreground/70">
+                <li key={i} className="text-label leading-relaxed text-muted-foreground/75">
+                  <span className="inline-block mr-1.5 px-1 py-px rounded text-label font-medium uppercase tracking-wide border bg-foreground/[0.03] border-border/40 text-muted-foreground/75">
                     not in export
                   </span>
                   <span className="font-medium text-foreground/70">{p.canonical}</span>
-                  <span className="ml-1 text-muted-foreground/45">· {p.csvLabel}</span>
+                  <span className="ml-1 text-muted-foreground/75">· {p.csvLabel}</span>
                 </li>
               ))}
             </ul>
@@ -981,23 +896,23 @@ function ImportHistoryPanel({
   };
 
   return (
-    <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden">
+    <div className="rounded-lg border border-border/30 bg-foreground/[0.02] overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
-        className="w-full flex items-center gap-2 px-2.5 py-2 text-left"
+        className="pressable-lg w-full flex items-center gap-2 px-2.5 py-2 text-left"
       >
-        <History className="w-3.5 h-3.5 text-muted-foreground/55 shrink-0" />
-        <span className="text-caption text-muted-foreground/70 leading-snug flex-1">
+        <History className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
+        <span className="text-caption text-muted-foreground/75 leading-snug flex-1">
           <span className="font-semibold text-foreground/80">
             Import history · {runsWithFiles.length} run{runsWithFiles.length !== 1 ? "s" : ""}
           </span>
           {" "}· Restage a past batch's files to regenerate analysis without re-uploading.
         </span>
         {expanded ? (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         )}
       </button>
       {expanded && (
@@ -1012,7 +927,7 @@ function ImportHistoryPanel({
                 <button
                   onClick={() => handleRestage(run.id)}
                   disabled={disabled || restagingRunId === run.id}
-                  className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-white/[0.02] text-label font-medium text-foreground/80 hover:bg-white/[0.05] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="pressable flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-foreground/[0.02] text-label font-medium text-foreground/80 hover:bg-foreground/[0.05] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {restagingRunId === run.id ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -1026,7 +941,7 @@ function ImportHistoryPanel({
                 {files.map((f) => (
                   <span
                     key={f.id}
-                    className="text-micro font-mono text-muted-foreground/50 border border-border/30 rounded px-1 py-0.5 truncate max-w-[160px]"
+                    className="text-micro font-mono text-muted-foreground/75 border border-border/30 rounded px-1 py-0.5 truncate max-w-[160px]"
                     title={f.filename}
                   >
                     {f.filename}
@@ -1037,7 +952,7 @@ function ImportHistoryPanel({
           ))}
         </div>
       )}
-      {restageError && <p className="text-caption text-red-400 px-2.5 pb-2">{restageError}</p>}
+      {restageError && <p className="text-caption text-status-danger px-2.5 pb-2">{restageError}</p>}
     </div>
   );
 }
@@ -1263,10 +1178,10 @@ export function AnalysisControls({
           onClick={() => setDateRange(r.id)}
           disabled={isRunning}
           className={cn(
-            "h-8 px-2 rounded-md border text-caption font-medium transition-colors",
+            "pressable h-8 px-2 rounded-md border text-caption font-medium transition-colors",
             dateRange === r.id
               ? "border-primary/40 bg-primary/[0.08] text-interactive"
-              : "border-border/40 bg-white/[0.02] text-muted-foreground/85 hover:bg-white/[0.04]",
+              : "border-border/40 bg-foreground/[0.02] text-muted-foreground/85 hover:bg-foreground/[0.04]",
             isRunning && "opacity-50 cursor-not-allowed"
           )}
         >
@@ -1295,14 +1210,14 @@ export function AnalysisControls({
 
   // Hard-block: at least one required report hasn't been staged yet
   const missingCsvWarningBox = missingRequiredCsv && !isRunning && (
-    <div className="rounded-lg border border-red-400/35 bg-red-500/[0.07] p-3">
+    <div className="rounded-lg border border-status-danger/35 bg-status-danger/[0.07] p-3">
       <div className="flex items-start gap-2">
-        <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+        <AlertTriangle className="w-3.5 h-3.5 text-status-danger shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0 space-y-1">
-          <div className="text-caption font-semibold text-red-200">
+          <div className="text-caption font-semibold text-status-danger">
             Both reports are required before running analysis
           </div>
-          <p className="text-label text-red-100/70 leading-relaxed">
+          <p className="text-label text-status-danger/70 leading-relaxed">
             Missing: {[!hasDemoCsv && "Demographics export", !hasPlacementCsv && "Placement export"]
               .filter(Boolean)
               .join(", ")}
@@ -1322,9 +1237,9 @@ export function AnalysisControls({
     <div className="space-y-3">
       {/* Existing-runs context strip */}
       {priorRuns.length > 0 && (
-        <div className="flex items-center gap-2 rounded-md border border-border/30 bg-white/[0.02] px-2.5 py-2">
-          <History className="w-3.5 h-3.5 text-muted-foreground/55 shrink-0" />
-          <span className="text-caption text-muted-foreground/70 leading-snug">
+        <div className="flex items-center gap-2 rounded-md border border-border/30 bg-foreground/[0.02] px-2.5 py-2">
+          <History className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
+          <span className="text-caption text-muted-foreground/75 leading-snug">
             <span className="font-semibold text-foreground/80">
               {priorRuns.length} existing run{priorRuns.length !== 1 ? "s" : ""}
             </span>
@@ -1382,18 +1297,18 @@ export function AnalysisControls({
         onConfirmed={() => void refetchImports()}
       />
 
-      {error && <p className="text-caption text-red-400">{error}</p>}
+      {error && <p className="text-caption text-status-danger">{error}</p>}
 
       {/* Soft-block warning when required breakdown columns are missing */}
       {!missingRequiredCsv && hasRequiredMissing && !isRunning && !forceRunAcknowledged && (
-        <div className="rounded-lg border border-red-400/35 bg-red-500/[0.07] p-3 space-y-2">
+        <div className="rounded-lg border border-status-danger/35 bg-status-danger/[0.07] p-3 space-y-2">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-3.5 h-3.5 text-status-danger shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0 space-y-1">
-              <div className="text-caption font-semibold text-red-200">
+              <div className="text-caption font-semibold text-status-danger">
                 Required columns are missing — this run will likely fail
               </div>
-              <p className="text-label text-red-100/70 leading-relaxed">
+              <p className="text-label text-status-danger/70 leading-relaxed">
                 One or more required breakdown columns (e.g. Age, Placement) were not found in your
                 file. Fix the file and re-upload it, or run anyway and review the error.
               </p>
@@ -1402,7 +1317,7 @@ export function AnalysisControls({
           <div className="flex items-center gap-2 pt-0.5">
             <button
               onClick={() => setForceRunAcknowledged(true)}
-              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-red-400/35 bg-red-500/[0.08] text-caption font-medium text-red-200 hover:bg-red-500/[0.14] transition-colors"
+              className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-status-danger/35 bg-status-danger/[0.08] text-caption font-medium text-status-danger hover:bg-status-danger/[0.14] transition-colors"
             >
               <PlayCircle className="w-3.5 h-3.5" /> Run anyway
             </button>
@@ -1420,7 +1335,7 @@ export function AnalysisControls({
               </span>
             )}
             {run.status === "error" && run.error_message && (
-              <span className="text-label text-red-400/80 truncate">{run.error_message}</span>
+              <span className="text-label text-status-danger/80 truncate">{run.error_message}</span>
             )}
           </div>
         ) : (
@@ -1494,11 +1409,11 @@ export function AnalysisControls({
               {run?.status === "success" ? 100 : (run?.progress_pct ?? 0)}%
             </span>
           </div>
-          <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+          <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
             <div
               className={cn(
                 "h-full rounded-full transition-[width] duration-700 ease-out",
-                run?.status === "success" ? "bg-emerald-400/70" : "bg-primary/70"
+                run?.status === "success" ? "bg-status-success/70" : "bg-primary/70"
               )}
               style={{
                 width: `${run?.status === "success" ? 100 : (run?.progress_pct ?? 0)}%`,
@@ -1525,7 +1440,7 @@ export function AnalysisControls({
                         ? "bg-primary/70"
                         : active
                         ? "bg-primary/40"
-                        : "bg-white/[0.08]"
+                        : "bg-foreground/[0.08]"
                     )}
                   />
                 );

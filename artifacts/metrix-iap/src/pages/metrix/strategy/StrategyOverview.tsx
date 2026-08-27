@@ -38,9 +38,9 @@ function pillarTier(cells: string[]): "high" | "medium" | "low" {
 }
 
 const TIER_STYLE: Record<string, string> = {
-  high:   "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
-  medium: "bg-amber-400/10 text-amber-300 border-amber-400/20",
-  low:    "bg-muted text-muted-foreground/60 border-border/40",
+  high:   "bg-status-success/10 text-status-success border-status-success/20",
+  medium: "bg-status-warning/10 text-status-warning border-status-warning/20",
+  low:    "bg-muted text-muted-foreground/75 border-border/40",
 };
 
 const TIER_LABEL: Record<string, string> = {
@@ -103,15 +103,15 @@ function PillarCoverageStrip({
                     {p.source_cells.length} cell{p.source_cells.length !== 1 ? "s" : ""}
                   </span>
                   {hypCount > 0 && (
-                    <span className={cn(TYPE.label, "text-muted-foreground/40 tabular-nums")}>
+                    <span className={cn(TYPE.label, "text-muted-foreground/75 tabular-nums")}>
                       {hypCount} hyp
                     </span>
                   )}
                 </div>
               </div>
-              <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+              <div className="h-1.5 rounded-full bg-foreground/[0.05] overflow-hidden">
                 <div
-                  className="h-full rounded-full transition-all duration-300"
+                  className="h-full rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300"
                   style={{
                     width: `${pct}%`,
                     background:
@@ -119,7 +119,7 @@ function PillarCoverageStrip({
                         ? "hsl(var(--metrix-success) / 0.8)"
                         : tier === "medium"
                           ? "hsl(var(--metrix-gold) / 0.8)"
-                          : "rgba(255,255,255,0.18)",
+                          : "hsl(var(--foreground) / 0.18)",
                   }}
                 />
               </div>
@@ -140,7 +140,7 @@ function PillarCoverageStrip({
                     ? "hsl(var(--metrix-success) / 0.8)"
                     : tier === "medium"
                       ? "hsl(var(--metrix-gold) / 0.8)"
-                      : "rgba(255,255,255,0.18)",
+                      : "hsl(var(--foreground) / 0.18)",
               }}
             />
             <span className={TYPE.label}>{TIER_LABEL[tier]}</span>
@@ -193,7 +193,7 @@ function VariableFamilyHeatmap({ pillars }: { pillars: MessagePillar[] }) {
             >
               {/* Family label */}
               <div className="flex items-center gap-1.5 pr-2">
-                <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 w-4 text-right")}>
+                <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/75 w-4 text-right")}>
                   {familyUsed}
                 </span>
                 <span className={cn(TYPE.label, "truncate")} title={f.label}>{f.label}</span>
@@ -211,7 +211,7 @@ function VariableFamilyHeatmap({ pillars }: { pillars: MessagePillar[] }) {
                       "rounded h-6 flex items-center justify-center border transition-opacity",
                       used
                         ? cn("border-transparent opacity-90", colorCls)
-                        : "border-border/20 bg-white/[0.02] opacity-40"
+                        : "border-border/20 bg-foreground/[0.02] opacity-40"
                     )}
                     title={
                       code
@@ -238,11 +238,11 @@ function VariableFamilyHeatmap({ pillars }: { pillars: MessagePillar[] }) {
 // ─── Per-lane playbook with individual collapse ───────────────────────
 
 const COLLAPSIBLE_LANE_CONFIG: readonly { key: string; label: string; accent: string }[] = [
-  { key: "scale_now",          label: "Scale now", accent: "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400" },
-  { key: "optimize",           label: "Optimize",  accent: "border-amber-400/25 bg-amber-400/[0.06] text-amber-300" },
+  { key: "scale_now",          label: "Scale now", accent: "border-status-success/25 bg-status-success/[0.06] text-status-success" },
+  { key: "optimize",           label: "Optimize",  accent: "border-status-warning/25 bg-status-warning/[0.06] text-status-warning" },
   { key: "validate",           label: "Validate",  accent: "border-accent/25 bg-accent/[0.06] text-accent" },
-  { key: "explore",            label: "Explore",   accent: "border-purple-400/25 bg-purple-400/[0.06] text-purple-300" },
-  { key: "avoid_combinations", label: "Avoid",     accent: "border-red-400/25 bg-red-400/[0.06] text-red-300" },
+  { key: "explore",            label: "Explore",   accent: "border-primary/25 bg-primary/[0.06] text-interactive" },
+  { key: "avoid_combinations", label: "Avoid",     accent: "border-status-danger/25 bg-status-danger/[0.06] text-status-danger" },
 ];
 
 function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<typeof getStrategyData>>["scaling_playbook"] }) {
@@ -276,7 +276,7 @@ function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<ty
                   })
                 }
                 aria-expanded={isOpen}
-                className="w-full flex items-center justify-between gap-2 text-left"
+                className="pressable-lg w-full flex items-center justify-between gap-2 text-left"
               >
                 <span className={TYPE.label}>{label} · {items.length}</span>
                 <ChevronDown
@@ -300,8 +300,8 @@ function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<ty
         })}
         {typeof playbook.budget_reallocation_note === "string" &&
           playbook.budget_reallocation_note && (
-            <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
-              <div className={cn(TYPE.label, "mb-1 text-muted-foreground/60")}>
+            <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
+              <div className={cn(TYPE.label, "mb-1 text-muted-foreground/75")}>
                 Budget reallocation
               </div>
               <DetailReveal
@@ -369,7 +369,7 @@ export function StrategyOverview() {
                     runningLabel="Generating strategy…"
                   />
                 ) : (
-                  <p className="text-caption text-muted-foreground/70">Needs completed analysis first.</p>
+                  <p className="text-caption text-muted-foreground/75">Needs completed analysis first.</p>
                 )}
               </div>
             </div>
@@ -533,13 +533,13 @@ export function StrategyOverview() {
                         key={p.id}
                         id={`pillar-${p.id}`}
                         className={cn(
-                          "rounded-xl border border-border/40 bg-white/[0.02] flex flex-col scroll-mt-4 overflow-hidden",
+                          "rounded-xl border border-border/40 bg-foreground/[0.02] flex flex-col scroll-mt-4 overflow-hidden",
                           tierAccent
                         )}
                       >
                         {/* ── Header: index + title + tier badge ── */}
                         <div className="px-4 pt-4 pb-3 flex items-start gap-2 border-b border-border/15">
-                          <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 mt-0.5 shrink-0 w-5 text-right")}>
+                          <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/75 mt-0.5 shrink-0 w-5 text-right")}>
                             {String(i + 1).padStart(2, "0")}
                           </span>
                           <div className="flex-1 min-w-0">
@@ -547,7 +547,7 @@ export function StrategyOverview() {
                               {t.main}
                             </p>
                             {t.qualifier && (
-                              <p className={cn(TYPE.caption, "line-clamp-1 mt-0.5 text-muted-foreground/55")}>
+                              <p className={cn(TYPE.caption, "line-clamp-1 mt-0.5 text-muted-foreground/75")}>
                                 {t.qualifier}
                               </p>
                             )}
@@ -567,14 +567,14 @@ export function StrategyOverview() {
                         <div className="px-4 py-3 flex flex-col gap-2.5 flex-1">
                           {/* Descriptor */}
                           {p.plain_descriptor && (
-                            <p className="text-caption text-muted-foreground/55 leading-relaxed line-clamp-2">
+                            <p className="text-caption text-muted-foreground/75 leading-relaxed line-clamp-2">
                               {deriveLabel(p.plain_descriptor, 130)}
                             </p>
                           )}
 
                           {/* Variable stack — most actionable signal, rendered prominently */}
                           <div>
-                            <span className={cn(TYPE.label, "text-muted-foreground/45 uppercase tracking-wide text-label mb-1.5 block")}>
+                            <span className={cn(TYPE.label, "text-muted-foreground/75 uppercase tracking-wide text-label mb-1.5 block")}>
                               What works
                             </span>
                             <VariableStackChips stack={p.variable_stack} />
@@ -583,7 +583,7 @@ export function StrategyOverview() {
                           {/* ICP chips */}
                           {(p.target_icps?.length ?? 0) > 0 && (
                             <div>
-                              <span className={cn(TYPE.label, "text-muted-foreground/45 uppercase tracking-wide text-label mb-1.5 block")}>
+                              <span className={cn(TYPE.label, "text-muted-foreground/75 uppercase tracking-wide text-label mb-1.5 block")}>
                                 Who responds
                               </span>
                               <IcpChips ids={p.target_icps} profiles={strategy.icp_profiles} />
@@ -616,7 +616,7 @@ export function StrategyOverview() {
                               <button
                                 onClick={() => setExpandedPillars((e) => ({ ...e, [p.id]: !isOpen }))}
                                 aria-expanded={isOpen}
-                                className="inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors w-full"
+                                className="pressable-lg inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors w-full"
                               >
                                 <ChevronDown className={cn("w-3 h-3 transition-transform shrink-0", isOpen && "rotate-180")} />
                                 <span>{linked.length} hypothes{linked.length !== 1 ? "es" : "is"}</span>
@@ -662,7 +662,7 @@ export function StrategyOverview() {
                         window.history.pushState({}, "", s.to);
                         window.dispatchEvent(new PopStateEvent("popstate"));
                       }}
-                      className="group rounded-xl border border-border/40 bg-white/[0.02] hover:bg-white/[0.045] hover:border-border/70 p-4 flex flex-col gap-3 transition-all no-underline"
+                      className="group rounded-xl border border-border/40 bg-foreground/[0.02] hover:bg-foreground/[0.045] hover:border-border/70 p-4 flex flex-col gap-3 transition-[color,background-color,border-color,box-shadow,opacity,transform] no-underline"
                     >
                       {/* Icon + label */}
                       <div className="flex items-center gap-2">
@@ -673,13 +673,13 @@ export function StrategyOverview() {
                       </div>
 
                       {/* Description — always visible */}
-                      <p className={cn(TYPE.caption, "text-muted-foreground/60 leading-relaxed flex-1")}>
+                      <p className={cn(TYPE.caption, "text-muted-foreground/75 leading-relaxed flex-1")}>
                         {s.desc}
                       </p>
 
                       {/* Stat + arrow */}
                       <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/20">
-                        <span className={cn(TYPE.label, "text-muted-foreground/50 font-mono")}>{s.stat}</span>
+                        <span className={cn(TYPE.label, "text-muted-foreground/75 font-mono")}>{s.stat}</span>
                         <span className={cn(TYPE.label, "text-interactive/60 group-hover:text-interactive transition-colors font-semibold")}>
                           Open →
                         </span>

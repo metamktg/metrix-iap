@@ -37,10 +37,10 @@ const SECTION = "MST · 06";
 const TIER_ORDER: ScalingBucket[] = ["scale_now", "optimize", "validate", "explore", "avoid"];
 
 const ROW_COLOR: Record<string, string> = {
-  "var(--green)": "border-emerald-400/30 bg-emerald-400/[0.04]",
-  "var(--blue)": "border-blue-400/30 bg-chart-1/[0.04]",
-  "var(--amber)": "border-amber-400/30 bg-amber-400/[0.04]",
-  "var(--purple)": "border-purple-400/30 bg-purple-400/[0.04]",
+  "var(--green)": "border-status-success/30 bg-status-success/[0.04]",
+  "var(--blue)": "border-primary/30 bg-chart-1/[0.04]",
+  "var(--amber)": "border-status-warning/30 bg-status-warning/[0.04]",
+  "var(--purple)": "border-primary/30 bg-primary/[0.04]",
 };
 
 // ─── Matrix ↔ rollup linkage ───────────────────────────────────────────
@@ -117,10 +117,10 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
             return (
               <div key={c.id} className={cn("p-2 text-center transition-opacity", dimmedCol(c.id) && "opacity-30")}>
                 <div className="text-body font-semibold text-foreground leading-tight whitespace-pre-line">{c.name}</div>
-                <div className="text-micro font-mono text-muted-foreground/40 mt-1">
+                <div className="text-micro font-mono text-muted-foreground/75 mt-1">
                   {c.id}
                   {perf && (
-                    <span className={cn("ml-1.5", (perf.results ?? 0) === 0 ? "text-amber-300/70" : "text-interactive/80")} data-testid={`matrix-col-perf-${c.id}`}>
+                    <span className={cn("ml-1.5", (perf.results ?? 0) === 0 ? "text-status-warning/70" : "text-interactive/80")} data-testid={`matrix-col-perf-${c.id}`}>
                       {perf.cpa != null ? `${fmtUSD(perf.cpa)} CPA` : "no conv."}
                     </span>
                   )}
@@ -133,7 +133,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
             <div key={row.id} className="contents">
               <div className={cn("p-2 flex flex-col justify-center rounded-l-lg border-l-2 my-0.5", ROW_COLOR[row.color] ?? "border-border/40")}>
                 <div className="text-body font-semibold text-foreground">Row {row.id}</div>
-                <div className="text-micro font-mono text-muted-foreground/50 mt-0.5">{row.shared}</div>
+                <div className="text-micro font-mono text-muted-foreground/75 mt-0.5">{row.shared}</div>
               </div>
               {matrix.columns.map((col) => {
                 const cell = cellOf(col.id, row.id);
@@ -159,11 +159,11 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                     data-testid={cell ? `matrix-cell-${cell.cell_id}` : undefined}
                     className={cn(
                       "m-0.5 p-2.5 rounded-lg border text-left min-h-[112px] flex flex-col gap-1.5 transition-opacity",
-                      isScale ? "border-primary/50 bg-primary/[0.06]" : "bg-white/[0.02]",
+                      isScale ? "border-primary/50 bg-primary/[0.06]" : "bg-foreground/[0.02]",
                       !isScale && diag === "diag_down" && "border-primary/40 ring-1 ring-primary/15",
-                      !isScale && diag === "diag_up" && "border-teal-400/40 ring-1 ring-teal-400/15",
+                      !isScale && diag === "diag_up" && "border-metrix-cyan/40 ring-1 ring-metrix-cyan/15",
                       !isScale && !diag && "border-border/40",
-                      clickable && "cursor-pointer hover:bg-white/[0.05] hover:border-primary/40 transition-colors",
+                      clickable && "cursor-pointer hover:bg-foreground/[0.05] hover:border-primary/40 transition-colors",
                       dimmedCol(col.id) && "opacity-30"
                     )}
                   >
@@ -175,12 +175,12 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                             onClick={(e) => { e.stopPropagation(); openCell(); }}
                             aria-label={`Open creative for ${cell.cell_id}`}
                             data-testid={`matrix-cell-creative-${cell.cell_id}`}
-                            className="h-11 w-full rounded-md bg-white/[0.05] hover:bg-white/[0.09] transition-colors flex items-center justify-center gap-1 text-micro font-medium text-muted-foreground/75"
+                            className="pressable-lg h-11 w-full rounded-md bg-foreground/[0.05] hover:bg-foreground/[0.09] transition-colors flex items-center justify-center gap-1 text-micro font-medium text-muted-foreground/75"
                           >
                             Creative <span className="text-interactive text-caption leading-none" aria-hidden="true">›</span>
                           </button>
                         )}
-                        <div className="text-micro font-mono text-muted-foreground/45">{cell.cell_id}</div>
+                        <div className="text-micro font-mono text-muted-foreground/75">{cell.cell_id}</div>
                         {cell.plain_text.headline && (
                           <div className="text-body font-semibold text-foreground leading-tight line-clamp-3">{cell.plain_text.headline}</div>
                         )}
@@ -191,21 +191,21 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                               isScale
                                 ? "bg-primary/25 text-interactive"
                                 : isAvoid
-                                  ? "bg-red-400/25 text-red-300"
+                                  ? "bg-status-danger/25 text-status-danger"
                                   : bucket
-                                    ? "bg-white/[0.06] text-foreground/70"
-                                    : "text-muted-foreground/35",
+                                    ? "bg-foreground/[0.06] text-foreground/70"
+                                    : "text-muted-foreground/75",
                             )}
                           >
                             {bucket ? BUCKET_LABEL[bucket] : "—"}
                           </span>
-                          <span className={cn(TYPE.label, "font-medium", isScale ? "text-interactive" : "text-muted-foreground/55")}>
+                          <span className={cn(TYPE.label, "font-medium", isScale ? "text-interactive" : "text-muted-foreground/75")}>
                             {perf?.confidence ?? ""}
                           </span>
                         </div>
                       </>
                     ) : (
-                      <div className="text-caption text-muted-foreground/60">—</div>
+                      <div className="text-caption text-muted-foreground/75">—</div>
                     )}
                   </div>
                 );
@@ -254,10 +254,10 @@ function TopConceptsTable({ rollup, book }: { rollup: ConceptRollupRow[]; book: 
                 <tr key={`${r.book}:${r.concept}`}>
                   <td className="font-medium text-foreground/90">{r.book} · {r.concept}</td>
                   <td className="text-right tabular-nums text-foreground/85">{fmtUSD(r.cpa!)}</td>
-                  <td className={cn("text-right tabular-nums", lift == null ? "text-muted-foreground/40" : lift >= 0 ? "text-emerald-400" : "text-red-300")}>
+                  <td className={cn("text-right tabular-nums", lift == null ? "text-muted-foreground/75" : lift >= 0 ? "text-status-success" : "text-status-danger")}>
                     {lift == null ? "—" : `${lift >= 0 ? "+" : ""}${fmtPct(lift)}`}
                   </td>
-                  <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : <span className={cn(TYPE.label, "text-muted-foreground/35")}>—</span>}</td>
+                  <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : <span className={cn(TYPE.label, "text-muted-foreground/75")}>—</span>}</td>
                 </tr>
               );
             })}
@@ -331,12 +331,12 @@ export function MstSprintsView() {
                 <div className="flex gap-6">
                   {windowLabel && (
                     <div className="text-right">
-                      <div className={cn(TYPE.microLabel, "text-muted-foreground/50")}>Window</div>
+                      <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Window</div>
                       <div className={cn(TYPE.body, "font-medium text-foreground/90 tabular-nums")}>{windowLabel}</div>
                     </div>
                   )}
                   <div className="text-right">
-                    <div className={cn(TYPE.microLabel, "text-muted-foreground/50")}>Cells mapped</div>
+                    <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Cells mapped</div>
                     <div className={cn(TYPE.body, "font-medium text-foreground/90 tabular-nums")}>
                       {matrix.cells.length} / {matrix.columns.length * matrix.rows.length}
                     </div>
@@ -348,7 +348,7 @@ export function MstSprintsView() {
 
               {availableTiers.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/40")}>
+                  <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75")}>
                     Filter by tier
                   </span>
                   <SegmentedToggle
@@ -361,7 +361,7 @@ export function MstSprintsView() {
                     onChange={(id) => setTierFilter(id as ScalingBucket | "all")}
                   />
                   {tierFilter !== "all" && (
-                    <span className="text-caption text-muted-foreground/50">
+                    <span className="text-caption text-muted-foreground/75">
                       Other columns dim — click a cell for its detail regardless of tier
                     </span>
                   )}
@@ -388,8 +388,8 @@ export function MstSprintsView() {
               />
               <div className="flex items-center gap-4 text-caption text-muted-foreground/75 flex-wrap">
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-primary/40 ring-1 ring-primary/15 inline-block" /> Primary diagonal (↘)</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-teal-400/40 ring-1 ring-teal-400/15 inline-block" /> Counter diagonal (↗)</span>
-                <span className="text-muted-foreground/60">Tier tags come from the scaling playbook at concept level · click any cell for granular performance</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-metrix-cyan/40 ring-1 ring-metrix-cyan/15 inline-block" /> Counter diagonal (↗)</span>
+                <span className="text-muted-foreground/75">Tier tags come from the scaling playbook at concept level · click any cell for granular performance</span>
                 <span className="ml-auto"><CrossLink to="/app/mst/cross-map" label="See crossmap results" /></span>
               </div>
 

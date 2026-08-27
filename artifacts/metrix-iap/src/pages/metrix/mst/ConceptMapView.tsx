@@ -232,7 +232,7 @@ function ConceptGroupList({
   if (groups.length === 0) {
     return (
       <div className="px-6 py-8">
-        <p className={cn(TYPE.body, "text-muted-foreground/50 text-center")}>No concepts match this filter.</p>
+        <p className={cn(TYPE.body, "text-muted-foreground/75 text-center")}>No concepts match this filter.</p>
       </div>
     );
   }
@@ -245,20 +245,20 @@ function ConceptGroupList({
           <button
             key={g.name}
             onClick={() => onSelect(g)}
-            className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 transition-all hover:border-primary/35 hover:bg-primary/[0.04] hover:-translate-y-px"
+            className="pressable-lg text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 transition-[color,background-color,border-color,box-shadow,opacity,transform] hover:border-primary/35 hover:bg-primary/[0.04] hover:-translate-y-px"
             data-testid={`concept-group-${g.name}`}
           >
             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
               {g.cellIds.map((c) => (
-                <span key={c} className={cn(TYPE.label, "font-mono text-muted-foreground/70 border border-border/30 px-1 py-0.5 rounded leading-none")}>{c}</span>
+                <span key={c} className={cn(TYPE.label, "font-mono text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none")}>{c}</span>
               ))}
             </div>
             <p className={cn(TYPE.title, "leading-tight")}>{g.name}</p>
 
-            <div className="mt-3 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+            <div className="mt-3 h-1.5 rounded-full bg-foreground/[0.06] overflow-hidden">
               <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "hsl(var(--chart-1) / 0.65)" }} />
             </div>
-            <div className={cn("flex items-center justify-between mt-1.5", TYPE.label, "text-muted-foreground/60 tabular-nums")}>
+            <div className={cn("flex items-center justify-between mt-1.5", TYPE.label, "text-muted-foreground/75 tabular-nums")}>
               <span>{fmtUSD(g.spend, 0)} spend</span>
               <span>{fmtNum(g.results)} results</span>
               <span>{g.cpa != null ? fmtUSD(g.cpa) : "—"} CPA</span>
@@ -271,7 +271,7 @@ function ConceptGroupList({
                   <span key={p.id} className={cn(TYPE.label, "text-interactive/85 border border-primary/25 bg-primary/[0.08] px-1.5 py-0.5 rounded leading-none")}>{p.label}</span>
                 ))
               ) : (
-                <span className={cn(TYPE.label, "text-muted-foreground/60")}>No pillar linked yet</span>
+                <span className={cn(TYPE.label, "text-muted-foreground/75")}>No pillar linked yet</span>
               )}
             </div>
           </button>

@@ -57,6 +57,7 @@ import type {
   CreateAdAccountResult,
   CreateGoogleDocInput,
   CreateGoogleDocResult,
+  DailySeriesResult,
   DeconstructCreativesInput,
   GenerateStrategyInput,
   GeneratedReportCreateInput,
@@ -1745,6 +1746,94 @@ export function useGetAnalysisSummaryByDateRange<TData = Awaited<ReturnType<type
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAnalysisSummaryByDateRangeQueryOptions(accountId,start,end,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAccountDailySeriesUrl = (accountId: string,
+    start: string,
+    end: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/timeseries/${start}/${end}`
+}
+
+/**
+ * ad_performance is stored one row per ad per day; the seed aggregates that grain away into window totals. This returns it, day by day, for trend charts. Rates are recomputed from the summed numerator and denominator, never averaged across ads. Reach is per-day as measured and must not be summed across days (it is a deduplicated people count). Days inside the span with no rows are reported in missing_days rather than emitted as zeroes, so a trend line never implies continuity the data lacks.
+ * @summary Daily metric series for an account over a date range
+ */
+export const getAccountDailySeries = async (accountId: string,
+    start: string,
+    end: string, options?: RequestInit): Promise<DailySeriesResult> => {
+
+  return customFetch<DailySeriesResult>(getGetAccountDailySeriesUrl(accountId,start,end),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountDailySeriesQueryKey = (accountId: string,
+    start: string,
+    end: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/timeseries/${start}/${end}`
+    ] as const;
+    }
+
+
+export const getGetAccountDailySeriesQueryOptions = <TData = Awaited<ReturnType<typeof getAccountDailySeries>>, TError = ErrorType<ApiError>>(accountId: string,
+    start: string,
+    end: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountDailySeries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountDailySeriesQueryKey(accountId,start,end);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountDailySeries>>> = ({ signal }) => getAccountDailySeries(accountId,start,end, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined && start !== null && start !== undefined && end !== null && end !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountDailySeries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountDailySeriesQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountDailySeries>>>
+export type GetAccountDailySeriesQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Daily metric series for an account over a date range
+ */
+
+export function useGetAccountDailySeries<TData = Awaited<ReturnType<typeof getAccountDailySeries>>, TError = ErrorType<ApiError>>(
+ accountId: string,
+    start: string,
+    end: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountDailySeries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountDailySeriesQueryOptions(accountId,start,end,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

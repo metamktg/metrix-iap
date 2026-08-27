@@ -1,0 +1,432 @@
+# METRIX IAP · Phase 3 · Command Deck makeover master plan
+
+Text extracted 2026-08-27 from the published design artifact
+(claude.ai/code/artifact/88f8dbf5-9a6b-4209-a0e0-18c82ceb82ff), rendered in a
+browser and dumped, so the executable spec is in the repo rather than only in a
+link. The artifact is the source of truth; this is a faithful copy of its prose
+plus the token values read out of its own stylesheet.
+
+## Token values read from the artifact's :root
+
+    --bg              #0A0E17      --accent          #5B9DFF
+    --surface         #11151F      --accent-fill     #2E6BFF
+    --surface-2       #161B27      --accent-tint     #14233F
+    --surface-3       #1B2130      --accent-border   #2E4E82
+    --border          #262D3D      --intel           #45E0E6
+    --border-soft     rgba(255,255,255,0.07)
+    --text-primary    #FAFBFF      --success         #38DDA0
+    --text-body       #D9DEE9      --danger          #FF7A87
+    --text-secondary  #ABB3C4      --warning         #FFB454
+    --text-muted      #7E869A      (each status also has -tint and -border)
+    --code            #9EC0F2      --font-sans       Open Sans
+
+Note: those are the DOCUMENT's own tokens. The spec it describes names a
+different set for the product itself — §01 below — and that set is what the
+IAP implements:
+
+    --mx-blue #155dff · --mx-cyan #16d9ff · --mx-neutral #8796ac
+    --mx-success #35d96f · --mx-danger #ff4f61 · --mx-warning #f7c948
+
+---
+
+METRIX IAP · PHASE 3 · CLAUDE CODE EXECUTION PLAN
+Command Deck
+Makeover master plan
+
+Full CSS, shell, component, and data-surface overhaul for the Metrix IAP — hybrid of the v2.0 electric-blue cockpit and Nocturne's tonal-ramp discipline, built strictly on top of UI/UX Pass Phases 1–5 and the surgical repair pass.
+
+Progressive-disclosure order is fixed for every module this plan describes: decision (the number/verdict) → evidence (what supports it) → explanation (methodology, source, identifiers). This document itself follows that order top to bottom — invariants and tokens before shell mechanics, shell before epics, epics before the field-level coverage audit.
+
+metamktg/metrix-iap @ main
+v3 token spec included
+Repo file · PHASE3_MASTER_PLAN.md
+Why this won't look like the rest
+KILL
+
+Gauge dials · rainbow multi-hue KPI grids · glossy tilted-mockup framing · generic "top products" donuts · neumorphic drop shadows. The genre default everyone converges on — Madgicx, Hyros, generic GoHighLevel-style templates — is the same navy-neon dashboard with mismatched accent colors bolted onto every card.
+
+KEEP — THE ACTUAL BETS
+
+The Loop Spine as navigation, not a menu · the MST 4×4 matrix as a hero object nobody else has · evidence chips tracing every claim to source cells · honesty states as a designed language instead of a screen that ships empty.
+
+The edge isn't prettier gauges. It's that every number on screen has a receipt.
+
+00
+Binding invariants
+
+Validate these before and after every epic. They're established, tested behavior from Phases 1–5 and the repair pass — a Phase 3 change that breaks one is a regression, not a redesign.
+
+I1
+Honesty pattern
+
+UI never fabricates. Null seed fields render honest pending states; signal-card structured fields render only when producer-supplied, never derived from prose.
+
+I2
+Cohort-awareness
+
+No ROAS / purchase-funnel hardcoding. Terminal metrics come from cohort configuration (ecommerce · lead_gen · service · app).
+
+I3
+Locked IA
+
+navTree.ts is the single source of truth. Shell geometry may change; the 10 sections, routes, badge keys and dataSource annotations do not.
+
+I4
+Disclosure rulebook
+
+No sentences on the first layer. Typography roles from typography.ts only. Ratcheting gate: per-file violation counts may only go down.
+
+I5
+A11y floor (Phase 4)
+
+Focus traps on dialogs, reduced-motion respected, keyboard rows in virtual tables, aria-labels on icon-only controls, focus-visible rings everywhere.
+
+I6
+Execute-on-command
+
+The IAP loop never auto-runs. Ingestion refreshes data; the UI only recommends the next runnable stage.
+
+I7
+Test suite is a contract
+
+704 + 209 + 55 tests green at every epic boundary. Existing data-testids (e.g. row-audience-segment-*) are kept.
+
+01
+Hybrid v3 token system
+KEEP — METRIX V2.0 IDENTITY
+
+Deep-navy grounds (#020711 / #050b18) · electric blue #155dff primary · cyan #16d9ff intelligence accent · filled-blue primary CTA · 7-level surface scale · high density · dark-only.
+
+ADOPT — NOCTURNE DISCIPLINE
+
+OKLCH 100–900 tonal ramps per role, replacing alpha-tint literals · accent as line and glow, never flood · rules fade to transparent at their ends · outlined secondaries · 2px accent focus-visible everywhere.
+
+New ramps — --mx-<role>-100…900, shared perceptual lightness scale
+--mx-blue
+#155dff
+--mx-cyan
+#16d9ff
+--mx-neutral
+#8796ac
+--mx-success
+#35d96f
+--mx-danger
+#ff4f61
+--mx-warning
+#f7c948
+
+Tints, hovers and borders come from ramp steps — 700–900 for fills on dark ground, 100–300 for text on tints — replacing every rgba(21,93,255,0.12)-style literal. Swatches above are illustrative; generate finals in OKLCH.
+
+Changed tokens (everything else keeps its v2.0 value)
+Token
+v2.0
+v3
+--radius
+14px (sm 10 / md 12 / xl 18)
+10px (sm 6 / md 8 / lg 14 — modals keep 14)
+card shadow
+3-layer stack incl. ambient blue glow on every card
+inset hairline + soft ambient dark; glow removed from resting state
+.elevation-*
+flat / raised / floating with glow
+same names glowless; new .elevation-active carries the only ambient blue glow
+section rules
+solid 1px borders
+.mx-rule — fades to transparent at both ends (short accent marks stay solid)
+--ring
+ring-primary/40 ≈ 2.8:1 (deferred Phase 5 item)
+--mx-blue-400 ≥ 3:1 — closes the follow-up
+02
+Shell rethink — the Command Deck
+
+navTree.ts stays the single source of truth — the 10 locked sections, routes and badges are untouched. The chrome around them is rebuilt into five zones.
+
+metrix
+Bookster
+Jun 1 – Aug 15
+Run · latest ✓
+1 · SCOPE BAR
+ICON RAIL
+03 · Analysis
+Ad Performance
+IAP Library
+Creative DNA
+Audience
+CONTEXT COLUMN
+Data ✓
+Analysis ✓
+Strategy ▸ next
+Briefs
+Report
+LOOP SPINE
+
+Main content — module views unchanged in IA, restyled to v3, evidence-linked.
+
+⌘K command palette overlays here
+
+Signal tray
+Critical · 1
+Important · 3
+Tasks · 2
+1Scope Bar
+
+One 48px strip owns ALL scope: brand · account switcher · date range · run scope · loop chip · user. Absorbs per-module ScopeBanner; scoped account name still renders in module headers so scoping tests hold.
+
+2Icon Rail + Context Column
+
+56px rail = the 10 locked sections, numbered and badged. Selecting opens a 200px column of that section's children + command-center landing. Mobile keeps the overlay pattern.
+
+3Loop Spine
+
+The IAP loop (Data → Analysis → Strategy → Briefs → Report → Re-run) as a persistent stage row on account scope, statuses from loop_status; full LoopCommandChain stays on command-center pages.
+
+4Signal Tray
+
+Right rail (46 → 320px) merging the Task Tray with a live Listen feed ranked by normalized priority; null priority renders the raw impact string, never a substituted bucket.
+
+5Command Palette (⌘K)
+
+Navigate sections and accounts, trigger only actions that already have a button today — never a new auto-run path.
+
+A sixth zone: the Universal Data Module
+every analytical card, one shared contract
+
+Every module built on AnalysisData / StrategyData / MST rows shares one component, not a bespoke chart per page: a view switcher across the shapes that data actually supports, and a breakdown control that correlates any metric against any IAP registry variable or audience/device segment.
+
+Ad performance — CPA by concept
+Trend
+Compare
+Breakdown
+Funnel
+Map
+Table
+Testimonial problem-hook (UGC)
+$18.40
+Founder-led PAS framework
+$23.60
+Before / after visual proof
+$30.10
+Cold statistic hook
+$41.85
+Generic feature callout
+$63.20
+Metric · CPA
+Variable · Hook family
+Segment · Age 45–54
+Trend
+Funnel
+Map
+Table
+
+One switcher, four honest renderings of the same evidence — no view fabricates data the shape doesn't have.
+
+Data shape
+Views this data actually supports
+performance_by_cell / concept_rollup
+Trend · Compare · Table
+v3_variable_performance / top_checkout_variables
+Compare · Breakdown · Table
+demographic_registration_signal
+Breakdown · Table
+v3_placement_signal / device_delivery_signal
+Compare · Breakdown · Table
+historical_matrix_4x4
+Map (the matrix itself)
+icp_profiles + performance_data
+Map (positioning) · Table
+adds_to_cart / checkouts_initiated / purchases
+Funnel · Trend
+
+No module offers a view its data can't back — Placements never gets a 7-slice donut (>5 categories reads as a bar, not a pie), and the matrix's Map view is the literal 4×4 grid, not a generic scatterplot.
+
+03
+Epic roadmap
+E0 → E8, dependency order
+E0
+Alignment & regression baseline
+Prerequisite
+
+Snapshot the present before touching it: full validation gate, Playwright screenshot corpus of every route at 3 viewports, disclosure-rulebook baseline recorded, BUG_TRACKER.md overlaps folded in.
+
+Files
+none changed · corpus → docs/resources/phase3-baseline/
+Acceptance
+All gates green; before-corpus committed; open bug overlaps triaged into epics.
+E1
+v3 token layer
+Prerequisite
+
+Implement the hybrid token spec: OKLCH ramps, .mx-rule, glowless elevation + .elevation-active, radius retune, ring contrast fix; mechanical sweep of alpha-tint call sites.
+
+Files
+index.css · tailwind config · ~26 known call sites · grep rgba(21,93,255 / rgba(86,140,255 / bg-[hsl(
+Acceptance
+Zero raw alpha-tint literals in components; text ≥4.5:1, chrome ≥3:1; rulebook baseline unchanged or lower; visual diff vs E0.
+E2
+Command Deck shell
+Shell rethink
+
+The five-zone shell of §02: Scope Bar, Icon Rail + Context Column, Loop Spine, Signal Tray, ⌘K palette. navTree.ts data untouched.
+
+Files
+components/layout/* (12) · App.tsx · components/tray/* · loop/LoopCommandChain.tsx (compact variant) · useNavBadges.ts
+Acceptance
+All routes render in new shell; rail/column/palette fully keyboard-operable; 375px overlay works; nav tests unweakened.
+E3
+Overviews & first-run
+Priority screens
+
+Manager Overview (fleet grid + per-account loop minimap, cohort-aware totals band, read-only recommendation cards kept), Account Overview (loop spine hero, Current Focus + Layer Status restyled, metric tiles + diagnostic modal intact), Onboarding/UnconfiguredState checklists restyled not restructured.
+
+Files
+ManagerOverview.tsx · AdAccountOverview.tsx · OverviewLoopHub.tsx · shared.tsx (UnconfiguredState) · OnboardingWizard.tsx · AddAccountDialog.tsx
+Acceptance
+Loop semantics unchanged (dataComplete ≠ analysisComplete; report count account-scoped); ROAS still excluded from tiles by design; overview tests green.
+E4
+Analysis suite + Universal Data Module
+Priority screens
+
+All seven analysis views on v3, AND builds the shared Universal Data Module (view switcher + metric × variable × segment breakdown control, §02) that every later analytical surface consumes. Stage-2 intelligence chips (buying_intent_score, performance_tier, lift) on IAP Library; device panel from device_delivery_signal with conversion-attributed fallback + basis note; cross-links cells → MST / pillars.
+
+Files
+pages/metrix/analysis/* (16) · components/data-module/ViewSwitcher.tsx (new) · components/data-module/BreakdownControl.tsx (new) · lib/data/metricsCatalog.ts · normalize.ts (chips)
+Acceptance
+Every AnalysisData field surfaced or explicitly dispositioned; audience drill + testids intact; latest-successful-run scoping respected; ViewSwitcher/BreakdownControl ship as shared components, not per-page reimplementations, and only offer views their data shape actually supports.
+E5
+Strategy suite
+Priority screens
+
+Strategy Map as pillar → source_cells evidence map; full ICP profiles (face = name/code/measured chips, theory in drawer); scaling playbook buckets + variable combinations panel; hypothesis ↔ pillar linkage only when pillar_id exists. Consumes E4's Universal Data Module for ICP positioning-map and pillar breakdown views.
+
+Files
+pages/metrix/strategy/* (8) · scalingBuckets.ts · strategyShared
+Acceptance
+Provenance (generated vs imported) badged; GenerationErrorNote + Retry untouched; unattached hypotheses stay unattached.
+E6
+MST — matrix as hero
+Priority screens
+
+4×4 matrix hero from historical_matrix_4x4: row colors, diagonal overlays + roles, cell detail with variable stack, avatar → ICP links only via matched_profile_ids. Sprints, Variable library, render-policy caveat all preserved; Direction stays honest-pending. Consumes E4's Universal Data Module for the matrix's Map view and cross-variable breakdown.
+
+Files
+pages/metrix/mst/* (9) · mst-analysis.ts
+Acceptance
+Matrix arrow-key navigable, Enter opens detail; no fabricated cell content; caveat renders.
+E7
+Seed coverage closure
+Data surfacing
+
+Work the §04 register to 100% dispositioned. New surfaces: Data Health (data_quality flags, campaign_windows, caveats, variable_registry incl. registry_missing) and Creative Scan review completeness (detected vs brief_variables side-by-side with per-variable confidence).
+
+Files
+listen/* · analysis/history · creative/scan · docs/resources/phase3-coverage.md
+Acceptance
+Register shows every field surfaced / behind drilldown / intentionally-not with reason.
+E8
+Hardening & sign-off
+Validation
+
+Full a11y re-walk on v3 tokens, responsive re-shoot vs E0 corpus, keyboard walkthrough of shell + matrix, forbidden-terms sweep, PHASE3_PASS_SUMMARY.md evidence report.
+
+Files
+BUG_TRACKER.md · PHASE3_PASS_SUMMARY.md
+Acceptance
+Every §00 invariant re-verified with evidence; all gates green; after-corpus committed.
+04
+Seed JSON coverage audit
+from seedTypes.ts · 18 fields dispositioned
+Seed field
+Status
+Phase 3 plan
+Epic
+result_totals_by_event
+Partial
+Per-event totals band on Manager Overview, cohort-aware
+E3
+recommendation_cards
+Surfaced
+Keep read-only cards (repair P2); retint to v3
+E3
+performance_by_cell funnel counts
+Partial
+adds_to_cart / checkouts / purchases columns where present, cohort-gated
+E4
+concept_rollup Stage-2 fields
+Gap
+buying_intent_score · performance_tier · lift as IAP Library chips + drilldown
+E4
+device_delivery_signal
+Gap
+Device panel in Placements (real spend basis)
+E4
+conversion_tracking_signal
+Gap
+Funnel-attributed device/platform/placement panel; no CPA/CTR by design; render the basis note
+E4
+campaign_windows + data_caveat
+Partial
+Data Health surface: windows, coverage, caveat strings
+E7
+intelligence (open record)
+Gap
+Audit real keys from live fixture; surface summary + failure patterns in Analysis overview
+E4·E7
+data_quality flags
+Partial
+Data Health surface (kind-typed flag rows)
+E7
+loop_status
+Surfaced
+Loop spine + full chain
+E2
+SignalCard structured contract
+Partial
+Listen cards lead with metric_value/priority when supplied; null ⇒ prose fallback, never derived
+E2
+icp_profiles full fields
+Partial
+Drawer completeness: psychographic, behavioral, funnel entry, resonance
+E5
+variable_combinations + scaling_playbook
+Partial
+Dedicated Strategy panel: scale_now / optimize / validate / explore / avoid
+E5
+matrix diagonals + matched_profile_ids
+Partial
+Diagonal overlays + avatar → ICP links (absent ⇒ no link)
+E6
+creative_deconstructions
+Partial
+Detected vs brief_variables side-by-side, per-variable confidence, status workflow
+E7
+ads[] registry (uncoded ads)
+Partial
+Tile for every ad via performance aggregate; Ads Manager deep-link gating unchanged
+E4
+variable_registry (registry_missing)
+Gap
+Data Health honesty row for ST_/AW_/CTA_ missing families
+E7
+workspace_settings (billing, notifications)
+Partial
+Verify all fields render — low priority (Settings out of priority scope)
+E7
+
+Method note — before E4, diff the live seed fixture (src/test-fixtures/metrix_seed_bundle.json) against this register — intelligence and metadata are open records and must be audited from data, not types.
+
+05
+Validation gates
+run at every epic close
+$ pnpm run typecheck
+$ pnpm --filter @workspace/metrix-iap run test
+$ pnpm --filter @workspace/scripts run check:disclosure-rulebook
+$ pnpm --filter @workspace/scripts run check:api-codegen-drift
+$ pnpm run build
+
+Plus a Playwright screenshot pass at 1440 / 768 / 375 against the E0 baseline corpus, and a keyboard walk of any changed flow. Suite floor: 704 + 209 + 55 tests green at every epic boundary.
+
+What "disruptive" must never mean: new nav sections · auto-running loop stages · fabricated placeholders · prose-first card faces · ROAS assumptions · weakened tests. The category-differentiating bets are the loop spine, matrix-as-hero MST, unified scope bar, evidence-linked strategy, and the honesty system rendered as a first-class visual language.
+
+Sources: replit.md · METRIX_DESIGN_BRIEF.html · navTree.ts · seedTypes.ts · UI_UX_PASS_SUMMARY.md · REPAIR_INVENTORY.md
+Full executable spec: PHASE3_MASTER_PLAN.md · 2026-08-26
+Made with Claude Design

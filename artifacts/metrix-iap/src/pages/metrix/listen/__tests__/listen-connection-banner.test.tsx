@@ -246,14 +246,15 @@ describe("SignalView — disconnected", () => {
     expect(screen.getByText(/^scopes$/i)).toBeTruthy();
   });
 
-  it("renders seed signal cards as buttons", () => {
+  it("renders seed signal cards, each openable", () => {
     render(<SignalView />, { wrapper: makeWrapper("/app/listen/signal") });
-    // The signal list renders each card as a <button>; with 4 bookster
-    // signals, at least one scope-filtered card must be present.
-    const cards = screen.getAllByRole("button").filter(
-      (b) => b.closest(".space-y-3") !== null
-    );
+    // Asserted on the SEMANTICS, not on a container class. The previous
+    // version looked for buttons inside `.space-y-3`, so it broke the moment
+    // the list became a grid of <article> cards — while the behaviour it
+    // cared about (signals render, and each one opens) was unchanged.
+    const cards = screen.getAllByRole("article");
     expect(cards.length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: /^Detail:/ }).length).toBe(cards.length);
   });
 
   it("shows ConnectionNudgeBanner when Meta is disconnected", () => {

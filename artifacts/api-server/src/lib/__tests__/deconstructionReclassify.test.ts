@@ -32,12 +32,20 @@ function builder(table: string) {
   let payload: Row | Row[] | null = null;
   let onConflict: string[] | null = null;
   let wantRows = false;
+  let range: { from: number; to: number } | null = null;
 
   const rowsMatching = () => (db[table] ?? []).filter((r) => filters.every((f) => matches(r, f.field, f.value, f.op)));
 
   const exec = () => {
     db[table] ??= [];
-    if (action === "select") return { data: rowsMatching().map((r) => ({ ...r })), error: null };
+    if (action === "select") {
+      const all = rowsMatching().map((r) => ({ ...r }));
+      // Model PostgREST's range semantics rather than ignoring them: a fake
+      // that returns everything regardless of .range() would hide exactly
+      // the pagination bugs the real client has (see lib/paginatedSelect).
+      const data = range ? all.slice(range.from, range.to + 1) : all;
+      return { data, error: null };
+    }
     if (action === "delete") {
       const doomed = new Set(rowsMatching());
       db[table] = db[table]!.filter((r) => !doomed.has(r));
@@ -84,6 +92,7 @@ function builder(table: string) {
     not: () => api,
     order: () => api,
     limit: () => api,
+    range: (from: number, to: number) => ((range = { from, to }), api),
     then: (resolve: (v: any) => any, reject?: (e: any) => any) => Promise.resolve(exec()).then(resolve, reject),
   };
   return api;

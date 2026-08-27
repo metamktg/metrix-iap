@@ -163,12 +163,12 @@ export function CellCreativeUploadDialog({
 
         {status === "success" ? (
           <div className="flex flex-col items-center gap-3 py-6">
-            <CheckCircle className="w-8 h-8 text-emerald-400" />
+            <CheckCircle className="w-8 h-8 text-status-success" />
             <p className="text-body text-center text-muted-foreground">
               Creative filed to <span className="font-mono text-interactive">{cellId}</span> — the library will refresh automatically.
             </p>
             {validation && (
-              <div className="w-full flex items-center gap-1.5 justify-center text-caption text-muted-foreground/70">
+              <div className="w-full flex items-center gap-1.5 justify-center text-caption text-muted-foreground/75">
                 <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                 {matched
                   ? `Matched the cell's DNA${validation.overall_confidence != null ? ` · ${Math.round(validation.overall_confidence * 100)}% confidence` : ""}`
@@ -178,17 +178,17 @@ export function CellCreativeUploadDialog({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="mt-1 text-caption text-muted-foreground/60 hover:text-muted-foreground transition-colors underline underline-offset-2"
+              className="pressable mt-1 text-caption text-muted-foreground/75 hover:text-muted-foreground transition-colors underline underline-offset-2"
             >
               Close
             </button>
           </div>
         ) : status === "confirm" && validation ? (
           <div className="space-y-3 py-1">
-            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <div className="space-y-1.5 text-caption text-amber-200/90">
-                <p className="font-medium text-amber-200">Doesn't match this cell's recorded DNA</p>
+            <div className="flex items-start gap-2 rounded-lg border border-status-warning/30 bg-status-warning/10 px-3 py-2.5">
+              <AlertTriangle className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
+              <div className="space-y-1.5 text-caption text-status-warning/90">
+                <p className="font-medium text-status-warning">Doesn't match this cell's recorded DNA</p>
                 {validation.missing.length > 0 && (
                   <p>Missing: <span className="font-mono">{validation.missing.join(", ")}</span></p>
                 )}
@@ -207,14 +207,14 @@ export function CellCreativeUploadDialog({
               <button
                 type="button"
                 onClick={() => { setStatus("idle"); setValidation(null); }}
-                className="flex-1 py-2 rounded-lg text-body font-medium border border-border/50 text-muted-foreground hover:text-foreground transition-colors"
+                className="pressable flex-1 py-2 rounded-lg text-body font-medium border border-border/50 text-muted-foreground hover:text-foreground transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => void upload(true)}
-                className="flex-1 py-2 rounded-lg text-body font-medium bg-amber-500/90 text-black hover:bg-amber-500 transition-colors"
+                className="pressable flex-1 py-2 rounded-lg text-body font-medium bg-status-warning/90 text-background hover:bg-status-warning transition-colors"
               >
                 Upload anyway
               </button>
@@ -250,7 +250,7 @@ export function CellCreativeUploadDialog({
                   />
                 )
               ) : (
-                <div className="flex flex-col items-center gap-2 text-muted-foreground/60 select-none">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground/75 select-none">
                   <Upload className="w-6 h-6" />
                   <span className="text-caption text-center px-4">
                     Drop an image or video, or click to browse
@@ -268,7 +268,7 @@ export function CellCreativeUploadDialog({
                     reset();
                   }}
                   title="Remove file"
-                  className="absolute top-1.5 right-1.5 z-10 p-0.5 rounded-full bg-black/60 text-white/80 hover:text-white transition-colors"
+                  className="pressable absolute top-1.5 right-1.5 z-10 p-0.5 rounded-full bg-background/60 text-foreground/80 hover:text-foreground transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -282,7 +282,7 @@ export function CellCreativeUploadDialog({
                     fileRef.current?.click();
                   }}
                   title="Replace file"
-                  className="absolute bottom-1.5 left-1.5 z-10 text-[9px] font-medium px-1.5 py-0.5 rounded bg-black/60 text-white/70 hover:text-white transition-colors"
+                  className="pressable absolute bottom-1.5 left-1.5 z-10 text-[9px] font-medium px-1.5 py-0.5 rounded bg-background/60 text-foreground/70 hover:text-foreground transition-colors"
                 >
                   Replace
                 </button>

@@ -28,11 +28,11 @@ const SECTION = "MST · 06";
 const BUCKET_ORDER: ScalingBucket[] = ["scale_now", "optimize", "validate", "explore", "avoid"];
 
 const BUCKET_STYLE: Record<ScalingBucket, string> = {
-  scale_now: "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400",
-  optimize: "border-amber-400/25 bg-amber-400/[0.06] text-amber-300",
+  scale_now: "border-status-success/25 bg-status-success/[0.06] text-status-success",
+  optimize: "border-status-warning/25 bg-status-warning/[0.06] text-status-warning",
   validate: "border-accent/25 bg-accent/[0.06] text-accent",
-  explore: "border-purple-400/25 bg-purple-400/[0.06] text-purple-300",
-  avoid: "border-red-400/25 bg-red-400/[0.06] text-red-300",
+  explore: "border-primary/25 bg-primary/[0.06] text-interactive",
+  avoid: "border-status-danger/25 bg-status-danger/[0.06] text-status-danger",
 };
 
 const BUCKET_ICON: Record<ScalingBucket, React.ComponentType<{ className?: string }>> = {
@@ -130,15 +130,15 @@ export function MstDirectionView() {
               <CaveatNote text="Automated variable re-weighting isn't a running job yet — Direction reads this account's current scaling playbook (Strategy → generate strategy) and applies it to every measured concept. Re-run Strategy to refresh it." />
 
               {visible.length === 0 ? (
-                <p className={cn(TYPE.body, "text-muted-foreground/50 py-6 text-center")}>No concepts classified yet — generate strategy to populate the playbook.</p>
+                <p className={cn(TYPE.body, "text-muted-foreground/75 py-6 text-center")}>No concepts classified yet — generate strategy to populate the playbook.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {visible.map(({ row, bucket, rationale }) => {
                     const Icon = BUCKET_ICON[bucket];
                     return (
-                      <div key={`${row.book}:${row.concept}`} className="rounded-xl border border-border/40 bg-white/[0.02] p-4" data-testid={`direction-concept-${row.book}-${row.concept}`}>
+                      <div key={`${row.book}:${row.concept}`} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4" data-testid={`direction-concept-${row.book}-${row.concept}`}>
                         <div className="flex items-center justify-between gap-2 mb-2.5">
-                          <span className={cn(TYPE.label, "font-mono text-muted-foreground/70")}>{row.book} · {row.concept}</span>
+                          <span className={cn(TYPE.label, "font-mono text-muted-foreground/75")}>{row.book} · {row.concept}</span>
                           <span className={cn("inline-flex items-center gap-1 text-label font-semibold border px-1.5 py-0.5 rounded leading-none", BUCKET_STYLE[bucket])}>
                             <Icon className="w-3 h-3" />
                             {BUCKET_LABEL[bucket]}
@@ -162,14 +162,14 @@ export function MstDirectionView() {
               )}
 
               {unclassified.length > 0 && (
-                <p className={cn(TYPE.caption, "text-muted-foreground/50")}>
+                <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
                   {unclassified.length} measured concept{unclassified.length !== 1 ? "s" : ""} not yet named in the playbook — {unclassified.map((r) => `${r.book} ${r.concept}`).join(", ")}.
                 </p>
               )}
 
               {typeof playbook.budget_reallocation_note === "string" && playbook.budget_reallocation_note && (
-                <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
-                  <div className={cn(TYPE.label, "mb-1 text-muted-foreground/60")}>Budget reallocation</div>
+                <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
+                  <div className={cn(TYPE.label, "mb-1 text-muted-foreground/75")}>Budget reallocation</div>
                   <DetailReveal
                     label={deriveLabel(playbook.budget_reallocation_note, 100)}
                     labelClassName={TYPE.body}

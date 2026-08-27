@@ -87,6 +87,8 @@ export * from './creativeDeconstruction';
 export * from './creativeDeconstructionDetectedCopy';
 export * from './creativeDeconstructionStatus';
 export * from './creativeLinkResult';
+export * from './dailySeriesPoint';
+export * from './dailySeriesResult';
 export * from './deconstructCreativesInput';
 export * from './detectedCreativeVariable';
 export * from './eventPref';

@@ -16,6 +16,7 @@
 //   per-cell attribution uses only the per-cell rows.
 
 import type { AnalysisData, DemographicRow, MST } from "@/lib/data/seedTypes";
+import { sumStrict as sharedSumStrict, numberOrNull } from "@/lib/strict-sum";
 
 /** Sentinel cell id used by manual demographic uploads for the account-level aggregate grain. */
 export const ACCOUNT_LEVEL_CELL_ID = "ACCOUNT";
@@ -97,20 +98,13 @@ export interface SegmentRawTotals {
   addsToCartValue: number | null;
 }
 
-function numberOrNull(v: unknown): number | null {
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
-
-/** Strict nullable sum: null when there are no rows or any row lacks the field. */
+/**
+ * Strict nullable sum: null when there are no rows or any row lacks the
+ * field. Delegates to `lib/strict-sum` so this file no longer carries its
+ * own copy of the policy — there is one definition of a trustworthy sum.
+ */
 function sumStrict(rows: DemographicRow[], pick: (r: DemographicRow) => unknown): number | null {
-  if (rows.length === 0) return null;
-  let total = 0;
-  for (const r of rows) {
-    const v = numberOrNull(pick(r));
-    if (v == null) return null;
-    total += v;
-  }
-  return total;
+  return sharedSumStrict(rows, pick);
 }
 
 export function computeSegmentTotals(rows: DemographicRow[]): SegmentRawTotals {

@@ -34,25 +34,25 @@ export function StrategyHistoryView() {
             ) : (
               <SectionCard title="Latest run" desc={run.model ? `Model: ${run.model}` : undefined}>
                 <div className="flex items-center gap-2 mb-3">
-                  {run.status === "running" && <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />}
-                  {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-                  {run.status === "error" && <XCircle className="w-4 h-4 text-red-400" />}
+                  {run.status === "running" && <Loader2 className="w-4 h-4 text-status-warning animate-spin" />}
+                  {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-status-success" />}
+                  {run.status === "error" && <XCircle className="w-4 h-4 text-status-danger" />}
                   <span className="text-title font-semibold text-foreground capitalize">{run.status}</span>
                 </div>
                 <dl className="grid grid-cols-2 gap-3 text-body">
                   <div>
-                    <dt className="text-muted-foreground/70">Started</dt>
+                    <dt className="text-muted-foreground/75">Started</dt>
                     <dd className="text-foreground/90">{new Date(run.started_at).toLocaleString()}</dd>
                   </div>
                   {run.finished_at && (
                     <div>
-                      <dt className="text-muted-foreground/70">Finished</dt>
+                      <dt className="text-muted-foreground/75">Finished</dt>
                       <dd className="text-foreground/90">{new Date(run.finished_at).toLocaleString()}</dd>
                     </div>
                   )}
                 </dl>
                 {run.error_message && (
-                  <p className="text-caption text-red-400/90 mt-3">{run.error_message}</p>
+                  <p className="text-caption text-status-danger/90 mt-3">{run.error_message}</p>
                 )}
               </SectionCard>
             )}

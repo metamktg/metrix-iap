@@ -100,3 +100,42 @@ describe("cellInRunScope", () => {
     expect(cellInRunScope(multiRun, { allTime: false, selectedRunIds: ["run-c"] }, "C2B")).toBe(false);
   });
 });
+
+// ─── The concept hint is read from a typed field, not an index cast (R2) ─
+//
+// `filterByRun` used to reach for the hint through
+// `(r as Record<string, unknown>)["concept_variable"]`. If that field were
+// renamed on CellPerformanceRow, the read would have gone on returning
+// undefined: the hint silently disappears, rows whose cell_id doesn't
+// encode their concept fall back to conceptForCell, and they quietly leave
+// or join the scope with no compiler error and no runtime warning. The
+// field is now a typed indexed access (ConceptHint), so a rename fails the
+// build — these cases pin the behaviour that hole was hiding.
+describe("cellInRunScope · explicit concept hint", () => {
+  // concept_rollup is keyed by concept code ("C2"), which conceptForCell
+  // derives from a cell id ("C2B" → "C2").
+  const analysis = analysisWith([
+    { concept: "C2", manual_analysis_run_id: "run_1" },
+    { concept: "C4", manual_analysis_run_id: "run_2" },
+  ]);
+  const runIds = getConceptRunIds(analysis);
+  const selectRun1 = { allTime: false, selectedRunIds: ["run_1"] };
+
+  it("scopes a row whose cell_id does not encode its concept, via the hint", () => {
+    // An ad-name cell_id (the LittleData historical shape) carries no
+    // concept prefix, so only the hint can place it.
+    expect(cellInRunScope(runIds, selectRun1, "Some Ad Name 2024", "C2")).toBe(true);
+    expect(cellInRunScope(runIds, selectRun1, "Some Ad Name 2024", "C4")).toBe(false);
+  });
+
+  it("keeps a row that no hint or cell_id can place, rather than dropping it", () => {
+    // Unplaceable is not the same as out of scope — we can't honestly
+    // exclude what we can't attribute.
+    expect(cellInRunScope(runIds, selectRun1, "Some Ad Name 2024", null)).toBe(true);
+  });
+
+  it("falls back to the cell_id when no hint is supplied", () => {
+    expect(cellInRunScope(runIds, selectRun1, "C2B", null)).toBe(true);
+    expect(cellInRunScope(runIds, selectRun1, "C4E", null)).toBe(false);
+  });
+});

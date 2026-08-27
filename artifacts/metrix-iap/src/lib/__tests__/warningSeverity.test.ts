@@ -2,7 +2,7 @@
 // run-history panel must agree on what counts as routine.
 
 import { describe, expect, it } from "vitest";
-import { splitWarningsBySeverity, isInformationalWarning } from "../warningSeverity";
+import { splitWarningsBySeverity, isInformationalWarning, hasReducedConfidence } from "../warningSeverity";
 
 describe("splitWarningsBySeverity", () => {
   it("classifies current-format lines", () => {
@@ -67,5 +67,40 @@ describe("currency-suffix resolution is a notice, not an attention line", () => 
     expect(notices).toHaveLength(1);
     expect(attention).toHaveLength(1);
     expect(attention[0]).toContain("please verify");
+  });
+});
+
+// ─── Reduced-confidence headline is classified, not substring-matched (E-b) ─
+//
+// The panel used to decide its headline inline with
+// `w.includes("Reduced confidence") || w.includes("core metric")`. That is
+// behaviour keyed on prose: a copy edit to the parser's message silently
+// demotes "Analysis succeeded with reduced confidence" to a generic
+// warning count, and the one line telling the user their efficiency
+// metrics are incomplete disappears. These pin the classification against
+// the producer's ACTUAL wording, so the two can't drift apart quietly.
+describe("hasReducedConfidence", () => {
+  // Verbatim from iapCsvParser's core-metric branch.
+  const PRODUCER_LINE =
+    "⚠ Reduced confidence: core metric columns are missing and will be null — " +
+    "Impressions, Reach. Key analysis metrics (efficiency scores, CTR, CPM calculations) will be incomplete.";
+
+  it("recognises the message the parser actually emits", () => {
+    expect(hasReducedConfidence([PRODUCER_LINE])).toBe(true);
+  });
+
+  it("still recognises it if the headline half is reworded", () => {
+    expect(hasReducedConfidence(["Note: core metric columns are missing and will be null — Reach."])).toBe(true);
+  });
+
+  it("does not fire on routine mapping notices", () => {
+    expect(hasReducedConfidence([
+      "Note: \"Date\" matched automatically to \"Day\" (via alias match) — no action needed.",
+      "Note: supplementary metric columns not found (will be null): Frequency.",
+    ])).toBe(false);
+  });
+
+  it("does not fire on an empty warning set", () => {
+    expect(hasReducedConfidence([])).toBe(false);
   });
 });

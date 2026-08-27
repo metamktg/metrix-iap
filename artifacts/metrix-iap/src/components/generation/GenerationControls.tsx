@@ -290,14 +290,14 @@ export function GenerationProgressBar({
           <span>{progressPercent}%</span>
         </span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
         <div
           className="h-full rounded-full bg-primary/70 transition-[width] duration-700 ease-out"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
       {showClock && typeof typicalSeconds === "number" && (
-        <div className="text-caption text-muted-foreground/60" data-testid="generation-pace-note">
+        <div className="text-caption text-muted-foreground/75" data-testid="generation-pace-note">
           {pacePhrase(elapsedSeconds, typicalSeconds)}
         </div>
       )}
@@ -326,7 +326,7 @@ export function GenerationErrorNote({ message, onRetry }: { message: string | nu
         {onRetry && (
           <button
             onClick={onRetry}
-            className="mt-1.5 text-caption font-medium text-status-warning hover:text-status-warning/80 underline underline-offset-2 transition-colors"
+            className="pressable mt-1.5 text-caption font-medium text-status-warning hover:text-status-warning/80 underline underline-offset-2 transition-colors"
           >
             Retry
           </button>

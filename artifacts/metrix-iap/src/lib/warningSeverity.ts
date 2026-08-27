@@ -46,3 +46,38 @@ export function splitWarningsBySeverity(warnings: readonly string[]): {
   }
   return { attention, notices };
 }
+
+// ─── Reduced-confidence detection (E-b) ───────────────────────────────
+//
+// The run-warnings panel used to pick its headline inline with
+// `w.includes("Reduced confidence") || w.includes("core metric")`. That is
+// business logic keyed on prose: rewording the parser's message — a copy
+// edit, the sort of change nobody expects to alter behaviour — silently
+// demotes "Analysis succeeded with reduced confidence" to a generic
+// warning count, and the reader loses the one line that says their
+// efficiency metrics are incomplete.
+//
+// The producer is `iapCsvParser`'s core-metric branch, which emits
+// "⚠ Reduced confidence: core metric columns are missing and will be null
+// — …". Stored runs keep their warnings verbatim (csv_warnings is
+// string[] in both the DB and the API contract), so a machine severity
+// field on new runs would still leave every historical run classified by
+// text. Until that contract changes, the honest fix is the same one this
+// module already applies to the notice/attention split: ONE place that
+// interprets warning prose, next to the patterns it interprets, so a copy
+// edit has exactly one place to update — and a test that fails loudly if
+// the producer's wording moves out from under it.
+
+const REDUCED_CONFIDENCE_PATTERNS: RegExp[] = [
+  /Reduced confidence/i,
+  /core metric columns are missing/i,
+];
+
+/**
+ * True when a run's warnings include a core-metric absence — the case
+ * where the run succeeded but its efficiency metrics are incomplete.
+ * Pass the ATTENTION lines: a routine notice never carries this.
+ */
+export function hasReducedConfidence(warnings: readonly string[]): boolean {
+  return warnings.some((w) => REDUCED_CONFIDENCE_PATTERNS.some((p) => p.test(w)));
+}

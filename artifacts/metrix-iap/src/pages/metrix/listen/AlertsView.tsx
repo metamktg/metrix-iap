@@ -87,22 +87,22 @@ export function AlertsView() {
                 <>
                   {highSignals.length > 0 && (
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">High-impact signals</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">High-impact signals</h3>
                       <div className="space-y-3">
                         {highSignals.map((s) => (
                           <button
                             key={s.id}
                             onClick={() => setDetail(s)}
-                            className="w-full text-left rounded-xl border border-red-400/20 bg-red-400/[0.03] p-4 hover:border-red-400/35 transition-colors"
+                            className="pressable-lg w-full text-left rounded-xl border border-status-danger/20 bg-status-danger/[0.03] p-4 hover:border-status-danger/35 transition-colors"
                           >
                             <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                              <AlertTriangle className="w-3.5 h-3.5 text-red-300/80" />
+                              <AlertTriangle className="w-3.5 h-3.5 text-status-danger/80" />
                               <ScopeBadge scope={s.scope} />
                               <ImpactBadge impact={s.impact} />
                               <ConfidenceBadge value={s.confidence} />
                             </div>
                             <p className="text-title font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
-                            <p className="text-body text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
+                            <p className="text-body text-muted-foreground/75 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
                           </button>
                         ))}
                       </div>
@@ -111,7 +111,7 @@ export function AlertsView() {
 
                   {caveats.length > 0 && (
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Data caveats</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Data caveats</h3>
                       <div className="space-y-2">
                         {caveats.map((c) => (
                           <CaveatNote key={c.id} text={c.text} source={c.source} />
@@ -122,7 +122,7 @@ export function AlertsView() {
 
                   {qualityFlags.length > 0 && (
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Data-quality findings</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Data-quality findings</h3>
                       <div className="space-y-2">
                         {qualityFlags.map((f, i) => (
                           <CaveatNote
@@ -132,7 +132,7 @@ export function AlertsView() {
                           />
                         ))}
                       </div>
-                      <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-2 leading-snug")}>
+                      <p className={cn(TYPE.caption, "text-muted-foreground/75 mt-2 leading-snug")}>
                         Raised by the last analysis run. Full evidence per finding is on{" "}
                         <CrossLink to="/app/analysis/performance" label="Ad Performance" />.
                       </p>
@@ -164,7 +164,7 @@ export function AlertsView() {
                 <DrawerField label="Recommended action"><TokenizedConceptText text={detail.recommended_action} /></DrawerField>
                 {detail.source_path && (
                   <DrawerField label="Source">
-                    <span className="font-mono text-label text-muted-foreground/60">{detail.source_path}</span>
+                    <span className="font-mono text-label text-muted-foreground/75">{detail.source_path}</span>
                   </DrawerField>
                 )}
               </InfoDrawer>

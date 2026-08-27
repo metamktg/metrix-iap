@@ -79,6 +79,26 @@ export interface CellPerformanceRow {
   purchases?: number | null;
 }
 
+/**
+ * The concept hint a scoping helper reads off a cell-keyed row when the
+ * cell_id doesn't encode the concept itself (LittleData historical cells,
+ * whose cell_id is an ad name).
+ *
+ * Declared as an indexed access into CellPerformanceRow ON PURPOSE: both
+ * run-scope and date-scope used to reach for this field through
+ * `(r as Record<string, unknown>)["concept_variable"]`, so renaming it on
+ * the row type silently yielded `undefined` — the hint vanished, rows
+ * quietly fell in or out of scope, and neither the compiler nor the
+ * runtime said a word. Renaming it now breaks this line first.
+ */
+export type ConceptHint = CellPerformanceRow["concept_variable"];
+
+/** A cell-keyed row that may carry an explicit concept hint. */
+export interface ConceptScopedRow {
+  cell_id: string;
+  concept_variable?: ConceptHint | null;
+}
+
 export interface VariablePerformanceRow {
   variable_family: string;
   variable_id: string;
@@ -93,6 +113,15 @@ export interface VariablePerformanceRow {
   CPA_result: number | null;
   CTR_link_pct: number;
   Result_per_link_click_pct: number;
+  /**
+   * Which analysis run measured this variable. variable_performance retains
+   * one row per run (schema.sql's ..._run_key), so aggregating without
+   * scoping by this counts the same spend once per run. Null on
+   * pre-migration rows, which are kept under every scope.
+   */
+  manual_analysis_run_id?: string | null;
+  date_start?: string | null;
+  date_end?: string | null;
 }
 
 export interface DemographicRow {
@@ -200,6 +229,15 @@ export interface ConceptRollupRow {
 export interface AnalysisData {
   performance_by_cell: CellPerformanceRow[];
   v3_variable_performance: VariablePerformanceRow[];
+  /**
+   * The newest SUCCESSFUL analysis run for this account, or null when none
+   * has succeeded. The correct default scope for any view that shows "this
+   * account" rather than "this run" — concept_rollup and
+   * v3_variable_performance both accumulate a row per run, so the only
+   * other available default was every run at once, which sums
+   * re-measurements of the same period.
+   */
+  latest_analysis_run_id?: string | null;
   demographic_registration_signal: DemographicRow[];
   v3_placement_signal: PlacementRow[];
   c4e_placement_signal: PlacementRow[];

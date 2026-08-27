@@ -11,7 +11,7 @@
 //   • Briefs running     — stale badge suppressed on Briefs tile
 //
 // Implementation note:
-//   When a tile is stale, StageTile applies "border-orange-400/30" to its
+//   When a tile is stale, StageTile applies "border-status-warning/30" to its
 //   outer <button> element. Tests detect staleness by checking that class
 //   substring — mirroring the real rendering contract without reaching into
 //   internal icon/SVG structure.

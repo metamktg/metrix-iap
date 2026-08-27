@@ -42,8 +42,8 @@ function HypFact({
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-1 mb-0.5">
-        <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />
-        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+        <Icon className="w-3.5 h-3.5 text-muted-foreground/75" />
+        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">{label}</span>
       </div>
       <p className="text-caption text-foreground/80 leading-snug line-clamp-1">{deriveLabel(value, 56)}</p>
     </div>
@@ -72,7 +72,7 @@ function HypothesisCardList({
           <button
             key={h.id}
             onClick={() => onSelect(h)}
-            className="w-full text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+            className="pressable-lg w-full text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 hover:border-border/60 hover:bg-foreground/[0.03] transition-colors"
           >
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
@@ -81,8 +81,8 @@ function HypothesisCardList({
                 <HypothesisCodeChipsRow label={h.label} />
                 <p className="text-body text-foreground/80 leading-snug line-clamp-1 mt-1">{deriveLabel(h.label, 72)}</p>
                 {h.source && (
-                  <div className="flex items-center gap-1.5 mt-1.5 text-caption text-muted-foreground/60">
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/60" />
+                  <div className="flex items-center gap-1.5 mt-1.5 text-caption text-muted-foreground/75">
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/75" />
                     {h.source}
                   </div>
                 )}
@@ -97,8 +97,8 @@ function HypothesisCardList({
               <div className="flex items-center gap-4 mt-2.5 pt-2.5 border-t border-border/20 flex-wrap">
                 {inlineFacts.map((f) => (
                   <div key={f.label} className="flex items-center gap-1.5 min-w-0">
-                    <f.Icon className="w-3 h-3 text-muted-foreground/45 shrink-0" />
-                    <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/35 shrink-0">{f.label}</span>
+                    <f.Icon className="w-3 h-3 text-muted-foreground/75 shrink-0" />
+                    <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0">{f.label}</span>
                     <span className="text-caption text-foreground/70 truncate">{deriveLabel(f.value, 48)}</span>
                   </div>
                 ))}
@@ -107,8 +107,8 @@ function HypothesisCardList({
 
             {h.risk && (
               <div className="flex items-start gap-1.5 mt-2.5 pt-2.5 border-t border-border/20">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-0.5" />
-                <p className="text-caption text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
+                <AlertTriangle className="w-3.5 h-3.5 text-status-warning/70 shrink-0 mt-0.5" />
+                <p className="text-caption text-status-warning/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
               </div>
             )}
           </button>
@@ -222,14 +222,14 @@ export function HypothesisQueueView() {
                             onClick={() => setStatusFilter(id)}
                             aria-pressed={active}
                             className={cn(
-                              "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
+                              "pressable inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
                               active ? PILL_ACTIVE : PILL_INACTIVE,
                             )}
                           >
                             {label}
                             <span className={cn(
                               "text-label font-mono rounded px-0.5",
-                              active ? "text-interactive/70" : "text-muted-foreground/40",
+                              active ? "text-interactive/70" : "text-muted-foreground/75",
                             )}>{count}</span>
                           </button>
                         );
@@ -263,7 +263,7 @@ export function HypothesisQueueView() {
                     {pillars.map((p) => {
                       const linkedBriefs = briefs.filter((b) => b.source_pillar === p.id);
                       return (
-                        <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                        <div key={p.id} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
                           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                             {p.source_cells.map((c) => (
                               <TooltipProvider key={c} delayDuration={150}>

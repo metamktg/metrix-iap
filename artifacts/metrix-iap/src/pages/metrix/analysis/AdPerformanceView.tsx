@@ -6,6 +6,7 @@
 // history — this page is read-only.
 
 import { useState, useMemo, useEffect, Fragment } from "react";
+import { scopeToRun, supersededCount } from "@/lib/run-supersede";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -105,12 +106,12 @@ function SignalHeadlineCard({ tier, flag }: { tier: SignalTier; flag: DataQualit
       data-testid={`signal-headline-${tier}`}
       className={cn(
         "rounded-lg border px-3.5 py-3 flex flex-col gap-1.5 min-h-[92px]",
-        flag && isActNow ? "border-status-warning/30 bg-status-warning/[0.04]" : "border-border/40 bg-white/[0.015]",
+        flag && isActNow ? "border-status-warning/30 bg-status-warning/[0.04]" : "border-border/40 bg-foreground/[0.015]",
       )}
     >
       <div className="flex items-center gap-1.5">
-        <Icon className={cn("w-3.5 h-3.5 shrink-0", flag && isActNow ? "text-status-warning/80" : "text-muted-foreground/50")} />
-        <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", flag && isActNow ? "text-status-warning/85" : "text-muted-foreground/60")}>
+        <Icon className={cn("w-3.5 h-3.5 shrink-0", flag && isActNow ? "text-status-warning/80" : "text-muted-foreground/75")} />
+        <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", flag && isActNow ? "text-status-warning/85" : "text-muted-foreground/75")}>
           {TIER_LABEL[tier]}
         </span>
       </div>
@@ -120,11 +121,11 @@ function SignalHeadlineCard({ tier, flag }: { tier: SignalTier; flag: DataQualit
           {spend != null ? (
             <span className={cn(TYPE.body, "font-semibold text-foreground/80")}>{fmtUSD(spend, 0)} affected</span>
           ) : (
-            <span className={cn(TYPE.caption, "text-muted-foreground/60")}>{flagBody(flag)}</span>
+            <span className={cn(TYPE.caption, "text-muted-foreground/75")}>{flagBody(flag)}</span>
           )}
         </>
       ) : (
-        <span className={cn(TYPE.caption, "text-muted-foreground/40 italic")}>
+        <span className={cn(TYPE.caption, "text-muted-foreground/75 italic")}>
           No {TIER_LABEL[tier].toLowerCase()} signals this run.
         </span>
       )}
@@ -158,7 +159,7 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
           <SignalHeadlineCard key={tier} tier={tier} flag={highestPriorityFlag(flags, tier)} />
         ))}
       </div>
-      <div className={cn(TYPE.microLabel, "text-muted-foreground/45 mb-2 px-0.5")}>All signals</div>
+      <div className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-2 px-0.5")}>All signals</div>
       <div className="flex items-center gap-1.5 mb-3 flex-wrap" role="group" aria-label="Filter signals by tier">
         {SIGNAL_TIER_FILTERS.map(({ id, label }) => {
           const active = filter === id;
@@ -169,12 +170,12 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
               onClick={() => setFilter(id)}
               aria-pressed={active}
               className={cn(
-                "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
+                "pressable inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
                 active ? PILL_ACTIVE : PILL_INACTIVE,
               )}
             >
               {label}
-              <span className={cn("text-label font-mono rounded px-0.5", active ? "text-interactive/70" : "text-muted-foreground/40")}>
+              <span className={cn("text-label font-mono rounded px-0.5", active ? "text-interactive/70" : "text-muted-foreground/75")}>
                 {counts[id] ?? 0}
               </span>
             </button>
@@ -193,21 +194,21 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
               key={globalIndex}
               className={cn(
                 "rounded-lg border px-3.5 py-3 flex flex-col gap-2",
-                isActNow ? "border-status-warning/30 bg-status-warning/[0.04]" : "border-border/40 bg-white/[0.015]",
+                isActNow ? "border-status-warning/30 bg-status-warning/[0.04]" : "border-border/40 bg-foreground/[0.015]",
               )}
             >
               <div className="flex items-center gap-1.5">
                 {isActNow
                   ? <AlertTriangle className="w-3.5 h-3.5 text-status-warning/80 shrink-0" />
                   : tier === "watch"
-                    ? <Eye className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
-                    : <Search className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />}
-                <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", isActNow ? "text-status-warning/85" : "text-muted-foreground/60")}>
+                    ? <Eye className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
+                    : <Search className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />}
+                <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", isActNow ? "text-status-warning/85" : "text-muted-foreground/75")}>
                   {TIER_LABEL[tier]}
                 </span>
                 {/* Real spend-affected badge — never a fabricated confidence percentage. */}
                 {spend != null && (
-                  <span className={cn(TYPE.label, "ml-auto shrink-0 border rounded-full px-2 py-0.5 font-semibold normal-case tracking-normal text-muted-foreground/65 border-border/40 bg-white/[0.03]")}>
+                  <span className={cn(TYPE.label, "ml-auto shrink-0 border rounded-full px-2 py-0.5 font-semibold normal-case tracking-normal text-muted-foreground/75 border-border/40 bg-foreground/[0.03]")}>
                     {fmtUSD(spend, 0)} affected
                   </span>
                 )}
@@ -224,11 +225,11 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
                   one uncontrolled Popover opening at a time); "Summary"
                   restores the compact click-to-reveal popover. */}
               {detailOn ? (
-                <div className="rounded-lg border border-border/30 bg-white/[0.02] p-2.5 space-y-1.5" data-testid="signal-evidence-inline">
-                  <div className={cn(TYPE.microLabel, "text-muted-foreground/60")}>Evidence</div>
+                <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-2.5 space-y-1.5" data-testid="signal-evidence-inline">
+                  <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Evidence</div>
                   {evidence.map((e) => (
                     <div key={e.k} className="flex items-baseline gap-2 flex-wrap">
-                      <span className={cn(TYPE.microLabel, "shrink-0 w-28 text-muted-foreground/50")}>{e.k}</span>
+                      <span className={cn(TYPE.microLabel, "shrink-0 w-28 text-muted-foreground/75")}>{e.k}</span>
                       <span className={TYPE.body}>{e.v}</span>
                     </div>
                   ))}
@@ -251,7 +252,7 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
                 <button
                   type="button"
                   onClick={() => navigate("/app/listen/signal")}
-                  className={cn(TYPE.caption, "inline-flex items-center gap-1.5 font-semibold rounded-lg border border-primary/40 bg-primary/15 text-interactive px-3 py-1.5 hover:bg-primary/25 transition-colors")}
+                  className={cn("pressable", TYPE.caption, "inline-flex items-center gap-1.5 font-semibold rounded-lg border border-primary/40 bg-primary/15 text-interactive px-3 py-1.5 hover:bg-primary/25 transition-colors")}
                 >
                   Review in Listen
                 </button>
@@ -291,10 +292,10 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
 
 const BUCKET_TAG_CLS: Record<string, string> = {
   scale_now: "border-primary/40 bg-primary/15 text-interactive",
-  optimize: "border-border/40 bg-white/[0.04] text-foreground/75",
-  validate: "border-border/40 bg-white/[0.04] text-muted-foreground/70",
-  explore: "border-border/40 bg-white/[0.04] text-muted-foreground/70",
-  avoid: "border-red-400/30 bg-red-400/10 text-red-300",
+  optimize: "border-border/40 bg-foreground/[0.04] text-foreground/75",
+  validate: "border-border/40 bg-foreground/[0.04] text-muted-foreground/75",
+  explore: "border-border/40 bg-foreground/[0.04] text-muted-foreground/75",
+  avoid: "border-status-danger/30 bg-status-danger/10 text-status-danger",
 };
 
 // Real tier vocabulary only — the strategy map classifies into these five
@@ -516,12 +517,12 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
               onClick={() => { setFilter(id); setExpandedKeys(new Set()); }}
               aria-pressed={active}
               className={cn(
-                "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
+                "pressable inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
                 active ? PILL_ACTIVE : PILL_INACTIVE,
               )}
             >
               {label}
-              <span className={cn("text-label font-mono rounded px-0.5", active ? "text-interactive/70" : "text-muted-foreground/40")}>
+              <span className={cn("text-label font-mono rounded px-0.5", active ? "text-interactive/70" : "text-muted-foreground/75")}>
                 {counts[id] ?? 0}
               </span>
             </button>
@@ -546,7 +547,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
             {sortedRows.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-center py-4">
-                  <span className={cn(TYPE.caption, "text-muted-foreground/50")}>No concepts in this tier.</span>
+                  <span className={cn(TYPE.caption, "text-muted-foreground/75")}>No concepts in this tier.</span>
                 </td>
               </tr>
             )}
@@ -565,24 +566,24 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
                   >
                     <td>
                       <span className="inline-flex items-center gap-1.5">
-                        <ChevronDown className={cn("w-3 h-3 text-muted-foreground/40 transition-transform shrink-0", isOpen && "rotate-180")} aria-hidden />
+                        <ChevronDown className={cn("w-3 h-3 text-muted-foreground/75 transition-transform shrink-0", isOpen && "rotate-180")} aria-hidden />
                         <span className="font-medium text-foreground/90">{r.book} · {r.concept}</span>
                       </span>
                     </td>
                     <td className="text-right tabular-nums text-muted-foreground/75">{r.spend != null ? fmtUSD(r.spend, 0) : "n/a"}</td>
                     <td className="text-right tabular-nums text-foreground/80">{r.cpa != null ? fmtUSD(r.cpa) : zero ? `no ${resultNoun}` : "n/a"}</td>
                     <td className="text-right tabular-nums text-muted-foreground/75">{r.cvr_link_pct != null ? fmtPct(r.cvr_link_pct) : "n/a"}</td>
-                    <td className={cn("text-right tabular-nums", r.lift == null ? "text-muted-foreground/40" : r.lift >= 0 ? "text-emerald-400" : "text-red-300")}>
+                    <td className={cn("text-right tabular-nums", r.lift == null ? "text-muted-foreground/75" : r.lift >= 0 ? "text-status-success" : "text-status-danger")}>
                       {r.lift == null ? "—" : `${r.lift >= 0 ? "+" : ""}${fmtPct(r.lift)}`}
                     </td>
-                    <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : <span className={cn(TYPE.label, "text-muted-foreground/35")}>—</span>}</td>
+                    <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : <span className={cn(TYPE.label, "text-muted-foreground/75")}>—</span>}</td>
                     <td className="text-right">
                       {r.bucket ? (
                         <span className={cn(TYPE.label, "inline-flex border rounded-full px-2 py-0.5 font-semibold normal-case", BUCKET_TAG_CLS[r.bucket])}>
                           {BUCKET_LABEL[r.bucket]}
                         </span>
                       ) : (
-                        <span className={cn(TYPE.label, "text-muted-foreground/35")}>unclassified</span>
+                        <span className={cn(TYPE.label, "text-muted-foreground/75")}>unclassified</span>
                       )}
                     </td>
                   </tr>
@@ -590,18 +591,18 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
                     <tr>
                       <td colSpan={7} className="pb-3 pt-0">
                         <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          <div className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2">
+                          <div className="rounded-lg border border-border/40 bg-foreground/[0.02] px-3 py-2">
                             <div className={cn(TYPE.microLabel, "mb-1")}>Confidence</div>
                             <div className={TYPE.body}>{r.confidence ?? "Not scored yet"}</div>
                           </div>
-                          <div className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2">
+                          <div className="rounded-lg border border-border/40 bg-foreground/[0.02] px-3 py-2">
                             <div className={cn(TYPE.microLabel, "mb-1")}>Recommended next</div>
                             <div className={TYPE.body}>
                               {r.bucketEntry ?? "No playbook entry names this concept yet — position-only in the local library."}
                             </div>
                           </div>
                           {varStack && (
-                            <div className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2 sm:col-span-2">
+                            <div className="rounded-lg border border-border/40 bg-foreground/[0.02] px-3 py-2 sm:col-span-2">
                               <div className={cn(TYPE.microLabel, "mb-1.5")}>Variable stack · across mapped rows</div>
                               <div className="space-y-1.5">
                                 {Object.entries(varStack).map(([family, codes]) => (
@@ -619,12 +620,12 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
                             <button
                               type="button"
                               onClick={() => navigate(`/app/analysis/library?focus=${firstCellId}`)}
-                              className={cn(TYPE.caption, "inline-flex items-center gap-1.5 font-medium rounded-lg border border-border/40 text-muted-foreground/70 px-3 py-1.5 hover:text-foreground/80 hover:border-border/60 transition-colors")}
+                              className={cn("pressable", TYPE.caption, "inline-flex items-center gap-1.5 font-medium rounded-lg border border-border/40 text-muted-foreground/75 px-3 py-1.5 hover:text-foreground/80 hover:border-border/60 transition-colors")}
                             >
                               Open creative deep dive
                             </button>
                           ) : (
-                            <span className={cn(TYPE.caption, "text-muted-foreground/40 italic")}>No mapped creative cell for this concept yet.</span>
+                            <span className={cn(TYPE.caption, "text-muted-foreground/75 italic")}>No mapped creative cell for this concept yet.</span>
                           )}
                         </div>
                       </td>
@@ -686,11 +687,11 @@ function BuyerIntentFunnelCard({
           return (
             <div key={stage.id} className={cn("rounded-lg border p-2.5", c.bg, c.border)}>
               <div className="flex items-center gap-3">
-                <span className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/60 w-28 shrink-0")}>
+                <span className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/75 w-28 shrink-0")}>
                   {stage.label}
                 </span>
-                <div className="flex-1 h-4 bg-white/[0.04] rounded overflow-hidden">
-                  <div className={cn("h-full rounded transition-all", c.bar)} style={{ width: `${barW}%` }} />
+                <div className="flex-1 h-4 bg-foreground/[0.04] rounded overflow-hidden">
+                  <div className={cn("h-full rounded transition-[color,background-color,border-color,box-shadow,opacity,transform]", c.bar)} style={{ width: `${barW}%` }} />
                 </div>
                 <span className={cn(TYPE.body, "font-semibold text-foreground tabular-nums w-20 text-right shrink-0")}>
                   {fmtNum(stage.value!)}
@@ -698,8 +699,8 @@ function BuyerIntentFunnelCard({
               </div>
               {stage.pctOfPrev != null && (
                 <div className="flex items-center gap-1 ml-28 pl-3 mt-1">
-                  <ArrowRight className="w-3 h-3 text-muted-foreground/35" />
-                  <span className={cn(TYPE.microLabel, stage.pctOfPrev >= 20 ? "text-emerald-400/70" : stage.pctOfPrev >= 5 ? c.text : "text-red-400/70")}>
+                  <ArrowRight className="w-3 h-3 text-muted-foreground/75" />
+                  <span className={cn(TYPE.microLabel, stage.pctOfPrev >= 20 ? "text-status-success/70" : stage.pctOfPrev >= 5 ? c.text : "text-status-danger/70")}>
                     {stage.pctOfPrev.toFixed(1)}% of previous stage
                   </span>
                 </div>
@@ -769,28 +770,28 @@ function CostPerResultCard({ adAccountId, accountConfigured }: { adAccountId: st
                 className="w-8 rounded-t bg-muted-foreground/25"
                 style={{ height: `${barHeightPx(trend.prior, maxVal)}px` }}
               />
-              <span className={cn(TYPE.microLabel, "text-muted-foreground/55")}>Prior window</span>
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Prior window</span>
             </div>
             <div className="flex flex-col items-center gap-1.5 w-16">
               <span className={cn(TYPE.caption, "font-semibold text-foreground tabular-nums")}>{fmtUSD(trend.current)}</span>
               <div
-                className={cn("w-8 rounded-t", trend.improved ? "bg-emerald-400/70" : "bg-status-warning/70")}
+                className={cn("w-8 rounded-t", trend.improved ? "bg-status-success/70" : "bg-status-warning/70")}
                 style={{ height: `${barHeightPx(trend.current, maxVal)}px` }}
               />
-              <span className={cn(TYPE.microLabel, "text-muted-foreground/55")}>Current window</span>
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Current window</span>
             </div>
           </div>
-          <div className={cn(TYPE.body, "font-semibold pb-1", trend.improved ? "text-emerald-400" : "text-red-300")}>
+          <div className={cn(TYPE.body, "font-semibold pb-1", trend.improved ? "text-status-success" : "text-status-danger")}>
             {trend.deltaPct >= 0 ? "+" : ""}{trend.deltaPct.toFixed(1)}%
-            {delta != null && <span className="text-muted-foreground/60 font-normal"> ({delta >= 0 ? "+" : "−"}{fmtUSD(Math.abs(delta))})</span>}
+            {delta != null && <span className="text-muted-foreground/75 font-normal"> ({delta >= 0 ? "+" : "−"}{fmtUSD(Math.abs(delta))})</span>}
           </div>
         </div>
       ) : (
-        <p className={cn(TYPE.body, "text-muted-foreground/60")}>
+        <p className={cn(TYPE.body, "text-muted-foreground/75")}>
           {isLoading ? "Loading prior-period comparison…" : "Not enough prior-period data in this window for a real comparison yet."}
         </p>
       )}
-      <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-3")}>
+      <p className={cn(TYPE.caption, "text-muted-foreground/75 mt-3")}>
         Full per-factor attribution isn't available yet — placement, audience, and creative breakdowns don't carry prior-period comparisons in the current data model.
       </p>
     </SectionCard>
@@ -854,7 +855,14 @@ export function AdPerformanceView() {
         // Range-scoped totals from the dated concept rollup. When the user
         // narrows the range, tiles reflect only concepts whose flight
         // window overlaps it — no per-day interpolation, whole flights.
-        const rollup = a.concept_rollup ?? [];
+        // Scoped to the newest successful run. concept_performance keeps one
+        // row per run by design, so the unscoped array holds every run's
+        // measurement of every concept — summing it reported a $1,000
+        // concept as $2,000 after one re-run and $3,000 after two. Untagged
+        // pre-migration rows are kept under every scope.
+        const rollupAll = a.concept_rollup ?? [];
+        const rollup = scopeToRun(rollupAll, a.latest_analysis_run_id ?? null);
+        const rollupSuperseded = supersededCount(rollupAll, a.latest_analysis_run_id ?? null);
         const rollupDates = (r: (typeof rollup)[number]) => ({ start: r.date_start, end: r.date_end });
         const scoped = narrowed
           ? {
@@ -980,7 +988,19 @@ export function AdPerformanceView() {
                   })}
                   tileCount={3}
                   disclosures={{
-                    spend: <span>Range-scoped: {scoped.concepts} concept flight{scoped.concepts === 1 ? "" : "s"} overlapping the selected range — whole flights, no per-day interpolation.</span>,
+                    spend: (
+                      <span>
+                        Range-scoped: {scoped.concepts} concept flight{scoped.concepts === 1 ? "" : "s"} overlapping
+                        the selected range — whole flights, no per-day interpolation.
+                        {rollupSuperseded > 0 && (
+                          <>
+                            {" "}Measured by the latest analysis run only; {rollupSuperseded} row
+                            {rollupSuperseded === 1 ? "" : "s"} from earlier runs re-measure the same concepts and are
+                            excluded rather than added to it.
+                          </>
+                        )}
+                      </span>
+                    ),
                   }}
                   trendFor={tileTrendFor}
                 />
@@ -1040,16 +1060,16 @@ export function AdPerformanceView() {
                       return (
                         <div className="relative rounded-xl border border-primary/35 bg-primary/[0.03] p-4 md:col-span-3">
                           <div data-testid="primary-control-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />
-                          <div className={cn(TYPE.microLabel, "text-muted-foreground/70 mb-1.5")}>Primary control</div>
+                          <div className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-1.5")}>Primary control</div>
                           {/* Unresolved codes (no human name in local_book2_library) render
                               de-emphasized instead of borrowing the resolved-name treatment —
                               a raw composite ID is not a headline. */}
-                          <p className={primaryResolved ? TYPE.title : cn(TYPE.body, "font-mono text-muted-foreground/70")}>
+                          <p className={primaryResolved ? TYPE.title : cn(TYPE.body, "font-mono text-muted-foreground/75")}>
                             {primaryName}
                           </p>
                           <p className={cn(TYPE.body, "text-muted-foreground/80 mt-1.5")}>{resolveControlText(controls.primary_control_read, controls.primary_control)}</p>
                           {primaryResolved && (
-                            <p className={cn(TYPE.microLabel, "text-muted-foreground/40 mt-1.5")}>{controls.primary_control}</p>
+                            <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mt-1.5")}>{controls.primary_control}</p>
                           )}
                         </div>
                       );
@@ -1059,16 +1079,16 @@ export function AdPerformanceView() {
                       const regName = resolveConceptName(regId);
                       const regResolved = regName !== regId;
                       return (
-                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4 md:col-span-2">
-                          <div className={cn(TYPE.microLabel, "text-muted-foreground/70 mb-1.5")}>{term.Singular} control</div>
-                          <p className={regResolved ? TYPE.title : cn(TYPE.body, "font-mono text-muted-foreground/70")}>
+                        <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4 md:col-span-2">
+                          <div className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-1.5")}>{term.Singular} control</div>
+                          <p className={regResolved ? TYPE.title : cn(TYPE.body, "font-mono text-muted-foreground/75")}>
                             {regName}
                           </p>
                           {controls.registration_control_read && (
                             <p className={cn(TYPE.body, "text-muted-foreground/80 mt-1.5")}>{resolveControlText(controls.registration_control_read, regId)}</p>
                           )}
                           {regResolved && (
-                            <p className={cn(TYPE.microLabel, "text-muted-foreground/40 mt-1.5")}>{regId}</p>
+                            <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mt-1.5")}>{regId}</p>
                           )}
                         </div>
                       );
@@ -1103,15 +1123,15 @@ export function AdPerformanceView() {
                     <div
                       key={s.to}
                       data-testid={`featured-module-${s.label.toLowerCase().replace(/\s+/g, "-")}`}
-                      className="flex flex-col gap-1.5 rounded-xl border border-border/40 bg-white/[0.02] p-4"
+                      className="flex flex-col gap-1.5 rounded-xl border border-border/40 bg-foreground/[0.02] p-4"
                     >
                       <div className="flex items-center gap-2">
                         <s.Icon className="w-4 h-4 text-interactive shrink-0" />
                         <span className={TYPE.title}>{s.label}</span>
                         <div className="ml-auto"><CrossLink to={s.to} label="Open" /></div>
                       </div>
-                      <p className={cn(TYPE.caption, "text-muted-foreground/70")}>{s.desc}</p>
-                      <span className={cn(TYPE.microLabel, "text-muted-foreground/50")}>{s.stat}</span>
+                      <p className={cn(TYPE.caption, "text-muted-foreground/75")}>{s.desc}</p>
+                      <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{s.stat}</span>
                     </div>
                   ))}
                 </div>
@@ -1120,12 +1140,12 @@ export function AdPerformanceView() {
                     <div
                       key={s.to}
                       title={s.desc}
-                      className="flex items-center gap-2 rounded-lg border border-border/30 bg-white/[0.015] pl-3 pr-1.5 py-1.5"
+                      className="flex items-center gap-2 rounded-lg border border-border/30 bg-foreground/[0.015] pl-3 pr-1.5 py-1.5"
                     >
-                      <s.Icon className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+                      <s.Icon className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
                       <div className="flex flex-col min-w-0">
                         <span className={cn(TYPE.caption, "font-semibold text-foreground/90")}>{s.label}</span>
-                        <span className={cn(TYPE.microLabel, "text-muted-foreground/50 truncate")}>{s.stat}</span>
+                        <span className={cn(TYPE.microLabel, "text-muted-foreground/75 truncate")}>{s.stat}</span>
                       </div>
                       <CrossLink to={s.to} label="Open" />
                     </div>

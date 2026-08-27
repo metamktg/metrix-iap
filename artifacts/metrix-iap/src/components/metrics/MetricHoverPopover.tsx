@@ -82,7 +82,11 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
 
   const hasChart = concepts.length >= 2;
   const chartConfig = isCpa ? CPA_CONFIG : DEFAULT_CONFIG;
-  const barColor = isCpa ? "hsl(var(--chart-4))" : "hsl(var(--interactive))";
+  // A cost metric's bar is a magnitude, not a verdict and not a warning. It
+  // gets a second series hue so cost reads as a different measure from volume,
+  // without implying anything is wrong: amber here made every CPA hover look
+  // like a data-quality alert.
+  const barColor = isCpa ? "hsl(var(--chart-3))" : "hsl(var(--interactive))";
 
   // Truncate concept names for Y-axis
   const chartData = concepts.map((c) => ({
@@ -122,7 +126,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
             aria-label={open ? "Hide metric chart" : "Show metric chart"}
             aria-expanded={open}
             onClick={handleInfoClick}
-            className="absolute top-2 right-2 p-0.5 text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+            className="pressable absolute top-2 right-2 p-0.5 text-muted-foreground/75 group-hover:text-muted-foreground/75 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
           >
             <Info className="w-3 h-3" />
           </button>
@@ -130,7 +134,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
       </HoverCardTrigger>
 
       <HoverCardContent
-        className="w-[300px] p-0 bg-[hsl(var(--surface-raised))] border border-[hsl(var(--border-default))] shadow-2xl overflow-hidden rounded-xl"
+        className="w-[300px] p-0 bg-popover/95 backdrop-blur-sm border border-border/60 elevation-floating overflow-hidden rounded-xl"
         side="bottom"
         align="start"
         sideOffset={6}
@@ -141,14 +145,14 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
         {/* Header */}
         <div className="px-3 pt-2.5 pb-2.5 border-b border-[hsl(var(--border-subtle))]">
           <div
-            className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/70 mb-1"
+            className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75 mb-1"
             data-testid="metric-popover-header-label"
           >
             {metric.label}
           </div>
           <div className="text-stat metric-num leading-none text-foreground">{metric.formatted}</div>
           {metric.sub && (
-            <div className="text-[9px] font-mono text-muted-foreground/50 mt-1 truncate tracking-wide">{metric.sub}</div>
+            <div className="text-[9px] font-mono text-muted-foreground/75 mt-1 truncate tracking-wide">{metric.sub}</div>
           )}
         </div>
 
@@ -208,13 +212,13 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
             </>
           ) : (
             <div className="py-2 space-y-1">
-              <div className="text-[10px] text-muted-foreground/65 leading-relaxed">
+              <div className="text-[10px] text-muted-foreground/75 leading-relaxed">
                 {concepts.length === 0
                   ? "No concept rows available for this metric in the current import."
                   : "Only one concept found — full breakdown available in the diagnostic."}
               </div>
               {metric.sub && (
-                <div className="text-[10px] font-mono text-muted-foreground/50">{metric.sub}</div>
+                <div className="text-[10px] font-mono text-muted-foreground/75">{metric.sub}</div>
               )}
             </div>
           )}
@@ -224,7 +228,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
         <div className="px-3 pb-3 border-t border-[hsl(var(--border-subtle))] pt-2">
           <button
             onClick={onDiagnose}
-            className="inline-flex items-center gap-1 text-[10px] font-semibold text-interactive hover:text-interactive/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+            className="pressable inline-flex items-center gap-1 text-[10px] font-semibold text-interactive hover:text-interactive/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
           >
             Diagnose full breakdown <ArrowRight className="w-3 h-3" />
           </button>

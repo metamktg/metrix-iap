@@ -334,11 +334,12 @@ async function importLittleData(q: Q): Promise<number> {
     const spend = round2(seg.spend);
     await q(
       `insert into demographic_performance (account_id, gender, age, date_start, date_end, spend,
-         link_clicks, results, cpa, cvr_link_pct, confidence, adds_to_cart, checkouts_initiated, purchases)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+         link_clicks, results, cpa, cvr_link_pct, confidence, adds_to_cart, checkouts_initiated, purchases,
+         impressions)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
       [ECAS_ACCOUNT_ID, seg.gender, seg.age, windowStart, windowEnd, spend, seg.linkClicks, seg.results,
         cpaOf(spend, seg.results), pctOf(seg.results, seg.linkClicks), "validation_required",
-        seg.addsToCart, seg.checkoutsInitiated, seg.purchases],
+        seg.addsToCart, seg.checkoutsInitiated, seg.purchases, seg.impressions],
     );
     await q(
       `insert into demographic_signal (account_id, cell_id, ad_name, age, gender, date_start, date_end, row_index, payload)
@@ -772,11 +773,12 @@ async function importEcas(q: Q): Promise<number> {
     const spend = round2(seg.spend);
     await q(
       `insert into demographic_performance (account_id, gender, age, date_start, date_end, spend,
-         link_clicks, results, cpa, cvr_link_pct, confidence, adds_to_cart, checkouts_initiated, purchases)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+         link_clicks, results, cpa, cvr_link_pct, confidence, adds_to_cart, checkouts_initiated, purchases,
+         impressions)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
       [ECAS_ACCOUNT_ID, seg.gender, seg.age, windowStart, windowEnd, spend, seg.linkClicks,
         seg.results, cpaOf(spend, seg.results), pctOf(seg.results, seg.linkClicks), "insufficient",
-        seg.addsToCart, seg.checkoutsInitiated, seg.purchases],
+        seg.addsToCart, seg.checkoutsInitiated, seg.purchases, seg.impressions],
     );
     await q(
       `insert into demographic_signal (account_id, cell_id, ad_name, age, gender, date_start, date_end, row_index, payload)
@@ -1496,11 +1498,12 @@ async function main() {
     for (const r of bundle.demographic_performance) {
       await q(
         `insert into demographic_performance (account_id, gender, age, date_start, date_end, spend,
-           link_clicks, results, cpa, cvr_link_pct, confidence, adds_to_cart, checkouts_initiated, purchases)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+           link_clicks, results, cpa, cvr_link_pct, confidence, adds_to_cart, checkouts_initiated, purchases,
+           impressions)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
         [ACCOUNT_ID, r.gender, r.age, WINDOW_START, WINDOW_END, num(r.spend), num(r.link_clicks),
           num(r.results), num(r.cpa), num(r.cvr_link_pct), str(r.confidence),
-          num(r.adds_to_cart), num(r.checkouts_initiated), num(r.purchases)],
+          num(r.adds_to_cart), num(r.checkouts_initiated), num(r.purchases), num(r.impressions)],
       );
     }
     for (const r of bundle.placement_performance) {

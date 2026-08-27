@@ -115,7 +115,7 @@ export function LoginPage() {
 
             {/* Headline */}
             <div className="space-y-4">
-              <p className="flex items-center gap-2 text-label font-bold uppercase tracking-widest text-muted-foreground/60">
+              <p className="flex items-center gap-2 text-label font-bold uppercase tracking-widest text-muted-foreground/75">
                 <span className="w-5 h-px bg-border shrink-0" />
                 Performance Intelligence Platform
               </p>
@@ -125,7 +125,7 @@ export function LoginPage() {
                 marketers who need<br />
                 to move <span className="text-interactive">faster.</span>
               </h1>
-              <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/50">
+              <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
                 TEST · OPTIMIZE · SCALE · REPEAT
               </p>
             </div>
@@ -137,7 +137,7 @@ export function LoginPage() {
                 return (
                   <div
                     key={label}
-                    className="group rounded-2xl border border-border/40 bg-white/[0.02] px-4 py-3.5 space-y-1.5 hover:border-border/60 hover:bg-white/[0.04] transition-colors"
+                    className="group rounded-2xl border border-border/40 bg-foreground/[0.02] px-4 py-3.5 space-y-1.5 hover:border-border/60 hover:bg-foreground/[0.04] transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-interactive/75 group-hover:text-interactive transition-colors">
@@ -145,7 +145,7 @@ export function LoginPage() {
                       </span>
                       <span className="text-caption font-semibold text-foreground/80 group-hover:text-foreground transition-colors">{label}</span>
                     </div>
-                    <p className="text-caption text-muted-foreground/60 leading-snug">{sub}</p>
+                    <p className="text-caption text-muted-foreground/75 leading-snug">{sub}</p>
                   </div>
                 );
               })}
@@ -159,8 +159,8 @@ export function LoginPage() {
                     <p className="text-[2rem] font-bold text-foreground tracking-tight">
                       {value}
                     </p>
-                    <p className="text-caption font-semibold text-muted-foreground/70 mt-0.5">{label}</p>
-                    <p className="text-label text-muted-foreground/45 mt-0.5">{evidence}</p>
+                    <p className="text-caption font-semibold text-muted-foreground/75 mt-0.5">{label}</p>
+                    <p className="text-label text-muted-foreground/75 mt-0.5">{evidence}</p>
                   </div>
                 ))}
               </div>
@@ -170,13 +170,13 @@ export function LoginPage() {
             <div className="flex items-center gap-3">
               <a
                 href="/waitlist/#request-access"
-                className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 shadow-md shadow-primary/25 transition-all"
+                className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 shadow-md shadow-primary/25 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
               >
                 Request Demo Access <ArrowRight className="w-3.5 h-3.5" />
               </a>
               <a
                 href="/waitlist/"
-                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl border border-border/40 text-body text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl border border-border/40 text-body text-muted-foreground hover:text-foreground hover:border-border/60 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
               >
                 See More <ArrowRight className="w-3.5 h-3.5" />
               </a>
@@ -184,7 +184,7 @@ export function LoginPage() {
           </div>
 
           {/* Footer */}
-          <p className="text-label font-medium uppercase tracking-[0.18em] text-muted-foreground/35">
+          <p className="text-label font-medium uppercase tracking-[0.18em] text-muted-foreground/75">
             Built for marketers · Engineered for growth · METRIX.AD
           </p>
         </div>
@@ -204,7 +204,7 @@ export function LoginPage() {
               <BrandLogo className="w-7 h-7" />
               <span className="text-cardtitle font-bold tracking-tight text-foreground">metrix</span>
             </div>
-            <p className="text-body text-muted-foreground/70 leading-snug">
+            <p className="text-body text-muted-foreground/75 leading-snug">
               Performance intelligence for marketers who need to move faster.
             </p>
             <a
@@ -233,14 +233,14 @@ export function LoginPage() {
 
               {/* Email */}
               <div className="space-y-1.5">
-                <label htmlFor="login-email" className="block text-label font-semibold uppercase tracking-widest text-muted-foreground/60">
+                <label htmlFor="login-email" className="block text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
                   Email
                 </label>
                 <input
                   id="login-email" type="email" required autoComplete="email"
                   value={email} onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
-                  className="w-full h-11 px-4 rounded-xl bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+                  className="w-full h-11 px-4 rounded-xl bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
                   data-testid="input-login-email"
                 />
               </div>
@@ -248,12 +248,12 @@ export function LoginPage() {
               {/* Password */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="login-password" className="block text-label font-semibold uppercase tracking-widest text-muted-foreground/60">
+                  <label htmlFor="login-password" className="block text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
                     Password
                   </label>
                   <button
                     type="button" onClick={() => navigate("/forgot-password")}
-                    className="text-caption text-interactive/70 hover:text-interactive transition-colors"
+                    className="pressable text-caption text-interactive/70 hover:text-interactive transition-colors"
                     data-testid="link-forgot-password"
                   >
                     Forgot password?
@@ -263,7 +263,7 @@ export function LoginPage() {
                   id="login-password" type="password" required autoComplete="current-password"
                   value={password} onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full h-11 px-4 rounded-xl bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+                  className="w-full h-11 px-4 rounded-xl bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
                   data-testid="input-login-password"
                 />
               </div>
@@ -276,13 +276,13 @@ export function LoginPage() {
                   className="w-3.5 h-3.5 rounded accent-primary cursor-pointer"
                   data-testid="checkbox-remember-me"
                 />
-                <span className="text-body text-muted-foreground/70">Remember me</span>
+                <span className="text-body text-muted-foreground/75">Remember me</span>
               </label>
 
               {/* Error */}
               {loginError && (
                 <div
-                  className="text-body text-red-400/90 rounded-xl px-4 py-2.5 bg-red-500/10 border border-red-500/20"
+                  className="text-body text-status-danger/90 rounded-xl px-4 py-2.5 bg-status-danger/10 border border-status-danger/20"
                   data-testid="text-login-error"
                 >
                   {loginError}
@@ -293,7 +293,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoggingIn || !email.trim() || !password}
-                className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 active:scale-[0.99] shadow-md shadow-primary/25 transition-all disabled:opacity-35 disabled:pointer-events-none flex items-center justify-center gap-2 mt-1"
+                className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 active:scale-[0.99] shadow-md shadow-primary/25 transition-[color,background-color,border-color,box-shadow,opacity,transform] disabled:opacity-35 disabled:pointer-events-none flex items-center justify-center gap-2 mt-1"
                 data-testid="button-login"
               >
                 {isLoggingIn ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -305,22 +305,22 @@ export function LoginPage() {
             <div
               className="mt-7 pt-6 space-y-3 border-t border-border/40"
             >
-              <p className="text-label font-bold uppercase tracking-widest text-muted-foreground/40 text-center">
+              <p className="text-label font-bold uppercase tracking-widest text-muted-foreground/75 text-center">
                 No account?
               </p>
               <a
                 href="/waitlist/#request-access"
-                className="w-full h-11 rounded-xl border border-primary/30 bg-primary/10 text-body font-semibold text-interactive hover:bg-primary/20 hover:border-primary/50 transition-all flex items-center justify-center gap-2"
+                className="w-full h-11 rounded-xl border border-primary/30 bg-primary/10 text-body font-semibold text-interactive hover:bg-primary/20 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex items-center justify-center gap-2"
                 data-testid="link-request-access"
               >
                 Request access <ArrowRight className="w-3.5 h-3.5" />
               </a>
-              <p className="text-caption text-muted-foreground/50 text-center leading-relaxed px-3">
+              <p className="text-caption text-muted-foreground/75 text-center leading-relaxed px-3">
                 Access is approved by the Metrix team. Approved users receive a temporary password by email.
               </p>
               <button
                 type="button" onClick={() => navigate(CREATE_ACCOUNT_PATH)}
-                className="w-full h-10 rounded-xl border border-border/40 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 hover:border-border/60 transition-all flex items-center justify-center"
+                className="pressable-lg w-full h-10 rounded-xl border border-border/40 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 hover:border-border/60 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex items-center justify-center"
                 data-testid="button-create-account"
               >
                 Create Account
@@ -331,7 +331,7 @@ export function LoginPage() {
             <div className="mt-6 text-center hidden lg:block">
               <a
                 href="/waitlist/"
-                className="inline-flex items-center gap-1 text-caption text-muted-foreground/40 hover:text-foreground/70 transition-colors"
+                className="inline-flex items-center gap-1 text-caption text-muted-foreground/75 hover:text-foreground/70 transition-colors"
                 data-testid="link-marketing-site"
               >
                 Learn more about Metrix <ArrowRight className="w-3 h-3" />

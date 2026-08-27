@@ -829,6 +829,8 @@ export interface AnalysisSummaryDemoRow {
   age: string;
   gender: string;
   spend: number | null;
+  /** Impressions for this age/gender cell. Nullable because rows ingested before demographic_performance carried the column have no measurement — null means not measured, never zero. Without it there is no demographic CTR or CPM, which is why the column was backfilled. */
+  impressions: number | null;
   results: number | null;
   link_clicks: number | null;
   adds_to_cart: number | null;
@@ -942,6 +944,32 @@ export interface AccountAnalysisDataWindow {
   spend: number;
   /** Number of ad_performance rows in this window */
   rows: number;
+}
+
+export interface DailySeriesPoint {
+  /** YYYY-MM-DD */
+  day: string;
+  spend: number | null;
+  impressions: number | null;
+  /** Per-day deduplicated people count. Never sum across days. */
+  reach: number | null;
+  clicks_all: number | null;
+  link_clicks: number | null;
+  results: number | null;
+  /** spend / results, recomputed from the day's sums. */
+  cpa: number | null;
+  ctr_link_pct: number | null;
+  cvr_link_pct: number | null;
+  /** Ad rows contributing to this day. */
+  ads: number;
+}
+
+export interface DailySeriesResult {
+  points: DailySeriesPoint[];
+  date_start: string | null;
+  date_end: string | null;
+  /** Days inside the span with no rows at all — a real gap, not a zero. */
+  missing_days: string[];
 }
 
 export interface AccountAnalysisDataWindowsResult {

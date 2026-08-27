@@ -146,7 +146,7 @@ export function AddAccountDialog({
                     key={n}
                     className={cn(
                       "w-1.5 h-1.5 rounded-full transition-colors",
-                      n < stepNumber ? "bg-emerald-400/60"
+                      n < stepNumber ? "bg-status-success/60"
                         : n === stepNumber ? "bg-primary/70"
                         : "bg-border/40"
                     )}
@@ -154,7 +154,7 @@ export function AddAccountDialog({
                 );
               })}
             </div>
-            <span className="text-label font-medium text-muted-foreground/40 tabular-nums">
+            <span className="text-label font-medium text-muted-foreground/75 tabular-nums">
               Step {stepNumber} of {totalSteps}
             </span>
           </div>
@@ -164,7 +164,7 @@ export function AddAccountDialog({
           <>
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
                   <Plus className="w-4 h-4 text-interactive" />
                 </div>
               </div>
@@ -180,7 +180,7 @@ export function AddAccountDialog({
                   default while live Meta OAuth is gated below. */}
               <button
                 onClick={() => setStep("manual_name")}
-                className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-primary/30 bg-primary/[0.03] hover:border-primary/50 hover:bg-primary/[0.06] transition-colors text-left"
+                className="pressable-lg w-full flex items-start gap-3 p-3.5 rounded-lg border border-primary/30 bg-primary/[0.03] hover:border-primary/50 hover:bg-primary/[0.06] transition-colors text-left"
               >
                 <div className="w-9 h-9 rounded-lg border border-primary/25 bg-primary/10 flex items-center justify-center shrink-0">
                   <FileUp className="w-4 h-4 text-interactive" />
@@ -202,19 +202,19 @@ export function AddAccountDialog({
                 disabled
                 aria-disabled="true"
                 title="Live Meta connection is coming soon — use manual upload above for now"
-                className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-border/30 bg-white/[0.01] opacity-70 cursor-not-allowed text-left"
+                className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-border/30 bg-foreground/[0.01] opacity-70 cursor-not-allowed text-left"
               >
-                <div className="w-9 h-9 rounded-lg border border-border/30 bg-white/[0.02] flex items-center justify-center shrink-0">
-                  <Plug className="w-4 h-4 text-muted-foreground/50" />
+                <div className="w-9 h-9 rounded-lg border border-border/30 bg-foreground/[0.02] flex items-center justify-center shrink-0">
+                  <Plug className="w-4 h-4 text-muted-foreground/75" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <div className="text-title font-semibold text-muted-foreground/70">Connect Meta Ad Account</div>
-                    <span className="text-label font-semibold uppercase tracking-widest border border-border/40 bg-white/[0.03] text-muted-foreground/60 px-1.5 py-0.5 rounded shrink-0">
+                    <div className="text-title font-semibold text-muted-foreground/75">Connect Meta Ad Account</div>
+                    <span className="text-label font-semibold uppercase tracking-widest border border-border/40 bg-foreground/[0.03] text-muted-foreground/75 px-1.5 py-0.5 rounded shrink-0">
                       Coming soon
                     </span>
                   </div>
-                  <p className="text-caption text-muted-foreground/55 leading-relaxed mt-0.5">
+                  <p className="text-caption text-muted-foreground/75 leading-relaxed mt-0.5">
                     Direct OAuth connection to Meta is in active development. Use manual upload
                     above in the meantime.
                   </p>
@@ -228,7 +228,7 @@ export function AddAccountDialog({
           <>
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
                   <FileUp className="w-4 h-4 text-interactive" />
                 </div>
               </div>
@@ -248,15 +248,15 @@ export function AddAccountDialog({
                 placeholder="e.g. Acme Skincare"
                 maxLength={120}
                 className={cn(
-                  "w-full h-10 px-3 rounded-md bg-white/[0.03] border text-title text-foreground",
+                  "w-full h-10 px-3 rounded-md bg-foreground/[0.03] border text-title text-foreground",
                   "placeholder:text-muted-foreground/75 focus:outline-none focus:ring-1",
-                  error ? "border-red-400/40 focus:ring-red-400/40" : "border-border/50 focus:ring-primary/40 focus:border-primary/40"
+                  error ? "border-status-danger/40 focus:ring-status-danger/40" : "border-border/50 focus:ring-primary/40 focus:border-primary/40"
                 )}
               />
               {error && (
-                <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                  <p className="text-caption text-red-300 leading-relaxed">{error}</p>
+                <div className="flex items-start gap-2 p-2.5 rounded-lg border border-status-danger/25 bg-status-danger/[0.06]">
+                  <AlertTriangle className="w-3.5 h-3.5 text-status-danger shrink-0 mt-0.5" />
+                  <p className="text-caption text-status-danger leading-relaxed">{error}</p>
                 </div>
               )}
               <div className="flex items-center justify-between pt-1">
@@ -283,8 +283,8 @@ export function AddAccountDialog({
           <>
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg border border-emerald-400/25 bg-emerald-400/[0.08] flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <div className="w-8 h-8 rounded-lg border border-status-success/25 bg-status-success/[0.08] flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 text-status-success" />
                 </div>
               </div>
               <DialogTitle className={DIALOG.title}>{created.name} created</DialogTitle>

@@ -149,7 +149,7 @@ describe("Creative Library — Next moves card", () => {
 describe("Creative Library — Variable library chips open the drill-down modal", () => {
   it("opens VariableDrilldownModal with real KPI data when a chip is clicked", () => {
     renderFor("bookster");
-    fireEvent.click(screen.getByRole("button", { name: /Variable library/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /Variable library/i }));
     const chip = screen.getByTestId("chip-library-variable-HK_Benefit");
     fireEvent.click(chip);
     expect(screen.getByTestId("title-variable-drilldown")).toBeTruthy();
@@ -159,19 +159,19 @@ describe("Creative Library — Variable library chips open the drill-down modal"
 describe("Creative Library — Cross-map cells are real click targets", () => {
   it("opens the real creative when a tested cell is clicked", () => {
     renderFor("bookster");
-    fireEvent.click(screen.getByRole("button", { name: /Cross-map/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /Cross-map/i }));
     // C2B / MOF and C2F / MOF are real tested combinations in Bookster's data.
     const testedCells = screen.getAllByTitle(/spend · \d+ results — click to open the creative/i);
     expect(testedCells.length).toBeGreaterThan(0);
     fireEvent.click(testedCells[0]);
     // The creative expand dialog's tab bar renders once open.
-    expect(screen.getByRole("button", { name: /Overview/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Demographics/i })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Overview/i })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Demographics/i })).toBeTruthy();
   });
 
   it("queues a real Task Tray item when an untested cell is clicked", () => {
     renderFor("bookster");
-    fireEvent.click(screen.getByRole("button", { name: /Cross-map/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /Cross-map/i }));
     const untestedCell = screen.getAllByTitle(/Untested — click to queue/i)[0];
     expect(untestedCell).toBeTruthy();
     const label = untestedCell.getAttribute("title")!;

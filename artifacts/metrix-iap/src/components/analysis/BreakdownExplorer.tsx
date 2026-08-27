@@ -48,7 +48,7 @@ function ControlSelect({ label, value, onChange, options }: {
 }) {
   return (
     <label className="flex items-center gap-1.5 min-w-0">
-      <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/50 shrink-0")}>{label}</span>
+      <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0")}>{label}</span>
       <select
         aria-label={label}
         value={value}
@@ -79,8 +79,8 @@ function ChartFormToggle({ form, onChange }: { form: ChartForm; onChange: (f: Ch
           aria-label={label}
           onClick={() => onChange(id)}
           className={cn(
-            "px-2 py-1 transition-colors",
-            form === id ? "bg-primary/15 text-interactive" : "text-muted-foreground/50 hover:text-foreground/75",
+            "pressable px-2 py-1 transition-colors",
+            form === id ? "bg-primary/15 text-interactive" : "text-muted-foreground/75 hover:text-foreground/75",
           )}
         >
           <Icon className="w-3.5 h-3.5" aria-hidden />
@@ -194,7 +194,7 @@ function FunnelRanking({ rows }: { rows: BreakdownRow[] }) {
         const pct = Math.max(((r.value as number) / max) * 100, 6);
         return (
           <div key={r.key} className="flex items-center gap-3">
-            <span className={cn(TYPE.label, "w-32 shrink-0 truncate text-muted-foreground/70 normal-case tracking-normal text-right")} title={r.label}>
+            <span className={cn(TYPE.label, "w-32 shrink-0 truncate text-muted-foreground/75 normal-case tracking-normal text-right")} title={r.label}>
               {r.label}
             </span>
             <div className="flex-1 flex justify-center">
@@ -224,10 +224,10 @@ function MirrorTable({ rows, metricLabel, dimensionLabel, onDrillSegment }: {
       <table className="w-full text-left border-collapse">
         <thead>
           <tr className="border-b border-border/30">
-            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/50 uppercase tracking-widest font-medium")}>Segment</th>
-            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/50 uppercase tracking-widest font-medium text-right")}>{metricLabel}</th>
-            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/50 uppercase tracking-widest font-medium text-right")}>Spend</th>
-            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/50 uppercase tracking-widest font-medium text-right")}>Results</th>
+            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/75 uppercase tracking-widest font-medium")}>Segment</th>
+            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/75 uppercase tracking-widest font-medium text-right")}>{metricLabel}</th>
+            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/75 uppercase tracking-widest font-medium text-right")}>Spend</th>
+            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/75 uppercase tracking-widest font-medium text-right")}>Results</th>
           </tr>
         </thead>
         <tbody>
@@ -239,7 +239,7 @@ function MirrorTable({ rows, metricLabel, dimensionLabel, onDrillSegment }: {
                     <button
                       type="button"
                       onClick={() => onDrillSegment(r)}
-                      className="text-left truncate max-w-full text-interactive hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+                      className="pressable-lg text-left truncate max-w-full text-interactive hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
                       data-testid={`breakdown-segment-${r.key}`}
                       aria-label={`Open the deep dive for ${r.label}`}
                     >
@@ -250,7 +250,7 @@ function MirrorTable({ rows, metricLabel, dimensionLabel, onDrillSegment }: {
                   )}
                 </SegmentHoverPreview>
               </td>
-              <td className={cn(TYPE.body, "px-3 py-1.5 tabular-nums text-right", r.value == null ? "text-muted-foreground/40" : "text-foreground font-semibold")}>
+              <td className={cn(TYPE.body, "px-3 py-1.5 tabular-nums text-right", r.value == null ? "text-muted-foreground/75" : "text-foreground font-semibold")}>
                 {r.formatted}
               </td>
               <td className={cn(TYPE.body, "px-3 py-1.5 tabular-nums text-right text-foreground/60")}>
@@ -269,7 +269,7 @@ function MirrorTable({ rows, metricLabel, dimensionLabel, onDrillSegment }: {
 
 function NoticeNote({ children, testid }: { children: React.ReactNode; testid?: string }) {
   return (
-    <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-white/[0.02] p-3" data-testid={testid}>
+    <div className="flex items-start gap-2 text-caption text-muted-foreground/75 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-3" data-testid={testid}>
       <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden />
       <span>{children}</span>
     </div>
@@ -378,7 +378,7 @@ export function BreakdownExplorer({
           type="button"
           onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
           aria-label={sortDir === "desc" ? "Sorted descending — switch to ascending" : "Sorted ascending — switch to descending"}
-          className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/50 text-caption text-foreground/75 hover:text-foreground transition-colors"
+          className="pressable inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/50 text-caption text-foreground/75 hover:text-foreground transition-colors"
         >
           {sortDir === "desc" ? <ArrowDown className="w-3 h-3" aria-hidden /> : <ArrowUp className="w-3 h-3" aria-hidden />}
           {sortDir === "desc" ? "High → low" : "Low → high"}
@@ -407,7 +407,7 @@ export function BreakdownExplorer({
         rows.length === 0 || !hasValues ? (
           <div className="py-8 text-center space-y-1.5" data-testid="breakdown-empty">
             <p className="text-title font-medium text-foreground/60">No segment data for this selection</p>
-            <p className="text-caption text-muted-foreground/60 max-w-sm mx-auto leading-relaxed">
+            <p className="text-caption text-muted-foreground/75 max-w-sm mx-auto leading-relaxed">
               No rows back this metric for the selected dimension in the current import — values that can't be
               honestly computed show as n/a, never zero.
             </p>

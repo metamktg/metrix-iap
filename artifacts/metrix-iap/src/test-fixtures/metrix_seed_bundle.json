@@ -2107,7 +2107,10 @@
               "Clicks (all)": 501,
               "variable_family": "hook",
               "Amount spent (USD)": 884.41,
-              "Result_per_link_click_pct": 4.1667
+              "Result_per_link_click_pct": 4.1667,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 10450,
@@ -2122,7 +2125,10 @@
               "Clicks (all)": 424,
               "variable_family": "framework",
               "Amount spent (USD)": 773.49,
-              "Result_per_link_click_pct": 4.7761
+              "Result_per_link_click_pct": 4.7761,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 12327,
@@ -2137,7 +2143,10 @@
               "Clicks (all)": 490,
               "variable_family": "cta",
               "Amount spent (USD)": 862.46,
-              "Result_per_link_click_pct": 4.0107
+              "Result_per_link_click_pct": 4.0107,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 9696,
@@ -2152,7 +2161,10 @@
               "Clicks (all)": 402,
               "variable_family": "concept",
               "Amount spent (USD)": 735.99,
-              "Result_per_link_click_pct": 4.4444
+              "Result_per_link_click_pct": 4.4444,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 9696,
@@ -2167,7 +2179,10 @@
               "Clicks (all)": 402,
               "variable_family": "concept",
               "Amount spent (USD)": 735.99,
-              "Result_per_link_click_pct": 4.4444
+              "Result_per_link_click_pct": 4.4444,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 9696,
@@ -2182,7 +2197,10 @@
               "Clicks (all)": 402,
               "variable_family": "concept",
               "Amount spent (USD)": 735.99,
-              "Result_per_link_click_pct": 4.4444
+              "Result_per_link_click_pct": 4.4444,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 9696,
@@ -2197,7 +2215,10 @@
               "Clicks (all)": 402,
               "variable_family": "cta",
               "Amount spent (USD)": 735.99,
-              "Result_per_link_click_pct": 4.4444
+              "Result_per_link_click_pct": 4.4444,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 9696,
@@ -2212,7 +2233,10 @@
               "Clicks (all)": 402,
               "variable_family": "hook",
               "Amount spent (USD)": 735.99,
-              "Result_per_link_click_pct": 4.4444
+              "Result_per_link_click_pct": 4.4444,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 9696,
@@ -2227,7 +2251,10 @@
               "Clicks (all)": 402,
               "variable_family": "pain_proof",
               "Amount spent (USD)": 735.99,
-              "Result_per_link_click_pct": 4.4444
+              "Result_per_link_click_pct": 4.4444,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 9696,
@@ -2242,7 +2269,10 @@
               "Clicks (all)": 402,
               "variable_family": "proof",
               "Amount spent (USD)": 735.99,
-              "Result_per_link_click_pct": 4.4444
+              "Result_per_link_click_pct": 4.4444,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 9696,
@@ -2257,7 +2287,10 @@
               "Clicks (all)": 402,
               "variable_family": "proof",
               "Amount spent (USD)": 735.99,
-              "Result_per_link_click_pct": 4.4444
+              "Result_per_link_click_pct": 4.4444,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 9696,
@@ -2272,7 +2305,10 @@
               "Clicks (all)": 402,
               "variable_family": "tone",
               "Amount spent (USD)": 735.99,
-              "Result_per_link_click_pct": 4.4444
+              "Result_per_link_click_pct": 4.4444,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 2976,
@@ -2287,7 +2323,10 @@
               "Clicks (all)": 99,
               "variable_family": "tone",
               "Amount spent (USD)": 148.42,
-              "Result_per_link_click_pct": 2.8986
+              "Result_per_link_click_pct": 2.8986,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 754,
@@ -2302,7 +2341,10 @@
               "Clicks (all)": 22,
               "variable_family": "cta",
               "Amount spent (USD)": 37.5,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 754,
@@ -2317,7 +2359,10 @@
               "Clicks (all)": 22,
               "variable_family": "tone",
               "Amount spent (USD)": 37.5,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 2567,
@@ -2332,7 +2377,10 @@
               "Clicks (all)": 88,
               "variable_family": "pain_proof",
               "Amount spent (USD)": 132.87,
-              "Result_per_link_click_pct": 1.6949
+              "Result_per_link_click_pct": 1.6949,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 2567,
@@ -2347,7 +2395,10 @@
               "Clicks (all)": 88,
               "variable_family": "proof",
               "Amount spent (USD)": 132.87,
-              "Result_per_link_click_pct": 1.6949
+              "Result_per_link_click_pct": 1.6949,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 2631,
@@ -2362,7 +2413,10 @@
               "Clicks (all)": 88,
               "variable_family": "concept",
               "Amount spent (USD)": 126.47,
-              "Result_per_link_click_pct": 1.6949
+              "Result_per_link_click_pct": 1.6949,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 2631,
@@ -2377,7 +2431,10 @@
               "Clicks (all)": 88,
               "variable_family": "proof",
               "Amount spent (USD)": 126.47,
-              "Result_per_link_click_pct": 1.6949
+              "Result_per_link_click_pct": 1.6949,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 345,
@@ -2392,7 +2449,10 @@
               "Clicks (all)": 11,
               "variable_family": "concept",
               "Amount spent (USD)": 21.95,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 345,
@@ -2407,7 +2467,10 @@
               "Clicks (all)": 11,
               "variable_family": "concept",
               "Amount spent (USD)": 21.95,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 345,
@@ -2422,7 +2485,10 @@
               "Clicks (all)": 11,
               "variable_family": "framework",
               "Amount spent (USD)": 21.95,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 345,
@@ -2437,7 +2503,10 @@
               "Clicks (all)": 11,
               "variable_family": "pain_proof",
               "Amount spent (USD)": 21.95,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 409,
@@ -2452,7 +2521,10 @@
               "Clicks (all)": 11,
               "variable_family": "concept",
               "Amount spent (USD)": 15.55,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 409,
@@ -2467,7 +2539,10 @@
               "Clicks (all)": 11,
               "variable_family": "cta",
               "Amount spent (USD)": 15.55,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 409,
@@ -2482,7 +2557,10 @@
               "Clicks (all)": 11,
               "variable_family": "framework",
               "Amount spent (USD)": 15.55,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 409,
@@ -2497,7 +2575,10 @@
               "Clicks (all)": 11,
               "variable_family": "hook",
               "Amount spent (USD)": 15.55,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 409,
@@ -2512,7 +2593,10 @@
               "Clicks (all)": 11,
               "variable_family": "pain_proof",
               "Amount spent (USD)": 15.55,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 409,
@@ -2527,7 +2611,10 @@
               "Clicks (all)": 11,
               "variable_family": "pain_proof",
               "Amount spent (USD)": 15.55,
-              "Result_per_link_click_pct": 10
+              "Result_per_link_click_pct": 10,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 2222,
@@ -2542,7 +2629,10 @@
               "Clicks (all)": 77,
               "variable_family": "framework",
               "Amount spent (USD)": 110.92,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 2222,
@@ -2557,7 +2647,10 @@
               "Clicks (all)": 77,
               "variable_family": "tone",
               "Amount spent (USD)": 110.92,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             }
           ],
           "demographic_registration_signal": [
@@ -4937,7 +5030,8 @@
               "performance_tier": null,
               "confidence_level": null
             }
-          ]
+          ],
+          "latest_analysis_run_id": null
         },
         "strategy": {
           "provenance": "imported",
@@ -16184,7 +16278,8 @@
               "performance_tier": null,
               "confidence_level": null
             }
-          ]
+          ],
+          "latest_analysis_run_id": null
         },
         "strategy": {
           "provenance": "imported",
@@ -20632,7 +20727,8 @@
               "performance_tier": "4 - Eliminate",
               "confidence_level": "validation_required"
             }
-          ]
+          ],
+          "latest_analysis_run_id": null
         },
         "strategy": {
           "provenance": "generated",
@@ -31168,7 +31264,8 @@
               "performance_tier": null,
               "confidence_level": null
             }
-          ]
+          ],
+          "latest_analysis_run_id": null
         },
         "strategy": {
           "provenance": "generated",
@@ -32683,7 +32780,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 500.49,
-              "Result_per_link_click_pct": 1.1477761836441895
+              "Result_per_link_click_pct": 1.1477761836441895,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32698,7 +32798,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 363.88,
-              "Result_per_link_click_pct": 0.9115770282588878
+              "Result_per_link_click_pct": 0.9115770282588878,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32713,7 +32816,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 723.2800000000001,
-              "Result_per_link_click_pct": 1.6580310880829014
+              "Result_per_link_click_pct": 1.6580310880829014,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32728,7 +32834,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 12.8,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32743,7 +32852,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 101.24,
-              "Result_per_link_click_pct": 0.9090909090909091
+              "Result_per_link_click_pct": 0.9090909090909091,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32758,7 +32870,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 137.94,
-              "Result_per_link_click_pct": 1.0309278350515463
+              "Result_per_link_click_pct": 1.0309278350515463,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32773,7 +32888,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 97.87,
-              "Result_per_link_click_pct": 0.3703703703703704
+              "Result_per_link_click_pct": 0.3703703703703704,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32788,7 +32906,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 97.87,
-              "Result_per_link_click_pct": 0.3703703703703704
+              "Result_per_link_click_pct": 0.3703703703703704,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32803,7 +32924,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 448.88,
-              "Result_per_link_click_pct": 3.125
+              "Result_per_link_click_pct": 3.125,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32818,7 +32942,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 1.11,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32833,7 +32960,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 3.33,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32848,7 +32978,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 8.399999999999999,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32863,7 +32996,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 59.82,
-              "Result_per_link_click_pct": 2.941176470588235
+              "Result_per_link_click_pct": 2.941176470588235,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32878,7 +33014,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 59.82,
-              "Result_per_link_click_pct": 2.941176470588235
+              "Result_per_link_click_pct": 2.941176470588235,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32893,7 +33032,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.62,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32908,7 +33050,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.62,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32923,7 +33068,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 415.62,
-              "Result_per_link_click_pct": 2.471169686985173
+              "Result_per_link_click_pct": 2.471169686985173,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32938,7 +33086,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 40.64,
-              "Result_per_link_click_pct": 1.7241379310344827
+              "Result_per_link_click_pct": 1.7241379310344827,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32953,7 +33104,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.69,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32968,7 +33122,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.69,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32983,7 +33140,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 215.15,
-              "Result_per_link_click_pct": 2.997275204359673
+              "Result_per_link_click_pct": 2.997275204359673,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -32998,7 +33158,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 60.43,
-              "Result_per_link_click_pct": 1.1363636363636365
+              "Result_per_link_click_pct": 1.1363636363636365,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33013,7 +33176,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 71.13,
-              "Result_per_link_click_pct": 1.3937282229965158
+              "Result_per_link_click_pct": 1.3937282229965158,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33028,7 +33194,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 83.61,
-              "Result_per_link_click_pct": 2.73972602739726
+              "Result_per_link_click_pct": 2.73972602739726,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33043,7 +33212,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 83.61,
-              "Result_per_link_click_pct": 2.73972602739726
+              "Result_per_link_click_pct": 2.73972602739726,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33058,7 +33230,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 4.31,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33073,7 +33248,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 71.19,
-              "Result_per_link_click_pct": 1.5151515151515151
+              "Result_per_link_click_pct": 1.5151515151515151,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33088,7 +33266,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 786.3199999999999,
-              "Result_per_link_click_pct": 2.021276595744681
+              "Result_per_link_click_pct": 2.021276595744681,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33103,7 +33284,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 94.32,
-              "Result_per_link_click_pct": 2.73972602739726
+              "Result_per_link_click_pct": 2.73972602739726,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33118,7 +33302,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 94.32,
-              "Result_per_link_click_pct": 2.73972602739726
+              "Result_per_link_click_pct": 2.73972602739726,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33133,7 +33320,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 182.43,
-              "Result_per_link_click_pct": 1.7241379310344827
+              "Result_per_link_click_pct": 1.7241379310344827,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33148,7 +33338,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 135.82,
-              "Result_per_link_click_pct": 1.3513513513513513
+              "Result_per_link_click_pct": 1.3513513513513513,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33163,7 +33356,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 72.79999999999998,
-              "Result_per_link_click_pct": 3.7037037037037033
+              "Result_per_link_click_pct": 3.7037037037037033,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33178,7 +33374,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 66.42,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33193,7 +33392,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 21.67997528,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33208,7 +33410,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33223,7 +33428,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 22.43,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33238,7 +33446,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 44.77,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33253,7 +33464,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 1239.06,
-              "Result_per_link_click_pct": 1.3472292831723438
+              "Result_per_link_click_pct": 1.3472292831723438,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33268,7 +33482,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 100.35,
-              "Result_per_link_click_pct": 1.7964071856287425
+              "Result_per_link_click_pct": 1.7964071856287425,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33283,7 +33500,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 62.44,
-              "Result_per_link_click_pct": 6.25
+              "Result_per_link_click_pct": 6.25,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33298,7 +33518,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 28.92,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33313,7 +33536,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 37.68,
-              "Result_per_link_click_pct": 2.5
+              "Result_per_link_click_pct": 2.5,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33328,7 +33554,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 299.03,
-              "Result_per_link_click_pct": 1.5810276679841897
+              "Result_per_link_click_pct": 1.5810276679841897,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33343,7 +33572,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 299.03,
-              "Result_per_link_click_pct": 1.5810276679841897
+              "Result_per_link_click_pct": 1.5810276679841897,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33358,7 +33590,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 279.37,
-              "Result_per_link_click_pct": 1.4285714285714286
+              "Result_per_link_click_pct": 1.4285714285714286,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33373,7 +33608,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 19.660000000000004,
-              "Result_per_link_click_pct": 6.25
+              "Result_per_link_click_pct": 6.25,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33388,7 +33626,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 372.51653127000003,
-              "Result_per_link_click_pct": 1.4749262536873156
+              "Result_per_link_click_pct": 1.4749262536873156,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33403,7 +33644,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 6.87,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33418,7 +33662,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 257.73,
-              "Result_per_link_click_pct": 1.7928286852589643
+              "Result_per_link_click_pct": 1.7928286852589643,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33433,7 +33680,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 89.03,
-              "Result_per_link_click_pct": 1.7241379310344827
+              "Result_per_link_click_pct": 1.7241379310344827,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33448,7 +33698,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 44.85999999999999,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33463,7 +33716,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 7.74,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33478,7 +33734,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 97.83,
-              "Result_per_link_click_pct": 1.875
+              "Result_per_link_click_pct": 1.875,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33493,7 +33752,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.36,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33508,7 +33770,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 107.91653127000001,
-              "Result_per_link_click_pct": 0.6329113924050633
+              "Result_per_link_click_pct": 0.6329113924050633,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33523,7 +33788,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 828.36,
-              "Result_per_link_click_pct": 1.3612565445026177
+              "Result_per_link_click_pct": 1.3612565445026177,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33538,7 +33806,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 136.73,
-              "Result_per_link_click_pct": 1.4084507042253522
+              "Result_per_link_click_pct": 1.4084507042253522,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33553,7 +33824,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 67.51,
-              "Result_per_link_click_pct": 0.9433962264150944
+              "Result_per_link_click_pct": 0.9433962264150944,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33568,7 +33842,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 145.51900909,
-              "Result_per_link_click_pct": 0.46728971962616817
+              "Result_per_link_click_pct": 0.46728971962616817,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33583,7 +33860,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 509.22,
-              "Result_per_link_click_pct": 1.443298969072165
+              "Result_per_link_click_pct": 1.443298969072165,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33598,7 +33878,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 64.97,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33613,7 +33896,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 128.29666666999998,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33628,7 +33914,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 32.03,
-              "Result_per_link_click_pct": 2.272727272727273
+              "Result_per_link_click_pct": 2.272727272727273,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33643,7 +33932,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 374.98,
-              "Result_per_link_click_pct": 2.6476578411405294
+              "Result_per_link_click_pct": 2.6476578411405294,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33658,7 +33950,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 374.98,
-              "Result_per_link_click_pct": 2.6476578411405294
+              "Result_per_link_click_pct": 2.6476578411405294,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33673,7 +33968,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 411.13,
-              "Result_per_link_click_pct": 2.425373134328358
+              "Result_per_link_click_pct": 2.425373134328358,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33688,7 +33986,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 36.15,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33703,7 +34004,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 36.15,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33718,7 +34022,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 36.15,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33733,7 +34040,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 30.88,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33748,7 +34058,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 2.83,
-              "Result_per_link_click_pct": 12.5
+              "Result_per_link_click_pct": 12.5,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33763,7 +34076,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 99.65,
-              "Result_per_link_click_pct": 0.5813953488372093
+              "Result_per_link_click_pct": 0.5813953488372093,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33778,7 +34094,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 3.66,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33793,7 +34112,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 17.25,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33808,7 +34130,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 7.14,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33823,7 +34148,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 404.37,
-              "Result_per_link_click_pct": 3.32512315270936
+              "Result_per_link_click_pct": 3.32512315270936,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33838,7 +34166,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 80.71,
-              "Result_per_link_click_pct": 4.615384615384616
+              "Result_per_link_click_pct": 4.615384615384616,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33853,7 +34184,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.05,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33868,7 +34202,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.05,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33883,7 +34220,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.29,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33898,7 +34238,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 150.78,
-              "Result_per_link_click_pct": 3.2520325203252036
+              "Result_per_link_click_pct": 3.2520325203252036,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33913,7 +34256,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33928,7 +34274,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33943,7 +34292,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 500.49,
-              "Result_per_link_click_pct": 1.1477761836441895
+              "Result_per_link_click_pct": 1.1477761836441895,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33958,7 +34310,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 363.88,
-              "Result_per_link_click_pct": 0.9115770282588878
+              "Result_per_link_click_pct": 0.9115770282588878,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33973,7 +34328,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 723.2800000000001,
-              "Result_per_link_click_pct": 1.6580310880829014
+              "Result_per_link_click_pct": 1.6580310880829014,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -33988,7 +34346,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 12.8,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34003,7 +34364,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 101.24,
-              "Result_per_link_click_pct": 0.9090909090909091
+              "Result_per_link_click_pct": 0.9090909090909091,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34018,7 +34382,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 137.94,
-              "Result_per_link_click_pct": 1.0309278350515463
+              "Result_per_link_click_pct": 1.0309278350515463,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34033,7 +34400,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 97.87,
-              "Result_per_link_click_pct": 0.3703703703703704
+              "Result_per_link_click_pct": 0.3703703703703704,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34048,7 +34418,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 97.87,
-              "Result_per_link_click_pct": 0.3703703703703704
+              "Result_per_link_click_pct": 0.3703703703703704,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34063,7 +34436,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 448.88,
-              "Result_per_link_click_pct": 3.125
+              "Result_per_link_click_pct": 3.125,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34078,7 +34454,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 1.11,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34093,7 +34472,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 3.33,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34108,7 +34490,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 8.399999999999999,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34123,7 +34508,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 59.82,
-              "Result_per_link_click_pct": 2.941176470588235
+              "Result_per_link_click_pct": 2.941176470588235,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34138,7 +34526,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 59.82,
-              "Result_per_link_click_pct": 2.941176470588235
+              "Result_per_link_click_pct": 2.941176470588235,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34153,7 +34544,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.62,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34168,7 +34562,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.62,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34183,7 +34580,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 415.62,
-              "Result_per_link_click_pct": 2.471169686985173
+              "Result_per_link_click_pct": 2.471169686985173,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34198,7 +34598,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 40.64,
-              "Result_per_link_click_pct": 1.7241379310344827
+              "Result_per_link_click_pct": 1.7241379310344827,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34213,7 +34616,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.69,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34228,7 +34634,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.69,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34243,7 +34652,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 215.15,
-              "Result_per_link_click_pct": 2.997275204359673
+              "Result_per_link_click_pct": 2.997275204359673,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34258,7 +34670,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 60.43,
-              "Result_per_link_click_pct": 1.1363636363636365
+              "Result_per_link_click_pct": 1.1363636363636365,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34273,7 +34688,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 71.13,
-              "Result_per_link_click_pct": 1.3937282229965158
+              "Result_per_link_click_pct": 1.3937282229965158,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34288,7 +34706,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 83.61,
-              "Result_per_link_click_pct": 2.73972602739726
+              "Result_per_link_click_pct": 2.73972602739726,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34303,7 +34724,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 83.61,
-              "Result_per_link_click_pct": 2.73972602739726
+              "Result_per_link_click_pct": 2.73972602739726,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34318,7 +34742,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 4.31,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34333,7 +34760,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 71.19,
-              "Result_per_link_click_pct": 1.5151515151515151
+              "Result_per_link_click_pct": 1.5151515151515151,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34348,7 +34778,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 786.3199999999999,
-              "Result_per_link_click_pct": 2.021276595744681
+              "Result_per_link_click_pct": 2.021276595744681,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34363,7 +34796,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 94.32,
-              "Result_per_link_click_pct": 2.73972602739726
+              "Result_per_link_click_pct": 2.73972602739726,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34378,7 +34814,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 94.32,
-              "Result_per_link_click_pct": 2.73972602739726
+              "Result_per_link_click_pct": 2.73972602739726,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34393,7 +34832,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 182.43,
-              "Result_per_link_click_pct": 1.7241379310344827
+              "Result_per_link_click_pct": 1.7241379310344827,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34408,7 +34850,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 135.82,
-              "Result_per_link_click_pct": 1.3513513513513513
+              "Result_per_link_click_pct": 1.3513513513513513,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34423,7 +34868,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 72.79999999999998,
-              "Result_per_link_click_pct": 3.7037037037037033
+              "Result_per_link_click_pct": 3.7037037037037033,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34438,7 +34886,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 66.42,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34453,7 +34904,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 21.67997528,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34468,7 +34922,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34483,7 +34940,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 22.43,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34498,7 +34958,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 44.77,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34513,7 +34976,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 1239.06,
-              "Result_per_link_click_pct": 1.3472292831723438
+              "Result_per_link_click_pct": 1.3472292831723438,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34528,7 +34994,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 100.35,
-              "Result_per_link_click_pct": 1.7964071856287425
+              "Result_per_link_click_pct": 1.7964071856287425,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34543,7 +35012,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 62.44,
-              "Result_per_link_click_pct": 6.25
+              "Result_per_link_click_pct": 6.25,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34558,7 +35030,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 28.92,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34573,7 +35048,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 37.68,
-              "Result_per_link_click_pct": 2.5
+              "Result_per_link_click_pct": 2.5,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34588,7 +35066,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 299.03,
-              "Result_per_link_click_pct": 1.5810276679841897
+              "Result_per_link_click_pct": 1.5810276679841897,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34603,7 +35084,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 299.03,
-              "Result_per_link_click_pct": 1.5810276679841897
+              "Result_per_link_click_pct": 1.5810276679841897,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34618,7 +35102,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 279.37,
-              "Result_per_link_click_pct": 1.4285714285714286
+              "Result_per_link_click_pct": 1.4285714285714286,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34633,7 +35120,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 19.660000000000004,
-              "Result_per_link_click_pct": 6.25
+              "Result_per_link_click_pct": 6.25,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34648,7 +35138,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 372.51653127000003,
-              "Result_per_link_click_pct": 1.4749262536873156
+              "Result_per_link_click_pct": 1.4749262536873156,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34663,7 +35156,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 6.87,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34678,7 +35174,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 257.73,
-              "Result_per_link_click_pct": 1.7928286852589643
+              "Result_per_link_click_pct": 1.7928286852589643,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34693,7 +35192,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 89.03,
-              "Result_per_link_click_pct": 1.7241379310344827
+              "Result_per_link_click_pct": 1.7241379310344827,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34708,7 +35210,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 44.85999999999999,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34723,7 +35228,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 7.74,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34738,7 +35246,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 97.83,
-              "Result_per_link_click_pct": 1.875
+              "Result_per_link_click_pct": 1.875,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34753,7 +35264,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.36,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34768,7 +35282,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 107.91653127000001,
-              "Result_per_link_click_pct": 0.6329113924050633
+              "Result_per_link_click_pct": 0.6329113924050633,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34783,7 +35300,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 828.36,
-              "Result_per_link_click_pct": 1.3612565445026177
+              "Result_per_link_click_pct": 1.3612565445026177,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34798,7 +35318,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 136.73,
-              "Result_per_link_click_pct": 1.4084507042253522
+              "Result_per_link_click_pct": 1.4084507042253522,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34813,7 +35336,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 67.51,
-              "Result_per_link_click_pct": 0.9433962264150944
+              "Result_per_link_click_pct": 0.9433962264150944,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34828,7 +35354,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 145.51900909,
-              "Result_per_link_click_pct": 0.46728971962616817
+              "Result_per_link_click_pct": 0.46728971962616817,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34843,7 +35372,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 509.22,
-              "Result_per_link_click_pct": 1.443298969072165
+              "Result_per_link_click_pct": 1.443298969072165,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34858,7 +35390,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 64.97,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34873,7 +35408,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 128.29666666999998,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34888,7 +35426,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 32.03,
-              "Result_per_link_click_pct": 2.272727272727273
+              "Result_per_link_click_pct": 2.272727272727273,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34903,7 +35444,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 374.98,
-              "Result_per_link_click_pct": 2.6476578411405294
+              "Result_per_link_click_pct": 2.6476578411405294,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34918,7 +35462,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 374.98,
-              "Result_per_link_click_pct": 2.6476578411405294
+              "Result_per_link_click_pct": 2.6476578411405294,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34933,7 +35480,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 411.13,
-              "Result_per_link_click_pct": 2.425373134328358
+              "Result_per_link_click_pct": 2.425373134328358,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34948,7 +35498,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 36.15,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34963,7 +35516,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 36.15,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34978,7 +35534,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 36.15,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -34993,7 +35552,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 30.88,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35008,7 +35570,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 2.83,
-              "Result_per_link_click_pct": 12.5
+              "Result_per_link_click_pct": 12.5,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35023,7 +35588,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 99.65,
-              "Result_per_link_click_pct": 0.5813953488372093
+              "Result_per_link_click_pct": 0.5813953488372093,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35038,7 +35606,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 3.66,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35053,7 +35624,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 17.25,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35068,7 +35642,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 7.14,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35083,7 +35660,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 404.37,
-              "Result_per_link_click_pct": 3.32512315270936
+              "Result_per_link_click_pct": 3.32512315270936,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35098,7 +35678,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 80.71,
-              "Result_per_link_click_pct": 4.615384615384616
+              "Result_per_link_click_pct": 4.615384615384616,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35113,7 +35696,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.05,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35128,7 +35714,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.05,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35143,7 +35732,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0.29,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35158,7 +35750,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 150.78,
-              "Result_per_link_click_pct": 3.2520325203252036
+              "Result_per_link_click_pct": 3.2520325203252036,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35173,7 +35768,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             },
             {
               "Reach": 0,
@@ -35188,7 +35786,10 @@
               "Clicks (all)": 0,
               "variable_family": "raw_token",
               "Amount spent (USD)": 0,
-              "Result_per_link_click_pct": 0
+              "Result_per_link_click_pct": 0,
+              "manual_analysis_run_id": null,
+              "date_start": null,
+              "date_end": null
             }
           ],
           "demographic_registration_signal": [],
@@ -50920,7 +51521,8 @@
           },
           "top_checkout_cells": [],
           "top_checkout_variables": [],
-          "concept_rollup": []
+          "concept_rollup": [],
+          "latest_analysis_run_id": null
         },
         "strategy": {
           "provenance": "generated",
@@ -52422,7 +53024,8 @@
           },
           "top_checkout_cells": [],
           "top_checkout_variables": [],
-          "concept_rollup": []
+          "concept_rollup": [],
+          "latest_analysis_run_id": null
         },
         "strategy": {
           "provenance": "generated",
