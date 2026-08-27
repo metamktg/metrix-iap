@@ -6,6 +6,7 @@
 // history — this page is read-only.
 
 import { useState, useMemo, useEffect, Fragment } from "react";
+import { scopeToRun, supersededCount } from "@/lib/run-supersede";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -854,7 +855,14 @@ export function AdPerformanceView() {
         // Range-scoped totals from the dated concept rollup. When the user
         // narrows the range, tiles reflect only concepts whose flight
         // window overlaps it — no per-day interpolation, whole flights.
-        const rollup = a.concept_rollup ?? [];
+        // Scoped to the newest successful run. concept_performance keeps one
+        // row per run by design, so the unscoped array holds every run's
+        // measurement of every concept — summing it reported a $1,000
+        // concept as $2,000 after one re-run and $3,000 after two. Untagged
+        // pre-migration rows are kept under every scope.
+        const rollupAll = a.concept_rollup ?? [];
+        const rollup = scopeToRun(rollupAll, a.latest_analysis_run_id ?? null);
+        const rollupSuperseded = supersededCount(rollupAll, a.latest_analysis_run_id ?? null);
         const rollupDates = (r: (typeof rollup)[number]) => ({ start: r.date_start, end: r.date_end });
         const scoped = narrowed
           ? {
@@ -980,7 +988,19 @@ export function AdPerformanceView() {
                   })}
                   tileCount={3}
                   disclosures={{
-                    spend: <span>Range-scoped: {scoped.concepts} concept flight{scoped.concepts === 1 ? "" : "s"} overlapping the selected range — whole flights, no per-day interpolation.</span>,
+                    spend: (
+                      <span>
+                        Range-scoped: {scoped.concepts} concept flight{scoped.concepts === 1 ? "" : "s"} overlapping
+                        the selected range — whole flights, no per-day interpolation.
+                        {rollupSuperseded > 0 && (
+                          <>
+                            {" "}Measured by the latest analysis run only; {rollupSuperseded} row
+                            {rollupSuperseded === 1 ? "" : "s"} from earlier runs re-measure the same concepts and are
+                            excluded rather than added to it.
+                          </>
+                        )}
+                      </span>
+                    ),
                   }}
                   trendFor={tileTrendFor}
                 />

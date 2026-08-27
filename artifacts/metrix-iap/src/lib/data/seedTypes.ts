@@ -113,6 +113,15 @@ export interface VariablePerformanceRow {
   CPA_result: number | null;
   CTR_link_pct: number;
   Result_per_link_click_pct: number;
+  /**
+   * Which analysis run measured this variable. variable_performance retains
+   * one row per run (schema.sql's ..._run_key), so aggregating without
+   * scoping by this counts the same spend once per run. Null on
+   * pre-migration rows, which are kept under every scope.
+   */
+  manual_analysis_run_id?: string | null;
+  date_start?: string | null;
+  date_end?: string | null;
 }
 
 export interface DemographicRow {
@@ -220,6 +229,15 @@ export interface ConceptRollupRow {
 export interface AnalysisData {
   performance_by_cell: CellPerformanceRow[];
   v3_variable_performance: VariablePerformanceRow[];
+  /**
+   * The newest SUCCESSFUL analysis run for this account, or null when none
+   * has succeeded. The correct default scope for any view that shows "this
+   * account" rather than "this run" — concept_rollup and
+   * v3_variable_performance both accumulate a row per run, so the only
+   * other available default was every run at once, which sums
+   * re-measurements of the same period.
+   */
+  latest_analysis_run_id?: string | null;
   demographic_registration_signal: DemographicRow[];
   v3_placement_signal: PlacementRow[];
   c4e_placement_signal: PlacementRow[];

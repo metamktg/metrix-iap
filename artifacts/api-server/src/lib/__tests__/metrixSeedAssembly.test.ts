@@ -17,6 +17,7 @@ type Row = Record<string, any>;
 const emptyTables = (): AccountTables => ({
   adPerformance: new Map(),
   conceptPerformance: new Map(),
+    successfulRuns: new Map(),
   campaignWindows: new Map(),
   dataQualityFlags: new Map(),
   libraryCells: new Map(),

@@ -148,6 +148,7 @@ function humanJoin(items: string[]): string {
 export type AccountTables = {
   adPerformance: Map<string, Row[]>;
   conceptPerformance: Map<string, Row[]>;
+  successfulRuns: Map<string, Row[]>;
   campaignWindows: Map<string, Row[]>;
   dataQualityFlags: Map<string, Row[]>;
   libraryCells: Map<string, Row[]>;
@@ -244,6 +245,8 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
 
   // ── Full assembly from this account's rows ──────────────────────────
   const conceptPerformance = forAccount(t.conceptPerformance, accountId);
+  // Fetched newest-first, so [0] is the most recent SUCCESSFUL run.
+  const latestAnalysisRunId = (forAccount(t.successfulRuns, accountId)[0]?.["id"] as string | undefined) ?? null;
   const campaignWindows = forAccount(t.campaignWindows, accountId);
   const dataQualityFlags = forAccount(t.dataQualityFlags, accountId);
   const libraryCells = forAccount(t.libraryCells, accountId);
@@ -348,7 +351,20 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
 
   // ── Analysis (verbatim library rows + computed top-checkout views) ──
   const performanceByCell = libraryCellPerformance.map((r) => r["payload"]);
-  const variablePerf = variablePerformance.map((r) => r["payload"]);
+  // The stored payload carries no run identity, so every consumer of
+  // v3_variable_performance was structurally unable to scope by run — and
+  // variable_performance retains one row per run by design (see the
+  // ..._run_key constraint in schema.sql). rollupDnaFamilies and
+  // kpiBreakdown's per-family grouping therefore summed the same variable's
+  // spend once per run: after N analysis runs a $1,000 variable read as
+  // $N,000. Projecting the row's own run id and window alongside the payload
+  // is what makes scoping possible at all.
+  const variablePerf: Row[] = variablePerformance.map((r) => ({
+    ...(r["payload"] as Row),
+    manual_analysis_run_id: r["manual_analysis_run_id"] ?? null,
+    date_start: r["date_start"] ?? null,
+    date_end: r["date_end"] ?? null,
+  }));
   const checkout = "onb_initiate_checkout";
   const topCheckoutCells = performanceByCell
     .filter((r) => r["Result type"] === checkout)
@@ -432,6 +448,13 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     ...(conversionTrackingSignal ? { conversion_tracking_signal: conversionTrackingSignal } : {}),
     top_checkout_cells: topCheckoutCells,
     top_checkout_variables: topCheckoutVariables,
+    // The run a consumer should scope to when it is showing "this account"
+    // rather than "this run". concept_rollup and v3_variable_performance both
+    // retain one row per run by design, so an unscoped aggregate over them
+    // sums every re-measurement of the same period — after N runs a $1,000
+    // concept reads as $N,000. Null when no run has succeeded yet, in which
+    // case there is nothing to scope and every row is untagged history.
+    latest_analysis_run_id: latestAnalysisRunId,
     // Cross-book concept view from the normalized bundle (new, real data)
     concept_rollup: conceptPerformance.map((r) => ({
       book: r["book"],
@@ -950,6 +973,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     signalCards,
     adPerformanceAll,
     conceptPerformanceAll,
+    successfulRunsAll,
     campaignWindowsAll,
     dataQualityFlagsAll,
     libraryCellsAll,
@@ -979,8 +1003,31 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("ad_accounts", (q) => q.order("id")),
     selectAll("account_modules", (q) => q.order("account_id").order("module")),
     selectAll("signal_cards", (q) => q.order("id")),
-    selectAll("ad_performance", (q) => q.order("id")),
+    // Narrowed projection, not SELECT *. ad_performance is the widest and
+    // fastest-growing table here — one row per ad, per result type, per day,
+    // retained across every analysis window — and the seed reads 12 of its
+    // 25 columns. The 13 it does not read include seven text columns
+    // (campaign_name, ad_set_name, cell, concept, variation, test_id,
+    // confidence) that dominate the row's wire size. Every one of them was
+    // being paginated out of PostgREST 1,000 rows at a time, deserialized,
+    // and dropped on the floor.
+    //
+    // The structural fix is to aggregate in Postgres: the seed uses these
+    // rows for four group-bys (per result type, per ad name, min/max window,
+    // distinct books) and nothing else, so a view or RPC would return tens
+    // of rows instead of tens of thousands. That is a schema change with
+    // deployment implications; this is the safe half of it.
+    selectAll(
+      "ad_performance",
+      (q) => q.order("id"),
+      "id, account_id, ad_name, book, result_type, date_start, date_end, spend, impressions, reach, clicks_all, link_clicks, results",
+    ),
     selectAll("concept_performance", (q) => q.order("book").order("concept").order("id")),
+    // Newest successful run first — the seed exposes its id so a consumer
+    // that shows "this account" rather than "this run" has a correct default
+    // to reach for. Without one the only available default was every run at
+    // once, which sums re-measurements of the same period.
+    selectAll("manual_analysis_runs", (q) => q.eq("status", "success").order("started_at", { ascending: false }), "id, started_at, account_id"),
     selectAll("campaign_windows", (q) => q.order("date_start").order("id")),
     selectAll("data_quality_flags", (q) => q.order("id")),
     selectAll("library_cells", (q) => q.order("row_index").order("id")),
@@ -1214,6 +1261,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
   const tables: AccountTables = {
     adPerformance: groupByAccount(adPerformanceAll),
     conceptPerformance: groupByAccount(conceptPerformanceAll),
+    successfulRuns: groupByAccount(successfulRunsAll),
     campaignWindows: groupByAccount(campaignWindowsAll),
     dataQualityFlags: groupByAccount(dataQualityFlagsAll),
     libraryCells: groupByAccount(libraryCellsAll),

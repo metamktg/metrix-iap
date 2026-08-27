@@ -1004,7 +1004,7 @@ export function IapLibraryView() {
                           </h3>
                         </div>
                         <div className="grid grid-cols-dashboard-4-xl gap-3">
-                          {rollupDnaFamilies(variables).map((f) => (
+                          {rollupDnaFamilies(variables, a?.latest_analysis_run_id ?? null).map((f) => (
                             <div
                               key={f.family}
                               role={f.top ? "button" : undefined}

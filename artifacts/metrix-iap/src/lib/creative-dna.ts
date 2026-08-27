@@ -20,6 +20,7 @@ import type {
   VariablePerformanceRow,
 } from "@/lib/data/seedTypes";
 import { codesFromCarrier, splitCodes } from "@/lib/segment-analytics";
+import { scopeToRun } from "@/lib/run-supersede";
 
 // ─── Variable families ────────────────────────────────────────────────
 
@@ -254,7 +255,19 @@ export interface DnaFamilyRollup {
  * already be metric-filtered by the caller (same convention as the
  * library tables — spend sums across the selected result-type rows).
  */
-export function rollupDnaFamilies(rows: VariablePerformanceRow[]): DnaFamilyRollup[] {
+export function rollupDnaFamilies(
+  rows: VariablePerformanceRow[],
+  /**
+   * Scope to this run before summing. variable_performance retains one row
+   * per run, so an unscoped roll-up adds the same variable's spend once per
+   * run — a $1,000 hook read as $3,000 after three analyses. Pass
+   * `analysis.latest_analysis_run_id`. Null (or omitted) keeps the old
+   * unscoped behaviour, which is correct only for rows that carry no run
+   * tag at all.
+   */
+  runId: string | null = null,
+): DnaFamilyRollup[] {
+  rows = scopeToRun(rows, runId);
   const byFamily = new Map<string, Map<string, { spend: number; results: number }>>();
   for (const r of rows) {
     const fam = byFamily.get(r.variable_family) ?? new Map<string, { spend: number; results: number }>();
