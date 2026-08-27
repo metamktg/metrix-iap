@@ -110,6 +110,20 @@ jobs:
         # real control, and an aria-label does not shield it from that one.
         run: pnpm --filter @workspace/scripts run check:locator-ambiguity
 
+      - name: Design system gates
+        # These four ship with this branch and were wired into .replit only, so
+        # on the merge path — the one that matters — they protected nothing.
+        # All four are pure static reads of committed files. Placed after the
+        # typecheck step because check:chart-palette reads command-deck's
+        # index.css, which is committed but regenerated from tokens.json by
+        # `pretypecheck` — so running here reads it as the tokens define it,
+        # not as it happens to be checked in.
+        run: |
+          pnpm --filter @workspace/scripts run check:interaction
+          pnpm --filter @workspace/scripts run check:token-colors
+          pnpm --filter @workspace/scripts run check:type-scale
+          pnpm --filter @workspace/scripts run check:chart-palette
+
       - name: API codegen drift
         run: pnpm --filter @workspace/scripts run check:api-codegen-drift
 
