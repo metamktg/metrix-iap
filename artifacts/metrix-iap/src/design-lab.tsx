@@ -32,6 +32,8 @@ import { ChartTooltip, ChartEmpty, ChartSkeleton } from "@/components/charts/cha
 import { TabRail } from "@/components/nav/TabRail";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { GoalProgressCard } from "@/components/metrics/GoalProgressCard";
+import { VariableStack } from "@/components/charts/VariableStack";
+import { BreakdownControl } from "@/components/data-module/BreakdownControl";
 import { Popover, PopoverTrigger, PopoverContent } from "@workspace/command-deck/components/ui/popover";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import { SERIES_VARS, seriesColor, divergingFill, divergingLegend, magnitudeFill, magnitudeLegend, VERDICT } from "@/components/charts/chartTokens";
@@ -396,6 +398,33 @@ function App() {
             <ProgressMeter value={2} total={3} segments={3} label="Confidence — Medium" size="md" />
           </div>
         </Panel>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Panel title="Variable stack" note="one slot per family · reads are marginal, never attributed">
+            <VariableStack
+              stack={{ hook: "HK_ProofFirst", tone: "TN_Direct", framework: "FW_PAS", cta: "CTA_StartFree" }}
+              marginal={new Map([
+                ["HK_ProofFirst", { label: "CPA", value: "$18.40" }],
+                ["TN_Direct", { label: "CPA", value: "$22.10" }],
+                ["FW_PAS", { label: "CPA", value: "—" }],
+              ])}
+              marginalLabel="CPA"
+              onSelect={() => {}}
+            />
+          </Panel>
+          <Panel title="Breakdown control" note="a single-valued dimension stays visible, disabled, with its count">
+            <BreakdownControl
+              shape="demographic_registration_signal"
+              rows={[
+                { Age: "25-34", Gender: "male", cell_id: "AAFE_HK_v3" },
+                { Age: "35-44", Gender: "female", cell_id: "AAFE_HK_v3" },
+                { Age: "45-54", Gender: null, cell_id: "AAFE_HK_v3" },
+              ]}
+              value="Age"
+              onChange={() => {}}
+            />
+          </Panel>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Panel title="Donut">

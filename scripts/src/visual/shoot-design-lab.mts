@@ -87,7 +87,31 @@ const PROBE = `(() => {
   const px = (sel) => { const el = document.querySelector(sel); return el ? parseFloat(getComputedStyle(el).fontSize) : null; };
   const lum = (c) => { const f = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
     return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2]; };
-  const rgb = (s) => (s.match(/\\d+/g) || []).slice(0, 3).map(Number);
+  // Resolve ANY computed colour string to [r,g,b,a]. Chrome returns
+  // oklab(0.16 -0.002 -0.036 / 0.95) for a token background composed through
+  // hsl(var(--popover) / 0.95), and the digit-scraping version of this read
+  // [0, 162719, 0] out of that — a garbage colour that produced a
+  // 3,434,422:1 contrast ratio and reported it as a pass. Letting the canvas
+  // parse it is the only version a new colour syntax cannot defeat.
+  const _c = document.createElement("canvas"); _c.width = _c.height = 1;
+  const _x = _c.getContext("2d", { willReadFrequently: true });
+  const rgba = (css) => {
+    _x.globalCompositeOperation = "copy";
+    _x.fillStyle = "#ff00ff";
+    _x.fillStyle = css;
+    _x.fillRect(0, 0, 1, 1);
+    const d = _x.getImageData(0, 0, 1, 1).data;
+    return [d[0], d[1], d[2], d[3] / 255];
+  };
+  // Self-test: a parser that silently failed would report every ratio as fine.
+  const _probe = rgba("rgb(1, 2, 3)");
+  const _parserOk = _probe[0] === 1 && _probe[1] === 2 && _probe[2] === 3;
+  /** Composite src over dst. Alpha matters: bg-popover/95 is not bg-popover. */
+  const over = (src, dst) => {
+    const a = src[3];
+    return [0, 1, 2].map((k) => Math.round(src[k] * a + dst[k] * (1 - a))).concat(1);
+  };
+  const rgb = (str) => rgba(str).slice(0, 3);
   const contrast = (a, b) => { const p = [lum(rgb(a)), lum(rgb(b))].sort((x, y) => y - x); return (p[0] + 0.05) / (p[1] + 0.05); };
   const bands = [];
   // Every panel whose cells carry a value as text over a generated fill:
@@ -131,6 +155,48 @@ const PROBE = `(() => {
       probe.remove();
       return out;
     })(),
+    // Text inside a portalled overlay, measured against the overlay's own
+    // painted background. Nothing else here covers it, and it is exactly what
+    // moving the tooltip off bg-primary could have broken: eight nodes were
+    // written in primary-foreground because the tooltip used to be blue, and
+    // whether they survived the change is a question only a render answers.
+    overlayText: (() => {
+      const out = [];
+      // A translucent surface composites onto what is behind it, so the
+      // colour a reader actually sees is the whole stack flattened — not the
+      // element's own backgroundColor. bg-popover/95 over the page is a
+      // different colour from bg-popover, and it is the one on screen.
+      const painted = (el) => {
+        const stack = [];
+        for (let n = el; n; n = n.parentElement) {
+          const c = rgba(getComputedStyle(n).backgroundColor);
+          if (c[3] === 0) continue;
+          stack.push(c);
+          if (c[3] === 1) break;
+        }
+        if (stack.length === 0) return null;
+        let flat = stack[stack.length - 1];
+        for (let k = stack.length - 2; k >= 0; k--) flat = over(stack[k], flat);
+        return "rgb(" + flat[0] + ", " + flat[1] + ", " + flat[2] + ")";
+      };
+      document.querySelectorAll("[data-radix-popper-content-wrapper]").forEach((wrap) => {
+        wrap.querySelectorAll("p, span, div").forEach((el) => {
+          const text = (el.textContent || "").trim();
+          if (!text || el.children.length > 0) return;
+          const bg = painted(el);
+          if (!bg) return;
+          const cs = getComputedStyle(el);
+          const size = parseFloat(cs.fontSize);
+          const ink = over(rgba(cs.color), rgba(bg));
+          out.push({
+            text: text.slice(0, 28), size,
+            ratio: +contrast("rgb(" + ink[0] + ", " + ink[1] + ", " + ink[2] + ")", bg).toFixed(2),
+          });
+        });
+      });
+      return out;
+    })(),
+    parserOk: _parserOk,
     smoothing: getComputedStyle(document.documentElement).webkitFontSmoothing,
     wrap: (() => { const e = document.querySelector(".text-h3"); return e ? getComputedStyle(e).textWrap : null; })(),
     bands,
@@ -142,6 +208,8 @@ const report = await page.evaluate(PROBE) as {
   sizes: Record<string, number | null>;
   faces: Record<string, { w: number; loaded: boolean }>;
   smoothing: string; wrap: string;
+  overlayText: { text: string; size: number; ratio: number }[];
+  parserOk: boolean;
   bands: { fill: string; ratio: number }[];
   overflow: { scroll: number; client: number };
 };
@@ -232,6 +300,29 @@ if (report.smoothing !== "antialiased") problems.push(`font smoothing is "${repo
 if (report.wrap !== "balance") problems.push(`heading text-wrap is "${report.wrap}", not balance`);
 if (overflow.scroll > overflow.client) problems.push(`the page scrolls horizontally (${overflow.scroll} > ${overflow.client})`);
 if (bands.length === 0) problems.push("no generated fills were measurable — the scale panels did not render");
+if (!report.parserOk) {
+  problems.push(
+    "the colour parser in the probe did not round-trip rgb(1, 2, 3) — every contrast number " +
+      "here is meaningless. This is the check that keeps a garbage ratio from reading as a pass.",
+  );
+}
+if (report.overlayText.length === 0) {
+  problems.push(
+    "no text inside a floating overlay was measurable — the popover and tooltip panels did not " +
+      "render open, so their contrast went unchecked.",
+  );
+}
+for (const t of report.overlayText) {
+  // AA is 4.5:1 for body text and 3:1 at 18.66px+ bold / 24px+.
+  const floor = t.size >= 24 ? 3 : AA_TEXT;
+  if (t.ratio < floor) {
+    problems.push(
+      `overlay text "${t.text}" is ${t.ratio}:1 at ${t.size}px, below AA ${floor}:1. ` +
+        `A tooltip or popover paints on its own surface, so a colour inherited from a ` +
+        `different one is only wrong at render time.`,
+    );
+  }
+}
 for (const b of bands) {
   if (b.ratio < AA_TEXT) problems.push(`a generated fill (${b.fill}) carries text at ${b.ratio}:1, below AA ${AA_TEXT}:1`);
 }
@@ -242,6 +333,10 @@ console.log(`Ladder: H1 ${sizes.h1} → H2 ${sizes.h2} → H3 ${sizes.h3} → H4
 console.log(`Faces:           ${Object.entries(report.faces).filter(([k]) => !k.startsWith("_")).map(([k, v]) => `${k} ${v.loaded ? "ok" : "FALLBACK"}`).join(" · ")}`);
 console.log(`Responsive:      ${responsive.join(" · ")}`);
 console.log(`Generated fills: ${bands.length} measured, worst text contrast ${Math.min(...bands.map((b) => b.ratio))}:1`);
+console.log(
+  `Overlay text:    ${report.overlayText.length} node(s), worst ` +
+    `${report.overlayText.length ? Math.min(...report.overlayText.map((t) => t.ratio)) : "n/a"}:1`,
+);
 
 if (problems.length > 0) {
   console.error("\nFAIL  Rendered-UI violations:\n");

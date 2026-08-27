@@ -15,6 +15,51 @@ export type VariablePrefix =
   | "HP"   // Hook position
   | "unknown";
 
+// ─── Family order ────────────────────────────────────────────────────
+//
+// The order a stack is READ in, which is the order the creative is built in:
+// what stops the scroll, how it sounds, how it is structured, what it is
+// about, what backs it up, and what it asks for.
+//
+// There were three separate copies of this list — StrategyOverview keyed by
+// variable_stack field, CreativeScanView and CreativeLibraryView keyed by
+// accessor — and they disagreed on both membership and order. StrategyOverview
+// carried a "Pain pt." family the registry has no prefix for, and none of the
+// three carried AW, ST or HP at all, so three of the nine families were
+// invisible wherever those lists drove the display.
+//
+// `key` is the variable_stack field name; `prefix` is the code prefix. A
+// family with no matching prefix cannot be resolved to a label, so there is
+// exactly one list and it is keyed to both.
+
+export interface VariableFamily {
+  /** The MessagePillar.variable_stack field name. */
+  key: string;
+  /** The code prefix, per docs/iap/VARIABLES_REGISTRY.md. */
+  prefix: Exclude<VariablePrefix, "unknown">;
+  label: string;
+  /** Short form for a dense chip. */
+  abbrev: string;
+}
+
+export const VARIABLE_FAMILIES: VariableFamily[] = [
+  { key: "hook",           prefix: "HK",  label: "Hook",           abbrev: "HK" },
+  { key: "hook_position",  prefix: "HP",  label: "Hook position",  abbrev: "HP" },
+  { key: "tone",           prefix: "TN",  label: "Tone",           abbrev: "TN" },
+  { key: "framework",      prefix: "FW",  label: "Framework",      abbrev: "FW" },
+  { key: "structure",      prefix: "ST",  label: "Structure",      abbrev: "ST" },
+  { key: "concept",        prefix: "CN",  label: "Concept",        abbrev: "CN" },
+  { key: "awareness",      prefix: "AW",  label: "Awareness",      abbrev: "AW" },
+  { key: "proof",          prefix: "PR",  label: "Proof",          abbrev: "PR" },
+  { key: "cta",            prefix: "CTA", label: "CTA",            abbrev: "CTA" },
+];
+
+/** Family for a code, by its prefix. Null when the code does not parse. */
+export function familyForCode(code: string): VariableFamily | null {
+  const p = getVariablePrefix(code);
+  return VARIABLE_FAMILIES.find((f) => f.prefix === p) ?? null;
+}
+
 // ─── Label registry ──────────────────────────────────────────────────
 
 const LABELS: Record<string, string> = {

@@ -67,13 +67,13 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
         side="top"
         className="max-w-[220px] space-y-1 text-left"
       >
-        <p className="font-mono text-label text-primary-foreground/70">{code}</p>
+        <p className="font-mono text-label text-muted-foreground">{code}</p>
         {entry?.what && (
-          <p className="text-label leading-relaxed text-primary-foreground/90">
+          <p className="text-label leading-relaxed text-foreground/90">
             {entry.what.length > 120 ? entry.what.slice(0, 120) + "…" : entry.what}
           </p>
         )}
-        <p className="text-[9px] text-primary-foreground/50 italic">Click to open in Library</p>
+        <p className="text-micro text-muted-foreground/70 italic">Click to open in Library</p>
       </TooltipContent>
     </Tooltip>
   );

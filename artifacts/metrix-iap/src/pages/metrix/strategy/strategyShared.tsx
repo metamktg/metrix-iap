@@ -74,8 +74,8 @@ export function VariableChip({ code, showCode = false, className }: { code: stri
         </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] space-y-0.5 text-left">
-        <p className="font-mono text-label text-primary-foreground/70">{code}</p>
-        <p className="text-label leading-relaxed text-primary-foreground/90">{resolveVariableLabel(code)}</p>
+        <p className="font-mono text-label text-muted-foreground">{code}</p>
+        <p className="text-label leading-relaxed text-foreground/90">{resolveVariableLabel(code)}</p>
       </TooltipContent>
     </Tooltip>
     </TooltipProvider>
@@ -128,9 +128,9 @@ export function VariableStackChips({ stack, maxVisible = 4 }: { stack: Record<st
         </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] space-y-0.5 text-left">
-        <p className="text-label font-semibold text-primary-foreground/90">{familyLabel(family)}</p>
-        <p className="font-mono text-label text-primary-foreground/70">{code}</p>
-        <p className="text-label leading-relaxed text-primary-foreground/90">{resolveVariableLabel(code)}</p>
+        <p className="text-label font-semibold text-foreground/90">{familyLabel(family)}</p>
+        <p className="font-mono text-label text-muted-foreground">{code}</p>
+        <p className="text-label leading-relaxed text-foreground/90">{resolveVariableLabel(code)}</p>
       </TooltipContent>
     </Tooltip>
     </TooltipProvider>

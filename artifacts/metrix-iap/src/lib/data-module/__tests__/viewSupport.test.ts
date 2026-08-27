@@ -19,7 +19,9 @@ const SHAPES: DataShape[] = [
 
 describe("viewSupport — the §02 table", () => {
   it("matches the master plan for every shape it names", () => {
-    expect(viewsFor("performance_by_cell")).toEqual(["trend", "compare", "table"]);
+    // Breakdown is here because the rows carry book2_concept_name and
+    // funnel_stage_variable — see the note in viewSupport.
+    expect(viewsFor("performance_by_cell")).toEqual(["trend", "compare", "breakdown", "table"]);
     expect(viewsFor("concept_rollup")).toEqual(["trend", "compare", "table"]);
     expect(viewsFor("v3_variable_performance")).toEqual(["compare", "breakdown", "table"]);
     expect(viewsFor("top_checkout_variables")).toEqual(["compare", "breakdown", "table"]);

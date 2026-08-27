@@ -60,9 +60,13 @@ interface ShapeSpec {
  */
 const SUPPORT: Record<DataShape, ShapeSpec> = {
   performance_by_cell: {
-    views: ["trend", "compare", "table"],
+    // Breakdown was excluded here on the grounds that "cell rows carry no
+    // audience or placement dimension". True, and not the whole story: the
+    // rows carry book2_concept_name and funnel_stage_variable, and a split of
+    // cell performance by concept is exactly the read this view is for. The
+    // cross-check in breakdownDimensions.test.ts caught the disagreement.
+    views: ["trend", "compare", "breakdown", "table"],
     why: {
-      breakdown: "Cell rows carry no audience or placement dimension to break down by.",
       funnel: "Cell rows carry spend and results, not funnel stage counts.",
       map: "The Map view is the 4×4 matrix itself — use historical_matrix_4x4.",
     },
