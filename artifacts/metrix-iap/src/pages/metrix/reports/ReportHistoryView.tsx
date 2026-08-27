@@ -254,7 +254,7 @@ export function ReportHistoryView() {
                             setSelectedIds(allSelected ? new Set() : new Set(deletableIds))
                           }
                           disabled={batchDeleting}
-                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                          className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
                         >
                           {allSelected ? "Deselect all" : `Select all (${fmtNum(deletableIds.length)})`}
                         </button>
@@ -264,7 +264,7 @@ export function ReportHistoryView() {
                               setSelectedIds(allDraftsSelected ? new Set() : new Set(draftIds))
                             }
                             disabled={batchDeleting}
-                            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                            className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
                           >
                             {allDraftsSelected
                               ? "Deselect drafts"
@@ -274,7 +274,7 @@ export function ReportHistoryView() {
                         <button
                           onClick={exitSelectMode}
                           disabled={batchDeleting}
-                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                          className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
                         >
                           <X className="w-3.5 h-3.5" />
                           Cancel
@@ -282,7 +282,7 @@ export function ReportHistoryView() {
                         <button
                           onClick={() => setConfirmBulkDelete(true)}
                           disabled={selectedIds.size === 0 || batchDeleting}
-                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-red-400/30 text-caption font-medium text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40"
+                          className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-status-danger/30 text-caption font-medium text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-40"
                         >
                           {batchDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                           Delete selected
@@ -292,7 +292,7 @@ export function ReportHistoryView() {
                   ) : (
                     <button
                       onClick={() => setSelectMode(true)}
-                      className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors ml-auto"
+                      className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors ml-auto"
                     >
                       <Check className="w-3.5 h-3.5" />
                       Select
@@ -335,7 +335,7 @@ export function ReportHistoryView() {
                           deleteReport({ workspaceId: manager.id, reportId: confirmDelete.reportId });
                         }
                       }}
-                      className="bg-red-500/90 hover:bg-red-500 text-white"
+                      className="bg-status-danger/90 hover:bg-status-danger text-foreground"
                     >
                       {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Delete report"}
                     </AlertDialogAction>
@@ -368,7 +368,7 @@ export function ReportHistoryView() {
                           });
                         }
                       }}
-                      className="bg-red-500/90 hover:bg-red-500 text-white"
+                      className="bg-status-danger/90 hover:bg-status-danger text-foreground"
                     >
                       {batchDeleting ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -425,8 +425,8 @@ function ReportCardList({
           className={cn(
             "rounded-xl border p-4 transition-colors",
             isSelected
-              ? "border-red-400/40 bg-red-400/[0.06]"
-              : "border-border/40 bg-white/[0.02]",
+              ? "border-status-danger/40 bg-status-danger/[0.06]"
+              : "border-border/40 bg-foreground/[0.02]",
             selectable && "cursor-pointer hover:border-border/70",
           )}
         >
@@ -445,8 +445,8 @@ function ReportCardList({
                 )}
               </div>
             )}
-            <div className="w-9 h-9 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0">
-              <FileText className="w-4 h-4 text-muted-foreground/70" />
+            <div className="w-9 h-9 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center shrink-0">
+              <FileText className="w-4 h-4 text-muted-foreground/75" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -455,15 +455,15 @@ function ReportCardList({
                   className={cn(
                     "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",
                     r.status === "exported"
-                      ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
-                      : "text-amber-400 border-amber-400/25 bg-amber-400/10"
+                      ? "text-status-success border-status-success/25 bg-status-success/10"
+                      : "text-status-warning border-status-warning/25 bg-status-warning/10"
                   )}
                 >
                   {r.status}
                 </span>
               </div>
               <p className="text-caption text-muted-foreground/80 mt-1 leading-relaxed line-clamp-1">{deriveLabel(r.summary, 90)}</p>
-              <div className="flex items-center gap-3 mt-2 text-label font-mono text-muted-foreground/70 flex-wrap">
+              <div className="flex items-center gap-3 mt-2 text-label font-mono text-muted-foreground/75 flex-wrap">
                 <span>{fmtDate(r.generated_at)}</span>
                 <span className="inline-flex items-center gap-1">
                   {r.mode === "client" ? <Users className="w-3.5 h-3.5" /> : <Building2 className="w-3.5 h-3.5" />}
@@ -478,10 +478,10 @@ function ReportCardList({
                 onClick={() => download(r, r.export_format!)}
                 disabled={busyId !== null}
                 className={cn(
-                  "flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium shrink-0 transition-colors disabled:opacity-60",
+                  "pressable flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium shrink-0 transition-colors disabled:opacity-60",
                   doneId === r.id
-                    ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/5"
-                    : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    ? "border-status-success/30 text-status-success bg-status-success/5"
+                    : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5"
                 )}
               >
                 {busyId === r.id ? (
@@ -500,7 +500,7 @@ function ReportCardList({
                 disabled={deleting}
                 aria-label={`Delete report "${r.title}"`}
                 title="Delete report"
-                className="flex items-center justify-center h-8 w-8 rounded-md border border-border/50 text-muted-foreground hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/5 shrink-0 transition-colors disabled:opacity-60"
+                className="pressable flex items-center justify-center h-8 w-8 rounded-md border border-border/50 text-muted-foreground hover:text-status-danger hover:border-status-danger/30 hover:bg-status-danger/5 shrink-0 transition-colors disabled:opacity-60"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

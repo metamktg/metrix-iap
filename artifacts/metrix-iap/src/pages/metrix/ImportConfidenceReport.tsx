@@ -14,44 +14,18 @@
 // not listed there has weight 0 and does not affect the grade.
 
 import { useState } from "react";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { AlertTriangle, ChevronDown, ChevronRight, TrendingDown } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import type { ManualImport } from "@workspace/api-client-react";
 import { InfoTooltip } from "./shared";
-
-// ── Signal weights (mirrors iapCsvSpec.ts SIGNAL_WEIGHTS) ──────────────
-// Maintained as a client-side copy so the frontend doesn't need a separate
-// API call. Must be kept in sync with the server-side constant.
-const SIGNAL_WEIGHTS: Record<string, number> = {
-  "Amount spent ({ACCOUNT_CURRENCY})": 0.20,
-  "Amount spent (USD)": 0.20,  // resolved currency variant
-  "Results": 0.23,
-  "Impressions": 0.10,
-  "CTR (link click-through rate)": 0.07,
-  "Link clicks": 0.07,
-  "Reach": 0.06,
-  "CPM (cost per 1,000 impressions)": 0.05,
-  "Video average play time": 0.03,
-  "ThruPlays": 0.03,
-  "Landing page views": 0.03,
-  "Clicks (all)": 0.02,
-  "CTR (all)": 0.02,
-  "Frequency": 0.02,
-  "Result type": 0.02,
-  "Ad creative body text": 0.01,
-  "Ad creative headline": 0.01,
-  "Conversion device": 0.01,
-};
+import { getSignalWeight } from "@/lib/signalWeights";
 
 type MappingEntry = NonNullable<ManualImport["mapping_summary"]>[number];
 
 type ColumnReport = MappingEntry & {
   signalWeight: number;
 };
-
-function getSignalWeight(canonical: string): number {
-  return SIGNAL_WEIGHTS[canonical] ?? 0;
-}
 
 function computeGrade(present: number, total: number): { grade: "A" | "B" | "C" | "D" | "F"; pct: number } {
   const pct = total > 0 ? present / total : 0;
@@ -65,11 +39,11 @@ function computeGrade(present: number, total: number): { grade: "A" | "B" | "C" 
 
 function GradeBadge({ grade }: { grade: "A" | "B" | "C" | "D" | "F" }) {
   const colors: Record<string, string> = {
-    A: "bg-emerald-400/15 border-emerald-400/40 text-emerald-300",
-    B: "bg-chart-1/15 border-blue-400/40 text-blue-300",
-    C: "bg-amber-400/15 border-amber-400/40 text-amber-300",
-    D: "bg-orange-400/15 border-orange-400/40 text-orange-300",
-    F: "bg-red-500/15 border-red-400/40 text-red-300",
+    A: "bg-status-success/15 border-status-success/40 text-status-success",
+    B: "bg-chart-1/15 border-primary/40 text-interactive",
+    C: "bg-status-warning/15 border-status-warning/40 text-status-warning",
+    D: "bg-status-warning/15 border-status-warning/40 text-status-warning",
+    F: "bg-status-danger/15 border-status-danger/40 text-status-danger",
   };
   return (
     <span
@@ -89,22 +63,22 @@ function TierBadge({ tier, isRequired }: { tier: MappingEntry["tier"]; isRequire
   // so it renders as a neutral "not in export" chip instead.
   if (tier === "missing" && !isRequired) {
     return (
-      <span className="px-1.5 py-0.5 rounded text-label font-medium uppercase tracking-wide border bg-white/[0.04] border-border/40 text-muted-foreground/70">
+      <span className="px-1.5 py-0.5 rounded text-label font-medium uppercase tracking-wide border bg-foreground/[0.04] border-border/40 text-muted-foreground/75">
         not in export
       </span>
     );
   }
   const styles: Record<string, string> = {
-    exact: "bg-emerald-400/10 border-emerald-400/25 text-emerald-400",
-    resolved: "bg-chart-1/10 border-blue-400/25 text-blue-300",
-    inferred: "bg-amber-400/10 border-amber-400/25 text-amber-300",
-    missing: "bg-red-500/10 border-red-400/30 text-red-300",
+    exact: "bg-status-success/10 border-status-success/25 text-status-success",
+    resolved: "bg-chart-1/10 border-primary/25 text-interactive",
+    inferred: "bg-status-warning/10 border-status-warning/25 text-status-warning",
+    missing: "bg-status-danger/10 border-status-danger/30 text-status-danger",
   };
   return (
     <span
       className={cn(
         "px-1.5 py-0.5 rounded text-label font-semibold uppercase tracking-wide border",
-        styles[tier] ?? "bg-white/[0.04] border-border/30 text-muted-foreground/80"
+        styles[tier] ?? "bg-foreground/[0.04] border-border/30 text-muted-foreground/80"
       )}
     >
       {tier}
@@ -114,20 +88,17 @@ function TierBadge({ tier, isRequired }: { tier: MappingEntry["tier"]; isRequire
 
 function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
-  const color =
-    pct >= 90 ? "bg-emerald-400/60" :
-    pct >= 70 ? "bg-chart-1/60" :
-    pct >= 50 ? "bg-amber-400/60" :
-    "bg-red-400/60";
+  // Graded state, so the reserved status tones are correct here — this IS a
+  // verdict on the import, not an identity.
+  const fill =
+    pct >= 90 ? "hsl(var(--status-success) / 0.60)" :
+    pct >= 70 ? "hsl(var(--chart-1) / 0.60)" :
+    pct >= 50 ? "hsl(var(--status-warning) / 0.60)" :
+    "hsl(var(--status-danger) / 0.60)";
   return (
     <div className="flex items-center gap-1.5">
-      <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
-        <div
-          className={cn("h-full rounded-full transition-[width]", color)}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="text-label tabular-nums text-muted-foreground/70 w-8 text-right">{pct}%</span>
+      <ProgressMeter value={pct} total={100} label="Import confidence" fill={fill} className="flex-1" />
+      <span className="text-label tabular-nums text-muted-foreground/75 w-8 text-right">{pct}%</span>
     </div>
   );
 }
@@ -187,20 +158,20 @@ function SingleCsvConfidenceReport({
   const resolvedColumns = columns.filter((c) => c.tier !== "missing");
 
   return (
-    <div className="rounded-lg border border-border/40 bg-white/[0.02] overflow-hidden">
+    <div className="rounded-lg border border-border/40 bg-foreground/[0.02] overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 p-3 text-left hover:bg-white/[0.02] transition-colors"
+        className="pressable-lg w-full flex items-center gap-2 p-3 text-left hover:bg-foreground/[0.02] transition-colors"
       >
         {open ? (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         )}
         <GradeBadge grade={grade} />
         <div className="flex-1 min-w-0">
           <div className="text-body font-medium text-foreground truncate">{csvLabel}</div>
-          <p className="text-label text-muted-foreground/70">
+          <p className="text-label text-muted-foreground/75">
             {Math.round(pct * 100)}% signal coverage ·{" "}
             {resolvedColumns.length} of {summary.length} columns matched
             {uploadWarnings && uploadWarnings.length > 0 && (
@@ -215,7 +186,7 @@ function SingleCsvConfidenceReport({
           {/* Upload-time warnings — persisted, not ephemeral. */}
           {uploadWarnings && uploadWarnings.length > 0 && (
             <div className="space-y-1">
-              <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">
+              <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">
                 Upload warnings ({uploadWarnings.length})
               </div>
               <div className="rounded-md border border-status-warning/25 bg-status-warning/[0.06] divide-y divide-border/20">
@@ -231,7 +202,7 @@ function SingleCsvConfidenceReport({
           {/* A file staged before warnings were persisted has none RECORDED,
               which is not the same as having none. Say which. */}
           {uploadWarnings == null && (
-            <p className="text-label text-muted-foreground/60">
+            <p className="text-label text-muted-foreground/75">
               Upload warnings weren't recorded for this file — it was staged before they were kept.
             </p>
           )}
@@ -239,13 +210,13 @@ function SingleCsvConfidenceReport({
           {/* Missing weighted columns with signal penalty */}
           {missingColumns.length > 0 && (
             <div className="space-y-1">
-              <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">
+              <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">
                 Missing signal columns
               </div>
               {missingColumns.map((col) => (
                 <div key={col.canonical} className="flex items-center gap-2">
                   <span className="flex-1 text-label text-foreground/80 truncate">{col.canonical}</span>
-                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/10 border border-red-400/25 text-label text-red-300 font-mono shrink-0">
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-status-danger/10 border border-status-danger/25 text-label text-status-danger font-mono shrink-0">
                     <TrendingDown className="w-3 h-3" />
                     −{Math.round(col.signalWeight * 100)}% signal
                   </span>
@@ -256,7 +227,7 @@ function SingleCsvConfidenceReport({
 
           {/* Full column table */}
           <div className="space-y-1">
-            <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">
+            <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">
               All columns ({summary.length})
             </div>
             <div className="rounded-md border border-border/30 divide-y divide-border/20">
@@ -266,7 +237,7 @@ function SingleCsvConfidenceReport({
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-label font-medium text-foreground/85 truncate">{col.canonical}</span>
                       {col.found_as && col.found_as !== col.canonical && (
-                        <span className="text-label text-muted-foreground/50 font-mono truncate">← {col.found_as}</span>
+                        <span className="text-label text-muted-foreground/75 font-mono truncate">← {col.found_as}</span>
                       )}
                     </div>
                   </div>
@@ -276,9 +247,9 @@ function SingleCsvConfidenceReport({
                       <ConfidenceBar value={col.confidence} />
                     </div>
                   ) : col.tier === "missing" ? (
-                    <span className="text-label text-muted-foreground/40 w-20 shrink-0 text-right">—</span>
+                    <span className="text-label text-muted-foreground/75 w-20 shrink-0 text-right">—</span>
                   ) : (
-                    <span className="text-label text-emerald-400/60 w-20 shrink-0 text-right">100%</span>
+                    <span className="text-label text-status-success/60 w-20 shrink-0 text-right">100%</span>
                   )}
                 </div>
               ))}

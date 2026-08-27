@@ -125,17 +125,17 @@ function BannerInner({ label }: BannerInnerProps) {
   const elapsed = useElapsedSeconds(true);
 
   return (
-    <div className="flex items-center gap-2.5 px-4 py-1.5 border-b border-amber-400/20 bg-amber-400/[0.04]">
-      <Loader2 className="w-3 h-3 text-amber-400/70 animate-spin shrink-0" />
-      <span className="text-label font-medium text-amber-400/75">{label} processing</span>
-      <span className="text-[9px] font-mono tabular-nums text-amber-400/45 leading-none">{fmtElapsed(elapsed)}</span>
+    <div className="flex items-center gap-2.5 px-4 py-1.5 border-b border-status-warning/20 bg-status-warning/[0.04]">
+      <Loader2 className="w-3 h-3 text-status-warning/70 animate-spin shrink-0" />
+      <span className="text-label font-medium text-status-warning/75">{label} processing</span>
+      <span className="text-[9px] font-mono tabular-nums text-status-warning/45 leading-none">{fmtElapsed(elapsed)}</span>
 
       {/* Progress bar */}
-      <div className="flex-1 relative h-[3px] rounded-full overflow-hidden bg-amber-400/[0.08]">
-        <span className="absolute inset-y-0 w-1/3 bg-amber-400/40 rounded-full animate-[progress-slide_1.4s_ease-in-out_infinite]" />
+      <div className="flex-1 relative h-[3px] rounded-full overflow-hidden bg-status-warning/[0.08]">
+        <span className="absolute inset-y-0 w-1/3 bg-status-warning/40 rounded-full animate-[progress-slide_1.4s_ease-in-out_infinite]" />
       </div>
 
-      <span className={cn("text-[9px] text-amber-400/40 leading-none whitespace-nowrap hidden sm:block")}>
+      <span className={cn("text-[9px] text-status-warning/40 leading-none whitespace-nowrap hidden sm:block")}>
         Views update on completion
       </span>
     </div>

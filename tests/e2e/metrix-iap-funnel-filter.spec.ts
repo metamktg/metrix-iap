@@ -476,8 +476,10 @@ async function main() {
           // Click the card to open the CreativeExpandDialog (card root has onClick).
           await firstCard.click();
 
-          // Wait for the "Funnel" tab button to appear inside the dialog.
-          const funnelTabButton = page.getByRole("button", { name: /Funnel/i }).first();
+          // Wait for the "Funnel" tab to appear inside the dialog. role="tab",
+          // not "button": the dialog's tab bar is TabRail, which announces
+          // itself as a tablist — the more specific role, not a looser one.
+          const funnelTabButton = page.getByRole("tab", { name: /Funnel/i }).first();
           await funnelTabButton.waitFor({ state: "visible", timeout: 10_000 });
 
           // Click the Funnel tab.

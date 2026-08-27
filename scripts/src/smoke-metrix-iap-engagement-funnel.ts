@@ -30,6 +30,7 @@
 // Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-engagement-funnel
 
 import { spawn, type ChildProcess } from "node:child_process";
+import { spawnGroup, killGroup } from "./lib/process-group.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -51,7 +52,7 @@ const DEV_PORT = "15181";
 
 async function startDevServer(): Promise<ChildProcess> {
   return new Promise((resolve, reject) => {
-    const child = spawn(
+    const child = spawnGroup(
       "pnpm",
       ["--filter", "@workspace/metrix-iap", "run", "dev"],
       {
@@ -90,7 +91,7 @@ async function startDevServer(): Promise<ChildProcess> {
     // Hard timeout.
     setTimeout(() => {
       if (!ready) {
-        child.kill();
+        killGroup(child);
         reject(new Error("Dev server did not become ready within 60 s"));
       }
     }, 60_000);
@@ -175,7 +176,7 @@ async function main() {
       await new Promise((r) => setTimeout(r, 500));
     }
     if (!warmedUp) {
-      server.kill();
+      killGroup(server);
       fail("Dev server did not respond within 45 s after signalling ready");
     }
 
@@ -184,7 +185,7 @@ async function main() {
       fail("Engagement funnel e2e tests failed", String(err?.message ?? err));
     });
   } finally {
-    server.kill();
+    killGroup(server);
   }
 
   console.log("\nPASS  Engagement funnel e2e tests passed.");

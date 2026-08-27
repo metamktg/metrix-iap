@@ -9,7 +9,8 @@
 // Styling is composed strictly from Command Deck / app tokens already in
 // use (mx-kpi-tile, TYPE, text-bignum, border-primary, …) — no new styles.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowUpRight, ChevronDown, Info } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
@@ -24,19 +25,49 @@ interface KpiMetricDropdownProps {
   activeId: string;
   onSelect: (id: string) => void;
   onClose: () => void;
+  /** The trigger button, used to place the portalled menu under its tile. */
+  anchorRef: React.RefObject<HTMLButtonElement | null>;
 }
 
-function KpiMetricDropdown({ catalog, activeId, onSelect, onClose }: KpiMetricDropdownProps) {
+function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: KpiMetricDropdownProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  // Anchor to the trigger in VIEWPORT coordinates. The dropdown is rendered
+  // through a portal (see below), so it has no positioned ancestor to lay
+  // itself out against — position: fixed plus the trigger's own rect is the
+  // only thing that keeps it under its tile.
+  useLayoutEffect(() => {
+    const el = anchorRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const width = 224; // w-56
+    // Keep it on screen when a tile sits near the right edge.
+    const left = Math.min(r.left, Math.max(8, window.innerWidth - width - 8));
+    setPos({ top: r.bottom + 4, left });
+  }, [anchorRef]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      const target = e.target as Node;
+      if (ref.current?.contains(target)) return;
+      if (anchorRef.current?.contains(target)) return;
+      onClose();
     };
+    // A fixed-position menu cannot follow the page, so close rather than
+    // drift away from the tile it belongs to.
+    const dismiss = () => onClose();
     // micro-delay so the click that opened the dropdown doesn't immediately close it
     const tid = setTimeout(() => document.addEventListener("mousedown", handler), 50);
-    return () => { clearTimeout(tid); document.removeEventListener("mousedown", handler); };
-  }, [onClose]);
+    window.addEventListener("scroll", dismiss, true);
+    window.addEventListener("resize", dismiss);
+    return () => {
+      clearTimeout(tid);
+      document.removeEventListener("mousedown", handler);
+      window.removeEventListener("scroll", dismiss, true);
+      window.removeEventListener("resize", dismiss);
+    };
+  }, [onClose, anchorRef]);
 
   const staticMetrics = catalog.filter((m) => !m.isResultEvent);
   const eventMetrics = catalog.filter((m) => m.isResultEvent);
@@ -47,26 +78,34 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose }: KpiMetricDr
       type="button"
       onClick={() => onSelect(m.id)}
       className={cn(
-        "w-full text-left px-3 py-1.5 flex items-center justify-between gap-3 transition-colors",
+        "pressable-lg w-full text-left px-3 py-1.5 flex items-center justify-between gap-3 transition-colors",
         m.id === activeId
           ? "bg-primary/10 text-interactive"
-          : "text-foreground/75 hover:bg-white/[0.05]",
+          : "text-foreground/75 hover:bg-foreground/[0.05]",
       )}
     >
       <span className="text-caption truncate">{m.label}</span>
-      <span className="text-caption font-mono tabular-nums text-muted-foreground/55 shrink-0">
+      <span className="text-caption font-mono tabular-nums text-muted-foreground/75 shrink-0">
         {m.value != null ? m.formatted : "—"}
       </span>
     </button>
   );
 
-  return (
+  // PORTALLED ON PURPOSE. .mx-kpi-tile sets `overflow: hidden` (index.css),
+  // and this menu is positioned below the tile's bottom edge — so as an
+  // in-flow absolute child it was clipped away entirely, on every KPI tile
+  // in the product. z-50 does nothing against an overflow-hidden ancestor.
+  // The metric picker is the whole point of the customizable tile rows, and
+  // it was invisible everywhere. Rendering into document.body is what takes
+  // it out of that clipping context; nothing else does.
+  const menu = (
     <div
       ref={ref}
       data-testid="kpi-metric-dropdown"
-      className="absolute top-full left-0 mt-1 z-50 w-56 rounded-lg border border-border/60 bg-[hsl(var(--surface-raised))] shadow-2xl py-1 overflow-hidden"
+      style={{ position: "fixed", top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? "visible" : "hidden" }}
+      className="z-50 w-56 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm elevation-floating py-1 overflow-hidden"
     >
-      <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/45">
+      <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/75">
         Delivery & efficiency
       </div>
       {staticMetrics.map((m) => <Row key={m.id} m={m} />)}
@@ -74,7 +113,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose }: KpiMetricDr
       {eventMetrics.length > 0 && (
         <>
           <div className="mx-2 my-1 border-t border-border/20" />
-          <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/45">
+          <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/75">
             Results by event
           </div>
           {eventMetrics.map((m) => <Row key={m.id} m={m} />)}
@@ -82,6 +121,8 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose }: KpiMetricDr
       )}
     </div>
   );
+
+  return createPortal(menu, document.body);
 }
 
 // ─── Info hover (disclosure slot) ──────────────────────────────────────
@@ -96,7 +137,7 @@ export function KpiInfoHover({ content }: { content: React.ReactNode }) {
             aria-label="Metric details"
             data-testid="kpi-tile-info"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center justify-center shrink-0 text-muted-foreground/40 hover:text-muted-foreground/75 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="pressable inline-flex items-center justify-center shrink-0 text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Info className="w-3 h-3" />
           </button>
@@ -118,6 +159,19 @@ export interface KpiTileTrend {
   improved: boolean;
   /** The prior window's formatted value ("prior $1,204"). */
   priorFormatted: string;
+}
+
+/**
+ * What a null on this tile means, when the metric carries no note of its
+ * own. Deliberately says which of the two cases it is — the catalog omits
+ * metrics it cannot compute at all (`hideWhenNull`), so a null that
+ * survives to a rendered tile is an absence of measurement, not an absence
+ * of definition.
+ */
+function unavailableNote(m: MetricDef): string {
+  return m.isResultEvent
+    ? "No rows in the current selection carry this result event, so there is nothing to total. This is an absence of data, not a value of zero."
+    : "Not measured in the current selection — no row carries this field over the active scope. This is an absence of data, not a value of zero.";
 }
 
 export interface KpiTileProps {
@@ -143,14 +197,25 @@ export function KpiTile({
   disclosure, hideInfo = false, variant = "default", trend, sparkPoints,
 }: KpiTileProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const m = metricById(catalog, metricId);
   if (!m) return null;
 
-  const infoContent = disclosure || m.sub
+  // C4: the ⓘ used to appear only when a metric carried `sub` or a caller
+  // passed `disclosure`, so the six base hero metrics — spend, impressions,
+  // reach, clicks, link clicks, link CTR — rendered a bare "—" with no way
+  // to ask why. Those are the highest-visibility numbers on the platform,
+  // and a dash the reader cannot interrogate is exactly the ambiguity the
+  // honest-null convention exists to remove. A null value now always has
+  // something behind the ⓘ: the metric's own note when it has one, and
+  // otherwise a statement of what null means here.
+  const nullNote = m.value == null ? unavailableNote(m) : null;
+  const infoContent = disclosure || m.sub || nullNote
     ? (
       <div className="space-y-1">
         {disclosure}
         {m.sub && <div className="text-muted-foreground/80">{m.sub}</div>}
+        {!m.sub && nullNote && <div className="text-muted-foreground/80">{nullNote}</div>}
       </div>
     )
     : null;
@@ -170,11 +235,12 @@ export function KpiTile({
       {/* Label row: dropdown trigger + drill affordance + optional info hover */}
       <div className="flex items-center justify-between gap-1.5 min-w-0">
         <button
+          ref={triggerRef}
           type="button"
           aria-haspopup="listbox"
           aria-expanded={pickerOpen}
           onClick={(e) => { e.stopPropagation(); setPickerOpen((v) => !v); }}
-          className="flex items-center gap-1 group/lbl text-left min-w-0"
+          className="pressable-lg flex items-center gap-1 group/lbl text-left min-w-0"
         >
           {/* Nocturne card-kicker: accent-tinted uppercase label */}
           <span className={cn(
@@ -185,8 +251,8 @@ export function KpiTile({
             {m.label}
           </span>
           <ChevronDown className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-all",
-            pickerOpen ? "rotate-180 text-interactive" : "text-muted-foreground/35 group-hover/lbl:text-muted-foreground/65",
+            "w-2.5 h-2.5 shrink-0 transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+            pickerOpen ? "rotate-180 text-interactive" : "text-muted-foreground/75 group-hover/lbl:text-muted-foreground/75",
           )} />
         </button>
         <span className="flex items-center gap-1.5 shrink-0">
@@ -200,7 +266,7 @@ export function KpiTile({
 
       {/* Value — label + value only; no inline sub-text */}
       {onClick ? (
-        <button type="button" data-testid="kpi-tile-body" onClick={onClick} className="text-left hover:opacity-75 transition-opacity w-fit">
+        <button type="button" data-testid="kpi-tile-body" onClick={onClick} className="pressable-lg text-left hover:opacity-75 transition-opacity w-fit">
           <KpiValue formatted={m.formatted} isRefetching={isRefetching} />
         </button>
       ) : (
@@ -214,11 +280,11 @@ export function KpiTile({
           <span className={cn(
             TYPE.body,
             "tabular-nums font-medium",
-            trend.improved ? "text-emerald-400" : "text-amber-300",
+            trend.improved ? "text-status-success" : "text-status-warning",
           )}>
             {trend.deltaPct >= 0 ? "▲" : "▼"} {Math.abs(trend.deltaPct).toFixed(1)}%
           </span>
-          <span className={cn(TYPE.caption, "text-muted-foreground/50 tabular-nums")}>
+          <span className={cn(TYPE.caption, "text-muted-foreground/75 tabular-nums")}>
             prior {trend.priorFormatted}
           </span>
         </div>
@@ -245,6 +311,7 @@ export function KpiTile({
 
       {pickerOpen && (
         <KpiMetricDropdown
+          anchorRef={triggerRef}
           catalog={catalog}
           activeId={metricId}
           onSelect={(id) => { onSelect(id); setPickerOpen(false); }}
@@ -313,7 +380,7 @@ function KpiValue({ formatted, isRefetching }: { formatted: string; isRefetching
   // says so to assistive tech; the dash now means exactly one thing.
   return isRefetching ? (
     <span
-      className="inline-block h-[1em] w-[3.5ch] rounded bg-white/[0.08] animate-pulse align-middle"
+      className="inline-block h-[1em] w-[3.5ch] rounded bg-foreground/[0.08] animate-pulse align-middle"
       aria-busy="true"
       aria-label="Loading"
       data-testid="kpi-value-loading"

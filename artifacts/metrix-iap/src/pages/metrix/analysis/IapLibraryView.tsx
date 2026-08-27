@@ -368,8 +368,8 @@ export function IapLibraryView() {
 
               {/* ── Funnel stage selector ── */}
               <div className="px-6 pt-3 pb-1 flex items-center gap-2">
-                <Sliders className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
-                <span className="text-label text-muted-foreground/50 shrink-0">Funnel</span>
+                <Sliders className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
+                <span className="text-label text-muted-foreground/75 shrink-0">Funnel</span>
                 <div className="flex items-center rounded-md border border-border/30 overflow-hidden">
                   {(["upper", "lower", "custom"] as const).map((stage) => {
                     const label = stage === "upper" ? "Upper Funnel" : stage === "lower" ? "Lower Funnel" : "Custom";
@@ -388,10 +388,10 @@ export function IapLibraryView() {
                           setPage(1);
                         }}
                         className={[
-                          "flex items-center gap-1 px-2.5 py-1 text-label font-medium transition-colors",
+                          "pressable flex items-center gap-1 px-2.5 py-1 text-label font-medium transition-colors",
                           funnelStage === stage
-                            ? "bg-white/10 text-foreground"
-                            : "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-white/[0.03]",
+                            ? "bg-foreground/10 text-foreground"
+                            : "text-muted-foreground/75 hover:text-muted-foreground/75 hover:bg-foreground/[0.03]",
                         ].join(" ")}
                       >
                         {icon}{label}
@@ -438,7 +438,7 @@ export function IapLibraryView() {
                     );
                   })}
                   {tileIds.length === 0 && (
-                    <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/60 border border-dashed border-border/40 rounded-lg px-3 py-4 text-center">
+                    <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/75 border border-dashed border-border/40 rounded-lg px-3 py-4 text-center">
                       No metrics selected — use "Customize" to add tiles.
                     </div>
                   )}
@@ -478,15 +478,15 @@ export function IapLibraryView() {
                       disabled={syncMutation.isPending}
                       title={syncResult ? `${syncResult.linked}/${syncResult.total} creatives linked` : "Re-sync creative asset links"}
                       className={[
-                        "flex items-center gap-1.5 text-label font-medium border px-2.5 py-1.5 rounded-md transition-colors",
+                        "pressable flex items-center gap-1.5 text-label font-medium border px-2.5 py-1.5 rounded-md transition-colors",
                         syncMutation.isPending
-                          ? "border-border/30 text-muted-foreground/40 cursor-not-allowed"
+                          ? "border-border/30 text-muted-foreground/75 cursor-not-allowed"
                           : syncResult
-                          ? "border-emerald-400/30 text-emerald-400/80 bg-emerald-400/[0.04] hover:bg-emerald-400/[0.08]"
-                          : "border-border/40 text-muted-foreground/70 hover:text-foreground bg-white/[0.02] hover:bg-white/[0.04] hover:border-border/60",
+                          ? "border-status-success/30 text-status-success/80 bg-status-success/[0.04] hover:bg-status-success/[0.08]"
+                          : "border-border/40 text-muted-foreground/75 hover:text-foreground bg-foreground/[0.02] hover:bg-foreground/[0.04] hover:border-border/60",
                       ].join(" ")}
                     >
-                      <RefreshCw className={["w-3.5 h-3.5", syncMutation.isPending ? "animate-spin" : ""].join(" ").trim()} />
+                      <RefreshCw className={["pressable w-3.5 h-3.5", syncMutation.isPending ? "animate-spin" : ""].join(" ").trim()} />
                       {syncMutation.isPending
                         ? "Syncing…"
                         : syncResult
@@ -496,14 +496,14 @@ export function IapLibraryView() {
                   )}
                   <button
                     onClick={() => setImportOpen(true)}
-                    className="flex items-center gap-1.5 text-label font-medium text-foreground/80 hover:text-foreground border border-primary/30 hover:border-primary/50 bg-primary/[0.07] hover:bg-primary/[0.12] px-2.5 py-1.5 rounded-md transition-colors"
+                    className="pressable flex items-center gap-1.5 text-label font-medium text-foreground/80 hover:text-foreground border border-primary/30 hover:border-primary/50 bg-primary/[0.07] hover:bg-primary/[0.12] px-2.5 py-1.5 rounded-md transition-colors"
                   >
                     <PlayCircle className="w-3.5 h-3.5 text-interactive" />
                     Upload &amp; Run Analysis
                   </button>
                   <button
                     onClick={() => setCreativeLibraryOpen(true)}
-                    className="flex items-center gap-1.5 text-label font-medium text-muted-foreground/70 hover:text-foreground border border-border/40 hover:border-border/60 bg-white/[0.02] hover:bg-white/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
+                    className="pressable flex items-center gap-1.5 text-label font-medium text-muted-foreground/75 hover:text-foreground border border-border/40 hover:border-border/60 bg-foreground/[0.02] hover:bg-foreground/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
                   >
                     <Images className="w-3.5 h-3.5" />
                     Add creatives
@@ -530,11 +530,11 @@ export function IapLibraryView() {
                           <p className="text-caption font-medium text-status-warning/90">
                             {unmappedCellIds.size} creative {unmappedCellIds.size === 1 ? "cell" : "cells"} not fully mapped to IAP library
                           </p>
-                          <p className="text-label text-muted-foreground/70">Missing library entry — assets may be incomplete.</p>
+                          <p className="text-label text-muted-foreground/75">Missing library entry — assets may be incomplete.</p>
                         </div>
                         <button
                           onClick={() => setCreativeLibraryOpen(true)}
-                          className="shrink-0 flex items-center gap-1 text-label font-medium text-status-warning border border-status-warning/35 bg-status-warning/10 hover:bg-status-warning/20 px-2.5 py-1.5 rounded transition-colors"
+                          className="pressable shrink-0 flex items-center gap-1 text-label font-medium text-status-warning border border-status-warning/35 bg-status-warning/10 hover:bg-status-warning/20 px-2.5 py-1.5 rounded transition-colors"
                         >
                           <Images className="w-3.5 h-3.5" />
                           Add creatives
@@ -601,7 +601,7 @@ export function IapLibraryView() {
                               action={
                                 <button
                                   onClick={() => setCreativeFilters(DEFAULT_FILTER_STATE)}
-                                  className="text-interactive hover:underline text-label"
+                                  className="pressable text-interactive hover:underline text-label"
                                 >
                                   Clear filters
                                 </button>
@@ -665,7 +665,7 @@ export function IapLibraryView() {
                             <PendingState
                               title="No cells match filters"
                               message="Adjust the spend floor, tier, or concept filter to see cells."
-                              action={<button onClick={() => setCreativeFilters(DEFAULT_FILTER_STATE)} className="text-interactive hover:underline text-label">Clear filters</button>}
+                              action={<button onClick={() => setCreativeFilters(DEFAULT_FILTER_STATE)} className="pressable text-interactive hover:underline text-label">Clear filters</button>}
                             />
                           )}
 
@@ -679,8 +679,8 @@ export function IapLibraryView() {
                                     data-concept-cell={row.cell_id}
                                     className={
                                       highlightedCell === row.cell_id
-                                        ? "rounded-xl ring-2 ring-primary/70 ring-offset-1 ring-offset-background transition-all duration-300"
-                                        : "transition-all duration-300"
+                                        ? "rounded-xl ring-2 ring-primary/70 ring-offset-1 ring-offset-background transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300"
+                                        : "transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300"
                                     }
                                   >
                                     <CreativeCard
@@ -702,7 +702,7 @@ export function IapLibraryView() {
                                         <button
                                           onClick={() => { close(); setDetail(row); }}
                                           data-testid={`button-full-detail-${row.cell_id}`}
-                                          className="inline-flex items-center gap-1.5 text-title font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
+                                          className="pressable inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                         >
                                           Full detail →
                                         </button>
@@ -714,7 +714,7 @@ export function IapLibraryView() {
 
                               {/* ── Pagination controls ── */}
                               <div className="flex items-center justify-between pt-3 border-t border-border/20">
-                                <span className="text-label text-muted-foreground/50 tabular-nums">
+                                <span className="text-label text-muted-foreground/75 tabular-nums">
                                   {totalCells <= pageSize
                                     ? `${totalCells} creative${totalCells === 1 ? "" : "s"} with performance data`
                                     : `${rangeStart}–${rangeEnd} of ${totalCells}`}
@@ -729,13 +729,13 @@ export function IapLibraryView() {
                                         className={`text-label font-medium px-2 py-1 rounded transition-colors ${
                                           pageSize === n
                                             ? "bg-primary/15 text-interactive"
-                                            : "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.04]"
+                                            : "text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04]"
                                         }`}
                                       >
                                         {n}
                                       </button>
                                     ))}
-                                    <span className="text-label text-muted-foreground/35 ml-1">per page</span>
+                                    <span className="text-label text-muted-foreground/75 ml-1">per page</span>
                                   </div>
                                   {/* Prev / page indicator / Next */}
                                   {totalPages > 1 && (
@@ -743,18 +743,18 @@ export function IapLibraryView() {
                                       <button
                                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                                         disabled={safePage === 1}
-                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
+                                        className="pressable text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/75"
                                         aria-label="Previous page"
                                       >
                                         ‹
                                       </button>
-                                      <span className="text-label tabular-nums text-muted-foreground/50 px-1 min-w-[3rem] text-center">
+                                      <span className="text-label tabular-nums text-muted-foreground/75 px-1 min-w-[3rem] text-center">
                                         {safePage} / {totalPages}
                                       </span>
                                       <button
                                         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                         disabled={safePage === totalPages}
-                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
+                                        className="pressable text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/75"
                                         aria-label="Next page"
                                       >
                                         ›
@@ -769,7 +769,7 @@ export function IapLibraryView() {
                           {/* ── Creative assets without performance data ── */}
                           {creativeOnlyCellIds.length > 0 && (
                             <div className="space-y-3 pt-2 border-t border-border/15">
-                              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/40">
+                              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                                 Creative assets — no performance data yet ({creativeOnlyCellIds.length})
                               </p>
                               <div className="grid grid-cols-dashboard-5-xl gap-3">
@@ -811,7 +811,7 @@ export function IapLibraryView() {
                       if (adLevelAds.length === 0) return null;
                       return (
                         <div className="space-y-3 pt-2 border-t border-border/15" data-testid="section-ad-level-tiles">
-                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/40">
+                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                             Ads without creative cells ({adLevelAds.length})
                           </p>
                           <div className="grid grid-cols-dashboard-5-xl gap-3">
@@ -887,19 +887,19 @@ export function IapLibraryView() {
                     const p75 = rankedCpas[Math.floor(rankedCpas.length * 0.75)] ?? rankedCpas[rankedCpas.length - 1];
                     const tierFor = (cpa: number | null): { label: string; cls: string } => {
                       if (cpa == null || rankedCpas.length < 2) {
-                        return { label: "Unranked", cls: "bg-white/[0.05] text-muted-foreground/55 border-border/30" };
+                        return { label: "Unranked", cls: "bg-foreground/[0.05] text-muted-foreground/75 border-border/30" };
                       }
-                      if (cpa <= p25) return { label: "Top 25%", cls: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25" };
-                      if (cpa >= p75) return { label: "Bottom 25%", cls: "bg-amber-400/10 text-amber-400 border-amber-400/25" };
-                      return { label: "Mid 50%", cls: "bg-white/[0.05] text-muted-foreground/70 border-border/30" };
+                      if (cpa <= p25) return { label: "Top 25%", cls: "bg-status-success/10 text-status-success border-status-success/25" };
+                      if (cpa >= p75) return { label: "Bottom 25%", cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
+                      return { label: "Mid 50%", cls: "bg-foreground/[0.05] text-muted-foreground/75 border-border/30" };
                     };
 
                     return (
                       <div className="space-y-4">
-                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">Text assets</p>
+                        <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
+                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">Text assets</p>
                           <h3 className="text-title font-semibold text-foreground mb-1">Meta ad copy, read against the same result</h3>
-                          <p className="text-caption text-muted-foreground/70 leading-relaxed">
+                          <p className="text-caption text-muted-foreground/75 leading-relaxed">
                             Primary text for every cell in scope, so a copy pattern can be judged next to what it actually cost.
                           </p>
                         </div>
@@ -915,7 +915,7 @@ export function IapLibraryView() {
                                 type="button"
                                 onClick={() => setDetail(row)}
                                 data-testid={`ad-copy-card-${row.cell_id}`}
-                                className="rounded-xl border border-border/40 bg-white/[0.02] hover:border-primary/30 hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors p-3.5 text-left flex flex-col gap-2.5 focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
+                                className="rounded-xl border border-border/40 bg-foreground/[0.02] hover:border-primary/30 hover:bg-foreground/[0.04] active:bg-foreground/[0.06] transition-colors p-3.5 text-left flex flex-col gap-2.5 focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
                               >
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="text-label font-mono text-interactive/80">{row.cell_id}</span>
@@ -926,7 +926,7 @@ export function IapLibraryView() {
                                 <p className="text-body italic text-foreground/90 leading-relaxed">
                                   &ldquo;{lib?.primary_message}&rdquo;
                                 </p>
-                                <div className="mt-auto pt-2 border-t border-border/20 flex items-baseline justify-between gap-2 text-label text-muted-foreground/55">
+                                <div className="mt-auto pt-2 border-t border-border/20 flex items-baseline justify-between gap-2 text-label text-muted-foreground/75">
                                   <span className="truncate">
                                     {conceptLabel}
                                     {ctx?.angleLabel ? ` · ${ctx.angleLabel}` : ""}
@@ -948,7 +948,7 @@ export function IapLibraryView() {
                 {tab === "top" && (
                   <div className="space-y-5">
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout cells</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Top checkout cells</h3>
                       {topCells.length ? (
                         <div className="grid grid-cols-dashboard-5-xl gap-3">
                           {uniqueCellRows(topCells).map((row) => (
@@ -972,7 +972,7 @@ export function IapLibraryView() {
                                 <button
                                   onClick={() => { close(); setDetail(row); }}
                                   data-testid={`button-full-detail-top-${row.cell_id}`}
-                                  className="inline-flex items-center gap-1.5 text-title font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
+                                  className="pressable inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                 >
                                   Full detail →
                                 </button>
@@ -985,7 +985,7 @@ export function IapLibraryView() {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Top checkout variables</h3>
                       {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />}
                     </div>
                   </div>
@@ -999,12 +999,12 @@ export function IapLibraryView() {
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
                           <Dna className="w-3.5 h-3.5 text-interactive/70" />
-                          <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60">
+                          <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75">
                             DNA families in selection
                           </h3>
                         </div>
                         <div className="grid grid-cols-dashboard-4-xl gap-3">
-                          {rollupDnaFamilies(variables).map((f) => (
+                          {rollupDnaFamilies(variables, a?.latest_analysis_run_id ?? null).map((f) => (
                             <div
                               key={f.family}
                               role={f.top ? "button" : undefined}
@@ -1012,35 +1012,35 @@ export function IapLibraryView() {
                               onClick={f.top ? () => setVariableCode(f.top!.variableId) : undefined}
                               onKeyDown={f.top ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setVariableCode(f.top!.variableId); } } : undefined}
                               title={f.top ? "Open drill-down for this family's best read" : undefined}
-                              className={`rounded-xl border border-border/40 bg-white/[0.02] p-3 ${f.top ? "cursor-pointer hover:border-primary/30 hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60" : ""}`}
+                              className={`rounded-xl border border-border/40 bg-foreground/[0.02] p-3 ${f.top ? "cursor-pointer hover:border-primary/30 hover:bg-foreground/[0.04] active:bg-foreground/[0.06] transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60" : ""}`}
                               data-testid={`dna-family-${f.family}`}
                             >
                               <div className="flex items-center justify-between gap-2 mb-3">
                                 <span className="text-sm font-bold text-foreground">{familyLabel(f.family)}</span>
-                                <span className="text-label font-mono text-muted-foreground/40 border border-border/30 rounded px-1 py-0.5 leading-none">
+                                <span className="text-label font-mono text-muted-foreground/75 border border-border/30 rounded px-1 py-0.5 leading-none">
                                   {f.variableCount} variable{f.variableCount === 1 ? "" : "s"}
                                 </span>
                               </div>
                               <div className="flex items-center gap-3 tabular-nums">
                                 <div>
-                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">Spend</div>
+                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">Spend</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtUSD(f.spend, 0)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">Results</div>
+                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">Results</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtNum(f.results)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">CPA</div>
+                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">CPA</div>
                                   <div className="text-caption font-semibold text-foreground/80">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
                                 </div>
                               </div>
                               {f.top && (
                                 <div className="mt-2 pt-2 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-micro uppercase tracking-widest text-muted-foreground/40">Best read</span>
+                                  <span className="text-micro uppercase tracking-widest text-muted-foreground/75">Best read</span>
                                   <VariableChip code={f.top.variableId} showCode={false} className="opacity-80 scale-95 border-border/30" />
                                   {f.top.cpa != null && (
-                                    <span className="text-label tabular-nums text-muted-foreground/50">{fmtUSD(f.top.cpa)} CPA</span>
+                                    <span className="text-label tabular-nums text-muted-foreground/75">{fmtUSD(f.top.cpa)} CPA</span>
                                   )}
                                 </div>
                               )}
@@ -1120,7 +1120,7 @@ export function IapLibraryView() {
                     <MetricTile label="Link CTR" value={fmtPct(detail.CTR_link_pct)} />
                   </div>
                   {/* Secondary delivery stats — derived from this row, dashes when absent */}
-                  <div className="grid grid-cols-3 gap-x-3 gap-y-2 rounded-lg border border-border/30 bg-white/[0.015] p-3">
+                  <div className="grid grid-cols-3 gap-x-3 gap-y-2 rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
                     {(() => {
                       const spend = detail["Amount spent (USD)"];
                       const imps = detail.Impressions;
@@ -1136,7 +1136,7 @@ export function IapLibraryView() {
                       ];
                       return stats.map((s) => (
                         <div key={s.label}>
-                          <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">{s.label}</div>
+                          <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/75 leading-none mb-1">{s.label}</div>
                           <div className="text-caption font-semibold tabular-nums text-foreground/90">{s.value}</div>
                         </div>
                       ));
@@ -1173,7 +1173,7 @@ export function IapLibraryView() {
                   )}
                   {detail.legacy_library_match && (
                     <DrawerField label="Legacy library match">
-                      <span className="font-mono text-label text-muted-foreground/60">{detail.legacy_library_match}</span>
+                      <span className="font-mono text-label text-muted-foreground/75">{detail.legacy_library_match}</span>
                     </DrawerField>
                   )}
                   <DrawerField label="Creative">

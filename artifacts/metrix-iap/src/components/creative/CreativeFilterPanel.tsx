@@ -75,8 +75,8 @@ function SpendFloorInput({
   }, [value]);
 
   return (
-    <div className="flex items-center gap-1 border border-border/40 rounded-md px-2.5 py-1 bg-white/[0.02] hover:border-border/60 transition-colors">
-      <span className="text-label text-muted-foreground/50 shrink-0">≥ $</span>
+    <div className="flex items-center gap-1 border border-border/40 rounded-md px-2.5 py-1 bg-foreground/[0.02] hover:border-border/60 transition-colors">
+      <span className="text-label text-muted-foreground/75 shrink-0">≥ $</span>
       <input
         type="text"
         inputMode="decimal"
@@ -84,13 +84,13 @@ function SpendFloorInput({
         value={raw}
         onChange={(e) => setRaw(e.target.value)}
         onBlur={() => flush(raw)}
-        className="w-14 bg-transparent text-label text-foreground/80 outline-none placeholder:text-muted-foreground/30 tabular-nums"
+        className="w-14 bg-transparent text-label text-foreground/80 outline-none placeholder:text-muted-foreground/75 tabular-nums"
         aria-label="Minimum spend filter"
       />
       {value != null && (
         <button
           onClick={() => { setRaw(""); onChange(null); }}
-          className="text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
+          className="pressable text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
           aria-label="Clear spend floor"
         >
           <X className="w-3 h-3" />
@@ -132,26 +132,26 @@ function ConceptMultiSelect({
             "flex items-center gap-1.5 border rounded-md px-2.5 py-1 text-label font-medium transition-colors",
             selected.length > 0
               ? "border-primary/40 bg-primary/[0.06] text-foreground"
-              : "border-border/40 bg-white/[0.02] text-muted-foreground/70 hover:border-border/60 hover:text-foreground"
+              : "border-border/40 bg-foreground/[0.02] text-muted-foreground/75 hover:border-border/60 hover:text-foreground"
           )}
           aria-label="Filter by concept"
         >
           <span className="max-w-[120px] truncate">{label}</span>
-          <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground/50" />
+          <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground/75" />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-52 max-h-[280px] overflow-y-auto p-1.5">
-        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 px-1.5 pb-1 mb-0.5 border-b border-border/20">
+        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75 px-1.5 pb-1 mb-0.5 border-b border-border/20">
           Concept family
         </p>
         {options.length === 0 ? (
-          <p className="text-label text-muted-foreground/50 px-1.5 py-2">No concept families found</p>
+          <p className="text-label text-muted-foreground/75 px-1.5 py-2">No concept families found</p>
         ) : (
           <>
             {selected.length > 0 && (
               <button
                 onClick={() => onChange([])}
-                className="w-full text-left text-label text-interactive/70 hover:text-interactive px-1.5 py-1.5 rounded transition-colors"
+                className="pressable-lg w-full text-left text-label text-interactive/70 hover:text-interactive px-1.5 py-1.5 rounded transition-colors"
               >
                 Clear all
               </button>
@@ -163,8 +163,8 @@ function ConceptMultiSelect({
                   key={name}
                   onClick={() => toggle(name)}
                   className={cn(
-                    "w-full flex items-center gap-2 text-left px-1.5 py-1.5 rounded text-label transition-colors",
-                    on ? "bg-white/[0.04] text-foreground" : "text-foreground/70 hover:bg-white/[0.03]"
+                    "pressable-lg w-full flex items-center gap-2 text-left px-1.5 py-1.5 rounded text-label transition-colors",
+                    on ? "bg-foreground/[0.04] text-foreground" : "text-foreground/70 hover:bg-foreground/[0.03]"
                   )}
                 >
                   <span className={cn(
@@ -206,7 +206,7 @@ export function CreativeFilterPanel({
     <div className="flex flex-wrap items-center gap-2">
       {/* Spend floor */}
       <div className="flex items-center gap-1.5">
-        <span className="text-label text-muted-foreground/50 shrink-0">Min spend</span>
+        <span className="text-label text-muted-foreground/75 shrink-0">Min spend</span>
         <SpendFloorInput
           value={filters.minSpendUsd}
           onChange={(v) => onChange({ ...filters, minSpendUsd: v })}
@@ -220,10 +220,10 @@ export function CreativeFilterPanel({
             key={t.value}
             onClick={() => onChange({ ...filters, tier: t.value })}
             className={cn(
-              "px-2.5 py-1 text-label font-medium transition-colors",
+              "pressable px-2.5 py-1 text-label font-medium transition-colors",
               filters.tier === t.value
-                ? "bg-white/10 text-foreground"
-                : "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-white/[0.03]"
+                ? "bg-foreground/10 text-foreground"
+                : "text-muted-foreground/75 hover:text-muted-foreground/75 hover:bg-foreground/[0.03]"
             )}
           >
             {t.label}
@@ -242,7 +242,7 @@ export function CreativeFilterPanel({
 
       {/* Active filter summary */}
       {isFiltered && (
-        <span className="text-label text-muted-foreground/50 tabular-nums">
+        <span className="text-label text-muted-foreground/75 tabular-nums">
           Showing <span className="text-foreground/70 font-medium">{shownCount}</span> of {totalCount} cells
         </span>
       )}
@@ -251,7 +251,7 @@ export function CreativeFilterPanel({
       {isFiltered && (
         <button
           onClick={() => onChange(DEFAULT_FILTER_STATE)}
-          className="text-label text-muted-foreground/50 hover:text-foreground transition-colors flex items-center gap-1"
+          className="pressable text-label text-muted-foreground/75 hover:text-foreground transition-colors flex items-center gap-1"
         >
           <X className="w-3 h-3" />
           Clear filters

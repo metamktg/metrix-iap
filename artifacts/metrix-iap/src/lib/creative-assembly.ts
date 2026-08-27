@@ -76,7 +76,21 @@ export function primaryAdForCell(
     matches = all.filter((a) => nameSet.has(a.ad_name));
   }
   if (!matches.length) return null;
+  // asset_servable is the importer's answer to "is the file actually
+  // there" — a row can carry a creative_asset_url whose asset was never
+  // uploaded or has since gone, and the column defaults to false until the
+  // importer confirms otherwise. Preferring a URL without checking it
+  // picked those rows first and rendered them as a broken image, which
+  // reads as "Metrix lost your creative" rather than "this one was never
+  // uploaded".
+  const servable = (a: AdRecord) => a.creative_asset_url && a.asset_servable !== false;
   return (
+    matches.find((a) => servable(a) && a.meta_ad_id) ??
+    matches.find((a) => servable(a)) ??
+    // Only after every servable candidate is exhausted. A row whose asset
+    // is not servable is still the best available identity for the cell —
+    // it carries the ad name and possibly the Meta id — so it is returned,
+    // and assembleCreativeCard drops its URL rather than the whole row.
     matches.find((a) => a.creative_asset_url && a.meta_ad_id) ??
     matches.find((a) => a.creative_asset_url) ??
     matches.find((a) => a.meta_ad_id) ??
@@ -133,7 +147,9 @@ export function cardFromLibraryCell(
     primaryText: lib?.primary_message ?? null,
     secondaryText: lib?.secondary_message ?? null,
     cta: lib?.cta ?? null,
-    assetUrl: ad?.creative_asset_url ?? null,
+    // Null when the file is not servable, so the card shows its honest
+    // "no asset" state instead of an <img> that will fail to load.
+    assetUrl: ad && ad.asset_servable !== false ? (ad.creative_asset_url ?? null) : null,
     assetFilename: ad?.asset_filename ?? null,
     aspectRatio: lib?.aspect_ratio ?? null,
     visualSystem: lib?.visual_system ?? null,

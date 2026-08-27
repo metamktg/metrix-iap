@@ -15,6 +15,7 @@
 //     only link_clicks (the one shared field) is offered there.
 
 import { fmtUSD, fmtNum, fmtPct, eventLabel } from "@/pages/metrix/shared";
+import { scopeToRun } from "@/lib/run-supersede";
 import type {
   AdAccount, AnalysisData, CellPerformanceRow, PlacementRow, DeviceDeliveryRow,
 } from "./seedTypes";
@@ -253,7 +254,11 @@ export function listBreakdownDimensions(a: AnalysisData | null | undefined): Bre
     dims.push({ id: "concept", label: "Concept", basis: "delivery" });
     dims.push({ id: "cell", label: "Creative cell", basis: "delivery" });
   }
-  const families = [...new Set((a.v3_variable_performance ?? []).map((r) => r.variable_family))];
+  const families = [
+    ...new Set(
+      scopeToRun(a.v3_variable_performance ?? [], a.latest_analysis_run_id ?? null).map((r) => r.variable_family),
+    ),
+  ];
   for (const f of families) dims.push({ id: `var:${f}`, label: familyLabel(f), basis: "delivery" });
   if ((a.demographic_registration_signal ?? []).length > 0) {
     dims.push({ id: "avatar", label: "Avatar segment (age × gender)", basis: "delivery" });
@@ -350,7 +355,9 @@ export function buildAccountBreakdown(
   }
   if (dimensionId.startsWith("var:")) {
     const family = dimensionId.slice("var:".length);
-    const rows = (a.v3_variable_performance ?? []).filter(
+    // Scoped first: variable_performance keeps one row per analysis run, so
+    // grouping the raw array sums the same variable once per run.
+    const rows = scopeToRun(a.v3_variable_performance ?? [], a.latest_analysis_run_id ?? null).filter(
       (r) => r.variable_family === family && (eventKey == null || r["Result type"] === eventKey),
     );
     return groupRows(rows, (r) => r.variable_id, (r) => r.variable_id, (r) => ({

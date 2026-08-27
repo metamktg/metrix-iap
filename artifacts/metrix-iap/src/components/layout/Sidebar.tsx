@@ -76,7 +76,7 @@ function saveCollapsed(v: boolean) {
 
 const BADGE_STYLE: Record<string, string> = {
   alerts:      "bg-destructive/15 text-destructive border-destructive/20",
-  signals:     "text-amber-400 bg-amber-400/10 border-amber-400/20",
+  signals:     "text-status-warning bg-status-warning/10 border-status-warning/20",
   suggestions: "bg-primary/15 text-interactive border-primary/20",
   briefs:      "bg-primary/15 text-interactive border-primary/20",
   mst:         "bg-muted text-muted-foreground border-border/40",
@@ -181,7 +181,7 @@ function ChildRow({
         }}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-all",
+          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-[color,background-color,border-color,box-shadow,opacity,transform]",
           active
             ? "font-semibold text-foreground bg-primary/8"
             : "text-foreground/65 hover:text-foreground hover:bg-primary/10"
@@ -189,12 +189,12 @@ function ChildRow({
       >
         <span className="flex-1 truncate leading-tight">{child.label}</span>
         {child.placeholder && !active && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
             Soon
           </span>
         )}
         {!child.placeholder && child.dataSource && (
-          <Database className="w-2 h-2 shrink-0 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Database className="w-2 h-2 shrink-0 text-muted-foreground/75 opacity-0 group-hover:opacity-100 transition-opacity" />
         )}
         {child.badgeKey && !child.placeholder && (
           <NavBadge count={count} badgeKey={child.badgeKey} />
@@ -244,10 +244,10 @@ function CollapsedItem({
           aria-label={section.label}
           title={section.label}
           className={cn(
-            "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all relative overflow-hidden",
+            "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] relative overflow-hidden",
             active
               ? "bg-primary/20 text-interactive border border-primary/30"
-              : "text-foreground/45 hover:text-foreground/90 hover:bg-white/[0.07]",
+              : "text-foreground/55 hover:text-foreground/90 hover:bg-foreground/[0.07]",
             section.placeholder && "opacity-50"
           )}
         >
@@ -256,7 +256,7 @@ function CollapsedItem({
           )}
           <NavIcon name={section.icon} className="w-4 h-4" />
           {badgeCount != null && badgeCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[7px] font-bold text-white flex items-center justify-center leading-none">
+            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[7px] font-bold text-foreground flex items-center justify-center leading-none">
               {badgeCount > 9 ? "9+" : badgeCount}
             </span>
           )}
@@ -314,7 +314,7 @@ function ExpandableSection({
         onClick={handleClick}
         title={landing ? `Click to expand · double-click to open ${section.label}` : undefined}
         className={cn(
-          "w-full flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-all select-none",
+          "pressable-lg w-full flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-[color,background-color,border-color,box-shadow,opacity,transform] select-none",
           landingActive
             ? "mx-nav-active font-medium"
             : sectionActive
@@ -326,7 +326,7 @@ function ExpandableSection({
           name={section.icon}
           className={cn(
             "w-4 h-4 shrink-0",
-            landingActive ? "text-white" : sectionActive ? "text-interactive" : "text-muted-foreground/70"
+            landingActive ? "text-foreground" : sectionActive ? "text-interactive" : "text-muted-foreground/75"
           )}
         />
         <span className="flex-1 text-left truncate">{section.label}</span>
@@ -335,7 +335,7 @@ function ExpandableSection({
           className={cn(
             "w-3 h-3 shrink-0 transition-transform duration-200",
             open && "rotate-180",
-            landingActive ? "text-white/70" : "text-muted-foreground/40"
+            landingActive ? "text-foreground/70" : "text-muted-foreground/75"
           )}
         />
       </button>
@@ -390,7 +390,7 @@ function LeafSection({
         onClick={(e) => navigate(to, e)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-all",
+          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-[color,background-color,border-color,box-shadow,opacity,transform]",
           active
             ? "mx-nav-active font-medium"
             : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10",
@@ -401,12 +401,12 @@ function LeafSection({
           name={section.icon}
           className={cn(
             "w-4 h-4 shrink-0",
-            active ? "text-white" : "text-muted-foreground/70"
+            active ? "text-foreground" : "text-muted-foreground/75"
           )}
         />
         <span className="flex-1">{section.label}</span>
         {section.placeholder && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
             Soon
           </span>
         )}
@@ -521,7 +521,7 @@ export function Sidebar() {
     >
       {/* Logo row — collapse toggle lives here as a small icon button */}
       <div className={cn(
-        "border-b border-border/40 shrink-0 transition-all duration-200",
+        "border-b border-border/40 shrink-0 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200",
         collapsed
           ? "px-0 pt-3 pb-2.5 flex flex-col items-center gap-2"
           : "px-4 pt-4 pb-3"
@@ -538,7 +538,7 @@ export function Sidebar() {
               onClick={toggleCollapse}
               aria-label="Expand sidebar"
               title="Expand sidebar"
-              className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/[0.05] transition-colors"
+              className="pressable w-7 h-7 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
             >
               <PanelLeftOpen className="w-3.5 h-3.5" />
             </button>
@@ -557,7 +557,7 @@ export function Sidebar() {
                 onClick={toggleCollapse}
                 aria-label="Collapse sidebar"
                 title="Collapse sidebar"
-                className="ml-auto w-6 h-6 flex items-center justify-center rounded text-muted-foreground/35 hover:text-muted-foreground hover:bg-white/[0.05] transition-colors"
+                className="pressable ml-auto w-6 h-6 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
               >
                 <PanelLeftClose className="w-3.5 h-3.5" />
               </button>
@@ -652,7 +652,7 @@ export function Sidebar() {
             {!collapsed && (
               <div className="min-w-0">
                 <p className="text-caption font-medium text-foreground/85 truncate leading-tight">{user.email}</p>
-                <p className="text-label text-muted-foreground/55 leading-tight">
+                <p className="text-label text-muted-foreground/75 leading-tight">
                   {user.role === "admin" ? "Agency (internal)" : "Member"}
                 </p>
               </div>

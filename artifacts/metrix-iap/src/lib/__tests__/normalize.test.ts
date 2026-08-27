@@ -31,6 +31,7 @@ import {
   normalizeConfidence,
   extractVariableCodes,
   compactIcpName,
+  fmtDelta,
 } from "../normalize";
 
 // ─── 1. Export-set equality ───────────────────────────────────────────
@@ -38,12 +39,15 @@ import {
 
 const RUNTIME_EXPORTS: Array<keyof typeof normalize> = [
   "splitTitle",
+  "fmtDelta",
   "parseHierarchyRef",
   "formatHierarchyRef",
   "extractVariableCodes",
   "compactIcpName",
   "fmtCount",
   "fmtMetric",
+  "fmtDay",
+  "fmtDayRange",
   "normalizeConfidence",
 ];
 
@@ -328,5 +332,36 @@ describe("compactIcpName", () => {
   it("returns the original when stripping would leave nothing meaningful", () => {
     expect(compactIcpName("(C2)")).toBe("(C2)");
     expect(compactIcpName("")).toBe("");
+  });
+});
+
+describe("fmtDelta", () => {
+  it("returns null for an unmeasured change, so a caller cannot default it to 0%", () => {
+    expect(fmtDelta(null)).toBeNull();
+    expect(fmtDelta(undefined)).toBeNull();
+    expect(fmtDelta(NaN)).toBeNull();
+  });
+
+  it("keeps a measured zero, which is a different fact from unmeasured", () => {
+    // And carries no "+" — there is no direction to signal.
+    expect(fmtDelta(0)).toBe("0.0%");
+  });
+
+  it("signs a rise and a fall", () => {
+    expect(fmtDelta(4.2)).toBe("+4.2%");
+    expect(fmtDelta(-4.2)).toBe("-4.2%");
+  });
+
+  it("scales precision: one decimal under 10%, none above", () => {
+    expect(fmtDelta(9.94)).toBe("+9.9%");
+    expect(fmtDelta(12.5)).toBe("+13%");
+    expect(fmtDelta(-240)).toBe("-240%");
+  });
+
+  it("returns one string, not a sign and a number to be concatenated", () => {
+    // Built inline in JSX this rendered as three adjacent text nodes, so the
+    // value was not addressable as a single string — by a test, or by a
+    // reader's find-in-page.
+    expect(typeof fmtDelta(12.5)).toBe("string");
   });
 });

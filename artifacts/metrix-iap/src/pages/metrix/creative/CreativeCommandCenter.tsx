@@ -155,9 +155,9 @@ export function CreativeCommandCenter() {
                 right={<CrossLink to="/app/creative/builder" label="View briefs" />}
               >
                 {!run ? (
-                  <p className="text-caption text-muted-foreground/60">No generation runs yet for this account.</p>
+                  <p className="text-caption text-muted-foreground/75">No generation runs yet for this account.</p>
                 ) : (
-                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-foreground/[0.015] px-3 py-2.5">
                     <div className="flex items-center gap-2 min-w-0">
                       {run.status === "running" && <Loader2 className="w-4 h-4 text-status-warning animate-spin shrink-0" />}
                       {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" />}
@@ -165,9 +165,9 @@ export function CreativeCommandCenter() {
                       <div className="min-w-0">
                         <p className="text-body font-medium text-foreground/90 capitalize truncate">
                           {run.status}
-                          <span className="ml-2 text-caption font-mono font-normal text-muted-foreground/40 normal-case">{run.id}</span>
+                          <span className="ml-2 text-caption font-mono font-normal text-muted-foreground/75 normal-case">{run.id}</span>
                         </p>
-                        <p className="text-caption text-muted-foreground/60">
+                        <p className="text-caption text-muted-foreground/75">
                           {new Date(run.started_at).toLocaleString()}
                           {run.model ? ` · ${run.model}` : ""}
                         </p>
@@ -204,19 +204,19 @@ export function CreativeCommandCenter() {
                     <button
                       key={b.id}
                       onClick={() => navigate(`/app/creative/builder?focus=${b.id}`)}
-                      className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+                      className="pressable-lg text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 flex flex-col hover:border-border/60 hover:bg-foreground/[0.03] transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <span className="inline-flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/50 px-1.5 py-0.5 rounded leading-none">
                           <FileText className="w-2.5 h-2.5" /> {b.asset_type}
                         </span>
-                        <span className="text-label font-semibold uppercase tracking-wide text-amber-200 border border-amber-400/30 bg-amber-400/20 px-1.5 py-0.5 rounded leading-none">
+                        <span className="text-label font-semibold uppercase tracking-wide text-status-warning border border-status-warning/30 bg-status-warning/20 px-1.5 py-0.5 rounded leading-none">
                           {STATUS_LABEL[b.status] ?? b.status}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 mb-2">
                         <Sparkles className="w-3 h-3 text-interactive/60" />
-                        <span className="text-caption text-muted-foreground/60">From pillar</span>
+                        <span className="text-caption text-muted-foreground/75">From pillar</span>
                         <span className="text-caption font-medium text-foreground">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</span>
                       </div>
                       <p className="text-body text-foreground/80 leading-relaxed flex-1"><TokenizedConceptText text={b.human_direction} /></p>

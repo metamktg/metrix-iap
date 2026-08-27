@@ -64,14 +64,14 @@ beforeEach(() => {
 describe("creative library cross-map tab (Bookster)", () => {
   it("shows a Cross-map tab alongside Concept library and Variable library", () => {
     renderFor("bookster");
-    expect(screen.getByRole("button", { name: /Concept library/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Variable library/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Cross-map/i })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Concept library/i })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Variable library/i })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Cross-map/i })).toBeTruthy();
   });
 
   it("renders real funnel-stage columns and concept rows, with an em dash for untested combinations", () => {
     renderFor("bookster");
-    fireEvent.click(screen.getByRole("button", { name: /Cross-map/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /Cross-map/i }));
 
     // Bookster's real performance_by_cell only carries "MOF" and
     // "TOF to MOF" stages — never a fabricated/hardcoded stage set.
@@ -88,7 +88,7 @@ describe("creative library cross-map tab (Bookster)", () => {
 
   it("keeps the concept-library and variable-library tabs' own content intact", () => {
     renderFor("bookster");
-    expect(screen.getByRole("button", { name: /Concept library/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Variable library/i })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Concept library/i })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Variable library/i })).toBeTruthy();
   });
 });

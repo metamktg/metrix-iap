@@ -27,16 +27,16 @@ export function DataCoverageBanner({
       role="status"
       data-testid="data-coverage-banner"
       className={cn(
-        "rounded-lg border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 flex items-start gap-3",
+        "rounded-lg border border-status-warning/30 bg-status-warning/[0.06] px-4 py-3 flex items-start gap-3",
         className,
       )}
     >
-      <AlertTriangle className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+      <AlertTriangle className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
       <div className="min-w-0 space-y-0.5">
-        <p className={cn(TYPE.label, "text-amber-300 font-semibold uppercase tracking-wider")}>
+        <p className={cn(TYPE.label, "text-status-warning font-semibold uppercase tracking-wider")}>
           Demographic coverage {pct != null ? `· ${pct}% of spend` : "· insufficient"}
         </p>
-        <p className={cn(TYPE.body, "text-amber-100/80")}>
+        <p className={cn(TYPE.body, "text-status-warning/80")}>
           {coverage.note ??
             "Demographic data covers too little of this account's spend for segment classification to be trustworthy."}
         </p>

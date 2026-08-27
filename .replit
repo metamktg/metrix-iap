@@ -78,6 +78,30 @@ args = "disclosure-rulebook"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
+args = "signal-weights-drift"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "type-scale"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "chart-palette"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "token-colors"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "interaction"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "locator-ambiguity"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
 args = "command-deck-token-drift"
 
 [[workflows.workflow.tasks]]
@@ -238,6 +262,72 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run check:disclosure-rulebook"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "signal-weights-drift"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:signal-weights-drift"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "type-scale"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:type-scale"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "chart-palette"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:chart-palette"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "token-colors"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:token-colors"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "interaction"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:interaction"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "locator-ambiguity"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:locator-ambiguity"
 
 [workflows.workflow.metadata]
 isValidation = true

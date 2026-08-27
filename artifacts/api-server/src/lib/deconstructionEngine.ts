@@ -14,6 +14,7 @@
 // stale re-run can never destroy an existing successful result.
 
 import { z } from "zod";
+import { selectAllRows } from "./paginatedSelect";
 import { getSupabase } from "./supabase";
 import { fetchSuccessfulRuns, splitBySource } from "./generatedCurrency";
 import { logger } from "./logger";
@@ -1016,7 +1017,12 @@ export async function startCreativeDeconstruction(
       }
       // Shared account context, fetched once per run.
       const [{ data: ads }, { data: allBriefs }, { data: registry }, briefRuns] = await Promise.all([
-        supabase.from("ads").select("ad_name, cell, concept, variation").eq("account_id", accountId),
+        // An account's whole ads table: the one read here with no natural
+        // bound, so the one that silently truncates at PostgREST's 1000-row
+        // default once a library grows. A classification run that misses
+        // ads reports a clean success over an incomplete set.
+        selectAllRows("ads", (q) => q.eq("account_id", accountId).order("id"), "ad_name, cell, concept, variation")
+          .then((data) => ({ data })),
         supabase
           .from("imported_creative_briefs")
           .select("brief_id, source, payload, generation_run_id")

@@ -23,6 +23,9 @@ import {
 import { syncAllCreativeLinksForAccount } from "./analysisEngine";
 import { resolveAccountObjectives } from "./cohortConfig";
 import { logger } from "./logger";
+import { createCoalescedCache } from "./coalescedCache";
+import { selectAllRows } from "./paginatedSelect";
+import { checkSeedBudget } from "./seedBudget";
 
 type Row = Record<string, any>;
 
@@ -33,36 +36,18 @@ const round = (v: number, dp = 2) => {
   return Math.round(v * f) / f;
 };
 
+/**
+ * Read every row of `table`, following PostgREST's 1000-row pages.
+ *
+ * Thin alias for lib/paginatedSelect's selectAllRows, kept under this name
+ * because the seed assembly and its pagination regression test have always
+ * called it this. The implementation moved out when the analysis summary
+ * turned out to have eight unpaginated reads of the same rollup tables —
+ * one reader means a table cannot be paginated on one path and silently
+ * truncated on another.
+ */
 export async function selectAll(table: string, build?: (q: any) => any, columns = "*"): Promise<Row[]> {
-  const supabase = getSupabase();
-  // Paginate in 1000-row pages so large tables (device_performance,
-  // demographic_performance, etc.) are fetched in full even when the
-  // Supabase / PostgREST server-side row limit is 1000.
-  //
-  // `columns` exists for tables carrying bytea payloads: select("*") on
-  // manual_imports dragged every uploaded file's full content through
-  // PostgREST on each seed assembly — fine at a handful of assets, fatal at
-  // a real creative library (observed live: 125 assets ≈ 257 MB of bytea ≈
-  // half a gigabyte of hex JSON in one page; the seed request never
-  // completed and production hung on the splash screen). Callers touching
-  // such tables MUST enumerate the metadata columns they need.
-  const PAGE_SIZE = 1000;
-  let offset = 0;
-  const allRows: Row[] = [];
-  for (;;) {
-    let query: any = supabase.from(table).select(columns);
-    if (build) query = build(query);
-    query = query.range(offset, offset + PAGE_SIZE - 1);
-    const { data, error } = await query;
-    if (error) {
-      throw new Error(`Supabase query failed for "${table}": ${error.message}`);
-    }
-    const rows: Row[] = data ?? [];
-    allRows.push(...rows);
-    if (rows.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
-  }
-  return allRows;
+  return selectAllRows(table, build, columns);
 }
 
 /** Group rows by account_id, preserving the fetch order within each group. */
@@ -163,6 +148,7 @@ function humanJoin(items: string[]): string {
 export type AccountTables = {
   adPerformance: Map<string, Row[]>;
   conceptPerformance: Map<string, Row[]>;
+  successfulRuns: Map<string, Row[]>;
   campaignWindows: Map<string, Row[]>;
   dataQualityFlags: Map<string, Row[]>;
   libraryCells: Map<string, Row[]>;
@@ -259,6 +245,8 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
 
   // ── Full assembly from this account's rows ──────────────────────────
   const conceptPerformance = forAccount(t.conceptPerformance, accountId);
+  // Fetched newest-first, so [0] is the most recent SUCCESSFUL run.
+  const latestAnalysisRunId = (forAccount(t.successfulRuns, accountId)[0]?.["id"] as string | undefined) ?? null;
   const campaignWindows = forAccount(t.campaignWindows, accountId);
   const dataQualityFlags = forAccount(t.dataQualityFlags, accountId);
   const libraryCells = forAccount(t.libraryCells, accountId);
@@ -363,7 +351,20 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
 
   // ── Analysis (verbatim library rows + computed top-checkout views) ──
   const performanceByCell = libraryCellPerformance.map((r) => r["payload"]);
-  const variablePerf = variablePerformance.map((r) => r["payload"]);
+  // The stored payload carries no run identity, so every consumer of
+  // v3_variable_performance was structurally unable to scope by run — and
+  // variable_performance retains one row per run by design (see the
+  // ..._run_key constraint in schema.sql). rollupDnaFamilies and
+  // kpiBreakdown's per-family grouping therefore summed the same variable's
+  // spend once per run: after N analysis runs a $1,000 variable read as
+  // $N,000. Projecting the row's own run id and window alongside the payload
+  // is what makes scoping possible at all.
+  const variablePerf: Row[] = variablePerformance.map((r) => ({
+    ...(r["payload"] as Row),
+    manual_analysis_run_id: r["manual_analysis_run_id"] ?? null,
+    date_start: r["date_start"] ?? null,
+    date_end: r["date_end"] ?? null,
+  }));
   const checkout = "onb_initiate_checkout";
   const topCheckoutCells = performanceByCell
     .filter((r) => r["Result type"] === checkout)
@@ -447,6 +448,13 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     ...(conversionTrackingSignal ? { conversion_tracking_signal: conversionTrackingSignal } : {}),
     top_checkout_cells: topCheckoutCells,
     top_checkout_variables: topCheckoutVariables,
+    // The run a consumer should scope to when it is showing "this account"
+    // rather than "this run". concept_rollup and v3_variable_performance both
+    // retain one row per run by design, so an unscoped aggregate over them
+    // sums every re-measurement of the same period — after N runs a $1,000
+    // concept reads as $N,000. Null when no run has succeeded yet, in which
+    // case there is nothing to scope and every row is untagged history.
+    latest_analysis_run_id: latestAnalysisRunId,
     // Cross-book concept view from the normalized bundle (new, real data)
     concept_rollup: conceptPerformance.map((r) => ({
       book: r["book"],
@@ -965,6 +973,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     signalCards,
     adPerformanceAll,
     conceptPerformanceAll,
+    successfulRunsAll,
     campaignWindowsAll,
     dataQualityFlagsAll,
     libraryCellsAll,
@@ -994,8 +1003,31 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("ad_accounts", (q) => q.order("id")),
     selectAll("account_modules", (q) => q.order("account_id").order("module")),
     selectAll("signal_cards", (q) => q.order("id")),
-    selectAll("ad_performance", (q) => q.order("id")),
+    // Narrowed projection, not SELECT *. ad_performance is the widest and
+    // fastest-growing table here — one row per ad, per result type, per day,
+    // retained across every analysis window — and the seed reads 12 of its
+    // 25 columns. The 13 it does not read include seven text columns
+    // (campaign_name, ad_set_name, cell, concept, variation, test_id,
+    // confidence) that dominate the row's wire size. Every one of them was
+    // being paginated out of PostgREST 1,000 rows at a time, deserialized,
+    // and dropped on the floor.
+    //
+    // The structural fix is to aggregate in Postgres: the seed uses these
+    // rows for four group-bys (per result type, per ad name, min/max window,
+    // distinct books) and nothing else, so a view or RPC would return tens
+    // of rows instead of tens of thousands. That is a schema change with
+    // deployment implications; this is the safe half of it.
+    selectAll(
+      "ad_performance",
+      (q) => q.order("id"),
+      "id, account_id, ad_name, book, result_type, date_start, date_end, spend, impressions, reach, clicks_all, link_clicks, results",
+    ),
     selectAll("concept_performance", (q) => q.order("book").order("concept").order("id")),
+    // Newest successful run first — the seed exposes its id so a consumer
+    // that shows "this account" rather than "this run" has a correct default
+    // to reach for. Without one the only available default was every run at
+    // once, which sums re-measurements of the same period.
+    selectAll("manual_analysis_runs", (q) => q.eq("status", "success").order("started_at", { ascending: false }), "id, started_at, account_id"),
     selectAll("campaign_windows", (q) => q.order("date_start").order("id")),
     selectAll("data_quality_flags", (q) => q.order("id")),
     selectAll("library_cells", (q) => q.order("row_index").order("id")),
@@ -1229,6 +1261,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
   const tables: AccountTables = {
     adPerformance: groupByAccount(adPerformanceAll),
     conceptPerformance: groupByAccount(conceptPerformanceAll),
+    successfulRuns: groupByAccount(successfulRunsAll),
     campaignWindows: groupByAccount(campaignWindowsAll),
     dataQualityFlags: groupByAccount(dataQualityFlagsAll),
     libraryCells: groupByAccount(libraryCellsAll),
@@ -1387,19 +1420,35 @@ export async function assembleMetrixSeed(): Promise<Row> {
 // out-of-band writes (direct DB edits, the importer) while cutting the
 // ~25-parallel-query rebuild from twice a minute to at most every 5 —
 // the dominant steady-state Supabase load for idle viewers.
-let cached: { at: number; data: Row } | null = null;
 const CACHE_TTL_MS = 5 * 60_000;
 
+/**
+ * The assembled bundle, rebuilt at most once per miss however many callers
+ * are waiting. See lib/coalescedCache for why the coalescing matters here
+ * specifically: assembleMetrixSeed is ~29 unfiltered table scans building
+ * every account in the deployment, and twenty mutation paths invalidate it.
+ */
+const seedCache = createCoalescedCache<Row>(async () => {
+  const seed = await assembleMetrixSeed();
+  // Measured on the rebuild, not per request — the cache means most
+  // requests never reach here, and this is about the payload's growth
+  // over time rather than any one caller.
+  checkSeedBudget(seed);
+  return seed;
+}, CACHE_TTL_MS);
+
 export async function getMetrixSeedFromSupabase(): Promise<Row> {
-  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.data;
-  const data = await assembleMetrixSeed();
-  cached = { at: Date.now(), data };
-  return data;
+  return seedCache.get();
 }
 
 /** Drop the cached bundle (e.g. after a new account is registered). */
 export function invalidateMetrixSeedCache(): void {
-  cached = null;
+  seedCache.invalidate();
+}
+
+/** Test-only: clear both the entry and any in-flight rebuild. */
+export function __resetMetrixSeedCacheForTests(): void {
+  seedCache.reset();
 }
 
 // ─── per-user authorization view ──────────────────────────────────────

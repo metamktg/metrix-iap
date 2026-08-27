@@ -23,10 +23,10 @@ import {
 import { splitTitle } from "@/lib/normalize";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { useResizableColumn, type ResizableColumn } from "@/hooks/useResizableColumn";
 import {
   Map, ChevronDown, FlaskConical, CheckSquare,
-  Square, Lightbulb,
-} from "lucide-react";
+  Square, Lightbulb, ChevronLeft } from "lucide-react";
 import type { MessagePillar, ActiveHypothesis, VariableCombination, ScalingPlaybook } from "@/lib/data/seedTypes";
 import { ConceptChip } from "@/components/concept/ConceptChip";
 import { useConceptRegistry } from "@/lib/concept-registry-context";
@@ -46,13 +46,13 @@ const PILLAR_ACCENTS = [
 ];
 
 const PILLAR_DOT = [
-  "bg-emerald-400/70",
+  "bg-status-success/70",
   "bg-chart-1/70",
-  "bg-purple-400/70",
-  "bg-amber-400/70",
-  "bg-cyan-400/70",
-  "bg-rose-400/70",
-  "bg-indigo-400/70",
+  "bg-primary/70",
+  "bg-status-warning/70",
+  "bg-metrix-cyan/70",
+  "bg-status-danger/70",
+  "bg-primary/70",
 ];
 
 // Hypothesis priority for the next-actions panel sort.
@@ -74,32 +74,26 @@ function sortByPriority(hyps: ActiveHypothesis[]): ActiveHypothesis[] {
 
 // ─── Resizable column handle ─────────────────────────────────────────
 
-function ResizeHandle({ onResize }: { onResize: (dx: number) => void }) {
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      let lastX = e.clientX;
-      const onMove = (ev: MouseEvent) => {
-        const dx = ev.clientX - lastX;
-        lastX = ev.clientX;
-        onResize(dx);
-      };
-      const onUp = () => {
-        document.removeEventListener("mousemove", onMove);
-        document.removeEventListener("mouseup", onUp);
-      };
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
-    },
-    [onResize]
-  );
+/**
+ * Column splitter.
+ *
+ * All behaviour — pointer (not mouse) events, cursor lock, text-selection
+ * guard, persistence, snap-to-collapse, arrow-key operation — lives in
+ * useResizableColumn, which is the same primitive Sidebar and TaskTray
+ * already use. This is only its visual shell.
+ */
+function ResizeHandle({ handleProps, collapsed }: { handleProps: ResizableColumn["handleProps"]; collapsed?: boolean }) {
   return (
     <div
-      className="w-1.5 shrink-0 cursor-col-resize hover:bg-primary/30 active:bg-primary/60 transition-colors border-x border-border/20"
-      onMouseDown={handleMouseDown}
-      role="separator"
-      aria-orientation="vertical"
-      aria-label="Resize column"
+      {...handleProps}
+      className={cn(
+        "w-1.5 shrink-0 cursor-col-resize border-x border-border/20 transition-colors",
+        "hover:bg-primary/30 active:bg-primary/60",
+        // A keyboard user needs to see where focus landed; the strip is
+        // 1.5px wide, so the ring is the only visible affordance.
+        "focus-visible:outline-none focus-visible:bg-primary/50",
+        collapsed && "bg-primary/15",
+      )}
     />
   );
 }
@@ -127,11 +121,11 @@ function PillarListCard({
       onClick={onClick}
       aria-pressed={selected}
       className={cn(
-        "w-full text-left px-3 py-2.5 border-l-2 transition-all flex flex-col gap-1",
+        "pressable-lg w-full text-left px-3 py-2.5 border-l-2 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex flex-col gap-1",
         accentBorder,
         selected
           ? "bg-primary/[0.09] border-r border-r-transparent shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.08)]"
-          : "bg-transparent hover:bg-white/[0.04]",
+          : "bg-transparent hover:bg-foreground/[0.04]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
       )}
     >
@@ -139,7 +133,7 @@ function PillarListCard({
       <div className="flex items-start gap-1.5">
         <div className="flex items-center gap-1 mt-0.5 shrink-0">
           <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 transition-opacity", dot, selected ? "opacity-100" : "opacity-50")} />
-          <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/50 w-3.5 text-right")}>
+          <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/75 w-3.5 text-right")}>
             {String(index + 1).padStart(2, "0")}
           </span>
         </div>
@@ -155,7 +149,7 @@ function PillarListCard({
           </p>
           {/* Descriptor snippet — visible only when selected */}
           {selected && pillar.plain_descriptor && (
-            <p className={cn(TYPE.label, "text-muted-foreground/50 leading-snug mt-1 line-clamp-2")}>
+            <p className={cn(TYPE.label, "text-muted-foreground/75 leading-snug mt-1 line-clamp-2")}>
               {pillar.plain_descriptor.slice(0, 80)}
               {pillar.plain_descriptor.length > 80 ? "…" : ""}
             </p>
@@ -165,7 +159,7 @@ function PillarListCard({
 
       {/* Cell count + hyp count */}
       <div className="pl-4 flex items-center gap-2">
-        <span className={cn(TYPE.label, selected ? "text-muted-foreground/60" : "text-muted-foreground/40", "tabular-nums")}>
+        <span className={cn(TYPE.label, selected ? "text-muted-foreground/75" : "text-muted-foreground/75", "tabular-nums")}>
           {pillar.source_cells.length} cell{pillar.source_cells.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -191,7 +185,7 @@ function SourceCellCard({
   const { registry } = useConceptRegistry();
   const hasEvidence = (spend ?? 0) > 0 || (results ?? 0) > 0;
   return (
-    <div className="rounded-lg border border-border/40 bg-white/[0.025] p-3 flex flex-col gap-2">
+    <div className="rounded-lg border border-border/40 bg-foreground/[0.025] p-3 flex flex-col gap-2">
       {/* Primary: concept name (if available) */}
       {conceptName && (
         <p className={cn(TYPE.body, "font-semibold text-foreground/85 leading-snug truncate")} title={conceptName}>
@@ -215,13 +209,13 @@ function SourceCellCard({
         <div className="flex items-center gap-3 pt-1 border-t border-border/15">
           {(spend ?? 0) > 0 && (
             <div className="flex flex-col gap-0.5">
-              <span className={cn(TYPE.microLabel, "text-muted-foreground/40")}>Spend</span>
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Spend</span>
               <span className={cn(TYPE.label, "text-foreground/65 tabular-nums font-semibold")}>{fmtUSD(spend, 0)}</span>
             </div>
           )}
           {(results ?? 0) > 0 && (
             <div className="flex flex-col gap-0.5">
-              <span className={cn(TYPE.microLabel, "text-muted-foreground/40")}>Results</span>
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Results</span>
               <span className={cn(TYPE.label, "text-foreground/65 tabular-nums font-semibold")}>{fmtNum(results)}</span>
             </div>
           )}
@@ -249,7 +243,7 @@ function HypCard({ h }: { h: ActiveHypothesis }) {
     <div
       data-testid={`hyp-row-${h.id}`}
       className={cn(
-        "rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2 flex flex-col gap-1.5 overflow-hidden",
+        "rounded-lg border border-border/30 bg-foreground/[0.015] px-3 py-2 flex flex-col gap-1.5 overflow-hidden",
         hypPriorityAccent(h.status)
       )}
     >
@@ -310,22 +304,22 @@ function NextActionsPanel({
   if (pending.length === 0) return null;
 
   return (
-    <div className="shrink-0 border-t border-border/30 bg-white/[0.01]">
+    <div className="shrink-0 border-t border-border/30 bg-foreground/[0.01]">
       {/* Panel header */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/[0.03] transition-colors text-left"
+        className="pressable-lg w-full flex items-center gap-2 px-4 py-2 hover:bg-foreground/[0.03] transition-colors text-left"
       >
-        <Lightbulb className="w-3.5 h-3.5 text-amber-300/70 shrink-0" />
+        <Lightbulb className="w-3.5 h-3.5 text-status-warning/70 shrink-0" />
         <span className={cn(TYPE.caption, "font-semibold text-foreground/80 flex-1 truncate")}>
           Next actions · {t.main}
         </span>
-        <span className={cn(TYPE.label, "text-muted-foreground/50 shrink-0")}>
+        <span className={cn(TYPE.label, "text-muted-foreground/75 shrink-0")}>
           {pending.length} pending
         </span>
-        <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground/40 shrink-0 transition-transform", open && "rotate-180")} />
+        <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground/75 shrink-0 transition-transform", open && "rotate-180")} />
       </button>
 
       {open && (
@@ -335,7 +329,7 @@ function NextActionsPanel({
             return (
               <div
                 key={h.id}
-                className="rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2 flex flex-col gap-1.5"
+                className="rounded-lg border border-border/30 bg-foreground/[0.015] px-3 py-2 flex flex-col gap-1.5"
               >
                 <div className="flex items-center gap-1.5">
                   <HypothesisStatusBadge status={h.status} />
@@ -343,7 +337,7 @@ function NextActionsPanel({
                 {/* Chips-only row inside button context, no nested reveal */}
                 <div>
                   <HypothesisCodeChipsRow label={h.label} />
-                  <p className={cn(TYPE.label, "text-muted-foreground/60 mt-1 line-clamp-1")} title={h.label}>
+                  <p className={cn(TYPE.label, "text-muted-foreground/75 mt-1 line-clamp-1")} title={h.label}>
                     {deriveLabel(h.label, 55)}
                   </p>
                 </div>
@@ -353,10 +347,10 @@ function NextActionsPanel({
                     onClick={() => onToggleQueue(h.id)}
                     aria-pressed={isQueued}
                     className={cn(
-                      "inline-flex items-center gap-1.5 text-label font-medium border rounded px-1.5 py-1 transition-colors leading-none",
+                      "pressable inline-flex items-center gap-1.5 text-label font-medium border rounded px-1.5 py-1 transition-colors leading-none",
                       isQueued
-                        ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30"
-                        : "bg-white/[0.03] text-muted-foreground/70 border-border/40 hover:text-foreground hover:border-border/70"
+                        ? "bg-status-success/10 text-status-success border-status-success/30"
+                        : "bg-foreground/[0.03] text-muted-foreground/75 border-border/40 hover:text-foreground hover:border-border/70"
                     )}
                   >
                     {isQueued ? (
@@ -399,14 +393,14 @@ function FooterPanel({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center gap-2 px-6 py-2.5 hover:bg-white/[0.02] transition-colors text-left"
+        className="pressable-lg w-full flex items-center gap-2 px-6 py-2.5 hover:bg-foreground/[0.02] transition-colors text-left"
       >
         <span className={cn(TYPE.caption, "font-semibold text-foreground/70 flex-1")}>
           Variable combinations · Scaling playbook
         </span>
         <ChevronDown
           className={cn(
-            "w-3.5 h-3.5 text-muted-foreground/40 transition-transform",
+            "w-3.5 h-3.5 text-muted-foreground/75 transition-transform",
             open && "rotate-180"
           )}
         />
@@ -446,14 +440,18 @@ export function StrategyMapView() {
 
   // Selection + panel state — must be at component top before any hook calls.
   const [selectedPillarId, setSelectedPillarId] = useState<string | null>(null);
-  const [leftWidth, setLeftWidth] = useState(210);
-  const [rightWidth, setRightWidth] = useState(260);
-  const handleLeftResize = useCallback((dx: number) => {
-    setLeftWidth((w) => Math.max(140, Math.min(320, w + dx)));
-  }, []);
-  const handleRightResize = useCallback((dx: number) => {
-    setRightWidth((w) => Math.max(180, Math.min(380, w - dx)));
-  }, []);
+  // The pillar list is this page's primary navigation, so it resizes but
+  // never collapses. The hypothesis rail is supporting context — it snaps
+  // shut when dragged narrow, and both widths survive navigation.
+  const leftCol = useResizableColumn("Resize pillar list", {
+    storageKey: "metrix.strategyMap.leftWidth",
+    defaultWidth: 210, minWidth: 140, maxWidth: 320, edge: "right",
+  });
+  const rightCol = useResizableColumn("Resize hypotheses panel", {
+    storageKey: "metrix.strategyMap.rightWidth",
+    defaultWidth: 260, minWidth: 180, maxWidth: 380, edge: "left",
+    collapseBelow: 150,
+  });
   const [queued, setQueued] = useState<Set<string>>(new Set());
   const [expandedPillarId, setExpandedPillarId] = useState<string | null>(null);
   const [segmentPillar, setSegmentPillar] = useState<MessagePillar | null>(null);
@@ -544,10 +542,10 @@ export function StrategyMapView() {
                 <div className="flex-1 flex min-h-0 overflow-hidden border-t border-border/30">
 
                   {/* Left column — Pillars list (resizable) */}
-                  <div style={{ width: leftWidth }} className="shrink-0 overflow-y-auto bg-white/[0.005]">
+                  <div style={{ width: leftCol.width }} className="shrink-0 overflow-y-auto bg-foreground/[0.005]">
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
                       <div className="flex items-center gap-1 mb-0.5">
-                        <p className={cn(TYPE.microLabel, "text-muted-foreground/35")}>Pillars</p>
+                        <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Pillars</p>
                         <SectionInfoIcon tip="Validated message pillars from analysis — select one to trace its source cells and the hypotheses it feeds." />
                       </div>
                       <span className={cn(TYPE.caption, "font-semibold text-foreground/65")}>
@@ -565,7 +563,7 @@ export function StrategyMapView() {
                     ))}
                   </div>
 
-                  <ResizeHandle onResize={handleLeftResize} />
+                  <ResizeHandle handleProps={leftCol.handleProps} />
 
                   {/* Centre column — Source cells + variable legend */}
                   <div className="flex-1 overflow-y-auto">
@@ -581,7 +579,7 @@ export function StrategyMapView() {
                             )}
                           />
                           <div className="min-w-0">
-                            <p className={cn(TYPE.microLabel, "text-muted-foreground/35 mb-0.5")}>
+                            <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-0.5")}>
                               Source cells
                             </p>
                             <span className={cn(TYPE.caption, "font-semibold text-foreground/80 leading-snug line-clamp-1")}>
@@ -591,11 +589,11 @@ export function StrategyMapView() {
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {evidenceTotals.spend > 0 && (
-                            <span className={cn(TYPE.label, "text-muted-foreground/50 tabular-nums")} title="Total spend across source cells">
+                            <span className={cn(TYPE.label, "text-muted-foreground/75 tabular-nums")} title="Total spend across source cells">
                               {fmtUSD(evidenceTotals.spend, 0)}
                             </span>
                           )}
-                          <span className={cn(TYPE.label, "text-muted-foreground/40 tabular-nums")}>
+                          <span className={cn(TYPE.label, "text-muted-foreground/75 tabular-nums")}>
                             {selected.source_cells.length} cell{selected.source_cells.length !== 1 ? "s" : ""}
                           </span>
                           {analysis && selected.source_cells.length > 0 && (
@@ -617,7 +615,7 @@ export function StrategyMapView() {
                     <div className="p-3 space-y-2">
                       {selected.source_cells.length === 0 ? (
                         <div className="py-8 text-center">
-                          <p className={cn(TYPE.caption, "text-muted-foreground/50")}>
+                          <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
                             No source cells linked to this pillar yet.
                           </p>
                         </div>
@@ -647,7 +645,7 @@ export function StrategyMapView() {
                               )
                             }
                             aria-expanded={expandedPillarId === selected.id}
-                            className="inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors"
+                            className="pressable inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors"
                           >
                             <ChevronDown
                               className={cn(
@@ -689,16 +687,41 @@ export function StrategyMapView() {
                     </div>
                   </div>
 
-                  <ResizeHandle onResize={handleRightResize} />
+                  <ResizeHandle handleProps={rightCol.handleProps} collapsed={rightCol.collapsed} />
+
+                  {/* Reopen tab. A collapsed panel whose only affordance is a
+                      1.5px splitter is a panel the user has lost — the rail
+                      needs to advertise itself, and say what is inside it. */}
+                  {rightCol.collapsed && (
+                    <button
+                      type="button"
+                      onClick={() => rightCol.setCollapsed(false)}
+                      title={`Show hypotheses (${selectedHyps.length} active)`}
+                      className="pressable shrink-0 w-7 flex flex-col items-center justify-center gap-2 border-l border-border/20 bg-foreground/[0.01] hover:bg-primary/[0.06] transition-colors group/reopen"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground/75 group-hover/reopen:text-interactive" />
+                      <span
+                        className={cn(TYPE.microLabel, "text-muted-foreground/75 group-hover/reopen:text-interactive")}
+                        style={{ writingMode: "vertical-rl" }}
+                      >
+                        Hypotheses
+                      </span>
+                      {selectedHyps.length > 0 && (
+                        <span className={cn(TYPE.microLabel, "text-interactive/70 tabular-nums")}>
+                          {selectedHyps.length}
+                        </span>
+                      )}
+                    </button>
+                  )}
 
                   {/* Right column — Hypotheses (resizable) */}
-                  <div style={{ width: rightWidth }} className="shrink-0 overflow-y-auto">
+                  <div style={{ width: rightCol.collapsed ? 0 : rightCol.width }} className={cn("shrink-0 overflow-y-auto", rightCol.collapsed && "invisible")} aria-hidden={rightCol.collapsed}>
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
-                          <FlaskConical className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+                          <FlaskConical className="w-3 h-3 text-muted-foreground/75 shrink-0" />
                           <div>
-                            <p className={cn(TYPE.microLabel, "text-muted-foreground/35 mb-0.5")}>Hypotheses</p>
+                            <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-0.5")}>Hypotheses</p>
                             <span className={cn(TYPE.caption, "font-semibold text-foreground/65")}>
                               {selectedHyps.length} active
                             </span>
@@ -713,7 +736,7 @@ export function StrategyMapView() {
                     <div className="p-3 space-y-2">
                       {selectedHyps.length === 0 ? (
                         <div className="py-8 text-center">
-                          <p className={cn(TYPE.caption, "text-muted-foreground/50")}>
+                          <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
                             No hypotheses linked to this pillar.
                           </p>
                         </div>
@@ -724,7 +747,7 @@ export function StrategyMapView() {
                       {/* Unattached hypotheses in right column when applicable */}
                       {unattached.length > 0 && selected.id === pillars[0].id && (
                         <div className="mt-3 border-t border-border/20 pt-3">
-                          <p className={cn(TYPE.label, "text-muted-foreground/40 mb-2")}>
+                          <p className={cn(TYPE.label, "text-muted-foreground/75 mb-2")}>
                             Unattached ({unattached.length})
                           </p>
                           <div className="space-y-2">

@@ -40,10 +40,10 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
 
         {state === "sent" ? (
           <div
-            className="flex items-start gap-2.5 p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06]"
+            className="flex items-start gap-2.5 p-3 rounded-lg border border-status-success/20 bg-status-success/[0.06]"
             data-testid="text-reset-request-success"
           >
-            <MailCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <MailCheck className="w-4 h-4 text-status-success shrink-0 mt-0.5" />
             <div className="text-body text-foreground">
               If an account exists for that email, we sent a password reset link.
               The link works once and expires in 1 hour.
@@ -67,12 +67,12 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+                className="w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
                 data-testid="input-forgot-email"
               />
             </div>
             {error && (
-              <div className="text-caption text-red-400/90" data-testid="text-forgot-error">
+              <div className="text-caption text-status-danger/90" data-testid="text-forgot-error">
                 {error}
               </div>
             )}
@@ -91,7 +91,7 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
         <div className="text-center">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground transition-colors"
+            className="pressable inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground transition-colors"
             data-testid="button-back-to-login"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to sign in

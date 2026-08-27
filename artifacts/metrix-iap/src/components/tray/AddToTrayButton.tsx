@@ -49,11 +49,11 @@ export function AddToTrayButton({
       aria-label={inTray ? `Remove "${item.title}" from tray` : `Add "${item.title}" to tray`}
       title={inTray ? "Remove from tray" : "Add to tray"}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-lg border text-caption font-semibold transition-colors shrink-0",
+        "pressable inline-flex items-center gap-1.5 rounded-lg border text-caption font-semibold transition-colors shrink-0",
         compact ? "h-7 w-7 justify-center" : "h-7 px-2.5",
         inTray
-          ? "bg-emerald-400/15 border-emerald-400/30 text-emerald-400 hover:bg-emerald-400/25"
-          : "bg-white/[0.04] border-border/50 text-foreground/70 hover:bg-primary/15 hover:border-primary/30 hover:text-interactive",
+          ? "bg-status-success/15 border-status-success/30 text-status-success hover:bg-status-success/25"
+          : "bg-foreground/[0.04] border-border/50 text-foreground/70 hover:bg-primary/15 hover:border-primary/30 hover:text-interactive",
         className,
       )}
     >

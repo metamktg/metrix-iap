@@ -57,7 +57,7 @@ function renderCrossmapTab() {
       </AuthProvider>
     </QueryClientProvider>
   );
-  fireEvent.click(screen.getByRole("button", { name: /Crossmap Results/i }));
+  fireEvent.click(screen.getByRole("tab", { name: /Crossmap Results/i }));
 }
 
 function coverageGroup() {

@@ -43,7 +43,7 @@ function StatsBlock({ title, stats }: { title: string; stats: DeepDiveStat[] }) 
               className={cn(
                 TYPE.body,
                 "tabular-nums font-semibold",
-                s.value === "n/a" ? "text-muted-foreground/40" : "text-foreground",
+                s.value === "n/a" ? "text-muted-foreground/75" : "text-foreground",
               )}
             >
               {s.value}
@@ -68,7 +68,7 @@ function RankedBlock({
     <section>
       <div className="flex items-baseline justify-between mb-2">
         <h4 className={TYPE.microLabel}>{title}</h4>
-        <span className={cn(TYPE.microLabel, "text-muted-foreground/40")}>{metricLabel}</span>
+        <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{metricLabel}</span>
       </div>
       <div className="space-y-0.5" data-testid="deep-dive-ranked">
         {rows.map((r) => {
@@ -78,7 +78,7 @@ function RankedBlock({
               <span className={cn(TYPE.body, "truncate min-w-0 flex-1 text-left", r.current ? "text-foreground font-semibold" : "text-foreground/85")}>
                 {r.label}
               </span>
-              <span className={cn(TYPE.body, "tabular-nums shrink-0", r.value == null ? "text-muted-foreground/40" : "text-foreground/75")}>
+              <span className={cn(TYPE.body, "tabular-nums shrink-0", r.value == null ? "text-muted-foreground/75" : "text-foreground/75")}>
                 {r.formatted}
               </span>
             </>
@@ -112,8 +112,8 @@ function RankedBlock({
               onClick={() => onDrill(r)}
               disabled={!r.drill}
               className={cn(
-                "flex w-full rounded-md border-l-2 border-transparent transition-colors",
-                r.drill && "hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer",
+                "pressable-lg flex w-full rounded-md border-l-2 border-transparent transition-colors",
+                r.drill && "hover:bg-foreground/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer",
               )}
               data-testid={`deep-dive-row-${r.key}`}
               title={r.note ?? `Open the deep dive for ${r.label}`}
@@ -131,7 +131,7 @@ function NoteBlock({ title, text }: { title?: string; text: string }) {
   return (
     <section>
       {title && <h4 className={cn(TYPE.microLabel, "mb-2")}>{title}</h4>}
-      <p className={cn(TYPE.caption, "rounded-lg border border-border/30 bg-white/[0.02] p-3")} data-testid="deep-dive-note">
+      <p className={cn(TYPE.caption, "rounded-lg border border-border/30 bg-foreground/[0.02] p-3")} data-testid="deep-dive-note">
         {text}
       </p>
     </section>
@@ -193,7 +193,7 @@ function FunnelBlock({ title, steps }: { title: string; steps: DeepDiveFunnelSte
             <span className={cn(TYPE.body, "text-foreground/80")}>{s.label}</span>
             <div className="flex items-center gap-3 shrink-0">
               <span className={cn(TYPE.body, "tabular-nums font-semibold text-foreground")}>{s.formatted}</span>
-              <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/50 w-20 text-right")}>
+              <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/75 w-20 text-right")}>
                 {s.pctOfPrior != null ? `${s.pctOfPrior.toFixed(1)}% of prior` : ""}
               </span>
             </div>
@@ -269,7 +269,7 @@ export function DeepDivePanel() {
       role="dialog"
       aria-label={`Deep dive · ${current.title}`}
       data-testid="deep-dive-panel"
-      className="fixed inset-y-0 right-0 z-50 w-full sm:w-[560px] max-w-[760px] flex flex-col bg-surface-deep border-l border-[var(--mx-edge-strong)] shadow-[0_0_60px_rgba(0,0,0,0.5)] focus-visible:outline-none"
+      className="fixed inset-y-0 right-0 z-50 w-full sm:w-[560px] max-w-[760px] flex flex-col bg-surface-deep border-l border-[var(--mx-edge-strong)] shadow-[0_0_60px_hsl(0 0% 0% / 0.5)] focus-visible:outline-none"
     >
       {/* ── Header: breadcrumbs + controls ─────────────────────────── */}
       <div className="shrink-0 px-4 pt-3 pb-2.5 border-b border-[var(--mx-edge-soft)] space-y-1.5">
@@ -279,7 +279,7 @@ export function DeepDivePanel() {
               type="button"
               onClick={pop}
               aria-label="Back to previous deep dive"
-              className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground/60 hover:text-foreground transition-colors shrink-0"
+              className="pressable p-1 rounded hover:bg-foreground/[0.06] text-muted-foreground/75 hover:text-foreground transition-colors shrink-0"
               data-testid="deep-dive-back"
             >
               <ArrowLeft className="w-3.5 h-3.5" aria-hidden />
@@ -289,12 +289,12 @@ export function DeepDivePanel() {
           <nav aria-label="Deep dive trail" className="flex items-center gap-1 min-w-0 overflow-hidden">
             {stack.map((m, i) => (
               <span key={`${m.id}-${i}`} className="flex items-center gap-1 min-w-0 shrink last:shrink-0">
-                {i > 0 && <ChevronRight className="w-3 h-3 text-muted-foreground/30 shrink-0" aria-hidden />}
+                {i > 0 && <ChevronRight className="w-3 h-3 text-muted-foreground/75 shrink-0" aria-hidden />}
                 {i < stack.length - 1 ? (
                   <button
                     type="button"
                     onClick={() => jumpTo(i)}
-                    className={cn(TYPE.label, "truncate text-muted-foreground/55 hover:text-foreground transition-colors normal-case tracking-normal")}
+                    className={cn("pressable", TYPE.label, "truncate text-muted-foreground/75 hover:text-foreground transition-colors normal-case tracking-normal")}
                     data-testid={`deep-dive-crumb-${i}`}
                     title={m.title}
                   >
@@ -312,7 +312,7 @@ export function DeepDivePanel() {
             type="button"
             onClick={close}
             aria-label="Close deep dive"
-            className="ml-auto p-1 rounded hover:bg-white/[0.06] text-muted-foreground/60 hover:text-foreground transition-colors shrink-0"
+            className="pressable ml-auto p-1 rounded hover:bg-foreground/[0.06] text-muted-foreground/75 hover:text-foreground transition-colors shrink-0"
             data-testid="deep-dive-close"
           >
             <X className="w-3.5 h-3.5" aria-hidden />
@@ -322,7 +322,7 @@ export function DeepDivePanel() {
           <div className={TYPE.microLabel}>{current.kicker}</div>
           <h3 className={TYPE.title} data-testid="deep-dive-title">{current.title}</h3>
           {current.subtitle && (
-            <div className={cn(TYPE.label, "font-mono text-muted-foreground/55 tracking-wide normal-case mt-0.5")}>
+            <div className={cn(TYPE.label, "font-mono text-muted-foreground/75 tracking-wide normal-case mt-0.5")}>
               {current.subtitle}
             </div>
           )}

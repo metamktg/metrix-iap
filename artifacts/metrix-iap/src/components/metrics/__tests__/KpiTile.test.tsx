@@ -52,7 +52,9 @@ describe("KpiTile", () => {
       <KpiTile metricId="spend" catalog={catalog} onSelect={onSelect} />
     );
     fireEvent.click(within(container).getByRole("button", { name: /total spend/i }));
-    const dropdown = within(container).getByTestId("kpi-metric-dropdown");
+    // Portalled to document.body so .mx-kpi-tile's overflow:hidden cannot
+    // clip it — so it is not a descendant of the render container.
+    const dropdown = screen.getByTestId("kpi-metric-dropdown");
     fireEvent.click(within(dropdown).getByRole("button", { name: /purchases/i }));
     expect(onSelect).toHaveBeenCalledWith("result:Website purchases");
   });
@@ -118,7 +120,9 @@ describe("KpiTileRow — per-view persistence", () => {
     const first = renderRow();
     // Open the first tile's dropdown and swap Total spend → CPM.
     fireEvent.click(within(first.container).getAllByRole("button", { name: /total spend/i })[0]);
-    const dropdown = within(first.container).getByTestId("kpi-metric-dropdown");
+    // Portalled to document.body so .mx-kpi-tile's overflow:hidden cannot
+    // clip it — so it is not a descendant of the render container.
+    const dropdown = screen.getByTestId("kpi-metric-dropdown");
     fireEvent.click(within(dropdown).getByRole("button", { name: /cpm/i }));
     expect(first.container.textContent).toContain("CPM");
     first.unmount();
@@ -201,5 +205,131 @@ describe("buildMetricCatalog — strict null propagation from result events", ()
     const c = buildMetricCatalog(withUnmeasuredEvent);
     const leadCost = c.find((m) => m.eventKey === "Leads" && m.id.startsWith("cost:"));
     if (leadCost) expect(leadCost.value).toBeNull();
+  });
+});
+
+// ─── A null hero metric can always be interrogated (C4) ───────────────
+//
+// The ⓘ used to appear only when a metric carried `sub` or a caller passed
+// `disclosure`. The six base metrics — spend, impressions, reach, clicks,
+// link clicks, link CTR — carry neither, and none of them is hideWhenNull,
+// so an account missing that field rendered the platform's most prominent
+// numbers as bare dashes with no affordance to ask why. A dash the reader
+// cannot interrogate is exactly the ambiguity the honest-null convention
+// exists to remove.
+
+const NULL_SOURCE: MetricSource = {
+  spend: null,
+  impressions: null,
+  reach: null,
+  clicksAll: null,
+  linkClicks: null,
+  linkCtrPct: null,
+  resultEvents: [],
+  isMultiEvent: false,
+};
+
+describe("KpiTile — a null value is never unexplainable", () => {
+  const nullCatalog = buildMetricCatalog(NULL_SOURCE);
+
+  it.each(["spend", "impressions", "reach", "clicks_all", "link_clicks", "link_ctr"])(
+    "offers the info affordance on a null %s tile",
+    (id) => {
+      const { container } = render(<KpiTile metricId={id} catalog={nullCatalog} onSelect={() => {}} />);
+      expect(within(container).queryByTestId("kpi-tile-info")).not.toBeNull();
+    },
+  );
+
+  it("explains that the dash is absent data rather than a zero", async () => {
+    const { container } = render(<KpiTile metricId="spend" catalog={nullCatalog} onSelect={() => {}} />);
+    fireEvent.focus(within(container).getByTestId("kpi-tile-info"));
+    await waitFor(() => {
+      expect(screen.getAllByText(/not a value of zero/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  it("keeps a metric's own note as the explanation when it has one", async () => {
+    const { container } = render(<KpiTile metricId="cpa_blended" catalog={nullCatalog} onSelect={() => {}} />);
+    fireEvent.focus(within(container).getByTestId("kpi-tile-info"));
+    await waitFor(() => {
+      expect(screen.getAllByText("spend ÷ all results").length).toBeGreaterThan(0);
+    });
+    // The generic note does not pile on top of a real one.
+    expect(screen.queryAllByText(/not a value of zero/i).length).toBe(0);
+  });
+
+  it("adds no affordance to a tile that has a real value and no note", () => {
+    const { container } = render(<KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />);
+    expect(within(container).queryByTestId("kpi-tile-info")).toBeNull();
+  });
+});
+
+// ─── The metric picker must escape the tile's clipping box ────────────
+//
+// .mx-kpi-tile sets `overflow: hidden` (index.css), and the dropdown is
+// positioned below the tile's bottom edge — so as an in-flow absolute
+// child it was clipped away entirely, on every KPI tile in the product.
+// z-50 does nothing against an overflow-hidden ancestor. The metric picker
+// is the whole point of the customizable tile rows, and it was invisible
+// everywhere; jsdom applies no CSS, which is why no test caught it.
+//
+// The structural property is what these can assert: the menu must not be a
+// descendant of the tile, because any ancestor is free to clip it.
+
+describe("KpiTile — metric picker escapes the tile's overflow", () => {
+  it("renders the dropdown outside the tile element", () => {
+    const { container } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />
+    );
+    fireEvent.click(within(container).getByText("Total spend"));
+
+    const tile = within(container).getByTestId("kpi-tile");
+    const dropdown = screen.getByTestId("kpi-metric-dropdown");
+    expect(dropdown).toBeTruthy();
+    // The assertion that would have failed before the portal.
+    expect(tile.contains(dropdown)).toBe(false);
+  });
+
+  it("attaches the dropdown to the document body", () => {
+    const { container } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />
+    );
+    fireEvent.click(within(container).getByText("Total spend"));
+    const dropdown = screen.getByTestId("kpi-metric-dropdown");
+    expect(dropdown.closest("[data-testid='kpi-tile']")).toBeNull();
+    expect(document.body.contains(dropdown)).toBe(true);
+  });
+
+  it("positions itself with fixed coordinates, having no positioned ancestor", () => {
+    const { container } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />
+    );
+    fireEvent.click(within(container).getByText("Total spend"));
+    const dropdown = screen.getByTestId("kpi-metric-dropdown") as HTMLElement;
+    // Portalled content cannot lay itself out against the trigger, so the
+    // position must come from the trigger's own rect.
+    expect(dropdown.style.position).toBe("fixed");
+  });
+
+  it("closes on scroll, since a fixed menu cannot follow its tile", () => {
+    const { container } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />
+    );
+    fireEvent.click(within(container).getByText("Total spend"));
+    expect(screen.queryByTestId("kpi-metric-dropdown")).not.toBeNull();
+
+    fireEvent.scroll(window);
+    expect(screen.queryByTestId("kpi-metric-dropdown")).toBeNull();
+  });
+
+  it("leaves nothing behind in the body once closed", () => {
+    const { container, unmount } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />
+    );
+    fireEvent.click(within(container).getByText("Total spend"));
+    expect(screen.queryByTestId("kpi-metric-dropdown")).not.toBeNull();
+    unmount();
+    // A portal that outlives its owner is a leak the user sees as a stuck menu.
+    expect(screen.queryByTestId("kpi-metric-dropdown")).toBeNull();
   });
 });

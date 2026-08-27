@@ -627,7 +627,12 @@ function renderBlockHtml(block: ReportBlock, accent: string): string {
 
 export function renderReportHtml(model: ReportModel): string {
   const internal = model.mode === "internal";
-  const accent = internal ? "#6d5df6" : "#0f766e";
+  // A print/Word document carries none of the app's CSS, so these are
+  // literals by necessity — but they are the BRAND's literals. The internal
+  // accent was #6d5df6, the Nocturne blurple the platform has since moved
+  // off, so exports were shipping a colour the product no longer uses.
+  // #155dff is the brief's electric blue and reads on white at 5.9:1.
+  const accent = internal ? "#155dff" : "#0f766e";
   const dateStr = model.generatedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
   const sectionsHtml = model.sections

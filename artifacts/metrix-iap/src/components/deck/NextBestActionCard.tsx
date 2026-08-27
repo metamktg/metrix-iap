@@ -23,9 +23,9 @@ import { addToTray } from "@/lib/data/trayStore";
 import { impactRank, type DeckCard } from "./RecommendationDeck";
 
 const IMPACT_BADGE: Record<string, string> = {
-  high: "border-red-400/25 bg-red-400/10 text-red-300",
-  medium: "border-amber-400/25 bg-amber-400/10 text-amber-300",
-  low: "border-border/40 bg-muted text-muted-foreground/60",
+  high: "border-status-danger/25 bg-status-danger/10 text-status-danger",
+  medium: "border-status-warning/25 bg-status-warning/10 text-status-warning",
+  low: "border-border/40 bg-muted text-muted-foreground/75",
   setup: "border-primary/25 bg-primary/10 text-interactive",
 };
 
@@ -80,12 +80,12 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
         data-testid="next-best-action-empty"
       >
         <div className="flex items-center gap-1.5 mb-1.5">
-          <Zap className="w-3.5 h-3.5 text-muted-foreground/45" />
-          <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/45")}>
+          <Zap className="w-3.5 h-3.5 text-muted-foreground/75" />
+          <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75")}>
             Next best action
           </span>
         </div>
-        <p className={cn(TYPE.body, "text-muted-foreground/60 leading-relaxed")}>
+        <p className={cn(TYPE.body, "text-muted-foreground/75 leading-relaxed")}>
           {cards.length === 0
             ? "No recommendations have been generated for this account yet."
             : "All recommendations have been reviewed — nothing pending right now."}
@@ -120,11 +120,11 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
             />
             <HeroBadge
               text={`${card.confidence} confidence`}
-              cls="border-border/40 bg-white/[0.03] text-muted-foreground/80"
+              cls="border-border/40 bg-foreground/[0.03] text-muted-foreground/80"
             />
             <HeroBadge
               text={card.scope.replace(/_/g, " ")}
-              cls="border-border/40 bg-white/[0.03] text-muted-foreground/60"
+              cls="border-border/40 bg-foreground/[0.03] text-muted-foreground/75"
             />
           </div>
           <div className="mt-2.5">
@@ -146,7 +146,7 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
             onClick={approve}
             data-testid="next-best-action-approve"
             className={cn(
-              TYPE.caption,
+              "pressable", TYPE.caption,
               "inline-flex items-center justify-center gap-1.5 font-semibold rounded-lg border border-primary/50 bg-primary text-primary-foreground px-3.5 py-1.5 hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             )}
           >
@@ -156,7 +156,7 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
             type="button"
             onClick={dismiss}
             data-testid="next-best-action-dismiss"
-            className={cn(TYPE.caption, "font-medium text-muted-foreground/70 px-1 py-0.5 hover:text-foreground/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded")}
+            className={cn("pressable", TYPE.caption, "font-medium text-muted-foreground/75 px-1 py-0.5 hover:text-foreground/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded")}
           >
             Dismiss
           </button>

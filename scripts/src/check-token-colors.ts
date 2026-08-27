@@ -1,0 +1,196 @@
+// Every colour in the app comes from a token.
+//
+// Before this gate there were 1,014 raw Tailwind palette classes across 77
+// files — `bg-emerald-500/10`, `text-amber-400`, `border-red-500/40` — and
+// 89% of them were emerald / amber / red doing the work of success, warning
+// and danger. They were written by hand because the design system shipped
+// only `destructive` and there was nothing else to point at.
+//
+// The consequence was not cosmetic. It meant editing tokens.json moved
+// almost nothing on screen: the platform's colour lived in component class
+// strings, so the design system could be changed without changing the
+// design. It also meant the product wore Tailwind's stock palette, which is
+// the same palette every other dashboard ships with.
+//
+// Two other things this catches:
+//
+//   · Raw hex and rgba() literals in components. Same problem, harder to
+//     grep for later.
+//   · Control characters embedded in source. A raw NUL was being used as a
+//     composite-key separator in two files; the technique is right, but as
+//     an embedded byte it makes the file grep as binary and any tool that
+//     round-trips it through a text encoder can drop it silently, collapsing
+//     two different keys onto one. Written as an escape it is safe.
+//
+// Run: pnpm --filter @workspace/scripts run check:token-colors
+
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const SRC = path.join(repoRoot, "artifacts/metrix-iap/src");
+
+const FAMILIES = [
+  "slate", "gray", "zinc", "neutral", "stone", "red", "orange", "amber", "yellow",
+  "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet",
+  "purple", "fuchsia", "pink", "rose",
+].join("|");
+const PREFIX = "bg|text|border|from|to|via|ring|fill|stroke|shadow|outline|divide|decoration|accent|caret";
+
+const RAW_CLASS = new RegExp(`\\b(?:${PREFIX})-(?:${FAMILIES})-\\d{2,3}(?:/[0-9.]+)?\\b`, "g");
+// `bg-white/[0.02]` is the subtle-surface-tint idiom — it was used 583 times.
+// It works on any dark ground, which is why it spread, but it hardcodes PURE
+// white as the lift: on the cockpit's blue-navy that reads cold and grey, and
+// it does not follow a re-theme. bg-foreground/[0.02] is the same tint taken
+// from the token.
+const RAW_TONE = new RegExp(`\\b(?:${PREFIX})-(?:white|black)(?:/(?:\\[[0-9.]+\\]|[0-9]+))?\\b`, "g");
+// A literal colour inside a component. The stylesheet may hold them; a .tsx
+// may not — that is where they escape review.
+const RAW_LITERAL = /(?:#[0-9a-fA-F]{3,8}\b|\brgba?\(\s*\d)/g;
+// Tailwind's stock depth scale. It is a black-based drop shadow with no
+// inset ring, so a panel wearing shadow-2xl sits beside one wearing
+// elevation-floating and reads as a different KIND of surface — which is
+// what three floating panels and both overlay primitives were doing. The
+// elevation-* scale is the one the design system defines.
+// `--shadow-sm:` in the stylesheet is the DEFINITION the elevation classes
+// are built from, so the class rule is scoped to .tsx like the literal rule.
+const RAW_SHADOW = /(?<!-)\bshadow-(?:sm|md|lg|xl|2xl|inner)\b(?!-)/g;
+// `shadow-md shadow-primary/25` is NOT the stock scale — in Tailwind a
+// coloured shadow needs a size class for its geometry and a colour class for
+// its tint, and the two together are one deliberate tinted glow. Matching the
+// size half of that pair would flag every primary CTA in the product. A size
+// shadow is a violation only when nothing on its line colours it.
+const SHADOW_TINT = /\bshadow-(?!sm\b|md\b|lg\b|xl\b|2xl\b|inner\b|none\b)[a-z][a-z0-9-]*(?:\/[0-9.]+)?/;
+// Text dimmed by opacity below what AA allows.
+//
+// A sweep of every rendered text node in the design lab found 110 of 511
+// below 4.5:1, and 894 `text-muted-foreground/NN` classes across the app sat
+// under the floor. muted-foreground is already a mid-tone — #aab6ca — so
+// multiplying it by 0.4 lands at 2.4:1, which is not dim, it is unreadable.
+//
+// The floors are measured, not chosen: on the lightest surface this text
+// actually sits on (card plus a 7% foreground tint), muted-foreground clears
+// 4.5:1 at 0.71 and foreground at 0.49. Rounded up to the nearest step the
+// codebase already spells, that is /75 (4.88:1) and /55 (5.36:1).
+//
+// The four levels of dimness this replaced were not a hierarchy — three of
+// them were illegible. Hierarchy lives in the type roles.
+const MUTED_AA_FLOOR = 75;
+const FG_AA_FLOOR = 55;
+const DIM_TEXT = /\btext-(muted-foreground|foreground)\/(\d+)\b/g;
+// Everything below 0x20 except tab, newline and carriage return.
+const CONTROL = new RegExp("[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]", "g");
+
+/**
+ * Files that may hold literals, each for a stated reason:
+ *   design-lab   a swatch page — showing the values IS the point
+ *   chartChrome  layered box-shadows, which have no token form
+ *   reportExport builds a standalone print/Word document that carries none
+ *                of the app's CSS, so it cannot reference a custom property
+ *   *.test.*     tests state the exact value they expect
+ */
+const LITERAL_EXEMPT = [/design-lab\.tsx$/, /chartChrome\.tsx$/, /reportExport\.ts$/, /\.test\.tsx?$/];
+
+function walk(dir: string, out: string[] = []): string[] {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) { if (e.name !== "node_modules") walk(p, out); }
+    else if (/\.(tsx?|css)$/.test(e.name)) out.push(p);
+  }
+  return out;
+}
+
+const problems: string[] = [];
+let scanned = 0;
+
+for (const file of walk(SRC)) {
+  const rel = path.relative(repoRoot, file);
+  const src = fs.readFileSync(file, "utf-8");
+  scanned += 1;
+  // Strip comments before looking for literals. A hex inside a comment is
+  // documentation — several of these files explain a past colour bug by
+  // naming the exact values involved, which is worth keeping.
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+  const classes = [...code.matchAll(RAW_CLASS)].map((m) => m[0]);
+  if (classes.length > 0) {
+    const distinct = [...new Set(classes)];
+    problems.push(
+      `${rel}: ${classes.length} raw Tailwind palette class${classes.length === 1 ? "" : "es"} ` +
+        `(${distinct.slice(0, 4).join(", ")}${distinct.length > 4 ? ", …" : ""}). ` +
+        `Use a token: status-success / status-warning / status-danger for state, ` +
+        `interactive / primary / metrix-cyan for brand, muted-foreground / border for chrome, ` +
+        `or a --mx-<role>-<step> ramp value when a specific step is needed.`,
+    );
+  }
+
+  const tones = [...code.matchAll(RAW_TONE)].map((m) => m[0]);
+  if (tones.length > 0) {
+    const distinct = [...new Set(tones)];
+    problems.push(
+      `${rel}: ${tones.length} hardcoded white/black utilit${tones.length === 1 ? "y" : "ies"} ` +
+        `(${distinct.slice(0, 3).join(", ")}${distinct.length > 3 ? ", …" : ""}). ` +
+        `Use foreground/background at the same opacity — a pure-white tint on a blue-navy ground ` +
+        `reads cold, and it will not follow a re-theme.`,
+    );
+  }
+
+  if (/\.tsx?$/.test(file) && !LITERAL_EXEMPT.some((r) => r.test(file))) {
+    const lits = [...code.matchAll(RAW_LITERAL)].map((m) => m[0]);
+    if (lits.length > 0) {
+      problems.push(
+        `${rel}: ${lits.length} raw colour literal${lits.length === 1 ? "" : "s"} ` +
+          `(${[...new Set(lits)].slice(0, 3).join(", ")}). A colour written into a component cannot ` +
+          `be re-themed and will not appear in any token audit.`,
+      );
+    }
+  }
+
+  // Line-scoped, so a size class can be recognised as the geometry half of a
+  // coloured shadow sitting beside it.
+  const shadows = code
+    .split("\n")
+    .filter((line) => !SHADOW_TINT.test(line))
+    .flatMap((line) => [...line.matchAll(RAW_SHADOW)].map((m) => m[0]));
+  if (shadows.length > 0 && !/design-lab\.tsx$/.test(file)) {
+    problems.push(
+      `${rel}: ${shadows.length} stock Tailwind shadow${shadows.length === 1 ? "" : "s"} ` +
+        `(${[...new Set(shadows)].join(", ")}). Use elevation-flat / elevation-raised / ` +
+        `elevation-floating — the stock scale has no inset ring, so a surface wearing it ` +
+        `reads as a different kind of surface from the ones beside it.`,
+    );
+  }
+
+  // Dim text below the measured AA floor.
+  const dim = [...code.matchAll(DIM_TEXT)]
+    .filter((m) => Number(m[2]) < (m[1] === "muted-foreground" ? MUTED_AA_FLOOR : FG_AA_FLOOR))
+    .map((m) => m[0]);
+  if (dim.length > 0 && !/design-lab\.tsx$/.test(file)) {
+    problems.push(
+      `${rel}: ${dim.length} dim-text class${dim.length === 1 ? "" : "es"} below the AA floor ` +
+        `(${[...new Set(dim)].slice(0, 4).join(", ")}). muted-foreground clears 4.5:1 only at /${MUTED_AA_FLOOR} ` +
+        `and foreground at /${FG_AA_FLOOR}, measured on the lightest surface these sit on (card + a 7% ` +
+        `foreground tint). Hierarchy comes from the type roles — micro / label / caption / body — not from ` +
+        `an opacity step that is only legible at one end.`,
+    );
+  }
+
+  const ctrl = src.match(CONTROL);
+  if (ctrl) {
+    problems.push(
+      `${rel}: ${ctrl.length} control character${ctrl.length === 1 ? "" : "s"} embedded in source. ` +
+        `Write them as escapes — as raw bytes the file greps as binary and a text round-trip can ` +
+        `drop them silently.`,
+    );
+  }
+}
+
+if (problems.length > 0) {
+  console.error("\nFAIL  Colour-token violations:\n");
+  for (const p of problems) console.error(`      · ${p}`);
+  console.error("");
+  process.exit(1);
+}
+
+console.log(`\nPASS  Every colour comes from a token, across ${scanned} files.\n`);

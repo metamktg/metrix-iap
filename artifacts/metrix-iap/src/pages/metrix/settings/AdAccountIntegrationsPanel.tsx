@@ -35,24 +35,24 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
   return (
     <div className="px-6 py-5 max-w-3xl space-y-5">
       {/* Account config card */}
-      <div className="rounded-xl border border-border/30 bg-white/[0.02] overflow-hidden">
+      <div className="rounded-xl border border-border/30 bg-foreground/[0.02] overflow-hidden">
         {/* Header row */}
         <div className="flex items-center gap-3 p-4 border-b border-border/20">
           {configured ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-status-success shrink-0" />
           ) : (
-            <Circle className="w-5 h-5 text-muted-foreground/60 shrink-0" />
+            <Circle className="w-5 h-5 text-muted-foreground/75 shrink-0" />
           )}
           <div className="flex-1 min-w-0">
             <div className="text-body font-semibold text-foreground">{account.name}</div>
-            <div className="text-label text-muted-foreground/70">{account.platform}</div>
+            <div className="text-label text-muted-foreground/75">{account.platform}</div>
           </div>
           <span
             className={cn(
               "text-label font-semibold uppercase tracking-wide px-2 py-1 rounded border leading-none shrink-0",
               configured
-                ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
-                : "text-muted-foreground/85 border-border/40 bg-white/[0.03]"
+                ? "text-status-success border-status-success/25 bg-status-success/10"
+                : "text-muted-foreground/85 border-border/40 bg-foreground/[0.03]"
             )}
           >
             {configured ? "Connected" : "Not connected"}
@@ -61,7 +61,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
 
         {/* Meta Ad Account ID row */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/20">
-          <div className="text-label text-muted-foreground/60 w-40 shrink-0">Meta Ad Account ID</div>
+          <div className="text-label text-muted-foreground/75 w-40 shrink-0">Meta Ad Account ID</div>
           {account.meta_ad_account_id ? (
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <span className="text-body font-mono text-foreground/85 truncate">
@@ -69,21 +69,21 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
               </span>
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1 text-label text-muted-foreground/60 hover:text-foreground/80 transition-colors shrink-0"
+                className="pressable flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/80 transition-colors shrink-0"
                 title="Copy to clipboard"
               >
                 <Copy className="w-3.5 h-3.5" />
-                {copied && <span className="text-emerald-400 text-label">Copied</span>}
+                {copied && <span className="text-status-success text-label">Copied</span>}
               </button>
             </div>
           ) : (
-            <span className="text-body text-muted-foreground/40">—</span>
+            <span className="text-body text-muted-foreground/75">—</span>
           )}
         </div>
 
         {/* Source status row */}
         <div className="flex items-center gap-3 px-4 py-3">
-          <div className="text-label text-muted-foreground/60 w-40 shrink-0">Source status</div>
+          <div className="text-label text-muted-foreground/75 w-40 shrink-0">Source status</div>
           <span className="text-body text-foreground/80">
             {account.source_status ?? "—"}
           </span>
@@ -95,7 +95,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
         {!configured && (
           hasLiveConnection ? (
             <div
-              className="flex items-center gap-2 h-9 px-4 rounded-md border border-emerald-400/30 bg-emerald-400/10 text-body text-emerald-400"
+              className="flex items-center gap-2 h-9 px-4 rounded-md border border-status-success/30 bg-status-success/10 text-body text-status-success"
               data-testid="live-connection-note-integrations"
             >
               <Wifi className="w-4 h-4 shrink-0" />
@@ -104,7 +104,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
           ) : (
             <button
               onClick={() => setConnectOpen(true)}
-              className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary border border-primary text-body font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
+              className="pressable flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary border border-primary text-body font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
               data-testid="button-connect-account-integrations"
             >
               <Plug className="w-4 h-4" /> Connect
@@ -113,7 +113,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
         )}
         <button
           onClick={() => setImportOpen(true)}
-          className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-body font-medium text-interactive hover:bg-primary/25 transition-colors"
+          className="pressable flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-body font-medium text-interactive hover:bg-primary/25 transition-colors"
           data-testid="button-manual-import-integrations"
         >
           <FileUp className="w-4 h-4" /> Manual import
@@ -124,7 +124,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
       <div className="pt-1">
         <button
           onClick={selectManager}
-          className="inline-flex items-center gap-1.5 text-label text-muted-foreground/60 hover:text-foreground/80 transition-colors"
+          className="pressable inline-flex items-center gap-1.5 text-label text-muted-foreground/75 hover:text-foreground/80 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Agency-wide integration settings

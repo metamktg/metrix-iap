@@ -75,25 +75,25 @@ export function OverviewLoopSummary() {
   }));
 
   return (
-    <div className="rounded-xl border border-border/40 bg-white/[0.02] px-3 py-2.5">
+    <div className="rounded-xl border border-border/40 bg-foreground/[0.02] px-3 py-2.5">
       <div className="flex items-center justify-between gap-3 mb-2">
         {/* Stage completion summary */}
         <div className="flex items-center gap-2 flex-wrap min-w-0">
-          <span className={cn(TYPE.label, "text-muted-foreground/60 shrink-0")}>IAP Loop</span>
-          <span className={cn(TYPE.label, "text-muted-foreground/40 shrink-0")}>·</span>
+          <span className={cn(TYPE.label, "text-muted-foreground/75 shrink-0")}>IAP Loop</span>
+          <span className={cn(TYPE.label, "text-muted-foreground/75 shrink-0")}>·</span>
           {stageCounts.map((s, i) => (
             <span key={s.label} className="inline-flex items-center gap-1 shrink-0">
               {i > 0 && (
-                <span className={cn(TYPE.label, "text-muted-foreground/30 mr-1")}>·</span>
+                <span className={cn(TYPE.label, "text-muted-foreground/75 mr-1")}>·</span>
               )}
               <span
                 className={cn(
                   TYPE.label,
                   s.done === s.total && s.total > 0
-                    ? "text-emerald-400/90"
+                    ? "text-status-success/90"
                     : s.done > 0
-                      ? "text-amber-400/80"
-                      : "text-muted-foreground/55"
+                      ? "text-status-warning/80"
+                      : "text-muted-foreground/75"
                 )}
               >
                 {s.label} {s.done}/{s.total}

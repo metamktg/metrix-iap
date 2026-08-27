@@ -24,6 +24,8 @@
 // from audience-clusters.ts, so the same honesty rules apply to both.
 
 import { useMemo, useState, useCallback } from "react";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { VERDICT, divergingFill } from "@/components/charts/chartTokens";
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
   ReferenceLine, Tooltip, ResponsiveContainer,
@@ -54,6 +56,7 @@ import {
   type SegmentId, type SegmentRawTotals,
   type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
+import { buildSegmentMetricCatalog } from "@/lib/data/segmentMetricsCatalog";
 import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
 import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
 import {
@@ -98,17 +101,23 @@ function cpaEff(cpa: number | null, med: number): CpaEff {
 }
 
 const EFF_COLOR: Record<CpaEff, string> = {
-  efficient: "hsl(var(--chart-3))",
-  average:   "hsl(var(--chart-1))",
-  costly:    "hsl(var(--chart-4))",
-  unknown:   "hsl(var(--chart-5))",
+  // A cluster's profile is a verdict on efficiency, not a category — so it
+  // wears the reserved diverging scale (good / neutral / bad), never chart
+  // slots. Slots 3 and 4 were teal and amber when this was written; the
+  // categorical palette is free to re-step, and did.
+  efficient: VERDICT.good,
+  average:   VERDICT.neutral,
+  costly:    VERDICT.bad,
+  unknown:   VERDICT.unmeasured,
 };
 
 const QUADRANT_COLOR: Record<PositioningQuadrant, string> = {
-  scale:    "hsl(var(--chart-3))",
-  optimize: "hsl(var(--chart-1))",
-  explore:  "hsl(var(--chart-2))",
-  avoid:    "hsl(var(--chart-4))",
+  // Ordered good -> bad, so the same diverging rule applies. "Explore" is
+  // deliberately the neutral: it is neither a win nor a loss yet.
+  scale:    VERDICT.good,
+  optimize: divergingFill(0.72),
+  explore:  VERDICT.neutral,
+  avoid:    VERDICT.bad,
 };
 
 function buildRankMetrics(resultPlural: string): RankMetric<SegmentEntry>[] {
@@ -184,12 +193,51 @@ function SegmentByToggle({ mode, onChange }: { mode: SegmentByMode; onChange: (m
 // (scalingBuckets.ts: Scale / Optimize / Explore / Avoid) rather than a
 // second parallel vocabulary — see audience-clusters.ts classifyQuadrant.
 
+// ─── Why a grouping is empty ──────────────────────────────────────────
+//
+// Cluster mode is built from CPA and CVR, and both need results — so an
+// account that is spending but has not converted yet has NO clusterable
+// segments, and all three cluster cards come back empty. They used to say
+// "No spend to allocate", which is not merely unhelpful but false: the
+// spend is real, the segments are real, and the same account shows them
+// immediately in Age view.
+//
+// That is the honesty invariant in miniature. An empty state is a claim
+// about the data, and this one claimed the opposite of the truth. It now
+// names the actual reason and offers the view that does work.
+
+function GroupingEmptyState({ hint, fallback }: { hint?: GroupingEmptyHint; fallback: string }) {
+  if (!hint) {
+    return <p className={cn(TYPE.body, "text-muted-foreground/75 py-6 text-center")}>{fallback}</p>;
+  }
+  return (
+    <div className="py-6 text-center space-y-2">
+      <p className={cn(TYPE.body, "text-muted-foreground/75")}>{hint.reason}</p>
+      <button
+        type="button"
+        onClick={hint.onSwitch}
+        className="inline-flex items-center gap-1.5 text-body font-medium text-interactive border border-primary/30 hover:bg-primary/10 active:bg-primary/20 rounded-lg px-3 py-1.5 transition-colors"
+      >
+        {hint.actionLabel}
+      </button>
+    </div>
+  );
+}
+
+export interface GroupingEmptyHint {
+  /** The real reason this grouping is empty, in the user's terms. */
+  reason: string;
+  actionLabel: string;
+  onSwitch: () => void;
+}
+
 function PositioningMapCard({
-  groups, resultPlural, groupNoun,
+  groups, resultPlural, groupNoun, emptyHint,
 }: {
   groups: AudienceGroup<SegmentEntry>[];
   resultPlural: string;
   groupNoun: string;
+  emptyHint?: GroupingEmptyHint;
 }) {
   const plotted = groups.filter((g) => g.derived.cpa != null && g.totals.results != null);
 
@@ -215,12 +263,12 @@ function PositioningMapCard({
       return (
         <g role="img" aria-label={payload.group.label} style={{ cursor: "default" }}>
           <circle cx={cx} cy={cy} r={r + 4} fill={fill} fillOpacity={0.08} />
-          <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.72} stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />
+          <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.72} stroke="hsl(var(--foreground) / 0.15)" strokeWidth={1.5} />
           <text
             x={cx} y={cy + 0.5}
             textAnchor="middle" dominantBaseline="middle"
             fontSize={9} fontWeight={700}
-            fill="rgba(255,255,255,0.92)"
+            fill="hsl(var(--foreground) / 0.92)"
             style={{ pointerEvents: "none" }}
           >
             {payload.group.id}
@@ -269,12 +317,16 @@ function PositioningMapCard({
       right={<SectionInfoIcon tip={`Each bubble is one real ${groupNoun}. X = cost per result, Y = ${resultPlural.toLowerCase()}, bubble size = spend. Quadrant cutoffs are the real median across plotted ${groupNoun}s.`} />}
     >
       {plotData.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground/50 gap-2">
-          <TrendingUp className="w-8 h-8" />
-          <p className={TYPE.body}>Not enough real results data to plot {groupNoun}s.</p>
-        </div>
+        emptyHint ? (
+          <GroupingEmptyState hint={emptyHint} fallback="" />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground/75 gap-2">
+            <TrendingUp className="w-8 h-8" />
+            <p className={TYPE.body}>Not enough real results data to plot {groupNoun}s.</p>
+          </div>
+        )
       ) : (
-        <div className="relative w-full rounded-xl border border-border/20 bg-white/[0.01] overflow-hidden" style={{ height: 380 }}>
+        <div className="relative w-full rounded-xl border border-border/20 bg-foreground/[0.01] overflow-hidden" style={{ height: 380 }}>
           <div
             className="absolute inset-0 pointer-events-none"
             aria-hidden="true"
@@ -303,14 +355,14 @@ function PositioningMapCard({
 
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart margin={{ top: 10, right: 20, bottom: 45, left: 60 }}>
-              <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.10)" />
+              <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--foreground) / 0.10)" />
               <XAxis
                 dataKey="x"
                 type="number"
                 domain={["auto", "auto"]}
                 tickFormatter={(v: number) => fmtUSD(v, 0)}
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                axisLine={{ stroke: "hsl(var(--foreground) / 0.08)" }}
                 tickLine={false}
                 label={{
                   value: "Cost per result →",
@@ -326,7 +378,7 @@ function PositioningMapCard({
                 domain={["auto", "auto"]}
                 tickFormatter={(v: number) => fmtNum(v)}
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                axisLine={{ stroke: "hsl(var(--foreground) / 0.08)" }}
                 tickLine={false}
                 label={{
                   value: `${resultPlural} →`,
@@ -366,11 +418,12 @@ function PositioningMapCard({
 // ── Share of spend vs. share of results ────────────────────────────────
 
 function ShareOfSpendCard({
-  groups, resultPlural, groupNoun,
+  groups, resultPlural, groupNoun, emptyHint,
 }: {
   groups: AudienceGroup<SegmentEntry>[];
   resultPlural: string;
   groupNoun: string;
+  emptyHint?: GroupingEmptyHint;
 }) {
   const totalSpend = groups.reduce((n, g) => n + (g.totals.spend ?? 0), 0);
   const totalResults = groups.reduce((n, g) => n + (g.totals.results ?? 0), 0);
@@ -390,40 +443,42 @@ function ShareOfSpendCard({
       right={<SectionInfoIcon tip={`Each ${groupNoun}'s share of scoped spend next to its share of scoped ${resultPlural.toLowerCase()}. A positive gap returns more than its budget share; a negative gap takes more budget than it returns.`} />}
     >
       {totalSpend <= 0 ? (
-        <p className={cn(TYPE.body, "text-muted-foreground/50 py-6 text-center")}>No spend to allocate.</p>
+        <GroupingEmptyState hint={emptyHint} fallback="No spend to allocate." />
       ) : (
         <div className="space-y-2.5" data-testid="share-of-spend-rows">
           {rows.map(({ g, spendShare, resultShare, gap }) => (
             <div key={g.id} className="rounded-lg px-2 py-1.5 -mx-2">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className={cn(TYPE.caption, "font-medium text-foreground/85 inline-flex items-center gap-1.5 min-w-0")}>
-                  <span className="shrink-0 font-mono text-muted-foreground/45">{g.id}</span>
+                  <span className="shrink-0 font-mono text-muted-foreground/75">{g.id}</span>
                   <span className="truncate">{g.label}</span>
                 </span>
                 <span className={cn(
                   TYPE.label,
                   "tabular-nums shrink-0",
-                  gap >= 3 ? "text-emerald-400" : gap <= -3 ? "text-amber-300" : "text-muted-foreground/45",
+                  gap >= 3 ? "text-status-success" : gap <= -3 ? "text-status-warning" : "text-muted-foreground/75",
                 )}>
                   {gap > 0 ? "+" : ""}{gap}pts
                 </span>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>Spend</span>
-                  <div className="flex-1 h-[3px] rounded-full bg-white/[0.04] overflow-hidden">
-                    <div className="h-full rounded-full bg-primary/60" style={{ width: `${Math.min(spendShare, 100)}%` }} />
-                  </div>
-                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
+                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/75 normal-case")}>Spend</span>
+                  <ProgressMeter value={spendShare} total={100} label="Spend share" className="flex-1" colorIndex={0} />
+                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/75")}>
                     {spendShare.toFixed(0)}%
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>{totalResults > 0 ? "Results" : "Results —"}</span>
-                  <div className="flex-1 h-[3px] rounded-full bg-white/[0.04] overflow-hidden">
-                    <div className="h-full rounded-full bg-chart-2/70" style={{ width: `${Math.min(resultShare, 100)}%` }} />
-                  </div>
-                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
+                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/75 normal-case")}>{totalResults > 0 ? "Results" : "Results —"}</span>
+                  <ProgressMeter
+                    value={totalResults > 0 ? resultShare : null}
+                    total={100}
+                    label="Result share"
+                    className="flex-1"
+                    colorIndex={1}
+                  />
+                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/75")}>
                     {totalResults > 0 ? `${resultShare.toFixed(0)}%` : "n/a"}
                   </span>
                 </div>
@@ -437,6 +492,33 @@ function ShareOfSpendCard({
 }
 
 // ── Group detail — collapsed by default, indexed against account average ─
+
+// ─── Reasons for an absent stat (C3) ──────────────────────────────────
+//
+// The dashes on these rows used to be unexplainable. Rather than write a
+// second set of reason strings, both helpers read the ones the segment
+// metric catalog already computes — the same text the drill-down modal
+// shows — so a change to why a metric is unavailable lands everywhere at
+// once instead of drifting between surfaces.
+
+function segmentStatReason(
+  totals: SegmentRawTotals,
+  derived: SegmentDerivedMetrics,
+  metricId: string,
+): string | undefined {
+  const m = buildSegmentMetricCatalog(totals, derived).find((x) => x.id === metricId);
+  return m?.availability === "unavailable" ? m.unavailableReason : undefined;
+}
+
+/** An index compares this group against the account blend; say which half is missing. */
+function indexReason(label: string, accountValue: number | null, groupValue: number | null): string | undefined {
+  if (accountValue != null && accountValue > 0 && groupValue != null) return undefined;
+  if (groupValue == null && (accountValue == null || accountValue <= 0)) {
+    return `neither this group's ${label} nor the account blend could be measured, so there is nothing to index against`;
+  }
+  if (groupValue == null) return `this group's own ${label} could not be measured`;
+  return `the account-wide ${label} baseline could not be measured, so an index against it would be meaningless`;
+}
 
 function GroupDetailRow({
   group, accountDerived, onSelectMember, resultPlural,
@@ -458,7 +540,7 @@ function GroupDetailRow({
   return (
     <div className="flex items-center justify-between gap-3 py-2.5 border-b border-border/10 last:border-0 flex-wrap">
       <div className="flex items-center gap-2 min-w-0">
-        <span className={cn(TYPE.label, "font-mono text-muted-foreground/45 shrink-0")}>{group.id}</span>
+        <span className={cn(TYPE.label, "font-mono text-muted-foreground/75 shrink-0")}>{group.id}</span>
         <DetailReveal
           label={group.label}
           labelClassName={cn(TYPE.title, "text-foreground/90")}
@@ -472,8 +554,8 @@ function GroupDetailRow({
                     type="button"
                     onClick={() => onSelectMember(m.seg)}
                     className={cn(
-                      "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md",
-                      "hover:bg-white/[0.05] transition-colors text-left"
+                      "pressable-lg w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md",
+                      "hover:bg-foreground/[0.05] transition-colors text-left"
                     )}
                   >
                     <span className={cn(TYPE.body, "inline-flex items-center gap-1.5")}>
@@ -491,9 +573,21 @@ function GroupDetailRow({
         />
       </div>
       <div className="flex items-center gap-4 shrink-0">
-        <KpiStat label="CPA index" value={cpaIndex != null ? `${cpaIndex}%` : "—"} />
-        <KpiStat label="CVR index" value={cvrIndex != null ? `${cvrIndex}%` : "—"} />
-        <KpiStat label="Spend" value={group.totals.spend != null ? fmtUSD(group.totals.spend, 0) : "—"} />
+        <KpiStat
+          label="CPA index"
+          value={cpaIndex != null ? `${cpaIndex}%` : "—"}
+          unavailableReason={indexReason("CPA", accountDerived.cpa, group.derived.cpa)}
+        />
+        <KpiStat
+          label="CVR index"
+          value={cvrIndex != null ? `${cvrIndex}%` : "—"}
+          unavailableReason={indexReason("CVR", accountDerived.cvr, group.derived.cvr)}
+        />
+        <KpiStat
+          label="Spend"
+          value={group.totals.spend != null ? fmtUSD(group.totals.spend, 0) : "—"}
+          unavailableReason={segmentStatReason(group.totals, group.derived, "spend")}
+        />
         <KpiStat label={resultPlural} value={fmtNum(group.totals.results)} />
       </div>
     </div>
@@ -501,7 +595,7 @@ function GroupDetailRow({
 }
 
 function GroupDetailCard({
-  title, groups, accountDerived, onSelectMember, resultPlural, groupNoun,
+  title, groups, accountDerived, onSelectMember, resultPlural, groupNoun, emptyHint,
 }: {
   title: string;
   groups: AudienceGroup<SegmentEntry>[];
@@ -509,6 +603,7 @@ function GroupDetailCard({
   onSelectMember: (seg: SegmentId) => void;
   resultPlural: string;
   groupNoun: string;
+  emptyHint?: GroupingEmptyHint;
 }) {
   return (
     <SectionCard
@@ -518,7 +613,7 @@ function GroupDetailCard({
       right={<SectionInfoIcon tip="CPA/CVR index shows each group's rate relative to the real account-wide blended rate — 100% is the account average, under 100% CPA is cheaper than average, over 100% CVR is better than average." />}
     >
       {groups.length === 0 ? (
-        <p className={cn(TYPE.body, "text-muted-foreground/50 py-4 text-center")}>No {groupNoun}s to show.</p>
+        <GroupingEmptyState hint={emptyHint} fallback={`No ${groupNoun}s to show.`} />
       ) : (
         <div>
           {groups.map((g) => (
@@ -570,14 +665,14 @@ function RankedListTab({
               onClick={() => onSelect(e.seg)}
               data-testid={`row-audience-segment-${e.seg.age}-${e.seg.gender}`}
               className={cn(
-                "w-full text-left rounded-lg px-4 py-3.5 border border-border/30 bg-white/[0.01]",
+                "w-full text-left rounded-lg px-4 py-3.5 border border-border/30 bg-foreground/[0.01]",
                 "hover:border-primary/30 hover:bg-primary/[0.03] active:scale-[0.998]",
-                "transition-all duration-100 group"
+                "transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-100 group"
               )}
               style={{ borderLeftColor: accentColor, borderLeftWidth: "3px" }}
             >
               <div className="flex items-center gap-2.5 mb-2.5">
-                <span className="w-4 shrink-0 font-mono text-muted-foreground/35 tabular-nums text-right text-label">
+                <span className="w-4 shrink-0 font-mono text-muted-foreground/75 tabular-nums text-right text-label">
                   {idx + 1}
                 </span>
                 <SegmentGenderIcon gender={e.seg.gender} />
@@ -586,14 +681,14 @@ function RankedListTab({
                 </span>
                 {e.signal.state === "insufficient_coverage" ? (
                   <span
-                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-muted-foreground/60 shrink-0"
+                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-muted-foreground/75 shrink-0"
                     title={e.signal.reasons.join(" ")}
                   >
                     <AlertTriangle className="w-3.5 h-3.5" /> Coverage
                   </span>
                 ) : e.signal.low ? (
                   <span
-                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-amber-300/65 shrink-0"
+                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-status-warning/65 shrink-0"
                     title={e.signal.reasons.join(" ")}
                   >
                     <AlertTriangle className="w-3.5 h-3.5" /> Low
@@ -606,7 +701,7 @@ function RankedListTab({
                   Explore <ArrowRight className="w-3.5 h-3.5" />
                 </span>
               </div>
-              <div className="ml-6 h-[6px] rounded-full bg-white/[0.05] overflow-hidden mb-2.5">
+              <div className="ml-6 h-[6px] rounded-full bg-foreground/[0.05] overflow-hidden mb-2.5">
                 <div
                   className="h-full rounded-full bg-primary/60"
                   style={{ width: `${barPct}%` }}
@@ -614,16 +709,19 @@ function RankedListTab({
               </div>
               <div className="ml-6 flex items-center gap-4 flex-wrap">
                 <KpiStat label={resultPlural}  value={fmtNum(e.totals.results)}                                   highlight={activeMetric.id === "results"} />
-                <KpiStat label="CPA"           value={e.derived.cpa != null ? fmtUSD(e.derived.cpa) : "—"}       highlight={activeMetric.id === "cpa"} />
-                <KpiStat label="Spend"         value={e.totals.spend != null ? fmtUSD(e.totals.spend, 0) : "—"}  highlight={activeMetric.id === "spend"} />
-                <KpiStat label="CTR"           value={e.derived.ctr != null ? fmtPct(e.derived.ctr) : "—"}       highlight={activeMetric.id === "ctr"} />
+                <KpiStat label="CPA"           value={e.derived.cpa != null ? fmtUSD(e.derived.cpa) : "—"}       highlight={activeMetric.id === "cpa"}
+                         unavailableReason={segmentStatReason(e.totals, e.derived, "cpa")} />
+                <KpiStat label="Spend"         value={e.totals.spend != null ? fmtUSD(e.totals.spend, 0) : "—"}  highlight={activeMetric.id === "spend"}
+                         unavailableReason={segmentStatReason(e.totals, e.derived, "spend")} />
+                <KpiStat label="CTR"           value={e.derived.ctr != null ? fmtPct(e.derived.ctr) : "—"}       highlight={activeMetric.id === "ctr"}
+                         unavailableReason={segmentStatReason(e.totals, e.derived, "ctr")} />
               </div>
             </button>
           );
         })}
       </div>
       <ShowMoreButton total={ranked.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="segments" />
-      <p className={cn("mt-3", TYPE.label, "text-muted-foreground/45")}>
+      <p className={cn("mt-3", TYPE.label, "text-muted-foreground/75")}>
         Bar length is relative to the best segment on {activeMetric.label}.{" "}
         {ranked.length} segment{ranked.length !== 1 ? "s" : ""} — click any row for its messaging attribution.
       </p>
@@ -641,30 +739,42 @@ const SEGMENT_BY_IDS: SegmentByMode[] = ["cluster", "age", "ranked"];
 /** Adapt API demographic rows → DemographicRow[] for existing analysis helpers.
  * Note: demographic_performance does not store impressions — Impressions and
  * CTR_link_pct are unavailable for preset windows and default to 0. */
-function adaptApiDemoRows(rows: {
-  age: string; gender: string; spend: number | null; results: number | null; link_clicks: number | null;
+export function adaptApiDemoRows(rows: {
+  age: string; gender: string; spend: number | null; impressions?: number | null;
+  results: number | null; link_clicks: number | null;
   adds_to_cart?: number | null; checkouts_initiated?: number | null; purchases?: number | null;
   adds_to_cart_value?: number | null;
 }[]): DemographicRow[] {
-  return rows.map((r) => ({
+  return rows.map((r) => {
+    // Impressions used to be hardcoded 0 here, with CTR hardcoded alongside
+    // it and a comment explaining that impressions were "not stored at
+    // demographic level". They are now — the engine always had the value
+    // and simply never persisted it — so the rate is a real derivation
+    // rather than a placeholder. Still 0 when the row predates the column,
+    // which is the pre-existing shape of DemographicRow; a row that cannot
+    // measure impressions reports no CTR rather than a computed one.
+    const impressions = r.impressions ?? 0;
+    const linkClicks = r.link_clicks ?? 0;
+    return {
     cell_id: "",
     "Ad name": "",
     Age: r.age,
     Gender: r.gender,
     "Amount spent (USD)": r.spend ?? 0,
     Reach: 0,
-    Impressions: 0,
+    Impressions: impressions,
     Results: r.results ?? 0,
     "Clicks (all)": 0,
-    "Link clicks": r.link_clicks ?? 0,
+    "Link clicks": linkClicks,
     CPA_result: r.results && r.results > 0 && r.spend ? r.spend / r.results : null,
-    CTR_link_pct: 0, // impressions not stored at demographic level
+    CTR_link_pct: impressions > 0 ? (linkClicks / impressions) * 100 : 0,
     Result_per_link_click_pct: r.link_clicks && r.link_clicks > 0 && r.results ? (r.results / r.link_clicks) * 100 : 0,
     adds_to_cart: r.adds_to_cart ?? null,
     checkouts_initiated: r.checkouts_initiated ?? null,
     purchases: r.purchases ?? null,
     adds_to_cart_value: r.adds_to_cart_value ?? null,
-  }));
+    };
+  });
 }
 
 export function AudienceView() {
@@ -773,6 +883,25 @@ export function AudienceView() {
   const activeGroups = mode === "cluster" ? clusterGroups : mode === "age" ? ageGroups : [];
   const groupNoun = mode === "cluster" ? "cluster" : "age group";
 
+  // Clustering needs CPA and CVR, and both need results — so an account
+  // that is spending but has not converted yet produces NO clusters, and
+  // every cluster card renders empty. The old copy for that state said
+  // "No spend to allocate", which is the opposite of true: the spend is
+  // real, the segments are real, and Age view shows them immediately.
+  // Name the real reason, and offer the view that works.
+  const groupingEmptyHint = useMemo((): GroupingEmptyHint | undefined => {
+    if (mode !== "cluster" || activeGroups.length > 0 || entries.length === 0) return undefined;
+    const withSpend = entries.filter((e) => (e.totals.spend ?? 0) > 0).length;
+    return {
+      reason:
+        `Clusters are built from cost per result and conversion rate, so they need results. ` +
+        `${withSpend} segment${withSpend === 1 ? "" : "s"} here ${withSpend === 1 ? "has" : "have"} spend but no results yet, ` +
+        `so there is nothing to cluster on — the spend itself is real and Age view shows it.`,
+      actionLabel: "Switch to Age view",
+      onSwitch: () => setMode("age"),
+    };
+  }, [mode, activeGroups.length, entries]);
+
   return (
     <>
       <ModuleScopeGate section={SECTION} title="Audience" account={account}>
@@ -847,7 +976,7 @@ export function AudienceView() {
 
                   <div className="px-6 py-5 space-y-4 max-w-6xl">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <p className={cn(TYPE.label, "text-muted-foreground/40")}>
+                      <p className={cn(TYPE.label, "text-muted-foreground/75")}>
                         {mode === "ranked"
                           ? `${ranked.length} segment${ranked.length !== 1 ? "s" : ""}`
                           : `${activeGroups.length} ${groupNoun}${activeGroups.length !== 1 ? "s" : ""} · ${entries.length} real segments`}
@@ -868,8 +997,8 @@ export function AudienceView() {
                     ) : (
                       <>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                          <PositioningMapCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} />
-                          <ShareOfSpendCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} />
+                          <PositioningMapCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} emptyHint={groupingEmptyHint} />
+                          <ShareOfSpendCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} emptyHint={groupingEmptyHint} />
                         </div>
                         <GroupDetailCard
                           title={mode === "cluster" ? "Cluster detail" : "Age detail"}
@@ -878,6 +1007,7 @@ export function AudienceView() {
                           onSelectMember={setSelectedSeg}
                           resultPlural={term.Plural}
                           groupNoun={groupNoun}
+                          emptyHint={groupingEmptyHint}
                         />
                       </>
                     )}

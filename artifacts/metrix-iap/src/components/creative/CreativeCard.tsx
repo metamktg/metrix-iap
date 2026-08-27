@@ -95,12 +95,12 @@ function PlaceholderVisual({ code, format, className }: { code: string; format?:
       >
         {code}
       </span>
-      <span className="flex items-center gap-1 text-[8px] font-mono uppercase tracking-widest text-white/25">
+      <span className="flex items-center gap-1 text-[8px] font-mono uppercase tracking-widest text-foreground/55">
         <ImageOff className="w-3.5 h-3.5" />
         No asset
       </span>
       {format && (
-        <span className="absolute top-1.5 right-1.5 text-[8px] font-mono uppercase tracking-wide text-white/30 border border-white/10 px-1 py-0.5 rounded leading-none">
+        <span className="absolute top-1.5 right-1.5 text-[8px] font-mono uppercase tracking-wide text-foreground/55 border border-foreground/10 px-1 py-0.5 rounded leading-none">
           {format}
         </span>
       )}
@@ -140,7 +140,7 @@ function CreativeVisualInner({ data, className }: { data: CreativeCardData; clas
     return (
       <div className={cn("relative w-full h-full", className)}>
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/[0.03]">
+          <div className="absolute inset-0 flex items-center justify-center bg-foreground/[0.03]">
             <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary/50 animate-spin" />
           </div>
         )}
@@ -191,7 +191,7 @@ export function VariableTagChips({ codes, max }: { codes: string[]; max?: number
         </span>
       ))}
       {hidden > 0 && (
-        <span className="text-[8px] font-mono text-muted-foreground/60 border border-border/30 px-1 py-0.5 rounded leading-none">
+        <span className="text-[8px] font-mono text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none">
           +{hidden}
         </span>
       )}
@@ -210,7 +210,7 @@ function StatStrip({ stats }: { stats: CreativeCardStats }) {
     <div className="grid grid-cols-2 gap-px bg-border/30 rounded-md overflow-hidden border border-border/30">
       {items.map((it) => (
         <div key={it.label} className="bg-surface-table px-2 py-1.5 text-center">
-          <div className="text-[7px] font-mono uppercase tracking-wider text-muted-foreground/55 truncate">{it.label}</div>
+          <div className="text-[7px] font-mono uppercase tracking-wider text-muted-foreground/75 truncate">{it.label}</div>
           <div className="text-label font-semibold text-foreground/90 tabular-nums mt-0.5">{it.value}</div>
         </div>
       ))}
@@ -282,18 +282,18 @@ export function CreativeCard({
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDialog(); } }}
         tabIndex={0}
         className={cn(
-          "group relative rounded-xl border bg-white/[0.02] overflow-hidden",
-          "transition-all duration-200 flex flex-col cursor-pointer",
+          "group relative rounded-xl border bg-foreground/[0.02] overflow-hidden",
+          "transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200 flex flex-col cursor-pointer",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-          "hover:shadow-lg hover:shadow-black/30",
+          "hover:shadow-lg hover:shadow-background/60",
           unmapped
-            ? "border-amber-400/30 hover:border-amber-400/50"
-            : "border-white/[0.09] hover:border-primary/30",
+            ? "border-status-warning/30 hover:border-status-warning/50"
+            : "border-foreground/[0.09] hover:border-primary/30",
           className
         )}
       >
         {/* Visual area — pointer-events-none so root div click fires reliably */}
-        <div className="relative aspect-[4/5] w-full overflow-hidden border-b border-white/[0.06]">
+        <div className="relative aspect-[4/5] w-full overflow-hidden border-b border-foreground/[0.06]">
           {/* Asset or placeholder (pointer-events-none so clicks bubble to root) */}
           <div className="absolute inset-0 transition-transform duration-500 will-change-transform group-hover:scale-[1.04] pointer-events-none">
             <CreativeVisual data={data} />
@@ -308,25 +308,34 @@ export function CreativeCard({
                 onUploadCreatives?.();
               }}
               title="Map this creative to an IAP library entry"
-              className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-amber-500/20 border border-amber-400/35 text-amber-300 text-[8px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm hover:bg-amber-500/30 transition-colors"
+              className="pressable absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-status-warning/20 border border-status-warning/35 text-status-warning text-[8px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm hover:bg-status-warning/30 transition-colors"
             >
-              <span className="w-1 h-1 rounded-full bg-amber-400 shrink-0" />
+              <span className="w-1 h-1 rounded-full bg-status-warning shrink-0" />
               Map creative
             </button>
           )}
 
           {/*
-           * Hover action bar — hidden (opacity-0) AND pointer-events-none by
-           * default so invisible state cannot intercept card clicks.
-           * On group-hover: opacity-100 + pointer-events-auto.
-           * Each action stopPropagation so parent onClick doesn't also fire.
+           * Action bar. Hidden and pointer-events-none at rest so the
+           * invisible state cannot intercept card clicks; revealed on hover,
+           * on keyboard focus anywhere inside it, and ALWAYS on a device
+           * with no hover at all.
+           *
+           * That last case is the bug this comment used to describe as
+           * correct behaviour: on a phone or tablet there is no hover, so
+           * Expand and every other action on this card was unreachable —
+           * not hard to find, unreachable. group-focus-within covers the
+           * keyboard; the (hover: none) query covers touch.
+           *
+           * Each action stopPropagation so the parent onClick does not also
+           * fire.
            */}
-          <div className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-between gap-1 px-2 py-1.5 bg-black/70 backdrop-blur-sm opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
+          <div className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-between gap-1 px-2 py-1.5 bg-background/70 backdrop-blur-sm opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto transition-opacity duration-200">
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); openDialog(); }}
               title="Expand creative"
-              className="flex items-center gap-1 text-[9px] font-medium text-white/80 hover:text-white transition-colors"
+              className="pressable flex items-center gap-1 text-[9px] font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               <Maximize2 className="w-3.5 h-3.5" />
               Expand
@@ -337,7 +346,7 @@ export function CreativeCard({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onUploadCreative(data.conceptCode); }}
                   title={data.assetUrl ? "Replace creative" : "Upload creative"}
-                  className="flex items-center gap-1 text-[9px] font-medium text-white/70 hover:text-white transition-colors"
+                  className="pressable flex items-center gap-1 text-[9px] font-medium text-foreground/70 hover:text-foreground transition-colors"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   {data.assetUrl ? "Replace" : "Upload"}
@@ -354,16 +363,16 @@ export function CreativeCard({
         <div className="p-2.5 space-y-1.5 flex-1 flex flex-col pointer-events-none">
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-mono text-muted-foreground/55">{data.conceptCode}</span>
+              <span className="text-[9px] font-mono text-muted-foreground/75">{data.conceptCode}</span>
               {data.stage && (
-                <span className="text-[8px] font-mono uppercase text-muted-foreground/55 border border-border/30 px-1 py-0.5 rounded leading-none">
+                <span className="text-[8px] font-mono uppercase text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none">
                   {data.stage}
                 </span>
               )}
               {qaFlagged && (
                 <span
                   title={`QA mapping: ${data.qaMappingStatus}`}
-                  className="flex items-center gap-0.5 text-[8px] font-semibold uppercase text-amber-300 border border-amber-400/30 bg-amber-400/10 px-1 py-0.5 rounded leading-none"
+                  className="flex items-center gap-0.5 text-[8px] font-semibold uppercase text-status-warning border border-status-warning/30 bg-status-warning/10 px-1 py-0.5 rounded leading-none"
                 >
                   <AlertTriangle className="w-2.5 h-2.5" />
                   QA

@@ -47,7 +47,7 @@ export function ExportsReportsView() {
                 <ul className="space-y-1.5">
                   {reportBuilder.export_formats.map((f) => (
                     <li key={f} className="flex items-center gap-2 text-body text-foreground/85">
-                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-status-success shrink-0" />
                       {FORMAT_LABEL[f] ?? f}
                     </li>
                   ))}

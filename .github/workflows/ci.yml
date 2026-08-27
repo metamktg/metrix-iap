@@ -96,6 +96,34 @@ jobs:
           pnpm --filter @workspace/scripts run check:css-token-contrast
           pnpm --filter @workspace/scripts run check:text-muted-contrast
 
+      - name: Spec locator ambiguity
+        # Guards the Playwright step far below. `getByRole(role, { name })`
+        # matches by case-insensitive SUBSTRING unless `exact: true` is passed,
+        # so giving SectionCard's header an aria-label of
+        # "Collapse section: <title>" silently made thirteen existing locators
+        # ambiguous. Each one is a strict-mode violation; the first spec to
+        # reach them failed nine of its ten tests at once, and the rest sat
+        # broken in specs the fail-fast run never got to. This is the same
+        # finding in under a second, and it names the file:line. It covers the
+        # text-content matcher too: `button:has-text("Run analysis")` sweeps in
+        # the header of the <SectionCard title="Run analysis"> that wraps the
+        # real control, and an aria-label does not shield it from that one.
+        run: pnpm --filter @workspace/scripts run check:locator-ambiguity
+
+      - name: Design system gates
+        # These four ship with this branch and were wired into .replit only, so
+        # on the merge path — the one that matters — they protected nothing.
+        # All four are pure static reads of committed files. Placed after the
+        # typecheck step because check:chart-palette reads command-deck's
+        # index.css, which is committed but regenerated from tokens.json by
+        # `pretypecheck` — so running here reads it as the tokens define it,
+        # not as it happens to be checked in.
+        run: |
+          pnpm --filter @workspace/scripts run check:interaction
+          pnpm --filter @workspace/scripts run check:token-colors
+          pnpm --filter @workspace/scripts run check:type-scale
+          pnpm --filter @workspace/scripts run check:chart-palette
+
       - name: API codegen drift
         run: pnpm --filter @workspace/scripts run check:api-codegen-drift
 

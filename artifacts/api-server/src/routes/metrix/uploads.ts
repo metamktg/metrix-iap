@@ -26,58 +26,21 @@ import {
   validatePerformanceCsvUpload,
   findStagedByteDuplicate,
 } from "./shared";
-// In-process cache for creative asset file content.  Supabase bytea fetches
-// are slow (10-17 s on large images) and trigger statement timeouts when many
-// card thumbnails fire simultaneously.  Caching the decoded Buffer after the
-// first fetch means all subsequent renders (re-mounts, scrolls, refreshes
-// within the TTL) are served from memory in < 1 ms.
-//
-// In-flight map provides request coalescing: if 20 cards request the same
-// importId at the same time, only ONE Supabase query runs; the other 19
-// await the shared Promise instead of each racing to open their own connection.
-export const CREATIVE_FILE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
-
-// Byte-bounded: the TTL alone let the cache grow to the whole creative
-// library's decoded size (a real account holds 125 assets ≈ 257 MB — more
-// RAM than the deployment instance can spare). Insertion order doubles as
-// the eviction order (oldest first); a single file bigger than the cap is
-// served without being cached at all.
-export const CREATIVE_FILE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
-
-const creativeFileCache = new Map<string, { buf: Buffer; contentType: string; expires: number }>();
-let creativeFileCacheBytes = 0;
-const creativeFileInFlight = new Map<string, Promise<{ buf: Buffer; contentType: string }>>();
-function cacheCreativeFile(importId: string, entry: { buf: Buffer; contentType: string; expires: number }): void {
-  const prior = creativeFileCache.get(importId);
-  if (prior) {
-    creativeFileCacheBytes -= prior.buf.length;
-    creativeFileCache.delete(importId);
-  }
-  if (entry.buf.length > CREATIVE_FILE_CACHE_MAX_BYTES) return;
-  for (const [key, value] of creativeFileCache) {
-    if (creativeFileCacheBytes + entry.buf.length <= CREATIVE_FILE_CACHE_MAX_BYTES) break;
-    creativeFileCache.delete(key);
-    creativeFileCacheBytes -= value.buf.length;
-  }
-  creativeFileCache.set(importId, entry);
-  creativeFileCacheBytes += entry.buf.length;
-}
+import { getCreativeFile, type CreativeFile } from "../../lib/creativeFileCache";
+import { resolveServedAsset, isInlineVideo } from "../../lib/assetContentType";
+// Staged-file bytes are served through lib/creativeFileCache, which owns
+// both the performance behaviour (TTL cache + in-flight coalescing) and the
+// tenancy rule that makes its key (account, import) rather than import
+// alone. Read that module's header before touching either.
 async function fetchAndCacheCreativeFile(
   importId: string,
   accountId: string,
-): Promise<{ buf: Buffer; contentType: string }> {
-  const cached = creativeFileCache.get(importId);
-  if (cached && Date.now() < cached.expires) {
-    return cached;
-  }
-  const existing = creativeFileInFlight.get(importId);
-  if (existing) return existing;
-
-  const promise = (async () => {
+): Promise<CreativeFile> {
+  return getCreativeFile(accountId, importId, async () => {
     const supabase = getSupabase();
     const result = await supabase
       .from("manual_imports")
-      .select("id, content_type, content")
+      .select("id, content_type, content, filename")
       .eq("id", importId)
       .eq("account_id", accountId)
       .limit(1);
@@ -88,14 +51,8 @@ async function fetchAndCacheCreativeFile(
     // bytes in manual_import_chunks — loadImportContentBuffer handles both.
     const buf = await loadImportContentBuffer(row);
     const contentType = (row["content_type"] as string | null) ?? "application/octet-stream";
-    cacheCreativeFile(importId, { buf, contentType, expires: Date.now() + CREATIVE_FILE_CACHE_TTL_MS });
-    return { buf, contentType };
-  })().finally(() => {
-    creativeFileInFlight.delete(importId);
+    return { buf, contentType, filename: (row["filename"] as string | null) ?? null };
   });
-
-  creativeFileInFlight.set(importId, promise);
-  return promise;
 }
 
 /**
@@ -619,7 +576,7 @@ router.get("/metrix/accounts/:accountId/manual-imports/:importId/file", requireA
       res.status(403).json({ message: "You don't have access to this ad account." });
       return;
     }
-    let file: { buf: Buffer; contentType: string };
+    let file: CreativeFile;
     try {
       file = await fetchAndCacheCreativeFile(importId, accountId);
     } catch (err) {
@@ -629,8 +586,15 @@ router.get("/metrix/accounts/:accountId/manual-imports/:importId/file", requireA
       }
       throw err;
     }
-    const { buf, contentType } = file;
+    // The uploader's declared content type is advisory: it is echoed back
+    // only when it names a type that cannot execute (see
+    // lib/assetContentType). Anything else — html, svg, unrecognised —
+    // becomes an opaque download rather than a live same-origin document.
+    const served = resolveServedAsset(file.contentType, file.filename);
+    const { buf } = file;
+    const contentType = served.contentType;
     res.setHeader("Content-Type", contentType);
+    if (served.disposition) res.setHeader("Content-Disposition", served.disposition);
     // Creative imports are immutable: each upload gets its own importId URL,
     // and replacing a creative creates a new URL. Keep the bytes in the
     // browser's disk cache so revisiting the library or refreshing the page
@@ -642,7 +606,7 @@ router.get("/metrix/accounts/:accountId/manual-imports/:importId/file", requireA
     // silently fail to load even though the plain GET works fine.
     res.setHeader("Accept-Ranges", "bytes");
     const rangeHeader = req.headers.range;
-    if (rangeHeader && contentType.startsWith("video/")) {
+    if (rangeHeader && isInlineVideo(contentType)) {
       const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader);
       const total = buf.length;
       const start = match?.[1] ? parseInt(match[1], 10) : 0;

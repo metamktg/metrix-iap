@@ -104,7 +104,7 @@ export function PrimaryBtn({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex items-center gap-1.5 h-9 px-4 rounded-md border text-body font-medium transition-colors",
+        "pressable flex items-center gap-1.5 h-9 px-4 rounded-md border text-body font-medium transition-colors",
         disabled
           ? "border-border/40 text-muted-foreground/80 cursor-not-allowed"
           : "bg-primary/15 border-primary/30 text-interactive hover:bg-primary/25"
@@ -119,7 +119,7 @@ export function GhostBtn({ onClick, children }: { onClick: () => void; children:
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+      className="pressable flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
     >
       {children}
     </button>
@@ -148,8 +148,8 @@ export function ConnectMetaDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-              <Plug className="w-4 h-4 text-muted-foreground/70" />
+            <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
+              <Plug className="w-4 h-4 text-muted-foreground/75" />
             </div>
             <span className="text-label font-semibold uppercase tracking-widest border border-primary/25 bg-primary/[0.08] text-interactive/80 px-2 py-1 rounded">
               Coming soon
@@ -163,7 +163,7 @@ export function ConnectMetaDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
+        <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-foreground/[0.02]">
           <FileUp className="w-4 h-4 text-interactive/80 shrink-0 mt-0.5" />
           <div className="min-w-0">
             <div className="text-body font-semibold text-foreground">Use manual import instead</div>
@@ -358,7 +358,7 @@ function UploadProgressBar({ pct, label }: { pct: number; label: string }) {
         </span>
         <span className="shrink-0 tabular-nums">{pct}%</span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
         <div
           className="h-full rounded-full bg-primary transition-[width] duration-150 ease-out"
           style={{ width: `${Math.min(100, Math.max(pct > 0 ? 4 : 0, pct))}%` }}
@@ -382,15 +382,15 @@ function CsvMappingDiffCallout({
 }) {
   if (diff.nowFound.length === 0 && diff.stillMissing.length === 0) return null;
   return (
-    <div className="rounded-lg border border-border/40 bg-white/[0.02] p-3 space-y-2">
+    <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-3 space-y-2">
       <div className="text-caption font-semibold text-foreground/75">After re-upload</div>
       {diff.nowFound.length > 0 && (
         <div className="space-y-1">
           {diff.nowFound.map((col) => (
             <div key={col} className="flex items-center gap-2 text-label">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="font-medium text-emerald-300">{col}</span>
-              <span className="text-emerald-400/55">— now found</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
+              <span className="font-medium text-status-success">{col}</span>
+              <span className="text-status-success/55">— now found</span>
             </div>
           ))}
         </div>
@@ -399,9 +399,9 @@ function CsvMappingDiffCallout({
         <div className="space-y-1">
           {diff.stillMissing.map((col) => (
             <div key={col} className="flex items-center gap-2 text-label">
-              <XCircle className="w-3.5 h-3.5 text-red-400/80 shrink-0" />
-              <span className="font-medium text-red-300">{col}</span>
-              <span className="text-red-400/55">— still missing</span>
+              <XCircle className="w-3.5 h-3.5 text-status-danger/80 shrink-0" />
+              <span className="font-medium text-status-danger">{col}</span>
+              <span className="text-status-danger/55">— still missing</span>
             </div>
           ))}
         </div>
@@ -435,17 +435,17 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
   const headerColor =
     requiredMissing.length > 0
       ? "border-status-warning/25 bg-status-warning/[0.04]"
-      : "border-emerald-400/20 bg-emerald-400/[0.03]";
+      : "border-status-success/20 bg-status-success/[0.03]";
   const chevronColor =
-    requiredMissing.length > 0 ? "text-status-warning/80" : "text-emerald-400/80";
+    requiredMissing.length > 0 ? "text-status-warning/80" : "text-status-success/80";
   const iconColor =
-    requiredMissing.length > 0 ? "text-status-warning" : "text-emerald-400";
+    requiredMissing.length > 0 ? "text-status-warning" : "text-status-success";
 
   return (
     <div className={cn("rounded-lg border overflow-hidden", headerColor)}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.02] transition-colors"
+        className="pressable-lg w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/[0.02] transition-colors"
         aria-expanded={open}
       >
         <GitMerge className={cn("w-3.5 h-3.5 shrink-0", iconColor)} />
@@ -461,7 +461,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
       </button>
 
       {open && (
-        <div className="px-3 pb-3 space-y-1 border-t border-white/[0.04]">
+        <div className="px-3 pb-3 space-y-1 border-t border-foreground/[0.04]">
           {resolved.length > 0 && (
             <div className="pt-2 space-y-1">
               {resolved.map((e) => {
@@ -472,25 +472,25 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
                     className={cn(
                       "flex items-start gap-2 px-2 py-1.5 rounded text-label",
                       isHigh
-                        ? "bg-emerald-400/[0.06] border border-emerald-400/15"
+                        ? "bg-status-success/[0.06] border border-status-success/15"
                         : "bg-status-warning/[0.06] border border-status-warning/15"
                     )}
                   >
                     <CheckCircle2
                       className={cn(
                         "w-3.5 h-3.5 shrink-0 mt-px",
-                        isHigh ? "text-emerald-400" : "text-status-warning"
+                        isHigh ? "text-status-success" : "text-status-warning"
                       )}
                     />
                     <div className="min-w-0 flex-1">
                       <span className="font-medium text-foreground/90">{e.canonical}</span>
                       {e.found_as && e.found_as !== e.canonical && (
-                        <span className="text-muted-foreground/70"> ← {e.found_as}</span>
+                        <span className="text-muted-foreground/75"> ← {e.found_as}</span>
                       )}
                       <span
                         className={cn(
                           "ml-1.5 text-label font-semibold uppercase tracking-wide",
-                          isHigh ? "text-emerald-400/80" : "text-status-warning/80"
+                          isHigh ? "text-status-success/80" : "text-status-warning/80"
                         )}
                       >
                         {Math.round(e.confidence * 100)}%
@@ -504,15 +504,15 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
 
           {requiredMissing.length > 0 && (
             <div className={cn("pt-2 space-y-1", resolved.length > 0 && "mt-1")}>
-              <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/60 pb-0.5">
+              <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/75 pb-0.5">
                 Required columns missing
               </p>
               {requiredMissing.map((e) => (
                 <div
                   key={e.canonical}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded text-label bg-red-400/[0.06] border border-red-400/15"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded text-label bg-status-danger/[0.06] border border-status-danger/15"
                 >
-                  <XCircle className="w-3.5 h-3.5 shrink-0 text-red-400/80" />
+                  <XCircle className="w-3.5 h-3.5 shrink-0 text-status-danger/80" />
                   <span className="font-medium text-foreground/80 min-w-0 truncate">{e.canonical}</span>
                 </div>
               ))}
@@ -521,15 +521,15 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
 
           {optionalMissing.length > 0 && (
             <div className={cn("pt-2 space-y-1", (resolved.length > 0 || requiredMissing.length > 0) && "mt-1")}>
-              <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/60 pb-0.5">
+              <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/75 pb-0.5">
                 Optional columns not included in this export — no action needed
               </p>
               {optionalMissing.map((e) => (
                 <div
                   key={e.canonical}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded text-label bg-white/[0.02] border border-border/30"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded text-label bg-foreground/[0.02] border border-border/30"
                 >
-                  <span className="font-medium text-muted-foreground/70 min-w-0 truncate">{e.canonical}</span>
+                  <span className="font-medium text-muted-foreground/75 min-w-0 truncate">{e.canonical}</span>
                 </div>
               ))}
             </div>
@@ -793,19 +793,19 @@ function SmartCsvUpload({
         }}
         disabled={current !== null}
         className={cn(
-          "w-full flex flex-col items-center gap-1.5 p-5 rounded-lg border border-dashed transition-colors",
+          "pressable-lg w-full flex flex-col items-center gap-1.5 p-5 rounded-lg border border-dashed transition-colors",
           current !== null
             ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
             : isDragging
             ? "border-primary/60 bg-primary/[0.06]"
-            : "border-border/60 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
+            : "border-border/60 hover:border-primary/40 hover:bg-foreground/[0.02] cursor-pointer"
         )}
       >
         {current !== null ? <Loader2 className="w-5 h-5 text-interactive animate-spin" /> : <Upload className="w-5 h-5 text-muted-foreground/85" />}
         <span className="text-body font-medium text-foreground/85">
           {current !== null ? `Uploading ${current.name}…` : "Drop your Meta CSV or XLSX exports here, or click to browse"}
         </span>
-        <span className="text-caption text-muted-foreground/60">Any number of files, any order — up to {MAX_PERFORMANCE_UPLOAD_MB_LABEL} each</span>
+        <span className="text-caption text-muted-foreground/75">Any number of files, any order — up to {MAX_PERFORMANCE_UPLOAD_MB_LABEL} each</span>
         {current !== null && <div className="w-full max-w-xs mt-1"><UploadProgressBar pct={current.pct} label="" /></div>}
       </button>
 
@@ -819,26 +819,26 @@ function SmartCsvUpload({
               key={slot.kind}
               className={cn(
                 "flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-label min-w-0",
-                filled ? "border-emerald-400/20 bg-emerald-400/[0.05]" : "border-border/40 bg-white/[0.015]"
+                filled ? "border-status-success/20 bg-status-success/[0.05]" : "border-border/40 bg-foreground/[0.015]"
               )}
             >
               {filled ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
               ) : (
                 <div className={cn("w-3.5 h-3.5 rounded-full border shrink-0", slot.optional ? "border-border/50" : "border-status-warning/50")} />
               )}
-              <span className={cn("truncate flex-1", filled ? "text-foreground/85" : "text-muted-foreground/70")}>
+              <span className={cn("truncate flex-1", filled ? "text-foreground/85" : "text-muted-foreground/75")}>
                 {slot.label}
                 {!slot.optional && !filled && <span className="text-status-warning/70"> *</span>}
                 {importsForSlot.length > 1 && (
-                  <span className="text-emerald-400/80"> · {importsForSlot.length} files</span>
+                  <span className="text-status-success/80"> · {importsForSlot.length} files</span>
                 )}
               </span>
               {single && (
                 <button
                   onClick={() => void handleRemove(single)}
                   disabled={deleteMutation.isPending}
-                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="pressable shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   aria-label={`Remove ${slot.label} file`}
                 >
                   <Trash2 className="w-3 h-3" />
@@ -847,7 +847,7 @@ function SmartCsvUpload({
               {importsForSlot.length > 1 && (
                 <button
                   onClick={() => setExpandedSlot((s) => (s === slot.kind ? null : slot.kind))}
-                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.06] transition-colors cursor-pointer"
+                  className="pressable shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
                   aria-label={`Manage ${slot.label} files`}
                 >
                   <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", expandedSlot === slot.kind && "rotate-90")} />
@@ -859,18 +859,18 @@ function SmartCsvUpload({
       </div>
 
       {expandedSlot && (staged[expandedSlot]?.length ?? 0) > 1 && (
-        <div className="rounded-lg border border-border/40 bg-white/[0.02] p-2 space-y-1">
-          <div className="text-label font-semibold text-muted-foreground/70 px-1">
+        <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2 space-y-1">
+          <div className="text-label font-semibold text-muted-foreground/75 px-1">
             {SMART_CSV_SLOTS.find((s) => s.kind === expandedSlot)?.label} — every one of these files feeds the next
             analysis run
           </div>
           {staged[expandedSlot]!.map((imp) => (
-            <div key={imp.id} className="flex items-center gap-2 px-1.5 py-1 rounded bg-white/[0.02] text-label">
+            <div key={imp.id} className="flex items-center gap-2 px-1.5 py-1 rounded bg-foreground/[0.02] text-label">
               <span className="text-foreground/80 truncate flex-1">{imp.filename}</span>
               <button
                 onClick={() => void handleRemove(imp)}
                 disabled={deleteMutation.isPending}
-                className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="pressable shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 aria-label={`Remove ${imp.filename}`}
               >
                 <Trash2 className="w-3 h-3" />
@@ -880,7 +880,7 @@ function SmartCsvUpload({
         </div>
       )}
       {!bothRequiredStaged && (
-        <p className="text-label text-muted-foreground/55 px-0.5">* Demographics and Placements are required before you can continue.</p>
+        <p className="text-label text-muted-foreground/75 px-0.5">* Demographics and Placements are required before you can continue.</p>
       )}
 
       <details className="group rounded-lg border border-border/30">
@@ -913,14 +913,14 @@ function SmartCsvUpload({
           <div
             className={cn(
               "rounded-lg border p-3 space-y-2",
-              alarmed ? "border-status-warning/30 bg-status-warning/[0.06]" : "border-border/40 bg-white/[0.02]",
+              alarmed ? "border-status-warning/30 bg-status-warning/[0.06]" : "border-border/40 bg-foreground/[0.02]",
             )}
           >
             <div className="flex items-start gap-2">
               {alarmed ? (
                 <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
               ) : (
-                <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0 mt-0.5" />
               )}
               <div className="flex-1 min-w-0 space-y-1">
                 <div className={cn("text-caption font-semibold", alarmed ? "text-status-warning" : "text-foreground/85")}>
@@ -937,13 +937,13 @@ function SmartCsvUpload({
                 )}
                 {notices.length > 0 && (
                   <details className="group/notices">
-                    <summary className="flex items-center gap-1 text-label text-muted-foreground/70 cursor-pointer hover:text-foreground/80 transition-colors [&::-webkit-details-marker]:hidden">
+                    <summary className="flex items-center gap-1 text-label text-muted-foreground/75 cursor-pointer hover:text-foreground/80 transition-colors [&::-webkit-details-marker]:hidden">
                       <ChevronRight className="w-3 h-3 shrink-0 transition-transform group-open/notices:rotate-90" />
                       {notices.length} notice{notices.length !== 1 ? "s" : ""} — automatic mappings &amp; optional columns
                     </summary>
                     <ul className="space-y-0.5 pl-4 pt-1">
                       {notices.map((w, i) => (
-                        <li key={i} className="text-label text-muted-foreground/70 leading-relaxed">{w}</li>
+                        <li key={i} className="text-label text-muted-foreground/75 leading-relaxed">{w}</li>
                       ))}
                     </ul>
                   </details>
@@ -952,10 +952,10 @@ function SmartCsvUpload({
               <button
                 onClick={() => setLastWarnings(null)}
                 className={cn(
-                  "shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors",
+                  "pressable shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors",
                   alarmed
                     ? "text-status-warning/70 hover:text-status-warning hover:bg-status-warning/10"
-                    : "text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.04]",
+                    : "text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.04]",
                 )}
                 aria-label="Dismiss warning"
               >
@@ -1014,7 +1014,7 @@ function AdNameDropdownPicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="flex items-center gap-1.5 h-7 px-2.5 rounded bg-white/[0.03] border border-border/50 text-caption text-foreground hover:border-primary/40 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 h-7 px-2.5 rounded bg-foreground/[0.03] border border-border/50 text-caption text-foreground hover:border-primary/40 transition-colors cursor-pointer"
           aria-label="Pick ad name(s) from existing analysis"
         >
           <ListChecks className="w-3.5 h-3.5 text-muted-foreground/85" />
@@ -1057,7 +1057,7 @@ function MatchMethodBadge({ method }: { method?: "id" | "fuzzy" | "guess" | null
   if (!method) return null;
   const config = {
     id: { icon: Hash, label: "Matched by ID code", className: "bg-primary/10 text-interactive" },
-    fuzzy: { icon: Sparkles, label: "Matched by filename similarity", className: "bg-white/[0.06] text-muted-foreground/85" },
+    fuzzy: { icon: Sparkles, label: "Matched by filename similarity", className: "bg-foreground/[0.06] text-muted-foreground/85" },
     guess: { icon: Sparkles, label: "Best guess — please review", className: "bg-status-warning/10 text-status-warning" },
   }[method];
   const Icon = config.icon;
@@ -1101,10 +1101,10 @@ function CreativeThumbnail({ accountId, asset }: { accountId: string; asset: Man
   return (
     <div
       ref={containerRef}
-      className="w-10 h-10 rounded-md border border-border/40 bg-black/20 overflow-hidden shrink-0 flex items-center justify-center"
+      className="w-10 h-10 rounded-md border border-border/40 bg-background/20 overflow-hidden shrink-0 flex items-center justify-center"
     >
       {broken ? (
-        <Images className="w-4 h-4 text-muted-foreground/60" />
+        <Images className="w-4 h-4 text-muted-foreground/75" />
       ) : !shouldLoad ? null : isVideo ? (
         <video src={fileUrl} className="w-full h-full object-cover" muted onError={() => setBroken(true)} />
       ) : (
@@ -1169,14 +1169,14 @@ function CreativeAdNamesEditor({
   return (
     <div
       className={cn(
-        "p-2 rounded-md border bg-white/[0.02] space-y-1.5",
+        "p-2 rounded-md border bg-foreground/[0.02] space-y-1.5",
         asset.ad_names.length > 0 ? "border-border/30" : "border-status-warning/30 bg-status-warning/[0.03]"
       )}
     >
       <div className="flex items-center gap-2">
         <CreativeThumbnail accountId={accountId} asset={asset} />
         <span className="text-caption text-foreground/80 truncate flex-1">{asset.filename}</span>
-        {updateMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground/70 shrink-0" />}
+        {updateMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground/75 shrink-0" />}
       </div>
 
       {hasRegistry ? (
@@ -1187,7 +1187,7 @@ function CreativeAdNamesEditor({
             onChange={(names) => void handleDropdownChange(names)}
             defaultOpen={autoFocusPicker && asset.ad_names.length === 0}
           />
-          {asset.ad_names.length > 0 && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+          {asset.ad_names.length > 0 && <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />}
           <MatchMethodBadge method={asset.match_method} />
         </div>
       ) : editingFree ? (
@@ -1198,12 +1198,12 @@ function CreativeAdNamesEditor({
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") void handleFreeSave(); }}
             placeholder="Ad name(s), comma-separated"
-            className="flex-1 h-7 px-2 rounded bg-white/[0.03] border border-border/50 text-caption text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+            className="flex-1 h-7 px-2 rounded bg-foreground/[0.03] border border-border/50 text-caption text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
           />
           <button
             onClick={() => void handleFreeSave()}
             disabled={updateMutation.isPending}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-emerald-400 hover:bg-emerald-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="pressable shrink-0 w-7 h-7 flex items-center justify-center rounded text-status-success hover:bg-status-success/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             aria-label="Save"
           >
             {updateMutation.isPending ? (
@@ -1214,7 +1214,7 @@ function CreativeAdNamesEditor({
           </button>
           <button
             onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(false); }}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:bg-white/5 transition-colors cursor-pointer"
+            className="pressable shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:bg-foreground/5 transition-colors cursor-pointer"
             aria-label="Cancel"
           >
             <X className="w-3.5 h-3.5" />
@@ -1228,7 +1228,7 @@ function CreativeAdNamesEditor({
           <MatchMethodBadge method={asset.match_method} />
           <button
             onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(true); }}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+            className="pressable shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
             aria-label="Edit ad name mapping"
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -1410,14 +1410,14 @@ function CreativeUploadSection({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
+      <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-foreground/[0.02]">
         <Images className="w-4 h-4 text-muted-foreground/85 shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
           <div className="text-body font-semibold text-foreground">Creative library <span className="text-muted-foreground/80 font-normal">(optional)</span></div>
           <p className="text-caption text-foreground/75 mt-0.5">
             Stage individual ad creative files (images/videos) so they render immediately.
           </p>
-          <p className="text-label text-muted-foreground/60 leading-relaxed mt-0.5">
+          <p className="text-label text-muted-foreground/75 leading-relaxed mt-0.5">
             Map each file to the ad name(s) it represents — filenames matching an ad name are pre-mapped.
           </p>
         </div>
@@ -1438,7 +1438,7 @@ function CreativeUploadSection({
           "w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed transition-colors",
           isUploading
             ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
-            : "border-border/60 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
+            : "border-border/60 hover:border-primary/40 hover:bg-foreground/[0.02] cursor-pointer"
         )}
       >
         {isUploading ? (
@@ -1463,9 +1463,9 @@ function CreativeUploadSection({
       )}
 
       {errors.length > 0 && (
-        <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
-          <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-          <div className="text-caption text-red-300 leading-relaxed space-y-0.5">
+        <div className="flex items-start gap-2 p-2.5 rounded-lg border border-status-danger/25 bg-status-danger/[0.06]">
+          <AlertTriangle className="w-3.5 h-3.5 text-status-danger shrink-0 mt-0.5" />
+          <div className="text-caption text-status-danger leading-relaxed space-y-0.5">
             {errors.map((msg, i) => (
               <p key={i}>{msg}</p>
             ))}
@@ -1525,7 +1525,7 @@ function CreativeUploadSection({
                 <button
                   onClick={() => setConfirmDeleteId(asset.id)}
                   disabled={pendingDeleteId === asset.id}
-                  className="shrink-0 mt-2 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="pressable shrink-0 mt-2 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   aria-label={`Remove ${asset.filename}`}
                 >
                   {pendingDeleteId === asset.id ? (
@@ -1555,7 +1555,7 @@ function CreativeUploadSection({
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => { if (confirmDeleteId) void handleDelete(confirmDeleteId); }}
-                  className="bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-600"
+                  className="bg-status-danger hover:bg-status-danger text-foreground focus-visible:ring-status-danger"
                 >
                   Remove file
                 </AlertDialogAction>
@@ -1628,16 +1628,16 @@ function PipelineProgress({
                 className={cn(
                   "w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors",
                   s.done
-                    ? "bg-emerald-400/20 border-emerald-400/50"
+                    ? "bg-status-success/20 border-status-success/50"
                     : s.partial
                     ? "bg-status-warning/15 border-status-warning/40"
                     : s.active
                     ? "bg-primary/15 border-primary/40"
-                    : "bg-white/[0.03] border-border/40"
+                    : "bg-foreground/[0.03] border-border/40"
                 )}
               >
                 {s.done ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-status-success" />
                 ) : s.partial ? (
                   <Clock className="w-3.5 h-3.5 text-status-warning" />
                 ) : s.active ? (
@@ -1647,15 +1647,15 @@ function PipelineProgress({
                 )}
               </div>
               <div className="min-w-0">
-                <div className={cn("text-label font-semibold leading-none", s.done ? "text-emerald-300/90" : s.active ? "text-foreground/90" : "text-muted-foreground/70")}>
+                <div className={cn("text-label font-semibold leading-none", s.done ? "text-status-success/90" : s.active ? "text-foreground/90" : "text-muted-foreground/75")}>
                   {s.label}
                 </div>
-                <div className="text-label text-muted-foreground/60 leading-none mt-0.5">{s.sublabel}</div>
+                <div className="text-label text-muted-foreground/75 leading-none mt-0.5">{s.sublabel}</div>
               </div>
             </div>
           </div>
           {i < steps.length - 1 && (
-            <div className={cn("h-px flex-shrink-0 w-4", s.done ? "bg-emerald-400/30" : "bg-border/30")} />
+            <div className={cn("h-px flex-shrink-0 w-4", s.done ? "bg-status-success/30" : "bg-border/30")} />
           )}
         </div>
       ))}
@@ -1737,7 +1737,7 @@ export function ManualUploadPanel({
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/40">Step 2 of 2 — Review</span>
+          <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/75">Step 2 of 2 — Review</span>
         </div>
         <PipelineProgress
           demoStaged={Boolean(demoImport)}
@@ -1746,20 +1746,20 @@ export function ManualUploadPanel({
           onAnalysis={true}
         />
         {/* Upload summary — compact, no raw file dump */}
-        <div className="rounded-lg border border-border/40 bg-white/[0.02] p-3 space-y-2">
+        <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-3 space-y-2">
           <div className="text-body font-semibold text-foreground">Files staged</div>
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 text-caption">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
               <span className="text-foreground/80 truncate">Demographics — {stagedFilesLabel(demoImports)}</span>
             </div>
             <div className="flex items-center gap-2 text-caption">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
               <span className="text-foreground/80 truncate">Placements — {stagedFilesLabel(placementImports)}</span>
             </div>
             {summaryImports.length > 0 ? (
               <div className="flex items-center gap-2 text-caption">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
                 <span className="text-foreground/80 truncate">Ad Summary — {stagedFilesLabel(summaryImports)}</span>
               </div>
             ) : (
@@ -1771,7 +1771,7 @@ export function ManualUploadPanel({
                 </div>
                 <button
                   onClick={() => setStep("upload")}
-                  className="shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-status-warning/35 bg-status-warning/10 text-label font-medium text-status-warning hover:bg-status-warning/20 transition-colors"
+                  className="pressable shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-status-warning/35 bg-status-warning/10 text-label font-medium text-status-warning hover:bg-status-warning/20 transition-colors"
                 >
                   <ArrowLeft className="w-3 h-3" /> Add one
                 </button>
@@ -1779,14 +1779,14 @@ export function ManualUploadPanel({
             )}
             {conversionDeviceImports.length > 0 && (
               <div className="flex items-center gap-2 text-caption">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
                 <span className="text-foreground/80 truncate">Conversion Device — {stagedFilesLabel(conversionDeviceImports)}</span>
               </div>
             )}
             {/* Creative files: compact count summary — avoids listing 60+ raw filenames */}
             {creativeAssets.length > 0 ? (
               <div className="flex items-center gap-2 text-caption">
-                <Images className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                <Images className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
                 <span className="text-foreground/80 flex-1">
                   {creativeAssets.length} creative {creativeAssets.length === 1 ? "file" : "files"} staged
                 </span>
@@ -1797,20 +1797,20 @@ export function ManualUploadPanel({
                     </span>
                     <button
                       onClick={() => setStep("upload")}
-                      className="shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-status-warning/35 bg-status-warning/10 text-label font-medium text-status-warning hover:bg-status-warning/20 transition-colors"
+                      className="pressable shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-status-warning/35 bg-status-warning/10 text-label font-medium text-status-warning hover:bg-status-warning/20 transition-colors"
                     >
                       Fix mappings
                     </button>
                   </>
                 ) : (
-                  <span className="flex items-center gap-1 text-emerald-400 shrink-0">
+                  <span className="flex items-center gap-1 text-status-success shrink-0">
                     <CheckCircle2 className="w-3 h-3" />
                     <span className="text-label font-medium">All mapped</span>
                   </span>
                 )}
               </div>
             ) : (
-              <div className="text-caption text-muted-foreground/60">No creative files staged — optional.</div>
+              <div className="text-caption text-muted-foreground/75">No creative files staged — optional.</div>
             )}
           </div>
         </div>
@@ -1856,7 +1856,7 @@ export function ManualUploadPanel({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/40">Step 1 of 2 — Upload files</span>
+        <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/75">Step 1 of 2 — Upload files</span>
       </div>
       <PipelineProgress
         demoStaged={Boolean(demoImport)}
@@ -1887,7 +1887,7 @@ export function ManualUploadPanel({
       <div className="flex items-center justify-between pt-1 border-t border-border/30 mt-1">
         <div className="max-w-[60%]">
           <p className="text-label text-foreground/75 font-medium">Both CSVs are required before you can continue.</p>
-          <p className="text-label text-muted-foreground/55 leading-relaxed mt-0.5">Files are stored raw until an analysis run explicitly processes them.</p>
+          <p className="text-label text-muted-foreground/75 leading-relaxed mt-0.5">Files are stored raw until an analysis run explicitly processes them.</p>
         </div>
         <PrimaryBtn onClick={() => setStep("review")} disabled={!bothRequiredStaged}>
           Review <ArrowRight className="w-3.5 h-3.5" />
@@ -1910,11 +1910,11 @@ export function ManualUploadPanel({
 // below-gate results land in the IAP Library review queue.
 function DeconstructBadge({ status }: { status: CreativeDeconstruction["status"] }) {
   const style: Record<CreativeDeconstruction["status"], string> = {
-    auto_filed: "border-emerald-400/30 bg-emerald-400/[0.06] text-emerald-400",
-    user_overridden: "border-emerald-400/30 bg-emerald-400/[0.06] text-emerald-400",
+    auto_filed: "border-status-success/30 bg-status-success/[0.06] text-status-success",
+    user_overridden: "border-status-success/30 bg-status-success/[0.06] text-status-success",
     needs_review: "border-status-warning/30 bg-status-warning/[0.06] text-status-warning",
-    unsupported: "border-border/50 bg-white/[0.03] text-muted-foreground/80",
-    discarded: "border-border/50 bg-white/[0.03] text-muted-foreground/80",
+    unsupported: "border-border/50 bg-foreground/[0.03] text-muted-foreground/80",
+    discarded: "border-border/50 bg-foreground/[0.03] text-muted-foreground/80",
   };
   return (
     <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded border text-label font-medium whitespace-nowrap", style[status])}>
@@ -1960,7 +1960,7 @@ function CreativeDeconstructSection({
       </div>
       {isRunning && progress && (
         <div className="px-0.5" data-testid="deconstruct-progress">
-          <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+          <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
               style={{ width: `${Math.max(4, Math.round((progress.done / Math.max(1, progress.total)) * 100))}%` }}
@@ -1972,7 +1972,7 @@ function CreativeDeconstructSection({
         {creativeAssets.map((asset) => {
           const d = byImportId.get(asset.id);
           return (
-            <div key={asset.id} className="flex items-center gap-2 px-2 py-1 rounded border border-border/30 bg-white/[0.015]">
+            <div key={asset.id} className="flex items-center gap-2 px-2 py-1 rounded border border-border/30 bg-foreground/[0.015]">
               <span className="flex-1 min-w-0 truncate text-caption text-foreground/85">{asset.filename}</span>
               {d && d.status !== "discarded" ? (
                 <>
@@ -1986,7 +1986,7 @@ function CreativeDeconstructSection({
                     <button
                       onClick={() => void start([asset.id])}
                       disabled={isRunning}
-                      className="shrink-0 h-6 px-2 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      className="pressable shrink-0 h-6 px-2 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       aria-label={`Retry deconstruct ${asset.filename}`}
                     >
                       Retry
@@ -1995,11 +1995,11 @@ function CreativeDeconstructSection({
                 </>
               ) : (
                 <>
-                  <span className="text-label text-muted-foreground/70">Not classified</span>
+                  <span className="text-label text-muted-foreground/75">Not classified</span>
                   <button
                     onClick={() => void start([asset.id])}
                     disabled={isRunning}
-                    className="shrink-0 h-6 px-2 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="pressable shrink-0 h-6 px-2 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     aria-label={`Deconstruct ${asset.filename}`}
                   >
                     Deconstruct
@@ -2012,7 +2012,7 @@ function CreativeDeconstructSection({
       </div>
       <div className="px-0.5">
         <p className="text-label text-foreground/70 font-medium">Classification grades each creative against the IAP variable registry.</p>
-        <p className="text-label text-muted-foreground/55 leading-relaxed mt-0.5">
+        <p className="text-label text-muted-foreground/75 leading-relaxed mt-0.5">
           ≥80% confidence files into the library automatically; anything lower waits in the IAP Library review queue. Videos are classified from extracted keyframes.
         </p>
       </div>
@@ -2185,7 +2185,7 @@ export function CreativeLibraryDialog({
           <div className="flex-none px-6 pt-6 pb-4">
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
                   <Images className="w-4 h-4 text-interactive" />
                 </div>
               </div>
@@ -2325,7 +2325,7 @@ export function ManualImportDialog({
           <div className="flex-none px-6 pt-6 pb-4">
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
                   <FileUp className="w-4 h-4 text-interactive" />
                 </div>
               </div>

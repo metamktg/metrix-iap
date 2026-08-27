@@ -12,6 +12,7 @@
 // one is this" label — it is never used to filter anything here.
 
 import { useState } from "react";
+import { fmtDayRange } from "@/lib/normalize";
 import { Checkbox } from "@workspace/command-deck/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -26,12 +27,11 @@ export interface RunSelectorValue {
 
 export const ALL_TIME_SELECTION: RunSelectorValue = { allTime: true, selectedRunIds: [] };
 
-function fmtRunDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 function runLabel(run: AnalysisRun): string {
-  if (run.date_start && run.date_end) return `${fmtRunDate(run.date_start)} – ${fmtRunDate(run.date_end)}`;
+  // date_start/date_end are Postgres `date` columns — calendar days, not
+  // instants. Rendered through a local-timezone formatter they read a day
+  // early for every viewer west of UTC. See fmtDay in lib/normalize.
+  if (run.date_start && run.date_end) return fmtDayRange(run.date_start, run.date_end);
   return run.date_range ?? "Analysis run";
 }
 
@@ -96,21 +96,21 @@ export function RunScopePicker({
         <button
           type="button"
           data-testid="button-run-scope"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border/40 bg-white/[0.02] hover:bg-muted/30 px-2.5 py-1.5 text-caption text-foreground/80 transition-colors max-w-[280px]"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border/40 bg-foreground/[0.02] hover:bg-muted/30 px-2.5 py-1.5 text-caption text-foreground/80 transition-colors max-w-[280px]"
           title="Scope to analysis run"
         >
-          <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+          <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
           <span className="truncate font-medium">{triggerLabel}</span>
           {!value.allTime && selectedRuns.length > 1 && (
-            <span className="text-[9px] font-mono text-muted-foreground/50 shrink-0">
+            <span className="text-[9px] font-mono text-muted-foreground/75 shrink-0">
               {selectedRuns.length}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+          <ChevronDown className="w-3 h-3 text-muted-foreground/75 shrink-0" />
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-2">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 px-1 pb-2">
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 px-1 pb-2">
           Scope to analysis run
         </p>
         <button
@@ -118,15 +118,15 @@ export function RunScopePicker({
           data-testid="option-run-all-time"
           onClick={() => { onChange(ALL_TIME_SELECTION); setCapHit(false); }}
           className={cn(
-            "w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-colors",
+            "pressable-lg w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-colors",
             value.allTime
-              ? "border-emerald-400/30 bg-emerald-400/[0.07] text-foreground/90"
+              ? "border-status-success/30 bg-status-success/[0.07] text-foreground/90"
               : "border-border/40 bg-transparent text-foreground/70 hover:bg-muted/30",
           )}
         >
           <Checkbox checked={value.allTime} className="pointer-events-none" />
           <span className="text-label font-semibold flex-1">All time</span>
-          <span className="text-[9px] text-muted-foreground/40">
+          <span className="text-[9px] text-muted-foreground/75">
             {runs.length} run{runs.length !== 1 ? "s" : ""} total
           </span>
         </button>
@@ -140,25 +140,25 @@ export function RunScopePicker({
                 data-testid={`option-run-${run.id}`}
                 onClick={() => toggleRun(run.id)}
                 className={cn(
-                  "w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
+                  "pressable-lg w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
                   isSel
-                    ? "bg-emerald-400/[0.07] text-foreground/90"
+                    ? "bg-status-success/[0.07] text-foreground/90"
                     : "bg-transparent text-foreground/55 hover:bg-muted/30",
                 )}
               >
                 <Checkbox checked={isSel} className="pointer-events-none" />
                 <div className="flex-1 min-w-0">
                   <span className="text-label font-medium block truncate">{runLabel(run)}</span>
-                  <span className="text-[9px] text-muted-foreground/40 block">{runTimestamp(run)}</span>
+                  <span className="text-[9px] text-muted-foreground/75 block">{runTimestamp(run)}</span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {idx === 0 && (
-                    <span className="text-[8px] font-semibold uppercase tracking-wider text-emerald-400/60 bg-emerald-400/[0.08] border border-emerald-400/15 rounded px-1 py-0.5 leading-none">
+                    <span className="text-[8px] font-semibold uppercase tracking-wider text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none">
                       Latest
                     </span>
                   )}
                   {run.rows_ingested != null && (
-                    <span className="text-[9px] font-mono text-muted-foreground/35">
+                    <span className="text-[9px] font-mono text-muted-foreground/75">
                       {run.rows_ingested.toLocaleString()} rows
                     </span>
                   )}
@@ -168,7 +168,7 @@ export function RunScopePicker({
           })}
         </div>
         {capHit && (
-          <p data-testid="text-run-cap" className="text-[10px] text-amber-300/80 px-1 pt-2">
+          <p data-testid="text-run-cap" className="text-[10px] text-status-warning/80 px-1 pt-2">
             Up to {RUN_SCOPE_MAX} runs at a time — deselect one to add another.
           </p>
         )}
@@ -204,15 +204,15 @@ export function RunSelector({
         type="button"
         onClick={() => onChange({ allTime: true, selectedRunIds: [] })}
         className={cn(
-          "w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-colors",
+          "pressable-lg w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-colors",
           value.allTime
-            ? "border-emerald-400/30 bg-emerald-400/[0.07] text-foreground/90"
+            ? "border-status-success/30 bg-status-success/[0.07] text-foreground/90"
             : "border-border/40 bg-transparent text-foreground/70 hover:bg-muted/30",
         )}
       >
         <Checkbox checked={value.allTime} className="pointer-events-none" />
         <span className="text-label font-semibold flex-1">All time</span>
-        <span className="text-[9px] text-muted-foreground/40">
+        <span className="text-[9px] text-muted-foreground/75">
           {runs.length} run{runs.length !== 1 ? "s" : ""} total
         </span>
       </button>
@@ -233,9 +233,9 @@ export function RunSelector({
                 onClick={() => toggleRun(run.id)}
                 disabled={value.allTime}
                 className={cn(
-                  "w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
+                  "pressable-lg w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
                   isSel
-                    ? "bg-emerald-400/[0.07] text-foreground/90"
+                    ? "bg-status-success/[0.07] text-foreground/90"
                     : "bg-transparent text-foreground/55 hover:bg-muted/30",
                 )}
               >
@@ -243,12 +243,12 @@ export function RunSelector({
                 <span className="text-label font-medium flex-1 truncate">{runLabel(run)}</span>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {idx === 0 && (
-                    <span className="text-[8px] font-semibold uppercase tracking-wider text-emerald-400/60 bg-emerald-400/[0.08] border border-emerald-400/15 rounded px-1 py-0.5 leading-none">
+                    <span className="text-[8px] font-semibold uppercase tracking-wider text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none">
                       Latest
                     </span>
                   )}
                   {run.rows_ingested != null && (
-                    <span className="text-[9px] font-mono text-muted-foreground/35">
+                    <span className="text-[9px] font-mono text-muted-foreground/75">
                       {run.rows_ingested.toLocaleString()} rows
                     </span>
                   )}
@@ -257,8 +257,8 @@ export function RunSelector({
             );
           })}
           {hiddenCount > 0 && (
-            <div className="px-2.5 py-1.5 bg-white/[0.01]">
-              <span className="text-[9px] text-muted-foreground/25">
+            <div className="px-2.5 py-1.5 bg-foreground/[0.01]">
+              <span className="text-[9px] text-muted-foreground/75">
                 +{hiddenCount} older run{hiddenCount !== 1 ? "s" : ""} not shown
               </span>
             </div>

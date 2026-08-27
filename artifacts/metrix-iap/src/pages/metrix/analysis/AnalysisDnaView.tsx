@@ -84,7 +84,7 @@ function LocusBar({ lift }: { lift: number | null }) {
   if (lift == null) {
     return (
       <div className="relative h-5 flex items-center justify-center">
-        <span className={cn(TYPE.label, "text-muted-foreground/40 normal-case tracking-normal")}>n/a</span>
+        <span className={cn(TYPE.label, "text-muted-foreground/75 normal-case tracking-normal")}>n/a</span>
       </div>
     );
   }
@@ -97,7 +97,7 @@ function LocusBar({ lift }: { lift: number | null }) {
       <div
         className={cn(
           "absolute top-0.5 h-4 rounded-sm",
-          positive ? "bg-emerald-400/50" : "bg-red-400/45"
+          positive ? "bg-status-success/50" : "bg-status-danger/45"
         )}
         style={
           positive
@@ -108,7 +108,7 @@ function LocusBar({ lift }: { lift: number | null }) {
       <span
         className={cn(
           "absolute top-0 text-label font-semibold tabular-nums whitespace-nowrap",
-          positive ? "text-emerald-400" : "text-red-300"
+          positive ? "text-status-success" : "text-status-danger"
         )}
         style={
           positive
@@ -150,14 +150,14 @@ function GeneLociCard({
             onClick={() => onOpenVariable(v.code)}
             data-testid={`locus-row-${v.code}`}
             title={`${v.uniqueAds} ad${v.uniqueAds === 1 ? "" : "s"} · ${fmtUSD(v.spend, 0)} spend · ${fmtNum(v.results)} results`}
-            className="grid grid-cols-[30px_minmax(110px,150px)_1fr] items-center gap-3 w-full border-t border-border/25 first:border-t-0 py-2.5 text-left hover:bg-white/[0.02] transition-colors rounded-sm"
+            className="pressable-lg grid grid-cols-[30px_minmax(110px,150px)_1fr] items-center gap-3 w-full border-t border-border/25 first:border-t-0 py-2.5 text-left hover:bg-foreground/[0.02] transition-colors rounded-sm"
           >
             <span className={cn(TYPE.microLabel, "flex items-center justify-center w-[22px] h-[22px] rounded-full border border-border/50 tracking-normal")}>
               L{idx + 1}
             </span>
             <div className="flex flex-col gap-0.5 min-w-0">
               <VariableChip code={v.code} className="w-fit" />
-              <span className={cn(TYPE.microLabel, "text-muted-foreground/40 normal-case tracking-normal")}>
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/75 normal-case tracking-normal")}>
                 {familyLabel(v.family)}
               </span>
             </div>
@@ -238,8 +238,8 @@ export function AnalysisDnaView() {
                 {/* Golden formula: no real field computes this yet — the seed's
                     own loop_status says so. Point at the honest page instead of
                     fabricating a formula sentence or stat tiles. */}
-                <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border/25 bg-white/[0.015] px-3.5 py-2.5">
-                  <p className={cn(TYPE.caption, "text-muted-foreground/70")}>
+                <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border/25 bg-foreground/[0.015] px-3.5 py-2.5">
+                  <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
                     <span className="font-semibold text-muted-foreground/85">Golden formula — </span>
                     {optimizationLoop?.note ??
                       "Not yet computed for this account — requires the Optimization Loop stage to run."}

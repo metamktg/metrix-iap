@@ -57,6 +57,14 @@ business-model logic, and are deliberately exempt from the cohort-awareness repa
 Planning and audit record — handoff synthesis, document briefs, and the Phase 1 cohort-awareness
 audit. Context for *why*, not specification for *what*.
 
+Two files there are live working records rather than history, and are the entry point for any
+session picking up phase work:
+
+- `README_HANDOFF.md` — the reading order, and where each phase actually stands.
+- `CARRY_FORWARD_REGISTER.md` — the E6 register, reconciled against live code. Every item
+  carries a verdict (`[shipped]` / `[open]` / `[decision]`) established by reading the file it
+  names. Update an item's status in place as you work it; never drop one silently.
+
 ## Working rules for docs
 
 - **The blueprint is canonical.** `docs/product/` and `docs/security/` hold verbatim extractions

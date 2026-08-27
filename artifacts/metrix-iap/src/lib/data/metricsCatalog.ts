@@ -6,6 +6,7 @@
 // underlying field exists anywhere in the bundle.
 
 import { fmtUSD, fmtNum, fmtPct, eventLabel, costPerResultLabel } from "@/pages/metrix/shared";
+import { sumStrictWithCoverage, type StrictSum } from "@/lib/strict-sum";
 import type { CampaignSummary, CellPerformanceRow, ManagerBottomLineTotals, SeedResultEventTotals } from "./seedTypes";
 
 export interface MetricResultEvent {
@@ -265,16 +266,27 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[]): MetricDef
     ? (results / linkClicks) * 100
     : null;
 
-  // adds_to_cart / checkouts_initiated are optional fields; null means not measured.
-  // Only aggregate when singleEvent to avoid cross-event double-counting.
-  const hasAtcData = singleEvent && rows.some((r) => r.adds_to_cart != null);
-  const hasChkData = singleEvent && rows.some((r) => r.checkouts_initiated != null);
-  const totalAtc = hasAtcData
-    ? rows.reduce((s, r) => s + (r.adds_to_cart ?? 0), 0)
-    : null;
-  const totalChk = hasChkData
-    ? rows.reduce((s, r) => s + (r.checkouts_initiated ?? 0), 0)
-    : null;
+  // adds_to_cart / checkouts_initiated are optional fields; null means not
+  // measured on that row (Meta reports a real 0 when the column is present
+  // and the ad had no such events — absence is absence, not zero).
+  //
+  // These used to aggregate on "ANY row carries the field", folding the rest
+  // with `?? 0`: three measured cells out of eleven produced a total that
+  // rendered exactly like a complete one and was then divided by a COMPLETE
+  // link-click denominator, understating every downstream rate. They now
+  // follow the one aggregation-null policy (lib/strict-sum) — null unless
+  // every row in the selection carries the field — and report coverage so
+  // the null can be explained rather than shown as a bare dash.
+  //
+  // Still gated on singleEvent first: rows are per (cell, result event) and
+  // the same physical funnel action appears on each of a cell's event rows,
+  // so summing across events would double-count regardless of coverage.
+  const atc = singleEvent ? sumStrictWithCoverage(rows, (r) => r.adds_to_cart) : null;
+  const chk = singleEvent ? sumStrictWithCoverage(rows, (r) => r.checkouts_initiated) : null;
+  const totalAtc = atc?.total ?? null;
+  const totalChk = chk?.total ?? null;
+  const hasAtcData = totalAtc != null;
+  const hasChkData = totalChk != null;
   // Spend denominator for cost metrics: use singleEvent spend (same grain).
   // When multi-event, totalAtc/totalChk are null so cost metrics are also null.
   const singleEventSpend = singleEvent ? spend : null;
@@ -296,6 +308,17 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[]): MetricDef
     ? "select one event to see funnel metrics"
     : "no conversion-event data in selection";
 
+  /**
+   * Why a funnel metric is null. Partial coverage is the case that used to
+   * be silently summed, so it gets a real count rather than the generic
+   * "no data" line — "4 of 11 cells carry it" is actionable; a dash isn't.
+   */
+  const coverageSub = (c: StrictSum | null, denominator: string): string => {
+    if (!singleEvent) return noConvSub;
+    if (c == null || c.covered === 0) return noConvSub;
+    return `not summed — only ${c.covered} of ${c.contributing} cells in this selection carry ${denominator}`;
+  };
+
   const def = (id: string, label: string, value: number | null, formatted: string, sub?: string): MetricDef => ({
     id, label, value, formatted, isResultEvent: false, ...(sub ? { sub } : {}),
   });
@@ -312,9 +335,9 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[]): MetricDef
     def("lib_link_ctr",        "Link CTR",            ctr,           ctr != null ? fmtPct(ctr) : "—",     multiEventSub ?? "link clicks ÷ impressions"),
     // ── Lower-funnel tiles ───────────────────────────────────────────
     def("lib_cvr",             "CVR",                 cvr,           cvr != null ? fmtPct(cvr) : "—",     "results ÷ link clicks"),
-    def("lib_atc_rate",        "ATC rate",            atcRate,       atcRate != null ? fmtPct(atcRate) : "—",  hasAtcData ? "adds-to-cart ÷ link clicks" : noConvSub),
-    def("lib_checkout_rate",   "Checkout rate",       checkoutRate,  checkoutRate != null ? fmtPct(checkoutRate) : "—", hasChkData ? "checkouts ÷ link clicks" : noConvSub),
-    def("lib_cost_per_atc",    "Cost / ATC",          costPerAtc,    costPerAtc != null ? fmtUSD(costPerAtc) : "—", hasAtcData ? "spend ÷ adds-to-cart" : noConvSub),
-    def("lib_cost_per_checkout","Cost / Checkout",    costPerCheckout, costPerCheckout != null ? fmtUSD(costPerCheckout) : "—", hasChkData ? "spend ÷ checkouts initiated" : noConvSub),
+    def("lib_atc_rate",        "ATC rate",            atcRate,       atcRate != null ? fmtPct(atcRate) : "—",  hasAtcData ? "adds-to-cart ÷ link clicks" : coverageSub(atc, "adds-to-cart")),
+    def("lib_checkout_rate",   "Checkout rate",       checkoutRate,  checkoutRate != null ? fmtPct(checkoutRate) : "—", hasChkData ? "checkouts ÷ link clicks" : coverageSub(chk, "checkouts initiated")),
+    def("lib_cost_per_atc",    "Cost / ATC",          costPerAtc,    costPerAtc != null ? fmtUSD(costPerAtc) : "—", hasAtcData ? "spend ÷ adds-to-cart" : coverageSub(atc, "adds-to-cart")),
+    def("lib_cost_per_checkout","Cost / Checkout",    costPerCheckout, costPerCheckout != null ? fmtUSD(costPerCheckout) : "—", hasChkData ? "spend ÷ checkouts initiated" : coverageSub(chk, "checkouts initiated")),
   ];
 }

@@ -71,7 +71,7 @@ export function MetrixBootLoader() {
 
   return (
     <div
-      className="h-screen w-screen mx-app-bg flex items-center justify-center px-6"
+      className="h-dvh w-full mx-app-bg flex items-center justify-center px-6"
       role="status"
       aria-busy="true"
       aria-label="Loading Metrix data"

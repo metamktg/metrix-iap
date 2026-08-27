@@ -114,7 +114,7 @@ describe("CreativeScanView – Concept library tab count", () => {
     renderView(CreativeScanView);
     // ModuleTabs renders: <button>Concept library<span>{count}</span></button>
     // Query the button by its accessible label, then inspect textContent.
-    const tabBtn = screen.getByRole("button", { name: /Concept library/i });
+    const tabBtn = screen.getByRole("tab", { name: /Concept library/i });
     expect(tabBtn.textContent).toContain(String(DISTINCT_CONCEPT_COUNT));
     expect(tabBtn.textContent).not.toContain(String(RAW_ROW_COUNT));
   });

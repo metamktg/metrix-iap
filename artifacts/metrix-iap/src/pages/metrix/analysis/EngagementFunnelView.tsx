@@ -23,6 +23,7 @@
 // which is not currently in the import spec — shown as "not available".
 
 import { useEffect, useMemo, useState } from "react";
+import { VERDICT } from "@/components/charts/chartTokens";
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, Tooltip as RechartTooltip, ReferenceLine,
@@ -65,7 +66,13 @@ function safe(n: number | null | undefined, d = 0): number | null {
   return n == null ? null : n;
 }
 function ratio(a: number | null | undefined, b: number | null | undefined): number | null {
-  if (!a || !b) return null;
+  // `!a` nulled a MEASURED zero numerator (C7): an ad set with a real,
+  // recorded 0 adds-to-cart reported "not measured" instead of 0%, which
+  // is the honesty invariant inverted — the platform's whole convention is
+  // that zero and unknown are different facts. Only the numerator being
+  // absent, or the denominator being absent or zero, makes the ratio
+  // unknowable.
+  if (a == null || b == null || b === 0) return null;
   return a / b;
 }
 function pct(a: number | null | undefined, b: number | null | undefined): number | null {
@@ -93,10 +100,10 @@ export interface FunnelStage {
 }
 
 export const ZONE_COLOR: Record<FunnelStage["zone"], { bar: string; text: string; bg: string; border: string }> = {
-  awareness:  { bar: "bg-chart-1/70",   text: "text-blue-300",   bg: "bg-chart-1/[0.06]",   border: "border-blue-400/25" },
-  engagement: { bar: "bg-indigo-400/70", text: "text-indigo-300", bg: "bg-indigo-400/[0.06]", border: "border-indigo-400/25" },
-  intent:     { bar: "bg-amber-400/70",  text: "text-amber-300",  bg: "bg-amber-400/[0.06]",  border: "border-amber-400/25" },
-  conversion: { bar: "bg-chart-3/70",text: "text-emerald-300",bg: "bg-emerald-400/[0.06]",border: "border-emerald-400/25" },
+  awareness:  { bar: "bg-chart-1/70",   text: "text-interactive",   bg: "bg-chart-1/[0.06]",   border: "border-primary/25" },
+  engagement: { bar: "bg-primary/70", text: "text-interactive", bg: "bg-primary/[0.06]", border: "border-primary/25" },
+  intent:     { bar: "bg-status-warning/70",  text: "text-status-warning",  bg: "bg-status-warning/[0.06]",  border: "border-status-warning/25" },
+  conversion: { bar: "bg-chart-3/70",text: "text-status-success",bg: "bg-status-success/[0.06]",border: "border-status-success/25" },
 };
 
 /** Exported so callers outside this view (e.g. AdPerformanceView's compact
@@ -302,12 +309,12 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
         return (
           <div key={stage.id} className={cn("rounded-lg border p-3", c.bg, c.border)}>
             <div className="flex items-center gap-3 mb-1.5">
-              <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/60 w-28 shrink-0">
+              <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 w-28 shrink-0">
                 {stage.label}
               </span>
-              <div className="flex-1 h-5 bg-white/[0.04] rounded overflow-hidden">
+              <div className="flex-1 h-5 bg-foreground/[0.04] rounded overflow-hidden">
                 <div
-                  className={cn("h-full rounded transition-all", c.bar)}
+                  className={cn("h-full rounded transition-[color,background-color,border-color,box-shadow,opacity,transform]", c.bar)}
                   style={{ width: `${barW}%` }}
                 />
               </div>
@@ -317,8 +324,8 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
             </div>
             {stage.pctOfPrev != null && (
               <div className="flex items-center gap-1 ml-28 pl-3">
-                <ArrowRight className="w-3 h-3 text-muted-foreground/35" />
-                <span className={cn("text-label font-medium", stage.pctOfPrev >= 20 ? "text-emerald-400/70" : stage.pctOfPrev >= 5 ? c.text : "text-red-400/70")}>
+                <ArrowRight className="w-3 h-3 text-muted-foreground/75" />
+                <span className={cn("text-label font-medium", stage.pctOfPrev >= 20 ? "text-status-success/70" : stage.pctOfPrev >= 5 ? c.text : "text-status-danger/70")}>
                   {stage.pctOfPrev.toFixed(1)}% of previous stage
                 </span>
               </div>
@@ -345,8 +352,8 @@ function SortableHeader({
     <button
       onClick={() => onSort(col.id)}
       className={cn(
-        "flex items-center gap-1 text-label font-semibold uppercase tracking-wide transition-colors",
-        isActive ? "text-interactive" : "text-muted-foreground/55 hover:text-foreground/70"
+        "pressable flex items-center gap-1 text-label font-semibold uppercase tracking-wide transition-colors",
+        isActive ? "text-interactive" : "text-muted-foreground/75 hover:text-foreground/70"
       )}
     >
       {col.label}
@@ -374,7 +381,7 @@ export function BreakdownTable({
   const allVals = sorted.map((r) => activeMetric.value(r));
 
   if (rows.length === 0) {
-    return <div className="text-body text-muted-foreground/60 py-4">No data for this breakdown.</div>;
+    return <div className="text-body text-muted-foreground/75 py-4">No data for this breakdown.</div>;
   }
 
   const allCols: RankMetric<BreakdownRow>[] = BREAKDOWN_METRICS.filter((m) => rows.some((r) => m.value(r) != null));
@@ -422,7 +429,7 @@ export function BreakdownTable({
                   // honors over the class.
                   style={isTop ? {
                     background:
-                      "linear-gradient(rgba(255,255,255,0.015), rgba(255,255,255,0.015)) no-repeat 0 0 / 100% 100%, " +
+                      "linear-gradient(hsl(var(--foreground) / 0.015), hsl(var(--foreground) / 0.015)) no-repeat 0 0 / 100% 100%, " +
                       "linear-gradient(to right, transparent, hsl(var(--foreground) / 0.08) 48px, hsl(var(--foreground) / 0.08) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px",
                   } : undefined}
                 >
@@ -436,14 +443,14 @@ export function BreakdownTable({
                         "tabular-nums whitespace-nowrap",
                         col.id === sortId ? "font-semibold text-interactive" : "text-foreground/70"
                       )}>
-                        {val != null ? col.format(val) : <span className="text-muted-foreground/30">—</span>}
+                        {val != null ? col.format(val) : <span className="text-muted-foreground/75">—</span>}
                       </td>
                     );
                   })}
                   <td className="w-32">
-                    <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden w-full">
+                    <div className="h-1.5 bg-foreground/[0.04] rounded-full overflow-hidden w-full">
                       <div
-                        className="h-full bg-interactive/50 rounded-full transition-all"
+                        className="h-full bg-interactive/50 rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                         style={{ width: `${bar}%` }}
                       />
                     </div>
@@ -458,7 +465,7 @@ export function BreakdownTable({
       {(hiddenCount > 0 || showAllCols) && (
         <button
           onClick={() => setShowAllCols((v) => !v)}
-          className="flex items-center gap-1 text-label font-medium text-muted-foreground/55 hover:text-foreground/70 transition-colors"
+          className="pressable flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground/70 transition-colors"
         >
           {showAllCols ? (
             <><ArrowUp className="w-3 h-3" /> Show fewer columns</>
@@ -489,7 +496,7 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
 
   if (plotData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-body text-muted-foreground/60">
+      <div className="flex items-center justify-center h-64 text-body text-muted-foreground/75">
         Need reach + impression data to plot frequency scatter.
       </div>
     );
@@ -497,7 +504,7 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3 text-label text-muted-foreground/60">
+      <div className="grid grid-cols-2 gap-3 text-label text-muted-foreground/75">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-chart-1/70" />
           <span>High freq + high CTR → scale safely</span>
@@ -517,13 +524,13 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
       </div>
       <ResponsiveContainer width="100%" height={320}>
         <ScatterChart margin={{ top: 10, right: 20, bottom: 50, left: 60 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--foreground) / 0.04)" />
           <XAxis
             dataKey="x"
             type="number"
             name="Frequency"
-            label={{ value: "Frequency (impressions / reach)", position: "bottom", offset: 0, style: { fontSize: 10, fill: "rgba(255,255,255,0.4)" } }}
-            tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
+            label={{ value: "Frequency (impressions / reach)", position: "bottom", offset: 0, style: { fontSize: 10, fill: "hsl(var(--foreground) / 0.4)" } }}
+            tick={{ fontSize: 10, fill: "hsl(var(--foreground) / 0.5)" }}
             tickLine={false}
             axisLine={false}
           />
@@ -531,24 +538,24 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
             dataKey="y"
             type="number"
             name="Link CTR %"
-            label={{ value: "Link CTR %", angle: -90, position: "left", offset: -10, style: { fontSize: 10, fill: "rgba(255,255,255,0.4)" } }}
-            tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
+            label={{ value: "Link CTR %", angle: -90, position: "left", offset: -10, style: { fontSize: 10, fill: "hsl(var(--foreground) / 0.4)" } }}
+            tick={{ fontSize: 10, fill: "hsl(var(--foreground) / 0.5)" }}
             tickFormatter={(v) => `${v.toFixed(1)}%`}
             tickLine={false}
             axisLine={false}
           />
-          <ReferenceLine x={medFreq} stroke="rgba(255,255,255,0.12)" strokeDasharray="4 3" />
-          <ReferenceLine y={medCtr}  stroke="rgba(255,255,255,0.12)" strokeDasharray="4 3" />
+          <ReferenceLine x={medFreq} stroke="hsl(var(--foreground) / 0.12)" strokeDasharray="4 3" />
+          <ReferenceLine y={medCtr}  stroke="hsl(var(--foreground) / 0.12)" strokeDasharray="4 3" />
           <RechartTooltip
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
               const p = payload[0]?.payload as (ScatterPoint & { spendShare: number });
               return (
-                <div className="rounded-lg border border-border/50 bg-popover/95 backdrop-blur px-3 py-2 shadow-lg text-caption space-y-0.5">
+                <div className="rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm px-3 py-2 elevation-floating text-caption space-y-0.5">
                   <div className="font-semibold text-foreground">{p.label}</div>
-                  <div className="text-muted-foreground/70">Frequency: <span className="text-foreground/90">{fmtFreq(p.x)}</span></div>
-                  <div className="text-muted-foreground/70">Link CTR: <span className="text-foreground/90">{fmtRate(p.y, 2)}</span></div>
-                  <div className="text-muted-foreground/70">Spend share: <span className="text-foreground/90">{fmtRate(p.spendShare * 100)}</span></div>
+                  <div className="text-muted-foreground/75">Frequency: <span className="text-foreground/90">{fmtFreq(p.x)}</span></div>
+                  <div className="text-muted-foreground/75">Link CTR: <span className="text-foreground/90">{fmtRate(p.y, 2)}</span></div>
+                  <div className="text-muted-foreground/75">Spend share: <span className="text-foreground/90">{fmtRate(p.spendShare * 100)}</span></div>
                 </div>
               );
             }}
@@ -557,7 +564,15 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
             {plotData.map((p, i) => {
               const highFreq = p.x >= medFreq;
               const highCtr  = p.y >= medCtr;
-              const color = highFreq && highCtr ? "hsl(var(--chart-1))" : highFreq && !highCtr ? "hsl(var(--destructive))" : !highFreq && highCtr ? "hsl(var(--chart-3))" : "hsl(var(--chart-5))";
+              // Each quadrant is a VERDICT on the segment, not a category:
+              //   low freq + high CTR  -> fresh audience still converting (good)
+              //   high freq + high CTR -> working but saturating (neutral)
+              //   high freq + low CTR  -> fatigue (bad)
+              //   low freq + low CTR   -> too little delivery to read yet
+              const color = !highFreq && highCtr ? VERDICT.good
+                : highFreq && highCtr ? VERDICT.neutral
+                : highFreq && !highCtr ? VERDICT.bad
+                : VERDICT.unmeasured;
               return (
                 <Cell
                   key={i}
@@ -576,8 +591,8 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
 
 function VideoPlaceholder() {
   return (
-    <div className="rounded-xl border border-border/30 bg-white/[0.015] p-5 flex items-start gap-3">
-      <Video className="w-5 h-5 text-muted-foreground/40 shrink-0 mt-0.5" />
+    <div className="rounded-xl border border-border/30 bg-foreground/[0.015] p-5 flex items-start gap-3">
+      <Video className="w-5 h-5 text-muted-foreground/75 shrink-0 mt-0.5" />
       <div className="space-y-1.5 max-w-xl flex-1 min-w-0">
         <div className="text-body font-semibold text-foreground/80">Video engagement metrics not available</div>
         <CaveatNote text="ThruPlay rate and video-play-percentage data require a Meta Video Creative report CSV — a separate export from the standard demographic/placement performance report, not currently detected in staged uploads. To see video metrics: in Meta Ads Manager, go to Columns → Customize, add ThruPlays and Video play %, export as CSV, and stage it alongside your performance exports." />
@@ -721,16 +736,16 @@ export function EngagementFunnelView() {
             {/* ── View / Dimension controls ──────────────────────────── */}
             <div className="px-6 pt-5 pb-1 flex flex-wrap items-center gap-3">
               {/* View mode */}
-              <div className="flex items-center gap-1 rounded-lg border border-border/40 p-0.5 bg-white/[0.02]">
+              <div className="flex items-center gap-1 rounded-lg border border-border/40 p-0.5 bg-foreground/[0.02]">
                 {([ ["funnel", "Funnel", Layers], ["breakdown", "Breakdown", Table2], ["scatter", "Scatter", Activity] ] as const).map(([mode, label, Icon]) => (
                   <button
                     key={mode}
                     onClick={() => setViewMode(mode)}
                     className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
+                      "pressable inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
                       viewMode === mode
                         ? "bg-primary/20 text-interactive border border-primary/25"
-                        : "text-muted-foreground/70 hover:text-foreground/80"
+                        : "text-muted-foreground/75 hover:text-foreground/80"
                     )}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -741,16 +756,16 @@ export function EngagementFunnelView() {
 
               {/* Breakdown dimension (only in breakdown/scatter mode) */}
               {(viewMode === "breakdown" || viewMode === "scatter") && (
-                <div className="flex items-center gap-1 rounded-lg border border-border/40 p-0.5 bg-white/[0.02]">
+                <div className="flex items-center gap-1 rounded-lg border border-border/40 p-0.5 bg-foreground/[0.02]">
                   {([ ["audience", "Audience"], ["placement", "Placement"], ["device", "Device"] ] as const).map(([d, l]) => (
                     <button
                       key={d}
                       onClick={() => setDim(d)}
                       className={cn(
-                        "px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
+                        "pressable px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
                         dim === d
                           ? "bg-primary/20 text-interactive border border-primary/25"
-                          : "text-muted-foreground/70 hover:text-foreground/80"
+                          : "text-muted-foreground/75 hover:text-foreground/80"
                       )}
                     >
                       {l}
@@ -791,24 +806,24 @@ export function EngagementFunnelView() {
                     right={<SectionInfoIcon tip="A wide gap between CTR All and CTR Link means clicks are staying on-platform (reactions, shares, profile visits) rather than driving off-platform intent." />}
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="rounded-lg border border-border/30 bg-white/[0.02] p-4">
-                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">CTR All</div>
+                      <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4">
+                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">CTR All</div>
                         <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.ctrAll, 2)}</div>
-                        <div className="text-label text-muted-foreground/50 mt-1">All clicks ÷ impressions</div>
+                        <div className="text-label text-muted-foreground/75 mt-1">All clicks ÷ impressions</div>
                       </div>
-                      <div className="rounded-lg border border-border/30 bg-white/[0.02] p-4">
-                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">CTR Link</div>
+                      <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4">
+                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">CTR Link</div>
                         <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.ctrLink, 2)}</div>
-                        <div className="text-label text-muted-foreground/50 mt-1">Link clicks ÷ impressions</div>
+                        <div className="text-label text-muted-foreground/75 mt-1">Link clicks ÷ impressions</div>
                       </div>
-                      <div className="rounded-lg border border-border/30 bg-white/[0.02] p-4">
-                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">Reach CTR</div>
+                      <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4">
+                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">Reach CTR</div>
                         <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.reachCtr, 2)}</div>
-                        <div className="text-label text-muted-foreground/50 mt-1">Link clicks ÷ unique reach</div>
+                        <div className="text-label text-muted-foreground/75 mt-1">Link clicks ÷ unique reach</div>
                       </div>
                     </div>
                     {summaryTiles.ctrAll != null && summaryTiles.ctrLink != null && summaryTiles.ctrAll > 0 && (
-                      <div className="mt-3 p-3 rounded-lg border border-border/25 bg-white/[0.01] text-caption text-muted-foreground/70">
+                      <div className="mt-3 p-3 rounded-lg border border-border/25 bg-foreground/[0.01] text-caption text-muted-foreground/75">
                         <span className="font-medium text-foreground/80">Intent conversion: </span>
                         {fmtRate(pct(summaryTiles.ctrLink, summaryTiles.ctrAll), 0)} of all clicks become link clicks.
                         {summaryTiles.ctrLink != null && summaryTiles.ctrAll != null && summaryTiles.ctrAll > 0 && summaryTiles.ctrLink / summaryTiles.ctrAll < 0.4 && (
@@ -828,7 +843,7 @@ export function EngagementFunnelView() {
                   desc={`All engagement metrics by ${dim === "audience" ? "age × gender pocket" : dim === "placement" ? "placement × platform" : "impression device"}. Sort by any column to find highest-frequency or highest-intent segments.`}
                   right={
                     <>
-                      <span className="text-label text-muted-foreground/50">
+                      <span className="text-label text-muted-foreground/75">
                         {breakdownRows.length} {dim === "audience" ? "pockets" : dim === "placement" ? "placements" : "devices"}
                       </span>
                       <SectionInfoIcon tip="Sortable table of engagement metrics for each segment. Switch the sort column to surface your highest-frequency or highest-intent pockets." />
@@ -837,7 +852,7 @@ export function EngagementFunnelView() {
                 >
                   {dim === "device" && breakdownRows.length === 0 ? (
                     <>
-                      <div className="text-body text-muted-foreground/60 py-4">No device breakdown for this window.</div>
+                      <div className="text-body text-muted-foreground/75 py-4">No device breakdown for this window.</div>
                       <CaveatNote
                         text={
                           convDevices.length > 0
@@ -867,11 +882,11 @@ export function EngagementFunnelView() {
                     {dim === "audience" ? (
                       <FrequencyScatter rows={breakdownRows} />
                     ) : (
-                      <div className="flex items-center justify-center h-40 text-body text-muted-foreground/60">
+                      <div className="flex items-center justify-center h-40 text-body text-muted-foreground/75">
                         Placement rows don't include Reach data — frequency scatter requires the demographic export.
                         <button
                           onClick={() => setDim("audience")}
-                          className="ml-2 text-interactive underline"
+                          className="pressable ml-2 text-interactive underline"
                         >
                           Switch to Audience
                         </button>

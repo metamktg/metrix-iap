@@ -290,15 +290,15 @@ export function AdAccountOverview() {
               desc="MST status"
               right={<SectionInfoIcon tip="Whether a Matrix Sprint Test is active for this account, and how many matrix cells and library concepts it covers." />}
             >
-              <div className="rounded-lg border border-border/30 bg-white/[0.015] p-2.5 hover:border-border/50 transition-colors">
+              <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-2.5 hover:border-border/50 transition-colors">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Grid3x3 className="w-3 h-3 text-purple-300/60" />
+                  <Grid3x3 className="w-3 h-3 text-interactive/75" />
                   <span className="text-caption font-medium text-foreground/75">MST active</span>
                 </div>
-                <p className="text-caption text-muted-foreground/70 leading-relaxed">
+                <p className="text-caption text-muted-foreground/75 leading-relaxed">
                   <span className="font-medium text-foreground/75">{matrixCellCount}</span> matrix cells · <span className="font-medium text-foreground/75">{libraryCount}</span> library concepts
                 </p>
-                <button onClick={() => navigate("/app/mst")} className="mt-2 inline-flex items-center gap-1 text-caption font-medium text-purple-300/75 hover:text-purple-200 transition-colors">
+                <button onClick={() => navigate("/app/mst")} className="pressable mt-2 inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-interactive transition-colors">
                   Open MST <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
@@ -325,8 +325,8 @@ export function AdAccountOverview() {
                       <tr key={key} className={cn(isZero && "opacity-40")}>
                         <td><span className="font-medium text-foreground/90">{eventLabel(key)}</span></td>
                         <td className="text-right tabular-nums text-foreground/85">{fmtNum(e.results)}</td>
-                        <td className="text-right tabular-nums text-muted-foreground/70">{fmtUSD(e.spend, 0)}</td>
-                        <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/35")}>
+                        <td className="text-right tabular-nums text-muted-foreground/75">{fmtUSD(e.spend, 0)}</td>
+                        <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/75")}>
                           {cpa != null ? fmtUSD(cpa) : "n/a"}
                         </td>
                       </tr>
@@ -340,9 +340,9 @@ export function AdAccountOverview() {
           {/* Core controls */}
           <SectionCard title="Core controls" desc="Control creative per funnel stage" right={<SectionInfoIcon tip="The benchmark creatives that define performance expectations per funnel stage." />}>
             <div className="grid grid-cols-dashboard-2 gap-3">
-              <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 hover:border-emerald-400/30 transition-colors">
+              <div className="rounded-xl border border-status-success/20 bg-status-success/[0.03] p-4 hover:border-status-success/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/80" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-status-success/80" />
                   <span className="text-caption font-semibold text-foreground">Primary control</span>
                   <SectionInfoIcon tip="The top-performing creative benchmark for this funnel stage." />
                 </div>
@@ -361,13 +361,13 @@ export function AdAccountOverview() {
                   );
                 })()}
                 {primaryControlName !== core.primary_control && (
-                  <p className="text-label font-mono text-muted-foreground/40 mt-1.5">
-                    <span className="text-label text-muted-foreground/30 not-italic">Code · </span>{core.primary_control}
+                  <p className="text-label font-mono text-muted-foreground/75 mt-1.5">
+                    <span className="text-label text-muted-foreground/75 not-italic">Code · </span>{core.primary_control}
                   </p>
                 )}
               </div>
               {core.registration_control && (
-                <div className="rounded-xl border border-blue-400/20 bg-chart-1/[0.03] p-4 hover:border-blue-400/30 transition-colors">
+                <div className="rounded-xl border border-primary/20 bg-chart-1/[0.03] p-4 hover:border-primary/30 transition-colors">
                   <div className="flex items-center gap-1.5 mb-2">
                     <KeyRound className="w-3.5 h-3.5 text-accent/80" />
                     <span className="text-caption font-semibold text-foreground">{term.Singular} control</span>
@@ -388,8 +388,8 @@ export function AdAccountOverview() {
                     );
                   })()}
                   {registrationControlName !== core.registration_control && (
-                    <p className="text-label font-mono text-muted-foreground/40 mt-1.5">
-                      <span className="text-label text-muted-foreground/30 not-italic">Code · </span>{core.registration_control}
+                    <p className="text-label font-mono text-muted-foreground/75 mt-1.5">
+                      <span className="text-label text-muted-foreground/75 not-italic">Code · </span>{core.registration_control}
                     </p>
                   )}
                 </div>

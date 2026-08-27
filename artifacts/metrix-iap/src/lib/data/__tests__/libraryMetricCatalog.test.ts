@@ -87,14 +87,22 @@ describe("buildLibraryMetricCatalog · lib_atc_rate · single event", () => {
     expect(catalog.find((m) => m.id === "lib_atc_rate")!.value).toBeCloseTo(10, 2);
   });
 
-  it("treats null adds_to_cart rows as 0 when at least one row has data", () => {
+  // SUPERSEDED by the aggregation-null policy (owner decision on BUG-11,
+  // carried forward as C5). This case used to assert that a null
+  // adds_to_cart row counts as 0 so long as one row carried data — which
+  // is precisely the partial sum the policy forbids: 40 measured ATCs were
+  // divided by BOTH rows' link clicks, reporting 10% for a figure whose
+  // real value is unknown. The rate is now null, and the sub-label says
+  // how much of the selection was actually measured.
+  it("does not fold a null adds_to_cart row into a measured total", () => {
     const rows = [
       makeRow({ "Link clicks": 200, Results: 10, adds_to_cart: 40 }),
       makeRow({ "Link clicks": 200, Results: 10, adds_to_cart: null }),
     ];
     const catalog = buildLibraryMetricCatalog(rows);
-    // 40 ATC / 400 link clicks * 100 = 10%
-    expect(catalog.find((m) => m.id === "lib_atc_rate")!.value).toBeCloseTo(10, 2);
+    const atc = catalog.find((m) => m.id === "lib_atc_rate")!;
+    expect(atc.value).toBeNull();
+    expect(atc.sub).toContain("1 of 2");
   });
 
   it("has a descriptive sub-label when data is absent", () => {
@@ -250,5 +258,55 @@ describe("buildLibraryMetricCatalog · lower-funnel IDs present", () => {
     for (const id of LOWER_IDS) {
       expect(ids).toContain(id);
     }
+  });
+});
+
+// ─── Aggregation-null policy: partial coverage (C5) ────────────────────
+//
+// The lower-funnel totals used to aggregate on "ANY row carries the field"
+// and fold the rest with `?? 0`. Three measured cells out of eleven summed
+// to a figure that rendered exactly like a complete one, then divided by a
+// COMPLETE link-click denominator — understating every rate it fed, with
+// nothing on screen indicating a partial sum. These pin the one policy
+// (lib/strict-sum): null unless every row in the selection carries it.
+
+describe("buildLibraryMetricCatalog · partial coverage is never summed", () => {
+  const measured = makeRow({ adds_to_cart: 40, checkouts_initiated: 10 });
+  const unmeasured = makeRow({ cell_id: "C3B", adds_to_cart: null, checkouts_initiated: null });
+
+  it("returns null for ATC/checkout totals when only some rows carry the field", () => {
+    const cat = buildLibraryMetricCatalog([measured, unmeasured]);
+    for (const id of ["lib_atc_rate", "lib_checkout_rate", "lib_cost_per_atc", "lib_cost_per_checkout"]) {
+      const m = cat.find((x) => x.id === id);
+      expect(m, id).toBeTruthy();
+      expect(m!.value, id).toBeNull();
+    }
+  });
+
+  it("explains the null with real coverage counts rather than a bare dash", () => {
+    const cat = buildLibraryMetricCatalog([measured, unmeasured]);
+    const atc = cat.find((x) => x.id === "lib_atc_rate")!;
+    expect(atc.sub).toContain("1 of 2");
+    expect(atc.sub).toContain("adds-to-cart");
+    const chk = cat.find((x) => x.id === "lib_checkout_rate")!;
+    expect(chk.sub).toContain("1 of 2");
+    expect(chk.sub).toContain("checkouts initiated");
+  });
+
+  it("still sums when every row in the selection carries the field", () => {
+    const other = makeRow({ cell_id: "C3B", adds_to_cart: 20, checkouts_initiated: 5 });
+    const cat = buildLibraryMetricCatalog([measured, other]);
+    // 60 adds-to-cart over 800 link clicks
+    expect(cat.find((x) => x.id === "lib_atc_rate")!.value).toBeCloseTo((60 / 800) * 100, 6);
+    // $2000 spend over 60 adds-to-cart
+    expect(cat.find((x) => x.id === "lib_cost_per_atc")!.value).toBeCloseTo(2000 / 60, 6);
+  });
+
+  it("keeps the multi-event guard ahead of the coverage note", () => {
+    const otherEvent = makeRow({ "Result type": "Lead", adds_to_cart: 20, checkouts_initiated: 5 });
+    const cat = buildLibraryMetricCatalog([measured, otherEvent]);
+    const atc = cat.find((x) => x.id === "lib_atc_rate")!;
+    expect(atc.value).toBeNull();
+    expect(atc.sub).toBe("select one event to see funnel metrics");
   });
 });

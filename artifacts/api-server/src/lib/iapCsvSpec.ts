@@ -525,7 +525,19 @@ export const COLUMN_ALIASES: Record<string, string> = {
  * Signal weights for each canonical column used in the Confidence Report grade.
  * Weights reflect how much each column contributes to signal analysis quality.
  * Columns not listed here have weight 0 (cosmetic / supplementary).
- * All listed weights must sum to 1.0.
+ *
+ * These sum to 0.98, not 1.00 — the comments here and below used to claim
+ * 1.00 and were simply wrong (17 entries, arithmetic checked). Nothing
+ * depends on the total: the Confidence Report grades
+ * `present weight / total weight of the weighted columns THIS import
+ * carries`, so it self-normalises over whatever subset appears and never
+ * divides by a fixed 1.00. The figures are therefore relative importances,
+ * and re-weighting to close the 0.02 would shift every grade slightly —
+ * a product decision, not a typo fix, so the numbers are left as they are
+ * and the claim is corrected instead.
+ *
+ * Mirrored client-side in artifacts/metrix-iap/src/lib/signalWeights.ts;
+ * scripts/src/signal-weights-drift.test.ts fails if the two disagree.
  */
 export const SIGNAL_WEIGHTS: Record<string, number> = {
   "Amount spent ({ACCOUNT_CURRENCY})": 0.20,
@@ -545,7 +557,7 @@ export const SIGNAL_WEIGHTS: Record<string, number> = {
   "Ad creative body text": 0.01,
   "Ad creative headline": 0.01,
   "Conversion device": 0.01,
-  // total = 1.00
+  // total = 0.98 (see the note above — relative weights, self-normalised)
 };
 
 /** How a CSV header was resolved to a canonical column name. */

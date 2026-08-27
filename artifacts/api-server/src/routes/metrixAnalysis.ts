@@ -22,6 +22,7 @@ import {
   VIEW_PRESETS,
   type DateRangePreset,
   type ViewPreset,
+  getAccountDailySeries,
 } from "../lib/analysisEngine";
 import { buildIapCsvClassFormat, COLUMN_ALIASES } from "../lib/iapCsvSpec";
 
@@ -141,6 +142,29 @@ router.get("/metrix/accounts/:accountId/analysis-summary/daterange/:start/:end",
     }
     req.log.error({ err, accountId, start, end }, "Failed to compute date-range analysis summary");
     res.status(502).json({ message: err instanceof Error ? err.message : "Could not compute analysis summary." });
+  }
+});
+
+// ─── Daily series (trend) ─────────────────────────────────────────────────────
+// The day-grained read behind trend charts. Deliberately its own endpoint
+// rather than a seed field: the seed is a bootstrap payload assembled for
+// every account the user can see, and a daily series is O(days x accounts).
+// Registered BEFORE the :preset wildcard for the same reason as the routes
+// above.
+router.get("/metrix/accounts/:accountId/timeseries/:start/:end", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const start     = String(req.params["start"] ?? "");
+  const end       = String(req.params["end"]   ?? "");
+  try {
+    if (!(await guardAccess(req, res, accountId))) return;
+    res.json(await getAccountDailySeries(accountId, start, end));
+  } catch (err) {
+    if (err instanceof AnalysisError) {
+      res.status(err.statusCode).json({ message: err.message });
+      return;
+    }
+    req.log.error({ err, accountId, start, end }, "Failed to load daily series");
+    res.status(502).json({ message: err instanceof Error ? err.message : "Could not load the daily series." });
   }
 });
 

@@ -120,13 +120,13 @@ export function AgentWaitlistSection() {
         title="Metrix Agent waitlist"
         desc="Personal emails · admin-only"
       >
-        <div className="p-3 rounded-lg border border-border/30 bg-white/[0.02] space-y-2.5" data-testid="panel-waitlist-locked">
+        <div className="p-3 rounded-lg border border-border/30 bg-foreground/[0.02] space-y-2.5" data-testid="panel-waitlist-locked">
           <div className="flex items-center gap-2.5">
-            <Lock className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+            <Lock className="w-4 h-4 text-muted-foreground/75 shrink-0" />
             <div className="text-body font-medium text-foreground">Admin access required</div>
           </div>
           {lastKeyRejected && (
-            <div className="text-caption text-red-400/80" data-testid="text-waitlist-unauthorized">
+            <div className="text-caption text-status-danger/80" data-testid="text-waitlist-unauthorized">
               That admin key was not accepted. Check the key and try again.
             </div>
           )}
@@ -137,7 +137,7 @@ export function AgentWaitlistSection() {
               onChange={(e) => setKeyInput(e.target.value)}
               placeholder="Enter admin key"
               autoComplete="off"
-              className="flex-1 h-8 px-2.5 rounded-md bg-white/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex-1 h-8 px-2.5 rounded-md bg-foreground/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
               data-testid="input-admin-key"
             />
             <button
@@ -149,7 +149,7 @@ export function AgentWaitlistSection() {
               Unlock
             </button>
           </form>
-          <div className="text-label text-muted-foreground/70">
+          <div className="text-label text-muted-foreground/75">
             The admin key is set by the app owner via the ADMIN_API_KEY secret.
           </div>
         </div>
@@ -201,7 +201,7 @@ export function AgentWaitlistSection() {
           <button
             onClick={handleExport}
             disabled={isExporting || total === 0}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
             data-testid="button-export-waitlist"
           >
             {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
@@ -209,7 +209,7 @@ export function AgentWaitlistSection() {
           </button>
           <button
             onClick={handleLock}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             data-testid="button-lock-waitlist"
           >
             <Lock className="w-3.5 h-3.5" /> Lock
@@ -219,19 +219,19 @@ export function AgentWaitlistSection() {
     >
       {/* Search input */}
       <div className="relative mb-2">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 pointer-events-none" />
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/75 pointer-events-none" />
         <input
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search by email…"
-          className="w-full h-8 pl-8 pr-8 rounded-md bg-white/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+          className="w-full h-8 pl-8 pr-8 rounded-md bg-foreground/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
           data-testid="input-waitlist-search"
         />
         {searchInput && (
           <button
             onClick={() => setSearchInput("")}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            className="pressable absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/75 hover:text-muted-foreground transition-colors"
             aria-label="Clear search"
             data-testid="button-clear-waitlist-search"
           >
@@ -240,26 +240,26 @@ export function AgentWaitlistSection() {
         )}
       </div>
       {exportError && (
-        <div className="mb-2 text-caption text-red-400/90 px-3 py-2 rounded-md border border-red-400/25 bg-red-400/[0.06]">
+        <div className="mb-2 text-caption text-status-danger/90 px-3 py-2 rounded-md border border-status-danger/25 bg-status-danger/[0.06]">
           {exportError}
         </div>
       )}
       {isLoading ? (
-        <div className="text-caption text-muted-foreground/70 p-3">Loading waitlist…</div>
+        <div className="text-caption text-muted-foreground/75 p-3">Loading waitlist…</div>
       ) : isError ? (
-        <div className="text-caption text-red-400/80 p-3">Could not load waitlist signups. Check that the API server is running.</div>
+        <div className="text-caption text-status-danger/80 p-3">Could not load waitlist signups. Check that the API server is running.</div>
       ) : entries.length === 0 ? (
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-          <Users className="w-4 h-4 text-muted-foreground/70 shrink-0" />
-          <div className="text-caption text-muted-foreground/70">
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
+          <Users className="w-4 h-4 text-muted-foreground/75 shrink-0" />
+          <div className="text-caption text-muted-foreground/75">
             {searchQuery ? `No signups matching "${searchQuery}".` : "No waitlist signups yet."}
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden" data-testid="list-waitlist-entries">
+        <div className="rounded-lg border border-border/30 bg-foreground/[0.02] overflow-hidden" data-testid="list-waitlist-entries">
           <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Email</span>
-            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Joined</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium">Email</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium">Joined</span>
           </div>
           <div ref={scrollRef} className="max-h-64 overflow-y-auto" data-testid="scroll-waitlist">
             {useVirtual ? (
@@ -281,11 +281,11 @@ export function AgentWaitlistSection() {
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-body text-foreground truncate">{entry.email}</span>
                           {entry.status === "approved" ? (
-                            <span className="flex items-center gap-1 text-label font-medium text-emerald-400 shrink-0" data-testid={`badge-approved-${entry.email}`}>
+                            <span className="flex items-center gap-1 text-label font-medium text-status-success shrink-0" data-testid={`badge-approved-${entry.email}`}>
                               <CheckCircle2 className="w-3.5 h-3.5" /> Approved
                             </span>
                           ) : (
-                            <span className="text-label font-medium text-amber-400/80 shrink-0" data-testid={`badge-pending-${entry.email}`}>
+                            <span className="text-label font-medium text-status-warning/80 shrink-0" data-testid={`badge-pending-${entry.email}`}>
                               Pending
                             </span>
                           )}
@@ -302,25 +302,25 @@ export function AgentWaitlistSection() {
                               {isApproving ? "Approving…" : "Approve"}
                             </button>
                           )}
-                          <span className="text-label font-mono text-muted-foreground/70">
+                          <span className="text-label font-mono text-muted-foreground/75">
                             {new Date(entry.joined_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
                           </span>
                         </div>
                       </div>
                       {result && result.status === "approved" && (
                         result.email_sent ? (
-                          <div className="flex items-center gap-1.5 text-caption text-emerald-400/90" data-testid={`text-approval-emailed-${entry.email}`}>
+                          <div className="flex items-center gap-1.5 text-caption text-status-success/90" data-testid={`text-approval-emailed-${entry.email}`}>
                             <MailCheck className="w-3.5 h-3.5" /> Temporary password emailed to {result.email}.
                           </div>
                         ) : result.temp_password ? (
-                          <div className="flex items-center gap-2 p-2 rounded border border-amber-500/20 bg-amber-500/[0.06]" data-testid={`panel-temp-password-${entry.email}`}>
+                          <div className="flex items-center gap-2 p-2 rounded border border-status-warning/20 bg-status-warning/[0.06]" data-testid={`panel-temp-password-${entry.email}`}>
                             <div className="text-caption text-foreground min-w-0">
                               Email not sent — share this temporary password manually:{" "}
-                              <span className="font-mono text-caption text-amber-300">{result.temp_password}</span>
+                              <span className="font-mono text-caption text-status-warning">{result.temp_password}</span>
                             </div>
                             <button
                               onClick={() => void handleCopyTempPassword(entry.id, result.temp_password!)}
-                              className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
+                              className="pressable flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0"
                               data-testid={`button-copy-temp-password-${entry.email}`}
                             >
                               <Copy className="w-3.5 h-3.5" /> {copiedEntryId === entry.id ? "Copied" : "Copy"}
@@ -344,11 +344,11 @@ export function AgentWaitlistSection() {
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-body text-foreground truncate">{entry.email}</span>
                           {entry.status === "approved" ? (
-                            <span className="flex items-center gap-1 text-label font-medium text-emerald-400 shrink-0" data-testid={`badge-approved-${entry.email}`}>
+                            <span className="flex items-center gap-1 text-label font-medium text-status-success shrink-0" data-testid={`badge-approved-${entry.email}`}>
                               <CheckCircle2 className="w-3.5 h-3.5" /> Approved
                             </span>
                           ) : (
-                            <span className="text-label font-medium text-amber-400/80 shrink-0" data-testid={`badge-pending-${entry.email}`}>
+                            <span className="text-label font-medium text-status-warning/80 shrink-0" data-testid={`badge-pending-${entry.email}`}>
                               Pending
                             </span>
                           )}
@@ -365,25 +365,25 @@ export function AgentWaitlistSection() {
                               {isApproving ? "Approving…" : "Approve"}
                             </button>
                           )}
-                          <span className="text-label font-mono text-muted-foreground/70">
+                          <span className="text-label font-mono text-muted-foreground/75">
                             {new Date(entry.joined_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
                           </span>
                         </div>
                       </div>
                       {result && result.status === "approved" && (
                         result.email_sent ? (
-                          <div className="flex items-center gap-1.5 text-caption text-emerald-400/90" data-testid={`text-approval-emailed-${entry.email}`}>
+                          <div className="flex items-center gap-1.5 text-caption text-status-success/90" data-testid={`text-approval-emailed-${entry.email}`}>
                             <MailCheck className="w-3.5 h-3.5" /> Temporary password emailed to {result.email}.
                           </div>
                         ) : result.temp_password ? (
-                          <div className="flex items-center gap-2 p-2 rounded border border-amber-500/20 bg-amber-500/[0.06]" data-testid={`panel-temp-password-${entry.email}`}>
+                          <div className="flex items-center gap-2 p-2 rounded border border-status-warning/20 bg-status-warning/[0.06]" data-testid={`panel-temp-password-${entry.email}`}>
                             <div className="text-caption text-foreground min-w-0">
                               Email not sent — share this temporary password manually:{" "}
-                              <span className="font-mono text-caption text-amber-300">{result.temp_password}</span>
+                              <span className="font-mono text-caption text-status-warning">{result.temp_password}</span>
                             </div>
                             <button
                               onClick={() => void handleCopyTempPassword(entry.id, result.temp_password!)}
-                              className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
+                              className="pressable flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0"
                               data-testid={`button-copy-temp-password-${entry.email}`}
                             >
                               <Copy className="w-3.5 h-3.5" /> {copiedEntryId === entry.id ? "Copied" : "Copy"}
@@ -397,7 +397,7 @@ export function AgentWaitlistSection() {
               </div>
             )}
             {approveMutation.isError && (
-              <div className="px-3 py-2 text-caption text-red-400/80" data-testid="text-approve-error">
+              <div className="px-3 py-2 text-caption text-status-danger/80" data-testid="text-approve-error">
                 Approval failed. Check the admin key and try again.
               </div>
             )}
@@ -406,7 +406,7 @@ export function AgentWaitlistSection() {
                 <button
                   onClick={() => fetchNextPage()}
                   disabled={isFetchingNextPage}
-                  className="w-full flex items-center justify-center gap-1.5 h-8 rounded-md border border-border/40 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="pressable-lg w-full flex items-center justify-center gap-1.5 h-8 rounded-md border border-border/40 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   data-testid="button-load-more-waitlist"
                 >
                   {isFetchingNextPage ? (
@@ -420,7 +420,7 @@ export function AgentWaitlistSection() {
               </div>
             )}
           </div>
-          <div className="px-3 py-2 border-t border-border/30 text-label text-muted-foreground/70">
+          <div className="px-3 py-2 border-t border-border/30 text-label text-muted-foreground/75">
             Showing {entries.length} of {total} signup{total === 1 ? "" : "s"}
           </div>
         </div>

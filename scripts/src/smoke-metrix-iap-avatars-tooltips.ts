@@ -9,6 +9,7 @@
 // Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-avatars-tooltips
 
 import { spawn, type ChildProcess } from "node:child_process";
+import { spawnGroup, killGroup } from "./lib/process-group.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,7 +29,7 @@ const DEV_PORT = "15187";
 
 async function startDevServer(): Promise<ChildProcess> {
   return new Promise((resolve, reject) => {
-    const child = spawn(
+    const child = spawnGroup(
       "pnpm",
       ["--filter", "@workspace/metrix-iap", "run", "dev"],
       {
@@ -65,7 +66,7 @@ async function startDevServer(): Promise<ChildProcess> {
 
     setTimeout(() => {
       if (!ready) {
-        child.kill();
+        killGroup(child);
         reject(new Error("Dev server did not become ready within 60 s"));
       }
     }, 60_000);
@@ -128,7 +129,7 @@ async function main() {
       fail("Avatars tooltip e2e tests failed", String(err?.message ?? err));
     });
   } finally {
-    server.kill();
+    killGroup(server);
   }
 
   console.log("\nPASS  Avatars tooltip e2e tests passed.");

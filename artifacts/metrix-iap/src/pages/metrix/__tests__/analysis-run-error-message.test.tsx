@@ -139,14 +139,14 @@ describe("AnalysisControls — error run shows verbatim error_message", () => {
     mockErrorMessage = null;
     const { container } = renderControls();
     // The red error span must not appear; the success date row appears instead
-    expect(container.querySelector(".text-red-400\\/80")).toBeNull();
+    expect(container.querySelector(".text-status-danger\\/80")).toBeNull();
   });
 
   it("does not show an error message when there is no run yet", () => {
     mockRunStatus = null;
     mockErrorMessage = null;
     const { container } = renderControls();
-    expect(container.querySelector(".text-red-400\\/80")).toBeNull();
+    expect(container.querySelector(".text-status-danger\\/80")).toBeNull();
     expect(screen.getByText("No analysis has been run yet.")).toBeTruthy();
   });
 
@@ -155,7 +155,7 @@ describe("AnalysisControls — error run shows verbatim error_message", () => {
     mockErrorMessage = null;
     const { container } = renderControls();
     // Condition is (status === "error" && error_message) — falsy message → no span
-    expect(container.querySelector(".text-red-400\\/80")).toBeNull();
+    expect(container.querySelector(".text-status-danger\\/80")).toBeNull();
   });
 
   it("still shows verbatim error_message after user clicks 'Run anyway' and the run fails", () => {
