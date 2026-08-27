@@ -123,8 +123,36 @@ export function getOptimizationLoop(seed: MetrixSeed, adAccountId: string | null
   return getAdAccount(seed, adAccountId)?.iap?.optimization_loop ?? null;
 }
 
+/**
+ * The imported MST seed historically carried `render_policy` as a sentence,
+ * but current source data may provide its format rules as a structured object.
+ * Normalize at the data boundary so UI components never receive an object they
+ * could try to render directly.
+ */
+export function formatMstRenderPolicy(policy: unknown): string {
+  if (typeof policy === "string") return policy;
+  if (!policy || typeof policy !== "object" || Array.isArray(policy)) {
+    return "";
+  }
+
+  const fields = policy as Record<string, unknown>;
+  const stringValue = (key: string) =>
+    typeof fields[key] === "string" && fields[key].trim() ? fields[key].trim() : null;
+  const parts = [
+    fields.mobile_first === true ? "Mobile-first" : null,
+    stringValue("primary_format") ? `Primary format: ${stringValue("primary_format")}` : null,
+    stringValue("secondary_format_required")
+      ? `Secondary format required: ${stringValue("secondary_format_required")}`
+      : null,
+    fields.text_safe_zones_required_on_9x16 === true ? "Text safe zones required on 9:16" : null,
+  ].filter((part): part is string => Boolean(part));
+
+  return parts.join(" · ") || "MST render policy is configured.";
+}
+
 export function getMST(seed: MetrixSeed, adAccountId: string | null): MST | null {
-  return getAdAccount(seed, adAccountId)?.mst ?? null;
+  const mst = getAdAccount(seed, adAccountId)?.mst;
+  return mst ? { ...mst, render_policy: formatMstRenderPolicy(mst.render_policy) } : null;
 }
 
 export function getReportHistory(seed: MetrixSeed, adAccountId: string | null): ReportHistoryEntry[] {
