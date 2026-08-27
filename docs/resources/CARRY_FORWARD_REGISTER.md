@@ -19,6 +19,9 @@ inherited on trust.
 
 ## Where E6 stands
 
+A second audit pass on 2026-08-27 added section **5b** — findings outside the original
+register's scope (security, scale, and defects), 11 shipped and 1 recorded as architecture.
+
 | Group | Shipped | Open |
 |---|---|---|
 | Scalability & storage (S) | — | S1, S2, S3, S4, S5 |
@@ -86,6 +89,34 @@ discards before the UI layer.
 | C9 | `[shipped]` | BUG-30: `reconciliation` is declared optional in `openapi.yaml` with the reason stated, and `AnalysisHistoryView`'s block self-hides — kept rather than deleted so implementing the writer needs no UI work. |
 | C10 | `[shipped]` | `csv_warnings` rendered only in `ManualAnalysisControls`, only for the latest run, so runs started from the Loop command chain or task tray surfaced warnings nowhere and the history screen showed none — despite the field already being on the `AnalysisRun` the list endpoint returns. Now a shared `CsvWarningsPanel` rendered in both places. |
 | C11 | `[shipped]` | BUG-44: `upload_warnings` are persisted on the `manual_imports` row and returned in listings. |
+
+## 5b. Platform audit (2026-08-27) — findings beyond the original register
+
+A second pass swept for defects, scale ceilings, security and SaaS practice rather than
+re-checking E6. Everything here was verified by reading the code, and every fix carries a test
+that was confirmed to fail against the original defect.
+
+### Shipped
+
+| # | Verdict | Item |
+|---|---|---|
+| A1 | `[shipped]` | **Cross-tenant file disclosure.** The staged-file cache in front of `/manual-imports/:importId/file` was keyed by `importId` alone, and both its cache-hit and in-flight branches return bytes BEFORE the account-scoped query runs — so a member of account B who knew an importId from account A was served A's file. Uuids are not secrets: they travel in URLs, screenshots, support tickets and logs, and revoking a grant does not un-see them. Now `lib/creativeFileCache`, keyed by (account, import). |
+| A2 | `[shipped]` | **Stored XSS → session-riding.** Both asset endpoints echoed the uploader's `content_type` (a bare `z.string()`, never validated) into the response header, so an authenticated user could upload HTML declared `text/html` and have the platform serve it as a live same-origin document. Script there runs with the session cookie on every fetch it makes. `lib/assetContentType` now serves only non-executable media inline; everything else is an opaque download. The cell endpoint was the worse of the two — its URL contains no unguessable id. |
+| A3 | `[shipped]` | **No security headers at all.** Added `nosniff` (load-bearing: without it a browser can sniff the A2 downgrade back into HTML), `default-src 'none'; sandbox` CSP, `X-Frame-Options`, `Referrer-Policy: no-referrer` (asset URLs carry account and import ids), and HTTPS-only HSTS. |
+| A4 | `[shipped]` | **Silent 1000-row truncation.** Ten reads across three engines had no `.range()`, so PostgREST returned a prefix and every total over it rendered as complete. Three pulled an account's ENTIRE history then filtered by date in JS, so the truncation landed before the window was applied. The rollups are per (entity × day) — demographic_performance passes 1000 within a month of ordinary delivery. One reader now (`lib/paginatedSelect`). |
+| A5 | `[shipped]` | **Seed cache stampede.** No request coalescing, so every concurrent miss started its own ~29-table rebuild. Twenty mutation paths invalidate the cache and their clients refetch immediately, making concurrent misses the common case. Now `lib/coalescedCache`. |
+| A6 | `[shipped]` | **Every analysis window labelled a day early outside UTC.** `date_start`/`date_end`/`window_start`/`window_end` are `date` columns rendered through `new Date(s).toLocaleDateString(...)` in four files — UTC midnight formatted in the browser's zone, so Aug 1–31 read "Jul 31 – Aug 30" for every viewer in the Americas. `fmtDay`/`fmtDayRange` in `lib/normalize` are now the one way to render a calendar day. Invisible to anyone developing in UTC, so the test runs under America/New_York. |
+| A7 | `[shipped]` | **The metric picker was invisible everywhere.** `.mx-kpi-tile` sets `overflow: hidden`, and the dropdown was an in-flow absolute child positioned below the tile's bottom edge. Four tests asserted it rendered and all four passed, because jsdom applies no CSS. Now portalled to `document.body`. This is the customizable-tiles feature. |
+| A8 | `[shipped]` | **Demographics had no `impressions` column** while placement/platform/device all did — and the engine read `b.impressions` to derive each row's rates, then dropped it. No demographic CTR or CPM was computable; the client hardcoded both to 0. Plumbed end to end through schema, engine, both summary paths, importer and contract (via codegen, not a hand-edit). |
+| A9 | `[shipped]` | **A false empty state.** Cluster mode needs CPA and CVR, so an account spending without conversions got no clusters — and the cards said "No spend to allocate", the inverse of the truth. Now names the real reason and offers Age view. |
+| A10 | `[shipped]` | **Rates assigned instead of derived.** `CreativeExpandDialog` set each age bucket's CPA/CTR from whichever row happened to be last in the loop. Now accumulates denominators and derives once. |
+| A11 | `[shipped]` | **A measured zero read as unknown.** `EngagementFunnelView`'s `ratio` guarded with `if (!a || !b)`, so a real recorded zero adds-to-cart reported "not measured" instead of 0% — the honesty invariant inverted, in the direction that hides a bad result. |
+
+### Open — the one structural item
+
+| # | Verdict | Item |
+|---|---|---|
+| A12 | `[open — architecture]` | **The seed is O(every account) on both sides.** One document holds every account the user may see, with each account's full nested `iap`; it is fetched once at boot and held in a React context that 61 components read. That shape is deliberate and buys real things — instant account switching, client-side agency rollups, no per-page loading states, and one snapshot that makes "never fabricate" enforceable. The cost is that the server assembles every account on each cache miss and the browser parses every account to render one page. Today: 11 accounts, 1.2 MB, unnoticeable. The heavy part is not the account list but the nested analysis blobs — one account's `conversion_tracking_signal` is 172 KB, its `device_delivery_signal` 106 KB. **Target shape** (what comparable platforms do): a thin index at boot — ids, names, status, `campaign_summary` totals, which is all the switcher and the rollups actually need — plus per-account detail fetched on demand. The per-account endpoints already exist (`analysis-summary/:preset`, `analysis-data-windows`, `analysis-runs`), so the seed is duplicating data that already has a dedicated path. Not attempted here: it touches 61 components and belongs in a scoped session, not the end of an audit. **Interim shipped:** `lib/seedBudget` logs with per-account attribution once the payload passes 5 MB, and escalates at 12 MB — so the next approach to the ceiling is a log line naming the responsible account rather than a user watching a spinner, which is how BUG-25 was found. |
 
 ## 6. Decisions needed — flag, don't silently pick
 

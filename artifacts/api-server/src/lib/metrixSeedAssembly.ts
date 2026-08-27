@@ -25,6 +25,7 @@ import { resolveAccountObjectives } from "./cohortConfig";
 import { logger } from "./logger";
 import { createCoalescedCache } from "./coalescedCache";
 import { selectAllRows } from "./paginatedSelect";
+import { checkSeedBudget } from "./seedBudget";
 
 type Row = Record<string, any>;
 
@@ -1379,7 +1380,14 @@ const CACHE_TTL_MS = 5 * 60_000;
  * specifically: assembleMetrixSeed is ~29 unfiltered table scans building
  * every account in the deployment, and twenty mutation paths invalidate it.
  */
-const seedCache = createCoalescedCache<Row>(() => assembleMetrixSeed(), CACHE_TTL_MS);
+const seedCache = createCoalescedCache<Row>(async () => {
+  const seed = await assembleMetrixSeed();
+  // Measured on the rebuild, not per request — the cache means most
+  // requests never reach here, and this is about the payload's growth
+  // over time rather than any one caller.
+  checkSeedBudget(seed);
+  return seed;
+}, CACHE_TTL_MS);
 
 export async function getMetrixSeedFromSupabase(): Promise<Row> {
   return seedCache.get();
