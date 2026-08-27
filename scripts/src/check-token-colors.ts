@@ -48,6 +48,20 @@ const RAW_TONE = new RegExp(`\\b(?:${PREFIX})-(?:white|black)(?:/(?:\\[[0-9.]+\\
 // A literal colour inside a component. The stylesheet may hold them; a .tsx
 // may not — that is where they escape review.
 const RAW_LITERAL = /(?:#[0-9a-fA-F]{3,8}\b|\brgba?\(\s*\d)/g;
+// Tailwind's stock depth scale. It is a black-based drop shadow with no
+// inset ring, so a panel wearing shadow-2xl sits beside one wearing
+// elevation-floating and reads as a different KIND of surface — which is
+// what three floating panels and both overlay primitives were doing. The
+// elevation-* scale is the one the design system defines.
+// `--shadow-sm:` in the stylesheet is the DEFINITION the elevation classes
+// are built from, so the class rule is scoped to .tsx like the literal rule.
+const RAW_SHADOW = /(?<!-)\bshadow-(?:sm|md|lg|xl|2xl|inner)\b(?!-)/g;
+// `shadow-md shadow-primary/25` is NOT the stock scale — in Tailwind a
+// coloured shadow needs a size class for its geometry and a colour class for
+// its tint, and the two together are one deliberate tinted glow. Matching the
+// size half of that pair would flag every primary CTA in the product. A size
+// shadow is a violation only when nothing on its line colours it.
+const SHADOW_TINT = /\bshadow-(?!sm\b|md\b|lg\b|xl\b|2xl\b|inner\b|none\b)[a-z][a-z0-9-]*(?:\/[0-9.]+)?/;
 // Everything below 0x20 except tab, newline and carriage return.
 const CONTROL = new RegExp("[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]", "g");
 
@@ -114,6 +128,21 @@ for (const file of walk(SRC)) {
           `be re-themed and will not appear in any token audit.`,
       );
     }
+  }
+
+  // Line-scoped, so a size class can be recognised as the geometry half of a
+  // coloured shadow sitting beside it.
+  const shadows = code
+    .split("\n")
+    .filter((line) => !SHADOW_TINT.test(line))
+    .flatMap((line) => [...line.matchAll(RAW_SHADOW)].map((m) => m[0]));
+  if (shadows.length > 0 && !/design-lab\.tsx$/.test(file)) {
+    problems.push(
+      `${rel}: ${shadows.length} stock Tailwind shadow${shadows.length === 1 ? "" : "s"} ` +
+        `(${[...new Set(shadows)].join(", ")}). Use elevation-flat / elevation-raised / ` +
+        `elevation-floating — the stock scale has no inset ring, so a surface wearing it ` +
+        `reads as a different kind of surface from the ones beside it.`,
+    );
   }
 
   const ctrl = src.match(CONTROL);

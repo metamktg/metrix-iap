@@ -29,6 +29,11 @@ import { ViewSwitcher } from "@/components/data-module/ViewSwitcher";
 import { SignalDeck } from "@/components/signals/SignalDeck";
 import type { SignalCard } from "@/lib/data/seedTypes";
 import { ChartTooltip, ChartEmpty, ChartSkeleton } from "@/components/charts/chartChrome";
+import { TabRail } from "@/components/nav/TabRail";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { GoalProgressCard } from "@/components/metrics/GoalProgressCard";
+import { Popover, PopoverTrigger, PopoverContent } from "@workspace/command-deck/components/ui/popover";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import { SERIES_VARS, seriesColor, divergingFill, divergingLegend, magnitudeFill, magnitudeLegend, VERDICT } from "@/components/charts/chartTokens";
 
 const money = (n: number) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
@@ -327,6 +332,69 @@ function App() {
             columns={COLS}
             filterPlaceholder="Filter creatives…"
           />
+        </Panel>
+
+        {/* The Radix overlay primitives, rendered OPEN. Their chrome comes
+            from the design system package, and nothing else in this lab
+            exercises it — a popover that lost its shadow or a tooltip that
+            went back to bg-primary would otherwise only be visible by
+            hovering the real app. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Panel title="Popover — open" note="design-system chrome · elevation-floating · rounded-xl">
+            <Popover defaultOpen>
+              <PopoverTrigger asChild>
+                <button type="button" className="text-body text-interactive">Trigger</button>
+              </PopoverTrigger>
+              <PopoverContent align="start" sideOffset={8}>
+                <p className="text-body text-foreground">
+                  The popover surface: popover token at 95%, a border at 60%, and the
+                  inset ring plus soft shadow that every floating surface here wears.
+                </p>
+              </PopoverContent>
+            </Popover>
+          </Panel>
+          <Panel title="Tooltip — open" note="was bg-primary, which read as an action surface">
+            <TooltipProvider>
+              <Tooltip open>
+                <TooltipTrigger asChild>
+                  <button type="button" className="text-body text-interactive">Hover target</button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={8}>
+                  Cost per result, blended across every ad in the window.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </Panel>
+        </div>
+
+        <Panel title="Tab rail" note="tablist · arrow keys · 40px hit area · scrolls rather than pushing the page">
+          <TabRail
+            tabs={[
+              { id: "pending", label: "Pending", count: 4 },
+              { id: "tray", label: "In Tray", count: 0 },
+              { id: "dismissed", label: "Dismissed", count: 12 },
+              { id: "compare", label: "Compare", disabledReason: "Needs two completed runs to compare." },
+            ]}
+            active="pending"
+            onChange={() => {}}
+            label="Queue status"
+          />
+        </Panel>
+
+        <Panel title="Goal progress" note="no goal, no bar — and an overrun is reported, not clipped">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <GoalProgressCard label="Cost per result" value={18.4} goal={25} format={money2} lowerIsBetter
+                              goalSource="median of this window" deltaPct={-8.2} />
+            <GoalProgressCard label="Cost per result" value={60} goal={25} format={money2} lowerIsBetter
+                              goalSource="median of this window" deltaPct={41} />
+            <GoalProgressCard label="Results" value={318} goal={500} format={count} deltaPct={4.1} />
+            <GoalProgressCard label="Link CTR" value={1.94} goal={null} format={pct} />
+          </div>
+          <div className="mt-3 space-y-2 max-w-md">
+            <ProgressMeter value={30} total={120} label="Matrix coverage" size="md" />
+            <ProgressMeter value={5} total={0} label="Result share" size="md" />
+            <ProgressMeter value={2} total={3} segments={3} label="Confidence — Medium" size="md" />
+          </div>
         </Panel>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

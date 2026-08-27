@@ -134,7 +134,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
       </HoverCardTrigger>
 
       <HoverCardContent
-        className="w-[300px] p-0 bg-[hsl(var(--surface-raised))] border border-[hsl(var(--border-default))] shadow-2xl overflow-hidden rounded-xl"
+        className="w-[300px] p-0 bg-popover/95 backdrop-blur-sm border border-border/60 elevation-floating overflow-hidden rounded-xl"
         side="bottom"
         align="start"
         sideOffset={6}

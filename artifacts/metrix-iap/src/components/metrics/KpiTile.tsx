@@ -103,7 +103,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
       ref={ref}
       data-testid="kpi-metric-dropdown"
       style={{ position: "fixed", top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? "visible" : "hidden" }}
-      className="z-50 w-56 rounded-lg border border-border/60 bg-[hsl(var(--surface-raised))] shadow-2xl py-1 overflow-hidden"
+      className="z-50 w-56 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm elevation-floating py-1 overflow-hidden"
     >
       <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/45">
         Delivery & efficiency

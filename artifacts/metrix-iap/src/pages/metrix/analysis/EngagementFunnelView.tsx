@@ -551,7 +551,7 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
               if (!active || !payload?.length) return null;
               const p = payload[0]?.payload as (ScatterPoint & { spendShare: number });
               return (
-                <div className="rounded-lg border border-border/50 bg-popover/95 backdrop-blur px-3 py-2 shadow-lg text-caption space-y-0.5">
+                <div className="rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm px-3 py-2 elevation-floating text-caption space-y-0.5">
                   <div className="font-semibold text-foreground">{p.label}</div>
                   <div className="text-muted-foreground/70">Frequency: <span className="text-foreground/90">{fmtFreq(p.x)}</span></div>
                   <div className="text-muted-foreground/70">Link CTR: <span className="text-foreground/90">{fmtRate(p.y, 2)}</span></div>

@@ -67,6 +67,38 @@ const cardtitle = need("text-cardtitle");
 const callout = need("text-callout");
 const caption = need("text-caption");
 
+// ─── The design system's fallback copies must not drift ──────────────
+//
+// command-deck's overlay primitives (tooltip especially) are sized with
+// .text-caption / .text-body, and those primitives render from a package
+// that cannot see this app's stylesheet. So the design system carries its
+// own copy of exactly those two steps.
+//
+// Two copies of a number is how a scale drifts. This asserts they agree,
+// which is cheap, and means a change to the app ramp cannot silently leave
+// every tooltip in the product a step behind.
+const DS_TEMPLATE = path.join(repoRoot, "artifacts/command-deck/scripts/theme-template.css");
+if (fs.existsSync(DS_TEMPLATE)) {
+  const ds = readScale(fs.readFileSync(DS_TEMPLATE, "utf-8"));
+  for (const name of ["text-caption", "text-body"]) {
+    const app = scale.get(name);
+    const sys = ds.get(name);
+    if (app == null) continue;
+    if (sys == null) {
+      problems.push(
+        `${name} is missing from the design system template — command-deck's overlay ` +
+          `primitives are sized with it and render outside this app's stylesheet.`,
+      );
+    } else if (sys !== app) {
+      problems.push(
+        `${name} is ${app}px in the app ramp but ${sys}px in the design system template ` +
+          `(artifacts/command-deck/scripts/theme-template.css). Two copies of a size is how ` +
+          `a scale drifts — every tooltip in the product would be a step behind.`,
+      );
+    }
+  }
+}
+
 export const BODY_FLOOR = 14;
 const MIN_HEADER_STEP = 3;
 

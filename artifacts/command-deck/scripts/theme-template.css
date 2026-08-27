@@ -405,3 +405,38 @@
     inset: -1px;
   }
 }
+
+/* ─── Elevation scale ─────────────────────────────────────────────────
+ *
+ * Depth as a layered inset ring plus a soft shadow, not a hard border. A
+ * 1px line reads as a seam against whatever is behind it; stacked
+ * transparent shadows read as depth on any background.
+ *
+ * These live HERE rather than in a consuming app because the design
+ * system's own overlay primitives (popover, tooltip, dialog) wear them.
+ * They previously wore Tailwind's stock shadow-md / shadow-lg, which
+ * carries no inset ring — so a popover sat beside an app surface using
+ * elevation-floating and read as a different KIND of surface.
+ * ─────────────────────────────────────────────────────────────────── */
+@layer components {
+  .elevation-flat     { box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.55); }
+  .elevation-raised   { box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.55), var(--shadow-sm); }
+  .elevation-floating { box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.7), var(--shadow-xl); }
+  /* The ONLY ambient glow in the system. Reserved for the surface the user
+   * is acting on right now — a focused panel, the running stage, the primary
+   * CTA. Its scarcity is what makes it mean something. */
+  .elevation-active {
+    box-shadow:
+      inset 0 0 0 1px hsl(var(--primary) / 0.45),
+      0 0 20px hsl(var(--primary) / 0.28),
+      0 2px 8px hsl(var(--primary) / 0.18),
+      var(--shadow-sm);
+  }
+
+  /* The two type steps the design system's own primitives need. The full
+   * ramp is the consuming app's (metrix-iap defines .text-h1..h6 and the
+   * body floor); these two are here so a tooltip rendered from this package
+   * is not sized by a class that only exists downstream. */
+  .text-caption { font-size: 0.75rem;  line-height: 1.5; letter-spacing: 0; }
+  .text-body    { font-size: 0.875rem; line-height: 1.6; letter-spacing: 0; }
+}

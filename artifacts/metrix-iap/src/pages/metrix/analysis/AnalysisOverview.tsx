@@ -168,7 +168,7 @@ function buildDemoHeatmap(rows: DemographicRow[]) {
 
 function ChartTooltipCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-border/50 bg-surface-deep px-3 py-2 text-body shadow-lg elevation-floating">
+    <div className="rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm px-3 py-2 text-body elevation-floating">
       {children}
     </div>
   );

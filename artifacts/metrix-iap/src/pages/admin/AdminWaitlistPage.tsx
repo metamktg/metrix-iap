@@ -383,7 +383,7 @@ function ManageAccessPanel({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60"
       data-testid="panel-manage-access"
     >
-      <div className="w-full max-w-sm rounded-xl border border-border/40 bg-background shadow-2xl">
+      <div className="w-full max-w-sm rounded-xl border border-border/40 bg-background elevation-floating">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
           <div>
             <div className="text-body font-semibold text-foreground">Manage ad account access</div>
@@ -507,7 +507,7 @@ function DeleteConfirmModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60"
       data-testid="modal-delete-confirm"
     >
-      <div className="w-full max-w-sm rounded-xl border border-status-danger/30 bg-background shadow-2xl">
+      <div className="w-full max-w-sm rounded-xl border border-status-danger/30 bg-background elevation-floating">
         <div className="px-4 py-3 border-b border-border/30 flex items-center gap-2">
           <Trash2 className="w-4 h-4 text-status-danger shrink-0" />
           <span className="text-body font-semibold text-foreground">Delete account</span>
@@ -610,7 +610,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60"
       data-testid="dialog-add-user"
     >
-      <div className="w-full max-w-md rounded-xl border border-border/40 bg-background shadow-2xl">
+      <div className="w-full max-w-md rounded-xl border border-border/40 bg-background elevation-floating">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
           <div className="flex items-center gap-2">
             <UserPlus className="w-4 h-4 text-interactive shrink-0" />

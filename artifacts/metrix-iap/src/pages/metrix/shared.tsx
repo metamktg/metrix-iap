@@ -726,7 +726,7 @@ export function DetailReveal({
       <PopoverContent
         align={align}
         collisionPadding={12}
-        className="w-[380px] max-w-[min(90vw,420px)] max-h-[min(60vh,480px)] overflow-y-auto p-4 space-y-3 border-border/60 bg-popover/95 backdrop-blur-sm"
+        className="w-[380px] max-w-[min(90vw,420px)] max-h-[min(60vh,480px)] overflow-y-auto p-4 space-y-3"
       >
         {eyebrow && (
           <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">{eyebrow}</div>
@@ -1185,7 +1185,7 @@ export function LoopAction({
         "inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-[color,background-color,border-color,box-shadow,opacity,transform]",
         variant === "primary"
           ? "bg-primary text-foreground border-primary hover:bg-primary/90 shadow-md shadow-primary/25 hover:shadow-primary/35"
-          : "bg-foreground/[0.07] border-border/55 text-foreground/90 hover:bg-foreground/[0.11] hover:text-foreground hover:border-border/75 shadow-sm",
+          : "bg-foreground/[0.07] border-border/55 text-foreground/90 hover:bg-foreground/[0.11] hover:text-foreground hover:border-border/75 elevation-raised",
       )}
     >
       <Icon className="w-4 h-4 shrink-0" />
