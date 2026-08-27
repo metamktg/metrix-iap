@@ -114,7 +114,7 @@ const QUADRANT_COLOR: Record<PositioningQuadrant, string> = {
   // Ordered good -> bad, so the same diverging rule applies. "Explore" is
   // deliberately the neutral: it is neither a win nor a loss yet.
   scale:    VERDICT.good,
-  optimize: divergingFill(0.72, 1),
+  optimize: divergingFill(0.72),
   explore:  VERDICT.neutral,
   avoid:    VERDICT.bad,
 };

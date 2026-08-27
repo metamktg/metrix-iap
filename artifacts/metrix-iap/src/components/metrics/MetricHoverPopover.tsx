@@ -82,9 +82,11 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
 
   const hasChart = concepts.length >= 2;
   const chartConfig = isCpa ? CPA_CONFIG : DEFAULT_CONFIG;
-  // Cost carries a warning polarity, not a series identity — the reserved
-  // status token, so a categorical re-step cannot repaint it.
-  const barColor = isCpa ? "hsl(var(--status-warning))" : "hsl(var(--interactive))";
+  // A cost metric's bar is a magnitude, not a verdict and not a warning. It
+  // gets a second series hue so cost reads as a different measure from volume,
+  // without implying anything is wrong: amber here made every CPA hover look
+  // like a data-quality alert.
+  const barColor = isCpa ? "hsl(var(--chart-3))" : "hsl(var(--interactive))";
 
   // Truncate concept names for Y-axis
   const chartData = concepts.map((c) => ({

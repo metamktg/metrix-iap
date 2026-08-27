@@ -114,35 +114,83 @@ export const SURFACE_VAR = "hsl(var(--card))";
 // indistinguishable. Polarity belongs on the reserved status tokens, which
 // exist precisely so a palette change cannot repaint a verdict.
 
-/** Good end. */
-export const GOOD_VAR = "hsl(var(--status-success)";
-/** Bad end. */
-export const BAD_VAR = "hsl(var(--status-warning)";
-/** The midpoint is grey on purpose — a hue there reads as a third category. */
-export const MID_VAR = "hsl(var(--muted-foreground)";
+// Fills come from RAMP STEPS, not from alpha over the ground. Alpha
+// compositing drags a hue through the surface colour: amber at 0.28 over the
+// dark card composites to rgb(90,73,53) — brown — and teal to a near-black
+// that reads as an empty cell. Both were visibly wrong the first time this
+// was rendered in a browser, which is the only way it could have been caught:
+// jsdom resolves no custom properties and computes no composite.
+//
+// The v3 ramps exist precisely for this (Phase 3 §01: "700-900 for fills on
+// dark ground, 100-300 for text on tints — replacing every
+// rgba(21,93,255,0.12)-style literal").
+
+// Per Phase 3 §01, a fill on the dark ground comes from ramp steps 700-900.
+// Three bands per side, because a heat cell is read by comparison with its
+// neighbours and three distinguishable levels beat nine that differ by less
+// than the eye resolves.
+const GOOD_STEPS = ["--mx-success-700", "--mx-success-800", "--mx-success-900"];
+const BAD_STEPS  = ["--mx-danger-700",  "--mx-danger-800",  "--mx-danger-900"];
+/** Neutral midpoint — a hue here would read as a third category. */
+const MID_STEP = "--mx-neutral-700";
+/** Unmeasured: fainter than every measured band, so absence never looks average. */
+const NONE_STEP = "--mx-neutral-900";
 
 /**
  * A fill for a diverging cell.
  *
- * @param t   0 = worst, 1 = best, 0.5 = neutral. Null when unmeasured.
- * @param max peak opacity at either end.
+ * @param t 0 = worst, 1 = best, 0.5 = neutral. Null when unmeasured.
  */
-export function divergingFill(t: number | null, max = 0.30): string {
-  // Unmeasured is not "average". It gets the faintest possible surface, so
-  // an absent cell never reads as a middling result.
-  if (t == null || !Number.isFinite(t)) return "hsl(var(--muted-foreground) / 0.05)";
+export function divergingFill(t: number | null): string {
+  if (t == null || !Number.isFinite(t)) return `var(${NONE_STEP})`;
   const clamped = Math.min(1, Math.max(0, t));
-  const distance = Math.abs(clamped - 0.5) * 2;       // 0 at the midpoint, 1 at either end
-  const alpha = (0.05 + distance * (max - 0.05)).toFixed(3);
-  if (distance < 0.12) return `${MID_VAR} / ${alpha})`;
-  return `${clamped > 0.5 ? GOOD_VAR : BAD_VAR} / ${alpha})`;
+  const distance = Math.abs(clamped - 0.5) * 2;
+  if (distance < 0.15) return `var(${MID_STEP})`;
+  const steps = clamped > 0.5 ? GOOD_STEPS : BAD_STEPS;
+  const band = distance >= 0.75 ? 0 : distance >= 0.4 ? 1 : 2;
+  return `var(${steps[band]})`;
 }
 
-/** Discrete verdict colours, for legends and chips. */
+/**
+ * The legend for `divergingFill`, derived FROM it.
+ *
+ * A legend that names its own colours drifts the moment the scale is
+ * re-stepped — which is exactly what happened here: the swatches showed the
+ * bright base hues while the cells were painted from the dark end of the
+ * ramp, so the key and the map disagreed. Deriving the swatches from the same
+ * function makes that impossible rather than merely discouraged.
+ */
+export function divergingLegend(): { label: string; fill: string }[] {
+  return [
+    { label: "Worse", fill: divergingFill(0) },
+    { label: "", fill: divergingFill(0.25) },
+    { label: "Neutral", fill: divergingFill(0.5) },
+    { label: "", fill: divergingFill(0.75) },
+    { label: "Better", fill: divergingFill(1) },
+    { label: "Not measured", fill: divergingFill(null) },
+  ];
+}
+
+/**
+ * Bright verdict colours — for a dot, an icon or a chip, where the colour IS
+ * the mark rather than a surface something sits on. NOT for cell fills: use
+ * `divergingFill`, and `divergingLegend` to key it.
+ *
+ * `bad` is danger red, not warning amber, and the distinction is deliberate:
+ *
+ *   POLARITY  — "this segment costs more than goal" — is the diverging scale,
+ *               red <-> neutral <-> green. It is a reading of performance.
+ *   WARNING   — "this export was missing a column", "these rows were
+ *               superseded" — is amber, and means something needs attention
+ *               about the DATA, not about the result.
+ *
+ * They were the same colour before, which made a merely expensive audience
+ * look like a broken import.
+ */
 export const VERDICT = {
   good: "hsl(var(--status-success))",
   neutral: "hsl(var(--muted-foreground))",
-  bad: "hsl(var(--status-warning))",
+  bad: "hsl(var(--status-danger))",
   unmeasured: "hsl(var(--muted-foreground) / 0.35)",
 } as const;
 
@@ -151,8 +199,18 @@ export const VERDICT = {
  * One hue, stepped by opacity — never a rainbow, and never the diverging
  * pair, because magnitude has no good end.
  */
-export function magnitudeFill(t: number | null, slot = 0, max = 0.28): string {
+export function magnitudeFill(t: number | null, slot = 0): string {
   if (t == null || !Number.isFinite(t)) return "transparent";
   const clamped = Math.min(1, Math.max(0, t));
-  return `color-mix(in srgb, ${seriesColor(slot)} ${(clamped * max * 100).toFixed(1)}%, transparent)`;
+  // Four steps down one role's ramp, darkest for the smallest magnitude. Blue
+  // is the default because magnitude on this platform is almost always spend.
+  const role = slot === 3 ? "success" : "blue";
+  if (clamped < 0.12) return "transparent";
+  const step = clamped >= 0.75 ? 700 : clamped >= 0.5 ? 800 : 900;
+  return `var(--mx-${role}-${step})`;
+}
+
+/** The legend for `magnitudeFill`, derived FROM it — same reason as above. */
+export function magnitudeLegend(slot = 0): string[] {
+  return [0.12, 0.4, 0.6, 0.9].map((t) => magnitudeFill(t, slot));
 }

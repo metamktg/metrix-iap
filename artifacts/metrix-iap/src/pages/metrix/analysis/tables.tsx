@@ -15,7 +15,7 @@
 // widths remain normal table layout (no absolute positioning hacks).
 
 import { useMemo, useRef, useState } from "react";
-import { divergingFill, magnitudeFill } from "@/components/charts/chartTokens";
+import { divergingFill, divergingLegend, magnitudeFill } from "@/components/charts/chartTokens";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -327,7 +327,9 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
             <span>Spend intensity</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--status-warning) / 0.28) 0%, hsl(var(--muted-foreground) / 0.08) 50%, hsl(var(--status-success) / 0.28) 100%)" }} />
+            <span className="inline-flex gap-px">{divergingLegend().filter((l) => l.label !== "Not measured").map((l, i) => (
+              <span key={i} className="w-3 h-2.5 first:rounded-l-sm last:rounded-r-sm" style={{ background: l.fill }} />
+            ))}</span>
             <span>Above goal → at goal</span>
           </div>
         </div>
@@ -448,7 +450,9 @@ export function VariableTable({
             <span>Spend intensity</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--status-warning) / 0.28) 0%, hsl(var(--muted-foreground) / 0.08) 50%, hsl(var(--status-success) / 0.28) 100%)" }} />
+            <span className="inline-flex gap-px">{divergingLegend().filter((l) => l.label !== "Not measured").map((l, i) => (
+              <span key={i} className="w-3 h-2.5 first:rounded-l-sm last:rounded-r-sm" style={{ background: l.fill }} />
+            ))}</span>
             <span>Above goal → at goal</span>
           </div>
         </div>
