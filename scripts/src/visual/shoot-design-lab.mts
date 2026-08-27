@@ -50,13 +50,17 @@ const PROBE = `(() => {
   const rgb = (s) => (s.match(/\\d+/g) || []).slice(0, 3).map(Number);
   const contrast = (a, b) => { const p = [lum(rgb(a)), lum(rgb(b))].sort((x, y) => y - x); return (p[0] + 0.05) / (p[1] + 0.05); };
   const bands = [];
-  const panel = document.querySelectorAll("section")[2];
-  if (panel) panel.querySelectorAll("div[style*='background']").forEach((el) => {
+  // Every panel whose cells carry a value as text over a generated fill:
+  // the diverging scale, the magnitude scale, and both Map views.
+  const titles = Array.from(document.querySelectorAll("section h2")).map((h) => h.textContent.trim());
+  const wanted = ["Diverging scale — verdicts", "Sequential scale — magnitude", "Map — verdict scale", "Map — magnitude scale"];
+  const panels = wanted.map((t) => document.querySelectorAll("section")[titles.indexOf(t)]).filter(Boolean);
+  panels.forEach((panel) => panel.querySelectorAll("[style*='background']").forEach((el) => {
     const span = el.querySelector("span"); if (!span) return;
     const bg = getComputedStyle(el).backgroundColor;
     if (!bg || bg === "rgba(0, 0, 0, 0)") return;
     bands.push({ fill: bg, ratio: +contrast(getComputedStyle(span).color, bg).toFixed(2) });
-  });
+  }));
   return {
     sizes: { h1: px(".mx-section-header__title"), h2: px(".text-cardtitle"), h3: px(".text-title"),
              body: px(".text-body"), caption: px(".text-caption"), label: px(".text-label"), micro: px(".text-micro") },
@@ -87,15 +91,15 @@ if (sizes.body != null && sizes.body < BODY_FLOOR) problems.push(`body computes 
 if (report.smoothing !== "antialiased") problems.push(`font smoothing is "${report.smoothing}", not antialiased`);
 if (report.wrap !== "balance") problems.push(`heading text-wrap is "${report.wrap}", not balance`);
 if (overflow.scroll > overflow.client) problems.push(`the page scrolls horizontally (${overflow.scroll} > ${overflow.client})`);
-if (bands.length === 0) problems.push("no diverging bands were measurable — the scale panel did not render");
+if (bands.length === 0) problems.push("no generated fills were measurable — the scale panels did not render");
 for (const b of bands) {
-  if (b.ratio < AA_TEXT) problems.push(`a diverging band (${b.fill}) carries text at ${b.ratio}:1, below AA ${AA_TEXT}:1`);
+  if (b.ratio < AA_TEXT) problems.push(`a generated fill (${b.fill}) carries text at ${b.ratio}:1, below AA ${AA_TEXT}:1`);
 }
 for (const e of consoleErrors) problems.push(`uncaught page error: ${e}`);
 
 console.log(`\nScreenshot → ${path.join(OUT, "design-lab.png")}`);
 console.log(`Ladder: H1 ${sizes.h1} → H2 ${sizes.h2} → H3 ${sizes.h3} → body ${sizes.body} → caption ${sizes.caption} → label ${sizes.label} → micro ${sizes.micro}`);
-console.log(`Diverging bands: ${bands.length} measured, worst text contrast ${Math.min(...bands.map((b) => b.ratio))}:1`);
+console.log(`Generated fills: ${bands.length} measured, worst text contrast ${Math.min(...bands.map((b) => b.ratio))}:1`);
 
 if (problems.length > 0) {
   console.error("\nFAIL  Rendered-UI violations:\n");

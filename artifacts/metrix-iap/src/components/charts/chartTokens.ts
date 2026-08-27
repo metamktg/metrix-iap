@@ -205,12 +205,23 @@ export function magnitudeFill(t: number | null, slot = 0): string {
   // Four steps down one role's ramp, darkest for the smallest magnitude. Blue
   // is the default because magnitude on this platform is almost always spend.
   const role = slot === 3 ? "success" : "blue";
-  if (clamped < 0.12) return "transparent";
-  const step = clamped >= 0.75 ? 700 : clamped >= 0.5 ? 800 : 900;
+  if (clamped < 0.10) return "transparent";
+  // Five bands, not three. The first version used 900/800/700 and resolved
+  // only three distinct levels across a full range of values — two cells an
+  // order of magnitude apart came out the same colour. Seen in the design
+  // lab against the cockpit ground, where the darkest steps sit close to the
+  // surface and compress further.
+  // Stops at 600, not 500: a magnitude cell carries its value as text, and
+  // step 500 puts that text at 3.9:1 — under AA. 600 holds 5.7:1 while the
+  // steps stay evenly separated (47-54 in RGB distance).
+  const step =
+    clamped >= 0.75 ? 600 :
+    clamped >= 0.50 ? 700 :
+    clamped >= 0.25 ? 800 : 900;
   return `var(--mx-${role}-${step})`;
 }
 
 /** The legend for `magnitudeFill`, derived FROM it — same reason as above. */
 export function magnitudeLegend(slot = 0): string[] {
-  return [0.12, 0.4, 0.6, 0.9].map((t) => magnitudeFill(t, slot));
+  return [0.15, 0.35, 0.6, 0.85].map((t) => magnitudeFill(t, slot));
 }
