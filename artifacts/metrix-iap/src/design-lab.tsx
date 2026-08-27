@@ -78,8 +78,8 @@ const COLS: MetricColumn<TRow>[] = [
 ];
 
 const TYPE_LADDER: [string, string, string][] = [
-  ["text-bignum font-h1 font-bold leading-none", "32 · Outfit 700", "H1 — route title"],
-  ["text-h2 font-h2 font-bold leading-tight", "27 · Roboto 700", "H2 — section title"],
+  ["text-bignum font-h1 font-bold leading-none", "32 · Space Grotesk 700", "H1 — route title"],
+  ["text-h2 font-h2 font-bold leading-tight", "27 · Space Grotesk 700", "H2 — section title"],
   ["text-h3 font-h3 font-semibold leading-snug", "23 · Outfit 600", "H3 — card title"],
   ["text-h4 font-h4 font-bold leading-snug", "20 · Lato 700", "H4 — group header"],
   ["text-h5 font-h5 font-semibold leading-snug", "17 · Rubik 600", "H5 — sub-group"],

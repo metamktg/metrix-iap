@@ -28,6 +28,8 @@ const OUT = process.env.SHOT_DIR ?? "/tmp/metrix-design-lab";
 const BODY_FLOOR = 14;
 const MIN_STEP = 3;
 const AA_TEXT = 4.5;
+/** The five heading faces. One list — the warm-up, the probe and the gate all read it. */
+const FACES = ["Space Grotesk", "Outfit", "Lato", "Rubik", "Figtree"];
 
 const problems: string[] = [];
 
@@ -35,13 +37,48 @@ fs.mkdirSync(OUT, { recursive: true });
 /** Phone, tablet, laptop. A layout that holds at one width is not responsive. */
 const WIDTHS: [number, string][] = [[390, "phone"], [768, "tablet"], [1440, "laptop"]];
 
-const browser = await chromium.launch({ executablePath: CHROME });
+// The browser needs the container's proxy or it cannot reach fonts.gstatic.com
+// and every webfont silently falls back — which is precisely the failure this
+// harness exists to catch, so it must not be the harness's own blind spot.
+const PROXY = process.env.HTTPS_PROXY ?? process.env.https_proxy;
+const browser = await chromium.launch({
+  executablePath: CHROME,
+  // Bypass for the dev server itself — routing 127.0.0.1 through the proxy
+  // means the page never loads and every check reports "did not render".
+  ...(PROXY ? { proxy: { server: PROXY, bypass: "127.0.0.1,localhost,::1" } } : {}),
+});
 const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 2 });
 const consoleErrors: string[] = [];
 page.on("pageerror", (e) => consoleErrors.push(e.message));
 await page.goto(URL, { waitUntil: "networkidle" });
 await page.waitForTimeout(1200);
 await page.screenshot({ path: path.join(OUT, "design-lab.png"), fullPage: true });
+
+// ── Force the faces to download before measuring them ─────────────────
+//
+// A @font-face is fetched lazily, when something on the page actually paints
+// with that exact family AND weight. The probe below measures at weight 700;
+// the lab renders H3 at font-semibold (600). Outfit-700.woff2 is its own src,
+// so nothing had requested it and the synchronous measurement read the
+// fallback — the gate reported "Outfit did not load" while the file was on
+// disk, valid, and served 200.
+//
+// document.fonts.load() is the right API here. Note that its sibling
+// document.fonts.check() is NOT: check() returns true for a family with zero
+// loaded faces, which is how an earlier version of this harness passed while
+// nothing had loaded at all. load() returns the FontFaces it actually matched,
+// so an empty array is itself a fact worth failing on — it means no
+// @font-face rule matched the family at that weight.
+const WARMUP = `(async () => {
+  const out = {};
+  for (const f of ${JSON.stringify(FACES)}) {
+    try { out[f] = (await document.fonts.load('700 64px "' + f + '"')).length; }
+    catch (e) { out[f] = -1; }
+  }
+  await document.fonts.ready;
+  return out;
+})()`;
+const matched = await page.evaluate(WARMUP) as Record<string, number>;
 
 // The probe runs as a STRING, not a callback: tsx compiles through esbuild,
 // which wraps named functions in a `__name` helper that does not exist in the
@@ -69,15 +106,33 @@ const PROBE = `(() => {
              h5: px(".text-h5"), body: px(".text-body"), caption: px(".text-caption"),
              label: px(".text-label"), micro: px(".text-micro") },
     faces: (() => {
+      // Measure what PAINTS, not what is declared. getComputedStyle returns
+      // the declared stack whether or not a single face in it loaded, so the
+      // previous version passed while all five fell back to one generic.
+      // A face that loaded renders the same string at a different width from
+      // the fallback; one that did not renders at exactly the fallback width.
+      const probe = document.createElement("span");
+      probe.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap;font-size:64px;font-weight:700";
+      probe.textContent = "Analysis Overview 18.40";
+      document.body.appendChild(probe);
+      const width = (stack) => { probe.style.fontFamily = stack; return Math.round(probe.getBoundingClientRect().width); };
+      // The baseline must be a family that CANNOT exist. An unloaded font
+      // falls back to the browser's DEFAULT face, not to sans-serif — so
+      // comparing against sans-serif reported every missing font as loaded,
+      // which is how the first version of this check passed while nothing
+      // had loaded at all.
+      const fallback = width('"__no_such_family_1a2b3c__"');
       const out = {};
-      for (const sel of [".text-bignum", ".text-h2", ".text-h3", ".text-h4", ".text-h5", ".text-body"]) {
-        const el = document.querySelector(sel);
-        out[sel] = el ? getComputedStyle(el).fontFamily : null;
+      for (const f of ${JSON.stringify(FACES)}) {
+        const w = width('"' + f + '", "__no_such_family_1a2b3c__"');
+        out[f] = { w, loaded: w !== fallback };
       }
+      out._fallback = { w: fallback, loaded: true };
+      probe.remove();
       return out;
     })(),
     smoothing: getComputedStyle(document.documentElement).webkitFontSmoothing,
-    wrap: getComputedStyle(document.querySelector(".text-h3")).textWrap,
+    wrap: (() => { const e = document.querySelector(".text-h3"); return e ? getComputedStyle(e).textWrap : null; })(),
     bands,
     overflow: { scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth },
   };
@@ -85,7 +140,7 @@ const PROBE = `(() => {
 
 const report = await page.evaluate(PROBE) as {
   sizes: Record<string, number | null>;
-  faces: Record<string, string | null>;
+  faces: Record<string, { w: number; loaded: boolean }>;
   smoothing: string; wrap: string;
   bands: { fill: string; ratio: number }[];
   overflow: { scroll: number; client: number };
@@ -154,15 +209,23 @@ for (const [an, a, bn, b] of ladder) {
   if (a - b < MIN_STEP) problems.push(`${an} (${a}px) is only ${a - b}px above ${bn} (${b}px) — needs ${MIN_STEP}px`);
 }
 if (sizes.body != null && sizes.body < BODY_FLOOR) problems.push(`body computes to ${sizes.body}px, below the ${BODY_FLOOR}px floor`);
-const FACE_EXPECT: [string, string][] = [
-  [".text-bignum", "Outfit"], [".text-h2", "Roboto"], [".text-h3", "Outfit"],
-  [".text-h4", "Lato"], [".text-h5", "Rubik"], [".text-body", "Figtree"],
-];
-for (const [sel, family] of FACE_EXPECT) {
-  const got = report.faces?.[sel];
-  if (!got) { problems.push(`could not measure the face on ${sel}`); continue; }
-  if (!got.toLowerCase().includes(family.toLowerCase())) {
-    problems.push(`${sel} renders in "${got}" — expected ${family}. A heading level that falls back to the body face loses the only signal separating it from its neighbour.`);
+for (const family of FACES) {
+  const m = report.faces?.[family];
+  if (!m) { problems.push(`could not measure whether ${family} painted`); continue; }
+  // Two different failures, kept apart because they have different fixes.
+  if (matched[family] === 0) {
+    problems.push(
+      `${family} matched no @font-face rule at weight 700 — check public/fonts/fonts.css ` +
+        `declares it and that the .woff2 is being served.`,
+    );
+    continue;
+  }
+  if (!m.loaded) {
+    problems.push(
+      `${family} did not load — it renders at the fallback's exact width (${m.w}px). ` +
+        `The ramp separates five heading levels by face as well as size; a face that ` +
+        `silently falls back collapses two levels into one with nothing in the CSS to show for it.`,
+    );
   }
 }
 if (report.smoothing !== "antialiased") problems.push(`font smoothing is "${report.smoothing}", not antialiased`);
@@ -176,6 +239,7 @@ for (const e of consoleErrors) problems.push(`uncaught page error: ${e}`);
 
 console.log(`\nScreenshot → ${path.join(OUT, "design-lab.png")}`);
 console.log(`Ladder: H1 ${sizes.h1} → H2 ${sizes.h2} → H3 ${sizes.h3} → H4 ${sizes.h4} → H5 ${sizes.h5} → body ${sizes.body} → caption ${sizes.caption} → label ${sizes.label} → micro ${sizes.micro}`);
+console.log(`Faces:           ${Object.entries(report.faces).filter(([k]) => !k.startsWith("_")).map(([k, v]) => `${k} ${v.loaded ? "ok" : "FALLBACK"}`).join(" · ")}`);
 console.log(`Responsive:      ${responsive.join(" · ")}`);
 console.log(`Generated fills: ${bands.length} measured, worst text contrast ${Math.min(...bands.map((b) => b.ratio))}:1`);
 

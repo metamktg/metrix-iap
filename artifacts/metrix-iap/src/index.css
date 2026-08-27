@@ -525,18 +525,23 @@
      densities. Every stack names a metric-compatible fallback so a
      failed webfont shifts weight, not layout.
 
-       H1  Outfit   geometric, wide apertures — the one big statement
-       H2  Roboto   neutral and workmanlike; section titles should not
-                    compete with the page title for character
-       H3  Outfit   picks the display voice back up one level down
+       H1  Space Grotesk  the brand voice. Flat terminals, an angular G and
+       H2  Space Grotesk  tightly-set numerals — drafting-table shapes rather
+                    than humanist ones, which is what makes it read as an
+                    instrument rather than an app. H2 routinely carries a
+                    metric ("$18.40 cost per result"), so its numerals matter
+                    as much as its letters. H1 and H2 share a voice because
+                    they are both titles; H3 down are structural.
+       H3  Outfit   geometric and wide — a clear step away from the display
+                    face without dropping to the body face
        H4  Lato     humanist, slightly warmer — group headers
        H5  Rubik    rounded terminals read as UI rather than prose
        H6  Rubik    the uppercase chrome label, separated by case and
                     tracking rather than size
        body Figtree tall x-height, which is what makes 14px hold
      ──────────────────────────────────────────────────────────────── */
-  .font-h1, .font-h3 { font-family: Outfit, "Segoe UI", system-ui, sans-serif; }
-  .font-h2           { font-family: Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .font-h1, .font-h2 { font-family: "Space Grotesk", "Segoe UI", system-ui, sans-serif; }
+  .font-h3           { font-family: Outfit, "Segoe UI", system-ui, sans-serif; }
   .font-h4           { font-family: Lato, "Segoe UI", system-ui, sans-serif; }
   .font-h5, .font-h6 { font-family: Rubik, "Segoe UI", system-ui, sans-serif; }
   .font-body         { font-family: Figtree, system-ui, sans-serif; }
