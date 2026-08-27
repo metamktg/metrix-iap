@@ -4671,13 +4671,22 @@ components:
         age: { type: string }
         gender: { type: string }
         spend: { type: number, nullable: true }
+        impressions:
+          type: number
+          nullable: true
+          description: >-
+            Impressions for this age/gender cell. Nullable because rows
+            ingested before demographic_performance carried the column have
+            no measurement — null means not measured, never zero. Without
+            it there is no demographic CTR or CPM, which is why the column
+            was backfilled.
         results: { type: number, nullable: true }
         link_clicks: { type: number, nullable: true }
         adds_to_cart: { type: number, nullable: true }
         checkouts_initiated: { type: number, nullable: true }
         purchases: { type: number, nullable: true }
         adds_to_cart_value: { type: number, nullable: true }
-      required: [age, gender, spend, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value]
+      required: [age, gender, spend, impressions, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value]
     AnalysisSummaryPlacementRow:
       type: object
       properties:

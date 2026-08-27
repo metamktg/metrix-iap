@@ -64,6 +64,8 @@ export interface AnalysisSummaryDemoRow {
   age: string;
   gender: string;
   spend: number | null;
+  /** Null on rows ingested before demographic_performance carried the column. */
+  impressions: number | null;
   results: number | null;
   link_clicks: number | null;
   adds_to_cart: number | null;
@@ -2345,6 +2347,11 @@ export async function startManualAnalysis(
         date_start: b.date,
         date_end: b.date,
         spend: b.spend,
+        // Persisted, not just consumed. derivedRates below has always read
+        // b.impressions to compute this row's cpa/cvr — the value was here
+        // all along and simply never written, so demographic CTR and CPM
+        // were computable from data the engine threw away.
+        impressions: b.impressions,
         link_clicks: b.linkClicks,
         results: b.results,
         cpa: derivedRates(b.spend, b.impressions, b.linkClicks, b.results).cpa,
@@ -2856,17 +2863,21 @@ export async function getAnalysisSummaryByPreset(
   const demoRows = await selectAllRows(
     "demographic_performance",
     (q) => q.eq("account_id", accountId),
-    "date_start, age, gender, spend, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value",
+    "date_start, age, gender, spend, impressions, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value",
   );
 
-  const demoMap = new Map<string, { spend: number; results: number; link_clicks: number; adds_to_cart: number | null; checkouts_initiated: number | null; purchases: number | null; adds_to_cart_value: number | null }>();
+  const demoMap = new Map<string, { spend: number; impressions: number | null; results: number; link_clicks: number; adds_to_cart: number | null; checkouts_initiated: number | null; purchases: number | null; adds_to_cart_value: number | null }>();
   for (const r of demoRows ?? []) {
     if (!withinViewPreset(String((r as any).date_start ?? ""), preset, anchor)) continue;
     const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}`;
-    const d = demoMap.get(key) ?? { spend: 0, results: 0, link_clicks: 0, adds_to_cart: null, checkouts_initiated: null, purchases: null, adds_to_cart_value: null };
+    const d = demoMap.get(key) ?? { spend: 0, impressions: null, results: 0, link_clicks: 0, adds_to_cart: null, checkouts_initiated: null, purchases: null, adds_to_cart_value: null };
     d.spend       += Number((r as any).spend ?? 0);
     d.results     += Number((r as any).results ?? 0);
     d.link_clicks += Number((r as any).link_clicks ?? 0);
+    // sumOptional, not `?? 0`: a row predating the impressions column has
+    // no measurement, and folding it as zero would understate the CTR and
+    // CPM this exists to make computable.
+    d.impressions = sumOptional(d.impressions, num((r as any).impressions));
     d.adds_to_cart = sumOptional(d.adds_to_cart, num((r as any).adds_to_cart));
     d.checkouts_initiated = sumOptional(d.checkouts_initiated, num((r as any).checkouts_initiated));
     d.purchases = sumOptional(d.purchases, num((r as any).purchases));
@@ -2879,6 +2890,7 @@ export async function getAnalysisSummaryByPreset(
       age:        age ?? "",
       gender:     gender ?? "",
       spend:      v.spend,
+      impressions: v.impressions,
       results:    v.results,
       link_clicks: v.link_clicks,
       adds_to_cart: v.adds_to_cart,
@@ -3044,16 +3056,20 @@ async function _computeAnalysisSummaryForDateRange(
   const demoRows = await selectAllRows(
     "demographic_performance",
     (q) => q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end),
-    "date_start, age, gender, spend, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value",
+    "date_start, age, gender, spend, impressions, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value",
   );
 
-  const demoMap = new Map<string, { spend: number; results: number; link_clicks: number; adds_to_cart: number | null; checkouts_initiated: number | null; purchases: number | null; adds_to_cart_value: number | null }>();
+  const demoMap = new Map<string, { spend: number; impressions: number | null; results: number; link_clicks: number; adds_to_cart: number | null; checkouts_initiated: number | null; purchases: number | null; adds_to_cart_value: number | null }>();
   for (const r of demoRows ?? []) {
     const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}`;
-    const d   = demoMap.get(key) ?? { spend: 0, results: 0, link_clicks: 0, adds_to_cart: null, checkouts_initiated: null, purchases: null, adds_to_cart_value: null };
+    const d   = demoMap.get(key) ?? { spend: 0, impressions: null, results: 0, link_clicks: 0, adds_to_cart: null, checkouts_initiated: null, purchases: null, adds_to_cart_value: null };
     d.spend       += Number((r as any).spend ?? 0);
     d.results     += Number((r as any).results ?? 0);
     d.link_clicks += Number((r as any).link_clicks ?? 0);
+    // sumOptional, not `?? 0`: a row predating the impressions column has
+    // no measurement, and folding it as zero would understate the CTR and
+    // CPM this exists to make computable.
+    d.impressions = sumOptional(d.impressions, num((r as any).impressions));
     d.adds_to_cart = sumOptional(d.adds_to_cart, num((r as any).adds_to_cart));
     d.checkouts_initiated = sumOptional(d.checkouts_initiated, num((r as any).checkouts_initiated));
     d.purchases = sumOptional(d.purchases, num((r as any).purchases));
@@ -3066,6 +3082,7 @@ async function _computeAnalysisSummaryForDateRange(
       age: age ?? "",
       gender: gender ?? "",
       spend: v.spend,
+      impressions: v.impressions,
       results: v.results,
       link_clicks: v.link_clicks,
       adds_to_cart: v.adds_to_cart,

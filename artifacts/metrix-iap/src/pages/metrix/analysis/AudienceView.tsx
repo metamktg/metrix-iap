@@ -684,30 +684,42 @@ const SEGMENT_BY_IDS: SegmentByMode[] = ["cluster", "age", "ranked"];
 /** Adapt API demographic rows → DemographicRow[] for existing analysis helpers.
  * Note: demographic_performance does not store impressions — Impressions and
  * CTR_link_pct are unavailable for preset windows and default to 0. */
-function adaptApiDemoRows(rows: {
-  age: string; gender: string; spend: number | null; results: number | null; link_clicks: number | null;
+export function adaptApiDemoRows(rows: {
+  age: string; gender: string; spend: number | null; impressions?: number | null;
+  results: number | null; link_clicks: number | null;
   adds_to_cart?: number | null; checkouts_initiated?: number | null; purchases?: number | null;
   adds_to_cart_value?: number | null;
 }[]): DemographicRow[] {
-  return rows.map((r) => ({
+  return rows.map((r) => {
+    // Impressions used to be hardcoded 0 here, with CTR hardcoded alongside
+    // it and a comment explaining that impressions were "not stored at
+    // demographic level". They are now — the engine always had the value
+    // and simply never persisted it — so the rate is a real derivation
+    // rather than a placeholder. Still 0 when the row predates the column,
+    // which is the pre-existing shape of DemographicRow; a row that cannot
+    // measure impressions reports no CTR rather than a computed one.
+    const impressions = r.impressions ?? 0;
+    const linkClicks = r.link_clicks ?? 0;
+    return {
     cell_id: "",
     "Ad name": "",
     Age: r.age,
     Gender: r.gender,
     "Amount spent (USD)": r.spend ?? 0,
     Reach: 0,
-    Impressions: 0,
+    Impressions: impressions,
     Results: r.results ?? 0,
     "Clicks (all)": 0,
-    "Link clicks": r.link_clicks ?? 0,
+    "Link clicks": linkClicks,
     CPA_result: r.results && r.results > 0 && r.spend ? r.spend / r.results : null,
-    CTR_link_pct: 0, // impressions not stored at demographic level
+    CTR_link_pct: impressions > 0 ? (linkClicks / impressions) * 100 : 0,
     Result_per_link_click_pct: r.link_clicks && r.link_clicks > 0 && r.results ? (r.results / r.link_clicks) * 100 : 0,
     adds_to_cart: r.adds_to_cart ?? null,
     checkouts_initiated: r.checkouts_initiated ?? null,
     purchases: r.purchases ?? null,
     adds_to_cart_value: r.adds_to_cart_value ?? null,
-  }));
+    };
+  });
 }
 
 export function AudienceView() {

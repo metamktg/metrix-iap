@@ -10,6 +10,8 @@ export interface AnalysisSummaryDemoRow {
   age: string;
   gender: string;
   spend: number | null;
+  /** Impressions for this age/gender cell. Nullable because rows ingested before demographic_performance carried the column have no measurement — null means not measured, never zero. Without it there is no demographic CTR or CPM, which is why the column was backfilled. */
+  impressions: number | null;
   results: number | null;
   link_clicks: number | null;
   adds_to_cart: number | null;

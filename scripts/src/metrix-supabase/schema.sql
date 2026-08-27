@@ -222,6 +222,18 @@ alter table demographic_performance add column if not exists purchases bigint;
 -- per-row ratio and must never be summed — the correct blended cost-per-ATC is
 -- always derived client-side as spend ÷ adds_to_cart from the raw counts above).
 alter table demographic_performance add column if not exists adds_to_cart_value numeric;
+-- Impressions: placement, platform and device_performance all declare this
+-- column natively; demographic_performance never did. The manual-analysis
+-- engine has always HAD the value — it reads b.impressions to derive this
+-- row's cpa and cvr_link_pct — and then dropped it on the floor, because
+-- there was nowhere to put it.
+--
+-- The cost was a whole class of audience analysis: with no impressions per
+-- age/gender there is no demographic CTR and no demographic CPM, so the
+-- Audience view could never answer "which age band actually engages",
+-- only "which one spends". The client had given up too and hardcoded
+-- CTR_link_pct to 0 with a comment saying impressions are not stored here.
+alter table demographic_performance add column if not exists impressions bigint;
 
 create table if not exists concept_performance (
   id bigint generated always as identity primary key,
