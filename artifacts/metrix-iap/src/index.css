@@ -33,6 +33,23 @@
   --color-status-warning: hsl(var(--status-warning));
   --color-status-danger: hsl(var(--status-danger));
   --color-status-info: hsl(var(--status-info));
+
+  /* ── Display face ─────────────────────────────────────────────────
+     The DISPLAY face is the heading face, not the base sans. Two things
+     were wrong with the previous `--font-display: var(--app-font-sans)`
+     in :root:
+
+       1. It aliased Figtree, so `font-display` was a no-op synonym for
+          body text — the two call sites reaching for a display voice
+          silently got the text voice instead.
+       2. It lived in :root rather than @theme, so Tailwind v4 never
+          generated the `font-display` UTILITY from it at all. The class
+          in AvatarsView matched nothing; only FindingsView's direct
+          `var(--font-display)` read resolved.
+
+     Declared here it emits both the variable and the utility, and it
+     names Outfit — the same face every .font-h* rule sets. */
+  --font-display: Outfit, "Segoe UI", system-ui, sans-serif;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -158,9 +175,6 @@
   --metrix-success: var(--success);
   --metrix-danger: var(--destructive);
   --metrix-panel: var(--card);
-
-  /* Display face follows the design system's sans (Inter). */
-  --font-display: var(--app-font-sans);
 
   --shadow-2xs: 0 1px 2px 0 rgba(0,0,0,0.4);
   --shadow-xs: 0 1px 3px 0 rgba(0,0,0,0.5);
@@ -511,31 +525,58 @@
      rather than clustered near the top the way a three-level ramp can be.
      ─────────────────────────────────────────────────────────────────── */
 
-  /* ── Faces ────────────────────────────────────────────────────────
-     Five families, one per heading level, because each level is doing a
-     different job and a size change alone is a weak signal at these
-     densities. Every stack names a metric-compatible fallback so a
-     failed webfont shifts weight, not layout.
+  /* ── Faces — THREE, one job each ──────────────────────────────────
+     This used to be five families, one per heading level, on the theory
+     that each level is doing a different job and a size change alone is a
+     weak signal. Space Grotesk (H1–H2), Outfit (H3), Lato (H4), Rubik
+     (H5–H6), Figtree (body). It is the wrong theory, and the evidence is
+     what the app actually looked like: a heading tree that changed
+     TYPEFACE between a section title and the card title inside it. Nobody
+     perceives a five-family hierarchy — they perceive an interface that
+     was assembled rather than designed. Five faces is not a hierarchy, it
+     is five brands sharing a page.
 
-       H1  Space Grotesk  the brand voice. Flat terminals, an angular G and
-       H2  Space Grotesk  tightly-set numerals — drafting-table shapes rather
-                    than humanist ones, which is what makes it read as an
-                    instrument rather than an app. H2 routinely carries a
-                    metric ("$18.40 cost per result"), so its numerals matter
-                    as much as its letters. H1 and H2 share a voice because
-                    they are both titles; H3 down are structural.
-       H3  Outfit   geometric and wide — a clear step away from the display
-                    face without dropping to the body face
-       H4  Lato     humanist, slightly warmer — group headers
-       H5  Rubik    rounded terminals read as UI rather than prose
-       H6  Rubik    the uppercase chrome label, separated by case and
-                    tracking rather than size
-       body Figtree tall x-height, which is what makes 14px hold
+     Differentiation does not come from how many families are stacked. It
+     comes from how one voice is SET: the scale, the tracking, the weight
+     contrast, and the one place a second voice is allowed to interrupt.
+     So the ramp collapses to three faces with a rule small enough to hold
+     in your head:
+
+       HEADINGS  Outfit           H1–H5 — every level that sets a title
+       PROSE     Figtree          body, captions, and the H6 eyebrow band
+       INDEX     Share Tech Mono  the 10px micro-index strip only
+
+     Outfit is the differentiator. It is a geometric sans with near-monoline
+     strokes, circular bowls and a tall x-height, and at 27–32px with the
+     negative tracking below it reads as a considered product mark rather
+     than the Inter-shaped default every analytics dashboard ships with.
+     Its numerals are even-width and unfussy, which matters because a
+     heading here routinely carries a metric ("$18.40 cost per result").
+     Space Grotesk was the previous display face and does have more
+     personality, but its idiosyncratic g/a/1 fight Outfit's geometry at
+     adjacent sizes and read as a period style rather than an instrument.
+
+     Figtree stays as the text face for the reason it was picked: a tall
+     x-height is what makes 14px hold on a dark ground, and a humanist
+     text face is the classic counterpoint to a geometric display one.
+
+     H6 is the one heading class pointed at Figtree, and deliberately. H6
+     is the 11px uppercase eyebrow — and TYPE.label is the SAME role at the
+     SAME size spelled without a font class, so it renders in the base sans
+     (Figtree). Pointing .font-h6 at Outfit would make two spellings of one
+     eyebrow render in two different faces, which is the exact defect this
+     consolidation exists to remove. At 11px under 0.08em tracking the face
+     is barely legible as a face anyway: that band separates by case,
+     weight and colour, and the x-height is what carries it.
+
+     Heading levels now separate by SIZE, WEIGHT and TRACKING — the three
+     signals that actually survive being read quickly — rather than by
+     typeface. Every stack names a metric-compatible fallback so a failed
+     webfont shifts weight, not layout.
      ──────────────────────────────────────────────────────────────── */
-  .font-h1, .font-h2 { font-family: "Space Grotesk", "Segoe UI", system-ui, sans-serif; }
-  .font-h3           { font-family: Outfit, "Segoe UI", system-ui, sans-serif; }
-  .font-h4           { font-family: Lato, "Segoe UI", system-ui, sans-serif; }
-  .font-h5, .font-h6 { font-family: Rubik, "Segoe UI", system-ui, sans-serif; }
+  .font-h1, .font-h2, .font-h3,
+  .font-h4, .font-h5 { font-family: Outfit, "Segoe UI", system-ui, sans-serif; }
+  .font-h6           { font-family: Figtree, system-ui, sans-serif; }
   .font-body         { font-family: Figtree, system-ui, sans-serif; }
 
   /* ── Chrome band — labels and indices, never sentences ───────────── */
