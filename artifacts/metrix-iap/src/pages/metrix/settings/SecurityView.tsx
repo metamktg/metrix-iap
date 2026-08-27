@@ -39,7 +39,7 @@ function SessionSection() {
         <button
           onClick={handleSignOut}
           disabled={signingOut}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-50"
+          className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-50"
           data-testid="button-sign-out"
         >
           {signingOut ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogOut className="w-3 h-3" />}
@@ -94,7 +94,7 @@ function ActiveSessionsSection() {
                 onClick={() => revoke.mutate({ sessionId: s.id })}
                 disabled={revoke.isPending}
                 className={cn(
-                  "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-label font-medium transition-colors shrink-0",
+                  "pressable flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-label font-medium transition-colors shrink-0",
                   s.is_current
                     ? "border-status-danger/30 text-status-danger hover:bg-status-danger/10"
                     : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5",

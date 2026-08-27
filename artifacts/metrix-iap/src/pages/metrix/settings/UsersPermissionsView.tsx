@@ -92,7 +92,7 @@ function PermissionToggleRow({
       onClick={() => onChange(!checked)}
       disabled={disabled}
       className={cn(
-        "w-full flex items-start gap-2.5 p-2.5 rounded-md border text-left transition-colors disabled:opacity-40 disabled:pointer-events-none",
+        "pressable-lg w-full flex items-start gap-2.5 p-2.5 rounded-md border text-left transition-colors disabled:opacity-40 disabled:pointer-events-none",
         checked
           ? "border-primary/30 bg-primary/[0.06]"
           : "border-border/40 bg-foreground/[0.02] hover:bg-foreground/[0.04]",
@@ -252,7 +252,7 @@ function AddMemberDialog({
                   type="button"
                   onClick={() => setRole(r.id)}
                   className={cn(
-                    "h-9 rounded-md border text-body font-medium transition-colors",
+                    "pressable h-9 rounded-md border text-body font-medium transition-colors",
                     role === r.id
                       ? "border-primary/30 bg-primary/[0.08] text-interactive"
                       : "border-border/40 bg-foreground/[0.02] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]"
@@ -333,7 +333,7 @@ function AddMemberDialog({
             <button
               type="button"
               onClick={() => handleOpenChange(false)}
-              className="h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+              className="pressable h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             >
               {successNotice ? "Close" : "Cancel"}
             </button>
@@ -431,7 +431,7 @@ function PendingInviteRow({
           onClick={handleResend}
           disabled={isRevoking || isResending}
           title="Resend invite"
-          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-foreground/[0.02] text-label font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          className="pressable flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-foreground/[0.02] text-label font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
           data-testid={`button-resend-invite-${invite.email}`}
         >
           {isResending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
@@ -442,7 +442,7 @@ function PendingInviteRow({
           onClick={() => setConfirmRevoke(true)}
           disabled={isRevoking || isResending}
           title="Revoke invite"
-          className="flex items-center gap-1 h-6 px-2 rounded border border-status-danger/25 bg-status-danger/[0.06] text-label font-medium text-status-danger/90 hover:bg-status-danger/[0.12] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          className="pressable flex items-center gap-1 h-6 px-2 rounded border border-status-danger/25 bg-status-danger/[0.06] text-label font-medium text-status-danger/90 hover:bg-status-danger/[0.12] transition-colors disabled:opacity-40 disabled:pointer-events-none"
           data-testid={`button-revoke-invite-${invite.email}`}
         >
           {isRevoking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
@@ -510,7 +510,7 @@ function MemberPermissionsCell({
         disabled={isPending}
         onClick={() => handleToggle({ manage_team: !manageTeam, view_agency_rollups: viewAgencyRollups })}
         className={cn(
-          "hit-target-24 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
+          "pressable hit-target-24 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
           manageTeam
             ? "border-primary/30 bg-primary/[0.08] text-interactive"
             : "border-border/40 bg-foreground/[0.02] text-muted-foreground hover:text-foreground",
@@ -524,7 +524,7 @@ function MemberPermissionsCell({
         disabled={isPending}
         onClick={() => handleToggle({ manage_team: manageTeam, view_agency_rollups: !viewAgencyRollups })}
         className={cn(
-          "hit-target-24 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
+          "pressable hit-target-24 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
           viewAgencyRollups
             ? "border-primary/30 bg-primary/[0.08] text-interactive"
             : "border-border/40 bg-foreground/[0.02] text-muted-foreground hover:text-foreground",
@@ -616,7 +616,7 @@ function MemberAdAccountsCell({
           onClick={() => setEditing((v) => !v)}
           disabled={busy && !editing}
           className={cn(
-            "flex items-center gap-1 hit-target-24 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
+            "pressable flex items-center gap-1 hit-target-24 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
             editing
               ? "border-primary/30 bg-primary/[0.08] text-interactive"
               : "border-dashed border-border/40 text-muted-foreground hover:text-foreground hover:border-border/70",
@@ -741,7 +741,7 @@ function MemberActionsCell({
           onClick={handleResend}
           disabled={busy}
           title="Send a new temp password"
-          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-foreground/[0.02] text-label font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          className="pressable flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-foreground/[0.02] text-label font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
           data-testid={`button-resend-temp-password-${email}`}
         >
           {isResending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
@@ -754,7 +754,7 @@ function MemberActionsCell({
         disabled={busy}
         title={disabled ? "Restore access" : "Remove access"}
         className={cn(
-          "flex items-center gap-1 h-6 px-2 rounded border text-label font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
+          "pressable flex items-center gap-1 h-6 px-2 rounded border text-label font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
           disabled
             ? "border-status-success/25 bg-status-success/[0.06] text-status-success/90 hover:bg-status-success/[0.12]"
             : "border-status-danger/25 bg-status-danger/[0.06] text-status-danger/90 hover:bg-status-danger/[0.12]",
@@ -911,7 +911,7 @@ function TeamAccessViewInner() {
         right={
           <button
             onClick={() => setInviteOpen(true)}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors"
             data-testid="button-invite-member"
           >
             <UserPlus className="w-3.5 h-3.5" /> Add member

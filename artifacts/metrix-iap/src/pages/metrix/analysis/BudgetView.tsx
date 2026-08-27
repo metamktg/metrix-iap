@@ -241,7 +241,7 @@ export function BudgetView() {
                 <div className="rounded-xl border border-border/30 bg-foreground/[0.01] overflow-hidden">
                   <button
                     onClick={() => setShowPlacements((v) => !v)}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-foreground/[0.02] transition-colors group"
+                    className="pressable-lg w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-foreground/[0.02] transition-colors group"
                     aria-expanded={showPlacements}
                   >
                     <div className="text-left">

@@ -204,7 +204,7 @@ export function CreativeCommandCenter() {
                     <button
                       key={b.id}
                       onClick={() => navigate(`/app/creative/builder?focus=${b.id}`)}
-                      className="text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 flex flex-col hover:border-border/60 hover:bg-foreground/[0.03] transition-colors"
+                      className="pressable-lg text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 flex flex-col hover:border-border/60 hover:bg-foreground/[0.03] transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <span className="inline-flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/50 px-1.5 py-0.5 rounded leading-none">

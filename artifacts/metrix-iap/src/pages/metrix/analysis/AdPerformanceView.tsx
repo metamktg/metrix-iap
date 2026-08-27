@@ -170,7 +170,7 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
               onClick={() => setFilter(id)}
               aria-pressed={active}
               className={cn(
-                "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
+                "pressable inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
                 active ? PILL_ACTIVE : PILL_INACTIVE,
               )}
             >
@@ -252,7 +252,7 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
                 <button
                   type="button"
                   onClick={() => navigate("/app/listen/signal")}
-                  className={cn(TYPE.caption, "inline-flex items-center gap-1.5 font-semibold rounded-lg border border-primary/40 bg-primary/15 text-interactive px-3 py-1.5 hover:bg-primary/25 transition-colors")}
+                  className={cn("pressable", TYPE.caption, "inline-flex items-center gap-1.5 font-semibold rounded-lg border border-primary/40 bg-primary/15 text-interactive px-3 py-1.5 hover:bg-primary/25 transition-colors")}
                 >
                   Review in Listen
                 </button>
@@ -517,7 +517,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
               onClick={() => { setFilter(id); setExpandedKeys(new Set()); }}
               aria-pressed={active}
               className={cn(
-                "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
+                "pressable inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
                 active ? PILL_ACTIVE : PILL_INACTIVE,
               )}
             >
@@ -620,7 +620,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
                             <button
                               type="button"
                               onClick={() => navigate(`/app/analysis/library?focus=${firstCellId}`)}
-                              className={cn(TYPE.caption, "inline-flex items-center gap-1.5 font-medium rounded-lg border border-border/40 text-muted-foreground/75 px-3 py-1.5 hover:text-foreground/80 hover:border-border/60 transition-colors")}
+                              className={cn("pressable", TYPE.caption, "inline-flex items-center gap-1.5 font-medium rounded-lg border border-border/40 text-muted-foreground/75 px-3 py-1.5 hover:text-foreground/80 hover:border-border/60 transition-colors")}
                             >
                               Open creative deep dive
                             </button>

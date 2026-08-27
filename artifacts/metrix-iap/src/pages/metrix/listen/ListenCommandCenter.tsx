@@ -73,7 +73,7 @@ export function ListenCommandCenter() {
                 <button
                   key={r.account.id}
                   onClick={() => selectAdAccount(r.account.id)}
-                  className="w-full flex items-center gap-3 py-2.5 border-t border-border/25 first:border-0 text-left hover:bg-status-danger/[0.04] transition-colors"
+                  className="pressable-lg w-full flex items-center gap-3 py-2.5 border-t border-border/25 first:border-0 text-left hover:bg-status-danger/[0.04] transition-colors"
                 >
                   <AlertTriangle className="w-4 h-4 text-status-danger shrink-0" />
                   <div className="flex-1 min-w-0">

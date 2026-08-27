@@ -78,7 +78,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
       type="button"
       onClick={() => onSelect(m.id)}
       className={cn(
-        "w-full text-left px-3 py-1.5 flex items-center justify-between gap-3 transition-colors",
+        "pressable-lg w-full text-left px-3 py-1.5 flex items-center justify-between gap-3 transition-colors",
         m.id === activeId
           ? "bg-primary/10 text-interactive"
           : "text-foreground/75 hover:bg-foreground/[0.05]",
@@ -137,7 +137,7 @@ export function KpiInfoHover({ content }: { content: React.ReactNode }) {
             aria-label="Metric details"
             data-testid="kpi-tile-info"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center justify-center shrink-0 text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="pressable inline-flex items-center justify-center shrink-0 text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Info className="w-3 h-3" />
           </button>
@@ -240,7 +240,7 @@ export function KpiTile({
           aria-haspopup="listbox"
           aria-expanded={pickerOpen}
           onClick={(e) => { e.stopPropagation(); setPickerOpen((v) => !v); }}
-          className="flex items-center gap-1 group/lbl text-left min-w-0"
+          className="pressable-lg flex items-center gap-1 group/lbl text-left min-w-0"
         >
           {/* Nocturne card-kicker: accent-tinted uppercase label */}
           <span className={cn(
@@ -266,7 +266,7 @@ export function KpiTile({
 
       {/* Value — label + value only; no inline sub-text */}
       {onClick ? (
-        <button type="button" data-testid="kpi-tile-body" onClick={onClick} className="text-left hover:opacity-75 transition-opacity w-fit">
+        <button type="button" data-testid="kpi-tile-body" onClick={onClick} className="pressable-lg text-left hover:opacity-75 transition-opacity w-fit">
           <KpiValue formatted={m.formatted} isRefetching={isRefetching} />
         </button>
       ) : (

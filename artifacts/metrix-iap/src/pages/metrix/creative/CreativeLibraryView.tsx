@@ -181,7 +181,7 @@ export function CreativeLibraryView() {
                               <button
                                 type="button"
                                 onClick={() => setOpenCellId(openCell)}
-                                className="inline-flex items-center h-7 px-2.5 rounded-md border border-border/40 text-label font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
+                                className="pressable inline-flex items-center h-7 px-2.5 rounded-md border border-border/40 text-label font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
                               >
                                 Open asset
                               </button>

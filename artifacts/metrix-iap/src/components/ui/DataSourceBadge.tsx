@@ -36,7 +36,7 @@ export function DataSourceBadgeToggle() {
     <button
       onClick={toggle}
       className={cn(
-        "flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors",
+        "pressable flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors",
         on
           ? "text-interactive border-primary/30 bg-primary/5 hover:bg-primary/10"
           : "text-muted-foreground/75 border-border/30 bg-transparent hover:bg-foreground/5"
@@ -97,7 +97,7 @@ export function DataSourceBadge({ table, className, collapsible = false }: DataS
       {isCollapsible && (
         <button
           onClick={() => setCollapsed(c => !c)}
-          className="text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
+          className="pressable text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
           title={collapsed ? "Show table names" : "Collapse"}
         >
           {collapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}

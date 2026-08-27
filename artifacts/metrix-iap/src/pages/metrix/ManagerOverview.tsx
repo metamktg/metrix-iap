@@ -178,7 +178,7 @@ function AdAccountCard({
     <button
       onClick={onOpen}
       className={cn(
-        "flex items-start gap-3 p-3.5 rounded-lg border text-left transition-[color,background-color,border-color,box-shadow,opacity,transform] group",
+        "pressable-lg flex items-start gap-3 p-3.5 rounded-lg border text-left transition-[color,background-color,border-color,box-shadow,opacity,transform] group",
         configured
           ? "border-border/40 bg-foreground/[0.02] hover:border-border/60 hover:bg-foreground/[0.04]"
           : "border-border/25 bg-transparent opacity-55 hover:opacity-75",
@@ -303,7 +303,7 @@ function RecommendationCardItem({
         <div>
           <button
             onClick={() => setRationaleOpen((v) => !v)}
-            className="flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/65 transition-colors font-medium"
+            className="pressable flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/65 transition-colors font-medium"
           >
             {rationaleOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             {rationaleOpen ? "Hide rationale" : "Why this?"}
@@ -323,7 +323,7 @@ function RecommendationCardItem({
       <div className="flex items-end justify-between gap-2 mt-auto pt-1">
         <button
           onClick={onOpen}
-          className="inline-flex items-center gap-1.5 text-body font-semibold text-interactive hover:text-primary transition-colors"
+          className="pressable inline-flex items-center gap-1.5 text-body font-semibold text-interactive hover:text-primary transition-colors"
         >
           Open {accountLabel} <ArrowRight className="w-3.5 h-3.5" />
         </button>
@@ -444,7 +444,7 @@ export function ManagerOverview() {
             <button
               type="button"
               onClick={() => navigate("/app/exports")}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
+              className="pressable inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
               Export
@@ -466,7 +466,7 @@ export function ManagerOverview() {
             <button
               onClick={() => setBreakdownOpen((v) => !v)}
               aria-expanded={breakdownOpen}
-              className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground/75 transition-colors px-2 py-1 rounded border border-border/30 bg-foreground/[0.02] hover:border-border/50"
+              className="pressable inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground/75 transition-colors px-2 py-1 rounded border border-border/30 bg-foreground/[0.02] hover:border-border/50"
             >
               By account
               <ChevronDown className={cn("w-3 h-3 transition-transform duration-150", breakdownOpen && "rotate-180")} />
@@ -535,7 +535,7 @@ export function ManagerOverview() {
             {/* Add / Connect entry point */}
             <button
               onClick={() => setAddOpen(true)}
-              className="flex items-center gap-3 p-3.5 rounded-lg border border-dashed border-border/40 bg-transparent hover:border-primary/35 hover:bg-primary/[0.025] transition-colors text-left"
+              className="pressable-lg flex items-center gap-3 p-3.5 rounded-lg border border-dashed border-border/40 bg-transparent hover:border-primary/35 hover:bg-primary/[0.025] transition-colors text-left"
             >
               <div className="w-8 h-8 rounded-lg border border-dashed border-border/40 flex items-center justify-center shrink-0">
                 <Plus className="w-3.5 h-3.5 text-muted-foreground/75" />

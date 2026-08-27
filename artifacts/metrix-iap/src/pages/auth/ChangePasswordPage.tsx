@@ -119,7 +119,7 @@ export function ChangePasswordPage() {
         <div className="text-center">
           <button
             onClick={() => void logout()}
-            className="text-caption text-muted-foreground hover:text-foreground transition-colors"
+            className="pressable text-caption text-muted-foreground hover:text-foreground transition-colors"
             data-testid="button-signout-change-password"
           >
             Sign out

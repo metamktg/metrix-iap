@@ -93,7 +93,7 @@ export function IntegrationsView() {
                           {!configured && (
                             <button
                               onClick={() => setConnectAccount(a)}
-                              className="flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-caption font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25 shrink-0"
+                              className="pressable flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-caption font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25 shrink-0"
                               data-testid={`button-connect-${a.id}`}
                             >
                               <Plug className="w-3.5 h-3.5" /> Connect
@@ -115,7 +115,7 @@ export function IntegrationsView() {
                     <button
                       onClick={() => defaultImportAccount && setImportAccount(defaultImportAccount)}
                       disabled={!defaultImportAccount}
-                      className="flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-caption font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25 disabled:opacity-40 disabled:pointer-events-none"
+                      className="pressable flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-caption font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25 disabled:opacity-40 disabled:pointer-events-none"
                       data-testid="button-add-import-integrations"
                     >
                       <FileUp className="w-3.5 h-3.5" /> Add import

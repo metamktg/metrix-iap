@@ -79,7 +79,7 @@ function VariableEditorRow({
       <button
         onClick={onRemove}
         aria-label={`Remove ${variable.code}`}
-        className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors cursor-pointer"
+        className="pressable shrink-0 w-6 h-6 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors cursor-pointer"
       >
         <X className="w-3.5 h-3.5" />
       </button>
@@ -165,7 +165,7 @@ function ReviewItem({
                       { family: next.family, code: next.suggestions[0] ?? `${next.prefix}_`, confidence: 1 },
                     ]);
                   }}
-                  className="text-label font-medium text-interactive hover:underline cursor-pointer"
+                  className="pressable text-label font-medium text-interactive hover:underline cursor-pointer"
                 >
                   + Add variable
                 </button>
@@ -175,14 +175,14 @@ function ReviewItem({
                     setDraft(item.variables);
                     setEditing(false);
                   }}
-                  className="h-7 px-2.5 rounded border border-border/50 text-label text-muted-foreground/85 hover:text-foreground transition-colors cursor-pointer"
+                  className="pressable h-7 px-2.5 rounded border border-border/50 text-label text-muted-foreground/85 hover:text-foreground transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => void act("update_variables", draft)}
                   disabled={!draftValid || reviewPending}
-                  className="h-7 px-2.5 rounded border border-primary/40 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="pressable h-7 px-2.5 rounded border border-primary/40 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   Save corrections
                 </button>
@@ -251,7 +251,7 @@ function ReviewItem({
               setDraft(item.variables);
               setEditing(true);
             }}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground transition-colors cursor-pointer"
+            className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground transition-colors cursor-pointer"
           >
             <Pencil className="w-3.5 h-3.5" /> Correct
           </button>
@@ -263,13 +263,13 @@ function ReviewItem({
               <button
                 onClick={() => void act("bypass")}
                 disabled={reviewPending}
-                className="h-7 px-2.5 rounded border border-status-warning/40 bg-status-warning/10 font-medium text-status-warning hover:bg-status-warning/20 transition-colors disabled:opacity-50 cursor-pointer"
+                className="pressable h-7 px-2.5 rounded border border-status-warning/40 bg-status-warning/10 font-medium text-status-warning hover:bg-status-warning/20 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {reviewPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Yes, accept anyway"}
               </button>
               <button
                 onClick={() => setConfirmBypass(false)}
-                className="h-7 px-2 rounded border border-border/50 text-muted-foreground/85 hover:text-foreground transition-colors cursor-pointer"
+                className="pressable h-7 px-2 rounded border border-border/50 text-muted-foreground/85 hover:text-foreground transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -277,7 +277,7 @@ function ReviewItem({
           ) : (
             <button
               onClick={() => setConfirmBypass(true)}
-              className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-status-warning/40 bg-status-warning/[0.06] text-label font-medium text-status-warning hover:bg-status-warning/[0.12] transition-colors cursor-pointer"
+              className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded border border-status-warning/40 bg-status-warning/[0.06] text-label font-medium text-status-warning hover:bg-status-warning/[0.12] transition-colors cursor-pointer"
             >
               <ShieldAlert className="w-3.5 h-3.5" /> Accept anyway
             </button>
@@ -285,7 +285,7 @@ function ReviewItem({
           <button
             onClick={() => void act("discard")}
             disabled={reviewPending}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-status-danger/30 text-label font-medium text-status-danger/90 hover:bg-status-danger/10 transition-colors disabled:opacity-50 cursor-pointer"
+            className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded border border-status-danger/30 text-label font-medium text-status-danger/90 hover:bg-status-danger/10 transition-colors disabled:opacity-50 cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" /> Discard
           </button>

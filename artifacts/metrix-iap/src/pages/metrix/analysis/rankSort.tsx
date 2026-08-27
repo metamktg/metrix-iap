@@ -121,7 +121,7 @@ function MetricOptionList({
         data-testid={`rank-metric-${id}`}
         aria-pressed={active}
         className={cn(
-          "w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors",
+          "pressable-lg w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors",
           active ? "bg-primary/10 text-interactive" : "text-foreground/80 hover:bg-foreground/[0.05]"
         )}
       >

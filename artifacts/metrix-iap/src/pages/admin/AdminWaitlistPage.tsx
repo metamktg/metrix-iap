@@ -95,7 +95,7 @@ function CopyButton({ value }: { value: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="inline-flex items-center gap-1 text-label text-interactive hover:text-primary/80 transition-colors"
+      className="pressable inline-flex items-center gap-1 text-label text-interactive hover:text-primary/80 transition-colors"
       data-testid="button-copy-temp-password"
     >
       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -171,7 +171,7 @@ function ActionButtons({
       <button
         onClick={onApprove}
         disabled={busy !== null}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-status-success/15 border border-status-success/30 text-caption font-medium text-status-success hover:bg-status-success/25 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md bg-status-success/15 border border-status-success/30 text-caption font-medium text-status-success hover:bg-status-success/25 transition-colors disabled:opacity-50 disabled:pointer-events-none"
         data-testid={`button-approve-${idKey}`}
       >
         {busy === "approve" ? (
@@ -184,7 +184,7 @@ function ActionButtons({
       <button
         onClick={onReject}
         disabled={busy !== null}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-status-danger/10 border border-status-danger/25 text-caption font-medium text-status-danger hover:bg-status-danger/20 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md bg-status-danger/10 border border-status-danger/25 text-caption font-medium text-status-danger hover:bg-status-danger/20 transition-colors disabled:opacity-50 disabled:pointer-events-none"
         data-testid={`button-reject-${idKey}`}
       >
         {busy === "reject" ? (
@@ -391,7 +391,7 @@ function ManageAccessPanel({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
+            className="pressable p-1 rounded hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -441,14 +441,14 @@ function ManageAccessPanel({
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-border/30">
           <button
             onClick={onClose}
-            className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+            className="pressable h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={save}
             disabled={update.isPending || loading}
-            className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-caption font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5"
+            className="pressable h-8 px-3 rounded-md bg-primary text-primary-foreground text-caption font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5"
             data-testid="button-save-access"
           >
             {update.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -537,7 +537,7 @@ function DeleteConfirmModal({
             <button
               type="button"
               onClick={onClose}
-              className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+              className="pressable h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             >
               Cancel
             </button>
@@ -618,7 +618,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
+            className="pressable p-1 rounded hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -648,7 +648,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
             ) : null}
             <button
               onClick={onClose}
-              className="w-full h-8 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+              className="pressable-lg w-full h-8 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             >
               Close
             </button>
@@ -694,7 +694,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
                     type="button"
                     onClick={() => setRole(r)}
                     className={cn(
-                      "h-7 px-3 rounded-md border text-label font-medium transition-colors capitalize",
+                      "pressable h-7 px-3 rounded-md border text-label font-medium transition-colors capitalize",
                       role === r
                         ? "border-primary/50 bg-primary/15 text-interactive"
                         : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
@@ -725,7 +725,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
                     <button
                       type="button"
                       onClick={() => setShowAccountPicker((v) => !v)}
-                      className="w-full flex items-center justify-between px-3 h-8 text-caption text-muted-foreground hover:text-foreground transition-colors"
+                      className="pressable-lg w-full flex items-center justify-between px-3 h-8 text-caption text-muted-foreground hover:text-foreground transition-colors"
                       data-testid="button-toggle-account-picker"
                     >
                       <span>
@@ -778,7 +778,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
               <button
                 type="button"
                 onClick={onClose}
-                className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+                className="pressable h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
               >
                 Cancel
               </button>
@@ -910,7 +910,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                 }}
                 disabled={busy}
                 className={cn(
-                  actionBtn,
+                  "pressable", actionBtn,
                   "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
                 )}
                 data-testid={`button-resend-temp-${user.id}`}
@@ -944,7 +944,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                 }}
                 disabled={busy}
                 className={cn(
-                  actionBtn,
+                  "pressable", actionBtn,
                   "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
                 )}
                 data-testid={`button-send-reset-${user.id}`}
@@ -973,7 +973,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                       );
                     }}
                     disabled={busy}
-                    className={cn(actionBtn, "border-status-danger/30 bg-status-danger/15 text-status-danger hover:bg-status-danger/25")}
+                    className={cn("pressable", actionBtn, "border-status-danger/30 bg-status-danger/15 text-status-danger hover:bg-status-danger/25")}
                     data-testid={`button-revoke-confirm-${user.id}`}
                   >
                     {revoke.isPending ? (
@@ -986,7 +986,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                   <button
                     onClick={() => setConfirmRevoke(false)}
                     disabled={busy}
-                    className={cn(actionBtn, "border-border/50 text-muted-foreground hover:text-foreground")}
+                    className={cn("pressable", actionBtn, "border-border/50 text-muted-foreground hover:text-foreground")}
                     data-testid={`button-revoke-cancel-${user.id}`}
                   >
                     Cancel
@@ -997,7 +997,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                   onClick={() => setConfirmRevoke(true)}
                   disabled={busy}
                   className={cn(
-                    actionBtn,
+                    "pressable", actionBtn,
                     "border-status-danger/25 text-status-danger/90 hover:bg-status-danger/10",
                   )}
                   data-testid={`button-revoke-${user.id}`}
@@ -1023,7 +1023,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
               }}
               disabled={busy}
               className={cn(
-                actionBtn,
+                "pressable", actionBtn,
                 "border-status-success/30 bg-status-success/15 text-status-success hover:bg-status-success/25",
               )}
               data-testid={`button-restore-${user.id}`}
@@ -1042,7 +1042,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
             onClick={() => setShowManageAccess(true)}
             disabled={busy}
             className={cn(
-              actionBtn,
+              "pressable", actionBtn,
               "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
             )}
             data-testid={`button-manage-access-${user.id}`}
@@ -1056,7 +1056,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
             onClick={() => setShowDeleteConfirm(true)}
             disabled={busy}
             className={cn(
-              actionBtn,
+              "pressable", actionBtn,
               "border-status-danger/20 text-status-danger/70 hover:text-status-danger hover:bg-status-danger/10",
             )}
             data-testid={`button-delete-${user.id}`}
@@ -1095,7 +1095,7 @@ function UsersSection() {
         </div>
         <button
           onClick={() => setShowAddUser(true)}
-          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-primary/40 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors"
+          className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-primary/40 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors"
           data-testid="button-add-user"
         >
           <UserPlus className="w-3.5 h-3.5" />
@@ -1392,7 +1392,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
             onClick={() =>
               logout.mutate(undefined, { onSuccess: onLogout, onError: onLogout })
             }
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             data-testid="button-admin-logout"
           >
             <LogOut className="w-3.5 h-3.5" /> Sign out

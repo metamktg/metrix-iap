@@ -624,6 +624,32 @@
    * Do not put it on controls that sit closer than 24px to each other — two
    * overlapping targets is a worse bug than one small one, because the press
    * lands on whichever happens to be painted last. */
+  /* ── Press feedback ──────────────────────────────────────────────────
+   *
+   * A control that does not move when pressed feels dead, and on a touch
+   * screen — where there is no hover state to have confirmed the target —
+   * it is the only feedback before the action happens. 346 of the 377
+   * clickable buttons here had none.
+   *
+   * Two sizes, because one value does not fit both: 0.96 on a discrete
+   * control reads as a press, and the same 0.96 on a full-width card reads
+   * as the whole panel lurching. Never below 0.95 — that stops reading as
+   * feedback and starts reading as a glitch.
+   *
+   * scale, not transform: it composites on the GPU without touching layout,
+   * so a pressed button never reflows its neighbours. :not(:disabled)
+   * because a disabled control that still responds to a press is lying
+   * about being disabled.
+   *
+   * Both respect prefers-reduced-motion through the global duration
+   * override further down this file. */
+  .pressable,
+  .pressable-lg {
+    transition: scale 150ms var(--mx-ease, cubic-bezier(0.2, 0, 0, 1));
+  }
+  .pressable:active:not(:disabled)    { scale: 0.96; }
+  .pressable-lg:active:not(:disabled) { scale: 0.99; }
+
   .hit-target-24 { position: relative; }
   .hit-target-24::after {
     content: "";

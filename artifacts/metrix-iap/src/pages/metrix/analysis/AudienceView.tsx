@@ -554,7 +554,7 @@ function GroupDetailRow({
                     type="button"
                     onClick={() => onSelectMember(m.seg)}
                     className={cn(
-                      "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md",
+                      "pressable-lg w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md",
                       "hover:bg-foreground/[0.05] transition-colors text-left"
                     )}
                   >

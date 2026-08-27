@@ -308,7 +308,7 @@ export function CreativeCard({
                 onUploadCreatives?.();
               }}
               title="Map this creative to an IAP library entry"
-              className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-status-warning/20 border border-status-warning/35 text-status-warning text-[8px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm hover:bg-status-warning/30 transition-colors"
+              className="pressable absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-status-warning/20 border border-status-warning/35 text-status-warning text-[8px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm hover:bg-status-warning/30 transition-colors"
             >
               <span className="w-1 h-1 rounded-full bg-status-warning shrink-0" />
               Map creative
@@ -335,7 +335,7 @@ export function CreativeCard({
               type="button"
               onClick={(e) => { e.stopPropagation(); openDialog(); }}
               title="Expand creative"
-              className="flex items-center gap-1 text-[9px] font-medium text-foreground/80 hover:text-foreground transition-colors"
+              className="pressable flex items-center gap-1 text-[9px] font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               <Maximize2 className="w-3.5 h-3.5" />
               Expand
@@ -346,7 +346,7 @@ export function CreativeCard({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onUploadCreative(data.conceptCode); }}
                   title={data.assetUrl ? "Replace creative" : "Upload creative"}
-                  className="flex items-center gap-1 text-[9px] font-medium text-foreground/70 hover:text-foreground transition-colors"
+                  className="pressable flex items-center gap-1 text-[9px] font-medium text-foreground/70 hover:text-foreground transition-colors"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   {data.assetUrl ? "Replace" : "Upload"}

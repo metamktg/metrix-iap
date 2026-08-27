@@ -121,7 +121,7 @@ function PillarListCard({
       onClick={onClick}
       aria-pressed={selected}
       className={cn(
-        "w-full text-left px-3 py-2.5 border-l-2 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex flex-col gap-1",
+        "pressable-lg w-full text-left px-3 py-2.5 border-l-2 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex flex-col gap-1",
         accentBorder,
         selected
           ? "bg-primary/[0.09] border-r border-r-transparent shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.08)]"
@@ -310,7 +310,7 @@ function NextActionsPanel({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-foreground/[0.03] transition-colors text-left"
+        className="pressable-lg w-full flex items-center gap-2 px-4 py-2 hover:bg-foreground/[0.03] transition-colors text-left"
       >
         <Lightbulb className="w-3.5 h-3.5 text-status-warning/70 shrink-0" />
         <span className={cn(TYPE.caption, "font-semibold text-foreground/80 flex-1 truncate")}>
@@ -347,7 +347,7 @@ function NextActionsPanel({
                     onClick={() => onToggleQueue(h.id)}
                     aria-pressed={isQueued}
                     className={cn(
-                      "inline-flex items-center gap-1.5 text-label font-medium border rounded px-1.5 py-1 transition-colors leading-none",
+                      "pressable inline-flex items-center gap-1.5 text-label font-medium border rounded px-1.5 py-1 transition-colors leading-none",
                       isQueued
                         ? "bg-status-success/10 text-status-success border-status-success/30"
                         : "bg-foreground/[0.03] text-muted-foreground/75 border-border/40 hover:text-foreground hover:border-border/70"
@@ -393,7 +393,7 @@ function FooterPanel({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center gap-2 px-6 py-2.5 hover:bg-foreground/[0.02] transition-colors text-left"
+        className="pressable-lg w-full flex items-center gap-2 px-6 py-2.5 hover:bg-foreground/[0.02] transition-colors text-left"
       >
         <span className={cn(TYPE.caption, "font-semibold text-foreground/70 flex-1")}>
           Variable combinations · Scaling playbook
@@ -645,7 +645,7 @@ export function StrategyMapView() {
                               )
                             }
                             aria-expanded={expandedPillarId === selected.id}
-                            className="inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors"
+                            className="pressable inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors"
                           >
                             <ChevronDown
                               className={cn(
@@ -697,7 +697,7 @@ export function StrategyMapView() {
                       type="button"
                       onClick={() => rightCol.setCollapsed(false)}
                       title={`Show hypotheses (${selectedHyps.length} active)`}
-                      className="shrink-0 w-7 flex flex-col items-center justify-center gap-2 border-l border-border/20 bg-foreground/[0.01] hover:bg-primary/[0.06] transition-colors group/reopen"
+                      className="pressable shrink-0 w-7 flex flex-col items-center justify-center gap-2 border-l border-border/20 bg-foreground/[0.01] hover:bg-primary/[0.06] transition-colors group/reopen"
                     >
                       <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground/75 group-hover/reopen:text-interactive" />
                       <span

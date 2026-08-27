@@ -38,7 +38,7 @@ export function MetricPickerButton({
           </span>
           <button
             onClick={onReset}
-            className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground transition-colors"
+            className="pressable inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Reset
           </button>
@@ -56,14 +56,14 @@ export function MetricPickerButton({
                   <button
                     disabled={i === 0}
                     onClick={() => onMove(id, -1)}
-                    className="p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
+                    className="pressable p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
                   >
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>
                   <button
                     disabled={i === selected.length - 1}
                     onClick={() => onMove(id, 1)}
-                    className="p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
+                    className="pressable p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
@@ -82,7 +82,7 @@ export function MetricPickerButton({
                 key={m.id}
                 onClick={() => onToggle(m.id)}
                 className={cn(
-                  "w-full flex items-center gap-2 px-1.5 py-1.5 rounded-md text-left transition-colors",
+                  "pressable-lg w-full flex items-center gap-2 px-1.5 py-1.5 rounded-md text-left transition-colors",
                   on ? "bg-foreground/[0.03]" : "hover:bg-foreground/[0.02]"
                 )}
               >

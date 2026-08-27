@@ -88,7 +88,7 @@ function InlineDrawer({
         <button
           type="button"
           onClick={onClose}
-          className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
+          className="pressable w-6 h-6 rounded flex items-center justify-center text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
           aria-label="Collapse"
         >
           <ChevronUp className="w-4 h-4" />
@@ -188,7 +188,7 @@ function QueueCard({
         onClick={() => !isDismissed && setExpanded((v) => !v)}
         disabled={isDismissed}
         className={cn(
-          "w-full text-left p-4 transition-colors",
+          "pressable-lg w-full text-left p-4 transition-colors",
           !isDismissed && "hover:bg-foreground/[0.02]",
           isDismissed && "cursor-default"
         )}
@@ -251,14 +251,14 @@ function QueueCard({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); dismiss(); }}
-            className="flex items-center gap-1.5 h-8 px-3 rounded border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <X className="w-3.5 h-3.5" /> Dismiss
           </button>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); approve(); }}
-            className="flex items-center gap-1.5 h-8 px-3 rounded bg-primary/15 border border-primary/30 text-caption font-semibold text-interactive hover:bg-primary/25 transition-colors"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded bg-primary/15 border border-primary/30 text-caption font-semibold text-interactive hover:bg-primary/25 transition-colors"
           >
             <Check className="w-3.5 h-3.5" /> Add to Tray
           </button>
@@ -271,7 +271,7 @@ function QueueCard({
           <button
             type="button"
             onClick={restore}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
+            className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <RotateCcw className="w-3 h-3" /> Restore
           </button>
@@ -285,7 +285,7 @@ function QueueCard({
           <button
             type="button"
             onClick={restore}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
+            className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <RotateCcw className="w-3 h-3" /> Undo
           </button>

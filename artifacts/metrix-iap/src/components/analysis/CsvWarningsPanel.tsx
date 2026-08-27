@@ -50,7 +50,7 @@ export function CsvWarningsPanel({ run, compact = false }: { run: AnalysisRun; c
     >
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-start gap-2 text-left"
+        className="pressable-lg w-full flex items-start gap-2 text-left"
       >
         <AlertTriangle className={cn("w-3.5 h-3.5 shrink-0 mt-0.5", alarmed ? "text-status-warning" : "text-muted-foreground/75")} />
         <div className="flex-1 min-w-0">

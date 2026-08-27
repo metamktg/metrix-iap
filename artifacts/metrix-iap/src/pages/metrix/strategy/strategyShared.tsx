@@ -328,7 +328,7 @@ export function PillarDetailsFold({ pillar, profiles }: { pillar: MessagePillar;
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 transition-colors"
+        className="pressable flex items-center gap-1.5 text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 transition-colors"
       >
         Pillar details
         <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} aria-hidden />
@@ -638,7 +638,7 @@ export function AccordionToggle({
       type="button"
       onClick={onToggle}
       aria-expanded={open}
-      className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 transition-colors"
+      className="pressable flex items-center gap-1.5 text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 transition-colors"
     >
       {Icon && <Icon className="w-3.5 h-3.5" />}
       {label}
@@ -672,7 +672,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
+            className="pressable rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
           >
             +{overflow} more
           </button>
@@ -681,7 +681,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
           <button
             type="button"
             onClick={() => setExpanded(false)}
-            className="rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
+            className="pressable rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
           >
             − less
           </button>

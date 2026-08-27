@@ -119,7 +119,7 @@ function DetailDrawer({
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+            className="pressable w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             aria-label="Close"
           >
             <X className="w-4 h-4" />
@@ -174,13 +174,13 @@ function DetailDrawer({
         <div className="px-5 py-4 border-t border-border/40 flex items-center gap-2">
           <button
             onClick={() => { onReject(); onClose(); }}
-            className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+            className="pressable flex-1 flex items-center justify-center gap-1.5 h-9 rounded border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <X className="w-3.5 h-3.5" /> Reject
           </button>
           <button
             onClick={() => { onApprove(); onClose(); }}
-            className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded bg-primary/15 border border-primary/30 text-body font-medium text-interactive hover:bg-primary/25 transition-colors"
+            className="pressable flex-1 flex items-center justify-center gap-1.5 h-9 rounded bg-primary/15 border border-primary/30 text-body font-medium text-interactive hover:bg-primary/25 transition-colors"
           >
             <Check className="w-3.5 h-3.5" /> Add to Tray
           </button>
@@ -443,21 +443,21 @@ export function RecommendationDeck({
             <div className="flex items-center justify-center gap-3 mt-5">
               <button
                 onClick={() => reject(pending[0].id)}
-                className="w-11 h-11 rounded-full flex items-center justify-center border border-status-danger/30 text-status-danger hover:bg-status-danger/10 transition-colors"
+                className="pressable w-11 h-11 rounded-full flex items-center justify-center border border-status-danger/30 text-status-danger hover:bg-status-danger/10 transition-colors"
                 aria-label="Reject"
               >
                 <X className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setDetailId(pending[0].id)}
-                className="w-9 h-9 rounded-full flex items-center justify-center border border-border/40 text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+                className="pressable w-9 h-9 rounded-full flex items-center justify-center border border-border/40 text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
                 aria-label="Details"
               >
                 <Info className="w-4 h-4" />
               </button>
               <button
                 onClick={() => approve(pending[0].id)}
-                className="w-11 h-11 rounded-full flex items-center justify-center border border-status-success/30 text-status-success hover:bg-status-success/10 transition-colors"
+                className="pressable w-11 h-11 rounded-full flex items-center justify-center border border-status-success/30 text-status-success hover:bg-status-success/10 transition-colors"
                 aria-label="Add to Tray"
               >
                 <Check className="w-5 h-5" />
@@ -475,7 +475,7 @@ export function RecommendationDeck({
               <div className="flex justify-center mt-3">
                 <button
                   onClick={() => onSegments(pending[0])}
-                  className="inline-flex items-center gap-1.5 text-caption font-medium text-interactive/90 hover:text-primary border border-primary/25 bg-primary/[0.06] hover:bg-primary/10 rounded-md px-2.5 py-1.5 transition-colors"
+                  className="pressable inline-flex items-center gap-1.5 text-caption font-medium text-interactive/90 hover:text-primary border border-primary/25 bg-primary/[0.06] hover:bg-primary/10 rounded-md px-2.5 py-1.5 transition-colors"
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
                   Avatar × placement for this card
@@ -532,7 +532,7 @@ function TaskTray({
                 <div key={s.id} className={cn("flex items-start gap-3 p-3 rounded-lg border bg-foreground/[0.02]", done ? "border-status-success/20 opacity-60" : "border-border/40")}>
                   <button
                     onClick={() => toggleDone(scopeId, s.id)}
-                    className={cn("mt-0.5 w-4 hit-target-24 h-4 rounded border flex items-center justify-center shrink-0 transition-colors", done ? "bg-status-success/20 border-status-success/40 text-status-success" : "border-border/50 text-transparent hover:border-border/70")}
+                    className={cn("pressable mt-0.5 w-4 hit-target-24 h-4 rounded border flex items-center justify-center shrink-0 transition-colors", done ? "bg-status-success/20 border-status-success/40 text-status-success" : "border-border/50 text-transparent hover:border-border/70")}
                     aria-label={done ? "Mark not done" : "Mark done"}
                   >
                     <Check className="w-3.5 h-3.5" />
@@ -542,7 +542,7 @@ function TaskTray({
                     <p className="text-label text-muted-foreground/75 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.recommendedAction, 90)}</p>
                     {s.descriptor && <span className="inline-flex mt-1.5 text-[8px] font-semibold border border-border/40 px-1 py-0.5 rounded text-foreground/60">{s.descriptor}</span>}
                   </div>
-                  <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-label font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
+                  <button onClick={() => onRestore(s.id)} className="pressable h-6 px-2 rounded text-label font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -569,7 +569,7 @@ function DismissedLog({ items, onRestore }: { items: DeckCard[]; onRestore: (id:
             <p className="text-body font-medium text-foreground/60 leading-tight">{s.title}</p>
             <p className="text-label text-muted-foreground/75 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.rationale, 90)}</p>
           </div>
-          <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-label font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
+          <button onClick={() => onRestore(s.id)} className="pressable h-6 px-2 rounded text-label font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
         </div>

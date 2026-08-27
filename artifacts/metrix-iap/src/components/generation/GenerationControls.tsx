@@ -326,7 +326,7 @@ export function GenerationErrorNote({ message, onRetry }: { message: string | nu
         {onRetry && (
           <button
             onClick={onRetry}
-            className="mt-1.5 text-caption font-medium text-status-warning hover:text-status-warning/80 underline underline-offset-2 transition-colors"
+            className="pressable mt-1.5 text-caption font-medium text-status-warning hover:text-status-warning/80 underline underline-offset-2 transition-colors"
           >
             Retry
           </button>

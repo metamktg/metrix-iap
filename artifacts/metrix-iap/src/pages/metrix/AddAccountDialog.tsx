@@ -180,7 +180,7 @@ export function AddAccountDialog({
                   default while live Meta OAuth is gated below. */}
               <button
                 onClick={() => setStep("manual_name")}
-                className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-primary/30 bg-primary/[0.03] hover:border-primary/50 hover:bg-primary/[0.06] transition-colors text-left"
+                className="pressable-lg w-full flex items-start gap-3 p-3.5 rounded-lg border border-primary/30 bg-primary/[0.03] hover:border-primary/50 hover:bg-primary/[0.06] transition-colors text-left"
               >
                 <div className="w-9 h-9 rounded-lg border border-primary/25 bg-primary/10 flex items-center justify-center shrink-0">
                   <FileUp className="w-4 h-4 text-interactive" />

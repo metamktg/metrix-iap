@@ -53,7 +53,7 @@ export function JsonExportCard({
               downloadJson(filename, data);
               setDownloaded(true);
             }}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-interactive text-caption font-medium hover:bg-primary/25 transition-colors"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-interactive text-caption font-medium hover:bg-primary/25 transition-colors"
           >
             {downloaded ? <Check className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
             {downloaded ? "Downloaded" : "Download JSON"}

@@ -139,7 +139,7 @@ function ProfileSortBar({
               onClick={() => onSort(k)}
               aria-pressed={active}
               className={cn(
-                "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-body font-semibold transition-colors border",
+                "pressable inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-body font-semibold transition-colors border",
                 active
                   ? "bg-primary/12 border-primary/35 text-interactive"
                   : "bg-transparent border-border/40 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60",
@@ -508,7 +508,7 @@ function IcpProfileCard({
             <button
               key={col.id}
               onClick={() => onAvatarClick?.(col.id)}
-              className="inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
+              className="pressable inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
               data-testid={`link-icp-avatar-${col.id}`}
             >
               {col.name.replace(/\n/g, " ")}
@@ -608,7 +608,7 @@ function AudienceSegmentTile({
         <button
           type="button"
           onClick={onExplore}
-          className={cn("inline-flex items-center gap-1", TYPE.caption, "font-medium text-interactive hover:text-primary/80 transition-colors")}
+          className={cn("pressable inline-flex items-center gap-1", TYPE.caption, "font-medium text-interactive hover:text-primary/80 transition-colors")}
         >
           Explore segment
           <ArrowUpRight className="w-3.5 h-3.5" />
@@ -705,7 +705,7 @@ function DimensionRanking({
         {rows.length > 5 && (
           <button
             onClick={() => setExpanded((o) => !o)}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 text-body font-medium text-muted-foreground/75 hover:text-foreground/80 hover:bg-primary/[0.04] border-t border-border/30 transition-colors"
+            className="pressable-lg w-full flex items-center justify-center gap-1.5 py-2.5 text-body font-medium text-muted-foreground/75 hover:text-foreground/80 hover:bg-primary/[0.04] border-t border-border/30 transition-colors"
           >
             {expanded ? "Show fewer" : `Show all ${rows.length}`}
           </button>

@@ -163,7 +163,7 @@ function MetricToggle({ options, value, onChange }: {
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1 font-mono uppercase tracking-wide transition-colors",
+            "pressable px-2.5 py-1 font-mono uppercase tracking-wide transition-colors",
             value === o.value
               ? "bg-foreground/10 text-foreground"
               : "text-muted-foreground/75 hover:text-muted-foreground/75"
@@ -383,7 +383,7 @@ function DemographicsTab({
               key={b.age}
               onClick={() => setSelectedAge(b.age)}
               className={cn(
-                "w-full text-left rounded-lg border px-3 py-2.5 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
+                "pressable-lg w-full text-left rounded-lg border px-3 py-2.5 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
                 isActive
                   ? "border-primary/40 bg-primary/[0.06]"
                   : "border-border/30 bg-foreground/[0.015] hover:border-border/50 hover:bg-foreground/[0.03]"
@@ -495,7 +495,7 @@ function DemographicsTab({
                     onClick={(e) => { e.stopPropagation(); onSegmentClick({ age: activeBucket.age, gender: g.gender! }); }}
                     data-testid={`chip-demo-${activeBucket.age}-${g.label.toLowerCase()}`}
                     className={cn(
-                      "w-full text-label font-medium rounded-md border py-1.5 transition-colors",
+                      "pressable-lg w-full text-label font-medium rounded-md border py-1.5 transition-colors",
                       g.label === "Male"
                         ? "border-accent/25 text-accent/80 hover:bg-accent/10"
                         : "border-status-danger/25 text-status-danger/80 hover:bg-status-danger/10"
@@ -747,7 +747,7 @@ export function CreativeExpandDialog({
                     {onUploadCreatives && (
                       <button
                         onClick={() => { onOpenChange(false); onUploadCreatives(); }}
-                        className="flex items-center gap-1 text-label font-medium text-status-warning hover:text-status-warning border border-status-warning/25 bg-status-warning/[0.06] hover:bg-status-warning/10 px-2 py-1 rounded transition-colors"
+                        className="pressable flex items-center gap-1 text-label font-medium text-status-warning hover:text-status-warning border border-status-warning/25 bg-status-warning/[0.06] hover:bg-status-warning/10 px-2 py-1 rounded transition-colors"
                       >
                         <Upload className="w-3.5 h-3.5" /> Upload creatives
                       </button>

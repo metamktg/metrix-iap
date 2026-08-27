@@ -380,7 +380,7 @@ export function ReportBuilderView() {
                             onClick={() => setMode(a.id)}
                             aria-pressed={mode === a.id}
                             className={cn(
-                              "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-colors",
+                              "pressable-lg flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-colors",
                               mode === a.id
                                 ? "border-primary/45 bg-primary/[0.06]"
                                 : "border-border/40 bg-foreground/[0.015] hover:border-primary/25",
@@ -487,7 +487,7 @@ export function ReportBuilderView() {
                           {override && (
                             <button
                               onClick={() => setOverride(null)}
-                              className="text-label font-medium text-interactive/80 hover:text-primary transition-colors"
+                              className="pressable text-label font-medium text-interactive/80 hover:text-primary transition-colors"
                             >
                               Reset to global range
                             </button>
@@ -512,7 +512,7 @@ export function ReportBuilderView() {
                             <button
                               onClick={() => handleGenerate(rb.report_sections, chosenFormat)}
                               disabled={generating || generateFiring || rb.report_sections.length - excludedSections.size === 0}
-                              className="inline-flex items-center justify-center gap-2 h-9 w-full rounded-md bg-primary text-primary-foreground text-body font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
+                              className="pressable-lg inline-flex items-center justify-center gap-2 h-9 w-full rounded-md bg-primary text-primary-foreground text-body font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
                             >
                               {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                               {generating ? "Generating…" : "Generate report"}
@@ -530,7 +530,7 @@ export function ReportBuilderView() {
                                   onClick={() => setFormatOverride(f)}
                                   disabled={generating}
                                   className={cn(
-                                    "flex items-center gap-1 h-7 px-2.5 rounded text-caption font-medium transition-colors disabled:opacity-60",
+                                    "pressable flex items-center gap-1 h-7 px-2.5 rounded text-caption font-medium transition-colors disabled:opacity-60",
                                     chosenFormat === f
                                       ? "bg-foreground/[0.06] text-foreground"
                                       : "text-muted-foreground/75 hover:text-foreground"
@@ -614,7 +614,7 @@ export function ReportBuilderView() {
                           onClick={() => handleExport(f)}
                           disabled={exporting !== null}
                           className={cn(
-                            "flex items-center gap-1.5 h-9 px-3.5 rounded-md border text-body font-medium transition-colors disabled:opacity-60",
+                            "pressable flex items-center gap-1.5 h-9 px-3.5 rounded-md border text-body font-medium transition-colors disabled:opacity-60",
                             exported === f
                               ? "border-status-success/30 text-status-success bg-status-success/5"
                               : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5"
@@ -652,7 +652,7 @@ export function ReportBuilderView() {
 
                   <button
                     onClick={() => setTab("preview")}
-                    className="inline-flex items-center gap-1.5 text-caption font-medium text-interactive/80 hover:text-primary transition-colors"
+                    className="pressable inline-flex items-center gap-1.5 text-caption font-medium text-interactive/80 hover:text-primary transition-colors"
                   >
                     <Eye className="w-3.5 h-3.5" /> Back to report preview
                   </button>

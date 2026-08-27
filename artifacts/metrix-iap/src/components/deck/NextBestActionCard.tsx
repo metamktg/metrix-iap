@@ -146,7 +146,7 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
             onClick={approve}
             data-testid="next-best-action-approve"
             className={cn(
-              TYPE.caption,
+              "pressable", TYPE.caption,
               "inline-flex items-center justify-center gap-1.5 font-semibold rounded-lg border border-primary/50 bg-primary text-primary-foreground px-3.5 py-1.5 hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             )}
           >
@@ -156,7 +156,7 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
             type="button"
             onClick={dismiss}
             data-testid="next-best-action-dismiss"
-            className={cn(TYPE.caption, "font-medium text-muted-foreground/75 px-1 py-0.5 hover:text-foreground/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded")}
+            className={cn("pressable", TYPE.caption, "font-medium text-muted-foreground/75 px-1 py-0.5 hover:text-foreground/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded")}
           >
             Dismiss
           </button>

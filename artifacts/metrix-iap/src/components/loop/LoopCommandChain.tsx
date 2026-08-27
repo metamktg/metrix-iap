@@ -320,7 +320,7 @@ function StageTile({
             : "idle"
         }
         className={cn(
-          "group/stage flex items-center gap-2 rounded-lg py-1.5 px-2 -my-1.5 shrink-0 transition-colors",
+          "pressable group/stage flex items-center gap-2 rounded-lg py-1.5 px-2 -my-1.5 shrink-0 transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
           isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-foreground/[0.03]",
           isActive && "bg-primary/[0.08]",
@@ -942,7 +942,7 @@ function CommandHub({
           </div>
           <button
             onClick={() => goTo("/app/settings/integrations")}
-            className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+            className="pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
           >
             <Link2 className="w-3.5 h-3.5" />
             Manage connection
@@ -963,7 +963,7 @@ function CommandHub({
             <button
               onClick={() => goTo("/app/settings/account")}
               className={cn(
-                "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+                "pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
                 stagedImportCount > 0 ? "mx-secondary-btn" : "mx-primary-btn",
               )}
             >
@@ -1028,7 +1028,7 @@ function CommandHub({
                     key={r.id}
                     onClick={() => setLocalDateRange(r.id)}
                     className={cn(
-                      "h-7 px-2 rounded-md border text-label font-medium transition-colors",
+                      "pressable h-7 px-2 rounded-md border text-label font-medium transition-colors",
                       localDateRange === r.id
                         ? "border-primary/40 bg-primary/[0.08] text-interactive"
                         : "border-border/40 bg-foreground/[0.02] text-muted-foreground/75 hover:bg-foreground/[0.04]"
@@ -1071,7 +1071,7 @@ function CommandHub({
               }}
               disabled={analysisStarting}
               className={cn(
-                "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn",
+                "pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn",
                 analysisStarting && "opacity-60 cursor-not-allowed"
               )}
             >
@@ -1083,7 +1083,7 @@ function CommandHub({
             </button>
             <button
               onClick={() => setPendingConfirm(null)}
-              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+              className="pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
             >
               Cancel
             </button>
@@ -1096,7 +1096,7 @@ function CommandHub({
           <button
             onClick={() => setPendingConfirm("analysis")}
             className={cn(
-              "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+              "pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
               analysisComplete ? "mx-secondary-btn" : "mx-primary-btn",
             )}
           >
@@ -1128,13 +1128,13 @@ function CommandHub({
             <button
               onClick={() => { setPendingConfirm(null); onGenerateStrategy(runSelection); onClose(); }}
               disabled={!canBuild}
-              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn disabled:opacity-40 disabled:pointer-events-none"
+              className="pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn disabled:opacity-40 disabled:pointer-events-none"
             >
               <Sparkles className="w-3.5 h-3.5" /> Build Strategy
             </button>
             <button
               onClick={() => setPendingConfirm(null)}
-              className="inline-flex items-center text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+              className="pressable inline-flex items-center text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
             >
               Cancel
             </button>
@@ -1148,7 +1148,7 @@ function CommandHub({
             onClick={() => analysisComplete && setPendingConfirm("strategy")}
             disabled={!analysisComplete}
             className={cn(
-              "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+              "pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
               !analysisComplete
                 ? "opacity-30 cursor-not-allowed mx-secondary-btn"
                 : "mx-primary-btn",
@@ -1171,13 +1171,13 @@ function CommandHub({
           <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => goTo("/app/reports/history")}
-              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
+              className="pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
             >
               View History
             </button>
             <button
               onClick={() => goTo("/app/reports/new")}
-              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+              className="pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
             >
               <RefreshCw className="w-3.5 h-3.5" /> New Report
             </button>
@@ -1196,7 +1196,7 @@ function CommandHub({
                   key={m}
                   onClick={() => setReportMode(m)}
                   className={cn(
-                    "h-6 px-2.5 rounded text-[9px] font-semibold transition-colors",
+                    "pressable h-6 px-2.5 rounded text-[9px] font-semibold transition-colors",
                     reportMode === m
                       ? "bg-foreground/[0.08] text-foreground"
                       : "text-muted-foreground/75 hover:text-foreground",
@@ -1218,13 +1218,13 @@ function CommandHub({
           <div className="flex gap-1.5">
             <button
               onClick={() => { setPendingConfirm(null); onGenerateReport(reportMode); onClose(); }}
-              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
+              className="pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
             >
               <Sparkles className="w-3.5 h-3.5" /> Generate Report
             </button>
             <button
               onClick={() => setPendingConfirm(null)}
-              className="inline-flex items-center text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+              className="pressable inline-flex items-center text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
             >
               Cancel
             </button>
@@ -1239,7 +1239,7 @@ function CommandHub({
             onClick={() => briefsComplete && setPendingConfirm("report" as typeof pendingConfirm)}
             disabled={!briefsComplete}
             className={cn(
-              "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+              "pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
               !briefsComplete
                 ? "opacity-30 cursor-not-allowed mx-secondary-btn"
                 : reportComplete ? "mx-secondary-btn" : "mx-primary-btn",
@@ -1253,7 +1253,7 @@ function CommandHub({
           {reportComplete && (
             <button
               onClick={() => goTo("/app/reports/history")}
-              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+              className="pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
             >
               View History
             </button>
@@ -1312,13 +1312,13 @@ function CommandHub({
         <div className="flex gap-1.5">
           <button
             onClick={() => { setPendingConfirm(null); onGenerateBriefs(); onClose(); }}
-            className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
+            className="pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
           >
             <Sparkles className="w-3.5 h-3.5" /> Draft Briefs
           </button>
           <button
             onClick={() => setPendingConfirm(null)}
-            className="inline-flex items-center text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+            className="pressable inline-flex items-center text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
           >
             Cancel
           </button>
@@ -1332,7 +1332,7 @@ function CommandHub({
           onClick={() => strategyComplete && setPendingConfirm("briefs")}
           disabled={!strategyComplete}
           className={cn(
-            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+            "pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
             !strategyComplete
               ? "opacity-30 cursor-not-allowed mx-secondary-btn"
               : "mx-primary-btn",
@@ -1343,7 +1343,7 @@ function CommandHub({
         {briefsComplete && (
           <button
             onClick={() => goTo("/app/briefs/history")}
-            className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+            className="pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
           >
             View Archive
           </button>
@@ -1397,7 +1397,7 @@ function CommandHub({
 
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground/75 hover:text-foreground/60 hover:bg-foreground/[0.06] transition-colors shrink-0"
+            className="pressable w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground/75 hover:text-foreground/60 hover:bg-foreground/[0.06] transition-colors shrink-0"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -1457,7 +1457,7 @@ function CommandHub({
                   onClick={() => isAccessible && goTo(r.path)}
                   disabled={!isAccessible}
                   className={cn(
-                    "group flex flex-col gap-0.5 text-left px-3 py-2 rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+                    "pressable-lg group flex flex-col gap-0.5 text-left px-3 py-2 rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform]",
                     !isAccessible
                       ? "opacity-25 cursor-not-allowed"
                       : isCurrent
@@ -1916,7 +1916,7 @@ export function LoopCommandChain({
               </div>
               <button
                 onClick={() => setActiveStage(failedKind)}
-                className="self-start text-label font-semibold text-status-danger/80 hover:text-status-danger underline underline-offset-2"
+                className="pressable self-start text-label font-semibold text-status-danger/80 hover:text-status-danger underline underline-offset-2"
               >
                 Review &amp; retry
               </button>

@@ -489,7 +489,7 @@ export function NoDataInRangeState({ what, detail }: { what: string; detail?: st
       </p>
       <button
         onClick={() => setPreset("all")}
-        className="text-body font-semibold text-primary-foreground bg-primary border border-primary hover:bg-primary/90 rounded-md px-3.5 py-2 transition-colors shadow-md shadow-primary/25"
+        className="pressable text-body font-semibold text-primary-foreground bg-primary border border-primary hover:bg-primary/90 rounded-md px-3.5 py-2 transition-colors shadow-md shadow-primary/25"
       >
         Show all available data
       </button>
@@ -582,7 +582,7 @@ export function DenseText({
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
-        className="mt-0.5 inline-flex items-center gap-0.5 text-label font-semibold text-interactive/80 hover:text-interactive transition-colors"
+        className="pressable mt-0.5 inline-flex items-center gap-0.5 text-label font-semibold text-interactive/80 hover:text-interactive transition-colors"
       >
         {expanded ? "Less" : "More"}
         <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-150", expanded && "rotate-180")} />
@@ -1133,7 +1133,7 @@ export function CrossLink({ to, label, srNote }: { to: string; label: string; sr
   return (
     <button
       onClick={() => navigate(to)}
-      className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-interactive hover:bg-primary/20 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] shadow-sm shadow-primary/5"
+      className="pressable inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-interactive hover:bg-primary/20 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] shadow-sm shadow-primary/5"
     >
       {label}
       {srNote && <span className="sr-only">{` — ${srNote}`}</span>}
@@ -1172,7 +1172,7 @@ export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; 
             key={c.to}
             type="button"
             onClick={() => navigate(c.to)}
-            className="group relative flex items-start gap-3 text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 pr-8 transition-[color,background-color,border-color,box-shadow,opacity,transform] hover:border-primary/35 hover:bg-primary/[0.05] hover:-translate-y-px"
+            className="pressable-lg group relative flex items-start gap-3 text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 pr-8 transition-[color,background-color,border-color,box-shadow,opacity,transform] hover:border-primary/35 hover:bg-primary/[0.05] hover:-translate-y-px"
           >
             <span className="shrink-0 w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center transition-colors group-hover:bg-primary/20 group-hover:border-primary/35">
               <c.Icon className="w-4 h-4 text-interactive" />
@@ -1210,7 +1210,7 @@ export function LoopAction({
     <button
       onClick={() => navigate(to)}
       className={cn(
-        "inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+        "pressable inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-[color,background-color,border-color,box-shadow,opacity,transform]",
         variant === "primary"
           ? "bg-primary text-foreground border-primary hover:bg-primary/90 shadow-md shadow-primary/25 hover:shadow-primary/35"
           : "bg-foreground/[0.07] border-border/55 text-foreground/90 hover:bg-foreground/[0.11] hover:text-foreground hover:border-border/75 elevation-raised",
@@ -1268,7 +1268,7 @@ export function BackLink() {
   return (
     <button
       onClick={() => navigate(url)}
-      className="inline-flex items-center gap-1 text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 transition-colors"
+      className="pressable inline-flex items-center gap-1 text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 transition-colors"
     >
       <ChevronLeft className="w-3.5 h-3.5" />
       {backLabel(fp)}
@@ -1297,7 +1297,7 @@ export function FlowCrumb({ from, fromCell, fromHyp }: FromParams) {
     <div className="px-6 py-1.5 border-b border-border/20 bg-foreground/[0.01] flex items-center gap-1.5">
       <button
         onClick={() => navigate(url)}
-        className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-muted-foreground/80 transition-colors"
+        className="pressable inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-muted-foreground/80 transition-colors"
       >
         <ChevronLeft className="w-3.5 h-3.5" />
         {origin}
@@ -1417,7 +1417,7 @@ export function SegmentedToggle<T extends string>({
             onClick={() => onChange(id)}
             aria-pressed={isActive}
             className={cn(
-              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium transition-colors",
+              "pressable inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium transition-colors",
               isActive
                 ? "bg-primary/20 text-interactive shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
                 : "text-muted-foreground/75 hover:text-foreground/80"
@@ -1457,7 +1457,7 @@ export function MetricSelectionBar({
             onClick={() => onToggle(e)}
             aria-pressed={on}
             className={cn(
-              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-body font-medium transition-colors",
+              "pressable inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-body font-medium transition-colors",
               on ? PILL_ACTIVE : PILL_INACTIVE
             )}
           >
@@ -1507,7 +1507,7 @@ export function DatePresetBar({
             onClick={() => onChange(v)}
             aria-pressed={value === v}
             className={cn(
-              "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
+              "pressable inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
               value === v ? PILL_ACTIVE : PILL_INACTIVE
             )}
           >
@@ -1575,7 +1575,7 @@ export function OverviewHeaderControls({
             onClick={() => onPresetChange(value)}
             aria-pressed={preset === value}
             className={cn(
-              "h-7 px-2.5 text-caption font-medium transition-colors",
+              "pressable h-7 px-2.5 text-caption font-medium transition-colors",
               preset === value
                 ? "bg-primary/18 text-interactive"
                 : "text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04]"
@@ -1593,7 +1593,7 @@ export function OverviewHeaderControls({
           aria-pressed={!!compareOn}
           title="Compare each tile against the prior period of equal length"
           className={cn(
-            "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
+            "pressable inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
             compareOn ? PILL_ACTIVE : PILL_INACTIVE
           )}
         >
@@ -1608,7 +1608,7 @@ export function OverviewHeaderControls({
           aria-pressed={!!detailOn}
           title={detailOn ? "Collapse this page's detail panels" : "Expand this page's detail panels"}
           className={cn(
-            "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
+            "pressable inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
             detailOn ? PILL_ACTIVE : PILL_INACTIVE
           )}
         >
@@ -1619,7 +1619,7 @@ export function OverviewHeaderControls({
       <button
         type="button"
         onClick={() => navigate(exportTo)}
-        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
+        className="pressable inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
       >
         <Download className="w-3.5 h-3.5" />
         Export
@@ -1671,7 +1671,7 @@ export function DataWindowBar({
           onClick={() => onSelect(null)}
           aria-pressed={selectedKey === null}
           className={cn(
-            "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
+            "pressable inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
             selectedKey === null ? PILL_ACTIVE : PILL_INACTIVE,
           )}
         >
@@ -1687,7 +1687,7 @@ export function DataWindowBar({
               aria-pressed={pressed}
               title={`${w.rows.toLocaleString()} rows · $${w.spend.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} spend`}
               className={cn(
-                "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
+                "pressable inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
                 pressed ? PILL_ACTIVE : PILL_INACTIVE,
               )}
             >
@@ -1870,7 +1870,7 @@ export function ShowMoreButton({
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className="w-full flex items-center justify-center gap-1.5 py-2 mt-2 rounded-lg text-body font-medium text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.02] border border-border/25 transition-colors"
+      className="pressable-lg w-full flex items-center justify-center gap-1.5 py-2 mt-2 rounded-lg text-body font-medium text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.02] border border-border/25 transition-colors"
     >
       {expanded ? "Show fewer" : `Show all ${total} ${noun}`}
       <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", expanded && "rotate-180")} aria-hidden />
@@ -1963,7 +1963,7 @@ export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; cur
               disabled={locked}
               aria-current={isCurrent ? "step" : undefined}
               title={locked ? `${s.label} — locked` : s.label}
-              className={cn("group flex items-center gap-1.5", locked ? "cursor-not-allowed" : "cursor-pointer")}
+              className={cn("pressable group flex items-center gap-1.5", locked ? "cursor-not-allowed" : "cursor-pointer")}
             >
               <span
                 className={cn(
@@ -2049,7 +2049,7 @@ export function ConnectionNudgeBanner({ hasMetaConnection }: { hasMetaConnection
       <span className="flex-1">Connect Meta in Settings to enable live data refresh.</span>
       <button
         onClick={() => navigate("/app/settings/integrations")}
-        className="shrink-0 text-interactive hover:text-interactive/80 font-medium transition-colors"
+        className="pressable shrink-0 text-interactive hover:text-interactive/80 font-medium transition-colors"
       >
         Go to Integrations
         <ArrowRight className="inline w-3 h-3 ml-1" />

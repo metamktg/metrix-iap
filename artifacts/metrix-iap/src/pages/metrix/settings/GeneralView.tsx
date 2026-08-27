@@ -110,7 +110,7 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
           onClick={() => mutation.mutate({ accountId, data: { name: trimmed } })}
           disabled={!canSave}
           className={cn(
-            "shrink-0 rounded-lg border px-3 py-2 text-body transition-colors",
+            "pressable shrink-0 rounded-lg border px-3 py-2 text-body transition-colors",
             canSave
               ? "border-primary/45 bg-primary/[0.06] hover:bg-primary/[0.1] text-foreground"
               : "border-border/40 bg-foreground/[0.02] text-muted-foreground/75 cursor-not-allowed"
@@ -181,7 +181,7 @@ function ObjectivesSection({ accountId, currentObjectives }: { accountId: string
               disabled={mutation.isPending}
               aria-pressed={active}
               className={cn(
-                "flex items-center gap-2.5 p-3 rounded-lg border transition-colors text-left disabled:opacity-60",
+                "pressable-lg flex items-center gap-2.5 p-3 rounded-lg border transition-colors text-left disabled:opacity-60",
                 active
                   ? "border-primary/45 bg-primary/[0.06]"
                   : "border-border/40 bg-foreground/[0.02] hover:border-primary/40 hover:bg-primary/[0.04]"
@@ -229,7 +229,7 @@ function PrefToggle({
       disabled={disabled}
       data-testid={testId}
       className={cn(
-        "inline-flex items-center justify-center w-5 hit-target-24 h-5 rounded border transition-colors",
+        "pressable inline-flex items-center justify-center w-5 hit-target-24 h-5 rounded border transition-colors",
         on
           ? "border-status-success/25 bg-status-success/10 hover:bg-status-success/20"
           : "border-border/40 bg-foreground/[0.02] hover:bg-foreground/[0.06]",
@@ -319,7 +319,7 @@ function NotificationPrefsSections() {
                 disabled={isPending}
                 data-testid={`toggle-channel-${c.id}`}
                 className={cn(
-                  "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none transition-colors",
+                  "pressable text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none transition-colors",
                   c.enabled
                     ? "text-status-success border-status-success/25 bg-status-success/10 hover:bg-status-success/20"
                     : "text-muted-foreground/75 border-border/40 bg-foreground/[0.03] hover:bg-foreground/[0.08]",
@@ -414,7 +414,7 @@ export function GeneralView() {
               {!configured && (
                 <button
                   onClick={() => setConnectOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors"
+                  className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors"
                   data-testid="button-connect-account"
                 >
                   <Plug className="w-3 h-3" /> Connect
@@ -429,7 +429,7 @@ export function GeneralView() {
               </div>
               <button
                 onClick={() => setImportOpen(true)}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+                className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
                 data-testid="button-add-import"
               >
                 <FileUp className="w-3 h-3" /> Add import
@@ -446,7 +446,7 @@ export function GeneralView() {
                 </div>
                 <button
                   onClick={() => setCreativeLibraryOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+                  className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
                   data-testid="button-upload-creatives"
                 >
                   <Images className="w-3 h-3" /> Upload creatives

@@ -112,7 +112,7 @@ export function SortableTh({
           title={active ? (sort!.dir === "asc" ? "Sorted ascending — click for descending" : "Sorted descending — click for ascending") : "Click to sort"}
           aria-label={`Sort by ${String(children)}${active ? (sort!.dir === "asc" ? ", currently ascending" : ", currently descending") : ""}`}
           className={cn(
-            "inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors",
+            "pressable inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors",
             active ? "text-foreground" : "text-muted-foreground/90 hover:text-foreground",
             right && "flex-row-reverse"
           )}
@@ -131,7 +131,7 @@ export function SortableTh({
             data-testid={`sort-reset-${sortKey}`}
             title="Clear sort"
             aria-label="Clear sort"
-            className="ml-0.5 p-0.5 rounded text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.06] transition-colors"
+            className="pressable ml-0.5 p-0.5 rounded text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.06] transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -155,7 +155,7 @@ export function HeatmapToggle({ on, onToggle }: { on: boolean; onToggle: () => v
         onClick={onToggle}
         aria-pressed={on}
         className={cn(
-          "h-6 px-2.5 rounded-md border text-label font-mono uppercase tracking-widest transition-colors",
+          "pressable h-6 px-2.5 rounded-md border text-label font-mono uppercase tracking-widest transition-colors",
           on ? PILL_ACTIVE : PILL_INACTIVE
         )}
       >

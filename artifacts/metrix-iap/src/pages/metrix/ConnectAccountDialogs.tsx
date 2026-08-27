@@ -104,7 +104,7 @@ export function PrimaryBtn({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex items-center gap-1.5 h-9 px-4 rounded-md border text-body font-medium transition-colors",
+        "pressable flex items-center gap-1.5 h-9 px-4 rounded-md border text-body font-medium transition-colors",
         disabled
           ? "border-border/40 text-muted-foreground/80 cursor-not-allowed"
           : "bg-primary/15 border-primary/30 text-interactive hover:bg-primary/25"
@@ -119,7 +119,7 @@ export function GhostBtn({ onClick, children }: { onClick: () => void; children:
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+      className="pressable flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
     >
       {children}
     </button>
@@ -445,7 +445,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
     <div className={cn("rounded-lg border overflow-hidden", headerColor)}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/[0.02] transition-colors"
+        className="pressable-lg w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/[0.02] transition-colors"
         aria-expanded={open}
       >
         <GitMerge className={cn("w-3.5 h-3.5 shrink-0", iconColor)} />
@@ -793,7 +793,7 @@ function SmartCsvUpload({
         }}
         disabled={current !== null}
         className={cn(
-          "w-full flex flex-col items-center gap-1.5 p-5 rounded-lg border border-dashed transition-colors",
+          "pressable-lg w-full flex flex-col items-center gap-1.5 p-5 rounded-lg border border-dashed transition-colors",
           current !== null
             ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
             : isDragging
@@ -838,7 +838,7 @@ function SmartCsvUpload({
                 <button
                   onClick={() => void handleRemove(single)}
                   disabled={deleteMutation.isPending}
-                  className="shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="pressable shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   aria-label={`Remove ${slot.label} file`}
                 >
                   <Trash2 className="w-3 h-3" />
@@ -847,7 +847,7 @@ function SmartCsvUpload({
               {importsForSlot.length > 1 && (
                 <button
                   onClick={() => setExpandedSlot((s) => (s === slot.kind ? null : slot.kind))}
-                  className="shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
+                  className="pressable shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
                   aria-label={`Manage ${slot.label} files`}
                 >
                   <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", expandedSlot === slot.kind && "rotate-90")} />
@@ -870,7 +870,7 @@ function SmartCsvUpload({
               <button
                 onClick={() => void handleRemove(imp)}
                 disabled={deleteMutation.isPending}
-                className="shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="pressable shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 aria-label={`Remove ${imp.filename}`}
               >
                 <Trash2 className="w-3 h-3" />
@@ -952,7 +952,7 @@ function SmartCsvUpload({
               <button
                 onClick={() => setLastWarnings(null)}
                 className={cn(
-                  "shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors",
+                  "pressable shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors",
                   alarmed
                     ? "text-status-warning/70 hover:text-status-warning hover:bg-status-warning/10"
                     : "text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.04]",
@@ -1203,7 +1203,7 @@ function CreativeAdNamesEditor({
           <button
             onClick={() => void handleFreeSave()}
             disabled={updateMutation.isPending}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-status-success hover:bg-status-success/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="pressable shrink-0 w-7 h-7 flex items-center justify-center rounded text-status-success hover:bg-status-success/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             aria-label="Save"
           >
             {updateMutation.isPending ? (
@@ -1214,7 +1214,7 @@ function CreativeAdNamesEditor({
           </button>
           <button
             onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(false); }}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:bg-foreground/5 transition-colors cursor-pointer"
+            className="pressable shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:bg-foreground/5 transition-colors cursor-pointer"
             aria-label="Cancel"
           >
             <X className="w-3.5 h-3.5" />
@@ -1228,7 +1228,7 @@ function CreativeAdNamesEditor({
           <MatchMethodBadge method={asset.match_method} />
           <button
             onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(true); }}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+            className="pressable shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
             aria-label="Edit ad name mapping"
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -1525,7 +1525,7 @@ function CreativeUploadSection({
                 <button
                   onClick={() => setConfirmDeleteId(asset.id)}
                   disabled={pendingDeleteId === asset.id}
-                  className="shrink-0 mt-2 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="pressable shrink-0 mt-2 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   aria-label={`Remove ${asset.filename}`}
                 >
                   {pendingDeleteId === asset.id ? (
@@ -1771,7 +1771,7 @@ export function ManualUploadPanel({
                 </div>
                 <button
                   onClick={() => setStep("upload")}
-                  className="shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-status-warning/35 bg-status-warning/10 text-label font-medium text-status-warning hover:bg-status-warning/20 transition-colors"
+                  className="pressable shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-status-warning/35 bg-status-warning/10 text-label font-medium text-status-warning hover:bg-status-warning/20 transition-colors"
                 >
                   <ArrowLeft className="w-3 h-3" /> Add one
                 </button>
@@ -1797,7 +1797,7 @@ export function ManualUploadPanel({
                     </span>
                     <button
                       onClick={() => setStep("upload")}
-                      className="shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-status-warning/35 bg-status-warning/10 text-label font-medium text-status-warning hover:bg-status-warning/20 transition-colors"
+                      className="pressable shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-status-warning/35 bg-status-warning/10 text-label font-medium text-status-warning hover:bg-status-warning/20 transition-colors"
                     >
                       Fix mappings
                     </button>
@@ -1986,7 +1986,7 @@ function CreativeDeconstructSection({
                     <button
                       onClick={() => void start([asset.id])}
                       disabled={isRunning}
-                      className="shrink-0 h-6 px-2 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      className="pressable shrink-0 h-6 px-2 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       aria-label={`Retry deconstruct ${asset.filename}`}
                     >
                       Retry
@@ -1999,7 +1999,7 @@ function CreativeDeconstructSection({
                   <button
                     onClick={() => void start([asset.id])}
                     disabled={isRunning}
-                    className="shrink-0 h-6 px-2 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="pressable shrink-0 h-6 px-2 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     aria-label={`Deconstruct ${asset.filename}`}
                   >
                     Deconstruct

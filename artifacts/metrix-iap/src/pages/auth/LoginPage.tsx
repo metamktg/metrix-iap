@@ -253,7 +253,7 @@ export function LoginPage() {
                   </label>
                   <button
                     type="button" onClick={() => navigate("/forgot-password")}
-                    className="text-caption text-interactive/70 hover:text-interactive transition-colors"
+                    className="pressable text-caption text-interactive/70 hover:text-interactive transition-colors"
                     data-testid="link-forgot-password"
                   >
                     Forgot password?
@@ -320,7 +320,7 @@ export function LoginPage() {
               </p>
               <button
                 type="button" onClick={() => navigate(CREATE_ACCOUNT_PATH)}
-                className="w-full h-10 rounded-xl border border-border/40 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 hover:border-border/60 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex items-center justify-center"
+                className="pressable-lg w-full h-10 rounded-xl border border-border/40 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 hover:border-border/60 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex items-center justify-center"
                 data-testid="button-create-account"
               >
                 Create Account

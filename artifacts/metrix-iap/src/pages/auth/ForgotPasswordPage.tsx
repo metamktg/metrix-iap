@@ -91,7 +91,7 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
         <div className="text-center">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground transition-colors"
+            className="pressable inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground transition-colors"
             data-testid="button-back-to-login"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to sign in

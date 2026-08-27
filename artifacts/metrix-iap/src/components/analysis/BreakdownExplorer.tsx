@@ -79,7 +79,7 @@ function ChartFormToggle({ form, onChange }: { form: ChartForm; onChange: (f: Ch
           aria-label={label}
           onClick={() => onChange(id)}
           className={cn(
-            "px-2 py-1 transition-colors",
+            "pressable px-2 py-1 transition-colors",
             form === id ? "bg-primary/15 text-interactive" : "text-muted-foreground/75 hover:text-foreground/75",
           )}
         >
@@ -239,7 +239,7 @@ function MirrorTable({ rows, metricLabel, dimensionLabel, onDrillSegment }: {
                     <button
                       type="button"
                       onClick={() => onDrillSegment(r)}
-                      className="text-left truncate max-w-full text-interactive hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+                      className="pressable-lg text-left truncate max-w-full text-interactive hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
                       data-testid={`breakdown-segment-${r.key}`}
                       aria-label={`Open the deep dive for ${r.label}`}
                     >
@@ -378,7 +378,7 @@ export function BreakdownExplorer({
           type="button"
           onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
           aria-label={sortDir === "desc" ? "Sorted descending — switch to ascending" : "Sorted ascending — switch to descending"}
-          className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/50 text-caption text-foreground/75 hover:text-foreground transition-colors"
+          className="pressable inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/50 text-caption text-foreground/75 hover:text-foreground transition-colors"
         >
           {sortDir === "desc" ? <ArrowDown className="w-3 h-3" aria-hidden /> : <ArrowUp className="w-3 h-3" aria-hidden />}
           {sortDir === "desc" ? "High → low" : "Low → high"}

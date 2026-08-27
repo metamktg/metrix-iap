@@ -352,7 +352,7 @@ function SortableHeader({
     <button
       onClick={() => onSort(col.id)}
       className={cn(
-        "flex items-center gap-1 text-label font-semibold uppercase tracking-wide transition-colors",
+        "pressable flex items-center gap-1 text-label font-semibold uppercase tracking-wide transition-colors",
         isActive ? "text-interactive" : "text-muted-foreground/75 hover:text-foreground/70"
       )}
     >
@@ -465,7 +465,7 @@ export function BreakdownTable({
       {(hiddenCount > 0 || showAllCols) && (
         <button
           onClick={() => setShowAllCols((v) => !v)}
-          className="flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground/70 transition-colors"
+          className="pressable flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground/70 transition-colors"
         >
           {showAllCols ? (
             <><ArrowUp className="w-3 h-3" /> Show fewer columns</>
@@ -742,7 +742,7 @@ export function EngagementFunnelView() {
                     key={mode}
                     onClick={() => setViewMode(mode)}
                     className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
+                      "pressable inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
                       viewMode === mode
                         ? "bg-primary/20 text-interactive border border-primary/25"
                         : "text-muted-foreground/75 hover:text-foreground/80"
@@ -762,7 +762,7 @@ export function EngagementFunnelView() {
                       key={d}
                       onClick={() => setDim(d)}
                       className={cn(
-                        "px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
+                        "pressable px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
                         dim === d
                           ? "bg-primary/20 text-interactive border border-primary/25"
                           : "text-muted-foreground/75 hover:text-foreground/80"
@@ -886,7 +886,7 @@ export function EngagementFunnelView() {
                         Placement rows don't include Reach data — frequency scatter requires the demographic export.
                         <button
                           onClick={() => setDim("audience")}
-                          className="ml-2 text-interactive underline"
+                          className="pressable ml-2 text-interactive underline"
                         >
                           Switch to Audience
                         </button>

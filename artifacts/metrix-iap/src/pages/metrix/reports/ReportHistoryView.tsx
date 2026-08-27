@@ -254,7 +254,7 @@ export function ReportHistoryView() {
                             setSelectedIds(allSelected ? new Set() : new Set(deletableIds))
                           }
                           disabled={batchDeleting}
-                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
+                          className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
                         >
                           {allSelected ? "Deselect all" : `Select all (${fmtNum(deletableIds.length)})`}
                         </button>
@@ -264,7 +264,7 @@ export function ReportHistoryView() {
                               setSelectedIds(allDraftsSelected ? new Set() : new Set(draftIds))
                             }
                             disabled={batchDeleting}
-                            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
+                            className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
                           >
                             {allDraftsSelected
                               ? "Deselect drafts"
@@ -274,7 +274,7 @@ export function ReportHistoryView() {
                         <button
                           onClick={exitSelectMode}
                           disabled={batchDeleting}
-                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
+                          className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
                         >
                           <X className="w-3.5 h-3.5" />
                           Cancel
@@ -282,7 +282,7 @@ export function ReportHistoryView() {
                         <button
                           onClick={() => setConfirmBulkDelete(true)}
                           disabled={selectedIds.size === 0 || batchDeleting}
-                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-status-danger/30 text-caption font-medium text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-40"
+                          className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-status-danger/30 text-caption font-medium text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-40"
                         >
                           {batchDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                           Delete selected
@@ -292,7 +292,7 @@ export function ReportHistoryView() {
                   ) : (
                     <button
                       onClick={() => setSelectMode(true)}
-                      className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors ml-auto"
+                      className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors ml-auto"
                     >
                       <Check className="w-3.5 h-3.5" />
                       Select
@@ -478,7 +478,7 @@ function ReportCardList({
                 onClick={() => download(r, r.export_format!)}
                 disabled={busyId !== null}
                 className={cn(
-                  "flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium shrink-0 transition-colors disabled:opacity-60",
+                  "pressable flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium shrink-0 transition-colors disabled:opacity-60",
                   doneId === r.id
                     ? "border-status-success/30 text-status-success bg-status-success/5"
                     : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5"
@@ -500,7 +500,7 @@ function ReportCardList({
                 disabled={deleting}
                 aria-label={`Delete report "${r.title}"`}
                 title="Delete report"
-                className="flex items-center justify-center h-8 w-8 rounded-md border border-border/50 text-muted-foreground hover:text-status-danger hover:border-status-danger/30 hover:bg-status-danger/5 shrink-0 transition-colors disabled:opacity-60"
+                className="pressable flex items-center justify-center h-8 w-8 rounded-md border border-border/50 text-muted-foreground hover:text-status-danger hover:border-status-danger/30 hover:bg-status-danger/5 shrink-0 transition-colors disabled:opacity-60"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

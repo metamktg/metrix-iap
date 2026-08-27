@@ -93,7 +93,7 @@ export function DateRangePicker() {
                 setOpen(false);
               }}
               className={cn(
-                "w-full flex items-center gap-2 px-2 h-8 rounded text-body transition-colors",
+                "pressable-lg w-full flex items-center gap-2 px-2 h-8 rounded text-body transition-colors",
                 preset === p
                   ? "text-interactive bg-primary/10 font-medium"
                   : "text-foreground/75 hover:text-foreground hover:bg-foreground/5"
@@ -131,7 +131,7 @@ export function DateRangePicker() {
           <button
             onClick={applyCustom}
             disabled={!draftStart || !draftEnd}
-            className="w-full h-7 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors disabled:opacity-40"
+            className="pressable-lg w-full h-7 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors disabled:opacity-40"
           >
             Apply custom range
           </button>

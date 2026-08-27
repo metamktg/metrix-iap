@@ -46,7 +46,7 @@ export function TaskTrayPanel({
             <button
               onClick={onCollapse}
               aria-label="Collapse task tray"
-              className="w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground/80 hover:bg-foreground/[0.06] transition-colors"
+              className="pressable w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground/80 hover:bg-foreground/[0.06] transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -88,7 +88,7 @@ export function TaskTrayPanel({
                   <button
                     onClick={() => toggleDone(scopeId, s.id)}
                     className={cn(
-                      "mt-px w-3.5 hit-target-24 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors",
+                      "pressable mt-px w-3.5 hit-target-24 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors",
                       done
                         ? "bg-status-success/20 border-status-success/40 text-status-success"
                         : "border-border/50 text-transparent hover:border-primary/50"

@@ -90,7 +90,7 @@ function SpendFloorInput({
       {value != null && (
         <button
           onClick={() => { setRaw(""); onChange(null); }}
-          className="text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
+          className="pressable text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
           aria-label="Clear spend floor"
         >
           <X className="w-3 h-3" />
@@ -151,7 +151,7 @@ function ConceptMultiSelect({
             {selected.length > 0 && (
               <button
                 onClick={() => onChange([])}
-                className="w-full text-left text-label text-interactive/70 hover:text-interactive px-1.5 py-1.5 rounded transition-colors"
+                className="pressable-lg w-full text-left text-label text-interactive/70 hover:text-interactive px-1.5 py-1.5 rounded transition-colors"
               >
                 Clear all
               </button>
@@ -163,7 +163,7 @@ function ConceptMultiSelect({
                   key={name}
                   onClick={() => toggle(name)}
                   className={cn(
-                    "w-full flex items-center gap-2 text-left px-1.5 py-1.5 rounded text-label transition-colors",
+                    "pressable-lg w-full flex items-center gap-2 text-left px-1.5 py-1.5 rounded text-label transition-colors",
                     on ? "bg-foreground/[0.04] text-foreground" : "text-foreground/70 hover:bg-foreground/[0.03]"
                   )}
                 >
@@ -220,7 +220,7 @@ export function CreativeFilterPanel({
             key={t.value}
             onClick={() => onChange({ ...filters, tier: t.value })}
             className={cn(
-              "px-2.5 py-1 text-label font-medium transition-colors",
+              "pressable px-2.5 py-1 text-label font-medium transition-colors",
               filters.tier === t.value
                 ? "bg-foreground/10 text-foreground"
                 : "text-muted-foreground/75 hover:text-muted-foreground/75 hover:bg-foreground/[0.03]"
@@ -251,7 +251,7 @@ export function CreativeFilterPanel({
       {isFiltered && (
         <button
           onClick={() => onChange(DEFAULT_FILTER_STATE)}
-          className="text-label text-muted-foreground/75 hover:text-foreground transition-colors flex items-center gap-1"
+          className="pressable text-label text-muted-foreground/75 hover:text-foreground transition-colors flex items-center gap-1"
         >
           <X className="w-3 h-3" />
           Clear filters

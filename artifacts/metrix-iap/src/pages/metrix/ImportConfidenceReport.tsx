@@ -161,7 +161,7 @@ function SingleCsvConfidenceReport({
     <div className="rounded-lg border border-border/40 bg-foreground/[0.02] overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 p-3 text-left hover:bg-foreground/[0.02] transition-colors"
+        className="pressable-lg w-full flex items-center gap-2 p-3 text-left hover:bg-foreground/[0.02] transition-colors"
       >
         {open ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />

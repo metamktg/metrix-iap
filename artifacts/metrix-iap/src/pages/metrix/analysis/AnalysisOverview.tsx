@@ -588,7 +588,7 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
                     onClick={() => setSortKey(c.key)}
                     aria-label={`Sort by ${c.label}${active ? (dir === "asc" ? ", currently ascending" : ", currently descending") : ""}`}
                     className={cn(
-                      "inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors whitespace-nowrap",
+                      "pressable inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors whitespace-nowrap",
                       active
                         ? "text-interactive"
                         : "text-muted-foreground/75 hover:text-foreground/80",

@@ -72,7 +72,7 @@ function HypothesisCardList({
           <button
             key={h.id}
             onClick={() => onSelect(h)}
-            className="w-full text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 hover:border-border/60 hover:bg-foreground/[0.03] transition-colors"
+            className="pressable-lg w-full text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 hover:border-border/60 hover:bg-foreground/[0.03] transition-colors"
           >
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
@@ -222,7 +222,7 @@ export function HypothesisQueueView() {
                             onClick={() => setStatusFilter(id)}
                             aria-pressed={active}
                             className={cn(
-                              "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
+                              "pressable inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
                               active ? PILL_ACTIVE : PILL_INACTIVE,
                             )}
                           >

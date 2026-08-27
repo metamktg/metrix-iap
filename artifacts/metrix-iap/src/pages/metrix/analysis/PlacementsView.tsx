@@ -499,7 +499,7 @@ export function PlacementsView() {
                           key={s.placement}
                           onClick={() => setSelectedPlacement(s.placement)}
                           data-testid={`row-placement-${s.placement}`}
-                          className="w-full text-left grid grid-cols-[minmax(120px,170px)_1fr_minmax(80px,110px)] items-center gap-3.5 group"
+                          className="pressable-lg w-full text-left grid grid-cols-[minmax(120px,170px)_1fr_minmax(80px,110px)] items-center gap-3.5 group"
                         >
                           <div className="flex flex-col gap-0.5 min-w-0">
                             <span className={cn(TYPE.body, "font-medium text-foreground/90 truncate group-hover:text-interactive transition-colors")}>

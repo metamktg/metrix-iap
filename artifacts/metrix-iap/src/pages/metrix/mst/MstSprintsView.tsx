@@ -175,7 +175,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                             onClick={(e) => { e.stopPropagation(); openCell(); }}
                             aria-label={`Open creative for ${cell.cell_id}`}
                             data-testid={`matrix-cell-creative-${cell.cell_id}`}
-                            className="h-11 w-full rounded-md bg-foreground/[0.05] hover:bg-foreground/[0.09] transition-colors flex items-center justify-center gap-1 text-micro font-medium text-muted-foreground/75"
+                            className="pressable-lg h-11 w-full rounded-md bg-foreground/[0.05] hover:bg-foreground/[0.09] transition-colors flex items-center justify-center gap-1 text-micro font-medium text-muted-foreground/75"
                           >
                             Creative <span className="text-interactive text-caption leading-none" aria-hidden="true">›</span>
                           </button>

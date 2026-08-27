@@ -201,7 +201,7 @@ export function AgentWaitlistSection() {
           <button
             onClick={handleExport}
             disabled={isExporting || total === 0}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
             data-testid="button-export-waitlist"
           >
             {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
@@ -209,7 +209,7 @@ export function AgentWaitlistSection() {
           </button>
           <button
             onClick={handleLock}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+            className="pressable flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             data-testid="button-lock-waitlist"
           >
             <Lock className="w-3.5 h-3.5" /> Lock
@@ -231,7 +231,7 @@ export function AgentWaitlistSection() {
         {searchInput && (
           <button
             onClick={() => setSearchInput("")}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/75 hover:text-muted-foreground transition-colors"
+            className="pressable absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/75 hover:text-muted-foreground transition-colors"
             aria-label="Clear search"
             data-testid="button-clear-waitlist-search"
           >
@@ -320,7 +320,7 @@ export function AgentWaitlistSection() {
                             </div>
                             <button
                               onClick={() => void handleCopyTempPassword(entry.id, result.temp_password!)}
-                              className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0"
+                              className="pressable flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0"
                               data-testid={`button-copy-temp-password-${entry.email}`}
                             >
                               <Copy className="w-3.5 h-3.5" /> {copiedEntryId === entry.id ? "Copied" : "Copy"}
@@ -383,7 +383,7 @@ export function AgentWaitlistSection() {
                             </div>
                             <button
                               onClick={() => void handleCopyTempPassword(entry.id, result.temp_password!)}
-                              className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0"
+                              className="pressable flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0"
                               data-testid={`button-copy-temp-password-${entry.email}`}
                             >
                               <Copy className="w-3.5 h-3.5" /> {copiedEntryId === entry.id ? "Copied" : "Copy"}
@@ -406,7 +406,7 @@ export function AgentWaitlistSection() {
                 <button
                   onClick={() => fetchNextPage()}
                   disabled={isFetchingNextPage}
-                  className="w-full flex items-center justify-center gap-1.5 h-8 rounded-md border border-border/40 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="pressable-lg w-full flex items-center justify-center gap-1.5 h-8 rounded-md border border-border/40 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   data-testid="button-load-more-waitlist"
                 >
                   {isFetchingNextPage ? (

@@ -325,7 +325,7 @@ export function SegmentDrilldownButton({ onClick, label = "Avatar × placement" 
         e.stopPropagation();
         onClick();
       }}
-      className="inline-flex items-center gap-1 text-label font-medium text-interactive/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
+      className="pressable inline-flex items-center gap-1 text-label font-medium text-interactive/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
     >
       <span className="w-1 h-1 rounded-full bg-primary/60" />
       {label}

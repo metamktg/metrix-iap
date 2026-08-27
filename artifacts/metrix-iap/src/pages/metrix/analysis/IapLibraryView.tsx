@@ -388,7 +388,7 @@ export function IapLibraryView() {
                           setPage(1);
                         }}
                         className={[
-                          "flex items-center gap-1 px-2.5 py-1 text-label font-medium transition-colors",
+                          "pressable flex items-center gap-1 px-2.5 py-1 text-label font-medium transition-colors",
                           funnelStage === stage
                             ? "bg-foreground/10 text-foreground"
                             : "text-muted-foreground/75 hover:text-muted-foreground/75 hover:bg-foreground/[0.03]",
@@ -478,7 +478,7 @@ export function IapLibraryView() {
                       disabled={syncMutation.isPending}
                       title={syncResult ? `${syncResult.linked}/${syncResult.total} creatives linked` : "Re-sync creative asset links"}
                       className={[
-                        "flex items-center gap-1.5 text-label font-medium border px-2.5 py-1.5 rounded-md transition-colors",
+                        "pressable flex items-center gap-1.5 text-label font-medium border px-2.5 py-1.5 rounded-md transition-colors",
                         syncMutation.isPending
                           ? "border-border/30 text-muted-foreground/75 cursor-not-allowed"
                           : syncResult
@@ -486,7 +486,7 @@ export function IapLibraryView() {
                           : "border-border/40 text-muted-foreground/75 hover:text-foreground bg-foreground/[0.02] hover:bg-foreground/[0.04] hover:border-border/60",
                       ].join(" ")}
                     >
-                      <RefreshCw className={["w-3.5 h-3.5", syncMutation.isPending ? "animate-spin" : ""].join(" ").trim()} />
+                      <RefreshCw className={["pressable w-3.5 h-3.5", syncMutation.isPending ? "animate-spin" : ""].join(" ").trim()} />
                       {syncMutation.isPending
                         ? "Syncing…"
                         : syncResult
@@ -496,14 +496,14 @@ export function IapLibraryView() {
                   )}
                   <button
                     onClick={() => setImportOpen(true)}
-                    className="flex items-center gap-1.5 text-label font-medium text-foreground/80 hover:text-foreground border border-primary/30 hover:border-primary/50 bg-primary/[0.07] hover:bg-primary/[0.12] px-2.5 py-1.5 rounded-md transition-colors"
+                    className="pressable flex items-center gap-1.5 text-label font-medium text-foreground/80 hover:text-foreground border border-primary/30 hover:border-primary/50 bg-primary/[0.07] hover:bg-primary/[0.12] px-2.5 py-1.5 rounded-md transition-colors"
                   >
                     <PlayCircle className="w-3.5 h-3.5 text-interactive" />
                     Upload &amp; Run Analysis
                   </button>
                   <button
                     onClick={() => setCreativeLibraryOpen(true)}
-                    className="flex items-center gap-1.5 text-label font-medium text-muted-foreground/75 hover:text-foreground border border-border/40 hover:border-border/60 bg-foreground/[0.02] hover:bg-foreground/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
+                    className="pressable flex items-center gap-1.5 text-label font-medium text-muted-foreground/75 hover:text-foreground border border-border/40 hover:border-border/60 bg-foreground/[0.02] hover:bg-foreground/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
                   >
                     <Images className="w-3.5 h-3.5" />
                     Add creatives
@@ -534,7 +534,7 @@ export function IapLibraryView() {
                         </div>
                         <button
                           onClick={() => setCreativeLibraryOpen(true)}
-                          className="shrink-0 flex items-center gap-1 text-label font-medium text-status-warning border border-status-warning/35 bg-status-warning/10 hover:bg-status-warning/20 px-2.5 py-1.5 rounded transition-colors"
+                          className="pressable shrink-0 flex items-center gap-1 text-label font-medium text-status-warning border border-status-warning/35 bg-status-warning/10 hover:bg-status-warning/20 px-2.5 py-1.5 rounded transition-colors"
                         >
                           <Images className="w-3.5 h-3.5" />
                           Add creatives
@@ -601,7 +601,7 @@ export function IapLibraryView() {
                               action={
                                 <button
                                   onClick={() => setCreativeFilters(DEFAULT_FILTER_STATE)}
-                                  className="text-interactive hover:underline text-label"
+                                  className="pressable text-interactive hover:underline text-label"
                                 >
                                   Clear filters
                                 </button>
@@ -665,7 +665,7 @@ export function IapLibraryView() {
                             <PendingState
                               title="No cells match filters"
                               message="Adjust the spend floor, tier, or concept filter to see cells."
-                              action={<button onClick={() => setCreativeFilters(DEFAULT_FILTER_STATE)} className="text-interactive hover:underline text-label">Clear filters</button>}
+                              action={<button onClick={() => setCreativeFilters(DEFAULT_FILTER_STATE)} className="pressable text-interactive hover:underline text-label">Clear filters</button>}
                             />
                           )}
 
@@ -702,7 +702,7 @@ export function IapLibraryView() {
                                         <button
                                           onClick={() => { close(); setDetail(row); }}
                                           data-testid={`button-full-detail-${row.cell_id}`}
-                                          className="inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
+                                          className="pressable inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                         >
                                           Full detail →
                                         </button>
@@ -743,7 +743,7 @@ export function IapLibraryView() {
                                       <button
                                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                                         disabled={safePage === 1}
-                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/75"
+                                        className="pressable text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/75"
                                         aria-label="Previous page"
                                       >
                                         ‹
@@ -754,7 +754,7 @@ export function IapLibraryView() {
                                       <button
                                         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                         disabled={safePage === totalPages}
-                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/75"
+                                        className="pressable text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/75"
                                         aria-label="Next page"
                                       >
                                         ›
@@ -972,7 +972,7 @@ export function IapLibraryView() {
                                 <button
                                   onClick={() => { close(); setDetail(row); }}
                                   data-testid={`button-full-detail-top-${row.cell_id}`}
-                                  className="inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
+                                  className="pressable inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                 >
                                   Full detail →
                                 </button>

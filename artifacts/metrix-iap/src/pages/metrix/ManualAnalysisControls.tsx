@@ -81,7 +81,7 @@ function RunAnalysisBtn({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium transition-colors",
+        "pressable flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium transition-colors",
         warning
           ? "bg-status-warning/15 border-status-warning/40 text-status-warning"
           : "bg-primary/15 border-primary/30 text-interactive",
@@ -129,7 +129,7 @@ function ColumnAliasGuide({
     <div className="rounded-md border border-border/30 overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-1.5 px-2.5 py-2 text-left hover:bg-foreground/[0.03] transition-colors"
+        className="pressable-lg w-full flex items-center gap-1.5 px-2.5 py-2 text-left hover:bg-foreground/[0.03] transition-colors"
       >
         {open ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
@@ -197,7 +197,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
     <div className="rounded-lg border border-border/40 bg-foreground/[0.02] overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 p-3 text-left hover:bg-foreground/[0.02] transition-colors"
+        className="pressable-lg w-full flex items-center gap-2 p-3 text-left hover:bg-foreground/[0.02] transition-colors"
       >
         {open ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
@@ -255,7 +255,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
               </div>
               <button
                 onClick={downloadSample}
-                className="flex items-center gap-1.5 text-caption font-medium text-interactive hover:underline"
+                className="pressable flex items-center gap-1.5 text-caption font-medium text-interactive hover:underline"
               >
                 <Download className="w-3.5 h-3.5" /> Download a sample CSV
               </button>
@@ -301,7 +301,7 @@ function ObjectiveFlagsPanel({ run }: { run: AnalysisRun }) {
 
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/[0.06] p-3 space-y-2">
-      <button onClick={() => setExpanded((v) => !v)} className="w-full flex items-start gap-2 text-left">
+      <button onClick={() => setExpanded((v) => !v)} className="pressable-lg w-full flex items-start gap-2 text-left">
         <AlertTriangle className="w-3.5 h-3.5 text-interactive shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
           <div className="text-caption font-semibold text-interactive">Objective coverage notices</div>
@@ -427,7 +427,7 @@ export function GuessedMatchesCallout({
           onClick={() => void confirmAll()}
           disabled={confirming || updateMutation.isPending}
           className={cn(
-            "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
+            "pressable flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
             confirming || updateMutation.isPending
               ? "border-status-warning/30 text-status-warning/60 cursor-not-allowed"
               : "bg-status-warning/15 border-status-warning/40 text-status-warning hover:bg-status-warning/25"
@@ -446,7 +446,7 @@ export function GuessedMatchesCallout({
         {onReview && (
           <button
             onClick={onReview}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-status-warning/30 text-caption font-medium text-status-warning/85 hover:bg-status-warning/10 transition-colors"
+            className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-status-warning/30 text-caption font-medium text-status-warning/85 hover:bg-status-warning/10 transition-colors"
           >
             {reviewLabel ?? "Review & fix"}
           </button>
@@ -630,7 +630,7 @@ function CreativeLinkageStatus({
           onClick={() => void handleResync()}
           disabled={syncMutation.isPending}
           className={cn(
-            "shrink-0 flex items-center gap-1 text-label font-medium border px-2.5 py-1.5 rounded transition-colors",
+            "pressable shrink-0 flex items-center gap-1 text-label font-medium border px-2.5 py-1.5 rounded transition-colors",
             allLinked
               ? "border-status-success/30 text-status-success hover:bg-status-success/10"
               : noneLinked
@@ -762,7 +762,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
         <div className="rounded-lg border border-status-danger/35 bg-status-danger/[0.07] p-3 space-y-2">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="w-full flex items-start gap-2 text-left"
+            className="pressable-lg w-full flex items-start gap-2 text-left"
           >
             <AlertTriangle className="w-3.5 h-3.5 text-status-danger shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
@@ -789,7 +789,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
         <div className="rounded-lg border border-status-warning/30 bg-status-warning/[0.06] p-3 space-y-2">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="w-full flex items-start gap-2 text-left"
+            className="pressable-lg w-full flex items-start gap-2 text-left"
           >
             <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
@@ -816,7 +816,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
         <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-3 space-y-2">
           <button
             onClick={() => setNoticesExpanded((v) => !v)}
-            className="w-full flex items-start gap-2 text-left"
+            className="pressable-lg w-full flex items-start gap-2 text-left"
           >
             <Info className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
@@ -900,7 +900,7 @@ function ImportHistoryPanel({
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
-        className="w-full flex items-center gap-2 px-2.5 py-2 text-left"
+        className="pressable-lg w-full flex items-center gap-2 px-2.5 py-2 text-left"
       >
         <History className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         <span className="text-caption text-muted-foreground/75 leading-snug flex-1">
@@ -927,7 +927,7 @@ function ImportHistoryPanel({
                 <button
                   onClick={() => handleRestage(run.id)}
                   disabled={disabled || restagingRunId === run.id}
-                  className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-foreground/[0.02] text-label font-medium text-foreground/80 hover:bg-foreground/[0.05] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="pressable flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-foreground/[0.02] text-label font-medium text-foreground/80 hover:bg-foreground/[0.05] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {restagingRunId === run.id ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -1178,7 +1178,7 @@ export function AnalysisControls({
           onClick={() => setDateRange(r.id)}
           disabled={isRunning}
           className={cn(
-            "h-8 px-2 rounded-md border text-caption font-medium transition-colors",
+            "pressable h-8 px-2 rounded-md border text-caption font-medium transition-colors",
             dateRange === r.id
               ? "border-primary/40 bg-primary/[0.08] text-interactive"
               : "border-border/40 bg-foreground/[0.02] text-muted-foreground/85 hover:bg-foreground/[0.04]",
@@ -1317,7 +1317,7 @@ export function AnalysisControls({
           <div className="flex items-center gap-2 pt-0.5">
             <button
               onClick={() => setForceRunAcknowledged(true)}
-              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-status-danger/35 bg-status-danger/[0.08] text-caption font-medium text-status-danger hover:bg-status-danger/[0.14] transition-colors"
+              className="pressable flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-status-danger/35 bg-status-danger/[0.08] text-caption font-medium text-status-danger hover:bg-status-danger/[0.14] transition-colors"
             >
               <PlayCircle className="w-3.5 h-3.5" /> Run anyway
             </button>

@@ -183,7 +183,7 @@ export function CreativeBriefBuilderView() {
                       data-testid={`brief-list-item-${b.id}`}
                       aria-current={selected ? "true" : undefined}
                       className={cn(
-                        "w-full text-left rounded-xl border p-3.5 transition-colors",
+                        "pressable-lg w-full text-left rounded-xl border p-3.5 transition-colors",
                         selected
                           ? "border-primary/45 bg-primary/[0.05]"
                           : "border-border/40 bg-foreground/[0.02] hover:border-primary/30 hover:bg-foreground/[0.04]",
@@ -284,7 +284,7 @@ export function CreativeBriefBuilderView() {
                         onClick={() => setProdOpen((v) => !v)}
                         aria-expanded={prodOpen}
                         data-testid="brief-production-fold"
-                        className={cn(TYPE.caption, "flex items-center gap-1.5 font-medium text-muted-foreground/75 hover:text-foreground/90 transition-colors")}
+                        className={cn("pressable", TYPE.caption, "flex items-center gap-1.5 font-medium text-muted-foreground/75 hover:text-foreground/90 transition-colors")}
                       >
                         Production detail
                         <ChevronDown className={cn("w-3 h-3 transition-transform", prodOpen && "rotate-180")} />
@@ -337,7 +337,7 @@ export function CreativeBriefBuilderView() {
                   <div className="flex flex-wrap items-center gap-2 justify-end pt-1">
                     <button
                       onClick={() => downloadBriefJson(detail, acct.name)}
-                      className={cn(TYPE.body, "flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-border/50 font-medium text-foreground hover:bg-foreground/5 transition-colors")}
+                      className={cn("pressable", TYPE.body, "flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-border/50 font-medium text-foreground hover:bg-foreground/5 transition-colors")}
                     >
                       <Download className="w-3.5 h-3.5" /> Download brief (JSON)
                     </button>

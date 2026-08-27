@@ -69,7 +69,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
               </span>
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/80 transition-colors shrink-0"
+                className="pressable flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/80 transition-colors shrink-0"
                 title="Copy to clipboard"
               >
                 <Copy className="w-3.5 h-3.5" />
@@ -104,7 +104,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
           ) : (
             <button
               onClick={() => setConnectOpen(true)}
-              className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary border border-primary text-body font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
+              className="pressable flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary border border-primary text-body font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
               data-testid="button-connect-account-integrations"
             >
               <Plug className="w-4 h-4" /> Connect
@@ -113,7 +113,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
         )}
         <button
           onClick={() => setImportOpen(true)}
-          className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-body font-medium text-interactive hover:bg-primary/25 transition-colors"
+          className="pressable flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-body font-medium text-interactive hover:bg-primary/25 transition-colors"
           data-testid="button-manual-import-integrations"
         >
           <FileUp className="w-4 h-4" /> Manual import
@@ -124,7 +124,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
       <div className="pt-1">
         <button
           onClick={selectManager}
-          className="inline-flex items-center gap-1.5 text-label text-muted-foreground/75 hover:text-foreground/80 transition-colors"
+          className="pressable inline-flex items-center gap-1.5 text-label text-muted-foreground/75 hover:text-foreground/80 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Agency-wide integration settings

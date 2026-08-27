@@ -276,7 +276,7 @@ function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<ty
                   })
                 }
                 aria-expanded={isOpen}
-                className="w-full flex items-center justify-between gap-2 text-left"
+                className="pressable-lg w-full flex items-center justify-between gap-2 text-left"
               >
                 <span className={TYPE.label}>{label} · {items.length}</span>
                 <ChevronDown
@@ -616,7 +616,7 @@ export function StrategyOverview() {
                               <button
                                 onClick={() => setExpandedPillars((e) => ({ ...e, [p.id]: !isOpen }))}
                                 aria-expanded={isOpen}
-                                className="inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors w-full"
+                                className="pressable-lg inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors w-full"
                               >
                                 <ChevronDown className={cn("w-3 h-3 transition-transform shrink-0", isOpen && "rotate-180")} />
                                 <span>{linked.length} hypothes{linked.length !== 1 ? "es" : "is"}</span>

@@ -298,7 +298,7 @@ export function AdAccountOverview() {
                 <p className="text-caption text-muted-foreground/75 leading-relaxed">
                   <span className="font-medium text-foreground/75">{matrixCellCount}</span> matrix cells · <span className="font-medium text-foreground/75">{libraryCount}</span> library concepts
                 </p>
-                <button onClick={() => navigate("/app/mst")} className="mt-2 inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-interactive transition-colors">
+                <button onClick={() => navigate("/app/mst")} className="pressable mt-2 inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-interactive transition-colors">
                   Open MST <ArrowRight className="w-3 h-3" />
                 </button>
               </div>

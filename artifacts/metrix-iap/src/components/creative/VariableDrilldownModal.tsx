@@ -86,7 +86,7 @@ export function VariableDrilldownModal({
             {onBack && (
               <button
                 onClick={onBack}
-                className="inline-flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
+                className="pressable inline-flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
               >
                 <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
                 Back
@@ -177,7 +177,7 @@ export function VariableDrilldownModal({
                       <button
                         key={`${seg.age}-${seg.gender}`}
                         onClick={() => setSegment(seg)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-primary/[0.07] cursor-pointer transition-colors group"
+                        className="pressable-lg w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-primary/[0.07] cursor-pointer transition-colors group"
                         data-testid={`row-variable-segment-${seg.age}-${seg.gender}`}
                         title="Click to open segment drill-down"
                       >
@@ -247,7 +247,7 @@ export function VariableDrilldownModal({
               </p>
               <button
                 onClick={() => { onClose(); navigate("/app/strategy/map"); }}
-                className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-label font-semibold text-interactive/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
+                className="pressable shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-label font-semibold text-interactive/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 Strategy Map

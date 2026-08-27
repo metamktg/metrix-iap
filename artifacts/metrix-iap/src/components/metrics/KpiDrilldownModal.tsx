@@ -82,7 +82,7 @@ function ViewToggle({ view, onChange }: { view: "chart" | "table"; onChange: (v:
           aria-label={id === "chart" ? "Chart view" : "Table view"}
           onClick={() => onChange(id)}
           className={cn(
-            "px-2 py-1 transition-colors",
+            "pressable px-2 py-1 transition-colors",
             view === id ? "bg-primary/15 text-interactive" : "text-muted-foreground/75 hover:text-foreground/75",
           )}
         >
@@ -99,7 +99,7 @@ function SortToggle({ dir, onChange }: { dir: "asc" | "desc"; onChange: (d: "asc
       type="button"
       onClick={() => onChange(dir === "desc" ? "asc" : "desc")}
       aria-label={dir === "desc" ? "Sorted descending — switch to ascending" : "Sorted ascending — switch to descending"}
-      className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/50 text-caption text-foreground/75 hover:text-foreground transition-colors"
+      className="pressable inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/50 text-caption text-foreground/75 hover:text-foreground transition-colors"
     >
       {dir === "desc" ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />}
       {dir === "desc" ? "High → low" : "Low → high"}
@@ -176,7 +176,7 @@ function BreakdownTable({ rows, metricLabel, showWindows, onDrillSegment }: {
                   <button
                     type="button"
                     onClick={() => onDrillSegment(r)}
-                    className="text-left truncate max-w-full text-interactive hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+                    className="pressable-lg text-left truncate max-w-full text-interactive hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
                     data-testid={`kpi-drilldown-segment-${r.key}`}
                     aria-label={`Open the deep dive for ${r.label}`}
                   >

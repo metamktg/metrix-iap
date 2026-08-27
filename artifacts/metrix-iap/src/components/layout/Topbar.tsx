@@ -116,7 +116,7 @@ function MenuItem({
       onClick={onClick}
       data-testid={testId}
       className={cn(
-        "w-full flex items-center gap-2.5 px-3.5 py-1.5 text-body font-medium transition-colors text-left",
+        "pressable-lg w-full flex items-center gap-2.5 px-3.5 py-1.5 text-body font-medium transition-colors text-left",
         danger
           ? "text-status-danger/80 hover:text-status-danger hover:bg-status-danger/[0.06]"
           : "text-foreground/70 hover:text-foreground hover:bg-foreground/[0.04]"
@@ -209,7 +209,7 @@ export function Topbar() {
         title={open ? "Close task tray" : `Pending workflow actions${trayCount > 0 ? ` (${trayCount} items)` : ""}`}
         onClick={toggle}
         className={cn(
-          "relative h-7 px-2.5 rounded-md border flex items-center gap-1.5 transition-colors text-caption font-medium",
+          "pressable relative h-7 px-2.5 rounded-md border flex items-center gap-1.5 transition-colors text-caption font-medium",
           open
             ? "bg-primary/15 border-primary/25 text-interactive hover:bg-primary/20"
             : trayCount > 0
@@ -247,7 +247,7 @@ export function Topbar() {
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
             className={cn(
-              "w-7 h-7 rounded flex items-center justify-center transition-colors",
+              "pressable w-7 h-7 rounded flex items-center justify-center transition-colors",
               menuOpen
                 ? "bg-primary/25 border border-primary/40 text-interactive"
                 : "bg-primary/15 border border-primary/20 text-interactive hover:bg-primary/20"

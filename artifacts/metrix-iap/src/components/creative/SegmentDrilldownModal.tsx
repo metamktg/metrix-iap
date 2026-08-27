@@ -77,7 +77,7 @@ function SegmentMetricPicker({
           </span>
           <button
             onClick={onReset}
-            className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground transition-colors"
+            className="pressable inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Reset
           </button>
@@ -95,14 +95,14 @@ function SegmentMetricPicker({
                   <button
                     disabled={i === 0}
                     onClick={() => onMove(id, -1)}
-                    className="p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
+                    className="pressable p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
                   >
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>
                   <button
                     disabled={i === selected.length - 1}
                     onClick={() => onMove(id, 1)}
-                    className="p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
+                    className="pressable p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
@@ -131,7 +131,7 @@ function SegmentMetricPicker({
                 title={disabled ? m.unavailableReason : capBlocked ? `Maximum of ${MAX_VISIBLE_SEGMENT_METRICS} metrics reached` : undefined}
                 data-testid={`picker-segment-metric-${m.id}`}
                 className={cn(
-                  "w-full flex items-center gap-2 px-1.5 py-1.5 rounded-md text-left transition-colors",
+                  "pressable-lg w-full flex items-center gap-2 px-1.5 py-1.5 rounded-md text-left transition-colors",
                   disabled ? "opacity-45 cursor-not-allowed" : capBlocked ? "opacity-60 cursor-not-allowed" : on ? "bg-foreground/[0.03]" : "hover:bg-foreground/[0.02]"
                 )}
               >
@@ -226,7 +226,7 @@ function CompareSegmentPicker({
                 onPick(seg);
                 setOpen(false);
               }}
-              className="w-full text-left px-1.5 py-1.5 rounded-md text-caption text-foreground/85 hover:bg-foreground/[0.04] transition-colors"
+              className="pressable-lg w-full text-left px-1.5 py-1.5 rounded-md text-caption text-foreground/85 hover:bg-foreground/[0.04] transition-colors"
               data-testid={`picker-compare-segment-${segmentKey(seg)}`}
             >
               {segmentLabel(seg)}
@@ -730,7 +730,7 @@ export function SegmentDrilldownModal({
             {onBack && (
               <button
                 onClick={onBack}
-                className="inline-flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
+                className="pressable inline-flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
               >
                 <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
                 Back
@@ -769,7 +769,7 @@ export function SegmentDrilldownModal({
                   />
                   <button
                     onClick={() => setCompareSegment(null)}
-                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
+                    className="pressable inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
                     data-testid="button-clear-compare"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -1020,7 +1020,7 @@ export function SegmentDrilldownModal({
                 onClose();
                 if (onNextStep) { onNextStep(); } else { navigate("/app/strategy/map"); }
               }}
-              className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-label font-semibold text-interactive/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
+              className="pressable shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-label font-semibold text-interactive/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
               Strategy Map

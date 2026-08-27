@@ -112,7 +112,7 @@ function RankedBlock({
               onClick={() => onDrill(r)}
               disabled={!r.drill}
               className={cn(
-                "flex w-full rounded-md border-l-2 border-transparent transition-colors",
+                "pressable-lg flex w-full rounded-md border-l-2 border-transparent transition-colors",
                 r.drill && "hover:bg-foreground/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer",
               )}
               data-testid={`deep-dive-row-${r.key}`}
@@ -279,7 +279,7 @@ export function DeepDivePanel() {
               type="button"
               onClick={pop}
               aria-label="Back to previous deep dive"
-              className="p-1 rounded hover:bg-foreground/[0.06] text-muted-foreground/75 hover:text-foreground transition-colors shrink-0"
+              className="pressable p-1 rounded hover:bg-foreground/[0.06] text-muted-foreground/75 hover:text-foreground transition-colors shrink-0"
               data-testid="deep-dive-back"
             >
               <ArrowLeft className="w-3.5 h-3.5" aria-hidden />
@@ -294,7 +294,7 @@ export function DeepDivePanel() {
                   <button
                     type="button"
                     onClick={() => jumpTo(i)}
-                    className={cn(TYPE.label, "truncate text-muted-foreground/75 hover:text-foreground transition-colors normal-case tracking-normal")}
+                    className={cn("pressable", TYPE.label, "truncate text-muted-foreground/75 hover:text-foreground transition-colors normal-case tracking-normal")}
                     data-testid={`deep-dive-crumb-${i}`}
                     title={m.title}
                   >
@@ -312,7 +312,7 @@ export function DeepDivePanel() {
             type="button"
             onClick={close}
             aria-label="Close deep dive"
-            className="ml-auto p-1 rounded hover:bg-foreground/[0.06] text-muted-foreground/75 hover:text-foreground transition-colors shrink-0"
+            className="pressable ml-auto p-1 rounded hover:bg-foreground/[0.06] text-muted-foreground/75 hover:text-foreground transition-colors shrink-0"
             data-testid="deep-dive-close"
           >
             <X className="w-3.5 h-3.5" aria-hidden />

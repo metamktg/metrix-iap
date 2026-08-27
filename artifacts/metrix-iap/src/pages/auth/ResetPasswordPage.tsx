@@ -67,7 +67,7 @@ export function ResetPasswordPage({ onBackToLogin }: { onBackToLogin: () => void
             </div>
             <button
               onClick={onBackToLogin}
-              className="w-full h-9 rounded-md bg-primary text-primary-foreground text-body font-medium hover:bg-primary/90 transition-colors"
+              className="pressable-lg w-full h-9 rounded-md bg-primary text-primary-foreground text-body font-medium hover:bg-primary/90 transition-colors"
               data-testid="button-go-to-login"
             >
               Go to sign in
@@ -87,7 +87,7 @@ export function ResetPasswordPage({ onBackToLogin }: { onBackToLogin: () => void
             </div>
             <button
               onClick={onBackToLogin}
-              className="w-full h-9 rounded-md bg-primary text-primary-foreground text-body font-medium hover:bg-primary/90 transition-colors"
+              className="pressable-lg w-full h-9 rounded-md bg-primary text-primary-foreground text-body font-medium hover:bg-primary/90 transition-colors"
               data-testid="button-back-to-login-invalid"
             >
               Back to sign in
@@ -147,7 +147,7 @@ export function ResetPasswordPage({ onBackToLogin }: { onBackToLogin: () => void
           <div className="text-center">
             <button
               onClick={onBackToLogin}
-              className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground transition-colors"
+              className="pressable inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground transition-colors"
               data-testid="button-back-to-login-reset"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back to sign in

@@ -209,7 +209,7 @@ function AvatarTile({
       <span className={cn("absolute inset-y-0 left-0 w-[3px]", avatarAccent(accentIndex))} aria-hidden />
       <button
         onClick={() => onClickAvatar(col, cells)}
-        className="group w-full text-left flex items-start justify-between gap-3"
+        className="pressable-lg group w-full text-left flex items-start justify-between gap-3"
       >
         <div className="flex items-center gap-3 min-w-0">
           <PersonaAvatar name={flatName} />
@@ -280,7 +280,7 @@ function AvatarTile({
             <button
               key={p.profile_id}
               onClick={() => onNavigateProfile(p.profile_id)}
-              className="inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
+              className="pressable inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
               data-testid={`link-avatar-icp-${p.profile_id}`}
             >
               {p.profile_name}
@@ -307,7 +307,7 @@ function AvatarSortBar({ sortBy, onSort }: { sortBy: SortKey; onSort: (k: SortKe
             onClick={() => onSort(k)}
             aria-pressed={active}
             className={cn(
-              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-body font-semibold transition-colors border",
+              "pressable inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-body font-semibold transition-colors border",
               active
                 ? "bg-primary/12 border-primary/35 text-interactive"
                 : "bg-transparent border-border/40 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60",
@@ -407,7 +407,7 @@ function DrawerAdList({
         );
       })}
       {matchedAds.length > 8 && (
-        <button type="button" onClick={() => setShowAll((v) => !v)} className="text-xs text-interactive underline-offset-2 hover:underline">
+        <button type="button" onClick={() => setShowAll((v) => !v)} className="pressable text-xs text-interactive underline-offset-2 hover:underline">
           {showAll ? "Show fewer" : `Show all ${matchedAds.length} ads`}
         </button>
       )}
@@ -629,7 +629,7 @@ export function MstCommandCenter() {
                       <button
                         key={p.profile_id}
                         onClick={() => navigate(`/app/strategy/avatars?focus=${p.profile_id}`)}
-                        className="inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
+                        className="pressable inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
                         data-testid={`link-drawer-icp-${p.profile_id}`}
                       >
                         View ICP: {p.profile_name}
@@ -638,7 +638,7 @@ export function MstCommandCenter() {
                     ))}
                     <button
                       onClick={() => navigate("/app/creative")}
-                      className="inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
+                      className="pressable inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
                     >
                       Open Creative
                       <ArrowDownRight className="w-3.5 h-3.5" />

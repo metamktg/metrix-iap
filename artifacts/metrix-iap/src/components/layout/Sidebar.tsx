@@ -314,7 +314,7 @@ function ExpandableSection({
         onClick={handleClick}
         title={landing ? `Click to expand · double-click to open ${section.label}` : undefined}
         className={cn(
-          "w-full flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-[color,background-color,border-color,box-shadow,opacity,transform] select-none",
+          "pressable-lg w-full flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-[color,background-color,border-color,box-shadow,opacity,transform] select-none",
           landingActive
             ? "mx-nav-active font-medium"
             : sectionActive
@@ -538,7 +538,7 @@ export function Sidebar() {
               onClick={toggleCollapse}
               aria-label="Expand sidebar"
               title="Expand sidebar"
-              className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
+              className="pressable w-7 h-7 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
             >
               <PanelLeftOpen className="w-3.5 h-3.5" />
             </button>
@@ -557,7 +557,7 @@ export function Sidebar() {
                 onClick={toggleCollapse}
                 aria-label="Collapse sidebar"
                 title="Collapse sidebar"
-                className="ml-auto w-6 h-6 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
+                className="pressable ml-auto w-6 h-6 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
               >
                 <PanelLeftClose className="w-3.5 h-3.5" />
               </button>

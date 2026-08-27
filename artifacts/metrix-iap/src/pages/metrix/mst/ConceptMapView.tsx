@@ -245,7 +245,7 @@ function ConceptGroupList({
           <button
             key={g.name}
             onClick={() => onSelect(g)}
-            className="text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 transition-[color,background-color,border-color,box-shadow,opacity,transform] hover:border-primary/35 hover:bg-primary/[0.04] hover:-translate-y-px"
+            className="pressable-lg text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 transition-[color,background-color,border-color,box-shadow,opacity,transform] hover:border-primary/35 hover:bg-primary/[0.04] hover:-translate-y-px"
             data-testid={`concept-group-${g.name}`}
           >
             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">

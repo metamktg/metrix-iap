@@ -194,7 +194,7 @@ function SwitcherPanel({
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors text-[10px]"
+                className="pressable text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors text-[10px]"
               >
                 ×
               </button>
@@ -209,7 +209,7 @@ function SwitcherPanel({
           <button
             onClick={() => pick(selectManager)}
             className={cn(
-              "w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors relative group",
+              "pressable-lg w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors relative group",
               isManager
                 ? "bg-primary/10 hover:bg-primary/15"
                 : "hover:bg-foreground/[0.05]"
@@ -257,7 +257,7 @@ function SwitcherPanel({
                 key={a.id}
                 onClick={() => pick(() => selectAdAccount(a.id))}
                 className={cn(
-                  "w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors relative group/row",
+                  "pressable-lg w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors relative group/row",
                   isActive
                     ? "bg-primary/10 hover:bg-primary/15"
                     : "hover:bg-foreground/[0.05]",
@@ -300,7 +300,7 @@ function SwitcherPanel({
         <div className="border-t border-border/30 p-1.5">
           <button
             onClick={() => { onClose(); setTimeout(onAddAccount, 0); }}
-            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left hover:bg-foreground/[0.05] transition-colors group"
+            className="pressable-lg w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left hover:bg-foreground/[0.05] transition-colors group"
           >
             <div className="w-8 h-8 rounded-lg border border-dashed border-border/40 flex items-center justify-center shrink-0 group-hover:border-border/60 transition-colors">
               <Plus className="w-3.5 h-3.5 text-muted-foreground/75 group-hover:text-muted-foreground/80 transition-colors" />
@@ -341,7 +341,7 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
           aria-label={`Switch account — currently: ${triggerLabel}`}
           title={triggerLabel}
           className={cn(
-            "w-10 h-10 mx-auto rounded-lg flex items-center justify-center transition-colors",
+            "pressable w-10 h-10 mx-auto rounded-lg flex items-center justify-center transition-colors",
             "hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
             open && "bg-primary/10"
           )}
@@ -374,7 +374,7 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
         onClick={toggle}
         aria-label={`Current account: ${triggerLabel}`}
         className={cn(
-          "w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-colors",
+          "pressable-lg w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-colors",
           "hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
           open && "bg-foreground/[0.06]"
         )}

@@ -118,7 +118,7 @@ export function RunScopePicker({
           data-testid="option-run-all-time"
           onClick={() => { onChange(ALL_TIME_SELECTION); setCapHit(false); }}
           className={cn(
-            "w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-colors",
+            "pressable-lg w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-colors",
             value.allTime
               ? "border-status-success/30 bg-status-success/[0.07] text-foreground/90"
               : "border-border/40 bg-transparent text-foreground/70 hover:bg-muted/30",
@@ -140,7 +140,7 @@ export function RunScopePicker({
                 data-testid={`option-run-${run.id}`}
                 onClick={() => toggleRun(run.id)}
                 className={cn(
-                  "w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
+                  "pressable-lg w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
                   isSel
                     ? "bg-status-success/[0.07] text-foreground/90"
                     : "bg-transparent text-foreground/55 hover:bg-muted/30",
@@ -204,7 +204,7 @@ export function RunSelector({
         type="button"
         onClick={() => onChange({ allTime: true, selectedRunIds: [] })}
         className={cn(
-          "w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-colors",
+          "pressable-lg w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-colors",
           value.allTime
             ? "border-status-success/30 bg-status-success/[0.07] text-foreground/90"
             : "border-border/40 bg-transparent text-foreground/70 hover:bg-muted/30",
@@ -233,7 +233,7 @@ export function RunSelector({
                 onClick={() => toggleRun(run.id)}
                 disabled={value.allTime}
                 className={cn(
-                  "w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
+                  "pressable-lg w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
                   isSel
                     ? "bg-status-success/[0.07] text-foreground/90"
                     : "bg-transparent text-foreground/55 hover:bg-muted/30",
