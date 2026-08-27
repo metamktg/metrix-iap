@@ -401,10 +401,10 @@ export function RecommendationDeck({
 
   return (
     <div className="flex flex-col">
-      <TabRail<TabId>
+      <TabRail
         tabs={TABS}
         active={tab}
-        onChange={setTab}
+        onChange={setTab as (id: TabId) => void}
         label="Recommendation state"
         className="mb-4"
       />

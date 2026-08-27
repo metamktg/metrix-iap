@@ -731,7 +731,7 @@ export function CreativeExpandDialog({
             </div>
 
             {/* Tab bar */}
-            <TabRail<Tab> tabs={TABS} active={tab} onChange={setTab} label="Creative detail section" className="shrink-0 px-1" />
+            <TabRail tabs={TABS} active={tab} onChange={setTab as (id: Tab) => void} label="Creative detail section" className="shrink-0 px-1" />
 
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
