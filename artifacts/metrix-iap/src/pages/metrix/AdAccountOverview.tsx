@@ -292,13 +292,13 @@ export function AdAccountOverview() {
             >
               <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-2.5 hover:border-border/50 transition-colors">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Grid3x3 className="w-3 h-3 text-primary/60" />
+                  <Grid3x3 className="w-3 h-3 text-interactive/75" />
                   <span className="text-caption font-medium text-foreground/75">MST active</span>
                 </div>
                 <p className="text-caption text-muted-foreground/75 leading-relaxed">
                   <span className="font-medium text-foreground/75">{matrixCellCount}</span> matrix cells · <span className="font-medium text-foreground/75">{libraryCount}</span> library concepts
                 </p>
-                <button onClick={() => navigate("/app/mst")} className="mt-2 inline-flex items-center gap-1 text-caption font-medium text-primary/75 hover:text-primary transition-colors">
+                <button onClick={() => navigate("/app/mst")} className="mt-2 inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-interactive transition-colors">
                   Open MST <ArrowRight className="w-3 h-3" />
                 </button>
               </div>

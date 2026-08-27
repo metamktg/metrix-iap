@@ -101,7 +101,7 @@ export interface FunnelStage {
 
 export const ZONE_COLOR: Record<FunnelStage["zone"], { bar: string; text: string; bg: string; border: string }> = {
   awareness:  { bar: "bg-chart-1/70",   text: "text-interactive",   bg: "bg-chart-1/[0.06]",   border: "border-primary/25" },
-  engagement: { bar: "bg-primary/70", text: "text-primary", bg: "bg-primary/[0.06]", border: "border-primary/25" },
+  engagement: { bar: "bg-primary/70", text: "text-interactive", bg: "bg-primary/[0.06]", border: "border-primary/25" },
   intent:     { bar: "bg-status-warning/70",  text: "text-status-warning",  bg: "bg-status-warning/[0.06]",  border: "border-status-warning/25" },
   conversion: { bar: "bg-chart-3/70",text: "text-status-success",bg: "bg-status-success/[0.06]",border: "border-status-success/25" },
 };

@@ -31,7 +31,7 @@ const BUCKET_STYLE: Record<ScalingBucket, string> = {
   scale_now: "border-status-success/25 bg-status-success/[0.06] text-status-success",
   optimize: "border-status-warning/25 bg-status-warning/[0.06] text-status-warning",
   validate: "border-accent/25 bg-accent/[0.06] text-accent",
-  explore: "border-primary/25 bg-primary/[0.06] text-primary",
+  explore: "border-primary/25 bg-primary/[0.06] text-interactive",
   avoid: "border-status-danger/25 bg-status-danger/[0.06] text-status-danger",
 };
 

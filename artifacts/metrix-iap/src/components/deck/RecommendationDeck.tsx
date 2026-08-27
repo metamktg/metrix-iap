@@ -532,7 +532,7 @@ function TaskTray({
                 <div key={s.id} className={cn("flex items-start gap-3 p-3 rounded-lg border bg-foreground/[0.02]", done ? "border-status-success/20 opacity-60" : "border-border/40")}>
                   <button
                     onClick={() => toggleDone(scopeId, s.id)}
-                    className={cn("mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors", done ? "bg-status-success/20 border-status-success/40 text-status-success" : "border-border/50 text-transparent hover:border-border/70")}
+                    className={cn("mt-0.5 w-4 hit-target-24 h-4 rounded border flex items-center justify-center shrink-0 transition-colors", done ? "bg-status-success/20 border-status-success/40 text-status-success" : "border-border/50 text-transparent hover:border-border/70")}
                     aria-label={done ? "Mark not done" : "Mark done"}
                   >
                     <Check className="w-3.5 h-3.5" />

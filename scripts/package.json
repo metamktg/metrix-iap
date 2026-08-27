@@ -47,7 +47,8 @@
     "mirror:auth-users": "tsx ./src/metrix-official/mirror-auth-users.ts",
     "migrate:metrix-official": "tsx ./src/metrix-official/migrate.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --config vitest.config.ts"
+    "test": "vitest run --config vitest.config.ts",
+    "check:interaction": "tsx ./src/check-interaction.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",

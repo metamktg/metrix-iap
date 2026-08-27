@@ -229,7 +229,7 @@ function PrefToggle({
       disabled={disabled}
       data-testid={testId}
       className={cn(
-        "inline-flex items-center justify-center w-5 h-5 rounded border transition-colors",
+        "inline-flex items-center justify-center w-5 hit-target-24 h-5 rounded border transition-colors",
         on
           ? "border-status-success/25 bg-status-success/10 hover:bg-status-success/20"
           : "border-border/40 bg-foreground/[0.02] hover:bg-foreground/[0.06]",

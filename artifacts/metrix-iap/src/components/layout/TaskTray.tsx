@@ -461,7 +461,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             onClick={() => setTrayItemStatus(scopeId, id, "done")}
             aria-label="Mark complete"
             title="Mark complete"
-            className="mt-0.5 w-4 h-4 rounded border border-border/50 text-transparent hover:border-status-success/60 hover:bg-status-success/5 hover:text-status-success/60 flex items-center justify-center shrink-0 transition-colors"
+            className="mt-0.5 w-4 hit-target-24 h-4 rounded border border-border/50 text-transparent hover:border-status-success/60 hover:bg-status-success/5 hover:text-status-success/60 flex items-center justify-center shrink-0 transition-colors"
           >
             <Check className="w-3.5 h-3.5" />
           </button>
@@ -511,7 +511,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
                 onClick={() => navigate(href)}
                 title="Open source"
                 aria-label={`Open source of "${title}"`}
-                className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-interactive hover:bg-foreground/5 transition-colors"
+                className="w-5 hit-target-24 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-interactive hover:bg-foreground/5 transition-colors"
               >
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
@@ -520,7 +520,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
               onClick={() => setTrayItemStatus(scopeId, id, "archived")}
               title="Archive"
               aria-label={`Archive "${title}"`}
-              className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/5 transition-colors"
+              className="w-5 hit-target-24 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/5 transition-colors"
             >
               <Archive className="w-3.5 h-3.5" />
             </button>
@@ -530,7 +530,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             onClick={() => setTrayItemStatus(scopeId, id, "open")}
             title="Move back to tray"
             aria-label={`Move "${title}" back to tray`}
-            className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/5 transition-colors shrink-0"
+            className="w-5 hit-target-24 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/5 transition-colors shrink-0"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>

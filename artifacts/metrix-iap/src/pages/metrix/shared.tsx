@@ -314,7 +314,7 @@ export function ConfidenceBadge({ value }: { value: string }) {
         : v.includes("validation") || v.includes("required")
           ? "bg-accent/10 text-accent border-accent/20"
           : c.level === "directional"
-            ? "bg-primary/10 text-primary border-primary/20"
+            ? "bg-primary/10 text-interactive border-primary/20"
             : c.level === "medium"
               ? "bg-status-warning/10 text-status-warning border-status-warning/20"
               : "bg-muted text-muted-foreground/75 border-border/40";
@@ -1719,7 +1719,7 @@ export const SCOPE_STYLE: Record<string, string> = {
   creative: "bg-status-warning/10 text-status-warning border-status-warning/20",
   funnel: "bg-metrix-cyan/10 text-metrix-cyan border-metrix-cyan/20",
   placement: "bg-status-success/10 text-status-success border-status-success/20",
-  mst: "bg-primary/10 text-primary border-primary/20",
+  mst: "bg-primary/10 text-interactive border-primary/20",
   ad_account: "bg-primary/10 text-interactive border-primary/20",
 };
 

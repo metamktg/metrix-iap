@@ -838,7 +838,7 @@ function SmartCsvUpload({
                 <button
                   onClick={() => void handleRemove(single)}
                   disabled={deleteMutation.isPending}
-                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   aria-label={`Remove ${slot.label} file`}
                 >
                   <Trash2 className="w-3 h-3" />
@@ -847,7 +847,7 @@ function SmartCsvUpload({
               {importsForSlot.length > 1 && (
                 <button
                   onClick={() => setExpandedSlot((s) => (s === slot.kind ? null : slot.kind))}
-                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
+                  className="shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
                   aria-label={`Manage ${slot.label} files`}
                 >
                   <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", expandedSlot === slot.kind && "rotate-90")} />
@@ -870,7 +870,7 @@ function SmartCsvUpload({
               <button
                 onClick={() => void handleRemove(imp)}
                 disabled={deleteMutation.isPending}
-                className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="shrink-0 w-5 hit-target-24 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 aria-label={`Remove ${imp.filename}`}
               >
                 <Trash2 className="w-3 h-3" />

@@ -316,12 +316,21 @@ export function CreativeCard({
           )}
 
           {/*
-           * Hover action bar — hidden (opacity-0) AND pointer-events-none by
-           * default so invisible state cannot intercept card clicks.
-           * On group-hover: opacity-100 + pointer-events-auto.
-           * Each action stopPropagation so parent onClick doesn't also fire.
+           * Action bar. Hidden and pointer-events-none at rest so the
+           * invisible state cannot intercept card clicks; revealed on hover,
+           * on keyboard focus anywhere inside it, and ALWAYS on a device
+           * with no hover at all.
+           *
+           * That last case is the bug this comment used to describe as
+           * correct behaviour: on a phone or tablet there is no hover, so
+           * Expand and every other action on this card was unreachable —
+           * not hard to find, unreachable. group-focus-within covers the
+           * keyboard; the (hover: none) query covers touch.
+           *
+           * Each action stopPropagation so the parent onClick does not also
+           * fire.
            */}
-          <div className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-between gap-1 px-2 py-1.5 bg-background/70 backdrop-blur-sm opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
+          <div className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-between gap-1 px-2 py-1.5 bg-background/70 backdrop-blur-sm opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto transition-opacity duration-200">
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); openDialog(); }}

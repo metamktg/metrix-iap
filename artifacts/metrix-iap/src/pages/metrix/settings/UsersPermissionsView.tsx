@@ -510,7 +510,7 @@ function MemberPermissionsCell({
         disabled={isPending}
         onClick={() => handleToggle({ manage_team: !manageTeam, view_agency_rollups: viewAgencyRollups })}
         className={cn(
-          "h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
+          "hit-target-24 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
           manageTeam
             ? "border-primary/30 bg-primary/[0.08] text-interactive"
             : "border-border/40 bg-foreground/[0.02] text-muted-foreground hover:text-foreground",
@@ -524,7 +524,7 @@ function MemberPermissionsCell({
         disabled={isPending}
         onClick={() => handleToggle({ manage_team: manageTeam, view_agency_rollups: !viewAgencyRollups })}
         className={cn(
-          "h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
+          "hit-target-24 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
           viewAgencyRollups
             ? "border-primary/30 bg-primary/[0.08] text-interactive"
             : "border-border/40 bg-foreground/[0.02] text-muted-foreground hover:text-foreground",
@@ -616,7 +616,7 @@ function MemberAdAccountsCell({
           onClick={() => setEditing((v) => !v)}
           disabled={busy && !editing}
           className={cn(
-            "flex items-center gap-1 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
+            "flex items-center gap-1 hit-target-24 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
             editing
               ? "border-primary/30 bg-primary/[0.08] text-interactive"
               : "border-dashed border-border/40 text-muted-foreground hover:text-foreground hover:border-border/70",

@@ -241,7 +241,7 @@ const COLLAPSIBLE_LANE_CONFIG: readonly { key: string; label: string; accent: st
   { key: "scale_now",          label: "Scale now", accent: "border-status-success/25 bg-status-success/[0.06] text-status-success" },
   { key: "optimize",           label: "Optimize",  accent: "border-status-warning/25 bg-status-warning/[0.06] text-status-warning" },
   { key: "validate",           label: "Validate",  accent: "border-accent/25 bg-accent/[0.06] text-accent" },
-  { key: "explore",            label: "Explore",   accent: "border-primary/25 bg-primary/[0.06] text-primary" },
+  { key: "explore",            label: "Explore",   accent: "border-primary/25 bg-primary/[0.06] text-interactive" },
   { key: "avoid_combinations", label: "Avoid",     accent: "border-status-danger/25 bg-status-danger/[0.06] text-status-danger" },
 ];
 

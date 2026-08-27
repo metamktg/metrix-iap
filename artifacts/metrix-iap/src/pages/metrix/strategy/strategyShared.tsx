@@ -497,7 +497,7 @@ const PLAYBOOK_LANES: Array<{
   { key: "scale_now", label: "Scale now", Icon: ArrowUpRight, accent: "text-status-success border-status-success/25 bg-status-success/[0.06]" },
   { key: "optimize", label: "Optimize", Icon: Sparkles, accent: "text-status-warning border-status-warning/25 bg-status-warning/[0.06]" },
   { key: "validate", label: "Validate", Icon: FlaskConical, accent: "text-accent border-accent/25 bg-accent/[0.06]" },
-  { key: "explore", label: "Explore", Icon: Search, accent: "text-primary border-primary/25 bg-primary/[0.06]" },
+  { key: "explore", label: "Explore", Icon: Search, accent: "text-interactive border-primary/25 bg-primary/[0.06]" },
   { key: "avoid_combinations", label: "Avoid", Icon: Ban, accent: "text-status-danger border-status-danger/25 bg-status-danger/[0.06]" },
 ];
 
