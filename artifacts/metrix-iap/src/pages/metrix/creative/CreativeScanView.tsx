@@ -72,7 +72,7 @@ export function CreativeScanView() {
                     ))}
                   </div>
                 </div>
-                <div className="flex items-center gap-2.5 rounded-lg border border-border/30 bg-white/[0.015] px-4 py-5 mt-1">
+                <div className="flex items-center gap-2.5 rounded-lg border border-border/30 bg-foreground/[0.015] px-4 py-5 mt-1">
                   <ScanSearch className="w-4 h-4 text-muted-foreground/50 shrink-0" />
                   <p className={cn(TYPE.body, "text-muted-foreground/65")}>
                     No scan results yet — staged assets appear here, one row per asset, once the first scan runs.

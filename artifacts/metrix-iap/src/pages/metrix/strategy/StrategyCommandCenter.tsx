@@ -124,7 +124,7 @@ export function StrategyCommandCenter() {
                 {!run ? (
                   <p className="text-caption text-muted-foreground/60">No generation runs yet for this account.</p>
                 ) : (
-                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-foreground/[0.015] px-3 py-2.5">
                     <div className="flex items-center gap-2 min-w-0">
                       {run.status === "running" && <Loader2 className="w-4 h-4 text-status-warning animate-spin shrink-0" />}
                       {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" />}

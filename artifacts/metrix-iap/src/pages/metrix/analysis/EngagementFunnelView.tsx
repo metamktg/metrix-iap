@@ -312,7 +312,7 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
               <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/60 w-28 shrink-0">
                 {stage.label}
               </span>
-              <div className="flex-1 h-5 bg-white/[0.04] rounded overflow-hidden">
+              <div className="flex-1 h-5 bg-foreground/[0.04] rounded overflow-hidden">
                 <div
                   className={cn("h-full rounded transition-[color,background-color,border-color,box-shadow,opacity,transform]", c.bar)}
                   style={{ width: `${barW}%` }}
@@ -448,7 +448,7 @@ export function BreakdownTable({
                     );
                   })}
                   <td className="w-32">
-                    <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden w-full">
+                    <div className="h-1.5 bg-foreground/[0.04] rounded-full overflow-hidden w-full">
                       <div
                         className="h-full bg-interactive/50 rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                         style={{ width: `${bar}%` }}
@@ -591,7 +591,7 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
 
 function VideoPlaceholder() {
   return (
-    <div className="rounded-xl border border-border/30 bg-white/[0.015] p-5 flex items-start gap-3">
+    <div className="rounded-xl border border-border/30 bg-foreground/[0.015] p-5 flex items-start gap-3">
       <Video className="w-5 h-5 text-muted-foreground/40 shrink-0 mt-0.5" />
       <div className="space-y-1.5 max-w-xl flex-1 min-w-0">
         <div className="text-body font-semibold text-foreground/80">Video engagement metrics not available</div>
@@ -736,7 +736,7 @@ export function EngagementFunnelView() {
             {/* ── View / Dimension controls ──────────────────────────── */}
             <div className="px-6 pt-5 pb-1 flex flex-wrap items-center gap-3">
               {/* View mode */}
-              <div className="flex items-center gap-1 rounded-lg border border-border/40 p-0.5 bg-white/[0.02]">
+              <div className="flex items-center gap-1 rounded-lg border border-border/40 p-0.5 bg-foreground/[0.02]">
                 {([ ["funnel", "Funnel", Layers], ["breakdown", "Breakdown", Table2], ["scatter", "Scatter", Activity] ] as const).map(([mode, label, Icon]) => (
                   <button
                     key={mode}
@@ -756,7 +756,7 @@ export function EngagementFunnelView() {
 
               {/* Breakdown dimension (only in breakdown/scatter mode) */}
               {(viewMode === "breakdown" || viewMode === "scatter") && (
-                <div className="flex items-center gap-1 rounded-lg border border-border/40 p-0.5 bg-white/[0.02]">
+                <div className="flex items-center gap-1 rounded-lg border border-border/40 p-0.5 bg-foreground/[0.02]">
                   {([ ["audience", "Audience"], ["placement", "Placement"], ["device", "Device"] ] as const).map(([d, l]) => (
                     <button
                       key={d}
@@ -806,24 +806,24 @@ export function EngagementFunnelView() {
                     right={<SectionInfoIcon tip="A wide gap between CTR All and CTR Link means clicks are staying on-platform (reactions, shares, profile visits) rather than driving off-platform intent." />}
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="rounded-lg border border-border/30 bg-white/[0.02] p-4">
+                      <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4">
                         <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">CTR All</div>
                         <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.ctrAll, 2)}</div>
                         <div className="text-label text-muted-foreground/50 mt-1">All clicks ÷ impressions</div>
                       </div>
-                      <div className="rounded-lg border border-border/30 bg-white/[0.02] p-4">
+                      <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4">
                         <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">CTR Link</div>
                         <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.ctrLink, 2)}</div>
                         <div className="text-label text-muted-foreground/50 mt-1">Link clicks ÷ impressions</div>
                       </div>
-                      <div className="rounded-lg border border-border/30 bg-white/[0.02] p-4">
+                      <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4">
                         <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">Reach CTR</div>
                         <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.reachCtr, 2)}</div>
                         <div className="text-label text-muted-foreground/50 mt-1">Link clicks ÷ unique reach</div>
                       </div>
                     </div>
                     {summaryTiles.ctrAll != null && summaryTiles.ctrLink != null && summaryTiles.ctrAll > 0 && (
-                      <div className="mt-3 p-3 rounded-lg border border-border/25 bg-white/[0.01] text-caption text-muted-foreground/70">
+                      <div className="mt-3 p-3 rounded-lg border border-border/25 bg-foreground/[0.01] text-caption text-muted-foreground/70">
                         <span className="font-medium text-foreground/80">Intent conversion: </span>
                         {fmtRate(pct(summaryTiles.ctrLink, summaryTiles.ctrAll), 0)} of all clicks become link clicks.
                         {summaryTiles.ctrLink != null && summaryTiles.ctrAll != null && summaryTiles.ctrAll > 0 && summaryTiles.ctrLink / summaryTiles.ctrAll < 0.4 && (

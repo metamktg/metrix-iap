@@ -413,7 +413,7 @@ function PlacementTable({ placements }: {
                 {fmtUSD(p.spend, 0)}
               </span>
             </div>
-            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+            <div className="h-1.5 rounded-full bg-foreground/[0.06] overflow-hidden">
               <div
                 className="h-full rounded-full"
                 style={{
@@ -532,11 +532,11 @@ function DemoHeatmapGrid({
                   type="button"
                   onClick={() => setSelectedSegment({ age, gender })}
                   className={cn(
-                    "rounded-md px-1.5 py-2 text-center border border-white/[0.06] min-h-[44px] flex flex-col items-center justify-center",
+                    "rounded-md px-1.5 py-2 text-center border border-foreground/[0.06] min-h-[44px] flex flex-col items-center justify-center",
                     "cursor-pointer transition-opacity",
                     isEmpty
                       ? "hover:opacity-60"
-                      : "hover:brightness-125 hover:border-white/[0.14]",
+                      : "hover:brightness-125 hover:border-foreground/[0.14]",
                     gender === "unknown" && "opacity-70 hover:opacity-90",
                   )}
                   style={{ backgroundColor: cellBg(cell?.cpa ?? null) }}
@@ -1058,7 +1058,7 @@ export function AnalysisOverview() {
                     </div>
                     {/* Right: result type donut — inline with tiles */}
                     {resultTypePie.length > 0 && (
-                      <div className="w-[196px] shrink-0 rounded-xl border border-border/40 bg-white/[0.02] p-3 flex flex-col">
+                      <div className="w-[196px] shrink-0 rounded-xl border border-border/40 bg-foreground/[0.02] p-3 flex flex-col">
                         <div className="text-sm font-bold text-foreground mb-1.5">
                           By result type
                         </div>
@@ -1245,7 +1245,7 @@ export function AnalysisOverview() {
                   {controls && (
                     <SectionCard title="Core control reads" desc="Control creative · per funnel depth" right={<SectionInfoIcon tip="The benchmark creative concepts that set the efficiency floor — new tests are judged against these." />}>
                       <div className="grid grid-cols-dashboard-2 gap-3">
-                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                        <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
                           <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">Primary control</div>
                           <p className="text-sm font-bold text-foreground">{resolveConceptName(controls.primary_control)}</p>
                           <div className="mt-1.5">
@@ -1269,7 +1269,7 @@ export function AnalysisOverview() {
                           const regId   = controls.registration_control!;
                           const regName = resolveConceptName(regId);
                           return (
-                            <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                            <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
                               <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">{term.Singular} control</div>
                               <p className="text-sm font-bold text-foreground">{regName}</p>
                               {controls.registration_control_read && (() => {
@@ -1299,7 +1299,7 @@ export function AnalysisOverview() {
                   <SectionCard title="Analysis modules" desc="Same data · different slices" right={<SectionInfoIcon tip="Deeper views of the same data sliced by library, audience, placements, and budget." />}>
                     <div className="grid grid-cols-dashboard-2 gap-3">
                       {subpages.map((s) => (
-                        <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
+                        <div key={s.to} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4 flex flex-col gap-2">
                           <div className="flex items-center gap-2">
                             <s.Icon className="w-3.5 h-3.5 text-interactive" />
                             <span className="text-sm font-bold text-foreground">{s.label}</span>

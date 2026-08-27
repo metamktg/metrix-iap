@@ -221,7 +221,7 @@ function EmptyState({ title, message }: { title: string; message: string }) {
 
 function NoticeNote({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-white/[0.02] p-3">
+    <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-3">
       <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
       <span>{children}</span>
     </div>

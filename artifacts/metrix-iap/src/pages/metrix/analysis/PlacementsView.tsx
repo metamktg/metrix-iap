@@ -193,7 +193,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
         <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{label}</p>
         <div className="rounded-lg border border-border/40 overflow-hidden">
           {[...rows].sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]).map((r, i) => (
-            <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-white/[0.01]">
+            <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-foreground/[0.01]">
               <div className="min-w-0">
                 <div className="text-caption font-medium text-foreground truncate">{r.Placement}</div>
                 <div className="text-label font-mono text-muted-foreground/50 mt-0.5">
@@ -437,7 +437,7 @@ export function PlacementsView() {
             if (blend == null) return "bg-primary/70";
             if (v <= blend) return "bg-primary/80";
             if (v <= 2 * blend) return "bg-primary/40";
-            return "bg-white/[0.12]";
+            return "bg-foreground/[0.12]";
           };
 
           return (
@@ -509,7 +509,7 @@ export function PlacementsView() {
                               {spendShare.toFixed(1)}% of spend
                             </span>
                           </div>
-                          <div className="h-3 rounded bg-white/[0.04] overflow-hidden">
+                          <div className="h-3 rounded bg-foreground/[0.04] overflow-hidden">
                             {v != null && (
                               <div
                                 className={cn("h-full rounded transition-[color,background-color,border-color,box-shadow,opacity,transform]", barFill(v))}

@@ -119,7 +119,7 @@ export function GhostBtn({ onClick, children }: { onClick: () => void; children:
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+      className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
     >
       {children}
     </button>
@@ -148,7 +148,7 @@ export function ConnectMetaDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
               <Plug className="w-4 h-4 text-muted-foreground/70" />
             </div>
             <span className="text-label font-semibold uppercase tracking-widest border border-primary/25 bg-primary/[0.08] text-interactive/80 px-2 py-1 rounded">
@@ -163,7 +163,7 @@ export function ConnectMetaDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
+        <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-foreground/[0.02]">
           <FileUp className="w-4 h-4 text-interactive/80 shrink-0 mt-0.5" />
           <div className="min-w-0">
             <div className="text-body font-semibold text-foreground">Use manual import instead</div>
@@ -358,7 +358,7 @@ function UploadProgressBar({ pct, label }: { pct: number; label: string }) {
         </span>
         <span className="shrink-0 tabular-nums">{pct}%</span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
         <div
           className="h-full rounded-full bg-primary transition-[width] duration-150 ease-out"
           style={{ width: `${Math.min(100, Math.max(pct > 0 ? 4 : 0, pct))}%` }}
@@ -382,7 +382,7 @@ function CsvMappingDiffCallout({
 }) {
   if (diff.nowFound.length === 0 && diff.stillMissing.length === 0) return null;
   return (
-    <div className="rounded-lg border border-border/40 bg-white/[0.02] p-3 space-y-2">
+    <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-3 space-y-2">
       <div className="text-caption font-semibold text-foreground/75">After re-upload</div>
       {diff.nowFound.length > 0 && (
         <div className="space-y-1">
@@ -445,7 +445,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
     <div className={cn("rounded-lg border overflow-hidden", headerColor)}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.02] transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/[0.02] transition-colors"
         aria-expanded={open}
       >
         <GitMerge className={cn("w-3.5 h-3.5 shrink-0", iconColor)} />
@@ -461,7 +461,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
       </button>
 
       {open && (
-        <div className="px-3 pb-3 space-y-1 border-t border-white/[0.04]">
+        <div className="px-3 pb-3 space-y-1 border-t border-foreground/[0.04]">
           {resolved.length > 0 && (
             <div className="pt-2 space-y-1">
               {resolved.map((e) => {
@@ -527,7 +527,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
               {optionalMissing.map((e) => (
                 <div
                   key={e.canonical}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded text-label bg-white/[0.02] border border-border/30"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded text-label bg-foreground/[0.02] border border-border/30"
                 >
                   <span className="font-medium text-muted-foreground/70 min-w-0 truncate">{e.canonical}</span>
                 </div>
@@ -798,7 +798,7 @@ function SmartCsvUpload({
             ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
             : isDragging
             ? "border-primary/60 bg-primary/[0.06]"
-            : "border-border/60 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
+            : "border-border/60 hover:border-primary/40 hover:bg-foreground/[0.02] cursor-pointer"
         )}
       >
         {current !== null ? <Loader2 className="w-5 h-5 text-interactive animate-spin" /> : <Upload className="w-5 h-5 text-muted-foreground/85" />}
@@ -819,7 +819,7 @@ function SmartCsvUpload({
               key={slot.kind}
               className={cn(
                 "flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-label min-w-0",
-                filled ? "border-status-success/20 bg-status-success/[0.05]" : "border-border/40 bg-white/[0.015]"
+                filled ? "border-status-success/20 bg-status-success/[0.05]" : "border-border/40 bg-foreground/[0.015]"
               )}
             >
               {filled ? (
@@ -847,7 +847,7 @@ function SmartCsvUpload({
               {importsForSlot.length > 1 && (
                 <button
                   onClick={() => setExpandedSlot((s) => (s === slot.kind ? null : slot.kind))}
-                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.06] transition-colors cursor-pointer"
+                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
                   aria-label={`Manage ${slot.label} files`}
                 >
                   <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", expandedSlot === slot.kind && "rotate-90")} />
@@ -859,13 +859,13 @@ function SmartCsvUpload({
       </div>
 
       {expandedSlot && (staged[expandedSlot]?.length ?? 0) > 1 && (
-        <div className="rounded-lg border border-border/40 bg-white/[0.02] p-2 space-y-1">
+        <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2 space-y-1">
           <div className="text-label font-semibold text-muted-foreground/70 px-1">
             {SMART_CSV_SLOTS.find((s) => s.kind === expandedSlot)?.label} — every one of these files feeds the next
             analysis run
           </div>
           {staged[expandedSlot]!.map((imp) => (
-            <div key={imp.id} className="flex items-center gap-2 px-1.5 py-1 rounded bg-white/[0.02] text-label">
+            <div key={imp.id} className="flex items-center gap-2 px-1.5 py-1 rounded bg-foreground/[0.02] text-label">
               <span className="text-foreground/80 truncate flex-1">{imp.filename}</span>
               <button
                 onClick={() => void handleRemove(imp)}
@@ -913,7 +913,7 @@ function SmartCsvUpload({
           <div
             className={cn(
               "rounded-lg border p-3 space-y-2",
-              alarmed ? "border-status-warning/30 bg-status-warning/[0.06]" : "border-border/40 bg-white/[0.02]",
+              alarmed ? "border-status-warning/30 bg-status-warning/[0.06]" : "border-border/40 bg-foreground/[0.02]",
             )}
           >
             <div className="flex items-start gap-2">
@@ -955,7 +955,7 @@ function SmartCsvUpload({
                   "shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors",
                   alarmed
                     ? "text-status-warning/70 hover:text-status-warning hover:bg-status-warning/10"
-                    : "text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.04]",
+                    : "text-muted-foreground/60 hover:text-foreground/80 hover:bg-foreground/[0.04]",
                 )}
                 aria-label="Dismiss warning"
               >
@@ -1014,7 +1014,7 @@ function AdNameDropdownPicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="flex items-center gap-1.5 h-7 px-2.5 rounded bg-white/[0.03] border border-border/50 text-caption text-foreground hover:border-primary/40 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 h-7 px-2.5 rounded bg-foreground/[0.03] border border-border/50 text-caption text-foreground hover:border-primary/40 transition-colors cursor-pointer"
           aria-label="Pick ad name(s) from existing analysis"
         >
           <ListChecks className="w-3.5 h-3.5 text-muted-foreground/85" />
@@ -1057,7 +1057,7 @@ function MatchMethodBadge({ method }: { method?: "id" | "fuzzy" | "guess" | null
   if (!method) return null;
   const config = {
     id: { icon: Hash, label: "Matched by ID code", className: "bg-primary/10 text-interactive" },
-    fuzzy: { icon: Sparkles, label: "Matched by filename similarity", className: "bg-white/[0.06] text-muted-foreground/85" },
+    fuzzy: { icon: Sparkles, label: "Matched by filename similarity", className: "bg-foreground/[0.06] text-muted-foreground/85" },
     guess: { icon: Sparkles, label: "Best guess — please review", className: "bg-status-warning/10 text-status-warning" },
   }[method];
   const Icon = config.icon;
@@ -1101,7 +1101,7 @@ function CreativeThumbnail({ accountId, asset }: { accountId: string; asset: Man
   return (
     <div
       ref={containerRef}
-      className="w-10 h-10 rounded-md border border-border/40 bg-black/20 overflow-hidden shrink-0 flex items-center justify-center"
+      className="w-10 h-10 rounded-md border border-border/40 bg-background/20 overflow-hidden shrink-0 flex items-center justify-center"
     >
       {broken ? (
         <Images className="w-4 h-4 text-muted-foreground/60" />
@@ -1169,7 +1169,7 @@ function CreativeAdNamesEditor({
   return (
     <div
       className={cn(
-        "p-2 rounded-md border bg-white/[0.02] space-y-1.5",
+        "p-2 rounded-md border bg-foreground/[0.02] space-y-1.5",
         asset.ad_names.length > 0 ? "border-border/30" : "border-status-warning/30 bg-status-warning/[0.03]"
       )}
     >
@@ -1198,7 +1198,7 @@ function CreativeAdNamesEditor({
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") void handleFreeSave(); }}
             placeholder="Ad name(s), comma-separated"
-            className="flex-1 h-7 px-2 rounded bg-white/[0.03] border border-border/50 text-caption text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+            className="flex-1 h-7 px-2 rounded bg-foreground/[0.03] border border-border/50 text-caption text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
           />
           <button
             onClick={() => void handleFreeSave()}
@@ -1214,7 +1214,7 @@ function CreativeAdNamesEditor({
           </button>
           <button
             onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(false); }}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:bg-white/5 transition-colors cursor-pointer"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:bg-foreground/5 transition-colors cursor-pointer"
             aria-label="Cancel"
           >
             <X className="w-3.5 h-3.5" />
@@ -1410,7 +1410,7 @@ function CreativeUploadSection({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
+      <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-foreground/[0.02]">
         <Images className="w-4 h-4 text-muted-foreground/85 shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
           <div className="text-body font-semibold text-foreground">Creative library <span className="text-muted-foreground/80 font-normal">(optional)</span></div>
@@ -1438,7 +1438,7 @@ function CreativeUploadSection({
           "w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed transition-colors",
           isUploading
             ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
-            : "border-border/60 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
+            : "border-border/60 hover:border-primary/40 hover:bg-foreground/[0.02] cursor-pointer"
         )}
       >
         {isUploading ? (
@@ -1555,7 +1555,7 @@ function CreativeUploadSection({
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => { if (confirmDeleteId) void handleDelete(confirmDeleteId); }}
-                  className="bg-status-danger hover:bg-status-danger text-white focus-visible:ring-status-danger"
+                  className="bg-status-danger hover:bg-status-danger text-foreground focus-visible:ring-status-danger"
                 >
                   Remove file
                 </AlertDialogAction>
@@ -1633,7 +1633,7 @@ function PipelineProgress({
                     ? "bg-status-warning/15 border-status-warning/40"
                     : s.active
                     ? "bg-primary/15 border-primary/40"
-                    : "bg-white/[0.03] border-border/40"
+                    : "bg-foreground/[0.03] border-border/40"
                 )}
               >
                 {s.done ? (
@@ -1746,7 +1746,7 @@ export function ManualUploadPanel({
           onAnalysis={true}
         />
         {/* Upload summary — compact, no raw file dump */}
-        <div className="rounded-lg border border-border/40 bg-white/[0.02] p-3 space-y-2">
+        <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-3 space-y-2">
           <div className="text-body font-semibold text-foreground">Files staged</div>
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 text-caption">
@@ -1913,8 +1913,8 @@ function DeconstructBadge({ status }: { status: CreativeDeconstruction["status"]
     auto_filed: "border-status-success/30 bg-status-success/[0.06] text-status-success",
     user_overridden: "border-status-success/30 bg-status-success/[0.06] text-status-success",
     needs_review: "border-status-warning/30 bg-status-warning/[0.06] text-status-warning",
-    unsupported: "border-border/50 bg-white/[0.03] text-muted-foreground/80",
-    discarded: "border-border/50 bg-white/[0.03] text-muted-foreground/80",
+    unsupported: "border-border/50 bg-foreground/[0.03] text-muted-foreground/80",
+    discarded: "border-border/50 bg-foreground/[0.03] text-muted-foreground/80",
   };
   return (
     <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded border text-label font-medium whitespace-nowrap", style[status])}>
@@ -1960,7 +1960,7 @@ function CreativeDeconstructSection({
       </div>
       {isRunning && progress && (
         <div className="px-0.5" data-testid="deconstruct-progress">
-          <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+          <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
               style={{ width: `${Math.max(4, Math.round((progress.done / Math.max(1, progress.total)) * 100))}%` }}
@@ -1972,7 +1972,7 @@ function CreativeDeconstructSection({
         {creativeAssets.map((asset) => {
           const d = byImportId.get(asset.id);
           return (
-            <div key={asset.id} className="flex items-center gap-2 px-2 py-1 rounded border border-border/30 bg-white/[0.015]">
+            <div key={asset.id} className="flex items-center gap-2 px-2 py-1 rounded border border-border/30 bg-foreground/[0.015]">
               <span className="flex-1 min-w-0 truncate text-caption text-foreground/85">{asset.filename}</span>
               {d && d.status !== "discarded" ? (
                 <>
@@ -2185,7 +2185,7 @@ export function CreativeLibraryDialog({
           <div className="flex-none px-6 pt-6 pb-4">
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
                   <Images className="w-4 h-4 text-interactive" />
                 </div>
               </div>
@@ -2325,7 +2325,7 @@ export function ManualImportDialog({
           <div className="flex-none px-6 pt-6 pb-4">
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
                   <FileUp className="w-4 h-4 text-interactive" />
                 </div>
               </div>

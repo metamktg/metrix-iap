@@ -119,7 +119,7 @@ function MenuItem({
         "w-full flex items-center gap-2.5 px-3.5 py-1.5 text-body font-medium transition-colors text-left",
         danger
           ? "text-status-danger/80 hover:text-status-danger hover:bg-status-danger/[0.06]"
-          : "text-foreground/70 hover:text-foreground hover:bg-white/[0.04]"
+          : "text-foreground/70 hover:text-foreground hover:bg-foreground/[0.04]"
       )}
     >
       <Icon className={cn("w-3.5 h-3.5 shrink-0", danger ? "text-status-danger/70" : "text-muted-foreground/50")} />
@@ -214,7 +214,7 @@ export function Topbar() {
             ? "bg-primary/15 border-primary/25 text-interactive hover:bg-primary/20"
             : trayCount > 0
             ? "border-primary/40 text-interactive hover:bg-primary/10"
-            : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-white/5"
+            : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-foreground/5"
         )}
       >
         {open ? (
@@ -234,7 +234,7 @@ export function Topbar() {
       <div className="flex items-center gap-1 shrink-0">
         <button
           aria-label="Notifications"
-          className="relative w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+          className="relative w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
         >
           <Bell className="w-3.5 h-3.5" />
         </button>

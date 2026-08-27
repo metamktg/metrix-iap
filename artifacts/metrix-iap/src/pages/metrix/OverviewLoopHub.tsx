@@ -75,7 +75,7 @@ export function OverviewLoopSummary() {
   }));
 
   return (
-    <div className="rounded-xl border border-border/40 bg-white/[0.02] px-3 py-2.5">
+    <div className="rounded-xl border border-border/40 bg-foreground/[0.02] px-3 py-2.5">
       <div className="flex items-center justify-between gap-3 mb-2">
         {/* Stage completion summary */}
         <div className="flex items-center gap-2 flex-wrap min-w-0">

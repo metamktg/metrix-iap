@@ -269,7 +269,7 @@ function MirrorTable({ rows, metricLabel, dimensionLabel, onDrillSegment }: {
 
 function NoticeNote({ children, testid }: { children: React.ReactNode; testid?: string }) {
   return (
-    <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-white/[0.02] p-3" data-testid={testid}>
+    <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-3" data-testid={testid}>
       <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden />
       <span>{children}</span>
     </div>

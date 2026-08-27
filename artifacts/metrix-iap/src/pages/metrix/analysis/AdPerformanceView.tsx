@@ -105,7 +105,7 @@ function SignalHeadlineCard({ tier, flag }: { tier: SignalTier; flag: DataQualit
       data-testid={`signal-headline-${tier}`}
       className={cn(
         "rounded-lg border px-3.5 py-3 flex flex-col gap-1.5 min-h-[92px]",
-        flag && isActNow ? "border-status-warning/30 bg-status-warning/[0.04]" : "border-border/40 bg-white/[0.015]",
+        flag && isActNow ? "border-status-warning/30 bg-status-warning/[0.04]" : "border-border/40 bg-foreground/[0.015]",
       )}
     >
       <div className="flex items-center gap-1.5">
@@ -193,7 +193,7 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
               key={globalIndex}
               className={cn(
                 "rounded-lg border px-3.5 py-3 flex flex-col gap-2",
-                isActNow ? "border-status-warning/30 bg-status-warning/[0.04]" : "border-border/40 bg-white/[0.015]",
+                isActNow ? "border-status-warning/30 bg-status-warning/[0.04]" : "border-border/40 bg-foreground/[0.015]",
               )}
             >
               <div className="flex items-center gap-1.5">
@@ -207,7 +207,7 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
                 </span>
                 {/* Real spend-affected badge — never a fabricated confidence percentage. */}
                 {spend != null && (
-                  <span className={cn(TYPE.label, "ml-auto shrink-0 border rounded-full px-2 py-0.5 font-semibold normal-case tracking-normal text-muted-foreground/65 border-border/40 bg-white/[0.03]")}>
+                  <span className={cn(TYPE.label, "ml-auto shrink-0 border rounded-full px-2 py-0.5 font-semibold normal-case tracking-normal text-muted-foreground/65 border-border/40 bg-foreground/[0.03]")}>
                     {fmtUSD(spend, 0)} affected
                   </span>
                 )}
@@ -224,7 +224,7 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
                   one uncontrolled Popover opening at a time); "Summary"
                   restores the compact click-to-reveal popover. */}
               {detailOn ? (
-                <div className="rounded-lg border border-border/30 bg-white/[0.02] p-2.5 space-y-1.5" data-testid="signal-evidence-inline">
+                <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-2.5 space-y-1.5" data-testid="signal-evidence-inline">
                   <div className={cn(TYPE.microLabel, "text-muted-foreground/60")}>Evidence</div>
                   {evidence.map((e) => (
                     <div key={e.k} className="flex items-baseline gap-2 flex-wrap">
@@ -291,9 +291,9 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
 
 const BUCKET_TAG_CLS: Record<string, string> = {
   scale_now: "border-primary/40 bg-primary/15 text-interactive",
-  optimize: "border-border/40 bg-white/[0.04] text-foreground/75",
-  validate: "border-border/40 bg-white/[0.04] text-muted-foreground/70",
-  explore: "border-border/40 bg-white/[0.04] text-muted-foreground/70",
+  optimize: "border-border/40 bg-foreground/[0.04] text-foreground/75",
+  validate: "border-border/40 bg-foreground/[0.04] text-muted-foreground/70",
+  explore: "border-border/40 bg-foreground/[0.04] text-muted-foreground/70",
   avoid: "border-status-danger/30 bg-status-danger/10 text-status-danger",
 };
 
@@ -590,18 +590,18 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
                     <tr>
                       <td colSpan={7} className="pb-3 pt-0">
                         <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          <div className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2">
+                          <div className="rounded-lg border border-border/40 bg-foreground/[0.02] px-3 py-2">
                             <div className={cn(TYPE.microLabel, "mb-1")}>Confidence</div>
                             <div className={TYPE.body}>{r.confidence ?? "Not scored yet"}</div>
                           </div>
-                          <div className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2">
+                          <div className="rounded-lg border border-border/40 bg-foreground/[0.02] px-3 py-2">
                             <div className={cn(TYPE.microLabel, "mb-1")}>Recommended next</div>
                             <div className={TYPE.body}>
                               {r.bucketEntry ?? "No playbook entry names this concept yet — position-only in the local library."}
                             </div>
                           </div>
                           {varStack && (
-                            <div className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2 sm:col-span-2">
+                            <div className="rounded-lg border border-border/40 bg-foreground/[0.02] px-3 py-2 sm:col-span-2">
                               <div className={cn(TYPE.microLabel, "mb-1.5")}>Variable stack · across mapped rows</div>
                               <div className="space-y-1.5">
                                 {Object.entries(varStack).map(([family, codes]) => (
@@ -689,7 +689,7 @@ function BuyerIntentFunnelCard({
                 <span className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/60 w-28 shrink-0")}>
                   {stage.label}
                 </span>
-                <div className="flex-1 h-4 bg-white/[0.04] rounded overflow-hidden">
+                <div className="flex-1 h-4 bg-foreground/[0.04] rounded overflow-hidden">
                   <div className={cn("h-full rounded transition-[color,background-color,border-color,box-shadow,opacity,transform]", c.bar)} style={{ width: `${barW}%` }} />
                 </div>
                 <span className={cn(TYPE.body, "font-semibold text-foreground tabular-nums w-20 text-right shrink-0")}>
@@ -1059,7 +1059,7 @@ export function AdPerformanceView() {
                       const regName = resolveConceptName(regId);
                       const regResolved = regName !== regId;
                       return (
-                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4 md:col-span-2">
+                        <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4 md:col-span-2">
                           <div className={cn(TYPE.microLabel, "text-muted-foreground/70 mb-1.5")}>{term.Singular} control</div>
                           <p className={regResolved ? TYPE.title : cn(TYPE.body, "font-mono text-muted-foreground/70")}>
                             {regName}
@@ -1103,7 +1103,7 @@ export function AdPerformanceView() {
                     <div
                       key={s.to}
                       data-testid={`featured-module-${s.label.toLowerCase().replace(/\s+/g, "-")}`}
-                      className="flex flex-col gap-1.5 rounded-xl border border-border/40 bg-white/[0.02] p-4"
+                      className="flex flex-col gap-1.5 rounded-xl border border-border/40 bg-foreground/[0.02] p-4"
                     >
                       <div className="flex items-center gap-2">
                         <s.Icon className="w-4 h-4 text-interactive shrink-0" />
@@ -1120,7 +1120,7 @@ export function AdPerformanceView() {
                     <div
                       key={s.to}
                       title={s.desc}
-                      className="flex items-center gap-2 rounded-lg border border-border/30 bg-white/[0.015] pl-3 pr-1.5 py-1.5"
+                      className="flex items-center gap-2 rounded-lg border border-border/30 bg-foreground/[0.015] pl-3 pr-1.5 py-1.5"
                     >
                       <s.Icon className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
                       <div className="flex flex-col min-w-0">

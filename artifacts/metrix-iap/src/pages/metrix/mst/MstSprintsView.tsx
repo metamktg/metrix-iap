@@ -159,11 +159,11 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                     data-testid={cell ? `matrix-cell-${cell.cell_id}` : undefined}
                     className={cn(
                       "m-0.5 p-2.5 rounded-lg border text-left min-h-[112px] flex flex-col gap-1.5 transition-opacity",
-                      isScale ? "border-primary/50 bg-primary/[0.06]" : "bg-white/[0.02]",
+                      isScale ? "border-primary/50 bg-primary/[0.06]" : "bg-foreground/[0.02]",
                       !isScale && diag === "diag_down" && "border-primary/40 ring-1 ring-primary/15",
                       !isScale && diag === "diag_up" && "border-metrix-cyan/40 ring-1 ring-metrix-cyan/15",
                       !isScale && !diag && "border-border/40",
-                      clickable && "cursor-pointer hover:bg-white/[0.05] hover:border-primary/40 transition-colors",
+                      clickable && "cursor-pointer hover:bg-foreground/[0.05] hover:border-primary/40 transition-colors",
                       dimmedCol(col.id) && "opacity-30"
                     )}
                   >
@@ -175,7 +175,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                             onClick={(e) => { e.stopPropagation(); openCell(); }}
                             aria-label={`Open creative for ${cell.cell_id}`}
                             data-testid={`matrix-cell-creative-${cell.cell_id}`}
-                            className="h-11 w-full rounded-md bg-white/[0.05] hover:bg-white/[0.09] transition-colors flex items-center justify-center gap-1 text-micro font-medium text-muted-foreground/75"
+                            className="h-11 w-full rounded-md bg-foreground/[0.05] hover:bg-foreground/[0.09] transition-colors flex items-center justify-center gap-1 text-micro font-medium text-muted-foreground/75"
                           >
                             Creative <span className="text-interactive text-caption leading-none" aria-hidden="true">›</span>
                           </button>
@@ -193,7 +193,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                                 : isAvoid
                                   ? "bg-status-danger/25 text-status-danger"
                                   : bucket
-                                    ? "bg-white/[0.06] text-foreground/70"
+                                    ? "bg-foreground/[0.06] text-foreground/70"
                                     : "text-muted-foreground/35",
                             )}
                           >

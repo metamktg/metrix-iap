@@ -48,7 +48,7 @@ function OptionRow<T extends string>({
             "flex items-center gap-1.5 px-2.5 h-7 rounded-md border text-caption font-medium transition-colors",
             value === opt
               ? "border-primary/40 bg-primary/10 text-interactive"
-              : "border-border/40 text-foreground/70 hover:text-foreground hover:bg-white/5",
+              : "border-border/40 text-foreground/70 hover:text-foreground hover:bg-foreground/5",
             disabled && "opacity-50 pointer-events-none"
           )}
         >
@@ -201,7 +201,7 @@ export function ReportConfigurationView() {
                       const v = e.target.value.trim();
                       if (v !== recipients) save({ schedule_recipients: v || null });
                     }}
-                    className="w-full h-8 px-2.5 rounded-md border border-border/40 bg-white/[0.03] text-body text-foreground/85 placeholder:text-muted-foreground/40"
+                    className="w-full h-8 px-2.5 rounded-md border border-border/40 bg-foreground/[0.03] text-body text-foreground/85 placeholder:text-muted-foreground/40"
                   />
                   <p className="text-label text-muted-foreground/60">Comma-separated emails. Saved when the field loses focus.</p>
                 </div>

@@ -88,7 +88,7 @@ function mailtoForBrief(brief: DraftBrief, pillarLabel: string): string {
 
 function FieldPanel({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-border/40 bg-white/[0.015] px-3.5 py-3">
+    <div className="rounded-lg border border-border/40 bg-foreground/[0.015] px-3.5 py-3">
       <div className={cn(TYPE.microLabel, "text-muted-foreground/55 mb-1")}>{label}</div>
       {children}
     </div>
@@ -186,14 +186,14 @@ export function CreativeBriefBuilderView() {
                         "w-full text-left rounded-xl border p-3.5 transition-colors",
                         selected
                           ? "border-primary/45 bg-primary/[0.05]"
-                          : "border-border/40 bg-white/[0.02] hover:border-primary/30 hover:bg-white/[0.04]",
+                          : "border-border/40 bg-foreground/[0.02] hover:border-primary/30 hover:bg-foreground/[0.04]",
                       )}
                     >
                       <span className="flex items-center justify-between gap-2">
                         <span className={cn(TYPE.body, "font-semibold text-foreground leading-tight truncate")}>
                           {pillarOf(b.source_pillar)?.label ?? b.source_pillar}
                         </span>
-                        <span className={cn(TYPE.label, "shrink-0 inline-flex border border-border/40 bg-white/[0.04] rounded-full px-2 py-0.5 text-foreground/70")}>
+                        <span className={cn(TYPE.label, "shrink-0 inline-flex border border-border/40 bg-foreground/[0.04] rounded-full px-2 py-0.5 text-foreground/70")}>
                           {STATUS_LABEL[b.status] ?? b.status}
                         </span>
                       </span>
@@ -219,7 +219,7 @@ export function CreativeBriefBuilderView() {
 
               {/* ── Right: selected brief workspace ── */}
               <div className="space-y-4 min-w-0" data-testid="brief-detail">
-                <div className="rounded-xl border border-border/50 bg-white/[0.02] p-5 space-y-4">
+                <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-5 space-y-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className={cn(TYPE.label, "font-semibold uppercase tracking-[0.14em] text-interactive/75")}>
                       {detail.id}{detail.book ? ` · ${detail.book}` : ""}
@@ -270,7 +270,7 @@ export function CreativeBriefBuilderView() {
                   {detail.plain_variable_descriptors.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {detail.plain_variable_descriptors.map((d) => (
-                        <span key={d} className={cn(TYPE.label, "text-foreground/75 border border-border/40 bg-white/[0.03] px-1.5 py-0.5 rounded leading-none")}>{d}</span>
+                        <span key={d} className={cn(TYPE.label, "text-foreground/75 border border-border/40 bg-foreground/[0.03] px-1.5 py-0.5 rounded leading-none")}>{d}</span>
                       ))}
                     </div>
                   )}
@@ -337,7 +337,7 @@ export function CreativeBriefBuilderView() {
                   <div className="flex flex-wrap items-center gap-2 justify-end pt-1">
                     <button
                       onClick={() => downloadBriefJson(detail, acct.name)}
-                      className={cn(TYPE.body, "flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-border/50 font-medium text-foreground hover:bg-white/5 transition-colors")}
+                      className={cn(TYPE.body, "flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-border/50 font-medium text-foreground hover:bg-foreground/5 transition-colors")}
                     >
                       <Download className="w-3.5 h-3.5" /> Download brief (JSON)
                     </button>

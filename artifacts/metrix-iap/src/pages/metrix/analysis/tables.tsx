@@ -130,7 +130,7 @@ export function SortableTh({
             data-testid={`sort-reset-${sortKey}`}
             title="Clear sort"
             aria-label="Clear sort"
-            className="ml-0.5 p-0.5 rounded text-muted-foreground/35 hover:text-foreground/80 hover:bg-white/[0.06] transition-colors"
+            className="ml-0.5 p-0.5 rounded text-muted-foreground/35 hover:text-foreground/80 hover:bg-foreground/[0.06] transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -204,7 +204,7 @@ function VirtualTableBody<Row>({
 
 function TableShellInner({ children, scrollRef }: { children: React.ReactNode; scrollRef: React.RefObject<HTMLDivElement | null> }) {
   return (
-    <div className="rounded-xl border border-border/40 overflow-hidden bg-white/[0.015]">
+    <div className="rounded-xl border border-border/40 overflow-hidden bg-foreground/[0.015]">
       <div ref={scrollRef} className="overflow-x-auto max-h-[520px] overflow-y-auto">
         <table className="nc-table">{children}</table>
       </div>
@@ -277,7 +277,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
     return (
       <tr
         key={r.cell_id + r["Result type"]}
-        className={cn(onRowClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
+        className={cn(onRowClick && "cursor-pointer active:bg-foreground/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
         onClick={onRowClick ? () => onRowClick(r) : undefined}
         role={onRowClick ? "button" : undefined}
         tabIndex={onRowClick ? 0 : undefined}
@@ -388,7 +388,7 @@ export function VariableTable({
     return (
       <tr
         key={r.variable_id + r["Result type"] + i}
-        className={cn(onRowClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
+        className={cn(onRowClick && "cursor-pointer active:bg-foreground/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
         onClick={onRowClick ? () => onRowClick(r) : undefined}
         role={onRowClick ? "button" : undefined}
         tabIndex={onRowClick ? 0 : undefined}
@@ -406,7 +406,7 @@ export function VariableTable({
           <div className="flex flex-col gap-0.5">
             <span>{fmtUSD(r["Amount spent (USD)"])}</span>
             {heatmapOn && maxSpend > 0 && (
-              <div className="h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
+              <div className="h-[3px] rounded-full bg-foreground/[0.06] overflow-hidden">
                 <div
                   className="h-full rounded-full"
                   style={{ width: `${spendIntensity * 100}%`, background: "hsl(var(--chart-1) / 0.65)" }}
@@ -496,7 +496,7 @@ export function DemographicTable({
   return (
     <div>
       {heatmap && maxCvr > 0 && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-white/[0.01] text-label text-muted-foreground/65 font-mono">
+        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-foreground/[0.01] text-label text-muted-foreground/65 font-mono">
           <span className="uppercase tracking-widest">CVR</span>
           <span className="text-muted-foreground/65">low</span>
           <div
@@ -525,7 +525,7 @@ export function DemographicTable({
             return (
               <tr
                 key={r.cell_id + r.Age + r.Gender + i}
-                className={cn(onSegmentClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
+                className={cn(onSegmentClick && "cursor-pointer active:bg-foreground/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
                 onClick={onSegmentClick ? () => onSegmentClick({ age: r.Age, gender: r.Gender }) : undefined}
                 role={onSegmentClick ? "button" : undefined}
                 tabIndex={onSegmentClick ? 0 : undefined}

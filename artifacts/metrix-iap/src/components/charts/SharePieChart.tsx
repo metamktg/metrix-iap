@@ -56,12 +56,12 @@ export function SharePieChart({
         aria-label="Loading chart"
         role="status"
       >
-        <div className="w-32 h-32 rounded-full border-8 border-white/[0.06] animate-pulse" />
+        <div className="w-32 h-32 rounded-full border-8 border-foreground/[0.06] animate-pulse" />
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
           {[80, 56, 64].map((w) => (
             <div key={w} className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-white/[0.08] animate-pulse" />
-              <div className="h-2.5 rounded bg-white/[0.08] animate-pulse" style={{ width: w }} />
+              <div className="w-2 h-2 rounded-full bg-foreground/[0.08] animate-pulse" />
+              <div className="h-2.5 rounded bg-foreground/[0.08] animate-pulse" style={{ width: w }} />
             </div>
           ))}
         </div>

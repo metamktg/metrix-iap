@@ -30,7 +30,7 @@ function SessionSection() {
 
   return (
     <SectionCard title="Your session" desc="The account you're currently signed in with.">
-      <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+      <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
         <UserCircle2 className="w-4 h-4 text-interactive shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-body font-medium text-foreground truncate" data-testid="text-session-email">{user.email}</div>
@@ -39,7 +39,7 @@ function SessionSection() {
         <button
           onClick={handleSignOut}
           disabled={signingOut}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-50"
           data-testid="button-sign-out"
         >
           {signingOut ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogOut className="w-3 h-3" />}
@@ -97,7 +97,7 @@ function ActiveSessionsSection() {
                   "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-label font-medium transition-colors shrink-0",
                   s.is_current
                     ? "border-status-danger/30 text-status-danger hover:bg-status-danger/10"
-                    : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5",
+                    : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
                   revoke.isPending && "opacity-50 pointer-events-none"
                 )}
               >
@@ -112,7 +112,7 @@ function ActiveSessionsSection() {
 }
 
 const inputClass =
-  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40";
+  "w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40";
 
 function PasswordSection() {
   const { changePassword } = useAuth();
@@ -267,7 +267,7 @@ export function SecurityView() {
         <SessionSection />
         <PasswordSection />
         <ActiveSessionsSection />
-        <div className="flex items-start gap-2.5 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+        <div className="flex items-start gap-2.5 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
           <ShieldCheck className="w-4 h-4 text-muted-foreground/60 shrink-0 mt-0.5" />
           <p className="text-caption text-muted-foreground/70 leading-relaxed">
             Two-factor authentication and login history are planned but not yet built.

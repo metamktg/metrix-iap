@@ -71,7 +71,7 @@ function ExpandVisualInner({ data, className }: { data: CreativeCardData; classN
     return (
       <div className={cn("relative w-full h-full", className)}>
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/[0.03]">
+          <div className="absolute inset-0 flex items-center justify-center bg-foreground/[0.03]">
             <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary/50 animate-spin" />
           </div>
         )}
@@ -96,7 +96,7 @@ function ExpandVisualInner({ data, className }: { data: CreativeCardData; classN
       <span className="text-hero font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
         {data.conceptCode}
       </span>
-      <span className={cn(TYPE.microLabel, "flex items-center gap-1.5 text-white/35")}>
+      <span className={cn(TYPE.microLabel, "flex items-center gap-1.5 text-foreground/35")}>
         <ImageOff className="w-3.5 h-3.5" /> No asset in import
       </span>
     </div>
@@ -185,7 +185,7 @@ function MetricToggle({ options, value, onChange }: {
           className={cn(
             "px-2.5 py-1 font-mono uppercase tracking-wide transition-colors",
             value === o.value
-              ? "bg-white/10 text-foreground"
+              ? "bg-foreground/10 text-foreground"
               : "text-muted-foreground/50 hover:text-muted-foreground/70"
           )}
         >
@@ -210,7 +210,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
             { label: "CPA", value: s.cpa != null ? usd(s.cpa) : "—" },
             { label: "Link CTR", value: pct(s.ctrPct) },
           ] as const).map((item) => (
-            <div key={item.label} className="rounded-lg border border-border/30 bg-white/[0.02] px-3 py-2.5 text-center">
+            <div key={item.label} className="rounded-lg border border-border/30 bg-foreground/[0.02] px-3 py-2.5 text-center">
               <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">{item.label}</div>
               <div className="text-lg font-bold text-foreground tabular-nums leading-none">{item.value}</div>
             </div>
@@ -406,7 +406,7 @@ function DemographicsTab({
                 "w-full text-left rounded-lg border px-3 py-2.5 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
                 isActive
                   ? "border-primary/40 bg-primary/[0.06]"
-                  : "border-border/30 bg-white/[0.015] hover:border-border/50 hover:bg-white/[0.03]"
+                  : "border-border/30 bg-foreground/[0.015] hover:border-border/50 hover:bg-foreground/[0.03]"
               )}
             >
               {/* Row header: age + value */}
@@ -420,7 +420,7 @@ function DemographicsTab({
               </div>
 
               {/* Stacked bar */}
-              <div className="h-4 rounded-md bg-white/[0.04] overflow-hidden">
+              <div className="h-4 rounded-md bg-foreground/[0.04] overflow-hidden">
                 <div
                   className="h-full flex rounded-md overflow-hidden transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-500"
                   style={{ width: `${barW}%` }}
@@ -461,7 +461,7 @@ function DemographicsTab({
 
       {/* KPI panel for selected bucket */}
       {activeBucket && (
-        <div className="rounded-xl border border-border/40 bg-white/[0.025] overflow-hidden">
+        <div className="rounded-xl border border-border/40 bg-foreground/[0.025] overflow-hidden">
           {/* Panel header */}
           <div className="px-4 py-2.5 border-b border-border/30 flex items-center justify-between">
             <div>
@@ -604,7 +604,7 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
                   {metric === "spend" ? usd(b["Amount spent (USD)"]) : cpa != null ? usd(cpa) : "—"}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+              <div className="h-1.5 rounded-full bg-foreground/[0.05] overflow-hidden">
                 <div
                   className="h-full rounded-full bg-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-700"
                   style={{ width: `${barW}%` }}
@@ -729,7 +729,7 @@ export function CreativeExpandDialog({
 
             {data.assetFormat && (
               <div className="absolute bottom-3 left-3">
-                <span className="text-[8px] font-mono uppercase text-white/50 border border-white/10 bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                <span className="text-[8px] font-mono uppercase text-foreground/50 border border-foreground/10 bg-background/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
                   {data.assetFormat}
                 </span>
               </div>

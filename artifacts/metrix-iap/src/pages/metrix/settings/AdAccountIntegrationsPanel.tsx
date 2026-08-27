@@ -35,7 +35,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
   return (
     <div className="px-6 py-5 max-w-3xl space-y-5">
       {/* Account config card */}
-      <div className="rounded-xl border border-border/30 bg-white/[0.02] overflow-hidden">
+      <div className="rounded-xl border border-border/30 bg-foreground/[0.02] overflow-hidden">
         {/* Header row */}
         <div className="flex items-center gap-3 p-4 border-b border-border/20">
           {configured ? (
@@ -52,7 +52,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
               "text-label font-semibold uppercase tracking-wide px-2 py-1 rounded border leading-none shrink-0",
               configured
                 ? "text-status-success border-status-success/25 bg-status-success/10"
-                : "text-muted-foreground/85 border-border/40 bg-white/[0.03]"
+                : "text-muted-foreground/85 border-border/40 bg-foreground/[0.03]"
             )}
           >
             {configured ? "Connected" : "Not connected"}

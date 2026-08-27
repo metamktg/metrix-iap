@@ -290,7 +290,7 @@ export function AdAccountOverview() {
               desc="MST status"
               right={<SectionInfoIcon tip="Whether a Matrix Sprint Test is active for this account, and how many matrix cells and library concepts it covers." />}
             >
-              <div className="rounded-lg border border-border/30 bg-white/[0.015] p-2.5 hover:border-border/50 transition-colors">
+              <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-2.5 hover:border-border/50 transition-colors">
                 <div className="flex items-center gap-1.5 mb-1">
                   <Grid3x3 className="w-3 h-3 text-primary/60" />
                   <span className="text-caption font-medium text-foreground/75">MST active</span>

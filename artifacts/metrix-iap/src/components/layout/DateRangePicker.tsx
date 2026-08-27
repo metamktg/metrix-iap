@@ -63,7 +63,7 @@ export function DateRangePicker() {
       <PopoverTrigger asChild>
         <button
           aria-label={`Date range: ${rangeLabel}`}
-          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-foreground/80 hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
+          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0"
         >
           <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/70" />
           <span className="hidden md:inline tabular-nums">{rangeLabel}</span>
@@ -96,7 +96,7 @@ export function DateRangePicker() {
                 "w-full flex items-center gap-2 px-2 h-8 rounded text-body transition-colors",
                 preset === p
                   ? "text-interactive bg-primary/10 font-medium"
-                  : "text-foreground/75 hover:text-foreground hover:bg-white/5"
+                  : "text-foreground/75 hover:text-foreground hover:bg-foreground/5"
               )}
             >
               <span className="flex-1 text-left">{PRESET_LABELS[p]}</span>
@@ -115,7 +115,7 @@ export function DateRangePicker() {
               max={bounds.end}
               onChange={(e) => setDraftStart(e.target.value)}
               aria-label="Custom range start"
-              className="flex-1 min-w-0 h-7 px-1.5 rounded border border-border/40 bg-white/[0.03] text-caption text-foreground/80 [color-scheme:dark]"
+              className="flex-1 min-w-0 h-7 px-1.5 rounded border border-border/40 bg-foreground/[0.03] text-caption text-foreground/80 [color-scheme:dark]"
             />
             <span className="text-label text-muted-foreground/60">→</span>
             <input
@@ -125,7 +125,7 @@ export function DateRangePicker() {
               max={bounds.end}
               onChange={(e) => setDraftEnd(e.target.value)}
               aria-label="Custom range end"
-              className="flex-1 min-w-0 h-7 px-1.5 rounded border border-border/40 bg-white/[0.03] text-caption text-foreground/80 [color-scheme:dark]"
+              className="flex-1 min-w-0 h-7 px-1.5 rounded border border-border/40 bg-foreground/[0.03] text-caption text-foreground/80 [color-scheme:dark]"
             />
           </div>
           <button

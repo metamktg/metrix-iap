@@ -95,12 +95,12 @@ function PlaceholderVisual({ code, format, className }: { code: string; format?:
       >
         {code}
       </span>
-      <span className="flex items-center gap-1 text-[8px] font-mono uppercase tracking-widest text-white/25">
+      <span className="flex items-center gap-1 text-[8px] font-mono uppercase tracking-widest text-foreground/25">
         <ImageOff className="w-3.5 h-3.5" />
         No asset
       </span>
       {format && (
-        <span className="absolute top-1.5 right-1.5 text-[8px] font-mono uppercase tracking-wide text-white/30 border border-white/10 px-1 py-0.5 rounded leading-none">
+        <span className="absolute top-1.5 right-1.5 text-[8px] font-mono uppercase tracking-wide text-foreground/30 border border-foreground/10 px-1 py-0.5 rounded leading-none">
           {format}
         </span>
       )}
@@ -140,7 +140,7 @@ function CreativeVisualInner({ data, className }: { data: CreativeCardData; clas
     return (
       <div className={cn("relative w-full h-full", className)}>
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/[0.03]">
+          <div className="absolute inset-0 flex items-center justify-center bg-foreground/[0.03]">
             <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary/50 animate-spin" />
           </div>
         )}
@@ -282,18 +282,18 @@ export function CreativeCard({
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDialog(); } }}
         tabIndex={0}
         className={cn(
-          "group relative rounded-xl border bg-white/[0.02] overflow-hidden",
+          "group relative rounded-xl border bg-foreground/[0.02] overflow-hidden",
           "transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200 flex flex-col cursor-pointer",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-          "hover:shadow-lg hover:shadow-black/30",
+          "hover:shadow-lg hover:shadow-background/60",
           unmapped
             ? "border-status-warning/30 hover:border-status-warning/50"
-            : "border-white/[0.09] hover:border-primary/30",
+            : "border-foreground/[0.09] hover:border-primary/30",
           className
         )}
       >
         {/* Visual area — pointer-events-none so root div click fires reliably */}
-        <div className="relative aspect-[4/5] w-full overflow-hidden border-b border-white/[0.06]">
+        <div className="relative aspect-[4/5] w-full overflow-hidden border-b border-foreground/[0.06]">
           {/* Asset or placeholder (pointer-events-none so clicks bubble to root) */}
           <div className="absolute inset-0 transition-transform duration-500 will-change-transform group-hover:scale-[1.04] pointer-events-none">
             <CreativeVisual data={data} />
@@ -321,12 +321,12 @@ export function CreativeCard({
            * On group-hover: opacity-100 + pointer-events-auto.
            * Each action stopPropagation so parent onClick doesn't also fire.
            */}
-          <div className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-between gap-1 px-2 py-1.5 bg-black/70 backdrop-blur-sm opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
+          <div className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-between gap-1 px-2 py-1.5 bg-background/70 backdrop-blur-sm opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); openDialog(); }}
               title="Expand creative"
-              className="flex items-center gap-1 text-[9px] font-medium text-white/80 hover:text-white transition-colors"
+              className="flex items-center gap-1 text-[9px] font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               <Maximize2 className="w-3.5 h-3.5" />
               Expand
@@ -337,7 +337,7 @@ export function CreativeCard({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onUploadCreative(data.conceptCode); }}
                   title={data.assetUrl ? "Replace creative" : "Upload creative"}
-                  className="flex items-center gap-1 text-[9px] font-medium text-white/70 hover:text-white transition-colors"
+                  className="flex items-center gap-1 text-[9px] font-medium text-foreground/70 hover:text-foreground transition-colors"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   {data.assetUrl ? "Replace" : "Upload"}

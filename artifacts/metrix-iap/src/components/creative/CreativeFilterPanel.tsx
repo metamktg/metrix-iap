@@ -75,7 +75,7 @@ function SpendFloorInput({
   }, [value]);
 
   return (
-    <div className="flex items-center gap-1 border border-border/40 rounded-md px-2.5 py-1 bg-white/[0.02] hover:border-border/60 transition-colors">
+    <div className="flex items-center gap-1 border border-border/40 rounded-md px-2.5 py-1 bg-foreground/[0.02] hover:border-border/60 transition-colors">
       <span className="text-label text-muted-foreground/50 shrink-0">≥ $</span>
       <input
         type="text"
@@ -132,7 +132,7 @@ function ConceptMultiSelect({
             "flex items-center gap-1.5 border rounded-md px-2.5 py-1 text-label font-medium transition-colors",
             selected.length > 0
               ? "border-primary/40 bg-primary/[0.06] text-foreground"
-              : "border-border/40 bg-white/[0.02] text-muted-foreground/70 hover:border-border/60 hover:text-foreground"
+              : "border-border/40 bg-foreground/[0.02] text-muted-foreground/70 hover:border-border/60 hover:text-foreground"
           )}
           aria-label="Filter by concept"
         >
@@ -164,7 +164,7 @@ function ConceptMultiSelect({
                   onClick={() => toggle(name)}
                   className={cn(
                     "w-full flex items-center gap-2 text-left px-1.5 py-1.5 rounded text-label transition-colors",
-                    on ? "bg-white/[0.04] text-foreground" : "text-foreground/70 hover:bg-white/[0.03]"
+                    on ? "bg-foreground/[0.04] text-foreground" : "text-foreground/70 hover:bg-foreground/[0.03]"
                   )}
                 >
                   <span className={cn(
@@ -222,8 +222,8 @@ export function CreativeFilterPanel({
             className={cn(
               "px-2.5 py-1 text-label font-medium transition-colors",
               filters.tier === t.value
-                ? "bg-white/10 text-foreground"
-                : "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-white/[0.03]"
+                ? "bg-foreground/10 text-foreground"
+                : "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-foreground/[0.03]"
             )}
           >
             {t.label}

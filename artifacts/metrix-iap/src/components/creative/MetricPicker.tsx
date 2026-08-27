@@ -26,7 +26,7 @@ export function MetricPickerButton({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] transition-colors">
+        <button className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.04] transition-colors">
           <Settings2 className="w-3.5 h-3.5" />
           Customize metrics
         </button>
@@ -83,7 +83,7 @@ export function MetricPickerButton({
                 onClick={() => onToggle(m.id)}
                 className={cn(
                   "w-full flex items-center gap-2 px-1.5 py-1.5 rounded-md text-left transition-colors",
-                  on ? "bg-white/[0.03]" : "hover:bg-white/[0.02]"
+                  on ? "bg-foreground/[0.03]" : "hover:bg-foreground/[0.02]"
                 )}
               >
                 <span

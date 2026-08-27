@@ -216,7 +216,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
     >
       {/* Header row: concept code + tier badge + confidence */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-caption font-bold font-mono text-foreground/60 bg-white/[0.05] px-1.5 py-0.5 rounded border border-white/[0.08]">
+        <span className="text-caption font-bold font-mono text-foreground/60 bg-foreground/[0.05] px-1.5 py-0.5 rounded border border-foreground/[0.08]">
           {score.book} {score.concept_code}
         </span>
         <span
@@ -271,7 +271,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
 
       {/* What / so_what text */}
       {(whatText || soWhatText) && (
-        <div className="border-t border-white/[0.06] pt-2.5 space-y-1.5">
+        <div className="border-t border-foreground/[0.06] pt-2.5 space-y-1.5">
           {whatText && (
             <DenseText
               text={whatText}
@@ -308,7 +308,7 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
           {fmtUSD(totalWasted, 0)} flagged spend
         </span>
       </div>
-      <div className="rounded-xl border border-[hsl(var(--border))] bg-secondary overflow-hidden divide-y divide-white/[0.04]">
+      <div className="rounded-xl border border-[hsl(var(--border))] bg-secondary overflow-hidden divide-y divide-foreground/[0.04]">
         {fold.visible.map((p, i) => (
           <div key={i} className="flex items-start gap-3 px-4 py-3">
             <AlertTriangle className="w-3.5 h-3.5 text-status-warning/60 shrink-0 mt-0.5" />
@@ -332,7 +332,7 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
 function FindingsEmptyState() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-      <div className="w-12 h-12 rounded-xl border border-border/40 bg-white/[0.02] flex items-center justify-center">
+      <div className="w-12 h-12 rounded-xl border border-border/40 bg-foreground/[0.02] flex items-center justify-center">
         <span className="text-display opacity-30">🔍</span>
       </div>
       <p className="text-title font-semibold text-foreground/70">No intelligence data yet</p>
@@ -477,7 +477,7 @@ export function FindingsView() {
               {/* ── Blended CPA summary row ────────────────────────────── */}
               {execSummary && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
+                  <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-foreground/[0.02] px-4 py-3">
                     <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Total spend</span>
                     <span
                       className="text-display font-semibold tabular-nums leading-none text-interactive"
@@ -485,7 +485,7 @@ export function FindingsView() {
                       {execSummary.total_spend != null ? fmtMetric("usd_total", execSummary.total_spend) : "—"}
                     </span>
                   </div>
-                  <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
+                  <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-foreground/[0.02] px-4 py-3">
                     <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Total results</span>
                     <span
                       className="text-display font-semibold tabular-nums leading-none text-interactive"
@@ -494,7 +494,7 @@ export function FindingsView() {
                     </span>
                   </div>
                   {execSummary.blended_cpa_by_book && Object.entries(execSummary.blended_cpa_by_book).slice(0, 2).map(([book, cpa]) => (
-                    <div key={book} className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
+                    <div key={book} className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-foreground/[0.02] px-4 py-3">
                       <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Blended CPA · {book}</span>
                       <span
                         className="text-display font-semibold tabular-nums leading-none text-interactive"

@@ -114,7 +114,7 @@ function saveTrayWidth(width: number) {
 function TrayAnalysisUnconfigured({ accountId }: { accountId: string }) {
   const [, navigate] = useLocation();
   return (
-    <div className="mx-4 rounded-xl border border-border/50 bg-white/[0.025] overflow-hidden">
+    <div className="mx-4 rounded-xl border border-border/50 bg-foreground/[0.025] overflow-hidden">
       {/* Header stripe */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30 bg-primary/[0.04]">
         <CalendarRange className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
@@ -138,7 +138,7 @@ function TrayAnalysisUnconfigured({ accountId }: { accountId: string }) {
           </button>
           <button
             onClick={() => navigate(`/app/account?account=${accountId}`)}
-            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-border/40 bg-white/[0.03] text-caption font-medium text-foreground/65 hover:text-foreground hover:bg-white/[0.06] transition-colors"
+            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-border/40 bg-foreground/[0.03] text-caption font-medium text-foreground/65 hover:text-foreground hover:bg-foreground/[0.06] transition-colors"
           >
             <Zap className="w-3.5 h-3.5" />
             Connect Meta
@@ -211,7 +211,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
   };
 
   return (
-    <div className="mx-4 rounded-xl border border-border/50 bg-white/[0.025] overflow-hidden">
+    <div className="mx-4 rounded-xl border border-border/50 bg-foreground/[0.025] overflow-hidden">
       {/* Header stripe */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30 bg-primary/[0.04]">
         <CalendarRange className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
@@ -266,7 +266,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
                 "h-7 rounded-lg border text-label font-semibold transition-colors",
                 dateRange === r.id
                   ? "border-primary/50 bg-primary/15 text-interactive"
-                  : "border-border/35 bg-white/[0.02] text-foreground/50 hover:bg-white/[0.05] hover:text-foreground/75",
+                  : "border-border/35 bg-foreground/[0.02] text-foreground/50 hover:bg-foreground/[0.05] hover:text-foreground/75",
                 isRunning && "opacity-40 cursor-not-allowed"
               )}
             >
@@ -285,7 +285,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
           (<button
             onClick={() => void handleRun()}
             disabled={startMutation.isPending}
-            className="w-full flex items-center justify-center gap-1.5 h-7 rounded-lg border border-border/30 bg-white/[0.02] text-caption font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.05] hover:border-border/50 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 h-7 rounded-lg border border-border/30 bg-foreground/[0.02] text-caption font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-foreground/[0.05] hover:border-border/50 transition-colors"
           >
             {startMutation.isPending ? (
               <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Starting…</>
@@ -404,7 +404,7 @@ function TrayCard({
   return (
     <div
       className={cn(
-        "relative rounded-lg border bg-white/[0.03] px-2.5 py-2 pl-[14px] pt-[4px] pb-[14px] space-y-1.5",
+        "relative rounded-lg border bg-foreground/[0.03] px-2.5 py-2 pl-[14px] pt-[4px] pb-[14px] space-y-1.5",
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:rounded-full",
         ACCENT[accent],
         muted ? "border-border/20 opacity-50" : "border-border/40"
@@ -432,7 +432,7 @@ function TrayItem({
     <TrayCard accent={accent}>
       <p className="font-medium text-foreground/90 line-clamp-2 text-[15px] pt-[4px] pb-[4px] mb-[10px] mt-[0px] pr-[40px]">{label}</p>
       {sub && (
-        <span className="inline-block font-semibold uppercase tracking-wide bg-white/[0.06] border border-border/30 rounded px-1.5 py-0.5 text-foreground/55 text-[15px]">
+        <span className="inline-block font-semibold uppercase tracking-wide bg-foreground/[0.06] border border-border/30 rounded px-1.5 py-0.5 text-foreground/55 text-[15px]">
           {sub}
         </span>
       )}
@@ -486,7 +486,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             <p className="text-label text-foreground/60 mt-0.5 leading-snug line-clamp-2">{sub}</p>
           )}
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <span className="text-[8px] font-semibold border border-border/30 bg-white/[0.05] px-1.5 py-0.5 rounded text-foreground/55 leading-none">
+            <span className="text-[8px] font-semibold border border-border/30 bg-foreground/[0.05] px-1.5 py-0.5 rounded text-foreground/55 leading-none">
               {KIND_LABEL[kind]}
             </span>
             {settled && (
@@ -495,7 +495,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
                   "text-[8px] font-semibold px-1.5 py-0.5 rounded leading-none border",
                   status === "done"
                     ? "border-status-success/20 bg-status-success/[0.07] text-status-success/80"
-                    : "border-border/30 bg-white/[0.04] text-muted-foreground/60"
+                    : "border-border/30 bg-foreground/[0.04] text-muted-foreground/60"
                 )}
               >
                 {status === "done" ? "Completed" : "Archived"}
@@ -511,7 +511,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
                 onClick={() => navigate(href)}
                 title="Open source"
                 aria-label={`Open source of "${title}"`}
-                className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-interactive hover:bg-white/5 transition-colors"
+                className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-interactive hover:bg-foreground/5 transition-colors"
               >
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
@@ -520,7 +520,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
               onClick={() => setTrayItemStatus(scopeId, id, "archived")}
               title="Archive"
               aria-label={`Archive "${title}"`}
-              className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/5 transition-colors"
+              className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-foreground/5 transition-colors"
             >
               <Archive className="w-3.5 h-3.5" />
             </button>
@@ -530,7 +530,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             onClick={() => setTrayItemStatus(scopeId, id, "open")}
             title="Move back to tray"
             aria-label={`Move "${title}" back to tray`}
-            className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/5 transition-colors shrink-0"
+            className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-foreground/5 transition-colors shrink-0"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -553,7 +553,7 @@ function TrayNavLink({
   return (
     <button
       onClick={() => navigate(to)}
-      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-foreground/60 hover:text-foreground hover:bg-white/[0.04] transition-colors text-left min-w-0 text-[14px] font-semibold"
+      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-foreground/60 hover:text-foreground hover:bg-foreground/[0.04] transition-colors text-left min-w-0 text-[14px] font-semibold"
     >
       {Icon && <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50" />}
       <span className="truncate font-extrabold text-[18px] text-metrix-cyan bg-metrix-panel border-t-[3px] border-r-[3px] border-b-[3px] border-l-[3px] rounded-tl-[8px] rounded-tr-[8px] rounded-br-[8px] rounded-bl-[8px] opacity-[0.94] ml-[14px] mr-[14px] mt-[8px] mb-[8px] pt-[8px] pb-[8px] pl-[20px] pr-[20px] border-t-[color:var(--color-sky-500)] border-r-[color:var(--color-sky-500)] border-b-[color:var(--color-sky-500)] border-l-[color:var(--color-sky-500)]">{label}</span>
@@ -711,7 +711,7 @@ export function TaskTray() {
             className="flex flex-col items-center gap-2 w-full px-1 text-muted-foreground/60 hover:text-primary transition-colors group"
           >
             <div className="relative">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-white/[0.05] border border-border/40 group-hover:bg-white/[0.08] border-t-[0px] border-r-[0px] border-b-[0px] border-l-[0px]">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-foreground/[0.05] border border-border/40 group-hover:bg-foreground/[0.08] border-t-[0px] border-r-[0px] border-b-[0px] border-l-[0px]">
                 <ClipboardList
                   className={cn(
                     "w-4 h-4 transition-transform group-hover:scale-110",
@@ -723,7 +723,7 @@ export function TaskTray() {
                 <span className={cn(
                   "absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold leading-none px-1 tabular-nums border",
                   hasPriorityItems
-                    ? "bg-status-success text-white border-status-success/50"
+                    ? "bg-status-success text-foreground border-status-success/50"
                     : "bg-primary text-primary-foreground border-primary/50"
                 )}>
                   {Math.min(totalItems, 9)}
@@ -742,7 +742,7 @@ export function TaskTray() {
             onClick={toggle}
             title="Expand"
             aria-label="Expand task tray"
-            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-white/[0.05] transition-colors"
+            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-foreground/[0.05] transition-colors"
           >
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
@@ -750,7 +750,7 @@ export function TaskTray() {
       ) : (
       <>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-white/[0.02]">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-foreground/[0.02]">
         <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
           <ClipboardList className="w-4 h-4 text-interactive" />
         </div>
@@ -767,7 +767,7 @@ export function TaskTray() {
         <button
           onClick={close}
           aria-label="Close task tray"
-          className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.06] transition-colors shrink-0"
+          className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-foreground/[0.06] transition-colors shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
@@ -910,7 +910,7 @@ export function TaskTray() {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-border/40 bg-white/[0.01]">
+      <div className="px-4 py-2.5 border-t border-border/40 bg-foreground/[0.01]">
         <p className="text-[9px] text-foreground/35 leading-snug">
           Action items update as you work through analysis, strategy &amp; briefs.
         </p>

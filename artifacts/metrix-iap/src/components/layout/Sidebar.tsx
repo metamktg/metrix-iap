@@ -247,7 +247,7 @@ function CollapsedItem({
             "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] relative overflow-hidden",
             active
               ? "bg-primary/20 text-interactive border border-primary/30"
-              : "text-foreground/45 hover:text-foreground/90 hover:bg-white/[0.07]",
+              : "text-foreground/45 hover:text-foreground/90 hover:bg-foreground/[0.07]",
             section.placeholder && "opacity-50"
           )}
         >
@@ -256,7 +256,7 @@ function CollapsedItem({
           )}
           <NavIcon name={section.icon} className="w-4 h-4" />
           {badgeCount != null && badgeCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[7px] font-bold text-white flex items-center justify-center leading-none">
+            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[7px] font-bold text-foreground flex items-center justify-center leading-none">
               {badgeCount > 9 ? "9+" : badgeCount}
             </span>
           )}
@@ -326,7 +326,7 @@ function ExpandableSection({
           name={section.icon}
           className={cn(
             "w-4 h-4 shrink-0",
-            landingActive ? "text-white" : sectionActive ? "text-interactive" : "text-muted-foreground/70"
+            landingActive ? "text-foreground" : sectionActive ? "text-interactive" : "text-muted-foreground/70"
           )}
         />
         <span className="flex-1 text-left truncate">{section.label}</span>
@@ -335,7 +335,7 @@ function ExpandableSection({
           className={cn(
             "w-3 h-3 shrink-0 transition-transform duration-200",
             open && "rotate-180",
-            landingActive ? "text-white/70" : "text-muted-foreground/40"
+            landingActive ? "text-foreground/70" : "text-muted-foreground/40"
           )}
         />
       </button>
@@ -401,7 +401,7 @@ function LeafSection({
           name={section.icon}
           className={cn(
             "w-4 h-4 shrink-0",
-            active ? "text-white" : "text-muted-foreground/70"
+            active ? "text-foreground" : "text-muted-foreground/70"
           )}
         />
         <span className="flex-1">{section.label}</span>
@@ -538,7 +538,7 @@ export function Sidebar() {
               onClick={toggleCollapse}
               aria-label="Expand sidebar"
               title="Expand sidebar"
-              className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/[0.05] transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
             >
               <PanelLeftOpen className="w-3.5 h-3.5" />
             </button>
@@ -557,7 +557,7 @@ export function Sidebar() {
                 onClick={toggleCollapse}
                 aria-label="Collapse sidebar"
                 title="Collapse sidebar"
-                className="ml-auto w-6 h-6 flex items-center justify-center rounded text-muted-foreground/35 hover:text-muted-foreground hover:bg-white/[0.05] transition-colors"
+                className="ml-auto w-6 h-6 flex items-center justify-center rounded text-muted-foreground/35 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
               >
                 <PanelLeftClose className="w-3.5 h-3.5" />
               </button>

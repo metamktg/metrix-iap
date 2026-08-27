@@ -199,7 +199,7 @@ function ReviewItem({
                 <span
                   key={v.code}
                   title={v.evidence ?? undefined}
-                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-border/50 bg-white/[0.03] text-label font-mono text-foreground/90"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-border/50 bg-foreground/[0.03] text-label font-mono text-foreground/90"
                 >
                   {v.code}
                   <span className="text-muted-foreground/70">{pct(v.confidence)}</span>
@@ -312,7 +312,7 @@ export function DeconstructionReviewQueue({ accountId }: { accountId: string | n
       {queue.length === 0 ? (
         <div
           data-testid="review-queue-empty"
-          className="rounded-lg border border-border/40 bg-white/[0.02] p-6 text-center text-caption text-muted-foreground/80"
+          className="rounded-lg border border-border/40 bg-foreground/[0.02] p-6 text-center text-caption text-muted-foreground/80"
         >
           Nothing needs review — new classifications land here when a deconstruction run grades a
           creative below 80% confidence.

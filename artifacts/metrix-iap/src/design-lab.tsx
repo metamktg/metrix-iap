@@ -36,7 +36,7 @@ const pct = (n: number) => `${n.toFixed(2)}%`;
 
 function Panel({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border/40 bg-white/[0.02] p-4 mb-4">
+    <section className="rounded-2xl border border-border/40 bg-foreground/[0.02] p-4 mb-4">
       <h2 className="text-cardtitle font-bold text-foreground leading-tight">{title}</h2>
       {note && <p className="text-label mt-0.5 mb-3">{note}</p>}
       <div className={note ? "" : "mt-3"}>{children}</div>

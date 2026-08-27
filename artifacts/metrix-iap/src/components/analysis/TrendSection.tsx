@@ -85,7 +85,7 @@ export function TrendSection({ accountId, start, end }: TrendSectionProps) {
 
   return (
     <section className="px-6 pt-5" aria-label="Daily trend">
-      <div className="rounded-2xl border border-border/40 bg-white/[0.02] p-4">
+      <div className="rounded-2xl border border-border/40 bg-foreground/[0.02] p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
           <div>
             <h3 className="text-title font-bold text-foreground leading-snug">Daily trend</h3>

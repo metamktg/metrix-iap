@@ -390,8 +390,8 @@ export function IapLibraryView() {
                         className={[
                           "flex items-center gap-1 px-2.5 py-1 text-label font-medium transition-colors",
                           funnelStage === stage
-                            ? "bg-white/10 text-foreground"
-                            : "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-white/[0.03]",
+                            ? "bg-foreground/10 text-foreground"
+                            : "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-foreground/[0.03]",
                         ].join(" ")}
                       >
                         {icon}{label}
@@ -483,7 +483,7 @@ export function IapLibraryView() {
                           ? "border-border/30 text-muted-foreground/40 cursor-not-allowed"
                           : syncResult
                           ? "border-status-success/30 text-status-success/80 bg-status-success/[0.04] hover:bg-status-success/[0.08]"
-                          : "border-border/40 text-muted-foreground/70 hover:text-foreground bg-white/[0.02] hover:bg-white/[0.04] hover:border-border/60",
+                          : "border-border/40 text-muted-foreground/70 hover:text-foreground bg-foreground/[0.02] hover:bg-foreground/[0.04] hover:border-border/60",
                       ].join(" ")}
                     >
                       <RefreshCw className={["w-3.5 h-3.5", syncMutation.isPending ? "animate-spin" : ""].join(" ").trim()} />
@@ -503,7 +503,7 @@ export function IapLibraryView() {
                   </button>
                   <button
                     onClick={() => setCreativeLibraryOpen(true)}
-                    className="flex items-center gap-1.5 text-label font-medium text-muted-foreground/70 hover:text-foreground border border-border/40 hover:border-border/60 bg-white/[0.02] hover:bg-white/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
+                    className="flex items-center gap-1.5 text-label font-medium text-muted-foreground/70 hover:text-foreground border border-border/40 hover:border-border/60 bg-foreground/[0.02] hover:bg-foreground/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
                   >
                     <Images className="w-3.5 h-3.5" />
                     Add creatives
@@ -702,7 +702,7 @@ export function IapLibraryView() {
                                         <button
                                           onClick={() => { close(); setDetail(row); }}
                                           data-testid={`button-full-detail-${row.cell_id}`}
-                                          className="inline-flex items-center gap-1.5 text-title font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
+                                          className="inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                         >
                                           Full detail →
                                         </button>
@@ -729,7 +729,7 @@ export function IapLibraryView() {
                                         className={`text-label font-medium px-2 py-1 rounded transition-colors ${
                                           pageSize === n
                                             ? "bg-primary/15 text-interactive"
-                                            : "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.04]"
+                                            : "text-muted-foreground/50 hover:text-foreground hover:bg-foreground/[0.04]"
                                         }`}
                                       >
                                         {n}
@@ -743,7 +743,7 @@ export function IapLibraryView() {
                                       <button
                                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                                         disabled={safePage === 1}
-                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
+                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/70"
                                         aria-label="Previous page"
                                       >
                                         ‹
@@ -754,7 +754,7 @@ export function IapLibraryView() {
                                       <button
                                         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                         disabled={safePage === totalPages}
-                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
+                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/70"
                                         aria-label="Next page"
                                       >
                                         ›
@@ -887,16 +887,16 @@ export function IapLibraryView() {
                     const p75 = rankedCpas[Math.floor(rankedCpas.length * 0.75)] ?? rankedCpas[rankedCpas.length - 1];
                     const tierFor = (cpa: number | null): { label: string; cls: string } => {
                       if (cpa == null || rankedCpas.length < 2) {
-                        return { label: "Unranked", cls: "bg-white/[0.05] text-muted-foreground/55 border-border/30" };
+                        return { label: "Unranked", cls: "bg-foreground/[0.05] text-muted-foreground/55 border-border/30" };
                       }
                       if (cpa <= p25) return { label: "Top 25%", cls: "bg-status-success/10 text-status-success border-status-success/25" };
                       if (cpa >= p75) return { label: "Bottom 25%", cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
-                      return { label: "Mid 50%", cls: "bg-white/[0.05] text-muted-foreground/70 border-border/30" };
+                      return { label: "Mid 50%", cls: "bg-foreground/[0.05] text-muted-foreground/70 border-border/30" };
                     };
 
                     return (
                       <div className="space-y-4">
-                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                        <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
                           <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">Text assets</p>
                           <h3 className="text-title font-semibold text-foreground mb-1">Meta ad copy, read against the same result</h3>
                           <p className="text-caption text-muted-foreground/70 leading-relaxed">
@@ -915,7 +915,7 @@ export function IapLibraryView() {
                                 type="button"
                                 onClick={() => setDetail(row)}
                                 data-testid={`ad-copy-card-${row.cell_id}`}
-                                className="rounded-xl border border-border/40 bg-white/[0.02] hover:border-primary/30 hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors p-3.5 text-left flex flex-col gap-2.5 focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
+                                className="rounded-xl border border-border/40 bg-foreground/[0.02] hover:border-primary/30 hover:bg-foreground/[0.04] active:bg-foreground/[0.06] transition-colors p-3.5 text-left flex flex-col gap-2.5 focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
                               >
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="text-label font-mono text-interactive/80">{row.cell_id}</span>
@@ -972,7 +972,7 @@ export function IapLibraryView() {
                                 <button
                                   onClick={() => { close(); setDetail(row); }}
                                   data-testid={`button-full-detail-top-${row.cell_id}`}
-                                  className="inline-flex items-center gap-1.5 text-title font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
+                                  className="inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                 >
                                   Full detail →
                                 </button>
@@ -1012,7 +1012,7 @@ export function IapLibraryView() {
                               onClick={f.top ? () => setVariableCode(f.top!.variableId) : undefined}
                               onKeyDown={f.top ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setVariableCode(f.top!.variableId); } } : undefined}
                               title={f.top ? "Open drill-down for this family's best read" : undefined}
-                              className={`rounded-xl border border-border/40 bg-white/[0.02] p-3 ${f.top ? "cursor-pointer hover:border-primary/30 hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60" : ""}`}
+                              className={`rounded-xl border border-border/40 bg-foreground/[0.02] p-3 ${f.top ? "cursor-pointer hover:border-primary/30 hover:bg-foreground/[0.04] active:bg-foreground/[0.06] transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60" : ""}`}
                               data-testid={`dna-family-${f.family}`}
                             >
                               <div className="flex items-center justify-between gap-2 mb-3">
@@ -1120,7 +1120,7 @@ export function IapLibraryView() {
                     <MetricTile label="Link CTR" value={fmtPct(detail.CTR_link_pct)} />
                   </div>
                   {/* Secondary delivery stats — derived from this row, dashes when absent */}
-                  <div className="grid grid-cols-3 gap-x-3 gap-y-2 rounded-lg border border-border/30 bg-white/[0.015] p-3">
+                  <div className="grid grid-cols-3 gap-x-3 gap-y-2 rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
                     {(() => {
                       const spend = detail["Amount spent (USD)"];
                       const imps = detail.Impressions;

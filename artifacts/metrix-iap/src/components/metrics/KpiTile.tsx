@@ -81,7 +81,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
         "w-full text-left px-3 py-1.5 flex items-center justify-between gap-3 transition-colors",
         m.id === activeId
           ? "bg-primary/10 text-interactive"
-          : "text-foreground/75 hover:bg-white/[0.05]",
+          : "text-foreground/75 hover:bg-foreground/[0.05]",
       )}
     >
       <span className="text-caption truncate">{m.label}</span>
@@ -380,7 +380,7 @@ function KpiValue({ formatted, isRefetching }: { formatted: string; isRefetching
   // says so to assistive tech; the dash now means exactly one thing.
   return isRefetching ? (
     <span
-      className="inline-block h-[1em] w-[3.5ch] rounded bg-white/[0.08] animate-pulse align-middle"
+      className="inline-block h-[1em] w-[3.5ch] rounded bg-foreground/[0.08] animate-pulse align-middle"
       aria-busy="true"
       aria-label="Loading"
       data-testid="kpi-value-loading"

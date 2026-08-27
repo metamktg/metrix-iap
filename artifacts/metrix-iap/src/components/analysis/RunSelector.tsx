@@ -96,7 +96,7 @@ export function RunScopePicker({
         <button
           type="button"
           data-testid="button-run-scope"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border/40 bg-white/[0.02] hover:bg-muted/30 px-2.5 py-1.5 text-caption text-foreground/80 transition-colors max-w-[280px]"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border/40 bg-foreground/[0.02] hover:bg-muted/30 px-2.5 py-1.5 text-caption text-foreground/80 transition-colors max-w-[280px]"
           title="Scope to analysis run"
         >
           <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
@@ -257,7 +257,7 @@ export function RunSelector({
             );
           })}
           {hiddenCount > 0 && (
-            <div className="px-2.5 py-1.5 bg-white/[0.01]">
+            <div className="px-2.5 py-1.5 bg-foreground/[0.01]">
               <span className="text-[9px] text-muted-foreground/25">
                 +{hiddenCount} older run{hiddenCount !== 1 ? "s" : ""} not shown
               </span>

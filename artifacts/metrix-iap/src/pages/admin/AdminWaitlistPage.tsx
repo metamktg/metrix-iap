@@ -64,7 +64,7 @@ import {
 import { cn } from "@workspace/command-deck/lib/utils";
 
 const INPUT_CLS =
-  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring";
+  "w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring";
 
 function StatusBadge({ status }: { status: string }) {
   const cls =
@@ -132,7 +132,7 @@ function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
           Email could not be sent — share this temporary password with {outcome.email} manually:
         </div>
         <div className="flex items-center gap-2">
-          <code className="text-body font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded">
+          <code className="text-body font-mono text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded">
             {outcome.temp_password}
           </code>
           <CopyButton value={outcome.temp_password} />
@@ -309,7 +309,7 @@ function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email:
       </div>
       {outcome.value && (
         <div className="flex items-center gap-2 min-w-0">
-          <code className="text-caption font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded truncate">
+          <code className="text-caption font-mono text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded truncate">
             {outcome.value}
           </code>
           <CopyButton value={outcome.value} />
@@ -380,7 +380,7 @@ function ManageAccessPanel({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60"
       data-testid="panel-manage-access"
     >
       <div className="w-full max-w-sm rounded-xl border border-border/40 bg-background shadow-2xl">
@@ -391,7 +391,7 @@ function ManageAccessPanel({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1 rounded hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -441,7 +441,7 @@ function ManageAccessPanel({
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-border/30">
           <button
             onClick={onClose}
-            className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             Cancel
           </button>
@@ -504,7 +504,7 @@ function DeleteConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60"
       data-testid="modal-delete-confirm"
     >
       <div className="w-full max-w-sm rounded-xl border border-status-danger/30 bg-background shadow-2xl">
@@ -537,7 +537,7 @@ function DeleteConfirmModal({
             <button
               type="button"
               onClick={onClose}
-              className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             >
               Cancel
             </button>
@@ -607,7 +607,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60"
       data-testid="dialog-add-user"
     >
       <div className="w-full max-w-md rounded-xl border border-border/40 bg-background shadow-2xl">
@@ -618,7 +618,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1 rounded hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -636,7 +636,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
                   Email could not be sent — share this temporary password with {outcome.email} manually:
                 </div>
                 <div className="flex items-center gap-2">
-                  <code className="text-body font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded">
+                  <code className="text-body font-mono text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded">
                     {outcome.temp_password}
                   </code>
                   <CopyButton value={outcome.temp_password} />
@@ -648,7 +648,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
             ) : null}
             <button
               onClick={onClose}
-              className="w-full h-8 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              className="w-full h-8 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             >
               Close
             </button>
@@ -697,7 +697,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
                       "h-7 px-3 rounded-md border text-label font-medium transition-colors capitalize",
                       role === r
                         ? "border-primary/50 bg-primary/15 text-interactive"
-                        : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-white/5",
+                        : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
                     )}
                   >
                     {r}
@@ -721,7 +721,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
                     No ad accounts available.
                   </div>
                 ) : (
-                  <div className="rounded-md border border-border/30 bg-white/[0.02]">
+                  <div className="rounded-md border border-border/30 bg-foreground/[0.02]">
                     <button
                       type="button"
                       onClick={() => setShowAccountPicker((v) => !v)}
@@ -778,7 +778,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
               <button
                 type="button"
                 onClick={onClose}
-                className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                className="h-8 px-3 rounded-md border border-border/50 text-caption text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
               >
                 Cancel
               </button>
@@ -837,7 +837,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
         />
       )}
       <div
-        className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-2"
+        className="rounded-lg border border-border/30 bg-foreground/[0.02] p-3 space-y-2"
         data-testid={`row-user-${user.id}`}
       >
         <div className="flex items-center gap-3 flex-wrap">
@@ -871,7 +871,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                   user.ad_account_ids.map((id) => (
                     <span
                       key={id}
-                      className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-border/30 text-muted-foreground/70 font-mono leading-none"
+                      className="text-[9px] px-1.5 py-0.5 rounded bg-foreground/[0.06] border border-border/30 text-muted-foreground/70 font-mono leading-none"
                     >
                       {id}
                     </span>
@@ -911,7 +911,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                 disabled={busy}
                 className={cn(
                   actionBtn,
-                  "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5",
+                  "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
                 )}
                 data-testid={`button-resend-temp-${user.id}`}
               >
@@ -945,7 +945,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                 disabled={busy}
                 className={cn(
                   actionBtn,
-                  "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5",
+                  "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
                 )}
                 data-testid={`button-send-reset-${user.id}`}
               >
@@ -1043,7 +1043,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
             disabled={busy}
             className={cn(
               actionBtn,
-              "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5",
+              "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5",
             )}
             data-testid={`button-manage-access-${user.id}`}
           >
@@ -1146,7 +1146,7 @@ function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChange
 
   return (
     <div
-      className="rounded-lg border border-border/30 bg-white/[0.02] p-4 space-y-3"
+      className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4 space-y-3"
       data-testid={`card-request-${entry.id}`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -1220,7 +1220,7 @@ function WaitlistRow({ entry, onChanged }: { entry: WaitlistEntry; onChanged: ()
 
   return (
     <div
-      className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-2"
+      className="rounded-lg border border-border/30 bg-foreground/[0.02] p-3 space-y-2"
       data-testid={`row-waitlist-${entry.id}`}
     >
       <div className="flex items-center gap-3">
@@ -1392,7 +1392,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
             onClick={() =>
               logout.mutate(undefined, { onSuccess: onLogout, onError: onLogout })
             }
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             data-testid="button-admin-logout"
           >
             <LogOut className="w-3.5 h-3.5" /> Sign out

@@ -58,8 +58,8 @@ export function FunnelStepsChart({ steps }: { steps: FunnelStep[] }) {
               className={cn(
                 "rounded-lg border px-3 py-2.5 transition-colors",
                 hasData
-                  ? "border-border/35 bg-white/[0.02]"
-                  : "border-border/20 bg-white/[0.01] opacity-50"
+                  ? "border-border/35 bg-foreground/[0.02]"
+                  : "border-border/20 bg-foreground/[0.01] opacity-50"
               )}
             >
               <div className="flex items-center justify-between mb-1.5">
@@ -77,7 +77,7 @@ export function FunnelStepsChart({ steps }: { steps: FunnelStep[] }) {
                 </span>
               </div>
               {/* Bar */}
-              <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+              <div className="h-1.5 rounded-full bg-foreground/[0.04] overflow-hidden">
                 <div
                   className={cn(
                     "h-full rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-700",

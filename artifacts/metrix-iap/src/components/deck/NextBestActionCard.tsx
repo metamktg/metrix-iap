@@ -120,11 +120,11 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
             />
             <HeroBadge
               text={`${card.confidence} confidence`}
-              cls="border-border/40 bg-white/[0.03] text-muted-foreground/80"
+              cls="border-border/40 bg-foreground/[0.03] text-muted-foreground/80"
             />
             <HeroBadge
               text={card.scope.replace(/_/g, " ")}
-              cls="border-border/40 bg-white/[0.03] text-muted-foreground/60"
+              cls="border-border/40 bg-foreground/[0.03] text-muted-foreground/60"
             />
           </div>
           <div className="mt-2.5">

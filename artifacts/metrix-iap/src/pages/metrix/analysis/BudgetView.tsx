@@ -35,7 +35,7 @@ function EventRowsList({ rows }: { rows: EventRow[] }) {
   return (
     <div className="rounded-xl border border-border/40 overflow-hidden">
       {/* Compact header row */}
-      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2 border-b border-border/30 bg-white/[0.015]">
+      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2 border-b border-border/30 bg-foreground/[0.015]">
         <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55">Event</span>
         <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Spend</span>
         <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Results</span>
@@ -45,7 +45,7 @@ function EventRowsList({ rows }: { rows: EventRow[] }) {
       {fold.visible.map(({ event, totals }) => (
         <div
           key={event}
-          className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2.5 border-b border-border/15 last:border-b-0 hover:bg-white/[0.02] transition-colors"
+          className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2.5 border-b border-border/15 last:border-b-0 hover:bg-foreground/[0.02] transition-colors"
         >
           <span className="text-body font-medium text-foreground/90 truncate">{eventLabel(event)}</span>
           <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{fmtUSD(totals.spend, 0)}</span>
@@ -71,7 +71,7 @@ function ConceptRowsList({ rows, maxConcept }: { rows: [string, number][]; maxCo
             <span className="text-foreground/85 font-medium">{name}</span>
             <span className="text-muted-foreground/60 tabular-nums">{fmtUSD(spend, 0)}</span>
           </div>
-          <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+          <div className="h-1.5 rounded-full bg-foreground/[0.04] overflow-hidden">
             <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max((spend / maxConcept) * 100, 3)}%` }} />
           </div>
         </div>
@@ -238,10 +238,10 @@ export function BudgetView() {
               </SectionCard>
 
               {a && (a.v3_placement_signal.length > 0 || a.c4e_placement_signal.length > 0) && (
-                <div className="rounded-xl border border-border/30 bg-white/[0.01] overflow-hidden">
+                <div className="rounded-xl border border-border/30 bg-foreground/[0.01] overflow-hidden">
                   <button
                     onClick={() => setShowPlacements((v) => !v)}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors group"
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-foreground/[0.02] transition-colors group"
                     aria-expanded={showPlacements}
                   >
                     <div className="text-left">

@@ -91,7 +91,7 @@ function AngleRow({
       {/* Angle header */}
       <button
         onClick={() => setShowCells((v) => !v)}
-        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors text-left"
+        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-foreground/[0.03] active:bg-foreground/[0.05] transition-colors text-left"
         aria-expanded={showCells}
         aria-label={`${showCells ? "Collapse" : "Expand"} angle ${group.angleKey}: ${group.angleLabel}`}
       >
@@ -117,7 +117,7 @@ function AngleRow({
 
       {/* Expanded cells grid */}
       {showCells && (
-        <div className="border-t border-border/25 px-3 py-3 bg-white/[0.01]">
+        <div className="border-t border-border/25 px-3 py-3 bg-foreground/[0.01]">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {rankedCells.map((row, idx) => (
               <div key={row.cell_id} className="relative">
@@ -140,7 +140,7 @@ function AngleRow({
                   expandFooter={(close) => (
                     <button
                       onClick={() => { close(); onDetail(row); }}
-                      className="inline-flex items-center gap-1.5 text-title font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
+                      className="inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                     >
                       Full detail →
                     </button>
@@ -186,15 +186,15 @@ function ConceptFamilyCard({
     <div className={cn(
       "rounded-xl border transition-colors",
       expanded
-        ? "border-primary/25 bg-white/[0.025]"
-        : "border-border/40 bg-white/[0.02] hover:border-border/60 hover:bg-white/[0.03]"
+        ? "border-primary/25 bg-foreground/[0.025]"
+        : "border-border/40 bg-foreground/[0.02] hover:border-border/60 hover:bg-foreground/[0.03]"
     )}>
       {/* Concept header */}
       <button
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
         aria-label={`${expanded ? "Collapse" : "Expand"} concept ${group.conceptId}`}
-        className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-foreground/[0.02] active:bg-foreground/[0.04] transition-colors"
       >
         <span className={cn(
           "shrink-0 w-6 h-6 rounded-md border flex items-center justify-center transition-colors",

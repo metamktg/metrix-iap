@@ -26,7 +26,7 @@ export function TaskTrayPanel({
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className={cn(
-        "flex items-center gap-2 border-b border-border/40 shrink-0 bg-white/[0.01]",
+        "flex items-center gap-2 border-b border-border/40 shrink-0 bg-foreground/[0.01]",
         compact ? "px-3 py-2" : "px-3 py-2.5"
       )}>
         <ClipboardList className={cn("text-interactive/80 shrink-0", compact ? "w-3.5 h-3.5" : "w-3.5 h-3.5")} />
@@ -46,7 +46,7 @@ export function TaskTrayPanel({
             <button
               onClick={onCollapse}
               aria-label="Collapse task tray"
-              className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground/80 hover:bg-white/[0.06] transition-colors"
+              className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground/80 hover:bg-foreground/[0.06] transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -62,7 +62,7 @@ export function TaskTrayPanel({
         {approved.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-10 text-center px-2">
             <div className={cn(
-              "rounded-xl border border-border/30 bg-white/[0.02] flex items-center justify-center",
+              "rounded-xl border border-border/30 bg-foreground/[0.02] flex items-center justify-center",
               compact ? "w-7 h-7" : "w-9 h-9"
             )}>
               <ClipboardList className={cn("text-muted-foreground/25", compact ? "w-3.5 h-3.5" : "w-4 h-4")} />
@@ -80,7 +80,7 @@ export function TaskTrayPanel({
                 <div
                   key={s.id}
                   className={cn(
-                    "flex items-start gap-2 rounded-lg border bg-white/[0.02] transition-opacity",
+                    "flex items-start gap-2 rounded-lg border bg-foreground/[0.02] transition-opacity",
                     compact ? "p-2" : "p-2.5",
                     done ? "border-status-success/20 opacity-55" : "border-border/40 hover:border-border/60"
                   )}
@@ -110,7 +110,7 @@ export function TaskTrayPanel({
                         {s.recommendedAction}
                       </p>
                     )}
-                    <span className="inline-flex mt-1 text-[8px] font-semibold border border-border/30 bg-white/[0.03] px-1 py-0.5 rounded text-muted-foreground/55 uppercase tracking-wide">
+                    <span className="inline-flex mt-1 text-[8px] font-semibold border border-border/30 bg-foreground/[0.03] px-1 py-0.5 rounded text-muted-foreground/55 uppercase tracking-wide">
                       {s.actionGroup.replace(" actions", "").replace(" updates", "")}
                     </span>
                   </div>
@@ -123,7 +123,7 @@ export function TaskTrayPanel({
 
       {/* Footer */}
       <div className={cn(
-        "shrink-0 border-t border-border/30 bg-white/[0.005]",
+        "shrink-0 border-t border-border/30 bg-foreground/[0.005]",
         compact ? "px-2.5 py-2" : "px-3 py-2.5"
       )}>
         <p className="text-[9px] text-muted-foreground/30 leading-relaxed text-center">

@@ -18,8 +18,8 @@ export function MetaLiveConnection() {
       title="Live Meta connection"
       desc="Direct OAuth connection to Meta ad accounts"
     >
-      <div className="flex items-start gap-3 p-4 rounded-xl border border-border/40 bg-white/[0.02]">
-        <div className="w-9 h-9 rounded-lg border border-border/30 bg-white/[0.03] flex items-center justify-center shrink-0">
+      <div className="flex items-start gap-3 p-4 rounded-xl border border-border/40 bg-foreground/[0.02]">
+        <div className="w-9 h-9 rounded-lg border border-border/30 bg-foreground/[0.03] flex items-center justify-center shrink-0">
           <Plug className="w-4 h-4 text-muted-foreground/60" />
         </div>
         <div className="flex-1 min-w-0 space-y-2">

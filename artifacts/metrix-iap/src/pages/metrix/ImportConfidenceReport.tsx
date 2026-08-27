@@ -62,7 +62,7 @@ function TierBadge({ tier, isRequired }: { tier: MappingEntry["tier"]; isRequire
   // so it renders as a neutral "not in export" chip instead.
   if (tier === "missing" && !isRequired) {
     return (
-      <span className="px-1.5 py-0.5 rounded text-label font-medium uppercase tracking-wide border bg-white/[0.04] border-border/40 text-muted-foreground/70">
+      <span className="px-1.5 py-0.5 rounded text-label font-medium uppercase tracking-wide border bg-foreground/[0.04] border-border/40 text-muted-foreground/70">
         not in export
       </span>
     );
@@ -77,7 +77,7 @@ function TierBadge({ tier, isRequired }: { tier: MappingEntry["tier"]; isRequire
     <span
       className={cn(
         "px-1.5 py-0.5 rounded text-label font-semibold uppercase tracking-wide border",
-        styles[tier] ?? "bg-white/[0.04] border-border/30 text-muted-foreground/80"
+        styles[tier] ?? "bg-foreground/[0.04] border-border/30 text-muted-foreground/80"
       )}
     >
       {tier}
@@ -94,7 +94,7 @@ function ConfidenceBar({ value }: { value: number }) {
     "bg-status-danger/60";
   return (
     <div className="flex items-center gap-1.5">
-      <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+      <div className="flex-1 h-1 rounded-full bg-foreground/[0.06] overflow-hidden">
         <div
           className={cn("h-full rounded-full transition-[width]", color)}
           style={{ width: `${pct}%` }}
@@ -160,10 +160,10 @@ function SingleCsvConfidenceReport({
   const resolvedColumns = columns.filter((c) => c.tier !== "missing");
 
   return (
-    <div className="rounded-lg border border-border/40 bg-white/[0.02] overflow-hidden">
+    <div className="rounded-lg border border-border/40 bg-foreground/[0.02] overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 p-3 text-left hover:bg-white/[0.02] transition-colors"
+        className="w-full flex items-center gap-2 p-3 text-left hover:bg-foreground/[0.02] transition-colors"
       >
         {open ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />

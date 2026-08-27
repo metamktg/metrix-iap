@@ -79,7 +79,7 @@ export function ViewSwitcher({
                             ? "text-muted-foreground/35 cursor-not-allowed"
                             : active
                               ? "bg-primary/20 text-foreground active:scale-[0.96]"
-                              : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] active:scale-[0.96]"
+                              : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04] active:scale-[0.96]"
                         }`}
           >
             <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />

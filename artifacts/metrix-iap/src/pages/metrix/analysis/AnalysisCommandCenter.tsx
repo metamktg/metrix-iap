@@ -212,7 +212,7 @@ export function AnalysisCommandCenter() {
                   type="button"
                   onClick={() => navigate("/app/exports/analysis")}
                   data-testid="analysis-json-export-row"
-                  className="w-full flex items-center gap-2.5 rounded-lg border border-border/30 bg-white/[0.015] hover:bg-white/[0.03] hover:border-primary/25 px-3 py-2.5 text-left transition-colors"
+                  className="w-full flex items-center gap-2.5 rounded-lg border border-border/30 bg-foreground/[0.015] hover:bg-foreground/[0.03] hover:border-primary/25 px-3 py-2.5 text-left transition-colors"
                 >
                   <FileJson className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
                   <span className="flex-1 min-w-0">

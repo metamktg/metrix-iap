@@ -290,7 +290,7 @@ export function GenerationProgressBar({
           <span>{progressPercent}%</span>
         </span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
         <div
           className="h-full rounded-full bg-primary/70 transition-[width] duration-700 ease-out"
           style={{ width: `${progressPercent}%` }}

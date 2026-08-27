@@ -102,7 +102,7 @@ function PreviewBlock({ block }: { block: ReportBlock }) {
         {block.data.map((d) => (
           <div key={d.label} className="grid grid-cols-[minmax(100px,150px)_1fr_minmax(64px,90px)] items-center gap-2.5">
             <span className={cn(TYPE.label, "text-foreground/75 truncate")}>{d.label}</span>
-            <div className="h-2 rounded bg-white/[0.04] overflow-hidden">
+            <div className="h-2 rounded bg-foreground/[0.04] overflow-hidden">
               <div className="h-full rounded bg-primary/60" style={{ width: `${max > 0 ? Math.max((d.value / max) * 100, 1.5) : 0}%` }} />
             </div>
             <span className={cn(TYPE.label, "text-right tabular-nums text-muted-foreground/75")}>{fmtChartValue(block.unit, d.value)}</span>
@@ -367,7 +367,7 @@ export function ReportBuilderView() {
                   {/* ── Left rail: audience · sections · window · generate ── */}
                   <div className="space-y-4 min-w-0">
                     {/* Audience — the canvas's density/branding selector */}
-                    <div className="rounded-xl border border-border/50 bg-white/[0.02] p-4">
+                    <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       <div className="text-cardtitle font-semibold text-foreground mb-0.5">Audience</div>
                       <p className={cn(TYPE.caption, "text-muted-foreground/60 mb-2.5")}>Sets branding and delivery density</p>
                       <div className="flex flex-col gap-1.5">
@@ -383,7 +383,7 @@ export function ReportBuilderView() {
                               "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-colors",
                               mode === a.id
                                 ? "border-primary/45 bg-primary/[0.06]"
-                                : "border-border/40 bg-white/[0.015] hover:border-primary/25",
+                                : "border-border/40 bg-foreground/[0.015] hover:border-primary/25",
                             )}
                           >
                             <span className={cn(TYPE.body, "font-medium text-foreground flex items-center gap-1.5")}>
@@ -396,7 +396,7 @@ export function ReportBuilderView() {
                     </div>
 
                     {/* Sections — the canvas's checklist card */}
-                    <div className="rounded-xl border border-border/50 bg-white/[0.02] p-4">
+                    <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       <div className="flex items-baseline justify-between gap-2 mb-2">
                         <div className="text-cardtitle font-semibold text-foreground">Sections</div>
                         <span className={cn(TYPE.label, "text-muted-foreground/55 tabular-nums")}>
@@ -423,7 +423,7 @@ export function ReportBuilderView() {
                                 aria-hidden="true"
                                 className={cn(
                                   "flex items-center justify-center w-[15px] h-[15px] rounded-[3px] border shrink-0 transition-colors",
-                                  included ? "bg-primary border-primary text-primary-foreground" : "bg-white/[0.04] border-border/60"
+                                  included ? "bg-primary border-primary text-primary-foreground" : "bg-foreground/[0.04] border-border/60"
                                 )}
                               >
                                 {included && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
@@ -436,7 +436,7 @@ export function ReportBuilderView() {
                     </div>
 
                     {/* Report window: inherit global range, allow per-report override */}
-                    <div className="rounded-xl border border-border/50 bg-white/[0.02] p-4">
+                    <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
                         <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Report window</span>
@@ -465,7 +465,7 @@ export function ReportBuilderView() {
                                 const end = override?.end ?? reportRange?.end ?? bounds.end;
                                 setOverride({ start: isoMin(v, end), end: isoMax(v, end) });
                               }}
-                              className="h-7 rounded border border-border/50 bg-white/[0.03] px-2 text-caption text-foreground tabular-nums [color-scheme:dark]"
+                              className="h-7 rounded border border-border/50 bg-foreground/[0.03] px-2 text-caption text-foreground tabular-nums [color-scheme:dark]"
                             />
                           </label>
                           <label className="flex items-center gap-1.5 text-label text-muted-foreground/70">
@@ -481,7 +481,7 @@ export function ReportBuilderView() {
                                 const start = override?.start ?? reportRange?.start ?? bounds.start;
                                 setOverride({ start: isoMin(start, v), end: isoMax(start, v) });
                               }}
-                              className="h-7 rounded border border-border/50 bg-white/[0.03] px-2 text-caption text-foreground tabular-nums [color-scheme:dark]"
+                              className="h-7 rounded border border-border/50 bg-foreground/[0.03] px-2 text-caption text-foreground tabular-nums [color-scheme:dark]"
                             />
                           </label>
                           {override && (
@@ -500,7 +500,7 @@ export function ReportBuilderView() {
                     </div>
 
                     {/* Generate: persists a snapshot to Report History + downloads it */}
-                    <div className="rounded-xl border border-border/50 bg-white/[0.02] p-4">
+                    <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       {(() => {
                         const defaultFormat = settings?.default_format ?? rb.export_formats[0] ?? "pdf";
                         const chosenFormat =
@@ -532,7 +532,7 @@ export function ReportBuilderView() {
                                   className={cn(
                                     "flex items-center gap-1 h-7 px-2.5 rounded text-caption font-medium transition-colors disabled:opacity-60",
                                     chosenFormat === f
-                                      ? "bg-white/[0.06] text-foreground"
+                                      ? "bg-foreground/[0.06] text-foreground"
                                       : "text-muted-foreground/70 hover:text-foreground"
                                   )}
                                 >
@@ -578,7 +578,7 @@ export function ReportBuilderView() {
                   {previewModel ? (
                     <ReportPreviewPane model={previewModel} audienceLabel={audienceLabel} />
                   ) : (
-                    <div className="rounded-xl border border-border/40 bg-white/[0.015] p-6">
+                    <div className="rounded-xl border border-border/40 bg-foreground/[0.015] p-6">
                       <p className={cn(TYPE.body, "text-muted-foreground/60")}>Include at least one section to preview the report.</p>
                     </div>
                   )}
@@ -617,7 +617,7 @@ export function ReportBuilderView() {
                             "flex items-center gap-1.5 h-9 px-3.5 rounded-md border text-body font-medium transition-colors disabled:opacity-60",
                             exported === f
                               ? "border-status-success/30 text-status-success bg-status-success/5"
-                              : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                              : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5"
                           )}
                         >
                           {exporting === f ? (

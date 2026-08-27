@@ -555,7 +555,7 @@ function AudienceSegmentTile({
                   "shrink-0 rounded border px-1.5 py-0.5 cursor-default",
                   TYPE.label,
                   signal.state === "insufficient_coverage"
-                    ? "border-border/60 bg-white/[0.04] text-muted-foreground/70"
+                    ? "border-border/60 bg-foreground/[0.04] text-muted-foreground/70"
                     : signal.low
                     ? "border-status-warning/30 bg-status-warning/[0.08] text-status-warning"
                     : "border-status-success/30 bg-status-success/[0.08] text-status-success",

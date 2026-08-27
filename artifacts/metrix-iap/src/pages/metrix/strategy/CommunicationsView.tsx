@@ -73,7 +73,7 @@ function ConfidenceBar({ cells }: { cells: string[] }) {
         <span className={cn(TYPE.label, "text-muted-foreground/60")}>Confidence</span>
         <span className={cn(TYPE.label, "text-muted-foreground/60")}>{TIER_LABEL[tier]}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+      <div className="h-1.5 rounded-full bg-foreground/[0.06] overflow-hidden">
         <div
           className={cn("h-full rounded-full", TIER_FILL_COLOR[tier])}
           style={{ width: `${pct}%` }}
@@ -122,8 +122,8 @@ function PillarCard({ pillar, index, strategy }: { pillar: MessagePillar; index:
       aria-label={`Open the deep dive for ${pillar.label}`}
       data-testid={`pillar-card-${pillar.id}`}
       className={cn(
-        "text-left rounded-xl border border-border/40 bg-white/[0.02] overflow-hidden flex flex-col h-full cursor-pointer",
-        "transition-colors hover:border-border/60 hover:bg-white/[0.03]",
+        "text-left rounded-xl border border-border/40 bg-foreground/[0.02] overflow-hidden flex flex-col h-full cursor-pointer",
+        "transition-colors hover:border-border/60 hover:bg-foreground/[0.03]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
         TIER_ACCENT[tier]
       )}

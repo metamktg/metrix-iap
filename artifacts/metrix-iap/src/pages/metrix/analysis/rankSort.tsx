@@ -122,7 +122,7 @@ function MetricOptionList({
         aria-pressed={active}
         className={cn(
           "w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors",
-          active ? "bg-primary/10 text-interactive" : "text-foreground/80 hover:bg-white/[0.05]"
+          active ? "bg-primary/10 text-interactive" : "text-foreground/80 hover:bg-foreground/[0.05]"
         )}
       >
         <Check className={cn("w-3 h-3 shrink-0", active ? "opacity-100" : "opacity-0")} />
@@ -177,7 +177,7 @@ export function RankSortBar<Row>({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 bg-white/[0.02] hover:bg-white/[0.05] transition-colors",
+            "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors",
             className
           )}
         >

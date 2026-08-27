@@ -39,6 +39,12 @@ const FAMILIES = [
 const PREFIX = "bg|text|border|from|to|via|ring|fill|stroke|shadow|outline|divide|decoration|accent|caret";
 
 const RAW_CLASS = new RegExp(`\\b(?:${PREFIX})-(?:${FAMILIES})-\\d{2,3}(?:/[0-9.]+)?\\b`, "g");
+// `bg-white/[0.02]` is the subtle-surface-tint idiom — it was used 583 times.
+// It works on any dark ground, which is why it spread, but it hardcodes PURE
+// white as the lift: on the cockpit's blue-navy that reads cold and grey, and
+// it does not follow a re-theme. bg-foreground/[0.02] is the same tint taken
+// from the token.
+const RAW_TONE = new RegExp(`\\b(?:${PREFIX})-(?:white|black)(?:/(?:\\[[0-9.]+\\]|[0-9]+))?\\b`, "g");
 // A literal colour inside a component. The stylesheet may hold them; a .tsx
 // may not — that is where they escape review.
 const RAW_LITERAL = /(?:#[0-9a-fA-F]{3,8}\b|\brgba?\(\s*\d)/g;
@@ -85,6 +91,17 @@ for (const file of walk(SRC)) {
         `Use a token: status-success / status-warning / status-danger for state, ` +
         `interactive / primary / metrix-cyan for brand, muted-foreground / border for chrome, ` +
         `or a --mx-<role>-<step> ramp value when a specific step is needed.`,
+    );
+  }
+
+  const tones = [...code.matchAll(RAW_TONE)].map((m) => m[0]);
+  if (tones.length > 0) {
+    const distinct = [...new Set(tones)];
+    problems.push(
+      `${rel}: ${tones.length} hardcoded white/black utilit${tones.length === 1 ? "y" : "ies"} ` +
+        `(${distinct.slice(0, 3).join(", ")}${distinct.length > 3 ? ", …" : ""}). ` +
+        `Use foreground/background at the same opacity — a pure-white tint on a blue-navy ground ` +
+        `reads cold, and it will not follow a re-theme.`,
     );
   }
 

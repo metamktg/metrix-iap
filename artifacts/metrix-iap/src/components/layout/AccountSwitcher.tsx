@@ -181,7 +181,7 @@ function SwitcherPanel({
       {/* Search */}
       {showSearch && (
         <div className="p-2 border-b border-border/30">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-border/30 focus-within:border-primary/40 transition-colors">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-foreground/[0.04] border border-border/30 focus-within:border-primary/40 transition-colors">
             <Search className="w-3 h-3 text-muted-foreground/40 shrink-0" />
             <input
               ref={searchRef}
@@ -212,7 +212,7 @@ function SwitcherPanel({
               "w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors relative group",
               isManager
                 ? "bg-primary/10 hover:bg-primary/15"
-                : "hover:bg-white/[0.05]"
+                : "hover:bg-foreground/[0.05]"
             )}
           >
             {isManager && (
@@ -260,7 +260,7 @@ function SwitcherPanel({
                   "w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors relative group/row",
                   isActive
                     ? "bg-primary/10 hover:bg-primary/15"
-                    : "hover:bg-white/[0.05]",
+                    : "hover:bg-foreground/[0.05]",
                   isUnconfigured && !isActive && "opacity-70"
                 )}
               >
@@ -300,7 +300,7 @@ function SwitcherPanel({
         <div className="border-t border-border/30 p-1.5">
           <button
             onClick={() => { onClose(); setTimeout(onAddAccount, 0); }}
-            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left hover:bg-white/[0.05] transition-colors group"
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left hover:bg-foreground/[0.05] transition-colors group"
           >
             <div className="w-8 h-8 rounded-lg border border-dashed border-border/40 flex items-center justify-center shrink-0 group-hover:border-border/60 transition-colors">
               <Plus className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-muted-foreground/80 transition-colors" />
@@ -375,8 +375,8 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
         aria-label={`Current account: ${triggerLabel}`}
         className={cn(
           "w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-colors",
-          "hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
-          open && "bg-white/[0.06]"
+          "hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
+          open && "bg-foreground/[0.06]"
         )}
       >
         <AccountAvatar

@@ -129,7 +129,7 @@ function ColumnAliasGuide({
     <div className="rounded-md border border-border/30 overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-1.5 px-2.5 py-2 text-left hover:bg-white/[0.03] transition-colors"
+        className="w-full flex items-center gap-1.5 px-2.5 py-2 text-left hover:bg-foreground/[0.03] transition-colors"
       >
         {open ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
@@ -154,7 +154,7 @@ function ColumnAliasGuide({
                 {aliasList.map((alias) => (
                   <span
                     key={alias}
-                    className="px-1.5 py-0.5 rounded bg-white/[0.05] border border-border/30 text-label text-muted-foreground/80 font-mono"
+                    className="px-1.5 py-0.5 rounded bg-foreground/[0.05] border border-border/30 text-label text-muted-foreground/80 font-mono"
                   >
                     {alias}
                   </span>
@@ -194,10 +194,10 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
   };
 
   return (
-    <div className="rounded-lg border border-border/40 bg-white/[0.02] overflow-hidden">
+    <div className="rounded-lg border border-border/40 bg-foreground/[0.02] overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 p-3 text-left hover:bg-white/[0.02] transition-colors"
+        className="w-full flex items-center gap-2 p-3 text-left hover:bg-foreground/[0.02] transition-colors"
       >
         {open ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
@@ -237,7 +237,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
                         "shrink-0 text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded",
                         g.required
                           ? "bg-primary/15 text-interactive border border-primary/25"
-                          : "bg-white/[0.04] text-muted-foreground/85 border border-border/30"
+                          : "bg-foreground/[0.04] text-muted-foreground/85 border border-border/30"
                       )}
                     >
                       {g.required ? "Required" : "Optional"}
@@ -575,7 +575,7 @@ function CreativeLinkageStatus({
         allLinked
           ? "border-status-success/25 bg-status-success/[0.04]"
           : noneLinked
-          ? "border-border/40 bg-white/[0.02]"
+          ? "border-border/40 bg-foreground/[0.02]"
           : "border-status-warning/30 bg-status-warning/[0.06]"
       )}
     >
@@ -634,7 +634,7 @@ function CreativeLinkageStatus({
             allLinked
               ? "border-status-success/30 text-status-success hover:bg-status-success/10"
               : noneLinked
-              ? "border-border/50 text-muted-foreground/80 hover:bg-white/5"
+              ? "border-border/50 text-muted-foreground/80 hover:bg-foreground/5"
               : "border-status-warning/30 text-status-warning hover:bg-status-warning/10",
             syncMutation.isPending && "opacity-50 cursor-not-allowed"
           )}
@@ -813,7 +813,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
 
       {/* ── Optional columns not in this export (neutral notice) ───────── */}
       {optionalMissing.length > 0 && (
-        <div className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-2">
+        <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-3 space-y-2">
           <button
             onClick={() => setNoticesExpanded((v) => !v)}
             className="w-full flex items-start gap-2 text-left"
@@ -835,7 +835,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
             <ul className="space-y-1 pt-1 border-t border-border/20">
               {optionalMissing.map((p, i) => (
                 <li key={i} className="text-label leading-relaxed text-muted-foreground/70">
-                  <span className="inline-block mr-1.5 px-1 py-px rounded text-label font-medium uppercase tracking-wide border bg-white/[0.03] border-border/40 text-muted-foreground/70">
+                  <span className="inline-block mr-1.5 px-1 py-px rounded text-label font-medium uppercase tracking-wide border bg-foreground/[0.03] border-border/40 text-muted-foreground/70">
                     not in export
                   </span>
                   <span className="font-medium text-foreground/70">{p.canonical}</span>
@@ -896,7 +896,7 @@ function ImportHistoryPanel({
   };
 
   return (
-    <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden">
+    <div className="rounded-lg border border-border/30 bg-foreground/[0.02] overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
@@ -927,7 +927,7 @@ function ImportHistoryPanel({
                 <button
                   onClick={() => handleRestage(run.id)}
                   disabled={disabled || restagingRunId === run.id}
-                  className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-white/[0.02] text-label font-medium text-foreground/80 hover:bg-white/[0.05] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-foreground/[0.02] text-label font-medium text-foreground/80 hover:bg-foreground/[0.05] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {restagingRunId === run.id ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -1181,7 +1181,7 @@ export function AnalysisControls({
             "h-8 px-2 rounded-md border text-caption font-medium transition-colors",
             dateRange === r.id
               ? "border-primary/40 bg-primary/[0.08] text-interactive"
-              : "border-border/40 bg-white/[0.02] text-muted-foreground/85 hover:bg-white/[0.04]",
+              : "border-border/40 bg-foreground/[0.02] text-muted-foreground/85 hover:bg-foreground/[0.04]",
             isRunning && "opacity-50 cursor-not-allowed"
           )}
         >
@@ -1237,7 +1237,7 @@ export function AnalysisControls({
     <div className="space-y-3">
       {/* Existing-runs context strip */}
       {priorRuns.length > 0 && (
-        <div className="flex items-center gap-2 rounded-md border border-border/30 bg-white/[0.02] px-2.5 py-2">
+        <div className="flex items-center gap-2 rounded-md border border-border/30 bg-foreground/[0.02] px-2.5 py-2">
           <History className="w-3.5 h-3.5 text-muted-foreground/55 shrink-0" />
           <span className="text-caption text-muted-foreground/70 leading-snug">
             <span className="font-semibold text-foreground/80">
@@ -1409,7 +1409,7 @@ export function AnalysisControls({
               {run?.status === "success" ? 100 : (run?.progress_pct ?? 0)}%
             </span>
           </div>
-          <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+          <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
             <div
               className={cn(
                 "h-full rounded-full transition-[width] duration-700 ease-out",
@@ -1440,7 +1440,7 @@ export function AnalysisControls({
                         ? "bg-primary/70"
                         : active
                         ? "bg-primary/40"
-                        : "bg-white/[0.08]"
+                        : "bg-foreground/[0.08]"
                     )}
                   />
                 );

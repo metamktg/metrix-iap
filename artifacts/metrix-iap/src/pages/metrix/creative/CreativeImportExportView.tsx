@@ -44,7 +44,7 @@ export function CreativeImportExportView() {
             ) : (
               <div className="space-y-2.5">
                 {creativeAssets.map((imp) => (
-                  <div key={imp.id} className="flex items-center gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                  <div key={imp.id} className="flex items-center gap-3 rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
                     <FileImage className="w-4 h-4 text-muted-foreground/70 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-body font-medium text-foreground truncate">{imp.filename}</p>

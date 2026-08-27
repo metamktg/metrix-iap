@@ -72,7 +72,7 @@ function HypothesisCardList({
           <button
             key={h.id}
             onClick={() => onSelect(h)}
-            className="w-full text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+            className="w-full text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 hover:border-border/60 hover:bg-foreground/[0.03] transition-colors"
           >
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
@@ -263,7 +263,7 @@ export function HypothesisQueueView() {
                     {pillars.map((p) => {
                       const linkedBriefs = briefs.filter((b) => b.source_pillar === p.id);
                       return (
-                        <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                        <div key={p.id} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
                           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                             {p.source_cells.map((c) => (
                               <TooltipProvider key={c} delayDuration={150}>

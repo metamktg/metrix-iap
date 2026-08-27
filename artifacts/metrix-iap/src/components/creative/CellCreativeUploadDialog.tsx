@@ -214,7 +214,7 @@ export function CellCreativeUploadDialog({
               <button
                 type="button"
                 onClick={() => void upload(true)}
-                className="flex-1 py-2 rounded-lg text-body font-medium bg-status-warning/90 text-black hover:bg-status-warning transition-colors"
+                className="flex-1 py-2 rounded-lg text-body font-medium bg-status-warning/90 text-background hover:bg-status-warning transition-colors"
               >
                 Upload anyway
               </button>
@@ -268,7 +268,7 @@ export function CellCreativeUploadDialog({
                     reset();
                   }}
                   title="Remove file"
-                  className="absolute top-1.5 right-1.5 z-10 p-0.5 rounded-full bg-black/60 text-white/80 hover:text-white transition-colors"
+                  className="absolute top-1.5 right-1.5 z-10 p-0.5 rounded-full bg-background/60 text-foreground/80 hover:text-foreground transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -282,7 +282,7 @@ export function CellCreativeUploadDialog({
                     fileRef.current?.click();
                   }}
                   title="Replace file"
-                  className="absolute bottom-1.5 left-1.5 z-10 text-[9px] font-medium px-1.5 py-0.5 rounded bg-black/60 text-white/70 hover:text-white transition-colors"
+                  className="absolute bottom-1.5 left-1.5 z-10 text-[9px] font-medium px-1.5 py-0.5 rounded bg-background/60 text-foreground/70 hover:text-foreground transition-colors"
                 >
                   Replace
                 </button>

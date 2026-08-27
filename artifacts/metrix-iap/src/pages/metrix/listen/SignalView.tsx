@@ -98,7 +98,7 @@ export function SignalView() {
                     <button
                       key={s.id}
                       onClick={() => setDetail(s)}
-                      className="w-full text-left rounded-xl border border-border/55 bg-white/[0.04] p-4 hover:border-border/70 hover:bg-white/[0.06] transition-colors"
+                      className="w-full text-left rounded-xl border border-border/55 bg-foreground/[0.04] p-4 hover:border-border/70 hover:bg-foreground/[0.06] transition-colors"
                     >
                       <div className="flex items-center gap-1.5 flex-wrap mb-2">
                         <ScopeBadge scope={s.scope} />

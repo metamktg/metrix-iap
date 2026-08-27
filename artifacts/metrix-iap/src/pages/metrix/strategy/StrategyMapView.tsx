@@ -125,7 +125,7 @@ function PillarListCard({
         accentBorder,
         selected
           ? "bg-primary/[0.09] border-r border-r-transparent shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.08)]"
-          : "bg-transparent hover:bg-white/[0.04]",
+          : "bg-transparent hover:bg-foreground/[0.04]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
       )}
     >
@@ -185,7 +185,7 @@ function SourceCellCard({
   const { registry } = useConceptRegistry();
   const hasEvidence = (spend ?? 0) > 0 || (results ?? 0) > 0;
   return (
-    <div className="rounded-lg border border-border/40 bg-white/[0.025] p-3 flex flex-col gap-2">
+    <div className="rounded-lg border border-border/40 bg-foreground/[0.025] p-3 flex flex-col gap-2">
       {/* Primary: concept name (if available) */}
       {conceptName && (
         <p className={cn(TYPE.body, "font-semibold text-foreground/85 leading-snug truncate")} title={conceptName}>
@@ -243,7 +243,7 @@ function HypCard({ h }: { h: ActiveHypothesis }) {
     <div
       data-testid={`hyp-row-${h.id}`}
       className={cn(
-        "rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2 flex flex-col gap-1.5 overflow-hidden",
+        "rounded-lg border border-border/30 bg-foreground/[0.015] px-3 py-2 flex flex-col gap-1.5 overflow-hidden",
         hypPriorityAccent(h.status)
       )}
     >
@@ -304,13 +304,13 @@ function NextActionsPanel({
   if (pending.length === 0) return null;
 
   return (
-    <div className="shrink-0 border-t border-border/30 bg-white/[0.01]">
+    <div className="shrink-0 border-t border-border/30 bg-foreground/[0.01]">
       {/* Panel header */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/[0.03] transition-colors text-left"
+        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-foreground/[0.03] transition-colors text-left"
       >
         <Lightbulb className="w-3.5 h-3.5 text-status-warning/70 shrink-0" />
         <span className={cn(TYPE.caption, "font-semibold text-foreground/80 flex-1 truncate")}>
@@ -329,7 +329,7 @@ function NextActionsPanel({
             return (
               <div
                 key={h.id}
-                className="rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2 flex flex-col gap-1.5"
+                className="rounded-lg border border-border/30 bg-foreground/[0.015] px-3 py-2 flex flex-col gap-1.5"
               >
                 <div className="flex items-center gap-1.5">
                   <HypothesisStatusBadge status={h.status} />
@@ -350,7 +350,7 @@ function NextActionsPanel({
                       "inline-flex items-center gap-1.5 text-label font-medium border rounded px-1.5 py-1 transition-colors leading-none",
                       isQueued
                         ? "bg-status-success/10 text-status-success border-status-success/30"
-                        : "bg-white/[0.03] text-muted-foreground/70 border-border/40 hover:text-foreground hover:border-border/70"
+                        : "bg-foreground/[0.03] text-muted-foreground/70 border-border/40 hover:text-foreground hover:border-border/70"
                     )}
                   >
                     {isQueued ? (
@@ -393,7 +393,7 @@ function FooterPanel({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center gap-2 px-6 py-2.5 hover:bg-white/[0.02] transition-colors text-left"
+        className="w-full flex items-center gap-2 px-6 py-2.5 hover:bg-foreground/[0.02] transition-colors text-left"
       >
         <span className={cn(TYPE.caption, "font-semibold text-foreground/70 flex-1")}>
           Variable combinations · Scaling playbook
@@ -542,7 +542,7 @@ export function StrategyMapView() {
                 <div className="flex-1 flex min-h-0 overflow-hidden border-t border-border/30">
 
                   {/* Left column — Pillars list (resizable) */}
-                  <div style={{ width: leftCol.width }} className="shrink-0 overflow-y-auto bg-white/[0.005]">
+                  <div style={{ width: leftCol.width }} className="shrink-0 overflow-y-auto bg-foreground/[0.005]">
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
                       <div className="flex items-center gap-1 mb-0.5">
                         <p className={cn(TYPE.microLabel, "text-muted-foreground/35")}>Pillars</p>
@@ -697,7 +697,7 @@ export function StrategyMapView() {
                       type="button"
                       onClick={() => rightCol.setCollapsed(false)}
                       title={`Show hypotheses (${selectedHyps.length} active)`}
-                      className="shrink-0 w-7 flex flex-col items-center justify-center gap-2 border-l border-border/20 bg-white/[0.01] hover:bg-primary/[0.06] transition-colors group/reopen"
+                      className="shrink-0 w-7 flex flex-col items-center justify-center gap-2 border-l border-border/20 bg-foreground/[0.01] hover:bg-primary/[0.06] transition-colors group/reopen"
                     >
                       <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground/50 group-hover/reopen:text-interactive" />
                       <span

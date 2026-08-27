@@ -53,7 +53,7 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
       className={cn(
         "rounded-lg border p-4 space-y-3",
         run.status === "success"
-          ? "border-border/40 bg-white/[0.02]"
+          ? "border-border/40 bg-foreground/[0.02]"
           : run.status === "running"
           ? "border-status-warning/25 bg-status-warning/[0.03]"
           : "border-status-danger/20 bg-status-danger/[0.03]"
@@ -112,7 +112,7 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
       {/* Date range preset badge */}
       <div className="flex items-center gap-1.5">
         <span className="text-label text-muted-foreground/50 font-medium uppercase tracking-wide">Range preset</span>
-        <span className="text-label font-semibold text-muted-foreground/70 bg-white/[0.04] border border-border/30 px-1.5 py-0.5 rounded">
+        <span className="text-label font-semibold text-muted-foreground/70 bg-foreground/[0.04] border border-border/30 px-1.5 py-0.5 rounded">
           {run.date_range ?? "custom"}
         </span>
       </div>
@@ -148,7 +148,7 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
               key={r.metric_key}
               className={cn(
                 "flex items-center gap-2 rounded px-2 py-1.5 text-caption",
-                r.flagged ? "bg-status-warning/[0.06] border border-status-warning/20" : "bg-white/[0.02] border border-border/20"
+                r.flagged ? "bg-status-warning/[0.06] border border-status-warning/20" : "bg-foreground/[0.02] border border-border/20"
               )}
             >
               {r.flagged

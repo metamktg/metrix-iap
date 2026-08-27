@@ -95,7 +95,7 @@ function PermissionToggleRow({
         "w-full flex items-start gap-2.5 p-2.5 rounded-md border text-left transition-colors disabled:opacity-40 disabled:pointer-events-none",
         checked
           ? "border-primary/30 bg-primary/[0.06]"
-          : "border-border/40 bg-white/[0.02] hover:bg-white/[0.04]",
+          : "border-border/40 bg-foreground/[0.02] hover:bg-foreground/[0.04]",
       )}
       data-testid={testId}
     >
@@ -215,7 +215,7 @@ function AddMemberDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center mb-1">
+          <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center mb-1">
             <UserPlus className="w-4 h-4 text-interactive" />
           </div>
           <DialogTitle className={DIALOG.title}>Add member</DialogTitle>
@@ -238,7 +238,7 @@ function AddMemberDialog({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@company.com"
               autoComplete="off"
-              className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
               data-testid="input-invite-email"
             />
           </div>
@@ -255,7 +255,7 @@ function AddMemberDialog({
                     "h-9 rounded-md border text-body font-medium transition-colors",
                     role === r.id
                       ? "border-primary/30 bg-primary/[0.08] text-interactive"
-                      : "border-border/40 bg-white/[0.02] text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+                      : "border-border/40 bg-foreground/[0.02] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]"
                   )}
                   data-testid={`button-invite-role-${r.id}`}
                 >
@@ -294,7 +294,7 @@ function AddMemberDialog({
                 {adAccounts.map((a) => (
                   <label
                     key={a.id}
-                    className="flex items-center gap-2 px-2.5 py-2 text-caption text-foreground/85 cursor-pointer hover:bg-white/[0.03]"
+                    className="flex items-center gap-2 px-2.5 py-2 text-caption text-foreground/85 cursor-pointer hover:bg-foreground/[0.03]"
                     data-testid={`checkbox-invite-account-${a.id}`}
                   >
                     <input
@@ -333,7 +333,7 @@ function AddMemberDialog({
             <button
               type="button"
               onClick={() => handleOpenChange(false)}
-              className="h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              className="h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             >
               {successNotice ? "Close" : "Cancel"}
             </button>
@@ -422,7 +422,7 @@ function PendingInviteRow({
           )}
         </div>
       </div>
-      <span className="text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none text-foreground/75 border-border/40 bg-white/[0.03]">
+      <span className="text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none text-foreground/75 border-border/40 bg-foreground/[0.03]">
         {invite.role}
       </span>
       <div className="flex items-center justify-end gap-1.5">
@@ -431,7 +431,7 @@ function PendingInviteRow({
           onClick={handleResend}
           disabled={isRevoking || isResending}
           title="Resend invite"
-          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-white/[0.02] text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-foreground/[0.02] text-label font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
           data-testid={`button-resend-invite-${invite.email}`}
         >
           {isResending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
@@ -462,7 +462,7 @@ function PendingInviteRow({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRevoke}
-              className="bg-status-danger hover:bg-status-danger text-white focus-visible:ring-status-danger"
+              className="bg-status-danger hover:bg-status-danger text-foreground focus-visible:ring-status-danger"
             >
               Revoke invite
             </AlertDialogAction>
@@ -513,7 +513,7 @@ function MemberPermissionsCell({
           "h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
           manageTeam
             ? "border-primary/30 bg-primary/[0.08] text-interactive"
-            : "border-border/40 bg-white/[0.02] text-muted-foreground hover:text-foreground",
+            : "border-border/40 bg-foreground/[0.02] text-muted-foreground hover:text-foreground",
         )}
         data-testid={`toggle-manage-team-${email}`}
       >
@@ -527,7 +527,7 @@ function MemberPermissionsCell({
           "h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
           viewAgencyRollups
             ? "border-primary/30 bg-primary/[0.08] text-interactive"
-            : "border-border/40 bg-white/[0.02] text-muted-foreground hover:text-foreground",
+            : "border-border/40 bg-foreground/[0.02] text-muted-foreground hover:text-foreground",
         )}
         data-testid={`toggle-view-agency-rollups-${email}`}
       >
@@ -604,7 +604,7 @@ function MemberAdAccountsCell({
           grantedAccounts.map((a) => (
             <span
               key={a.id}
-              className="h-5 px-1.5 rounded border border-border/40 bg-white/[0.03] text-label text-foreground/80"
+              className="h-5 px-1.5 rounded border border-border/40 bg-foreground/[0.03] text-label text-foreground/80"
               data-testid={`chip-account-${email}-${a.id}`}
             >
               {a.name}
@@ -640,7 +640,7 @@ function MemberAdAccountsCell({
               return (
                 <label
                   key={a.id}
-                  className="flex items-center gap-2 px-2.5 py-2 text-caption text-foreground/85 cursor-pointer hover:bg-white/[0.03]"
+                  className="flex items-center gap-2 px-2.5 py-2 text-caption text-foreground/85 cursor-pointer hover:bg-foreground/[0.03]"
                   data-testid={`checkbox-account-${email}-${a.id}`}
                 >
                   <input
@@ -741,7 +741,7 @@ function MemberActionsCell({
           onClick={handleResend}
           disabled={busy}
           title="Send a new temp password"
-          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-white/[0.02] text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-foreground/[0.02] text-label font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
           data-testid={`button-resend-temp-password-${email}`}
         >
           {isResending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
@@ -801,7 +801,7 @@ function MemberActionsCell({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => doStatusChange("disabled")}
-              className="bg-status-danger hover:bg-status-danger text-white focus-visible:ring-status-danger"
+              className="bg-status-danger hover:bg-status-danger text-foreground focus-visible:ring-status-danger"
             >
               Remove access
             </AlertDialogAction>
@@ -924,7 +924,7 @@ function TeamAccessViewInner() {
           title="Members"
           desc={`${seatsUsed} of ${team.seat_limit} seats in use.`}
         >
-          <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden">
+          <div className="rounded-lg border border-border/30 bg-foreground/[0.02] overflow-hidden">
             <div className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2 border-b border-border/30">
               <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Member</span>
               <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Role</span>
@@ -949,7 +949,7 @@ function TeamAccessViewInner() {
                   </div>
                   <span className={cn(
                     "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",
-                    m.role === "owner" ? "text-interactive border-primary/25 bg-primary/10" : "text-foreground/75 border-border/40 bg-white/[0.03]"
+                    m.role === "owner" ? "text-interactive border-primary/25 bg-primary/10" : "text-foreground/75 border-border/40 bg-foreground/[0.03]"
                   )}>
                     {m.role}
                   </span>
@@ -1003,7 +1003,7 @@ function TeamAccessViewInner() {
         <SectionCard title="Roles" desc="Per-role visibility & permissions">
           <div className="grid grid-cols-dashboard-3 gap-3">
             {team.roles.map((r) => (
-              <div key={r.id} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
+              <div key={r.id} className="rounded-lg border border-border/40 bg-foreground/[0.02] p-3.5">
                 <div className="text-body font-semibold text-foreground capitalize">{r.label}</div>
                 <p className="text-caption text-muted-foreground/80 mt-1 leading-relaxed">{r.description}</p>
               </div>

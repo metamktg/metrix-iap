@@ -163,7 +163,7 @@ export function CreativeLibraryView() {
                       const evidenceCells = cellIdsForCard(c, knownCells);
                       const openCell = evidenceCells[0] ?? null;
                       return (
-                        <div key={c.id} className="flex flex-col gap-1.5 rounded-lg border border-border/40 bg-white/[0.02] p-3">
+                        <div key={c.id} className="flex flex-col gap-1.5 rounded-lg border border-border/40 bg-foreground/[0.02] p-3">
                           <div className="flex items-center gap-2">
                             <span className="text-label font-mono text-interactive/80">{c.id}</span>
                             <span className={`text-micro font-semibold uppercase tracking-wide border rounded px-1.5 py-0.5 leading-none ${kind.cls}`}>
@@ -181,7 +181,7 @@ export function CreativeLibraryView() {
                               <button
                                 type="button"
                                 onClick={() => setOpenCellId(openCell)}
-                                className="inline-flex items-center h-7 px-2.5 rounded-md border border-border/40 text-label font-medium text-foreground/75 hover:text-foreground hover:bg-white/[0.04] transition-colors"
+                                className="inline-flex items-center h-7 px-2.5 rounded-md border border-border/40 text-label font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
                               >
                                 Open asset
                               </button>
@@ -265,7 +265,7 @@ export function CreativeLibraryView() {
                               onClick={a ? () => setVariableCode(it.code) : undefined}
                               title={a ? `Open ${readableVariables(it.code)} drill-down` : "Variable drill-down needs analysis data for this account"}
                               data-testid={`chip-library-variable-${it.code}`}
-                              className={`flex items-center gap-2 rounded-lg border border-border/40 bg-white/[0.02] px-2.5 py-1.5 text-left ${a ? "cursor-pointer hover:border-primary/35 hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60" : "cursor-default"}`}
+                              className={`flex items-center gap-2 rounded-lg border border-border/40 bg-foreground/[0.02] px-2.5 py-1.5 text-left ${a ? "cursor-pointer hover:border-primary/35 hover:bg-foreground/[0.04] active:bg-foreground/[0.06] transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60" : "cursor-default"}`}
                             >
                               <div>
                                 <div className="text-body font-medium text-foreground/90 leading-tight">{readableVariables(it.code)}</div>
@@ -340,10 +340,10 @@ export function CreativeLibraryView() {
                                   }
                                   className={`rounded-md border py-1.5 text-center text-body tabular-nums transition-colors ${
                                     cell.tested
-                                      ? "border-border/30 bg-white/[0.015] text-foreground/85 hover:border-primary/35 hover:bg-white/[0.04] cursor-pointer disabled:cursor-default disabled:hover:border-border/30 disabled:hover:bg-white/[0.015]"
+                                      ? "border-border/30 bg-foreground/[0.015] text-foreground/85 hover:border-primary/35 hover:bg-foreground/[0.04] cursor-pointer disabled:cursor-default disabled:hover:border-border/30 disabled:hover:bg-foreground/[0.015]"
                                       : queued
                                       ? "border-status-warning/30 bg-status-warning/[0.06] text-status-warning hover:bg-status-warning/10 cursor-pointer"
-                                      : "border-border/20 bg-white/[0.008] text-muted-foreground/40 hover:border-border/40 hover:bg-white/[0.02] hover:text-muted-foreground/70 cursor-pointer"
+                                      : "border-border/20 bg-foreground/[0.008] text-muted-foreground/40 hover:border-border/40 hover:bg-foreground/[0.02] hover:text-muted-foreground/70 cursor-pointer"
                                   }`}
                                 >
                                   {cell.tested ? (

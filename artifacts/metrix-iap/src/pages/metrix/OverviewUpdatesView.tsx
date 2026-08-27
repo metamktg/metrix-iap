@@ -28,8 +28,8 @@ export function OverviewUpdatesView() {
         <SectionCard title="Getting started">
           <div className="space-y-2.5">
             {GUIDE_STEPS.map((s, i) => (
-              <div key={s.title} className="flex items-start gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-3.5">
-                <div className="w-6 h-6 rounded border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0 text-label font-mono text-muted-foreground/70">{i + 1}</div>
+              <div key={s.title} className="flex items-start gap-3 rounded-xl border border-border/40 bg-foreground/[0.02] p-3.5">
+                <div className="w-6 h-6 rounded border border-border/40 bg-foreground/[0.03] flex items-center justify-center shrink-0 text-label font-mono text-muted-foreground/70">{i + 1}</div>
                 <s.Icon className="w-3.5 h-3.5 text-interactive shrink-0 mt-0.5" />
                 <div className="min-w-0">
                   <div className="text-body font-medium text-foreground">{s.title}</div>

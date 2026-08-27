@@ -28,7 +28,7 @@ import type { AnalysisData, VariablePerformanceRow } from "@/lib/data/seedTypes"
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-lg border border-border/40 bg-white/[0.02] p-2.5">
+    <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2.5">
       <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</div>
       <div className="text-base font-bold tabular-nums leading-tight mt-0.5 text-foreground">{value}</div>
       {sub && <div className="text-[9px] text-muted-foreground/55 leading-snug mt-0.5">{sub}</div>}
@@ -120,7 +120,7 @@ export function VariableDrilldownModal({
                 <Kpi label="Unique ads" value={fmtNum(data.totals.uniqueAds)} />
               </div>
             ) : (
-              <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/40 bg-white/[0.02] p-3">
+              <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/40 bg-foreground/[0.02] p-3">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
                   No variable-level performance row for this code in the current metric selection — the sections below
@@ -184,7 +184,7 @@ export function VariableDrilldownModal({
                         <span className="text-caption font-medium text-foreground/85 w-32 shrink-0 capitalize">
                           {segmentLabel(seg)}
                         </span>
-                        <span className="flex-1 h-2.5 rounded-full bg-white/[0.06] overflow-hidden">
+                        <span className="flex-1 h-2.5 rounded-full bg-foreground/[0.06] overflow-hidden">
                           <span
                             className="block h-full rounded-full bg-gradient-to-r from-primary/60 to-primary/60 group-hover:from-primary/85 group-hover:to-primary/85 transition-colors"
                             style={{ width: `${Math.max(share * 100, 2)}%` }}
@@ -202,7 +202,7 @@ export function VariableDrilldownModal({
                   })}
                 </div>
               ) : (
-                <div className="flex items-start gap-2 text-caption text-muted-foreground/60 leading-relaxed rounded-lg border border-border/30 bg-white/[0.01] p-3">
+                <div className="flex items-start gap-2 text-caption text-muted-foreground/60 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.01] p-3">
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   <span>{data.segments.unavailableReason}</span>
                 </div>
@@ -217,7 +217,7 @@ export function VariableDrilldownModal({
                 </p>
                 <div className="space-y-2">
                   {data.textVariants.map((v) => (
-                    <div key={v.cellId} className="rounded-lg border border-border/40 bg-white/[0.02] p-2.5 space-y-1">
+                    <div key={v.cellId} className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2.5 space-y-1">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[9px] font-mono text-muted-foreground/60">{v.cellId}</span>
                         {v.conceptName && <span className="text-label font-medium text-foreground/80">{v.conceptName}</span>}

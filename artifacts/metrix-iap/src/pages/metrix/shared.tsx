@@ -363,7 +363,7 @@ export function SectionTabBar({ section }: { section: "analysis" | "strategy" })
   const [location] = useLocation();
   const tabs = SECTION_TABS[section];
   return (
-    <div className="flex items-center gap-0.5 px-4 border-b border-border/40 overflow-x-auto shrink-0 bg-white/[0.008]">
+    <div className="flex items-center gap-0.5 px-4 border-b border-border/40 overflow-x-auto shrink-0 bg-foreground/[0.008]">
       {tabs.map((tab) => {
         const active = location === tab.to;
         return (
@@ -376,7 +376,7 @@ export function SectionTabBar({ section }: { section: "analysis" | "strategy" })
               "relative shrink-0 px-3.5 h-9 flex items-center text-body font-medium transition-colors whitespace-nowrap select-none",
               active
                 ? "text-foreground"
-                : "text-muted-foreground/55 hover:text-foreground/80 hover:bg-white/[0.04]"
+                : "text-muted-foreground/55 hover:text-foreground/80 hover:bg-foreground/[0.04]"
             )}
           >
             {tab.label}
@@ -457,7 +457,7 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
   const narrowed = preset !== "all";
   if (!narrowed && !compare) return null;
   return (
-    <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
+    <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-foreground/[0.01]">
       {compare && compareRange && (
         <span className="inline-flex items-center gap-1 text-caption text-interactive/80 tabular-nums">
           <ArrowLeftRight className="w-3.5 h-3.5 shrink-0 opacity-70" />
@@ -479,7 +479,7 @@ export function NoDataInRangeState({ what, detail }: { what: string; detail?: st
   const { range, setPreset } = useDateRange();
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-      <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
+      <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
         <CalendarX2 className="w-4 h-4 text-muted-foreground/60" />
       </div>
       <p className="text-callout font-semibold text-foreground/80">No {what} in this range</p>
@@ -769,7 +769,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
   const nextIdx = steps.findIndex((s) => !s.done);
 
   return (
-    <div className="rounded-xl border border-border/30 bg-white/[0.02] overflow-hidden">
+    <div className="rounded-xl border border-border/30 bg-foreground/[0.02] overflow-hidden">
       {/* Header + fraction */}
       <div className="px-3 py-2 border-b border-border/20 flex items-center gap-2">
         <span className={cn(TYPE.label, allComplete ? "text-status-success/70" : "text-muted-foreground/50")}>
@@ -824,7 +824,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
                 : {})}
             className={cn(
               "flex items-center gap-2 px-3 py-2 border-b border-border/15 last:border-0 w-full text-left",
-              isAction && !allComplete ? "hover:bg-white/[0.03] transition-colors cursor-pointer" : "cursor-default",
+              isAction && !allComplete ? "hover:bg-foreground/[0.03] transition-colors cursor-pointer" : "cursor-default",
             )}
           >
             <div className={cn(
@@ -833,7 +833,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
                 ? "text-status-success"
                 : isNext
                   ? "border border-primary/50 bg-primary/[0.08]"
-                  : "border border-border/35 bg-white/[0.02]",
+                  : "border border-border/35 bg-foreground/[0.02]",
             )}>
               {step.done
                 ? <CheckCircle2 className="w-3.5 h-3.5" />
@@ -895,7 +895,7 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
       <div className="max-w-sm w-full space-y-5">
         {/* Header */}
         <div className="text-center space-y-1.5">
-          <div className="w-12 h-12 rounded-2xl border border-border/40 bg-white/[0.03] flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-2xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center mx-auto mb-3">
             <Plug className="w-5 h-5 text-muted-foreground/60" />
           </div>
           <h2 className={HEADING.h2}>{s?.title ?? "Get started with " + account.name}</h2>
@@ -926,7 +926,7 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
 export function PendingState({ title, message, icon: Icon = Clock, action }: { title: string; message?: string; icon?: React.ComponentType<{ className?: string }>; action?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-      <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
+      <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
         <Icon className="w-4 h-4 text-muted-foreground/60" />
       </div>
       <div className="flex items-center gap-1.5">
@@ -951,7 +951,7 @@ export function SkeletonBlock({
   return (
     <div
       aria-hidden="true"
-      className={cn("animate-pulse rounded-md bg-white/[0.06]", className)}
+      className={cn("animate-pulse rounded-md bg-foreground/[0.06]", className)}
     />
   );
 }
@@ -965,7 +965,7 @@ export function SkeletonTileRow({ count = 4 }: { count?: number }) {
       style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
     >
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-border/30 bg-white/[0.02] px-3 py-2.5 space-y-2">
+        <div key={i} className="rounded-xl border border-border/30 bg-foreground/[0.02] px-3 py-2.5 space-y-2">
           <SkeletonBlock className="h-2 w-2/3" />
           <SkeletonBlock className="h-5 w-1/2" />
         </div>
@@ -1155,7 +1155,7 @@ export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; 
             key={c.to}
             type="button"
             onClick={() => navigate(c.to)}
-            className="group relative flex items-start gap-3 text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 pr-8 transition-[color,background-color,border-color,box-shadow,opacity,transform] hover:border-primary/35 hover:bg-primary/[0.05] hover:-translate-y-px"
+            className="group relative flex items-start gap-3 text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 pr-8 transition-[color,background-color,border-color,box-shadow,opacity,transform] hover:border-primary/35 hover:bg-primary/[0.05] hover:-translate-y-px"
           >
             <span className="shrink-0 w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center transition-colors group-hover:bg-primary/20 group-hover:border-primary/35">
               <c.Icon className="w-4 h-4 text-interactive" />
@@ -1195,8 +1195,8 @@ export function LoopAction({
       className={cn(
         "inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-[color,background-color,border-color,box-shadow,opacity,transform]",
         variant === "primary"
-          ? "bg-primary text-white border-primary hover:bg-primary/90 shadow-md shadow-primary/25 hover:shadow-primary/35"
-          : "bg-white/[0.07] border-border/55 text-foreground/90 hover:bg-white/[0.11] hover:text-foreground hover:border-border/75 shadow-sm",
+          ? "bg-primary text-foreground border-primary hover:bg-primary/90 shadow-md shadow-primary/25 hover:shadow-primary/35"
+          : "bg-foreground/[0.07] border-border/55 text-foreground/90 hover:bg-foreground/[0.11] hover:text-foreground hover:border-border/75 shadow-sm",
       )}
     >
       <Icon className="w-4 h-4 shrink-0" />
@@ -1277,7 +1277,7 @@ export function FlowCrumb({ from, fromCell, fromHyp }: FromParams) {
   if (!origin) return null;
 
   return (
-    <div className="px-6 py-1.5 border-b border-border/20 bg-white/[0.01] flex items-center gap-1.5">
+    <div className="px-6 py-1.5 border-b border-border/20 bg-foreground/[0.01] flex items-center gap-1.5">
       <button
         onClick={() => navigate(url)}
         className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors"
@@ -1366,7 +1366,7 @@ export function StaleFocusNotice({ label = "item" }: { label?: string }) {
 export const PILL_ACTIVE =
   "border-primary/60 bg-primary/20 text-interactive shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]";
 export const PILL_INACTIVE =
-  "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.04] hover:border-border/60";
+  "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-foreground/[0.04] hover:border-border/60";
 
 // ─── Segmented toggle ─────────────────────────────────────────────────
 // Contained 2-4 option mode switch (e.g. "Avatars / Profiles",
@@ -1388,7 +1388,7 @@ export function SegmentedToggle<T extends string>({
 }) {
   return (
     <div
-      className="flex items-center gap-0.5 rounded-lg border border-border/30 bg-white/[0.03] p-0.5"
+      className="flex items-center gap-0.5 rounded-lg border border-border/30 bg-foreground/[0.03] p-0.5"
       role="group"
       aria-label={ariaLabel}
     >
@@ -1428,7 +1428,7 @@ export function MetricSelectionBar({
   onToggle: (event: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-2 flex-wrap px-6 py-2.5 border-b border-border/30 bg-white/[0.01]">
+    <div className="flex items-center gap-2 flex-wrap px-6 py-2.5 border-b border-border/30 bg-foreground/[0.01]">
       <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/70">
         Metric selection
       </span>
@@ -1479,7 +1479,7 @@ export function DatePresetBar({
   isFetching?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
+    <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-foreground/[0.01]">
       <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/70 shrink-0">
         Window
       </span>
@@ -1561,7 +1561,7 @@ export function OverviewHeaderControls({
               "h-7 px-2.5 text-caption font-medium transition-colors",
               preset === value
                 ? "bg-primary/18 text-interactive"
-                : "text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.04]"
+                : "text-muted-foreground/60 hover:text-foreground hover:bg-foreground/[0.04]"
             )}
           >
             {label}
@@ -1602,7 +1602,7 @@ export function OverviewHeaderControls({
       <button
         type="button"
         onClick={() => navigate(exportTo)}
-        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] transition-colors"
+        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
       >
         <Download className="w-3.5 h-3.5" />
         Export
@@ -1645,7 +1645,7 @@ export function DataWindowBar({
 }) {
   const selectedKey = selected ? `${selected.start}|${selected.end}` : null;
   return (
-    <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
+    <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-foreground/[0.01]">
       <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/70 shrink-0">
         Period
       </span>
@@ -1749,7 +1749,7 @@ export function SectionCard({
       <div
         className={cn(
           "mx-accent-bar relative flex items-center gap-2 px-3.5 py-2 border-b border-primary/10",
-          collapsible && "cursor-pointer select-none hover:bg-white/[0.02] transition-colors"
+          collapsible && "cursor-pointer select-none hover:bg-foreground/[0.02] transition-colors"
         )}
         onClick={collapsible ? () => setOpen((v) => !v) : undefined}
       >
@@ -1772,7 +1772,7 @@ export function SectionCard({
               aria-label={bodyVisible ? "Collapse section" : "Expand section"}
               aria-expanded={bodyVisible}
               onClick={() => setOpen((v) => !v)}
-              className="p-0.5 rounded hover:bg-white/[0.06] transition-colors shrink-0"
+              className="p-0.5 rounded hover:bg-foreground/[0.06] transition-colors shrink-0"
             >
               <ChevronDown
                 className={cn(
@@ -1827,7 +1827,7 @@ export function ShowMoreButton({
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className="w-full flex items-center justify-center gap-1.5 py-2 mt-2 rounded-lg text-body font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.02] border border-border/25 transition-colors"
+      className="w-full flex items-center justify-center gap-1.5 py-2 mt-2 rounded-lg text-body font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-foreground/[0.02] border border-border/25 transition-colors"
     >
       {expanded ? "Show fewer" : `Show all ${total} ${noun}`}
       <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", expanded && "rotate-180")} aria-hidden />
@@ -1902,7 +1902,7 @@ export interface LoopStageInfo {
 export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; current?: string }) {
   const [, navigate] = useLocation();
   return (
-    <div className="flex items-center flex-wrap px-6 py-4 border-b border-border/30 bg-white/[0.01]">
+    <div className="flex items-center flex-wrap px-6 py-4 border-b border-border/30 bg-foreground/[0.01]">
       {stages.map((s, i) => {
         const isCurrent = s.id === current;
         const locked = s.status === "locked";
@@ -2001,7 +2001,7 @@ export function ConnectionNudgeBanner({ hasMetaConnection }: { hasMetaConnection
   const [, navigate] = useLocation();
   if (hasMetaConnection) return null;
   return (
-    <div className="mx-6 mt-4 flex items-center gap-2.5 rounded-lg border border-border/40 bg-white/[0.03] px-4 py-2.5 text-sm text-muted-foreground/80">
+    <div className="mx-6 mt-4 flex items-center gap-2.5 rounded-lg border border-border/40 bg-foreground/[0.03] px-4 py-2.5 text-sm text-muted-foreground/80">
       <Plug className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50" />
       <span className="flex-1">Connect Meta in Settings to enable live data refresh.</span>
       <button

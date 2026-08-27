@@ -325,7 +325,7 @@ function PositioningMapCard({
           </div>
         )
       ) : (
-        <div className="relative w-full rounded-xl border border-border/20 bg-white/[0.01] overflow-hidden" style={{ height: 380 }}>
+        <div className="relative w-full rounded-xl border border-border/20 bg-foreground/[0.01] overflow-hidden" style={{ height: 380 }}>
           <div
             className="absolute inset-0 pointer-events-none"
             aria-hidden="true"
@@ -463,7 +463,7 @@ function ShareOfSpendCard({
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>Spend</span>
-                  <div className="flex-1 h-[3px] rounded-full bg-white/[0.04] overflow-hidden">
+                  <div className="flex-1 h-[3px] rounded-full bg-foreground/[0.04] overflow-hidden">
                     <div className="h-full rounded-full bg-primary/60" style={{ width: `${Math.min(spendShare, 100)}%` }} />
                   </div>
                   <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
@@ -472,7 +472,7 @@ function ShareOfSpendCard({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>{totalResults > 0 ? "Results" : "Results —"}</span>
-                  <div className="flex-1 h-[3px] rounded-full bg-white/[0.04] overflow-hidden">
+                  <div className="flex-1 h-[3px] rounded-full bg-foreground/[0.04] overflow-hidden">
                     <div className="h-full rounded-full bg-chart-2/70" style={{ width: `${Math.min(resultShare, 100)}%` }} />
                   </div>
                   <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
@@ -552,7 +552,7 @@ function GroupDetailRow({
                     onClick={() => onSelectMember(m.seg)}
                     className={cn(
                       "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md",
-                      "hover:bg-white/[0.05] transition-colors text-left"
+                      "hover:bg-foreground/[0.05] transition-colors text-left"
                     )}
                   >
                     <span className={cn(TYPE.body, "inline-flex items-center gap-1.5")}>
@@ -662,7 +662,7 @@ function RankedListTab({
               onClick={() => onSelect(e.seg)}
               data-testid={`row-audience-segment-${e.seg.age}-${e.seg.gender}`}
               className={cn(
-                "w-full text-left rounded-lg px-4 py-3.5 border border-border/30 bg-white/[0.01]",
+                "w-full text-left rounded-lg px-4 py-3.5 border border-border/30 bg-foreground/[0.01]",
                 "hover:border-primary/30 hover:bg-primary/[0.03] active:scale-[0.998]",
                 "transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-100 group"
               )}
@@ -698,7 +698,7 @@ function RankedListTab({
                   Explore <ArrowRight className="w-3.5 h-3.5" />
                 </span>
               </div>
-              <div className="ml-6 h-[6px] rounded-full bg-white/[0.05] overflow-hidden mb-2.5">
+              <div className="ml-6 h-[6px] rounded-full bg-foreground/[0.05] overflow-hidden mb-2.5">
                 <div
                   className="h-full rounded-full bg-primary/60"
                   style={{ width: `${barPct}%` }}

@@ -134,7 +134,7 @@ export function FunnelChart({
               {r.label}
             </span>
 
-            <div className="flex-1 min-w-0 h-8 relative rounded-md bg-white/[0.03] overflow-hidden">
+            <div className="flex-1 min-w-0 h-8 relative rounded-md bg-foreground/[0.03] overflow-hidden">
               {r.isGap ? (
                 // A gap is drawn as a gap: a hatched, empty track that cannot
                 // be mistaken for a bar of length zero.

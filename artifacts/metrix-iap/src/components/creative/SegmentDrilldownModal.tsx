@@ -65,7 +65,7 @@ function SegmentMetricPicker({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] transition-colors" data-testid="button-segment-metric-picker">
+        <button className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.04] transition-colors" data-testid="button-segment-metric-picker">
           <Settings2 className="w-3.5 h-3.5" />
           Customize metrics
         </button>
@@ -132,7 +132,7 @@ function SegmentMetricPicker({
                 data-testid={`picker-segment-metric-${m.id}`}
                 className={cn(
                   "w-full flex items-center gap-2 px-1.5 py-1.5 rounded-md text-left transition-colors",
-                  disabled ? "opacity-45 cursor-not-allowed" : capBlocked ? "opacity-60 cursor-not-allowed" : on ? "bg-white/[0.03]" : "hover:bg-white/[0.02]"
+                  disabled ? "opacity-45 cursor-not-allowed" : capBlocked ? "opacity-60 cursor-not-allowed" : on ? "bg-foreground/[0.03]" : "hover:bg-foreground/[0.02]"
                 )}
               >
                 <span
@@ -226,7 +226,7 @@ function CompareSegmentPicker({
                 onPick(seg);
                 setOpen(false);
               }}
-              className="w-full text-left px-1.5 py-1.5 rounded-md text-caption text-foreground/85 hover:bg-white/[0.04] transition-colors"
+              className="w-full text-left px-1.5 py-1.5 rounded-md text-caption text-foreground/85 hover:bg-foreground/[0.04] transition-colors"
               data-testid={`picker-compare-segment-${segmentKey(seg)}`}
             >
               {segmentLabel(seg)}
@@ -409,7 +409,7 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
   return (
     <div className="space-y-3 min-w-0" data-testid={`compare-column-${side}`}>
       {!data.attribution.available ? (
-        <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-white/[0.02] p-2.5">
+        <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-2.5">
           <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <span>{data.attribution.unavailableReason}</span>
         </div>
@@ -579,7 +579,7 @@ function CompareMetricTable({
       <div className="rounded-lg border border-border/40 overflow-hidden">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-border/40 bg-white/[0.02]">
+            <tr className="border-b border-border/40 bg-foreground/[0.02]">
               <CompareSortTh sortKey="metric" current={sortKey} dir={sortDir} onSort={handleSort} align="left">
                 Metric
               </CompareSortTh>
@@ -758,7 +758,7 @@ export function SegmentDrilldownModal({
                     {label}
                   </span>
                   <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground/50" />
-                  <span className="text-caption font-semibold text-foreground px-2 py-1 rounded-md bg-white/[0.04] border border-border/40" data-testid="label-compare-b">
+                  <span className="text-caption font-semibold text-foreground px-2 py-1 rounded-md bg-foreground/[0.04] border border-border/40" data-testid="label-compare-b">
                     {compareLabel}
                   </span>
                 </div>
@@ -769,7 +769,7 @@ export function SegmentDrilldownModal({
                   />
                   <button
                     onClick={() => setCompareSegment(null)}
-                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] transition-colors"
+                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
                     data-testid="button-clear-compare"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -858,7 +858,7 @@ export function SegmentDrilldownModal({
                         key={id}
                         className={cn(
                           "rounded-lg border p-2.5",
-                          unavailable ? "border-border/30 bg-white/[0.01]" : "border-border/40 bg-white/[0.02]"
+                          unavailable ? "border-border/30 bg-foreground/[0.01]" : "border-border/40 bg-foreground/[0.02]"
                         )}
                         data-testid={`tile-segment-metric-${id}`}
                       >
@@ -881,7 +881,7 @@ export function SegmentDrilldownModal({
                   Top concepts for this segment
                 </p>
                 {!data.attribution.available ? (
-                  <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-white/[0.02] p-3" data-testid="note-attribution-unavailable">
+                  <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-3" data-testid="note-attribution-unavailable">
                     <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                     <span>{data.attribution.unavailableReason}</span>
                   </div>
@@ -892,7 +892,7 @@ export function SegmentDrilldownModal({
                       {data.attribution.cells.slice(0, 4).map((c) => {
                         const barPct = c.totals.results != null ? Math.round((c.totals.results / maxCResults) * 100) : 0;
                         return (
-                          <div key={c.cellId} className="rounded-xl border border-border/40 bg-white/[0.02] p-3 space-y-2" data-testid={`row-segment-concept-${c.cellId}`}>
+                          <div key={c.cellId} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-3 space-y-2" data-testid={`row-segment-concept-${c.cellId}`}>
                             {/* Name + result count */}
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
@@ -907,7 +907,7 @@ export function SegmentDrilldownModal({
                               )}
                             </div>
                             {/* Results share bar */}
-                            <div className="h-[5px] rounded-full bg-white/[0.05] overflow-hidden">
+                            <div className="h-[5px] rounded-full bg-foreground/[0.05] overflow-hidden">
                               <div className="h-full rounded-full bg-gradient-to-r from-primary/55 to-primary/55" style={{ width: `${barPct}%` }} />
                             </div>
                             {/* Copy preview */}

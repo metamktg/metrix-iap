@@ -118,7 +118,7 @@ function DetailDrawer({
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             aria-label="Close"
           >
             <X className="w-4 h-4" />
@@ -127,7 +127,7 @@ function DetailDrawer({
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
           <div className="flex items-center gap-1.5 flex-wrap">
-            {card.descriptor && <Badge text={card.descriptor} cls="bg-white/[0.04] text-foreground/70 border-border/40" />}
+            {card.descriptor && <Badge text={card.descriptor} cls="bg-foreground/[0.04] text-foreground/70 border-border/40" />}
             <Badge text={card.scope} cls={SCOPE_STYLE[card.scope] ?? "bg-muted text-muted-foreground/60 border-border/40"} />
             <Badge text={`${card.impact} impact`} cls={IMPACT_STYLE[card.impact] ?? IMPACT_STYLE.low} />
           </div>
@@ -173,7 +173,7 @@ function DetailDrawer({
         <div className="px-5 py-4 border-t border-border/40 flex items-center gap-2">
           <button
             onClick={() => { onReject(); onClose(); }}
-            className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <X className="w-3.5 h-3.5" /> Reject
           </button>
@@ -293,7 +293,7 @@ function SwipeCard({
         )}
 
         <div className="flex items-center gap-1.5 flex-wrap">
-          {card.descriptor && <Badge text={card.descriptor} cls="bg-white/[0.04] text-foreground/70 border-border/40" />}
+          {card.descriptor && <Badge text={card.descriptor} cls="bg-foreground/[0.04] text-foreground/70 border-border/40" />}
           <Badge text={card.scope} cls={SCOPE_STYLE[card.scope] ?? "bg-muted text-muted-foreground/60 border-border/40"} />
           <Badge text={`${card.impact} impact`} cls={IMPACT_STYLE[card.impact] ?? IMPACT_STYLE.low} />
         </div>
@@ -428,7 +428,7 @@ export function RecommendationDeck({
       {tab === "deck" && (
         pending.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-            <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4 text-status-success/60" />
             </div>
             <p className="text-title font-medium text-foreground/60">{emptyLabel}</p>
@@ -466,7 +466,7 @@ export function RecommendationDeck({
               </button>
               <button
                 onClick={() => setDetailId(pending[0].id)}
-                className="w-9 h-9 rounded-full flex items-center justify-center border border-border/40 text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                className="w-9 h-9 rounded-full flex items-center justify-center border border-border/40 text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
                 aria-label="Details"
               >
                 <Info className="w-4 h-4" />
@@ -545,7 +545,7 @@ function TaskTray({
             {g.rows.map((s) => {
               const done = isDone(scopeId, s.id);
               return (
-                <div key={s.id} className={cn("flex items-start gap-3 p-3 rounded-lg border bg-white/[0.02]", done ? "border-status-success/20 opacity-60" : "border-border/40")}>
+                <div key={s.id} className={cn("flex items-start gap-3 p-3 rounded-lg border bg-foreground/[0.02]", done ? "border-status-success/20 opacity-60" : "border-border/40")}>
                   <button
                     onClick={() => toggleDone(scopeId, s.id)}
                     className={cn("mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors", done ? "bg-status-success/20 border-status-success/40 text-status-success" : "border-border/50 text-transparent hover:border-border/70")}
@@ -580,7 +580,7 @@ function DismissedLog({ items, onRestore }: { items: DeckCard[]; onRestore: (id:
   return (
     <div className="space-y-2">
       {items.map((s) => (
-        <div key={s.id} className="flex items-start gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.01] opacity-70">
+        <div key={s.id} className="flex items-start gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.01] opacity-70">
           <div className="flex-1 min-w-0">
             <p className="text-body font-medium text-foreground/60 leading-tight">{s.title}</p>
             <p className="text-label text-muted-foreground/60 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.rationale, 90)}</p>
@@ -597,7 +597,7 @@ function DismissedLog({ items, onRestore }: { items: DeckCard[]; onRestore: (id:
 function EmptyPanel({ Icon, title, sub }: { Icon: React.ComponentType<{ className?: string }>; title: string; sub: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-      <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
+      <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
         <Icon className="w-4 h-4 text-muted-foreground/60" />
       </div>
       <p className="text-title font-medium text-foreground/60">{title}</p>

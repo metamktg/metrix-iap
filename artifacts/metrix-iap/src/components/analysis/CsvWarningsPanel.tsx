@@ -45,7 +45,7 @@ export function CsvWarningsPanel({ run, compact = false }: { run: AnalysisRun; c
       className={cn(
         "rounded-lg border space-y-2",
         compact ? "p-2" : "p-3",
-        alarmed ? "border-status-warning/30 bg-status-warning/[0.06]" : "border-border/40 bg-white/[0.02]",
+        alarmed ? "border-status-warning/30 bg-status-warning/[0.06]" : "border-border/40 bg-foreground/[0.02]",
       )}
     >
       <button

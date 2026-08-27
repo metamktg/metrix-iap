@@ -87,7 +87,7 @@ function InlineDrawer({
         <button
           type="button"
           onClick={onClose}
-          className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-white/5 transition-colors"
+          className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-colors"
           aria-label="Collapse"
         >
           <ChevronUp className="w-4 h-4" />
@@ -177,7 +177,7 @@ function QueueCard({
         isApproved
           ? "border-status-success/25 bg-status-success/[0.04]"
           : isDismissed
-          ? "border-[hsl(var(--border))] bg-white/[0.01] opacity-50"
+          ? "border-[hsl(var(--border))] bg-foreground/[0.01] opacity-50"
           : "border-[hsl(var(--border))] bg-secondary"
       )}
     >
@@ -188,7 +188,7 @@ function QueueCard({
         disabled={isDismissed}
         className={cn(
           "w-full text-left p-4 transition-colors",
-          !isDismissed && "hover:bg-white/[0.02]",
+          !isDismissed && "hover:bg-foreground/[0.02]",
           isDismissed && "cursor-default"
         )}
       >
@@ -250,7 +250,7 @@ function QueueCard({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); dismiss(); }}
-            className="flex items-center gap-1.5 h-8 px-3 rounded border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-8 px-3 rounded border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <X className="w-3.5 h-3.5" /> Dismiss
           </button>
@@ -270,7 +270,7 @@ function QueueCard({
           <button
             type="button"
             onClick={restore}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <RotateCcw className="w-3 h-3" /> Restore
           </button>
@@ -284,7 +284,7 @@ function QueueCard({
           <button
             type="button"
             onClick={restore}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <RotateCcw className="w-3 h-3" /> Undo
           </button>
@@ -306,7 +306,7 @@ const SECTION = "Act";
 function EmptyQueue({ reason }: { reason: "no-loop" | "all-done" }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border/40 py-16 text-center px-6">
-      <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
+      <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
         {reason === "all-done" ? (
           <CheckCircle2 className="w-5 h-5 text-status-success/60" />
         ) : (

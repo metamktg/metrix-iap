@@ -43,7 +43,7 @@ export function InlineAccountPicker({
         <button
           className={cn(
             "inline-flex items-center gap-2 h-9 pl-3 pr-2.5 rounded-md",
-            "border border-border/50 bg-white/[0.03] hover:bg-white/[0.06] transition-colors",
+            "border border-border/50 bg-foreground/[0.03] hover:bg-foreground/[0.06] transition-colors",
             "text-body font-medium text-foreground",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
           )}
@@ -66,7 +66,7 @@ export function InlineAccountPicker({
               className={cn("flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-sm h-9", isActive && "bg-primary/8")}
               onClick={() => { setOpen(false); setActiveAdAccountId(a.id); }}
             >
-              <div className={cn("w-5 h-5 rounded border flex items-center justify-center shrink-0", isActive ? "bg-primary/15 border-primary/25" : "bg-white/[0.04] border-border/30")}>
+              <div className={cn("w-5 h-5 rounded border flex items-center justify-center shrink-0", isActive ? "bg-primary/15 border-primary/25" : "bg-foreground/[0.04] border-border/30")}>
                 <Briefcase className={cn("w-3.5 h-3.5", isActive ? "text-interactive" : "text-muted-foreground/70")} />
               </div>
               <div className="flex-1 min-w-0">

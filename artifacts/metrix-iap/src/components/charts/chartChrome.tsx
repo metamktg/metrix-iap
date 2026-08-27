@@ -93,7 +93,7 @@ export function ChartSkeleton({ height }: { height: number }) {
       {[62, 84, 48, 71, 38, 56, 92].map((h, i) => (
         <div
           key={h}
-          className="flex-1 rounded-t bg-white/[0.06] animate-pulse"
+          className="flex-1 rounded-t bg-foreground/[0.06] animate-pulse"
           // Stagger, so the skeleton reads as one object resolving rather
           // than seven independent things blinking in unison.
           style={{ height: `${h}%`, animationDelay: `${i * 90}ms` }}

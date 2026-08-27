@@ -113,7 +113,7 @@ function RankedBlock({
               disabled={!r.drill}
               className={cn(
                 "flex w-full rounded-md border-l-2 border-transparent transition-colors",
-                r.drill && "hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer",
+                r.drill && "hover:bg-foreground/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer",
               )}
               data-testid={`deep-dive-row-${r.key}`}
               title={r.note ?? `Open the deep dive for ${r.label}`}
@@ -131,7 +131,7 @@ function NoteBlock({ title, text }: { title?: string; text: string }) {
   return (
     <section>
       {title && <h4 className={cn(TYPE.microLabel, "mb-2")}>{title}</h4>}
-      <p className={cn(TYPE.caption, "rounded-lg border border-border/30 bg-white/[0.02] p-3")} data-testid="deep-dive-note">
+      <p className={cn(TYPE.caption, "rounded-lg border border-border/30 bg-foreground/[0.02] p-3")} data-testid="deep-dive-note">
         {text}
       </p>
     </section>
@@ -279,7 +279,7 @@ export function DeepDivePanel() {
               type="button"
               onClick={pop}
               aria-label="Back to previous deep dive"
-              className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground/60 hover:text-foreground transition-colors shrink-0"
+              className="p-1 rounded hover:bg-foreground/[0.06] text-muted-foreground/60 hover:text-foreground transition-colors shrink-0"
               data-testid="deep-dive-back"
             >
               <ArrowLeft className="w-3.5 h-3.5" aria-hidden />
@@ -312,7 +312,7 @@ export function DeepDivePanel() {
             type="button"
             onClick={close}
             aria-label="Close deep dive"
-            className="ml-auto p-1 rounded hover:bg-white/[0.06] text-muted-foreground/60 hover:text-foreground transition-colors shrink-0"
+            className="ml-auto p-1 rounded hover:bg-foreground/[0.06] text-muted-foreground/60 hover:text-foreground transition-colors shrink-0"
             data-testid="deep-dive-close"
           >
             <X className="w-3.5 h-3.5" aria-hidden />

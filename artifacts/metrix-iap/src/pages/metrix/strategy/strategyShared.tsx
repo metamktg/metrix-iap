@@ -91,7 +91,7 @@ function ChipOverflow({ count, children }: { count: number; children: React.Reac
         <button
           type="button"
           aria-label={`Show ${count} more`}
-          className="inline-flex items-center text-label font-semibold text-muted-foreground/80 border border-border/50 bg-white/[0.04] hover:bg-white/[0.08] px-1.5 py-1 rounded leading-none transition-colors"
+          className="inline-flex items-center text-label font-semibold text-muted-foreground/80 border border-border/50 bg-foreground/[0.04] hover:bg-foreground/[0.08] px-1.5 py-1 rounded leading-none transition-colors"
         >
           +{count}
         </button>
@@ -175,7 +175,7 @@ export function IcpChips({ ids, profiles, maxVisible = 4 }: { ids: string[] | un
     return (
       <span
         key={id}
-        className="inline-flex items-center gap-1 text-label font-medium text-foreground/85 border border-border/40 bg-white/[0.03] px-1.5 py-1 rounded leading-none"
+        className="inline-flex items-center gap-1 text-label font-medium text-foreground/85 border border-border/40 bg-foreground/[0.03] px-1.5 py-1 rounded leading-none"
         title={compact === full ? id : `${full} · ${id}`}
       >
         <Users className="w-3.5 h-3.5 text-interactive/70" />
@@ -205,7 +205,7 @@ function RefChips({ refs }: { refs: HierarchyRef[] }) {
       {refs.map((r, i) => (
         <span
           key={i}
-          className="inline-flex items-center text-label font-mono font-semibold text-foreground/90 border border-border/50 bg-white/[0.04] px-1.5 py-0.5 rounded leading-none whitespace-nowrap"
+          className="inline-flex items-center text-label font-mono font-semibold text-foreground/90 border border-border/50 bg-foreground/[0.04] px-1.5 py-0.5 rounded leading-none whitespace-nowrap"
         >
           {formatHierarchyRef(r)}
         </span>
@@ -376,7 +376,7 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
         </div>
       )}
       {sections.map(({ key, label, Icon }) => (
-        <div key={key} className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
+        <div key={key} className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
           <div className="flex items-center gap-1.5 mb-1">
             <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />
             <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
@@ -444,7 +444,7 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
   return (
     <div className="grid grid-cols-dashboard-3 gap-3">
       {combinations.map((c, i) => (
-        <div key={`${c.combination}-${i}`} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2.5">
+        <div key={`${c.combination}-${i}`} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4 flex flex-col gap-2.5">
           <div className="flex items-start justify-between gap-2">
             {c.context && <NormalizedRefItem text={c.context} eyebrow="Combination context" />}
             {c.recommendation && (
@@ -524,7 +524,7 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
         ))}
       </div>
       {playbook.budget_reallocation_note && (
-        <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
+        <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
           <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">Budget reallocation</div>
           <DetailReveal
             label={deriveLabel(playbook.budget_reallocation_note, 72)}
@@ -666,7 +666,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="rounded-full border border-border/40 bg-white/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
+            className="rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
           >
             +{overflow} more
           </button>
@@ -675,7 +675,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
           <button
             type="button"
             onClick={() => setExpanded(false)}
-            className="rounded-full border border-border/40 bg-white/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
+            className="rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
           >
             − less
           </button>

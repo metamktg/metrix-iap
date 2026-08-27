@@ -109,7 +109,7 @@ function PillarCoverageStrip({
                   )}
                 </div>
               </div>
-              <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+              <div className="h-1.5 rounded-full bg-foreground/[0.05] overflow-hidden">
                 <div
                   className="h-full rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300"
                   style={{
@@ -211,7 +211,7 @@ function VariableFamilyHeatmap({ pillars }: { pillars: MessagePillar[] }) {
                       "rounded h-6 flex items-center justify-center border transition-opacity",
                       used
                         ? cn("border-transparent opacity-90", colorCls)
-                        : "border-border/20 bg-white/[0.02] opacity-40"
+                        : "border-border/20 bg-foreground/[0.02] opacity-40"
                     )}
                     title={
                       code
@@ -300,7 +300,7 @@ function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<ty
         })}
         {typeof playbook.budget_reallocation_note === "string" &&
           playbook.budget_reallocation_note && (
-            <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
+            <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
               <div className={cn(TYPE.label, "mb-1 text-muted-foreground/60")}>
                 Budget reallocation
               </div>
@@ -533,7 +533,7 @@ export function StrategyOverview() {
                         key={p.id}
                         id={`pillar-${p.id}`}
                         className={cn(
-                          "rounded-xl border border-border/40 bg-white/[0.02] flex flex-col scroll-mt-4 overflow-hidden",
+                          "rounded-xl border border-border/40 bg-foreground/[0.02] flex flex-col scroll-mt-4 overflow-hidden",
                           tierAccent
                         )}
                       >
@@ -662,7 +662,7 @@ export function StrategyOverview() {
                         window.history.pushState({}, "", s.to);
                         window.dispatchEvent(new PopStateEvent("popstate"));
                       }}
-                      className="group rounded-xl border border-border/40 bg-white/[0.02] hover:bg-white/[0.045] hover:border-border/70 p-4 flex flex-col gap-3 transition-[color,background-color,border-color,box-shadow,opacity,transform] no-underline"
+                      className="group rounded-xl border border-border/40 bg-foreground/[0.02] hover:bg-foreground/[0.045] hover:border-border/70 p-4 flex flex-col gap-3 transition-[color,background-color,border-color,box-shadow,opacity,transform] no-underline"
                     >
                       {/* Icon + label */}
                       <div className="flex items-center gap-2">

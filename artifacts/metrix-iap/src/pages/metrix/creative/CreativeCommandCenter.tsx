@@ -157,7 +157,7 @@ export function CreativeCommandCenter() {
                 {!run ? (
                   <p className="text-caption text-muted-foreground/60">No generation runs yet for this account.</p>
                 ) : (
-                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-foreground/[0.015] px-3 py-2.5">
                     <div className="flex items-center gap-2 min-w-0">
                       {run.status === "running" && <Loader2 className="w-4 h-4 text-status-warning animate-spin shrink-0" />}
                       {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" />}
@@ -204,7 +204,7 @@ export function CreativeCommandCenter() {
                     <button
                       key={b.id}
                       onClick={() => navigate(`/app/creative/builder?focus=${b.id}`)}
-                      className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+                      className="text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 flex flex-col hover:border-border/60 hover:bg-foreground/[0.03] transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <span className="inline-flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/50 px-1.5 py-0.5 rounded leading-none">

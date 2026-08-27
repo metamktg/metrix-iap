@@ -164,7 +164,7 @@ export function AddAccountDialog({
           <>
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
                   <Plus className="w-4 h-4 text-interactive" />
                 </div>
               </div>
@@ -202,15 +202,15 @@ export function AddAccountDialog({
                 disabled
                 aria-disabled="true"
                 title="Live Meta connection is coming soon — use manual upload above for now"
-                className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-border/30 bg-white/[0.01] opacity-70 cursor-not-allowed text-left"
+                className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-border/30 bg-foreground/[0.01] opacity-70 cursor-not-allowed text-left"
               >
-                <div className="w-9 h-9 rounded-lg border border-border/30 bg-white/[0.02] flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-lg border border-border/30 bg-foreground/[0.02] flex items-center justify-center shrink-0">
                   <Plug className="w-4 h-4 text-muted-foreground/50" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="text-title font-semibold text-muted-foreground/70">Connect Meta Ad Account</div>
-                    <span className="text-label font-semibold uppercase tracking-widest border border-border/40 bg-white/[0.03] text-muted-foreground/60 px-1.5 py-0.5 rounded shrink-0">
+                    <span className="text-label font-semibold uppercase tracking-widest border border-border/40 bg-foreground/[0.03] text-muted-foreground/60 px-1.5 py-0.5 rounded shrink-0">
                       Coming soon
                     </span>
                   </div>
@@ -228,7 +228,7 @@ export function AddAccountDialog({
           <>
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
                   <FileUp className="w-4 h-4 text-interactive" />
                 </div>
               </div>
@@ -248,7 +248,7 @@ export function AddAccountDialog({
                 placeholder="e.g. Acme Skincare"
                 maxLength={120}
                 className={cn(
-                  "w-full h-10 px-3 rounded-md bg-white/[0.03] border text-title text-foreground",
+                  "w-full h-10 px-3 rounded-md bg-foreground/[0.03] border text-title text-foreground",
                   "placeholder:text-muted-foreground/75 focus:outline-none focus:ring-1",
                   error ? "border-status-danger/40 focus:ring-status-danger/40" : "border-border/50 focus:ring-primary/40 focus:border-primary/40"
                 )}

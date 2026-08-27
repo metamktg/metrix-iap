@@ -254,7 +254,7 @@ export function ReportHistoryView() {
                             setSelectedIds(allSelected ? new Set() : new Set(deletableIds))
                           }
                           disabled={batchDeleting}
-                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
                         >
                           {allSelected ? "Deselect all" : `Select all (${fmtNum(deletableIds.length)})`}
                         </button>
@@ -264,7 +264,7 @@ export function ReportHistoryView() {
                               setSelectedIds(allDraftsSelected ? new Set() : new Set(draftIds))
                             }
                             disabled={batchDeleting}
-                            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
                           >
                             {allDraftsSelected
                               ? "Deselect drafts"
@@ -274,7 +274,7 @@ export function ReportHistoryView() {
                         <button
                           onClick={exitSelectMode}
                           disabled={batchDeleting}
-                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-60"
                         >
                           <X className="w-3.5 h-3.5" />
                           Cancel
@@ -292,7 +292,7 @@ export function ReportHistoryView() {
                   ) : (
                     <button
                       onClick={() => setSelectMode(true)}
-                      className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors ml-auto"
+                      className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors ml-auto"
                     >
                       <Check className="w-3.5 h-3.5" />
                       Select
@@ -335,7 +335,7 @@ export function ReportHistoryView() {
                           deleteReport({ workspaceId: manager.id, reportId: confirmDelete.reportId });
                         }
                       }}
-                      className="bg-status-danger/90 hover:bg-status-danger text-white"
+                      className="bg-status-danger/90 hover:bg-status-danger text-foreground"
                     >
                       {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Delete report"}
                     </AlertDialogAction>
@@ -368,7 +368,7 @@ export function ReportHistoryView() {
                           });
                         }
                       }}
-                      className="bg-status-danger/90 hover:bg-status-danger text-white"
+                      className="bg-status-danger/90 hover:bg-status-danger text-foreground"
                     >
                       {batchDeleting ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -426,7 +426,7 @@ function ReportCardList({
             "rounded-xl border p-4 transition-colors",
             isSelected
               ? "border-status-danger/40 bg-status-danger/[0.06]"
-              : "border-border/40 bg-white/[0.02]",
+              : "border-border/40 bg-foreground/[0.02]",
             selectable && "cursor-pointer hover:border-border/70",
           )}
         >
@@ -445,7 +445,7 @@ function ReportCardList({
                 )}
               </div>
             )}
-            <div className="w-9 h-9 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center shrink-0">
               <FileText className="w-4 h-4 text-muted-foreground/70" />
             </div>
             <div className="flex-1 min-w-0">
@@ -481,7 +481,7 @@ function ReportCardList({
                   "flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium shrink-0 transition-colors disabled:opacity-60",
                   doneId === r.id
                     ? "border-status-success/30 text-status-success bg-status-success/5"
-                    : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-foreground/5"
                 )}
               >
                 {busyId === r.id ? (

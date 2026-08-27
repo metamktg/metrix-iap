@@ -38,7 +38,7 @@ const SECTION = "Settings · 10";
 function SystemInfoSection() {
   return (
     <SectionCard title="System" desc="Build and data source">
-      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
         <div className="space-y-0.5">
           <div className="text-caption font-medium text-foreground/80 font-mono">METRIX IAP v2.0-rc</div>
           <div className="text-label text-muted-foreground/60 font-mono">SAMPLE / DEMO DATA</div>
@@ -96,7 +96,7 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
             aria-label="Account display name"
             aria-invalid={tooLong || undefined}
             className={cn(
-              "w-full rounded-lg border bg-white/[0.02] px-3 py-2 text-body text-foreground",
+              "w-full rounded-lg border bg-foreground/[0.02] px-3 py-2 text-body text-foreground",
               "placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/45 disabled:opacity-60",
               tooLong ? "border-status-danger/50" : "border-border/40"
             )}
@@ -113,7 +113,7 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
             "shrink-0 rounded-lg border px-3 py-2 text-body transition-colors",
             canSave
               ? "border-primary/45 bg-primary/[0.06] hover:bg-primary/[0.1] text-foreground"
-              : "border-border/40 bg-white/[0.02] text-muted-foreground/60 cursor-not-allowed"
+              : "border-border/40 bg-foreground/[0.02] text-muted-foreground/60 cursor-not-allowed"
           )}
         >
           {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
@@ -184,7 +184,7 @@ function ObjectivesSection({ accountId, currentObjectives }: { accountId: string
                 "flex items-center gap-2.5 p-3 rounded-lg border transition-colors text-left disabled:opacity-60",
                 active
                   ? "border-primary/45 bg-primary/[0.06]"
-                  : "border-border/40 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/[0.04]"
+                  : "border-border/40 bg-foreground/[0.02] hover:border-primary/40 hover:bg-primary/[0.04]"
               )}
             >
               {pendingThis ? (
@@ -232,7 +232,7 @@ function PrefToggle({
         "inline-flex items-center justify-center w-5 h-5 rounded border transition-colors",
         on
           ? "border-status-success/25 bg-status-success/10 hover:bg-status-success/20"
-          : "border-border/40 bg-white/[0.02] hover:bg-white/[0.06]",
+          : "border-border/40 bg-foreground/[0.02] hover:bg-foreground/[0.06]",
         disabled && "opacity-50 pointer-events-none"
       )}
     >
@@ -308,7 +308,7 @@ function NotificationPrefsSections() {
       <SectionCard title="Notification channels" desc="Where notifications are delivered. Click to toggle.">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {channels.map((c) => (
-            <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+            <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
               {c.id === "email" ? <Mail className="w-4 h-4 text-muted-foreground/70 shrink-0" /> : <MonitorSmartphone className="w-4 h-4 text-muted-foreground/70 shrink-0" />}
               <div className="flex-1 text-body font-medium text-foreground">{c.label}</div>
               <button
@@ -322,7 +322,7 @@ function NotificationPrefsSections() {
                   "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none transition-colors",
                   c.enabled
                     ? "text-status-success border-status-success/25 bg-status-success/10 hover:bg-status-success/20"
-                    : "text-muted-foreground/70 border-border/40 bg-white/[0.03] hover:bg-white/[0.08]",
+                    : "text-muted-foreground/70 border-border/40 bg-foreground/[0.03] hover:bg-foreground/[0.08]",
                   isPending && "opacity-60 pointer-events-none"
                 )}
               >
@@ -334,7 +334,7 @@ function NotificationPrefsSections() {
       </SectionCard>
 
       <SectionCard title="Notification events" desc="Which product events notify the workspace, per channel. Click a mark to toggle.">
-        <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden">
+        <div className="rounded-lg border border-border/30 bg-foreground/[0.02] overflow-hidden">
           <div className="grid grid-cols-[1fr_56px_56px] gap-2 px-3 py-2 border-b border-border/30">
             <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Event</span>
             <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium text-center">Email</span>
@@ -360,7 +360,7 @@ function NotificationPrefsSections() {
       </SectionCard>
 
       <SectionCard title="Digest" desc="The scheduled summary across all ad accounts.">
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
           <CalendarClock className="w-4 h-4 text-interactive shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="text-body font-medium text-foreground capitalize">{notifications.digest.frequency} · {notifications.digest.day}</div>
@@ -405,7 +405,7 @@ export function GeneralView() {
       <div className="px-6 py-5 space-y-5 max-w-3xl">
         <SectionCard title="Data connection" desc="Meta ad account connection and manual import status.">
           <div className="space-y-2.5">
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
               {configured ? <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
               <div className="flex-1 min-w-0">
                 <div className="text-body font-medium text-foreground">Meta ad account</div>
@@ -421,7 +421,7 @@ export function GeneralView() {
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
               <FileUp className="w-4 h-4 text-muted-foreground/85 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-body font-medium text-foreground">Manual import</div>
@@ -429,14 +429,14 @@ export function GeneralView() {
               </div>
               <button
                 onClick={() => setImportOpen(true)}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
                 data-testid="button-add-import"
               >
                 <FileUp className="w-3 h-3" /> Add import
               </button>
             </div>
             {configured && (
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
                 <Images className="w-4 h-4 text-muted-foreground/85 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-body font-medium text-foreground">Creative library</div>
@@ -446,7 +446,7 @@ export function GeneralView() {
                 </div>
                 <button
                   onClick={() => setCreativeLibraryOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
                   data-testid="button-upload-creatives"
                 >
                   <Images className="w-3 h-3" /> Upload creatives
@@ -460,7 +460,7 @@ export function GeneralView() {
         {configured && <ObjectivesSection accountId={account.id} currentObjectives={account.objectives} />}
 
         {configured && (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
             <div className="min-w-0">
               <div className="text-body font-medium text-foreground">Run analysis</div>
               <div className="text-label text-muted-foreground/85">Moved to the Analysis command center.</div>
@@ -471,7 +471,7 @@ export function GeneralView() {
 
         {rb && (
           <SectionCard title="White-label & branding" desc="How reports are branded when delivered to this account's client.">
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
               <Palette className="w-4 h-4 text-interactive shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-body font-medium text-foreground capitalize">{rb.default_branding} branding</div>

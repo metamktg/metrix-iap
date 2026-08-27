@@ -137,7 +137,7 @@ export function LoginPage() {
                 return (
                   <div
                     key={label}
-                    className="group rounded-2xl border border-border/40 bg-white/[0.02] px-4 py-3.5 space-y-1.5 hover:border-border/60 hover:bg-white/[0.04] transition-colors"
+                    className="group rounded-2xl border border-border/40 bg-foreground/[0.02] px-4 py-3.5 space-y-1.5 hover:border-border/60 hover:bg-foreground/[0.04] transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-interactive/75 group-hover:text-interactive transition-colors">
@@ -240,7 +240,7 @@ export function LoginPage() {
                   id="login-email" type="email" required autoComplete="email"
                   value={email} onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
-                  className="w-full h-11 px-4 rounded-xl bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+                  className="w-full h-11 px-4 rounded-xl bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
                   data-testid="input-login-email"
                 />
               </div>
@@ -263,7 +263,7 @@ export function LoginPage() {
                   id="login-password" type="password" required autoComplete="current-password"
                   value={password} onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full h-11 px-4 rounded-xl bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+                  className="w-full h-11 px-4 rounded-xl bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
                   data-testid="input-login-password"
                 />
               </div>
@@ -320,7 +320,7 @@ export function LoginPage() {
               </p>
               <button
                 type="button" onClick={() => navigate(CREATE_ACCOUNT_PATH)}
-                className="w-full h-10 rounded-xl border border-border/40 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 hover:border-border/60 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex items-center justify-center"
+                className="w-full h-10 rounded-xl border border-border/40 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 hover:border-border/60 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex items-center justify-center"
                 data-testid="button-create-account"
               >
                 Create Account

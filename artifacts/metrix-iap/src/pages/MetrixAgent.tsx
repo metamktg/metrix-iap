@@ -14,7 +14,7 @@ const SECTION = "Metrix Agent · 07";
 function PendingRow({ label, sub }: { label: string; sub?: string }) {
   return (
     <div className="flex items-start gap-3 py-3 border-b border-border/20 last:border-b-0">
-      <div className="w-5 h-5 rounded border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0 mt-0.5">
+      <div className="w-5 h-5 rounded border border-border/40 bg-foreground/[0.03] flex items-center justify-center shrink-0 mt-0.5">
         <Clock className="w-3.5 h-3.5 text-muted-foreground/60" />
       </div>
       <div className="flex-1 min-w-0">
@@ -85,7 +85,7 @@ function WaitlistForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@company.com"
-            className="w-full h-9 pl-8 pr-3 rounded-lg border border-border/50 bg-white/[0.03] text-body text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+            className="w-full h-9 pl-8 pr-3 rounded-lg border border-border/50 bg-foreground/[0.03] text-body text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
             aria-label="Email address"
           />
         </div>
@@ -125,7 +125,7 @@ export function MetrixAgent() {
         <div className="w-full max-w-lg space-y-6">
 
           {/* Hero card */}
-          <div className="p-6 rounded-2xl border border-border/40 bg-white/[0.02]">
+          <div className="p-6 rounded-2xl border border-border/40 bg-foreground/[0.02]">
             <div className="space-y-4">
               {/* Icon + badge */}
               <div className="flex items-center gap-3">
@@ -150,8 +150,8 @@ export function MetrixAgent() {
                   { icon: Brain,    label: "Reasoning transparency",      sub: "See why each suggestion was generated." },
                   { icon: ArrowRight, label: "Workflow execution (read-only)", sub: "Summarize, draft, and queue — never auto-apply." },
                 ].map(({ icon: Icon, label, sub }) => (
-                  <div key={label} className="flex items-start gap-3 p-2.5 rounded-lg border border-border/25 bg-white/[0.02]">
-                    <div className="w-6 h-6 rounded border border-border/30 bg-white/[0.03] flex items-center justify-center shrink-0 mt-0.5">
+                  <div key={label} className="flex items-start gap-3 p-2.5 rounded-lg border border-border/25 bg-foreground/[0.02]">
+                    <div className="w-6 h-6 rounded border border-border/30 bg-foreground/[0.03] flex items-center justify-center shrink-0 mt-0.5">
                       <Icon className="w-3.5 h-3.5 text-muted-foreground/70" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -168,7 +168,7 @@ export function MetrixAgent() {
           <WaitlistForm />
 
           {/* Status card */}
-          <div className="p-4 rounded-xl border border-border/40 bg-white/[0.02]">
+          <div className="p-4 rounded-xl border border-border/40 bg-foreground/[0.02]">
             <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">
               Build status
             </div>

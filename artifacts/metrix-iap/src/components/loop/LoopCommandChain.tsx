@@ -194,7 +194,7 @@ function getPhaseLabel(kind: "analysis" | "strategy" | "briefs", pct: number): s
 
 function StatPill({ value, label }: { value: string | number; label?: string }) {
   return (
-    <span className="inline-flex items-baseline gap-1 text-label tabular-nums bg-white/[0.08] border border-border/40 rounded-md px-2 py-1 leading-none">
+    <span className="inline-flex items-baseline gap-1 text-label tabular-nums bg-foreground/[0.08] border border-border/40 rounded-md px-2 py-1 leading-none">
       <span className="font-bold text-foreground">{value}</span>
       {label && <span className="text-muted-foreground/75 font-normal">{label}</span>}
     </span>
@@ -215,7 +215,7 @@ function DepBadge({
       "inline-flex items-center gap-1 text-label font-semibold rounded-md px-2 py-1 leading-none border",
       satisfied
         ? "text-status-success bg-status-success/[0.15] border-status-success/40"
-        : "text-muted-foreground/60 bg-white/[0.05] border-border/30",
+        : "text-muted-foreground/60 bg-foreground/[0.05] border-border/30",
     )}>
       {satisfied
         ? <CheckCircle2 className="w-3.5 h-3.5" />
@@ -322,7 +322,7 @@ function StageTile({
         className={cn(
           "group/stage flex items-center gap-2 rounded-lg py-1.5 px-2 -my-1.5 shrink-0 transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-          isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-white/[0.03]",
+          isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-foreground/[0.03]",
           isActive && "bg-primary/[0.08]",
         )}
       >
@@ -800,7 +800,7 @@ function CommandHub({
       || (strategyComplete && stage === "briefs")
       || (briefsComplete && stage === "report")
     ? "text-interactive/90 bg-primary/[0.12] border-primary/35"
-    : "text-muted-foreground/65 bg-white/[0.05] border-border/30";
+    : "text-muted-foreground/65 bg-foreground/[0.05] border-border/30";
 
   const routes = STAGE_ROUTES[stage];
 
@@ -980,7 +980,7 @@ function CommandHub({
         <div className="flex flex-col gap-2.5">
           {/* Last run context — shown when a prior run exists */}
           {analysisRun && (analysisRun.status === "success" || analysisRun.status === "error") && (
-            <div className="rounded-lg border border-border/25 bg-white/[0.02] px-2.5 py-2 space-y-1">
+            <div className="rounded-lg border border-border/25 bg-foreground/[0.02] px-2.5 py-2 space-y-1">
               <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Last run</p>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {analysisRun.status === "success" ? (
@@ -1031,7 +1031,7 @@ function CommandHub({
                       "h-7 px-2 rounded-md border text-label font-medium transition-colors",
                       localDateRange === r.id
                         ? "border-primary/40 bg-primary/[0.08] text-interactive"
-                        : "border-border/40 bg-white/[0.02] text-muted-foreground/70 hover:bg-white/[0.04]"
+                        : "border-border/40 bg-foreground/[0.02] text-muted-foreground/70 hover:bg-foreground/[0.04]"
                     )}
                   >
                     {r.label}
@@ -1198,7 +1198,7 @@ function CommandHub({
                   className={cn(
                     "h-6 px-2.5 rounded text-[9px] font-semibold transition-colors",
                     reportMode === m
-                      ? "bg-white/[0.08] text-foreground"
+                      ? "bg-foreground/[0.08] text-foreground"
                       : "text-muted-foreground/60 hover:text-foreground",
                   )}
                 >
@@ -1276,17 +1276,17 @@ function CommandHub({
           {(pillarCount > 0 || hypothesisCount > 0 || icpCount > 0) && (
             <div className="flex flex-wrap gap-1.5 pt-0.5">
               {pillarCount > 0 && (
-                <span className="text-[9px] font-mono text-muted-foreground/45 bg-white/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                <span className="text-[9px] font-mono text-muted-foreground/45 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
                   {pillarCount} pillar{pillarCount === 1 ? "" : "s"}
                 </span>
               )}
               {hypothesisCount > 0 && (
-                <span className="text-[9px] font-mono text-muted-foreground/45 bg-white/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                <span className="text-[9px] font-mono text-muted-foreground/45 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
                   {hypothesisCount} hypothesis{hypothesisCount === 1 ? "" : "es"}
                 </span>
               )}
               {icpCount > 0 && (
-                <span className="text-[9px] font-mono text-muted-foreground/45 bg-white/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                <span className="text-[9px] font-mono text-muted-foreground/45 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
                   {icpCount} ICP{icpCount === 1 ? "" : "s"}
                 </span>
               )}
@@ -1374,7 +1374,7 @@ function CommandHub({
             "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border",
             isRunning   ? "bg-status-warning/10 border-status-warning/20"
               : isComplete ? "bg-status-success/[0.08] border-status-success/15"
-              : "bg-white/[0.04] border-border/20",
+              : "bg-foreground/[0.04] border-border/20",
           )}>
             <Icon className={cn(
               "w-4 h-4",
@@ -1397,7 +1397,7 @@ function CommandHub({
 
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground/25 hover:text-foreground/60 hover:bg-white/[0.06] transition-colors shrink-0"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground/25 hover:text-foreground/60 hover:bg-foreground/[0.06] transition-colors shrink-0"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -1462,7 +1462,7 @@ function CommandHub({
                       ? "opacity-25 cursor-not-allowed"
                       : isCurrent
                       ? "bg-primary/12 border border-primary/22"
-                      : "hover:bg-white/[0.06] border border-transparent hover:border-border/20",
+                      : "hover:bg-foreground/[0.06] border border-transparent hover:border-border/20",
                   )}
                 >
                   <span className={cn(

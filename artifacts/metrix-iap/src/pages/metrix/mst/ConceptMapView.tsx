@@ -245,7 +245,7 @@ function ConceptGroupList({
           <button
             key={g.name}
             onClick={() => onSelect(g)}
-            className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 transition-[color,background-color,border-color,box-shadow,opacity,transform] hover:border-primary/35 hover:bg-primary/[0.04] hover:-translate-y-px"
+            className="text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 transition-[color,background-color,border-color,box-shadow,opacity,transform] hover:border-primary/35 hover:bg-primary/[0.04] hover:-translate-y-px"
             data-testid={`concept-group-${g.name}`}
           >
             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
@@ -255,7 +255,7 @@ function ConceptGroupList({
             </div>
             <p className={cn(TYPE.title, "leading-tight")}>{g.name}</p>
 
-            <div className="mt-3 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+            <div className="mt-3 h-1.5 rounded-full bg-foreground/[0.06] overflow-hidden">
               <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "hsl(var(--chart-1) / 0.65)" }} />
             </div>
             <div className={cn("flex items-center justify-between mt-1.5", TYPE.label, "text-muted-foreground/60 tabular-nums")}>

@@ -53,7 +53,7 @@ export function AddToTrayButton({
         compact ? "h-7 w-7 justify-center" : "h-7 px-2.5",
         inTray
           ? "bg-status-success/15 border-status-success/30 text-status-success hover:bg-status-success/25"
-          : "bg-white/[0.04] border-border/50 text-foreground/70 hover:bg-primary/15 hover:border-primary/30 hover:text-interactive",
+          : "bg-foreground/[0.04] border-border/50 text-foreground/70 hover:bg-primary/15 hover:border-primary/30 hover:text-interactive",
         className,
       )}
     >

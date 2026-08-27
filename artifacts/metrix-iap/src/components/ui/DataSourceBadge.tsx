@@ -39,7 +39,7 @@ export function DataSourceBadgeToggle() {
         "flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors",
         on
           ? "text-interactive border-primary/30 bg-primary/5 hover:bg-primary/10"
-          : "text-muted-foreground/70 border-border/30 bg-transparent hover:bg-white/5"
+          : "text-muted-foreground/70 border-border/30 bg-transparent hover:bg-foreground/5"
       )}
       title="Toggle data source annotations"
     >

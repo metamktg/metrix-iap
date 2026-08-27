@@ -150,7 +150,7 @@ function GeneLociCard({
             onClick={() => onOpenVariable(v.code)}
             data-testid={`locus-row-${v.code}`}
             title={`${v.uniqueAds} ad${v.uniqueAds === 1 ? "" : "s"} · ${fmtUSD(v.spend, 0)} spend · ${fmtNum(v.results)} results`}
-            className="grid grid-cols-[30px_minmax(110px,150px)_1fr] items-center gap-3 w-full border-t border-border/25 first:border-t-0 py-2.5 text-left hover:bg-white/[0.02] transition-colors rounded-sm"
+            className="grid grid-cols-[30px_minmax(110px,150px)_1fr] items-center gap-3 w-full border-t border-border/25 first:border-t-0 py-2.5 text-left hover:bg-foreground/[0.02] transition-colors rounded-sm"
           >
             <span className={cn(TYPE.microLabel, "flex items-center justify-center w-[22px] h-[22px] rounded-full border border-border/50 tracking-normal")}>
               L{idx + 1}
@@ -238,7 +238,7 @@ export function AnalysisDnaView() {
                 {/* Golden formula: no real field computes this yet — the seed's
                     own loop_status says so. Point at the honest page instead of
                     fabricating a formula sentence or stat tiles. */}
-                <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border/25 bg-white/[0.015] px-3.5 py-2.5">
+                <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border/25 bg-foreground/[0.015] px-3.5 py-2.5">
                   <p className={cn(TYPE.caption, "text-muted-foreground/70")}>
                     <span className="font-semibold text-muted-foreground/85">Golden formula — </span>
                     {optimizationLoop?.note ??

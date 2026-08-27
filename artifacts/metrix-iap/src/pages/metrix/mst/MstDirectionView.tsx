@@ -136,7 +136,7 @@ export function MstDirectionView() {
                   {visible.map(({ row, bucket, rationale }) => {
                     const Icon = BUCKET_ICON[bucket];
                     return (
-                      <div key={`${row.book}:${row.concept}`} className="rounded-xl border border-border/40 bg-white/[0.02] p-4" data-testid={`direction-concept-${row.book}-${row.concept}`}>
+                      <div key={`${row.book}:${row.concept}`} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4" data-testid={`direction-concept-${row.book}-${row.concept}`}>
                         <div className="flex items-center justify-between gap-2 mb-2.5">
                           <span className={cn(TYPE.label, "font-mono text-muted-foreground/70")}>{row.book} · {row.concept}</span>
                           <span className={cn("inline-flex items-center gap-1 text-label font-semibold border px-1.5 py-0.5 rounded leading-none", BUCKET_STYLE[bucket])}>
@@ -168,7 +168,7 @@ export function MstDirectionView() {
               )}
 
               {typeof playbook.budget_reallocation_note === "string" && playbook.budget_reallocation_note && (
-                <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
+                <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
                   <div className={cn(TYPE.label, "mb-1 text-muted-foreground/60")}>Budget reallocation</div>
                   <DetailReveal
                     label={deriveLabel(playbook.budget_reallocation_note, 100)}

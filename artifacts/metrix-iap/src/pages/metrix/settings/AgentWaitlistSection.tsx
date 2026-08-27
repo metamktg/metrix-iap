@@ -120,7 +120,7 @@ export function AgentWaitlistSection() {
         title="Metrix Agent waitlist"
         desc="Personal emails · admin-only"
       >
-        <div className="p-3 rounded-lg border border-border/30 bg-white/[0.02] space-y-2.5" data-testid="panel-waitlist-locked">
+        <div className="p-3 rounded-lg border border-border/30 bg-foreground/[0.02] space-y-2.5" data-testid="panel-waitlist-locked">
           <div className="flex items-center gap-2.5">
             <Lock className="w-4 h-4 text-muted-foreground/70 shrink-0" />
             <div className="text-body font-medium text-foreground">Admin access required</div>
@@ -137,7 +137,7 @@ export function AgentWaitlistSection() {
               onChange={(e) => setKeyInput(e.target.value)}
               placeholder="Enter admin key"
               autoComplete="off"
-              className="flex-1 h-8 px-2.5 rounded-md bg-white/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex-1 h-8 px-2.5 rounded-md bg-foreground/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
               data-testid="input-admin-key"
             />
             <button
@@ -201,7 +201,7 @@ export function AgentWaitlistSection() {
           <button
             onClick={handleExport}
             disabled={isExporting || total === 0}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
             data-testid="button-export-waitlist"
           >
             {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
@@ -209,7 +209,7 @@ export function AgentWaitlistSection() {
           </button>
           <button
             onClick={handleLock}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
             data-testid="button-lock-waitlist"
           >
             <Lock className="w-3.5 h-3.5" /> Lock
@@ -225,7 +225,7 @@ export function AgentWaitlistSection() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search by email…"
-          className="w-full h-8 pl-8 pr-8 rounded-md bg-white/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+          className="w-full h-8 pl-8 pr-8 rounded-md bg-foreground/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
           data-testid="input-waitlist-search"
         />
         {searchInput && (
@@ -249,14 +249,14 @@ export function AgentWaitlistSection() {
       ) : isError ? (
         <div className="text-caption text-status-danger/80 p-3">Could not load waitlist signups. Check that the API server is running.</div>
       ) : entries.length === 0 ? (
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
           <Users className="w-4 h-4 text-muted-foreground/70 shrink-0" />
           <div className="text-caption text-muted-foreground/70">
             {searchQuery ? `No signups matching "${searchQuery}".` : "No waitlist signups yet."}
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden" data-testid="list-waitlist-entries">
+        <div className="rounded-lg border border-border/30 bg-foreground/[0.02] overflow-hidden" data-testid="list-waitlist-entries">
           <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
             <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Email</span>
             <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Joined</span>
@@ -320,7 +320,7 @@ export function AgentWaitlistSection() {
                             </div>
                             <button
                               onClick={() => void handleCopyTempPassword(entry.id, result.temp_password!)}
-                              className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
+                              className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0"
                               data-testid={`button-copy-temp-password-${entry.email}`}
                             >
                               <Copy className="w-3.5 h-3.5" /> {copiedEntryId === entry.id ? "Copied" : "Copy"}
@@ -383,7 +383,7 @@ export function AgentWaitlistSection() {
                             </div>
                             <button
                               onClick={() => void handleCopyTempPassword(entry.id, result.temp_password!)}
-                              className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
+                              className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0"
                               data-testid={`button-copy-temp-password-${entry.email}`}
                             >
                               <Copy className="w-3.5 h-3.5" /> {copiedEntryId === entry.id ? "Copied" : "Copy"}
@@ -406,7 +406,7 @@ export function AgentWaitlistSection() {
                 <button
                   onClick={() => fetchNextPage()}
                   disabled={isFetchingNextPage}
-                  className="w-full flex items-center justify-center gap-1.5 h-8 rounded-md border border-border/40 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="w-full flex items-center justify-center gap-1.5 h-8 rounded-md border border-border/40 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   data-testid="button-load-more-waitlist"
                 >
                   {isFetchingNextPage ? (
