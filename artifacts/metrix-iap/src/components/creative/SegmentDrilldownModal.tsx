@@ -65,19 +65,19 @@ function SegmentMetricPicker({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.04] transition-colors" data-testid="button-segment-metric-picker">
+        <button className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors" data-testid="button-segment-metric-picker">
           <Settings2 className="w-3.5 h-3.5" />
           Customize metrics
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 max-h-[420px] overflow-y-auto">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+          <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
             Segment metrics · max {MAX_VISIBLE_SEGMENT_METRICS}
           </span>
           <button
             onClick={onReset}
-            className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/60 hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Reset
           </button>
@@ -95,14 +95,14 @@ function SegmentMetricPicker({
                   <button
                     disabled={i === 0}
                     onClick={() => onMove(id, -1)}
-                    className="p-0.5 text-muted-foreground/60 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/60"
+                    className="p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
                   >
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>
                   <button
                     disabled={i === selected.length - 1}
                     onClick={() => onMove(id, 1)}
-                    className="p-0.5 text-muted-foreground/60 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/60"
+                    className="p-0.5 text-muted-foreground/75 hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground/75"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
@@ -142,15 +142,15 @@ function SegmentMetricPicker({
                   )}
                 >
                   {on && <Check className="w-3.5 h-3.5 text-interactive" />}
-                  {disabled && !on && <Ban className="w-3.5 h-3.5 text-muted-foreground/50" />}
+                  {disabled && !on && <Ban className="w-3.5 h-3.5 text-muted-foreground/75" />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-caption text-foreground/85 truncate">{m.label}</span>
                   {disabled && (
-                    <span className={cn(TYPE.caption, "block text-muted-foreground/55 leading-snug")}>{m.unavailableReason}</span>
+                    <span className={cn(TYPE.caption, "block text-muted-foreground/75 leading-snug")}>{m.unavailableReason}</span>
                   )}
                 </span>
-                {!disabled && <span className="text-label text-muted-foreground/50 tabular-nums">{m.formatted}</span>}
+                {!disabled && <span className="text-label text-muted-foreground/75 tabular-nums">{m.formatted}</span>}
               </button>
             );
           })}
@@ -310,7 +310,7 @@ function CompareMetricCell({
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="text-muted-foreground/40 cursor-default">—</span>
+          <span className="text-muted-foreground/75 cursor-default">—</span>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-[220px]">
           <p className="text-label">
@@ -325,7 +325,7 @@ function CompareMetricCell({
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="text-muted-foreground/40 cursor-default">—</span>
+          <span className="text-muted-foreground/75 cursor-default">—</span>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-[220px]">
           <p className="text-label">{m.unavailableReason}</p>
@@ -358,7 +358,7 @@ function WinnerDiffBadge({
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex items-center text-micro font-mono text-muted-foreground/50 px-1.5 py-0.5 rounded border border-border/30 cursor-default tabular-nums">
+          <span className="inline-flex items-center text-micro font-mono text-muted-foreground/75 px-1.5 py-0.5 rounded border border-border/30 cursor-default tabular-nums">
             tie
           </span>
         </TooltipTrigger>
@@ -369,7 +369,7 @@ function WinnerDiffBadge({
     );
   }
 
-  if (winner.side === null) return <span className="text-muted-foreground/30">—</span>;
+  if (winner.side === null) return <span className="text-muted-foreground/75">—</span>;
 
   const isAWins = winner.side === "a";
   const winnerLabel = isAWins ? label : compareLabel;
@@ -409,14 +409,14 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
   return (
     <div className="space-y-3 min-w-0" data-testid={`compare-column-${side}`}>
       {!data.attribution.available ? (
-        <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-2.5">
+        <div className="flex items-start gap-2 text-caption text-muted-foreground/75 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-2.5">
           <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <span>{data.attribution.unavailableReason}</span>
         </div>
       ) : (
         <>
           <div className="space-y-1">
-            <p className={cn(TYPE.microLabel, "text-muted-foreground/60")}>Top concepts</p>
+            <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Top concepts</p>
             <div className="rounded-lg border border-border/40 overflow-hidden">
               {data.attribution.cells.slice(0, 5).map((c) => (
                 <div
@@ -427,13 +427,13 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-caption font-medium text-foreground truncate">{c.conceptName ?? c.cellId}</div>
-                      <div className="text-micro font-mono text-muted-foreground/60">{c.cellId}</div>
+                      <div className="text-micro font-mono text-muted-foreground/75">{c.cellId}</div>
                     </div>
                     <div className="shrink-0 text-right">
                       <div className="text-caption font-semibold text-foreground tabular-nums">
                         {c.totals.results != null ? `${fmtNum(c.totals.results)} res` : "—"}
                       </div>
-                      <div className={cn(TYPE.caption, "text-muted-foreground/60")}>
+                      <div className={cn(TYPE.caption, "text-muted-foreground/75")}>
                         {c.totals.spend != null ? fmtUSD(c.totals.spend, 0) : "—"}
                         {c.derived.cpa != null ? ` · ${fmtUSD(c.derived.cpa)} CPA` : ""}
                       </div>
@@ -445,7 +445,7 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
           </div>
           {topVariables.length > 0 && (
             <div className="space-y-1">
-              <p className={cn(TYPE.microLabel, "text-muted-foreground/60")}>Ranked variables</p>
+              <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Ranked variables</p>
               <div className="rounded-lg border border-border/40 overflow-hidden">
                 {topVariables.map((v, i) => (
                   <div
@@ -454,10 +454,10 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
                     data-testid={`row-compare-variable-${side}-${v.code}`}
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-micro font-mono text-muted-foreground/50 w-3.5 shrink-0">{i + 1}</span>
+                      <span className="text-micro font-mono text-muted-foreground/75 w-3.5 shrink-0">{i + 1}</span>
                       <VariableChip v={v} />
                     </div>
-                    <div className="shrink-0 text-right text-micro text-muted-foreground/60 tabular-nums">
+                    <div className="shrink-0 text-right text-micro text-muted-foreground/75 tabular-nums">
                       {v.derived.cpa != null ? `${fmtUSD(v.derived.cpa)} CPA` : v.totals.spend != null ? fmtUSD(v.totals.spend, 0) : "—"}
                     </div>
                   </div>
@@ -493,7 +493,7 @@ function CompareSortTh({
         "text-micro font-mono uppercase tracking-widest font-semibold px-3 py-2 cursor-pointer select-none group",
         "hover:text-foreground transition-colors",
         align === "right" ? "text-right" : "text-left",
-        active ? "text-foreground/80" : "text-muted-foreground/60",
+        active ? "text-foreground/80" : "text-muted-foreground/75",
       )}
       onClick={() => onSort(sortKey)}
     >
@@ -564,7 +564,7 @@ function CompareMetricTable({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
           Segment metrics, side by side
         </p>
         <SegmentMetricPicker
@@ -586,11 +586,11 @@ function CompareMetricTable({
               <CompareSortTh sortKey="a" current={sortKey} dir={sortDir} onSort={handleSort}>
                 <span className="text-interactive/70 normal-case">{label}</span>
               </CompareSortTh>
-              <th className="text-micro font-mono uppercase tracking-widest font-semibold px-2 py-2 text-center text-muted-foreground/40 w-[64px]">
+              <th className="text-micro font-mono uppercase tracking-widest font-semibold px-2 py-2 text-center text-muted-foreground/75 w-[64px]">
                 Δ
               </th>
               <CompareSortTh sortKey="b" current={sortKey} dir={sortDir} onSort={handleSort}>
-                <span className="text-muted-foreground/70 normal-case">{compareLabel}</span>
+                <span className="text-muted-foreground/75 normal-case">{compareLabel}</span>
               </CompareSortTh>
             </tr>
           </thead>
@@ -604,7 +604,7 @@ function CompareMetricTable({
               const bWins = winner?.side === "b";
               return (
                 <tr key={id} className="border-b border-border/20 last:border-b-0" data-testid={`row-compare-metric-${id}`}>
-                  <td className="px-3 py-2 text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+                  <td className="px-3 py-2 text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                     {m.label}
                   </td>
                   <td className={cn("px-3 py-2 text-right text-title tabular-nums", aWins && "bg-status-success/[0.04]")} data-testid={`cell-compare-metric-${id}-a`}>
@@ -620,7 +620,7 @@ function CompareMetricTable({
                         direction={m.direction}
                       />
                     ) : (
-                      <span className="text-micro text-muted-foreground/25">—</span>
+                      <span className="text-micro text-muted-foreground/75">—</span>
                     )}
                   </td>
                   <td className={cn("px-3 py-2 text-right text-title tabular-nums", bWins && "bg-primary/[0.04]")} data-testid={`cell-compare-metric-${id}-b`}>
@@ -730,17 +730,17 @@ export function SegmentDrilldownModal({
             {onBack && (
               <button
                 onClick={onBack}
-                className="inline-flex items-center gap-1 text-label text-muted-foreground/60 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
+                className="inline-flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
               >
                 <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
                 Back
               </button>
             )}
-            <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">{kicker}</div>
+            <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest">{kicker}</div>
             <DialogTitle className={DIALOG.title} data-testid="title-segment-drilldown">
               {comparing ? `${label} vs ${compareLabel}` : `${label} — what's driving results`}
             </DialogTitle>
-            <DialogDescription className="text-caption text-muted-foreground/70 leading-relaxed">
+            <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
               {comparing
                 ? "Both segments' numbers are computed independently from their own demographic rows"
                 : "Every number below is computed from this segment's own demographic rows"}
@@ -757,7 +757,7 @@ export function SegmentDrilldownModal({
                   <span className="text-caption font-semibold text-foreground px-2 py-1 rounded-md bg-primary/[0.08] border border-primary/20" data-testid="label-compare-a">
                     {label}
                   </span>
-                  <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground/50" />
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground/75" />
                   <span className="text-caption font-semibold text-foreground px-2 py-1 rounded-md bg-foreground/[0.04] border border-border/40" data-testid="label-compare-b">
                     {compareLabel}
                   </span>
@@ -769,7 +769,7 @@ export function SegmentDrilldownModal({
                   />
                   <button
                     onClick={() => setCompareSegment(null)}
-                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
+                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
                     data-testid="button-clear-compare"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -796,7 +796,7 @@ export function SegmentDrilldownModal({
 
               {/* Concepts + variables per segment, side by side */}
               <div className="space-y-1.5">
-                <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+                <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                   What's driving each segment
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -805,7 +805,7 @@ export function SegmentDrilldownModal({
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 text-label text-muted-foreground/60 leading-relaxed">
+              <div className="flex items-start gap-2 text-label text-muted-foreground/75 leading-relaxed">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
                   Each column is computed independently from that segment's own demographic rows — the same math as
@@ -816,7 +816,7 @@ export function SegmentDrilldownModal({
           ) : !hasRows ? (
             <div className="py-10 text-center space-y-1">
               <p className="text-body font-medium text-foreground/60">No demographic rows for {label}</p>
-              <p className="text-caption text-muted-foreground/60">This segment doesn't appear in the current selection.</p>
+              <p className="text-caption text-muted-foreground/75">This segment doesn't appear in the current selection.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -833,7 +833,7 @@ export function SegmentDrilldownModal({
               {/* Metric tiles */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+                  <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                     Segment metrics
                   </p>
                   <div className="flex items-center gap-2">
@@ -862,12 +862,12 @@ export function SegmentDrilldownModal({
                         )}
                         data-testid={`tile-segment-metric-${id}`}
                       >
-                        <div className={cn(TYPE.microLabel, "text-muted-foreground/60")}>{m.label}</div>
-                        <div className={cn("text-base font-bold tabular-nums leading-tight mt-0.5", unavailable ? "text-muted-foreground/40" : "text-foreground")}>
+                        <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{m.label}</div>
+                        <div className={cn("text-base font-bold tabular-nums leading-tight mt-0.5", unavailable ? "text-muted-foreground/75" : "text-foreground")}>
                           {m.formatted}
                         </div>
                         {unavailable && (
-                          <div className={cn(TYPE.caption, "text-muted-foreground/55 leading-snug mt-0.5")}>{m.unavailableReason}</div>
+                          <div className={cn(TYPE.caption, "text-muted-foreground/75 leading-snug mt-0.5")}>{m.unavailableReason}</div>
                         )}
                       </div>
                     );
@@ -877,11 +877,11 @@ export function SegmentDrilldownModal({
 
               {/* Driving concepts — visual card tiles */}
               <div className="space-y-2">
-                <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+                <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                   Top concepts for this segment
                 </p>
                 {!data.attribution.available ? (
-                  <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-3" data-testid="note-attribution-unavailable">
+                  <div className="flex items-start gap-2 text-caption text-muted-foreground/75 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-3" data-testid="note-attribution-unavailable">
                     <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                     <span>{data.attribution.unavailableReason}</span>
                   </div>
@@ -897,12 +897,12 @@ export function SegmentDrilldownModal({
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <div className="text-body font-semibold text-foreground/90 truncate">{c.conceptName ?? c.cellId}</div>
-                                <div className="text-micro font-mono text-muted-foreground/40 mt-0.5">{c.cellId}</div>
+                                <div className="text-micro font-mono text-muted-foreground/75 mt-0.5">{c.cellId}</div>
                               </div>
                               {c.totals.results != null && (
                                 <div className="shrink-0 text-right">
                                   <span className="text-sm font-bold tabular-nums text-foreground/90 leading-none">{fmtNum(c.totals.results)}</span>
-                                  <span className="block text-[8px] font-mono uppercase tracking-wide text-muted-foreground/45 leading-none mt-0.5">results</span>
+                                  <span className="block text-[8px] font-mono uppercase tracking-wide text-muted-foreground/75 leading-none mt-0.5">results</span>
                                 </div>
                               )}
                             </div>
@@ -912,7 +912,7 @@ export function SegmentDrilldownModal({
                             </div>
                             {/* Copy preview */}
                             {c.copy?.primary && (
-                              <p className="text-label text-muted-foreground/65 leading-relaxed line-clamp-2 italic">
+                              <p className="text-label text-muted-foreground/75 leading-relaxed line-clamp-2 italic">
                                 &ldquo;{c.copy.primary}&rdquo;
                                 {c.copy.cta && <span className="not-italic text-interactive/60 ml-1">&rarr; {c.copy.cta}</span>}
                               </p>
@@ -925,15 +925,15 @@ export function SegmentDrilldownModal({
                                   return v ? <VariableChip key={code} v={v} /> : null;
                                 })}
                                 {c.variableCodes.length > 3 && (
-                                  <span className="text-[8px] text-muted-foreground/40 font-mono">+{c.variableCodes.length - 3}</span>
+                                  <span className="text-[8px] text-muted-foreground/75 font-mono">+{c.variableCodes.length - 3}</span>
                                 )}
                               </div>
                             )}
                             {/* KPI footer */}
                             <div className="flex items-center gap-3 pt-0.5 border-t border-border/20">
-                              {c.totals.spend != null && <span className="text-micro tabular-nums text-muted-foreground/50">{fmtUSD(c.totals.spend, 0)}</span>}
-                              {c.derived.cpa != null && <span className="text-micro tabular-nums text-muted-foreground/50">{fmtUSD(c.derived.cpa)} CPA</span>}
-                              {c.derived.ctr != null && <span className="text-micro tabular-nums text-muted-foreground/50">{fmtPct(c.derived.ctr)} CTR</span>}
+                              {c.totals.spend != null && <span className="text-micro tabular-nums text-muted-foreground/75">{fmtUSD(c.totals.spend, 0)}</span>}
+                              {c.derived.cpa != null && <span className="text-micro tabular-nums text-muted-foreground/75">{fmtUSD(c.derived.cpa)} CPA</span>}
+                              {c.derived.ctr != null && <span className="text-micro tabular-nums text-muted-foreground/75">{fmtPct(c.derived.ctr)} CTR</span>}
                             </div>
                           </div>
                         );
@@ -946,7 +946,7 @@ export function SegmentDrilldownModal({
               {/* Placement performance (joint demographic × placement grain only) */}
               {data.placements.available && data.placements.entries.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+                  <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                     Placements in this segment
                   </p>
                   <div className="rounded-lg border border-border/40 overflow-hidden">
@@ -958,20 +958,20 @@ export function SegmentDrilldownModal({
                       >
                         <div className="min-w-0">
                           <div className="text-caption font-medium text-foreground truncate">{p.placement}</div>
-                          <div className={cn(TYPE.caption, "text-muted-foreground/60 capitalize")}>{p.platform}</div>
+                          <div className={cn(TYPE.caption, "text-muted-foreground/75 capitalize")}>{p.platform}</div>
                         </div>
                         <div className="shrink-0 text-right">
                           <div className="text-caption font-semibold text-foreground tabular-nums">
                             {p.totals.results != null ? `${fmtNum(p.totals.results)} results` : "—"}
                           </div>
-                          <div className="text-micro text-muted-foreground/60 tabular-nums">
+                          <div className="text-micro text-muted-foreground/75 tabular-nums">
                             {perfSummary(p.totals, p.derived).join(" · ") || "—"}
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
-                  <p className={cn(TYPE.caption, "text-muted-foreground/55 leading-snug")}>
+                  <p className={cn(TYPE.caption, "text-muted-foreground/75 leading-snug")}>
                     Computed from this import's combined demographic × placement rows for {label} only — real joint
                     grain, not the account-level placement marginals.
                   </p>
@@ -981,17 +981,17 @@ export function SegmentDrilldownModal({
               {/* Ranked variables */}
               {data.attribution.available && topVariables.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+                  <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                     Creative variables ranked in this segment
                   </p>
                   <div className="rounded-lg border border-border/40 overflow-hidden">
                     {topVariables.map((v, i) => (
                       <div key={v.code} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0" data-testid={`row-segment-variable-${v.code}`}>
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-micro font-mono text-muted-foreground/50 w-4 shrink-0">{i + 1}</span>
+                          <span className="text-micro font-mono text-muted-foreground/75 w-4 shrink-0">{i + 1}</span>
                           <VariableChip v={v} />
                         </div>
-                        <div className="shrink-0 text-right text-micro text-muted-foreground/60 tabular-nums">
+                        <div className="shrink-0 text-right text-micro text-muted-foreground/75 tabular-nums">
                           {perfSummary(v.totals, v.derived).join(" · ") || "—"}
                         </div>
                       </div>
@@ -1000,7 +1000,7 @@ export function SegmentDrilldownModal({
                 </div>
               )}
 
-              <div className="flex items-start gap-2 text-label text-muted-foreground/60 leading-relaxed">
+              <div className="flex items-start gap-2 text-label text-muted-foreground/75 leading-relaxed">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
                   Concepts and variables join this segment's demographic rows to their creative cells and variable
@@ -1012,7 +1012,7 @@ export function SegmentDrilldownModal({
 
           {/* ── Next step CTA ── */}
           <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/25 mt-1">
-            <p className="text-label text-muted-foreground/50 leading-relaxed">
+            <p className="text-label text-muted-foreground/75 leading-relaxed">
               Use this segment's signal to strengthen your next sprint test.
             </p>
             <button

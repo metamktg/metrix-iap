@@ -76,8 +76,8 @@ function ConfidenceBar({ cells }: { cells: string[] }) {
   return (
     <div title={`${cells.length} source cell${cells.length !== 1 ? "s" : ""} behind this pillar`}>
       <div className="flex items-center justify-between gap-2 mb-1">
-        <span className={cn(TYPE.label, "text-muted-foreground/60")}>Confidence</span>
-        <span className={cn(TYPE.label, "text-muted-foreground/60")}>{TIER_LABEL[tier]}</span>
+        <span className={cn(TYPE.label, "text-muted-foreground/75")}>Confidence</span>
+        <span className={cn(TYPE.label, "text-muted-foreground/75")}>{TIER_LABEL[tier]}</span>
       </div>
       <ProgressMeter
         value={step}
@@ -139,7 +139,7 @@ function PillarCard({ pillar, index, strategy }: { pillar: MessagePillar; index:
       {/* ── Pillar header ── */}
       <div className="px-4 pt-4 pb-3 flex items-start gap-3 border-b border-border/15">
         {/* Index number */}
-        <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 mt-0.5 w-5 text-right shrink-0")}>
+        <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/75 mt-0.5 w-5 text-right shrink-0")}>
           {String(index + 1).padStart(2, "0")}
         </span>
 
@@ -149,7 +149,7 @@ function PillarCard({ pillar, index, strategy }: { pillar: MessagePillar; index:
             {pillar.label}
           </p>
           {pillar.plain_descriptor && (
-            <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-1 leading-relaxed line-clamp-2")}>
+            <p className={cn(TYPE.caption, "text-muted-foreground/75 mt-1 leading-relaxed line-clamp-2")}>
               {pillar.plain_descriptor}
             </p>
           )}
@@ -166,7 +166,7 @@ function PillarCard({ pillar, index, strategy }: { pillar: MessagePillar; index:
         <div>
           <div className="flex items-center gap-1.5 mb-2">
             <MessageSquare className="w-3 h-3 text-interactive/70 shrink-0" />
-            <span className={cn(TYPE.label, "text-muted-foreground/65 font-semibold uppercase tracking-wide text-label")}>
+            <span className={cn(TYPE.label, "text-muted-foreground/75 font-semibold uppercase tracking-wide text-label")}>
               What works
             </span>
           </div>
@@ -179,7 +179,7 @@ function PillarCard({ pillar, index, strategy }: { pillar: MessagePillar; index:
             <div className="flex items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-1.5">
                 <Users className="w-3 h-3 text-interactive/60 shrink-0" />
-                <span className={cn(TYPE.label, "text-muted-foreground/55 font-semibold uppercase tracking-wide text-label")}>
+                <span className={cn(TYPE.label, "text-muted-foreground/75 font-semibold uppercase tracking-wide text-label")}>
                   Who responds
                 </span>
               </div>
@@ -188,14 +188,14 @@ function PillarCard({ pillar, index, strategy }: { pillar: MessagePillar; index:
             {targetIcps.length > 0 ? (
               <IcpChips ids={targetIcps} profiles={strategy.icp_profiles} maxVisible={3} />
             ) : (
-              <p className={cn(TYPE.caption, "text-muted-foreground/40 italic")}>No ICP linked yet</p>
+              <p className={cn(TYPE.caption, "text-muted-foreground/75 italic")}>No ICP linked yet</p>
             )}
           </div>
         )}
 
         {/* Footer — hint that there's more, never the prose itself */}
         <div className="mt-auto pt-3 border-t border-border/20 flex items-center justify-between gap-2">
-          <span className={cn(TYPE.label, "text-muted-foreground/50")}>
+          <span className={cn(TYPE.label, "text-muted-foreground/75")}>
             {hypotheses.length > 0 ? `${hypotheses.length} testing hypothes${hypotheses.length !== 1 ? "es" : "is"}` : "No hypotheses yet"}
           </span>
           <span className={cn(TYPE.label, "inline-flex items-center gap-1 text-interactive/70")}>

@@ -14,7 +14,7 @@ export function GoogleDriveComingSoonButton() {
       type="button"
       disabled
       title="Google Drive export is coming soon"
-      className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/50 cursor-not-allowed"
+      className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 cursor-not-allowed"
     >
       <Cloud className="w-3.5 h-3.5" />
       Google Drive — Coming soon

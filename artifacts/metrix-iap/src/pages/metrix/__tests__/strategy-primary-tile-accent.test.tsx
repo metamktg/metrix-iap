@@ -112,8 +112,12 @@ describe("MetricTile variant accent", () => {
     const plainLabel = [...plain.container.querySelectorAll("div")].find(
       (d) => d.textContent === "Default label" && d.children.length === 0
     );
-    expect(primaryLabel?.className).toContain("text-muted-foreground/65");
-    expect(plainLabel?.className).toContain("text-muted-foreground/40");
+    // Both labels were clamped to the AA floor (muted-foreground/75 is
+    // 4.88:1 on the lightest surface; /65 and /40 were 4.4:1 and 2.4:1).
+    // The hierarchy they encoded now comes from the type roles, not from an
+    // opacity difference that was only legible on one of the two.
+    expect(primaryLabel?.className).toContain("text-muted-foreground/75");
+    expect(plainLabel?.className).toContain("text-muted-foreground/75");
   });
 });
 

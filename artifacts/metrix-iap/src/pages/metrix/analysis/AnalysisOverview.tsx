@@ -391,7 +391,7 @@ function PlacementTable({ placements }: {
   const medCpa = cpas.length ? cpas[Math.floor(cpas.length / 2)] : null;
 
   function cpaBadgeCls(cpa: number | null) {
-    if (cpa == null || medCpa == null) return "text-muted-foreground/50";
+    if (cpa == null || medCpa == null) return "text-muted-foreground/75";
     if (cpa <= medCpa * 0.85) return "text-status-success";
     if (cpa <= medCpa * 1.15) return "text-foreground/70";
     return "text-status-danger";
@@ -410,7 +410,7 @@ function PlacementTable({ placements }: {
               >
                 {p.placement.length > 24 ? p.placement.slice(0, 23) + "…" : p.placement}
               </span>
-              <span className={cn(TYPE.label, "font-mono tabular-nums text-muted-foreground/60 ml-2 shrink-0")}>
+              <span className={cn(TYPE.label, "font-mono tabular-nums text-muted-foreground/75 ml-2 shrink-0")}>
                 {fmtUSD(p.spend, 0)}
               </span>
             </div>
@@ -418,14 +418,14 @@ function PlacementTable({ placements }: {
           </div>
           {/* CPA badge */}
           <div className="text-right shrink-0 w-[52px]">
-            <div className={cn(TYPE.label, "text-muted-foreground/40 mb-0.5")}>CPA</div>
+            <div className={cn(TYPE.label, "text-muted-foreground/75 mb-0.5")}>CPA</div>
             <div className={cn(TYPE.caption, "font-mono font-semibold tabular-nums", cpaBadgeCls(p.cpa))}>
               {p.cpa != null ? fmtUSD(p.cpa, 0) : "—"}
             </div>
           </div>
           {/* CTR badge */}
           <div className="text-right shrink-0 w-[42px]">
-            <div className={cn(TYPE.label, "text-muted-foreground/40 mb-0.5")}>CTR</div>
+            <div className={cn(TYPE.label, "text-muted-foreground/75 mb-0.5")}>CTR</div>
             <div className={cn(TYPE.caption, "font-mono tabular-nums text-foreground/60")}>
               {p.ctr != null ? fmtPct(p.ctr, 1) : "—"}
             </div>
@@ -504,7 +504,7 @@ function DemoHeatmapGrid({
         onSelect={(cell) => setSelectedSegment(cell.meta as SegmentId)}
         emptyLabel="No demographic rows in this window"
       />
-      <p className={cn(TYPE.label, "text-muted-foreground/35 italic mt-2")}>
+      <p className={cn(TYPE.label, "text-muted-foreground/75 italic mt-2")}>
         Click any cell to explore segment attribution
       </p>
 
@@ -591,7 +591,7 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
                       "inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors whitespace-nowrap",
                       active
                         ? "text-interactive"
-                        : "text-muted-foreground/60 hover:text-foreground/80",
+                        : "text-muted-foreground/75 hover:text-foreground/80",
                     )}
                   >
                     {c.label}
@@ -608,7 +608,7 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
           {sorted.map((r, i) => (
             <tr key={r.variable_id + i}>
               <td className="font-medium text-foreground/90 whitespace-nowrap">{readableVariables(r.variable_id)}</td>
-              <td className="text-muted-foreground/70 capitalize">{r.variable_family}</td>
+              <td className="text-muted-foreground/75 capitalize">{r.variable_family}</td>
               <td className="text-right font-mono tabular-nums text-foreground/85">{fmtUSD(r["Amount spent (USD)"], 0)}</td>
               <td className="text-right font-mono tabular-nums text-foreground/85">{fmtNum(r.Results)}</td>
               <td className="text-right font-mono tabular-nums text-foreground/85">{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</td>
@@ -1040,7 +1040,7 @@ export function AnalysisOverview() {
                 <div className="px-6 py-5 space-y-4 max-w-5xl">
                   {summary.data_caveat && (
                     <div className="flex items-center gap-1">
-                      <span className="text-label text-muted-foreground/60">Data window</span>
+                      <span className="text-label text-muted-foreground/75">Data window</span>
                       <InfoTooltip content={summary.data_caveat} />
                     </div>
                   )}
@@ -1074,7 +1074,7 @@ export function AnalysisOverview() {
                           <SectionInfoIcon tip="Ranks creative concepts by spend or CPA so you can quickly see which ideas are carrying the account." />
                           {/* Top-N slider */}
                           <div className="flex items-center gap-2">
-                            <span className="text-label text-muted-foreground/60 whitespace-nowrap">
+                            <span className="text-label text-muted-foreground/75 whitespace-nowrap">
                               Top N: <span className="text-foreground/80 font-mono">{topN}</span>
                             </span>
                             <Slider
@@ -1148,7 +1148,7 @@ export function AnalysisOverview() {
                           {/* Goal-CPA slider */}
                           {medianCpa != null && (
                             <div className="flex items-center gap-2">
-                              <span className="text-label text-muted-foreground/60 whitespace-nowrap">
+                              <span className="text-label text-muted-foreground/75 whitespace-nowrap">
                                 Goal CPA: <span className="text-foreground/80 font-mono">{fmtUSD(effectiveGoalCpa ?? medianCpa, 0)}</span>
                               </span>
                               <Slider
@@ -1175,7 +1175,7 @@ export function AnalysisOverview() {
                     <SectionCard title="Core control reads" desc="Control creative · per funnel depth" right={<SectionInfoIcon tip="The benchmark creative concepts that set the efficiency floor — new tests are judged against these." />}>
                       <div className="grid grid-cols-dashboard-2 gap-3">
                         <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
-                          <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">Primary control</div>
+                          <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">Primary control</div>
                           <p className="text-sm font-bold text-foreground">{resolveConceptName(controls.primary_control)}</p>
                           <div className="mt-1.5">
                             {(() => {
@@ -1191,7 +1191,7 @@ export function AnalysisOverview() {
                             })()}
                           </div>
                           {resolveConceptName(controls.primary_control) !== controls.primary_control && (
-                            <p className="text-label font-mono text-muted-foreground/40 mt-1.5">{controls.primary_control}</p>
+                            <p className="text-label font-mono text-muted-foreground/75 mt-1.5">{controls.primary_control}</p>
                           )}
                         </div>
                         {controls.registration_control && (() => {
@@ -1199,7 +1199,7 @@ export function AnalysisOverview() {
                           const regName = resolveConceptName(regId);
                           return (
                             <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
-                              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">{term.Singular} control</div>
+                              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">{term.Singular} control</div>
                               <p className="text-sm font-bold text-foreground">{regName}</p>
                               {controls.registration_control_read && (() => {
                                 const read = resolveControlText(controls.registration_control_read, regId);
@@ -1215,7 +1215,7 @@ export function AnalysisOverview() {
                                 );
                               })()}
                               {regName !== regId && (
-                                <p className="text-label font-mono text-muted-foreground/40 mt-1.5">{regId}</p>
+                                <p className="text-label font-mono text-muted-foreground/75 mt-1.5">{regId}</p>
                               )}
                             </div>
                           );
@@ -1235,7 +1235,7 @@ export function AnalysisOverview() {
                             <InfoTooltip content={s.desc} />
                           </div>
                           <div className="flex items-center justify-between mt-auto pt-1">
-                            <span className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40">{s.stat}</span>
+                            <span className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75">{s.stat}</span>
                             <CrossLink to={s.to} label="Open" />
                           </div>
                         </div>

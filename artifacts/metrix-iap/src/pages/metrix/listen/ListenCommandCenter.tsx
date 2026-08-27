@@ -78,7 +78,7 @@ export function ListenCommandCenter() {
                   <AlertTriangle className="w-4 h-4 text-status-danger shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="text-body font-medium text-foreground/90 truncate">{r.account.name}</div>
-                    <div className="text-label text-muted-foreground/60">{r.highImpact} high-impact signal{r.highImpact === 1 ? "" : "s"}</div>
+                    <div className="text-label text-muted-foreground/75">{r.highImpact} high-impact signal{r.highImpact === 1 ? "" : "s"}</div>
                   </div>
                 </button>
               ))}
@@ -90,9 +90,9 @@ export function ListenCommandCenter() {
           <div className="flex flex-col">
             {accounts.map((a) => (
               <div key={a.id} className="flex items-center gap-2.5 py-2 border-t border-border/25 first:border-0">
-                {a.status === "configured" ? <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" /> : <Circle className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />}
+                {a.status === "configured" ? <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" /> : <Circle className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />}
                 <span className="text-body text-foreground/85 flex-1">{a.name}</span>
-                <span className="text-label text-muted-foreground/60">{a.status === "configured" ? "Connected" : "Not connected"}</span>
+                <span className="text-label text-muted-foreground/75">{a.status === "configured" ? "Connected" : "Not connected"}</span>
               </div>
             ))}
           </div>
@@ -137,7 +137,7 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
             <AlertTriangle className="w-4 h-4 text-status-danger shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-title font-semibold text-foreground">{highImpact} high-impact signal{highImpact === 1 ? "" : "s"}</div>
-              <div className="text-label text-muted-foreground/70 mt-0.5">Review in Alerts for details and recommended actions.</div>
+              <div className="text-label text-muted-foreground/75 mt-0.5">Review in Alerts for details and recommended actions.</div>
             </div>
           </div>
         )}

@@ -57,7 +57,7 @@ export function LoopStatusStrip({ adAccountId, className }: LoopStatusStripProps
                 "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none",
                 done
                   ? "text-status-success/90"
-                  : "text-muted-foreground/40"
+                  : "text-muted-foreground/75"
               )}
               title={stage.label}
             >

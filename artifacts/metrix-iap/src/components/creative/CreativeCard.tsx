@@ -95,12 +95,12 @@ function PlaceholderVisual({ code, format, className }: { code: string; format?:
       >
         {code}
       </span>
-      <span className="flex items-center gap-1 text-[8px] font-mono uppercase tracking-widest text-foreground/25">
+      <span className="flex items-center gap-1 text-[8px] font-mono uppercase tracking-widest text-foreground/55">
         <ImageOff className="w-3.5 h-3.5" />
         No asset
       </span>
       {format && (
-        <span className="absolute top-1.5 right-1.5 text-[8px] font-mono uppercase tracking-wide text-foreground/30 border border-foreground/10 px-1 py-0.5 rounded leading-none">
+        <span className="absolute top-1.5 right-1.5 text-[8px] font-mono uppercase tracking-wide text-foreground/55 border border-foreground/10 px-1 py-0.5 rounded leading-none">
           {format}
         </span>
       )}
@@ -191,7 +191,7 @@ export function VariableTagChips({ codes, max }: { codes: string[]; max?: number
         </span>
       ))}
       {hidden > 0 && (
-        <span className="text-[8px] font-mono text-muted-foreground/60 border border-border/30 px-1 py-0.5 rounded leading-none">
+        <span className="text-[8px] font-mono text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none">
           +{hidden}
         </span>
       )}
@@ -210,7 +210,7 @@ function StatStrip({ stats }: { stats: CreativeCardStats }) {
     <div className="grid grid-cols-2 gap-px bg-border/30 rounded-md overflow-hidden border border-border/30">
       {items.map((it) => (
         <div key={it.label} className="bg-surface-table px-2 py-1.5 text-center">
-          <div className="text-[7px] font-mono uppercase tracking-wider text-muted-foreground/55 truncate">{it.label}</div>
+          <div className="text-[7px] font-mono uppercase tracking-wider text-muted-foreground/75 truncate">{it.label}</div>
           <div className="text-label font-semibold text-foreground/90 tabular-nums mt-0.5">{it.value}</div>
         </div>
       ))}
@@ -354,9 +354,9 @@ export function CreativeCard({
         <div className="p-2.5 space-y-1.5 flex-1 flex flex-col pointer-events-none">
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-mono text-muted-foreground/55">{data.conceptCode}</span>
+              <span className="text-[9px] font-mono text-muted-foreground/75">{data.conceptCode}</span>
               {data.stage && (
-                <span className="text-[8px] font-mono uppercase text-muted-foreground/55 border border-border/30 px-1 py-0.5 rounded leading-none">
+                <span className="text-[8px] font-mono uppercase text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none">
                   {data.stage}
                 </span>
               )}

@@ -153,7 +153,7 @@ export function CreativeLibraryView() {
                 desc="Optimization-loop recommendations scoped to creative actions for this account."
               >
                 {creativeActions.length === 0 ? (
-                  <p className="text-caption text-muted-foreground/60">
+                  <p className="text-caption text-muted-foreground/75">
                     No creative-scoped recommendations yet — these appear once the optimization loop has run for this account.
                   </p>
                 ) : (
@@ -170,7 +170,7 @@ export function CreativeLibraryView() {
                               {kind.label}
                             </span>
                             {openCell && (
-                              <span className="ml-auto text-label text-muted-foreground/50 truncate max-w-[9rem]" title={openCell}>{openCell}</span>
+                              <span className="ml-auto text-label text-muted-foreground/75 truncate max-w-[9rem]" title={openCell}>{openCell}</span>
                             )}
                           </div>
                           <p className="text-caption text-foreground/85 leading-relaxed line-clamp-3">
@@ -186,7 +186,7 @@ export function CreativeLibraryView() {
                                 Open asset
                               </button>
                             ) : (
-                              <span className="text-label text-muted-foreground/40">No evidence cell referenced</span>
+                              <span className="text-label text-muted-foreground/75">No evidence cell referenced</span>
                             )}
                             <AddToTrayButton
                               scopeId={acct.id}
@@ -253,8 +253,8 @@ export function CreativeLibraryView() {
                     {variableGroups.map((g) => (
                       <div key={g.label}>
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/70">{g.label}</h3>
-                          <span className="text-label font-mono text-muted-foreground/60">{g.items.length}</span>
+                          <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75">{g.label}</h3>
+                          <span className="text-label font-mono text-muted-foreground/75">{g.items.length}</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {g.items.map((it) => (
@@ -269,7 +269,7 @@ export function CreativeLibraryView() {
                             >
                               <div>
                                 <div className="text-body font-medium text-foreground/90 leading-tight">{readableVariables(it.code)}</div>
-                                <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{it.code}</div>
+                                <div className="text-label font-mono text-muted-foreground/75 mt-0.5">{it.code}</div>
                               </div>
                               <span className="text-label font-mono text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5 leading-none">×{it.count}</span>
                             </button>
@@ -301,7 +301,7 @@ export function CreativeLibraryView() {
                       >
                         <span />
                         {crossStages.map((s) => (
-                          <span key={s} className="text-label text-muted-foreground/60 text-center leading-tight pb-1.5">{s}</span>
+                          <span key={s} className="text-label text-muted-foreground/75 text-center leading-tight pb-1.5">{s}</span>
                         ))}
                         {crossConcepts.map((concept) => (
                           <Fragment key={concept}>
@@ -343,7 +343,7 @@ export function CreativeLibraryView() {
                                       ? "border-border/30 bg-foreground/[0.015] text-foreground/85 hover:border-primary/35 hover:bg-foreground/[0.04] cursor-pointer disabled:cursor-default disabled:hover:border-border/30 disabled:hover:bg-foreground/[0.015]"
                                       : queued
                                       ? "border-status-warning/30 bg-status-warning/[0.06] text-status-warning hover:bg-status-warning/10 cursor-pointer"
-                                      : "border-border/20 bg-foreground/[0.008] text-muted-foreground/40 hover:border-border/40 hover:bg-foreground/[0.02] hover:text-muted-foreground/70 cursor-pointer"
+                                      : "border-border/20 bg-foreground/[0.008] text-muted-foreground/75 hover:border-border/40 hover:bg-foreground/[0.02] hover:text-muted-foreground/75 cursor-pointer"
                                   }`}
                                 >
                                   {cell.tested ? (

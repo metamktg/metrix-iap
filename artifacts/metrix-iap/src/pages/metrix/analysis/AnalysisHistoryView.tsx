@@ -70,12 +70,12 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
                 Latest
               </span>
             )}
-            <span className="text-caption text-muted-foreground/60 ml-auto shrink-0">
+            <span className="text-caption text-muted-foreground/75 ml-auto shrink-0">
               Run #{index + 1}
             </span>
           </div>
           {run.started_at && (
-            <p className="text-caption text-muted-foreground/60 mt-0.5">
+            <p className="text-caption text-muted-foreground/75 mt-0.5">
               {fmtDateTime(run.started_at)}
               {run.finished_at && ` · finished ${fmtDateTime(run.finished_at)}`}
             </p>
@@ -88,18 +88,18 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
         <div className="grid grid-cols-2 gap-3">
           {coverageLabel && (
             <div className="flex items-start gap-2">
-              <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
+              <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0 mt-0.5" />
               <div>
-                <div className="text-label text-muted-foreground/55 font-medium uppercase tracking-wide">Covered</div>
+                <div className="text-label text-muted-foreground/75 font-medium uppercase tracking-wide">Covered</div>
                 <div className="text-body text-foreground/85 font-medium mt-0.5">{coverageLabel}</div>
               </div>
             </div>
           )}
           {run.rows_ingested != null && (
             <div className="flex items-start gap-2">
-              <Database className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
+              <Database className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0 mt-0.5" />
               <div>
-                <div className="text-label text-muted-foreground/55 font-medium uppercase tracking-wide">Rows</div>
+                <div className="text-label text-muted-foreground/75 font-medium uppercase tracking-wide">Rows</div>
                 <div className="text-body text-foreground/85 font-medium mt-0.5">
                   {run.rows_ingested.toLocaleString()}
                 </div>
@@ -111,8 +111,8 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
 
       {/* Date range preset badge */}
       <div className="flex items-center gap-1.5">
-        <span className="text-label text-muted-foreground/50 font-medium uppercase tracking-wide">Range preset</span>
-        <span className="text-label font-semibold text-muted-foreground/70 bg-foreground/[0.04] border border-border/30 px-1.5 py-0.5 rounded">
+        <span className="text-label text-muted-foreground/75 font-medium uppercase tracking-wide">Range preset</span>
+        <span className="text-label font-semibold text-muted-foreground/75 bg-foreground/[0.04] border border-border/30 px-1.5 py-0.5 rounded">
           {run.date_range ?? "custom"}
         </span>
       </div>
@@ -140,7 +140,7 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
           Read through a local so the empty and absent cases are one path. */}
       {run.status === "success" && (run.reconciliation ?? []).length > 0 && (
         <div className="space-y-1.5 pt-1 border-t border-border/25">
-          <div className="text-label text-muted-foreground/50 font-medium uppercase tracking-wide">
+          <div className="text-label text-muted-foreground/75 font-medium uppercase tracking-wide">
             Data integrity check
           </div>
           {(run.reconciliation ?? []).map((r) => (
@@ -157,7 +157,7 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
               <span className="font-medium text-foreground/80">
                 {r.metric_key === "spend" ? "Spend" : r.metric_key === "results" ? "Results" : r.metric_key}
               </span>
-              <span className="text-muted-foreground/60 ml-auto">
+              <span className="text-muted-foreground/75 ml-auto">
                 Demo {r.demographic_total.toLocaleString()} · Placement {r.placement_total.toLocaleString()}
                 {r.flagged && ` · ${r.delta_pct.toFixed(1)}% apart`}
               </span>
@@ -204,7 +204,7 @@ export function AnalysisHistoryView() {
             )}
 
             {isLoading ? (
-              <div className="flex items-center gap-2 text-body text-muted-foreground/70 py-4">
+              <div className="flex items-center gap-2 text-body text-muted-foreground/75 py-4">
                 <Loader2 className="w-4 h-4 animate-spin" /> Loading runs…
               </div>
             ) : runs.length === 0 ? (

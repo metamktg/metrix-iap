@@ -15,11 +15,11 @@ function PendingRow({ label, sub }: { label: string; sub?: string }) {
   return (
     <div className="flex items-start gap-3 py-3 border-b border-border/20 last:border-b-0">
       <div className="w-5 h-5 rounded border border-border/40 bg-foreground/[0.03] flex items-center justify-center shrink-0 mt-0.5">
-        <Clock className="w-3.5 h-3.5 text-muted-foreground/60" />
+        <Clock className="w-3.5 h-3.5 text-muted-foreground/75" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-body font-medium text-foreground/70 leading-tight">{label}</p>
-        {sub && <p className="text-label text-muted-foreground/60 mt-0.5 leading-tight">{sub}</p>}
+        {sub && <p className="text-label text-muted-foreground/75 mt-0.5 leading-tight">{sub}</p>}
       </div>
       <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 border border-border/40 px-1.5 py-0.5 rounded shrink-0">
         Pending
@@ -74,18 +74,18 @@ function WaitlistForm() {
       <div className="text-label font-mono uppercase tracking-widest text-interactive/60 mb-2">
         Join the waitlist
       </div>
-      <p className="text-caption text-muted-foreground/60 mb-3 leading-relaxed">
+      <p className="text-caption text-muted-foreground/75 mb-3 leading-relaxed">
         Be first to know when Metrix Agent launches for your workspace.
       </p>
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
+          <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/75" />
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@company.com"
-            className="w-full h-9 pl-8 pr-3 rounded-lg border border-border/50 bg-foreground/[0.03] text-body text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+            className="w-full h-9 pl-8 pr-3 rounded-lg border border-border/50 bg-foreground/[0.03] text-body text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
             aria-label="Email address"
           />
         </div>
@@ -152,11 +152,11 @@ export function MetrixAgent() {
                 ].map(({ icon: Icon, label, sub }) => (
                   <div key={label} className="flex items-start gap-3 p-2.5 rounded-lg border border-border/25 bg-foreground/[0.02]">
                     <div className="w-6 h-6 rounded border border-border/30 bg-foreground/[0.03] flex items-center justify-center shrink-0 mt-0.5">
-                      <Icon className="w-3.5 h-3.5 text-muted-foreground/70" />
+                      <Icon className="w-3.5 h-3.5 text-muted-foreground/75" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-caption font-medium text-foreground/80 leading-tight">{label}</p>
-                      <p className="text-label text-muted-foreground/60 mt-0.5 leading-tight">{sub}</p>
+                      <p className="text-label text-muted-foreground/75 mt-0.5 leading-tight">{sub}</p>
                     </div>
                   </div>
                 ))}
@@ -169,7 +169,7 @@ export function MetrixAgent() {
 
           {/* Status card */}
           <div className="p-4 rounded-xl border border-border/40 bg-foreground/[0.02]">
-            <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">
+            <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 mb-3">
               Build status
             </div>
             <PendingRow
@@ -190,7 +190,7 @@ export function MetrixAgent() {
             />
           </div>
 
-          <p className="text-label font-mono text-muted-foreground/50 text-center">
+          <p className="text-label font-mono text-muted-foreground/75 text-center">
             No fake chat messages · No demo agent output · No simulated responses
           </p>
         </div>

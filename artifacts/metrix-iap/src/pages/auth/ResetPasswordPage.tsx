@@ -97,7 +97,7 @@ export function ResetPasswordPage({ onBackToLogin }: { onBackToLogin: () => void
           <form onSubmit={handleSubmit} className="space-y-3" data-testid="form-reset-password">
             <div className="space-y-1.5">
               <label htmlFor="reset-new-password" className="text-caption font-medium text-muted-foreground">
-                New password <span className="text-muted-foreground/60">(min. 8 characters)</span>
+                New password <span className="text-muted-foreground/75">(min. 8 characters)</span>
               </label>
               <input
                 id="reset-new-password"
@@ -107,7 +107,7 @@ export function ResetPasswordPage({ onBackToLogin }: { onBackToLogin: () => void
                 autoComplete="new-password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+                className="w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
                 data-testid="input-reset-new-password"
               />
             </div>
@@ -122,7 +122,7 @@ export function ResetPasswordPage({ onBackToLogin }: { onBackToLogin: () => void
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+                className="w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
                 data-testid="input-reset-confirm-password"
               />
             </div>

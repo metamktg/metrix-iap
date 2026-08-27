@@ -182,19 +182,19 @@ function SwitcherPanel({
       {showSearch && (
         <div className="p-2 border-b border-border/30">
           <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-foreground/[0.04] border border-border/30 focus-within:border-primary/40 transition-colors">
-            <Search className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+            <Search className="w-3 h-3 text-muted-foreground/75 shrink-0" />
             <input
               ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.stopPropagation()}
               placeholder="Search accounts…"
-              className="flex-1 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground/40 outline-none"
+              className="flex-1 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground/75 outline-none"
             />
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors text-[10px]"
+                className="text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors text-[10px]"
               >
                 ×
               </button>
@@ -223,7 +223,7 @@ function SwitcherPanel({
               <div className={cn("text-[12px] font-semibold leading-tight truncate", isManager ? "text-foreground" : "text-foreground/75")}>
                 {manager.name}
               </div>
-              <div className="text-[9px] text-muted-foreground/50 leading-tight mt-0.5">
+              <div className="text-[9px] text-muted-foreground/75 leading-tight mt-0.5">
                 Agency · All accounts
               </div>
             </div>
@@ -234,10 +234,10 @@ function SwitcherPanel({
         {/* Divider + section label */}
         {!search.trim() && (
           <div className="flex items-center gap-2 px-1 py-1">
-            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/45">
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/75">
               Ad Accounts
             </span>
-            <span className="text-[9px] text-muted-foreground/30 ml-auto tabular-nums">
+            <span className="text-[9px] text-muted-foreground/75 ml-auto tabular-nums">
               {configuredCount}/{adAccounts.length}
             </span>
           </div>
@@ -246,7 +246,7 @@ function SwitcherPanel({
         {/* Ad account rows */}
         {filtered.length === 0 ? (
           <div className="px-2.5 py-4 text-center">
-            <p className="text-[11px] text-muted-foreground/50">No accounts match "{search}"</p>
+            <p className="text-[11px] text-muted-foreground/75">No accounts match "{search}"</p>
           </div>
         ) : (
           filtered.map((a) => {
@@ -283,7 +283,7 @@ function SwitcherPanel({
                       <ArrowUpRight className="w-2.5 h-2.5 text-status-warning/50" />
                     </div>
                   ) : (
-                    <div className="text-[9px] text-muted-foreground/50 leading-tight mt-0.5">
+                    <div className="text-[9px] text-muted-foreground/75 leading-tight mt-0.5">
                       {resolveObjectivesMeta(a.objectives).label}
                     </div>
                   )}
@@ -303,9 +303,9 @@ function SwitcherPanel({
             className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left hover:bg-foreground/[0.05] transition-colors group"
           >
             <div className="w-8 h-8 rounded-lg border border-dashed border-border/40 flex items-center justify-center shrink-0 group-hover:border-border/60 transition-colors">
-              <Plus className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-muted-foreground/80 transition-colors" />
+              <Plus className="w-3.5 h-3.5 text-muted-foreground/75 group-hover:text-muted-foreground/80 transition-colors" />
             </div>
-            <span className="text-[12px] font-medium text-muted-foreground/60 group-hover:text-muted-foreground/90 transition-colors">
+            <span className="text-[12px] font-medium text-muted-foreground/75 group-hover:text-muted-foreground/90 transition-colors">
               Connect Ad Account
             </span>
           </button>
@@ -389,14 +389,14 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
           <div className="text-[12px] font-semibold text-foreground/90 leading-tight truncate">
             {triggerLabel}
           </div>
-          <div className="text-[9px] text-muted-foreground/50 leading-tight mt-0.5">
+          <div className="text-[9px] text-muted-foreground/75 leading-tight mt-0.5">
             {isManager ? "Agency Overview" : resolveObjectivesMeta(active?.objectives).label}
           </div>
         </div>
         <ChevronsUpDown
           className={cn(
             "w-3.5 h-3.5 shrink-0 transition-colors",
-            open ? "text-muted-foreground/70" : "text-muted-foreground/35"
+            open ? "text-muted-foreground/75" : "text-muted-foreground/75"
           )}
         />
       </button>

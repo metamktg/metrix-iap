@@ -131,7 +131,7 @@ export function SortableTh({
             data-testid={`sort-reset-${sortKey}`}
             title="Clear sort"
             aria-label="Clear sort"
-            className="ml-0.5 p-0.5 rounded text-muted-foreground/35 hover:text-foreground/80 hover:bg-foreground/[0.06] transition-colors"
+            className="ml-0.5 p-0.5 rounded text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.06] transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -235,7 +235,7 @@ export function VariableCodeChips({ row }: { row: CellPerformanceRow }) {
   return (
     <div className="flex flex-wrap gap-1 mt-1">
       {codes.map((c) => (
-        <span key={c} className="text-label font-mono text-muted-foreground/70 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
+        <span key={c} className="text-label font-mono text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
           {c}
         </span>
       ))}
@@ -287,7 +287,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
       >
         <Td>
           <div className="font-medium text-foreground">{r.book2_concept_name}</div>
-          <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
+          <div className="text-label font-mono text-muted-foreground/75 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
           <VariableCodeChips row={r} />
         </Td>
         <Td>{eventLabel(r["Result type"])}</Td>
@@ -322,7 +322,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
     <div className="space-y-1.5">
       <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
       {heatmapOn && (
-        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
+        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/75 font-mono">
           <MagnitudeLegend label="Spend" colorIndex={0} />
           <VerdictLegend lowLabel="Above goal" highLabel="At goal" />
         </div>
@@ -391,7 +391,7 @@ export function VariableTable({
       >
         <Td>
           <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
-          <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
+          <div className="text-label font-mono text-muted-foreground/75 mt-0.5">{r.variable_id}</div>
         </Td>
         <Td className="capitalize">{r.variable_family}</Td>
         <Td>{eventLabel(r["Result type"])}</Td>
@@ -437,7 +437,7 @@ export function VariableTable({
     <div className="space-y-1.5">
       <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
       {heatmapOn && (
-        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
+        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/75 font-mono">
           <MagnitudeLegend label="Spend" colorIndex={0} />
           <VerdictLegend lowLabel="Above goal" highLabel="At goal" />
         </div>
@@ -512,7 +512,7 @@ export function DemographicTable({
                 aria-label={onSegmentClick ? `Open segment for ${r.Age}, ${r.Gender}` : undefined}
                 data-testid={onSegmentClick ? `row-demographic-${r.Age}-${r.Gender}-${i}` : undefined}
               >
-                <Td><span className="font-mono text-label text-muted-foreground/60">{r.cell_id}</span></Td>
+                <Td><span className="font-mono text-label text-muted-foreground/75">{r.cell_id}</span></Td>
                 <Td>{r.Age}</Td>
                 <Td className="capitalize">{r.Gender}</Td>
                 <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
@@ -604,7 +604,7 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
             <Td right>{r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"}</Td>
             <Td right>{r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"}</Td>
             <Td right>{r.purchases != null ? fmtNum(r.purchases) : "—"}</Td>
-            <Td>{r.confidence ? <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/60">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
+            <Td>{r.confidence ? <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/75">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
           </tr>
         ))}
       </tbody>

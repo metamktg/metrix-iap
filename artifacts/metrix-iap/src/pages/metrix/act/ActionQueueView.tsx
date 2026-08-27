@@ -82,13 +82,13 @@ function InlineDrawer({
     <div className="mt-2 rounded-xl border border-[hsl(var(--border-default))] bg-secondary p-4 space-y-3 text-left">
       {/* Close handle */}
       <div className="flex items-center justify-between">
-        <span className="text-label font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
+        <span className="text-label font-bold uppercase tracking-[0.18em] text-muted-foreground/75">
           Full Detail
         </span>
         <button
           type="button"
           onClick={onClose}
-          className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-colors"
+          className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
           aria-label="Collapse"
         >
           <ChevronUp className="w-4 h-4" />
@@ -97,14 +97,14 @@ function InlineDrawer({
 
       {/* Rationale */}
       <div className="space-y-1">
-        <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/50">Rationale</p>
+        <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/75">Rationale</p>
         <DenseText text={card.rationale} className="text-body text-foreground/80 leading-relaxed" />
       </div>
 
       {/* Recommended action */}
       {card.recommended_action && (
         <div className="space-y-1">
-          <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/50">
+          <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/75">
             Recommended action
           </p>
           <p className="text-body text-foreground/75 leading-relaxed italic">
@@ -222,13 +222,13 @@ function QueueCard({
         </p>
 
         {/* Rationale preview — always visible */}
-        <p className="text-body text-muted-foreground/70 line-clamp-2 leading-relaxed">
+        <p className="text-body text-muted-foreground/75 line-clamp-2 leading-relaxed">
           {card.rationale}
         </p>
 
         {/* Expand chevron */}
         {!isDismissed && (
-          <div className="mt-2 flex items-center gap-1 text-label text-muted-foreground/40">
+          <div className="mt-2 flex items-center gap-1 text-label text-muted-foreground/75">
             {expanded ? (
               <><ChevronUp className="w-3.5 h-3.5" /> Less</>
             ) : (
@@ -271,7 +271,7 @@ function QueueCard({
           <button
             type="button"
             onClick={restore}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-colors"
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <RotateCcw className="w-3 h-3" /> Restore
           </button>
@@ -281,11 +281,11 @@ function QueueCard({
       {/* Restore for approved */}
       {isApproved && (
         <div className="px-4 pb-3 flex items-center justify-between">
-          <span className="text-label text-muted-foreground/50">Added to Task Tray</span>
+          <span className="text-label text-muted-foreground/75">Added to Task Tray</span>
           <button
             type="button"
             onClick={restore}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-colors"
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/5 transition-colors"
           >
             <RotateCcw className="w-3 h-3" /> Undo
           </button>
@@ -311,20 +311,20 @@ function EmptyQueue({ reason }: { reason: "no-loop" | "all-done" }) {
         {reason === "all-done" ? (
           <CheckCircle2 className="w-5 h-5 text-status-success/60" />
         ) : (
-          <Zap className="w-5 h-5 text-muted-foreground/30" />
+          <Zap className="w-5 h-5 text-muted-foreground/75" />
         )}
       </div>
       {reason === "all-done" ? (
         <>
           <p className="text-title font-medium text-foreground/60">All caught up</p>
-          <p className="text-body text-muted-foreground/50 max-w-[280px]">
+          <p className="text-body text-muted-foreground/75 max-w-[280px]">
             All recommendations have been reviewed. Approved items are in your Task Tray.
           </p>
         </>
       ) : (
         <>
           <p className="text-title font-medium text-foreground/60">No actions yet</p>
-          <p className="text-body text-muted-foreground/50 max-w-[280px]">
+          <p className="text-body text-muted-foreground/75 max-w-[280px]">
             Run analysis to generate optimization recommendations for this account.
           </p>
         </>
@@ -360,7 +360,7 @@ export function ActionQueueView() {
   if (!account) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-24 px-6">
-        <p className="text-title text-muted-foreground/70">Select an ad account to see the action queue.</p>
+        <p className="text-title text-muted-foreground/75">Select an ad account to see the action queue.</p>
       </div>
     );
   }
@@ -394,7 +394,7 @@ export function ActionQueueView() {
       <div className="px-6 py-6 space-y-5 max-w-[860px] w-full mx-auto">
 
         {/* ── Descriptive line ────────────────────────────────────────── */}
-        <p className="text-title text-muted-foreground/65 max-w-[520px] leading-relaxed">
+        <p className="text-title text-muted-foreground/75 max-w-[520px] leading-relaxed">
           {allCards.length > 0
             ? `${allCards.length} recommendation${allCards.length !== 1 ? "s" : ""} from the optimization loop, sorted by impact. Add items to your Task Tray to implement later.`
             : "Optimization loop recommendations appear here after analysis runs."}

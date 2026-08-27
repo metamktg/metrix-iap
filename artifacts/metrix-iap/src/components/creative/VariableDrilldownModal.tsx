@@ -29,9 +29,9 @@ import type { AnalysisData, VariablePerformanceRow } from "@/lib/data/seedTypes"
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2.5">
-      <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</div>
+      <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75">{label}</div>
       <div className="text-base font-bold tabular-nums leading-tight mt-0.5 text-foreground">{value}</div>
-      {sub && <div className="text-[9px] text-muted-foreground/55 leading-snug mt-0.5">{sub}</div>}
+      {sub && <div className="text-[9px] text-muted-foreground/75 leading-snug mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -86,20 +86,20 @@ export function VariableDrilldownModal({
             {onBack && (
               <button
                 onClick={onBack}
-                className="inline-flex items-center gap-1 text-label text-muted-foreground/60 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
+                className="inline-flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
               >
                 <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
                 Back
               </button>
             )}
-            <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
+            <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest">
               Variable drill-down{data.family ? ` · ${familyLabel(data.family)}` : ""}
             </div>
             <DialogTitle className={cn(DIALOG.title, "flex items-center gap-2 flex-wrap")} data-testid="title-variable-drilldown">
               {readableVariables(code)}
-              <span className="text-[9px] font-mono font-normal text-muted-foreground/60 border border-border/30 px-1.5 py-0.5 rounded">{code}</span>
+              <span className="text-[9px] font-mono font-normal text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded">{code}</span>
             </DialogTitle>
-            <DialogDescription className="text-caption text-muted-foreground/70 leading-relaxed">
+            <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
               Numbers come from this import's own variable-level rows and the creative cells that actually carried this
               variable — nothing estimated.
             </DialogDescription>
@@ -120,7 +120,7 @@ export function VariableDrilldownModal({
                 <Kpi label="Unique ads" value={fmtNum(data.totals.uniqueAds)} />
               </div>
             ) : (
-              <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/40 bg-foreground/[0.02] p-3">
+              <div className="flex items-start gap-2 text-caption text-muted-foreground/75 leading-relaxed rounded-lg border border-border/40 bg-foreground/[0.02] p-3">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
                   No variable-level performance row for this code in the current metric selection — the sections below
@@ -131,7 +131,7 @@ export function VariableDrilldownModal({
 
             {/* ── Top ads carrying this variable ── */}
             <div className="space-y-1.5">
-              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                 Top ads carrying this variable
               </p>
               {topCells.length > 0 ? (
@@ -153,12 +153,12 @@ export function VariableDrilldownModal({
                   ))}
                 </div>
               ) : (
-                <p className="text-caption text-muted-foreground/60">
+                <p className="text-caption text-muted-foreground/75">
                   No creative cell in this import carries this variable.
                 </p>
               )}
               {data.rankedCells.length > 3 && (
-                <p className="text-[9px] text-muted-foreground/50">
+                <p className="text-[9px] text-muted-foreground/75">
                   Top 3 of {data.rankedCells.length} carrier cells, ranked by results.
                 </p>
               )}
@@ -166,7 +166,7 @@ export function VariableDrilldownModal({
 
             {/* ── Segment performance ── */}
             <div className="space-y-1.5">
-              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                 Segment performance — scoped to this variable's cells
               </p>
               {data.segments.available ? (
@@ -190,19 +190,19 @@ export function VariableDrilldownModal({
                             style={{ width: `${Math.max(share * 100, 2)}%` }}
                           />
                         </span>
-                        <span className="text-label tabular-nums text-muted-foreground/70 w-16 text-right shrink-0">
+                        <span className="text-label tabular-nums text-muted-foreground/75 w-16 text-right shrink-0">
                           {totals.spend != null ? fmtUSD(totals.spend, 0) : "—"}
                         </span>
                         <span className="text-label tabular-nums text-foreground/80 w-20 text-right shrink-0">
                           {derived.cpa != null ? `${fmtUSD(derived.cpa)} CPA` : "— CPA"}
                         </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/35 group-hover:text-primary/80 group-hover:translate-x-0.5 transition-[color,background-color,border-color,box-shadow,opacity,transform] shrink-0" />
+                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 group-hover:text-primary/80 group-hover:translate-x-0.5 transition-[color,background-color,border-color,box-shadow,opacity,transform] shrink-0" />
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <div className="flex items-start gap-2 text-caption text-muted-foreground/60 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.01] p-3">
+                <div className="flex items-start gap-2 text-caption text-muted-foreground/75 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.01] p-3">
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   <span>{data.segments.unavailableReason}</span>
                 </div>
@@ -212,18 +212,18 @@ export function VariableDrilldownModal({
             {/* ── Copy variants ── */}
             {data.textVariants.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+                <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                   Copy that ran with this variable
                 </p>
                 <div className="space-y-2">
                   {data.textVariants.map((v) => (
                     <div key={v.cellId} className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2.5 space-y-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] font-mono text-muted-foreground/60">{v.cellId}</span>
+                        <span className="text-[9px] font-mono text-muted-foreground/75">{v.cellId}</span>
                         {v.conceptName && <span className="text-label font-medium text-foreground/80">{v.conceptName}</span>}
                       </div>
                       {v.primary && <p className="text-caption text-foreground/85 leading-relaxed">{v.primary}</p>}
-                      {v.secondary && <p className="text-label text-muted-foreground/70 leading-relaxed">{v.secondary}</p>}
+                      {v.secondary && <p className="text-label text-muted-foreground/75 leading-relaxed">{v.secondary}</p>}
                       {v.cta && (
                         <span className="inline-block text-[9px] font-medium text-interactive/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded">
                           {v.cta}
@@ -235,14 +235,14 @@ export function VariableDrilldownModal({
               </div>
             )}
 
-            <p className={cn("text-[9px] text-muted-foreground/50 leading-relaxed")}>
+            <p className={cn("text-[9px] text-muted-foreground/75 leading-relaxed")}>
               Placement data is account-level in this import and can't be attributed to a single variable, so it's not
               shown here.
             </p>
 
             {/* ── Next step CTA ── */}
             <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/25">
-              <p className="text-label text-muted-foreground/50 leading-relaxed">
+              <p className="text-label text-muted-foreground/75 leading-relaxed">
                 Use these variable insights to inform your next sprint test.
               </p>
               <button

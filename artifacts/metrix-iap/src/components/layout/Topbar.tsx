@@ -67,7 +67,7 @@ function AccountMenu({
             <p className="text-caption font-semibold text-foreground/90 truncate leading-tight">
               {email ?? "My account"}
             </p>
-            <p className="text-[9px] text-muted-foreground/50 font-mono uppercase tracking-wide leading-tight mt-0.5">
+            <p className="text-[9px] text-muted-foreground/75 font-mono uppercase tracking-wide leading-tight mt-0.5">
               Workspace member
             </p>
           </div>
@@ -122,7 +122,7 @@ function MenuItem({
           : "text-foreground/70 hover:text-foreground hover:bg-foreground/[0.04]"
       )}
     >
-      <Icon className={cn("w-3.5 h-3.5 shrink-0", danger ? "text-status-danger/70" : "text-muted-foreground/50")} />
+      <Icon className={cn("w-3.5 h-3.5 shrink-0", danger ? "text-status-danger/70" : "text-muted-foreground/75")} />
       {label}
     </button>
   );
@@ -160,18 +160,18 @@ export function Topbar() {
             const isLast = i === crumbs.length - 1;
             return (
               <span key={i} className="flex items-center min-w-0">
-                {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0 mx-0.5" />}
+                {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0 mx-0.5" />}
                 {!isLast && crumb.to ? (
                   <Link
                     href={crumb.to}
-                    className="text-body truncate text-muted-foreground/60 hover:text-foreground focus-visible:text-foreground rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="text-body truncate text-muted-foreground/75 hover:text-foreground focus-visible:text-foreground rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {crumb.label}
                   </Link>
                 ) : (
                   <span
                     aria-current={isLast ? "page" : undefined}
-                    className={cn("text-body truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/60")}
+                    className={cn("text-body truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/75")}
                   >
                     {crumb.label}
                   </span>
@@ -185,7 +185,7 @@ export function Topbar() {
 
       {/* Status */}
       {isManager ? (
-        <div className="flex items-center gap-1 text-caption font-medium text-muted-foreground/60 shrink-0">
+        <div className="flex items-center gap-1 text-caption font-medium text-muted-foreground/75 shrink-0">
           <span className="hidden sm:inline">Agency</span>
         </div>
       ) : unconfigured ? (

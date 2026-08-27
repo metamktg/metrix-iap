@@ -297,7 +297,7 @@ export function GenerationProgressBar({
         />
       </div>
       {showClock && typeof typicalSeconds === "number" && (
-        <div className="text-caption text-muted-foreground/60" data-testid="generation-pace-note">
+        <div className="text-caption text-muted-foreground/75" data-testid="generation-pace-note">
           {pacePhrase(elapsedSeconds, typicalSeconds)}
         </div>
       )}

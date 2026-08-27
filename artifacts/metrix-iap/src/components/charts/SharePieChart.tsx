@@ -72,7 +72,7 @@ export function SharePieChart({
   if (data.length === 0) {
     return (
       <div
-        className="w-full flex flex-col items-center justify-center gap-2 text-muted-foreground/50"
+        className="w-full flex flex-col items-center justify-center gap-2 text-muted-foreground/75"
         style={{ height }}
         role="img"
         aria-label={emptyLabel}

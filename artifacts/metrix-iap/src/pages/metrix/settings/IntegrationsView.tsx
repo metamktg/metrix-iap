@@ -58,7 +58,7 @@ export function IntegrationsView() {
           <div className="px-6 py-5 space-y-5 max-w-3xl">
             {/* Agency OAuth connection */}
             <div className="space-y-1.5">
-              <div className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 px-0.5">
+              <div className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 px-0.5">
                 Agency OAuth connection
               </div>
               <MetaLiveConnection />

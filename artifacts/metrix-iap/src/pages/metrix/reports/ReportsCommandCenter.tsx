@@ -99,10 +99,10 @@ export function ReportsCommandCenter() {
                     <div className="flex flex-col">
                       {recent.map((r) => (
                         <div key={r.id} className="flex items-center gap-2.5 py-2 border-t border-border/25 first:border-0 min-w-0">
-                          <span className="text-label font-mono text-muted-foreground/50 shrink-0">#{r.id}</span>
+                          <span className="text-label font-mono text-muted-foreground/75 shrink-0">#{r.id}</span>
                           <span className="flex-1 min-w-0">
                             <span className="block text-body text-foreground/85 truncate">{r.title}</span>
-                            <span className="block text-label text-muted-foreground/60">{new Date(r.generated_at).toLocaleDateString()}</span>
+                            <span className="block text-label text-muted-foreground/75">{new Date(r.generated_at).toLocaleDateString()}</span>
                           </span>
                           <span className="mx-inline-badge shrink-0">{r.mode}</span>
                         </div>

@@ -79,7 +79,7 @@ function VariableEditorRow({
       <button
         onClick={onRemove}
         aria-label={`Remove ${variable.code}`}
-        className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-muted-foreground/70 hover:text-status-danger hover:bg-status-danger/10 transition-colors cursor-pointer"
+        className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors cursor-pointer"
       >
         <X className="w-3.5 h-3.5" />
       </button>
@@ -202,7 +202,7 @@ function ReviewItem({
                   className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-border/50 bg-foreground/[0.03] text-label font-mono text-foreground/90"
                 >
                   {v.code}
-                  <span className="text-muted-foreground/70">{pct(v.confidence)}</span>
+                  <span className="text-muted-foreground/75">{pct(v.confidence)}</span>
                   {v.user_edited && <Pencil className="w-3 h-3 text-interactive" aria-label="Edited by reviewer" />}
                 </span>
               ))}
@@ -321,7 +321,7 @@ export function DeconstructionReviewQueue({ accountId }: { accountId: string | n
         queue.map((item) => <ReviewItem key={item.id} item={item} onReview={review} reviewPending={reviewPending} />)
       )}
       {resolved.length > 0 && (
-        <p className="text-label text-muted-foreground/70">
+        <p className="text-label text-muted-foreground/75">
           {resolved.filter((d) => d.status === "auto_filed").length} auto-classified ·{" "}
           {resolved.filter((d) => d.status === "user_overridden").length} accepted via override ·{" "}
           {resolved.filter((d) => d.status === "discarded").length} discarded

@@ -94,7 +94,7 @@ export function GoalProgressCard({
           {value != null ? format(value) : "—"}
         </span>
         {value == null && unmeasuredReason && (
-          <span className="text-caption font-body text-muted-foreground/70">{unmeasuredReason}</span>
+          <span className="text-caption font-body text-muted-foreground/75">{unmeasuredReason}</span>
         )}
         {hasGoal && (
           <span className="text-caption font-body text-muted-foreground/80 tabular-nums">
@@ -127,7 +127,7 @@ export function GoalProgressCard({
               {over && lowerIsBetter ? " of ceiling" : over ? " of target" : ""}
             </span>
             {goalSource && (
-              <span className="text-micro font-mono text-muted-foreground/50 truncate" title={goalSource}>
+              <span className="text-micro font-mono text-muted-foreground/75 truncate" title={goalSource}>
                 {goalSource}
               </span>
             )}
@@ -136,7 +136,7 @@ export function GoalProgressCard({
       ) : (
         <div className="flex items-center gap-2 flex-wrap">
           <span
-            className="text-caption font-body text-muted-foreground/70"
+            className="text-caption font-body text-muted-foreground/75"
             title="A progress bar needs a target. None has been set for this metric, so none is drawn — a bar against an assumed goal would report progress toward a number nobody chose."
           >
             {value == null ? "Not measured" : "No goal set"}

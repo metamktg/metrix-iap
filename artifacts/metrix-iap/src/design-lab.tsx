@@ -30,6 +30,7 @@ import { SignalDeck } from "@/components/signals/SignalDeck";
 import type { SignalCard } from "@/lib/data/seedTypes";
 import { ChartTooltip, ChartEmpty, ChartSkeleton } from "@/components/charts/chartChrome";
 import { TabRail } from "@/components/nav/TabRail";
+import { SectionCard, MetricTile, PendingState, SkeletonTileRow } from "@/pages/metrix/shared";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { GoalProgressCard } from "@/components/metrics/GoalProgressCard";
 import { VariableStack } from "@/components/charts/VariableStack";
@@ -109,7 +110,7 @@ function App() {
           <div className="flex flex-col gap-2">
             {TYPE_LADDER.map(([cls, px, desc]) => (
               <div key={cls} className="flex items-baseline gap-4 border-b border-border/25 pb-2">
-                <span className="text-micro font-mono text-muted-foreground/60 w-28 shrink-0 tabular-nums">{px}</span>
+                <span className="text-micro font-mono text-muted-foreground/75 w-28 shrink-0 tabular-nums">{px}</span>
                 <span className={cls}>{desc}</span>
               </div>
             ))}
@@ -138,14 +139,14 @@ function App() {
                 <div className="w-16 h-12 rounded-md grid place-items-center" style={{ background: divergingFill(t) }}>
                   <span className="text-caption text-foreground tabular-nums">$12.44</span>
                 </div>
-                <span className="text-micro font-mono text-muted-foreground/60 tabular-nums">{t.toFixed(2)}</span>
+                <span className="text-micro font-mono text-muted-foreground/75 tabular-nums">{t.toFixed(2)}</span>
               </div>
             ))}
             <div className="flex flex-col gap-1.5">
               <div className="w-16 h-12 rounded-md grid place-items-center" style={{ background: divergingFill(null) }}>
-                <span className="text-caption text-muted-foreground/60">—</span>
+                <span className="text-caption text-muted-foreground/75">—</span>
               </div>
-              <span className="text-micro font-mono text-muted-foreground/60">n/a</span>
+              <span className="text-micro font-mono text-muted-foreground/75">n/a</span>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -170,12 +171,11 @@ function App() {
         <Panel title="v3 tonal ramps" note="Six roles, one shared perceptual lightness scale · 100 lightest → 900 darkest">
           {["blue", "cyan", "neutral", "success", "danger", "warning"].map((role) => (
             <div key={role} className="flex items-center gap-1 mb-1">
-              <span className="text-micro font-mono text-muted-foreground/60 w-16 shrink-0">{role}</span>
+              <span className="text-micro font-mono text-muted-foreground/75 w-16 shrink-0">{role}</span>
               {[100, 200, 300, 400, 500, 600, 700, 800, 900].map((step) => (
-                <div key={step} className="flex-1 h-9 rounded-md grid place-items-center"
-                     style={{ background: `var(--mx-${role}-${step})` }}>
-                  <span className="text-micro font-mono tabular-nums"
-                        style={{ color: step <= 400 ? "var(--mx-neutral-900)" : "var(--mx-neutral-100)" }}>{step}</span>
+                <div key={step} className="flex-1 min-w-0">
+                  <div className="h-9 rounded-md" style={{ background: `var(--mx-${role}-${step})` }} />
+                  <div className="text-micro font-mono tabular-nums text-muted-foreground text-center mt-1">{step}</div>
                 </div>
               ))}
             </div>
@@ -189,7 +189,7 @@ function App() {
                 <div className="w-16 h-12 rounded-md border border-border/25 grid place-items-center" style={{ background: magnitudeFill(t, 0) }}>
                   <span className="text-caption text-foreground tabular-nums">$4,820</span>
                 </div>
-                <span className="text-micro font-mono text-muted-foreground/60 tabular-nums">{t.toFixed(2)}</span>
+                <span className="text-micro font-mono text-muted-foreground/75 tabular-nums">{t.toFixed(2)}</span>
               </div>
             ))}
             <div className="flex items-center gap-1 ml-4">
@@ -264,7 +264,7 @@ function App() {
           <div className="flex flex-col gap-3">
             {(["performance_by_cell", "conversion_tracking_signal", "historical_matrix_4x4"] as const).map((shape) => (
               <div key={shape} className="flex items-center gap-3 flex-wrap">
-                <span className="text-micro font-mono text-muted-foreground/60 w-56 shrink-0">{shape}</span>
+                <span className="text-micro font-mono text-muted-foreground/75 w-56 shrink-0">{shape}</span>
                 <ViewSwitcher shape={shape} value="table" onChange={() => {}} />
               </div>
             ))}
@@ -341,6 +341,39 @@ function App() {
             exercises it — a popover that lost its shadow or a tooltip that
             went back to bg-primary would otherwise only be visible by
             hovering the real app. */}
+        {/* The chrome every one of the ten IA sections composes from.
+            SectionCard is on 37 files, ModuleHeader 54, PendingState 41,
+            MetricTile 23 — so a defect here is a defect everywhere, and
+            nothing else in this lab exercised them. */}
+        <Panel title="Section card" note="the disclosure strip IS the control · 40px · keyboard-reachable">
+          <div className="space-y-3">
+            <SectionCard title="Audience heatmap" desc="Age × gender · CPA against goal">
+              <p className="text-body font-body text-muted-foreground">Body content.</p>
+            </SectionCard>
+            <SectionCard title="Pinned open" collapsible={false}>
+              <p className="text-body font-body text-muted-foreground">No disclosure control on this one.</p>
+            </SectionCard>
+          </div>
+        </Panel>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+          <Panel title="Metric tiles" note="the affordance is visible at rest, not only on hover">
+            <div className="grid grid-cols-dashboard-2 gap-2">
+              <MetricTile label="Amount spent" value="$14,820" sub="across 31 ads" variant="primary" />
+              <MetricTile label="Cost per result" value="$18.40" sub="vs $23.10 mean" onClick={() => {}} />
+            </div>
+            <div className="mt-3">
+              <SkeletonTileRow count={4} />
+            </div>
+          </Panel>
+          <Panel title="Pending state" note="the message is content, not a tooltip">
+            <PendingState
+              title="No analysis yet"
+              message="Analysis appears once performance data is connected or imported. Upload two Meta pivot exports, then pick a date range and run it."
+            />
+          </Panel>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Panel title="Popover — open" note="design-system chrome · elevation-floating · rounded-xl">
             <Popover defaultOpen>

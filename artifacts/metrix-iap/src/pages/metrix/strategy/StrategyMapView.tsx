@@ -133,7 +133,7 @@ function PillarListCard({
       <div className="flex items-start gap-1.5">
         <div className="flex items-center gap-1 mt-0.5 shrink-0">
           <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 transition-opacity", dot, selected ? "opacity-100" : "opacity-50")} />
-          <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/50 w-3.5 text-right")}>
+          <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/75 w-3.5 text-right")}>
             {String(index + 1).padStart(2, "0")}
           </span>
         </div>
@@ -149,7 +149,7 @@ function PillarListCard({
           </p>
           {/* Descriptor snippet — visible only when selected */}
           {selected && pillar.plain_descriptor && (
-            <p className={cn(TYPE.label, "text-muted-foreground/50 leading-snug mt-1 line-clamp-2")}>
+            <p className={cn(TYPE.label, "text-muted-foreground/75 leading-snug mt-1 line-clamp-2")}>
               {pillar.plain_descriptor.slice(0, 80)}
               {pillar.plain_descriptor.length > 80 ? "…" : ""}
             </p>
@@ -159,7 +159,7 @@ function PillarListCard({
 
       {/* Cell count + hyp count */}
       <div className="pl-4 flex items-center gap-2">
-        <span className={cn(TYPE.label, selected ? "text-muted-foreground/60" : "text-muted-foreground/40", "tabular-nums")}>
+        <span className={cn(TYPE.label, selected ? "text-muted-foreground/75" : "text-muted-foreground/75", "tabular-nums")}>
           {pillar.source_cells.length} cell{pillar.source_cells.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -209,13 +209,13 @@ function SourceCellCard({
         <div className="flex items-center gap-3 pt-1 border-t border-border/15">
           {(spend ?? 0) > 0 && (
             <div className="flex flex-col gap-0.5">
-              <span className={cn(TYPE.microLabel, "text-muted-foreground/40")}>Spend</span>
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Spend</span>
               <span className={cn(TYPE.label, "text-foreground/65 tabular-nums font-semibold")}>{fmtUSD(spend, 0)}</span>
             </div>
           )}
           {(results ?? 0) > 0 && (
             <div className="flex flex-col gap-0.5">
-              <span className={cn(TYPE.microLabel, "text-muted-foreground/40")}>Results</span>
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Results</span>
               <span className={cn(TYPE.label, "text-foreground/65 tabular-nums font-semibold")}>{fmtNum(results)}</span>
             </div>
           )}
@@ -316,10 +316,10 @@ function NextActionsPanel({
         <span className={cn(TYPE.caption, "font-semibold text-foreground/80 flex-1 truncate")}>
           Next actions · {t.main}
         </span>
-        <span className={cn(TYPE.label, "text-muted-foreground/50 shrink-0")}>
+        <span className={cn(TYPE.label, "text-muted-foreground/75 shrink-0")}>
           {pending.length} pending
         </span>
-        <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground/40 shrink-0 transition-transform", open && "rotate-180")} />
+        <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground/75 shrink-0 transition-transform", open && "rotate-180")} />
       </button>
 
       {open && (
@@ -337,7 +337,7 @@ function NextActionsPanel({
                 {/* Chips-only row inside button context, no nested reveal */}
                 <div>
                   <HypothesisCodeChipsRow label={h.label} />
-                  <p className={cn(TYPE.label, "text-muted-foreground/60 mt-1 line-clamp-1")} title={h.label}>
+                  <p className={cn(TYPE.label, "text-muted-foreground/75 mt-1 line-clamp-1")} title={h.label}>
                     {deriveLabel(h.label, 55)}
                   </p>
                 </div>
@@ -350,7 +350,7 @@ function NextActionsPanel({
                       "inline-flex items-center gap-1.5 text-label font-medium border rounded px-1.5 py-1 transition-colors leading-none",
                       isQueued
                         ? "bg-status-success/10 text-status-success border-status-success/30"
-                        : "bg-foreground/[0.03] text-muted-foreground/70 border-border/40 hover:text-foreground hover:border-border/70"
+                        : "bg-foreground/[0.03] text-muted-foreground/75 border-border/40 hover:text-foreground hover:border-border/70"
                     )}
                   >
                     {isQueued ? (
@@ -400,7 +400,7 @@ function FooterPanel({
         </span>
         <ChevronDown
           className={cn(
-            "w-3.5 h-3.5 text-muted-foreground/40 transition-transform",
+            "w-3.5 h-3.5 text-muted-foreground/75 transition-transform",
             open && "rotate-180"
           )}
         />
@@ -545,7 +545,7 @@ export function StrategyMapView() {
                   <div style={{ width: leftCol.width }} className="shrink-0 overflow-y-auto bg-foreground/[0.005]">
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
                       <div className="flex items-center gap-1 mb-0.5">
-                        <p className={cn(TYPE.microLabel, "text-muted-foreground/35")}>Pillars</p>
+                        <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Pillars</p>
                         <SectionInfoIcon tip="Validated message pillars from analysis — select one to trace its source cells and the hypotheses it feeds." />
                       </div>
                       <span className={cn(TYPE.caption, "font-semibold text-foreground/65")}>
@@ -579,7 +579,7 @@ export function StrategyMapView() {
                             )}
                           />
                           <div className="min-w-0">
-                            <p className={cn(TYPE.microLabel, "text-muted-foreground/35 mb-0.5")}>
+                            <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-0.5")}>
                               Source cells
                             </p>
                             <span className={cn(TYPE.caption, "font-semibold text-foreground/80 leading-snug line-clamp-1")}>
@@ -589,11 +589,11 @@ export function StrategyMapView() {
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {evidenceTotals.spend > 0 && (
-                            <span className={cn(TYPE.label, "text-muted-foreground/50 tabular-nums")} title="Total spend across source cells">
+                            <span className={cn(TYPE.label, "text-muted-foreground/75 tabular-nums")} title="Total spend across source cells">
                               {fmtUSD(evidenceTotals.spend, 0)}
                             </span>
                           )}
-                          <span className={cn(TYPE.label, "text-muted-foreground/40 tabular-nums")}>
+                          <span className={cn(TYPE.label, "text-muted-foreground/75 tabular-nums")}>
                             {selected.source_cells.length} cell{selected.source_cells.length !== 1 ? "s" : ""}
                           </span>
                           {analysis && selected.source_cells.length > 0 && (
@@ -615,7 +615,7 @@ export function StrategyMapView() {
                     <div className="p-3 space-y-2">
                       {selected.source_cells.length === 0 ? (
                         <div className="py-8 text-center">
-                          <p className={cn(TYPE.caption, "text-muted-foreground/50")}>
+                          <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
                             No source cells linked to this pillar yet.
                           </p>
                         </div>
@@ -699,9 +699,9 @@ export function StrategyMapView() {
                       title={`Show hypotheses (${selectedHyps.length} active)`}
                       className="shrink-0 w-7 flex flex-col items-center justify-center gap-2 border-l border-border/20 bg-foreground/[0.01] hover:bg-primary/[0.06] transition-colors group/reopen"
                     >
-                      <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground/50 group-hover/reopen:text-interactive" />
+                      <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground/75 group-hover/reopen:text-interactive" />
                       <span
-                        className={cn(TYPE.microLabel, "text-muted-foreground/45 group-hover/reopen:text-interactive")}
+                        className={cn(TYPE.microLabel, "text-muted-foreground/75 group-hover/reopen:text-interactive")}
                         style={{ writingMode: "vertical-rl" }}
                       >
                         Hypotheses
@@ -719,9 +719,9 @@ export function StrategyMapView() {
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
-                          <FlaskConical className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+                          <FlaskConical className="w-3 h-3 text-muted-foreground/75 shrink-0" />
                           <div>
-                            <p className={cn(TYPE.microLabel, "text-muted-foreground/35 mb-0.5")}>Hypotheses</p>
+                            <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-0.5")}>Hypotheses</p>
                             <span className={cn(TYPE.caption, "font-semibold text-foreground/65")}>
                               {selectedHyps.length} active
                             </span>
@@ -736,7 +736,7 @@ export function StrategyMapView() {
                     <div className="p-3 space-y-2">
                       {selectedHyps.length === 0 ? (
                         <div className="py-8 text-center">
-                          <p className={cn(TYPE.caption, "text-muted-foreground/50")}>
+                          <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
                             No hypotheses linked to this pillar.
                           </p>
                         </div>
@@ -747,7 +747,7 @@ export function StrategyMapView() {
                       {/* Unattached hypotheses in right column when applicable */}
                       {unattached.length > 0 && selected.id === pillars[0].id && (
                         <div className="mt-3 border-t border-border/20 pt-3">
-                          <p className={cn(TYPE.label, "text-muted-foreground/40 mb-2")}>
+                          <p className={cn(TYPE.label, "text-muted-foreground/75 mb-2")}>
                             Unattached ({unattached.length})
                           </p>
                           <div className="space-y-2">

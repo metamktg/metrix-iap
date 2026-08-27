@@ -87,7 +87,7 @@ export function AlertsView() {
                 <>
                   {highSignals.length > 0 && (
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">High-impact signals</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">High-impact signals</h3>
                       <div className="space-y-3">
                         {highSignals.map((s) => (
                           <button
@@ -102,7 +102,7 @@ export function AlertsView() {
                               <ConfidenceBadge value={s.confidence} />
                             </div>
                             <p className="text-title font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
-                            <p className="text-body text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
+                            <p className="text-body text-muted-foreground/75 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
                           </button>
                         ))}
                       </div>
@@ -111,7 +111,7 @@ export function AlertsView() {
 
                   {caveats.length > 0 && (
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Data caveats</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Data caveats</h3>
                       <div className="space-y-2">
                         {caveats.map((c) => (
                           <CaveatNote key={c.id} text={c.text} source={c.source} />
@@ -122,7 +122,7 @@ export function AlertsView() {
 
                   {qualityFlags.length > 0 && (
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Data-quality findings</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Data-quality findings</h3>
                       <div className="space-y-2">
                         {qualityFlags.map((f, i) => (
                           <CaveatNote
@@ -132,7 +132,7 @@ export function AlertsView() {
                           />
                         ))}
                       </div>
-                      <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-2 leading-snug")}>
+                      <p className={cn(TYPE.caption, "text-muted-foreground/75 mt-2 leading-snug")}>
                         Raised by the last analysis run. Full evidence per finding is on{" "}
                         <CrossLink to="/app/analysis/performance" label="Ad Performance" />.
                       </p>
@@ -164,7 +164,7 @@ export function AlertsView() {
                 <DrawerField label="Recommended action"><TokenizedConceptText text={detail.recommended_action} /></DrawerField>
                 {detail.source_path && (
                   <DrawerField label="Source">
-                    <span className="font-mono text-label text-muted-foreground/60">{detail.source_path}</span>
+                    <span className="font-mono text-label text-muted-foreground/75">{detail.source_path}</span>
                   </DrawerField>
                 )}
               </InfoDrawer>

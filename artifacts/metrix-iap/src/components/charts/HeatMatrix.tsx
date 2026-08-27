@@ -201,13 +201,13 @@ export function HeatMatrix({
                     >
                       <span
                         className={`text-caption tabular-nums ${
-                          isGap ? "text-muted-foreground/50" : "text-foreground font-medium"
+                          isGap ? "text-muted-foreground/75" : "text-foreground font-medium"
                         }`}
                       >
                         {isGap ? "—" : format(v)}
                       </span>
                       {cell?.sub && !isGap && (
-                        <span className="text-micro font-mono text-foreground/60 truncate max-w-full">
+                        <span className="text-micro font-mono text-foreground truncate max-w-full">
                           {cell.sub}
                         </span>
                       )}

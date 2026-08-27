@@ -40,7 +40,7 @@ function pillarTier(cells: string[]): "high" | "medium" | "low" {
 const TIER_STYLE: Record<string, string> = {
   high:   "bg-status-success/10 text-status-success border-status-success/20",
   medium: "bg-status-warning/10 text-status-warning border-status-warning/20",
-  low:    "bg-muted text-muted-foreground/60 border-border/40",
+  low:    "bg-muted text-muted-foreground/75 border-border/40",
 };
 
 const TIER_LABEL: Record<string, string> = {
@@ -103,7 +103,7 @@ function PillarCoverageStrip({
                     {p.source_cells.length} cell{p.source_cells.length !== 1 ? "s" : ""}
                   </span>
                   {hypCount > 0 && (
-                    <span className={cn(TYPE.label, "text-muted-foreground/40 tabular-nums")}>
+                    <span className={cn(TYPE.label, "text-muted-foreground/75 tabular-nums")}>
                       {hypCount} hyp
                     </span>
                   )}
@@ -193,7 +193,7 @@ function VariableFamilyHeatmap({ pillars }: { pillars: MessagePillar[] }) {
             >
               {/* Family label */}
               <div className="flex items-center gap-1.5 pr-2">
-                <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 w-4 text-right")}>
+                <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/75 w-4 text-right")}>
                   {familyUsed}
                 </span>
                 <span className={cn(TYPE.label, "truncate")} title={f.label}>{f.label}</span>
@@ -301,7 +301,7 @@ function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<ty
         {typeof playbook.budget_reallocation_note === "string" &&
           playbook.budget_reallocation_note && (
             <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
-              <div className={cn(TYPE.label, "mb-1 text-muted-foreground/60")}>
+              <div className={cn(TYPE.label, "mb-1 text-muted-foreground/75")}>
                 Budget reallocation
               </div>
               <DetailReveal
@@ -369,7 +369,7 @@ export function StrategyOverview() {
                     runningLabel="Generating strategy…"
                   />
                 ) : (
-                  <p className="text-caption text-muted-foreground/70">Needs completed analysis first.</p>
+                  <p className="text-caption text-muted-foreground/75">Needs completed analysis first.</p>
                 )}
               </div>
             </div>
@@ -539,7 +539,7 @@ export function StrategyOverview() {
                       >
                         {/* ── Header: index + title + tier badge ── */}
                         <div className="px-4 pt-4 pb-3 flex items-start gap-2 border-b border-border/15">
-                          <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 mt-0.5 shrink-0 w-5 text-right")}>
+                          <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/75 mt-0.5 shrink-0 w-5 text-right")}>
                             {String(i + 1).padStart(2, "0")}
                           </span>
                           <div className="flex-1 min-w-0">
@@ -547,7 +547,7 @@ export function StrategyOverview() {
                               {t.main}
                             </p>
                             {t.qualifier && (
-                              <p className={cn(TYPE.caption, "line-clamp-1 mt-0.5 text-muted-foreground/55")}>
+                              <p className={cn(TYPE.caption, "line-clamp-1 mt-0.5 text-muted-foreground/75")}>
                                 {t.qualifier}
                               </p>
                             )}
@@ -567,14 +567,14 @@ export function StrategyOverview() {
                         <div className="px-4 py-3 flex flex-col gap-2.5 flex-1">
                           {/* Descriptor */}
                           {p.plain_descriptor && (
-                            <p className="text-caption text-muted-foreground/55 leading-relaxed line-clamp-2">
+                            <p className="text-caption text-muted-foreground/75 leading-relaxed line-clamp-2">
                               {deriveLabel(p.plain_descriptor, 130)}
                             </p>
                           )}
 
                           {/* Variable stack — most actionable signal, rendered prominently */}
                           <div>
-                            <span className={cn(TYPE.label, "text-muted-foreground/45 uppercase tracking-wide text-label mb-1.5 block")}>
+                            <span className={cn(TYPE.label, "text-muted-foreground/75 uppercase tracking-wide text-label mb-1.5 block")}>
                               What works
                             </span>
                             <VariableStackChips stack={p.variable_stack} />
@@ -583,7 +583,7 @@ export function StrategyOverview() {
                           {/* ICP chips */}
                           {(p.target_icps?.length ?? 0) > 0 && (
                             <div>
-                              <span className={cn(TYPE.label, "text-muted-foreground/45 uppercase tracking-wide text-label mb-1.5 block")}>
+                              <span className={cn(TYPE.label, "text-muted-foreground/75 uppercase tracking-wide text-label mb-1.5 block")}>
                                 Who responds
                               </span>
                               <IcpChips ids={p.target_icps} profiles={strategy.icp_profiles} />
@@ -673,13 +673,13 @@ export function StrategyOverview() {
                       </div>
 
                       {/* Description — always visible */}
-                      <p className={cn(TYPE.caption, "text-muted-foreground/60 leading-relaxed flex-1")}>
+                      <p className={cn(TYPE.caption, "text-muted-foreground/75 leading-relaxed flex-1")}>
                         {s.desc}
                       </p>
 
                       {/* Stat + arrow */}
                       <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/20">
-                        <span className={cn(TYPE.label, "text-muted-foreground/50 font-mono")}>{s.stat}</span>
+                        <span className={cn(TYPE.label, "text-muted-foreground/75 font-mono")}>{s.stat}</span>
                         <span className={cn(TYPE.label, "text-interactive/60 group-hover:text-interactive transition-colors font-semibold")}>
                           Open →
                         </span>

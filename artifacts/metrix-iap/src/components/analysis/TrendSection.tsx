@@ -119,7 +119,7 @@ export function TrendSection({ accountId, start, end }: TrendSectionProps) {
         </div>
 
         {!enabled ? (
-          <p className="text-body text-muted-foreground/70 py-6 text-center">
+          <p className="text-body text-muted-foreground/75 py-6 text-center">
             Select a data window to see the daily trend.
           </p>
         ) : (

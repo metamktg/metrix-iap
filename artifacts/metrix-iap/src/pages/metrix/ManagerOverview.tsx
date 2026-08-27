@@ -67,10 +67,10 @@ function AccountBreakdownTable({ rows }: { rows: AccountTotals[] }) {
   return (
     <div className="rounded-lg border border-border/40 overflow-hidden">
       <div className="grid text-left" style={{ gridTemplateColumns: "1fr auto auto auto" }}>
-        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/50 uppercase tracking-widest")}>Account</div>
-        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/50 uppercase tracking-widest text-right")}>Spend</div>
-        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/50 uppercase tracking-widest text-right")}>Results</div>
-        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/50 uppercase tracking-widest text-right")}>CPA</div>
+        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/75 uppercase tracking-widest")}>Account</div>
+        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/75 uppercase tracking-widest text-right")}>Spend</div>
+        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/75 uppercase tracking-widest text-right")}>Results</div>
+        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/75 uppercase tracking-widest text-right")}>CPA</div>
         {rows.map((r, i) => {
           const isLast = i === rows.length - 1;
           const rowBorder = isLast ? "" : "border-b border-border/20";
@@ -110,7 +110,7 @@ function ResultsByEventList({
   const totalResults = sorted.reduce((s, [, e]) => s + e.results, 0);
 
   if (sorted.length === 0) {
-    return <p className={cn(TYPE.body, "text-muted-foreground/55 py-3 text-center")}>No result events recorded.</p>;
+    return <p className={cn(TYPE.body, "text-muted-foreground/75 py-3 text-center")}>No result events recorded.</p>;
   }
 
   return (
@@ -141,8 +141,8 @@ function ResultsByEventList({
                   </span>
                 </td>
                 <td className="text-right tabular-nums text-foreground/85">{fmtNum(e.results)}</td>
-                <td className="text-right tabular-nums text-muted-foreground/70">{fmtUSD(e.spend, 0)}</td>
-                <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/35")}>
+                <td className="text-right tabular-nums text-muted-foreground/75">{fmtUSD(e.spend, 0)}</td>
+                <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/75")}>
                   {cpa != null ? fmtUSD(cpa) : "n/a"}
                 </td>
               </tr>
@@ -152,7 +152,7 @@ function ResultsByEventList({
       </table>
       {totalResults > 0 && (
         <div className="flex items-center justify-between pt-2 px-2.5">
-          <span className={cn(TYPE.label, "text-muted-foreground/45")}>All events</span>
+          <span className={cn(TYPE.label, "text-muted-foreground/75")}>All events</span>
           <span className={cn(TYPE.body, "font-semibold tabular-nums text-foreground/70")}>{fmtNum(totalResults)}</span>
         </div>
       )}
@@ -191,7 +191,7 @@ function AdAccountCard({
       )}>
         {configured
           ? <CheckCircle2 className="w-3.5 h-3.5 text-status-success" />
-          : <Plug className="w-3.5 h-3.5 text-muted-foreground/50" />}
+          : <Plug className="w-3.5 h-3.5 text-muted-foreground/75" />}
       </div>
 
       {/* Content */}
@@ -203,11 +203,11 @@ function AdAccountCard({
           <ArrowRight className={cn(
             "w-3.5 h-3.5 shrink-0 transition-colors",
             configured
-              ? "text-muted-foreground/30 group-hover:text-interactive/60"
-              : "text-muted-foreground/20",
+              ? "text-muted-foreground/75 group-hover:text-interactive/60"
+              : "text-muted-foreground/75",
           )} />
         </div>
-        <div className={cn(TYPE.caption, "text-muted-foreground/55 mt-0.5 capitalize")}>
+        <div className={cn(TYPE.caption, "text-muted-foreground/75 mt-0.5 capitalize")}>
           {configured ? `${account.platform} · Connected` : "Setup required"}
         </div>
 
@@ -215,16 +215,16 @@ function AdAccountCard({
         {configured && totals && (totals.spend > 0 || totals.results > 0) && (
           <div className="flex items-center gap-4 mt-2.5 pt-2 border-t border-border/20">
             <div>
-              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/35 mb-0.5">Spend</div>
+              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">Spend</div>
               <div className={cn(TYPE.body, "font-semibold tabular-nums text-foreground/80")}>{fmtUSD(totals.spend, 0)}</div>
             </div>
             <div>
-              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/35 mb-0.5">Results</div>
+              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">Results</div>
               <div className={cn(TYPE.body, "tabular-nums text-foreground/65")}>{fmtNum(totals.results)}</div>
             </div>
             {totals.cpa != null && (
               <div>
-                <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/35 mb-0.5">CPA</div>
+                <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">CPA</div>
                 <div className={cn(TYPE.body, "tabular-nums text-foreground/65")}>{fmtUSD(totals.cpa)}</div>
               </div>
             )}
@@ -303,7 +303,7 @@ function RecommendationCardItem({
         <div>
           <button
             onClick={() => setRationaleOpen((v) => !v)}
-            className="flex items-center gap-1 text-label text-muted-foreground/45 hover:text-foreground/65 transition-colors font-medium"
+            className="flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/65 transition-colors font-medium"
           >
             {rationaleOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             {rationaleOpen ? "Hide rationale" : "Why this?"}
@@ -329,7 +329,7 @@ function RecommendationCardItem({
         </button>
         {card.source_path && (
           <span
-            className="text-micro font-mono text-muted-foreground/25 truncate max-w-[130px]"
+            className="text-micro font-mono text-muted-foreground/75 truncate max-w-[130px]"
             title={card.source_path}
           >
             {card.source_path}
@@ -397,7 +397,7 @@ export function ManagerOverview() {
             <span className="text-muted-foreground/80 shrink-0">{fmtCompactUSD(r.spend)}</span>
           </div>
         ))}
-        <div className="text-muted-foreground/70 pt-0.5">Blended across all configured accounts — see "By account" for the full table.</div>
+        <div className="text-muted-foreground/75 pt-0.5">Blended across all configured accounts — see "By account" for the full table.</div>
       </div>
     );
   }, [accountTotals]);
@@ -434,7 +434,7 @@ export function ManagerOverview() {
         subtitle="Blended performance · all ad accounts"
         right={
           <div className="flex items-center gap-2.5">
-            <span className={cn(TYPE.label, "font-mono text-muted-foreground/55 uppercase tracking-widest")}>
+            <span className={cn(TYPE.label, "font-mono text-muted-foreground/75 uppercase tracking-widest")}>
               {data.configured_ad_accounts} configured · {data.unconfigured_ad_accounts} to set up
             </span>
             {/* Manager scope has no windowed KPI-tile data source to drive a
@@ -444,7 +444,7 @@ export function ManagerOverview() {
             <button
               type="button"
               onClick={() => navigate("/app/exports")}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
+              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
               Export
@@ -466,7 +466,7 @@ export function ManagerOverview() {
             <button
               onClick={() => setBreakdownOpen((v) => !v)}
               aria-expanded={breakdownOpen}
-              className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/55 hover:text-foreground/75 transition-colors px-2 py-1 rounded border border-border/30 bg-foreground/[0.02] hover:border-border/50"
+              className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-foreground/75 transition-colors px-2 py-1 rounded border border-border/30 bg-foreground/[0.02] hover:border-border/50"
             >
               By account
               <ChevronDown className={cn("w-3 h-3 transition-transform duration-150", breakdownOpen && "rotate-180")} />
@@ -538,13 +538,13 @@ export function ManagerOverview() {
               className="flex items-center gap-3 p-3.5 rounded-lg border border-dashed border-border/40 bg-transparent hover:border-primary/35 hover:bg-primary/[0.025] transition-colors text-left"
             >
               <div className="w-8 h-8 rounded-lg border border-dashed border-border/40 flex items-center justify-center shrink-0">
-                <Plus className="w-3.5 h-3.5 text-muted-foreground/50" />
+                <Plus className="w-3.5 h-3.5 text-muted-foreground/75" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className={cn(TYPE.body, "font-medium text-foreground/70 leading-tight")}>
                   Add or connect an ad account
                 </div>
-                <div className={cn(TYPE.caption, "text-muted-foreground/50 mt-0.5")}>
+                <div className={cn(TYPE.caption, "text-muted-foreground/75 mt-0.5")}>
                   Connect Meta or add a manual import
                 </div>
               </div>
@@ -559,7 +559,7 @@ export function ManagerOverview() {
           desc="Cross-account signals · read-only · act from the source account"
         >
           {data.recommendation_cards.length === 0 ? (
-            <p className={cn(TYPE.body, "text-muted-foreground/55 py-4 text-center")}>
+            <p className={cn(TYPE.body, "text-muted-foreground/75 py-4 text-center")}>
               No account recommendations at the moment.
             </p>
           ) : (

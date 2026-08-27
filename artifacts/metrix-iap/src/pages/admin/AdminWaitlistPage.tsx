@@ -64,7 +64,7 @@ import {
 import { cn } from "@workspace/command-deck/lib/utils";
 
 const INPUT_CLS =
-  "w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring";
+  "w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring";
 
 function StatusBadge({ status }: { status: string }) {
   const cls =
@@ -402,7 +402,7 @@ function ManageAccessPanel({
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading accounts…
             </div>
           ) : accounts.length === 0 ? (
-            <div className="text-caption text-muted-foreground/70 py-4">
+            <div className="text-caption text-muted-foreground/75 py-4">
               No ad accounts found in the Metrix data layer.
             </div>
           ) : (
@@ -423,7 +423,7 @@ function ManageAccessPanel({
                     {acct.name ?? acct.id}
                   </div>
                   {acct.name && (
-                    <div className="text-label text-muted-foreground/60 truncate">{acct.id}</div>
+                    <div className="text-label text-muted-foreground/75 truncate">{acct.id}</div>
                   )}
                 </div>
               </label>
@@ -672,7 +672,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
             <div className="space-y-1">
               <label className="text-label font-medium text-muted-foreground">
                 Display name{" "}
-                <span className="text-muted-foreground/50">(optional)</span>
+                <span className="text-muted-foreground/75">(optional)</span>
               </label>
               <input
                 type="text"
@@ -710,14 +710,14 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
               <div className="space-y-1">
                 <label className="text-label font-medium text-muted-foreground">
                   Ad account access{" "}
-                  <span className="text-muted-foreground/50">(optional)</span>
+                  <span className="text-muted-foreground/75">(optional)</span>
                 </label>
                 {allAccounts.isLoading ? (
                   <div className="flex items-center gap-1.5 text-label text-muted-foreground py-1">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading accounts…
                   </div>
                 ) : accounts.length === 0 ? (
-                  <div className="text-label text-muted-foreground/60 py-1">
+                  <div className="text-label text-muted-foreground/75 py-1">
                     No ad accounts available.
                   </div>
                 ) : (
@@ -758,7 +758,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
                                 {acct.name ?? acct.id}
                               </div>
                               {acct.name && (
-                                <div className="text-[9px] text-muted-foreground/60 truncate">
+                                <div className="text-[9px] text-muted-foreground/75 truncate">
                                   {acct.id}
                                 </div>
                               )}
@@ -841,19 +841,19 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
         data-testid={`row-user-${user.id}`}
       >
         <div className="flex items-center gap-3 flex-wrap">
-          <Mail className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+          <Mail className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
           <div className="flex-1 min-w-0">
             {user.display_name ? (
               <>
                 <div className="text-body font-medium text-foreground truncate">
                   {user.display_name}
                 </div>
-                <div className="text-label text-muted-foreground/70 truncate">{user.email}</div>
+                <div className="text-label text-muted-foreground/75 truncate">{user.email}</div>
               </>
             ) : (
               <div className="text-body font-medium text-foreground truncate">{user.email}</div>
             )}
-            <div className="text-label text-muted-foreground/60">
+            <div className="text-label text-muted-foreground/75">
               Created {formatDate(user.created_at)}
               {user.last_login_at
                 ? ` · Last login ${formatDate(user.last_login_at)}`
@@ -864,14 +864,14 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
             {user.role !== "admin" && (
               <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                 {user.ad_account_ids.length === 0 ? (
-                  <span className="text-[9px] text-muted-foreground/40 italic">
+                  <span className="text-[9px] text-muted-foreground/75 italic">
                     No ad account access
                   </span>
                 ) : (
                   user.ad_account_ids.map((id) => (
                     <span
                       key={id}
-                      className="text-[9px] px-1.5 py-0.5 rounded bg-foreground/[0.06] border border-border/30 text-muted-foreground/70 font-mono leading-none"
+                      className="text-[9px] px-1.5 py-0.5 rounded bg-foreground/[0.06] border border-border/30 text-muted-foreground/75 font-mono leading-none"
                     >
                       {id}
                     </span>
@@ -1111,7 +1111,7 @@ function UsersSection() {
           Could not load users. Refresh to try again.
         </div>
       ) : list.length === 0 ? (
-        <div className="text-caption text-muted-foreground/70 py-4">
+        <div className="text-caption text-muted-foreground/75 py-4">
           No provisioned users yet — use "Add user" or approve a request to create the first
           account.
         </div>
@@ -1155,7 +1155,7 @@ function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChange
             {entry.full_name}
           </div>
           <div className="text-caption text-muted-foreground truncate">{entry.email}</div>
-          <div className="text-label text-muted-foreground/60 mt-0.5">
+          <div className="text-label text-muted-foreground/75 mt-0.5">
             Requested {formatDate(entry.created_at)}
           </div>
         </div>
@@ -1167,8 +1167,8 @@ function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChange
           .filter((d) => d.value)
           .map((d) => (
             <div key={d.label} className="flex items-center gap-1.5 min-w-0">
-              <d.icon className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
-              <span className="text-label text-muted-foreground/70 shrink-0">{d.label}:</span>
+              <d.icon className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
+              <span className="text-label text-muted-foreground/75 shrink-0">{d.label}:</span>
               <span className="text-caption text-foreground truncate">{d.value}</span>
             </div>
           ))}
@@ -1224,10 +1224,10 @@ function WaitlistRow({ entry, onChanged }: { entry: WaitlistEntry; onChanged: ()
       data-testid={`row-waitlist-${entry.id}`}
     >
       <div className="flex items-center gap-3">
-        <Mail className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+        <Mail className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-body font-medium text-foreground truncate">{entry.email}</div>
-          <div className="text-label text-muted-foreground/60">
+          <div className="text-label text-muted-foreground/75">
             Joined {formatDate(entry.joined_at)}
           </div>
         </div>
@@ -1422,7 +1422,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
               Could not load access requests. Refresh to try again.
             </div>
           ) : requestEntries.length === 0 ? (
-            <div className="text-caption text-muted-foreground/70 py-4">
+            <div className="text-caption text-muted-foreground/75 py-4">
               No access requests yet.
             </div>
           ) : (
@@ -1454,7 +1454,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
               Could not load the waitlist. Refresh to try again.
             </div>
           ) : waitlistEntries.length === 0 ? (
-            <div className="text-caption text-muted-foreground/70 py-4">
+            <div className="text-caption text-muted-foreground/75 py-4">
               No waitlist signups yet.
             </div>
           ) : (

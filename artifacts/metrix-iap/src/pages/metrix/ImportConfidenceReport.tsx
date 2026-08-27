@@ -63,7 +63,7 @@ function TierBadge({ tier, isRequired }: { tier: MappingEntry["tier"]; isRequire
   // so it renders as a neutral "not in export" chip instead.
   if (tier === "missing" && !isRequired) {
     return (
-      <span className="px-1.5 py-0.5 rounded text-label font-medium uppercase tracking-wide border bg-foreground/[0.04] border-border/40 text-muted-foreground/70">
+      <span className="px-1.5 py-0.5 rounded text-label font-medium uppercase tracking-wide border bg-foreground/[0.04] border-border/40 text-muted-foreground/75">
         not in export
       </span>
     );
@@ -98,7 +98,7 @@ function ConfidenceBar({ value }: { value: number }) {
   return (
     <div className="flex items-center gap-1.5">
       <ProgressMeter value={pct} total={100} label="Import confidence" fill={fill} className="flex-1" />
-      <span className="text-label tabular-nums text-muted-foreground/70 w-8 text-right">{pct}%</span>
+      <span className="text-label tabular-nums text-muted-foreground/75 w-8 text-right">{pct}%</span>
     </div>
   );
 }
@@ -164,14 +164,14 @@ function SingleCsvConfidenceReport({
         className="w-full flex items-center gap-2 p-3 text-left hover:bg-foreground/[0.02] transition-colors"
       >
         {open ? (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         )}
         <GradeBadge grade={grade} />
         <div className="flex-1 min-w-0">
           <div className="text-body font-medium text-foreground truncate">{csvLabel}</div>
-          <p className="text-label text-muted-foreground/70">
+          <p className="text-label text-muted-foreground/75">
             {Math.round(pct * 100)}% signal coverage ·{" "}
             {resolvedColumns.length} of {summary.length} columns matched
             {uploadWarnings && uploadWarnings.length > 0 && (
@@ -186,7 +186,7 @@ function SingleCsvConfidenceReport({
           {/* Upload-time warnings — persisted, not ephemeral. */}
           {uploadWarnings && uploadWarnings.length > 0 && (
             <div className="space-y-1">
-              <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">
+              <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">
                 Upload warnings ({uploadWarnings.length})
               </div>
               <div className="rounded-md border border-status-warning/25 bg-status-warning/[0.06] divide-y divide-border/20">
@@ -202,7 +202,7 @@ function SingleCsvConfidenceReport({
           {/* A file staged before warnings were persisted has none RECORDED,
               which is not the same as having none. Say which. */}
           {uploadWarnings == null && (
-            <p className="text-label text-muted-foreground/60">
+            <p className="text-label text-muted-foreground/75">
               Upload warnings weren't recorded for this file — it was staged before they were kept.
             </p>
           )}
@@ -210,7 +210,7 @@ function SingleCsvConfidenceReport({
           {/* Missing weighted columns with signal penalty */}
           {missingColumns.length > 0 && (
             <div className="space-y-1">
-              <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">
+              <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">
                 Missing signal columns
               </div>
               {missingColumns.map((col) => (
@@ -227,7 +227,7 @@ function SingleCsvConfidenceReport({
 
           {/* Full column table */}
           <div className="space-y-1">
-            <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">
+            <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">
               All columns ({summary.length})
             </div>
             <div className="rounded-md border border-border/30 divide-y divide-border/20">
@@ -237,7 +237,7 @@ function SingleCsvConfidenceReport({
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-label font-medium text-foreground/85 truncate">{col.canonical}</span>
                       {col.found_as && col.found_as !== col.canonical && (
-                        <span className="text-label text-muted-foreground/50 font-mono truncate">← {col.found_as}</span>
+                        <span className="text-label text-muted-foreground/75 font-mono truncate">← {col.found_as}</span>
                       )}
                     </div>
                   </div>
@@ -247,7 +247,7 @@ function SingleCsvConfidenceReport({
                       <ConfidenceBar value={col.confidence} />
                     </div>
                   ) : col.tier === "missing" ? (
-                    <span className="text-label text-muted-foreground/40 w-20 shrink-0 text-right">—</span>
+                    <span className="text-label text-muted-foreground/75 w-20 shrink-0 text-right">—</span>
                   ) : (
                     <span className="text-label text-status-success/60 w-20 shrink-0 text-right">100%</span>
                   )}

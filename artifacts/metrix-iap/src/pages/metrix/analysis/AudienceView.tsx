@@ -208,11 +208,11 @@ function SegmentByToggle({ mode, onChange }: { mode: SegmentByMode; onChange: (m
 
 function GroupingEmptyState({ hint, fallback }: { hint?: GroupingEmptyHint; fallback: string }) {
   if (!hint) {
-    return <p className={cn(TYPE.body, "text-muted-foreground/50 py-6 text-center")}>{fallback}</p>;
+    return <p className={cn(TYPE.body, "text-muted-foreground/75 py-6 text-center")}>{fallback}</p>;
   }
   return (
     <div className="py-6 text-center space-y-2">
-      <p className={cn(TYPE.body, "text-muted-foreground/70")}>{hint.reason}</p>
+      <p className={cn(TYPE.body, "text-muted-foreground/75")}>{hint.reason}</p>
       <button
         type="button"
         onClick={hint.onSwitch}
@@ -320,7 +320,7 @@ function PositioningMapCard({
         emptyHint ? (
           <GroupingEmptyState hint={emptyHint} fallback="" />
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground/50 gap-2">
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground/75 gap-2">
             <TrendingUp className="w-8 h-8" />
             <p className={TYPE.body}>Not enough real results data to plot {groupNoun}s.</p>
           </div>
@@ -450,27 +450,27 @@ function ShareOfSpendCard({
             <div key={g.id} className="rounded-lg px-2 py-1.5 -mx-2">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className={cn(TYPE.caption, "font-medium text-foreground/85 inline-flex items-center gap-1.5 min-w-0")}>
-                  <span className="shrink-0 font-mono text-muted-foreground/45">{g.id}</span>
+                  <span className="shrink-0 font-mono text-muted-foreground/75">{g.id}</span>
                   <span className="truncate">{g.label}</span>
                 </span>
                 <span className={cn(
                   TYPE.label,
                   "tabular-nums shrink-0",
-                  gap >= 3 ? "text-status-success" : gap <= -3 ? "text-status-warning" : "text-muted-foreground/45",
+                  gap >= 3 ? "text-status-success" : gap <= -3 ? "text-status-warning" : "text-muted-foreground/75",
                 )}>
                   {gap > 0 ? "+" : ""}{gap}pts
                 </span>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>Spend</span>
+                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/75 normal-case")}>Spend</span>
                   <ProgressMeter value={spendShare} total={100} label="Spend share" className="flex-1" colorIndex={0} />
-                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
+                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/75")}>
                     {spendShare.toFixed(0)}%
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>{totalResults > 0 ? "Results" : "Results —"}</span>
+                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/75 normal-case")}>{totalResults > 0 ? "Results" : "Results —"}</span>
                   <ProgressMeter
                     value={totalResults > 0 ? resultShare : null}
                     total={100}
@@ -478,7 +478,7 @@ function ShareOfSpendCard({
                     className="flex-1"
                     colorIndex={1}
                   />
-                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
+                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/75")}>
                     {totalResults > 0 ? `${resultShare.toFixed(0)}%` : "n/a"}
                   </span>
                 </div>
@@ -540,7 +540,7 @@ function GroupDetailRow({
   return (
     <div className="flex items-center justify-between gap-3 py-2.5 border-b border-border/10 last:border-0 flex-wrap">
       <div className="flex items-center gap-2 min-w-0">
-        <span className={cn(TYPE.label, "font-mono text-muted-foreground/45 shrink-0")}>{group.id}</span>
+        <span className={cn(TYPE.label, "font-mono text-muted-foreground/75 shrink-0")}>{group.id}</span>
         <DetailReveal
           label={group.label}
           labelClassName={cn(TYPE.title, "text-foreground/90")}
@@ -672,7 +672,7 @@ function RankedListTab({
               style={{ borderLeftColor: accentColor, borderLeftWidth: "3px" }}
             >
               <div className="flex items-center gap-2.5 mb-2.5">
-                <span className="w-4 shrink-0 font-mono text-muted-foreground/35 tabular-nums text-right text-label">
+                <span className="w-4 shrink-0 font-mono text-muted-foreground/75 tabular-nums text-right text-label">
                   {idx + 1}
                 </span>
                 <SegmentGenderIcon gender={e.seg.gender} />
@@ -681,7 +681,7 @@ function RankedListTab({
                 </span>
                 {e.signal.state === "insufficient_coverage" ? (
                   <span
-                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-muted-foreground/60 shrink-0"
+                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-muted-foreground/75 shrink-0"
                     title={e.signal.reasons.join(" ")}
                   >
                     <AlertTriangle className="w-3.5 h-3.5" /> Coverage
@@ -721,7 +721,7 @@ function RankedListTab({
         })}
       </div>
       <ShowMoreButton total={ranked.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="segments" />
-      <p className={cn("mt-3", TYPE.label, "text-muted-foreground/45")}>
+      <p className={cn("mt-3", TYPE.label, "text-muted-foreground/75")}>
         Bar length is relative to the best segment on {activeMetric.label}.{" "}
         {ranked.length} segment{ranked.length !== 1 ? "s" : ""} — click any row for its messaging attribution.
       </p>
@@ -976,7 +976,7 @@ export function AudienceView() {
 
                   <div className="px-6 py-5 space-y-4 max-w-6xl">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <p className={cn(TYPE.label, "text-muted-foreground/40")}>
+                      <p className={cn(TYPE.label, "text-muted-foreground/75")}>
                         {mode === "ranked"
                           ? `${ranked.length} segment${ranked.length !== 1 ? "s" : ""}`
                           : `${activeGroups.length} ${groupNoun}${activeGroups.length !== 1 ? "s" : ""} · ${entries.length} real segments`}

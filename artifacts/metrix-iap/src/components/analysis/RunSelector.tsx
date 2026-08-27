@@ -99,18 +99,18 @@ export function RunScopePicker({
           className="inline-flex items-center gap-1.5 rounded-lg border border-border/40 bg-foreground/[0.02] hover:bg-muted/30 px-2.5 py-1.5 text-caption text-foreground/80 transition-colors max-w-[280px]"
           title="Scope to analysis run"
         >
-          <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+          <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
           <span className="truncate font-medium">{triggerLabel}</span>
           {!value.allTime && selectedRuns.length > 1 && (
-            <span className="text-[9px] font-mono text-muted-foreground/50 shrink-0">
+            <span className="text-[9px] font-mono text-muted-foreground/75 shrink-0">
               {selectedRuns.length}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+          <ChevronDown className="w-3 h-3 text-muted-foreground/75 shrink-0" />
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-2">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 px-1 pb-2">
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 px-1 pb-2">
           Scope to analysis run
         </p>
         <button
@@ -126,7 +126,7 @@ export function RunScopePicker({
         >
           <Checkbox checked={value.allTime} className="pointer-events-none" />
           <span className="text-label font-semibold flex-1">All time</span>
-          <span className="text-[9px] text-muted-foreground/40">
+          <span className="text-[9px] text-muted-foreground/75">
             {runs.length} run{runs.length !== 1 ? "s" : ""} total
           </span>
         </button>
@@ -149,7 +149,7 @@ export function RunScopePicker({
                 <Checkbox checked={isSel} className="pointer-events-none" />
                 <div className="flex-1 min-w-0">
                   <span className="text-label font-medium block truncate">{runLabel(run)}</span>
-                  <span className="text-[9px] text-muted-foreground/40 block">{runTimestamp(run)}</span>
+                  <span className="text-[9px] text-muted-foreground/75 block">{runTimestamp(run)}</span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {idx === 0 && (
@@ -158,7 +158,7 @@ export function RunScopePicker({
                     </span>
                   )}
                   {run.rows_ingested != null && (
-                    <span className="text-[9px] font-mono text-muted-foreground/35">
+                    <span className="text-[9px] font-mono text-muted-foreground/75">
                       {run.rows_ingested.toLocaleString()} rows
                     </span>
                   )}
@@ -212,7 +212,7 @@ export function RunSelector({
       >
         <Checkbox checked={value.allTime} className="pointer-events-none" />
         <span className="text-label font-semibold flex-1">All time</span>
-        <span className="text-[9px] text-muted-foreground/40">
+        <span className="text-[9px] text-muted-foreground/75">
           {runs.length} run{runs.length !== 1 ? "s" : ""} total
         </span>
       </button>
@@ -248,7 +248,7 @@ export function RunSelector({
                     </span>
                   )}
                   {run.rows_ingested != null && (
-                    <span className="text-[9px] font-mono text-muted-foreground/35">
+                    <span className="text-[9px] font-mono text-muted-foreground/75">
                       {run.rows_ingested.toLocaleString()} rows
                     </span>
                   )}
@@ -258,7 +258,7 @@ export function RunSelector({
           })}
           {hiddenCount > 0 && (
             <div className="px-2.5 py-1.5 bg-foreground/[0.01]">
-              <span className="text-[9px] text-muted-foreground/25">
+              <span className="text-[9px] text-muted-foreground/75">
                 +{hiddenCount} older run{hiddenCount !== 1 ? "s" : ""} not shown
               </span>
             </div>

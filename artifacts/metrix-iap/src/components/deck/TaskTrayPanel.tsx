@@ -46,7 +46,7 @@ export function TaskTrayPanel({
             <button
               onClick={onCollapse}
               aria-label="Collapse task tray"
-              className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground/80 hover:bg-foreground/[0.06] transition-colors"
+              className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground/80 hover:bg-foreground/[0.06] transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -65,10 +65,10 @@ export function TaskTrayPanel({
               "rounded-xl border border-border/30 bg-foreground/[0.02] flex items-center justify-center",
               compact ? "w-7 h-7" : "w-9 h-9"
             )}>
-              <ClipboardList className={cn("text-muted-foreground/25", compact ? "w-3.5 h-3.5" : "w-4 h-4")} />
+              <ClipboardList className={cn("text-muted-foreground/75", compact ? "w-3.5 h-3.5" : "w-4 h-4")} />
             </div>
-            <p className="text-label text-muted-foreground/50 font-medium leading-tight">No approved tasks</p>
-            <p className="text-[9px] text-muted-foreground/35 leading-relaxed max-w-[140px]">
+            <p className="text-label text-muted-foreground/75 font-medium leading-tight">No approved tasks</p>
+            <p className="text-[9px] text-muted-foreground/75 leading-relaxed max-w-[140px]">
               Approve recommendations from the loop to add tasks here.
             </p>
           </div>
@@ -101,16 +101,16 @@ export function TaskTrayPanel({
                     <p className={cn(
                       "font-medium leading-tight",
                       compact ? "text-label" : "text-caption",
-                      done ? "text-foreground/40 line-through" : "text-foreground"
+                      done ? "text-foreground/55 line-through" : "text-foreground"
                     )}>
                       {s.title}
                     </p>
                     {!compact && (
-                      <p className="text-[9px] text-muted-foreground/50 mt-0.5 leading-tight line-clamp-2">
+                      <p className="text-[9px] text-muted-foreground/75 mt-0.5 leading-tight line-clamp-2">
                         {s.recommendedAction}
                       </p>
                     )}
-                    <span className="inline-flex mt-1 text-[8px] font-semibold border border-border/30 bg-foreground/[0.03] px-1 py-0.5 rounded text-muted-foreground/55 uppercase tracking-wide">
+                    <span className="inline-flex mt-1 text-[8px] font-semibold border border-border/30 bg-foreground/[0.03] px-1 py-0.5 rounded text-muted-foreground/75 uppercase tracking-wide">
                       {s.actionGroup.replace(" actions", "").replace(" updates", "")}
                     </span>
                   </div>
@@ -126,7 +126,7 @@ export function TaskTrayPanel({
         "shrink-0 border-t border-border/30 bg-foreground/[0.005]",
         compact ? "px-2.5 py-2" : "px-3 py-2.5"
       )}>
-        <p className="text-[9px] text-muted-foreground/30 leading-relaxed text-center">
+        <p className="text-[9px] text-muted-foreground/75 leading-relaxed text-center">
           Approve from loop · never auto-applied
         </p>
       </div>

@@ -20,7 +20,7 @@ export function MetaLiveConnection() {
     >
       <div className="flex items-start gap-3 p-4 rounded-xl border border-border/40 bg-foreground/[0.02]">
         <div className="w-9 h-9 rounded-lg border border-border/30 bg-foreground/[0.03] flex items-center justify-center shrink-0">
-          <Plug className="w-4 h-4 text-muted-foreground/60" />
+          <Plug className="w-4 h-4 text-muted-foreground/75" />
         </div>
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
@@ -29,7 +29,7 @@ export function MetaLiveConnection() {
               Coming soon
             </span>
           </div>
-          <p className="text-caption text-muted-foreground/70 leading-relaxed">
+          <p className="text-caption text-muted-foreground/75 leading-relaxed">
             Direct OAuth connection to Meta ad accounts is in active development and isn't available
             yet. Manual CSV import is the supported way to bring in performance data today.
           </p>

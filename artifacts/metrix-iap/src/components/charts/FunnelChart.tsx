@@ -169,7 +169,7 @@ export function FunnelChart({
               {r.isGap ? (
                 <DetailReveal
                   label="not measured"
-                  labelClassName="text-caption text-muted-foreground/60"
+                  labelClassName="text-caption text-muted-foreground/75"
                   eyebrow="Why this stage is blank"
                   sections={[{
                     text:
@@ -193,7 +193,7 @@ export function FunnelChart({
                   {pct(r.step * 100)}
                 </span>
               ) : (
-                <span className="text-caption text-muted-foreground/50">—</span>
+                <span className="text-caption text-muted-foreground/75">—</span>
               )}
             </span>
           </li>

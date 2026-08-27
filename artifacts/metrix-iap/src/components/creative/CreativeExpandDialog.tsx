@@ -97,7 +97,7 @@ function ExpandVisualInner({ data, className }: { data: CreativeCardData; classN
       <span className="text-hero font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
         {data.conceptCode}
       </span>
-      <span className={cn(TYPE.microLabel, "flex items-center gap-1.5 text-foreground/35")}>
+      <span className={cn(TYPE.microLabel, "flex items-center gap-1.5 text-foreground/55")}>
         <ImageOff className="w-3.5 h-3.5" /> No asset in import
       </span>
     </div>
@@ -166,7 +166,7 @@ function MetricToggle({ options, value, onChange }: {
             "px-2.5 py-1 font-mono uppercase tracking-wide transition-colors",
             value === o.value
               ? "bg-foreground/10 text-foreground"
-              : "text-muted-foreground/50 hover:text-muted-foreground/70"
+              : "text-muted-foreground/75 hover:text-muted-foreground/75"
           )}
         >
           {o.label}
@@ -191,7 +191,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
             { label: "Link CTR", value: pct(s.ctrPct) },
           ] as const).map((item) => (
             <div key={item.label} className="rounded-lg border border-border/30 bg-foreground/[0.02] px-3 py-2.5 text-center">
-              <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">{item.label}</div>
+              <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">{item.label}</div>
               <div className="text-lg font-bold text-foreground tabular-nums leading-none">{item.value}</div>
             </div>
           ))}
@@ -200,9 +200,9 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
       {(data.primaryText || data.secondaryText || data.cta) && (
         <div className="space-y-2">
-          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>Copy</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Copy</p>
           {data.primaryText && <p className="text-body text-foreground/85 leading-relaxed">{data.primaryText}</p>}
-          {data.secondaryText && <p className="text-caption text-muted-foreground/60 leading-relaxed">{data.secondaryText}</p>}
+          {data.secondaryText && <p className="text-caption text-muted-foreground/75 leading-relaxed">{data.secondaryText}</p>}
           {data.cta && (
             <span className="inline-flex text-label font-semibold text-interactive border border-primary/25 bg-primary/10 px-2 py-1 rounded">
               CTA · {data.cta}
@@ -213,27 +213,27 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
       {data.iapRead && (
         <div className="space-y-1.5">
-          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>IAP read</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>IAP read</p>
           <p className="text-caption text-foreground/80 leading-relaxed">{data.iapRead}</p>
         </div>
       )}
 
       {(data.qaMappingStatus || data.mappingConfidence) && (
         <div className="space-y-1.5">
-          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>QA mapping</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>QA mapping</p>
           <div className="flex items-center gap-1.5 flex-wrap">
             {data.qaMappingStatus && (
               <span
                 className={cn(
                   "inline-flex text-label font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
-                  QA_STATUS_STYLE[data.qaMappingStatus] ?? "bg-muted text-muted-foreground/60 border-border/40",
+                  QA_STATUS_STYLE[data.qaMappingStatus] ?? "bg-muted text-muted-foreground/75 border-border/40",
                 )}
               >
                 {QA_STATUS_LABEL[data.qaMappingStatus] ?? data.qaMappingStatus}
               </span>
             )}
             {data.mappingConfidence && (
-              <span className="text-label font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/40 px-1.5 py-0.5 rounded leading-none">
+              <span className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 border border-border/40 px-1.5 py-0.5 rounded leading-none">
                 {data.mappingConfidence} confidence
               </span>
             )}
@@ -243,7 +243,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
       {data.tags.length > 0 && (
         <div className="space-y-1.5">
-          <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>Variable stack</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Variable stack</p>
           <LocalTagChips codes={data.tags} />
         </div>
       )}
@@ -344,8 +344,8 @@ function DemographicsTab({
   if (rows.length === 0) {
     return (
       <div className="py-10 text-center space-y-1.5">
-        <p className="text-body font-medium text-muted-foreground/60">No demographic data for this cell</p>
-        <p className="text-label text-muted-foreground/50">
+        <p className="text-body font-medium text-muted-foreground/75">No demographic data for this cell</p>
+        <p className="text-label text-muted-foreground/75">
           {emptyReason ?? "Import a demographic pivot export to see the age × gender breakdown."}
         </p>
       </div>
@@ -356,7 +356,7 @@ function DemographicsTab({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Age × Gender</p>
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Age × Gender</p>
         <MetricToggle
           options={[{ value: "spend", label: "Spend" }, { value: "results", label: "Results" }]}
           value={metric}
@@ -394,7 +394,7 @@ function DemographicsTab({
                 <span className={cn("text-title font-semibold", isActive ? "text-foreground" : "text-foreground/75")}>
                   {b.age}
                 </span>
-                <span className="text-body tabular-nums text-muted-foreground/70 font-medium">
+                <span className="text-body tabular-nums text-muted-foreground/75 font-medium">
                   {fmtMain(barVal(b))}
                 </span>
               </div>
@@ -445,7 +445,7 @@ function DemographicsTab({
           {/* Panel header */}
           <div className="px-4 py-2.5 border-b border-border/30 flex items-center justify-between">
             <div>
-              <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Segment KPIs</span>
+              <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Segment KPIs</span>
               <span className="ml-2 text-body font-semibold text-foreground">{activeBucket.age}</span>
             </div>
           </div>
@@ -483,7 +483,7 @@ function DemographicsTab({
                     { key: "reach", label: "Reach", value: num(g.reach) },
                   ] as const).map((kpi) => (
                     <div key={kpi.key} className="flex items-center justify-between">
-                      <span className="text-label text-muted-foreground/60">{kpi.label}</span>
+                      <span className="text-label text-muted-foreground/75">{kpi.label}</span>
                       <span className="text-body font-semibold tabular-nums text-foreground/90">{kpi.value}</span>
                     </div>
                   ))}
@@ -510,7 +510,7 @@ function DemographicsTab({
         </div>
       )}
 
-      <p className={cn(TYPE.caption, "text-muted-foreground/40 pt-1")}>
+      <p className={cn(TYPE.caption, "text-muted-foreground/75 pt-1")}>
         Click an age group to inspect its segment KPIs. Bar width = proportion of highest group.
       </p>
     </div>
@@ -549,8 +549,8 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
   if (rows.length === 0) {
     return (
       <div className="py-10 text-center space-y-1.5">
-        <p className="text-body font-medium text-muted-foreground/60">No placement data for this account</p>
-        <p className="text-label text-muted-foreground/50">
+        <p className="text-body font-medium text-muted-foreground/75">No placement data for this account</p>
+        <p className="text-label text-muted-foreground/75">
           {emptyReason ?? "Import a device × placement export to see placement signal."}
         </p>
       </div>
@@ -560,7 +560,7 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className={cn(TYPE.microLabel, "text-muted-foreground/50")}>Account-level placements</p>
+        <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Account-level placements</p>
         <MetricToggle
           options={[{ value: "spend", label: "Spend" }, { value: "cpa", label: "CPA" }]}
           value={metric}
@@ -578,9 +578,9 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
               <div className="flex items-center justify-between text-label">
                 <div className="min-w-0">
                   <span className="font-medium text-foreground/80">{b.Placement}</span>
-                  <span className={cn(TYPE.caption, "ml-1.5 text-muted-foreground/50 capitalize")}>{b.Platform}</span>
+                  <span className={cn(TYPE.caption, "ml-1.5 text-muted-foreground/75 capitalize")}>{b.Platform}</span>
                 </div>
-                <span className="tabular-nums text-muted-foreground/60 shrink-0 ml-2">
+                <span className="tabular-nums text-muted-foreground/75 shrink-0 ml-2">
                   {metric === "spend" ? usd(b["Amount spent (USD)"]) : cpa != null ? usd(cpa) : "—"}
                 </span>
               </div>
@@ -590,7 +590,7 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
                   style={{ width: `${barW}%` }}
                 />
               </div>
-              <div className={cn(TYPE.caption, "text-muted-foreground/45")}>
+              <div className={cn(TYPE.caption, "text-muted-foreground/75")}>
                 {num(b.Results)} results · {usd(b["Amount spent (USD)"])} spend
               </div>
             </div>
@@ -598,7 +598,7 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
         })}
       </div>
 
-      <p className={cn(TYPE.caption, "text-muted-foreground/40 pt-2 border-t border-border/20")}>
+      <p className={cn(TYPE.caption, "text-muted-foreground/75 pt-2 border-t border-border/20")}>
         Placement signal is account-level — not scoped to this creative cell.
       </p>
     </div>
@@ -611,8 +611,8 @@ function FunnelTab({ perfRow, emptyReason }: { perfRow: CellPerformanceRow | nul
   if (!perfRow) {
     return (
       <div className="py-10 text-center space-y-1.5">
-        <p className="text-body font-medium text-muted-foreground/60">No performance data</p>
-        <p className="text-label text-muted-foreground/50">
+        <p className="text-body font-medium text-muted-foreground/75">No performance data</p>
+        <p className="text-label text-muted-foreground/75">
           {emptyReason ?? "Funnel steps require performance data for this creative."}
         </p>
       </div>
@@ -623,11 +623,11 @@ function FunnelTab({ perfRow, emptyReason }: { perfRow: CellPerformanceRow | nul
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Conversion funnel</p>
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Conversion funnel</p>
       </div>
       <FunnelStepsChart steps={steps} />
       {!hasAnyFunnel && (
-        <p className={cn(TYPE.caption, "text-muted-foreground/40 pt-1 border-t border-border/20")}>
+        <p className={cn(TYPE.caption, "text-muted-foreground/75 pt-1 border-t border-border/20")}>
           Adds to cart, checkouts, and purchases are only available when the source export includes conversion-event columns.
         </p>
       )}
@@ -709,7 +709,7 @@ export function CreativeExpandDialog({
 
             {data.assetFormat && (
               <div className="absolute bottom-3 left-3">
-                <span className="text-[8px] font-mono uppercase text-foreground/50 border border-foreground/10 bg-background/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                <span className="text-[8px] font-mono uppercase text-foreground/55 border border-foreground/10 bg-background/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
                   {data.assetFormat}
                 </span>
               </div>
@@ -721,12 +721,12 @@ export function CreativeExpandDialog({
 
             {/* Header */}
             <div className="px-5 pt-4 pb-3 border-b border-border/30 shrink-0">
-              <div className={cn(TYPE.microLabel, "text-muted-foreground/50 mb-0.5")}>
+              <div className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-0.5")}>
                 Creative · {data.conceptCode}
               </div>
               <p className="text-sm font-semibold text-foreground leading-tight">{data.title}</p>
               {data.visualSystem && (
-                <p className="text-caption text-muted-foreground/55 mt-0.5 leading-relaxed line-clamp-2">{data.visualSystem}</p>
+                <p className="text-caption text-muted-foreground/75 mt-0.5 leading-relaxed line-clamp-2">{data.visualSystem}</p>
               )}
             </div>
 
@@ -741,7 +741,7 @@ export function CreativeExpandDialog({
                   <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-px" strokeWidth={1.5} />
                   <div className="space-y-1.5 min-w-0">
                     <p className="text-caption font-medium text-status-warning/90">Not fully mapped to IAP library</p>
-                    <p className="text-label text-muted-foreground/70 leading-relaxed">
+                    <p className="text-label text-muted-foreground/75 leading-relaxed">
                       This cell has performance data but no library entry — variable codes, copy, and asset may be absent.
                     </p>
                     {onUploadCreatives && (

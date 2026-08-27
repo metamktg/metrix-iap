@@ -328,7 +328,7 @@ export function PillarDetailsFold({ pillar, profiles }: { pillar: MessagePillar;
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
+        className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 transition-colors"
       >
         Pillar details
         <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} aria-hidden />
@@ -376,7 +376,7 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
         <div className="md:col-span-2">
           <div className="flex items-center gap-1.5 mb-1.5">
             <Users className="w-3.5 h-3.5 text-interactive/70" />
-            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">Targets</span>
+            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">Targets</span>
           </div>
           <IcpChips ids={icps} profiles={profiles} />
         </div>
@@ -384,8 +384,8 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
       {sections.map(({ key, label, Icon }) => (
         <div key={key} className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
           <div className="flex items-center gap-1.5 mb-1">
-            <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />
-            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+            <Icon className="w-3.5 h-3.5 text-muted-foreground/75" />
+            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">{label}</span>
           </div>
           <DetailReveal
             label={deriveLabel(pillar[key] as string, 72)}
@@ -408,8 +408,8 @@ export const HYP_STATUS_STYLE: Record<string, string> = {
   p1: "bg-status-danger/10 text-status-danger border-status-danger/20",
   medium: "bg-status-warning/10 text-status-warning border-status-warning/20",
   p2: "bg-status-warning/10 text-status-warning border-status-warning/20",
-  low: "bg-muted text-muted-foreground/60 border-border/40",
-  p3: "bg-muted text-muted-foreground/60 border-border/40",
+  low: "bg-muted text-muted-foreground/75 border-border/40",
+  p3: "bg-muted text-muted-foreground/75 border-border/40",
 };
 
 export const HYP_STATUS_LABEL: Record<string, string> = {
@@ -429,7 +429,7 @@ export function HypothesisStatusBadge({ status }: { status: string }) {
     <span
       className={cn(
         "inline-flex text-label font-semibold border px-1.5 py-0.5 rounded leading-none",
-        HYP_STATUS_STYLE[key] ?? "bg-muted text-muted-foreground/60 border-border/40",
+        HYP_STATUS_STYLE[key] ?? "bg-muted text-muted-foreground/75 border-border/40",
       )}
     >
       {HYP_STATUS_LABEL[key] ?? status}
@@ -457,7 +457,7 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
               <span
                 className={cn(
                   "shrink-0 text-label font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
-                  RECO_STYLE[c.recommendation.toLowerCase()] ?? "bg-muted text-muted-foreground/60 border-border/40",
+                  RECO_STYLE[c.recommendation.toLowerCase()] ?? "bg-muted text-muted-foreground/75 border-border/40",
                 )}
               >
                 {c.recommendation}
@@ -467,11 +467,11 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
           <CombinationChips combination={c.combination} />
           <div className="mt-auto pt-2 border-t border-border/20 flex items-center gap-4">
             <div>
-              <div className={cn(TYPE.microLabel, "text-muted-foreground/40")}>CPA</div>
+              <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>CPA</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("usd_unit", c.cpa)}</div>
             </div>
             <div>
-              <div className={cn(TYPE.microLabel, "text-muted-foreground/40")}>CVR</div>
+              <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>CVR</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("pct", c.cvr_pct)}</div>
             </div>
             {c.confidence && (
@@ -531,7 +531,7 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
       </div>
       {playbook.budget_reallocation_note && (
         <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
-          <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">Budget reallocation</div>
+          <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 mb-1">Budget reallocation</div>
           <DetailReveal
             label={deriveLabel(playbook.budget_reallocation_note, 72)}
             labelClassName={TYPE.body}
@@ -609,7 +609,7 @@ export function StatGrid({ cells, cols }: { cells: StatCell[]; cols?: number }) 
     >
       {cells.map((c, i) => (
         <div key={i} className="bg-card px-2 py-1.5 text-center min-w-0">
-          <div className={cn(TYPE.microLabel, "text-muted-foreground/45 truncate")}>{c.label}</div>
+          <div className={cn(TYPE.microLabel, "text-muted-foreground/75 truncate")}>{c.label}</div>
           <div className={cn("text-body font-semibold tabular-nums mt-0.5 truncate", c.valueClassName ?? "text-foreground/90")}>
             {c.value}
           </div>
@@ -638,7 +638,7 @@ export function AccordionToggle({
       type="button"
       onClick={onToggle}
       aria-expanded={open}
-      className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
+      className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 transition-colors"
     >
       {Icon && <Icon className="w-3.5 h-3.5" />}
       {label}
@@ -662,7 +662,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
     <div data-testid={testId}>
       <div className="flex items-center gap-1 mb-1.5">
         <Dna className="w-3.5 h-3.5 text-interactive/70" />
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{label}</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">{label}</span>
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         {visible.map((v) => (
@@ -672,7 +672,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
+            className="rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
           >
             +{overflow} more
           </button>
@@ -681,7 +681,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
           <button
             type="button"
             onClick={() => setExpanded(false)}
-            className="rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
+            className="rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
           >
             − less
           </button>

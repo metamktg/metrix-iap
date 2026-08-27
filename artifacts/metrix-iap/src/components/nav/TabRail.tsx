@@ -100,10 +100,10 @@ export function TabRail<T extends string>({
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded-t-lg
                         ${
                           off
-                            ? "border-transparent text-muted-foreground/35 cursor-not-allowed"
+                            ? "border-transparent text-muted-foreground/75 cursor-not-allowed"
                             : on
                               ? "border-primary text-foreground active:scale-[0.96]"
-                              : "border-transparent text-muted-foreground/70 hover:text-foreground active:scale-[0.96]"
+                              : "border-transparent text-muted-foreground/75 hover:text-foreground active:scale-[0.96]"
                         }`}
           >
             {t.Icon && <t.Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
@@ -115,7 +115,7 @@ export function TabRail<T extends string>({
               // beside "Dismissed" is not good news.
               <span
                 className={`text-micro font-mono tabular-nums px-1.5 py-0.5 rounded-full
-                            ${on ? "bg-primary/15 text-interactive" : "bg-foreground/[0.06] text-muted-foreground/70"}`}
+                            ${on ? "bg-primary/15 text-interactive" : "bg-foreground/[0.06] text-muted-foreground/75"}`}
               >
                 {t.count}
               </span>

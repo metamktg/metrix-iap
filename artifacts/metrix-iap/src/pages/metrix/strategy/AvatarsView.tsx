@@ -130,7 +130,7 @@ function ProfileSortBar({
   return (
     <div className="flex items-center gap-3 flex-wrap">
       <div className="flex items-center gap-1.5" role="group" aria-label="Sort profiles">
-        <span className="text-label font-semibold text-muted-foreground/40 normal-case tracking-normal">Sort</span>
+        <span className="text-label font-semibold text-muted-foreground/75 normal-case tracking-normal">Sort</span>
         {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => {
           const active = sortBy === k;
           return (
@@ -142,7 +142,7 @@ function ProfileSortBar({
                 "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-body font-semibold transition-colors border",
                 active
                   ? "bg-primary/12 border-primary/35 text-interactive"
-                  : "bg-transparent border-border/40 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60",
+                  : "bg-transparent border-border/40 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60",
               )}
             >
               {SORT_LABEL[k]}
@@ -151,13 +151,13 @@ function ProfileSortBar({
         })}
       </div>
       <div className="flex items-center gap-1.5 border border-border/30 bg-card/40 rounded-md px-2.5 py-1.5">
-        <Search className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+        <Search className="w-3 h-3 text-muted-foreground/75 shrink-0" />
         <input
           type="text"
           value={search}
           onChange={(e) => onSearch(e.target.value)}
           placeholder="Filter profiles…"
-          className="bg-transparent text-body text-foreground/85 placeholder:text-muted-foreground/35 outline-none w-36"
+          className="bg-transparent text-body text-foreground/85 placeholder:text-muted-foreground/75 outline-none w-36"
         />
       </div>
     </div>
@@ -175,8 +175,8 @@ function IcpFact({ label, value, Icon }: {
   return (
     <div>
       <div className="flex items-center gap-1 mb-0.5">
-        <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />
-        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+        <Icon className="w-3.5 h-3.5 text-muted-foreground/75" />
+        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">{label}</span>
       </div>
       {value.length > 72 ? (
         <DetailReveal label={deriveLabel(value, 64)} labelClassName={TYPE.body} eyebrow={label} sections={[{ text: value }]} />
@@ -195,11 +195,11 @@ function PlacementsList({ rows }: { rows: PlacementRow[] }) {
   return (
     <div>
       <div className="flex items-center gap-1.5 mb-1.5">
-        <MapPin className="w-3.5 h-3.5 text-muted-foreground/60" />
+        <MapPin className="w-3.5 h-3.5 text-muted-foreground/75" />
         <TooltipProvider delayDuration={150}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70 cursor-default">
+              <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 cursor-default">
                 Account placements
                 <span className="sr-only"> — Account-level placement signal — no per-profile breakdown available.</span>
               </span>
@@ -215,16 +215,16 @@ function PlacementsList({ rows }: { rows: PlacementRow[] }) {
           <div key={r.Placement + r.Platform + i} className="flex items-center justify-between gap-2 rounded-lg border border-border/25 bg-card/30 px-3 py-2">
             <div className="min-w-0">
               <p className={cn(TYPE.title, "font-medium truncate")}>{r.Placement}</p>
-              <span className={cn(TYPE.label, "text-muted-foreground/50 capitalize")}>{r.Platform}</span>
+              <span className={cn(TYPE.label, "text-muted-foreground/75 capitalize")}>{r.Platform}</span>
             </div>
             <div className="flex items-center gap-3 shrink-0 tabular-nums">
               <div className="text-right">
-                <p className={cn(TYPE.label, "text-muted-foreground/50")}>Spend</p>
+                <p className={cn(TYPE.label, "text-muted-foreground/75")}>Spend</p>
                 <p className={cn(TYPE.body, "font-semibold text-foreground/80")}>{fmtUSD(r["Amount spent (USD)"], 0)}</p>
               </div>
               {r.CPA != null && (
                 <div className="text-right">
-                  <p className={cn(TYPE.label, "text-muted-foreground/50")}>CPA</p>
+                  <p className={cn(TYPE.label, "text-muted-foreground/75")}>CPA</p>
                   <p className={cn(TYPE.body, "font-semibold text-foreground/80")}>{fmtUSD(r.CPA)}</p>
                 </div>
               )}
@@ -266,8 +266,8 @@ function ProfileDetailFold({
           {hasCopy && (
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
-                <MessageSquareQuote className="w-3.5 h-3.5 text-muted-foreground/60" />
-                <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">Copy approach</span>
+                <MessageSquareQuote className="w-3.5 h-3.5 text-muted-foreground/75" />
+                <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">Copy approach</span>
               </div>
               <div className="space-y-2.5">
                 {messageResonance && (
@@ -283,7 +283,7 @@ function ProfileDetailFold({
                 )}
                 {hypotheses && hypotheses.length > 0 && (
                   <div>
-                    <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1.5">
+                    <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 mb-1.5">
                       Hypothesis test variants
                     </p>
                     <div className="space-y-1.5">
@@ -294,7 +294,7 @@ function ProfileDetailFold({
                             <span className="shrink-0"><HypothesisStatusBadge status={h.status} /></span>
                           </div>
                           {h.expected_impact && (
-                            <p className={cn(TYPE.label, "text-muted-foreground/60")}>
+                            <p className={cn(TYPE.label, "text-muted-foreground/75")}>
                               Expected impact <span className="text-foreground/75 font-medium normal-case">{h.expected_impact}</span>
                             </p>
                           )}
@@ -316,8 +316,8 @@ function ProfileDetailFold({
           {hasTheory && (
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
-                <Fingerprint className="w-3.5 h-3.5 text-muted-foreground/60" />
-                <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">Profile theory</span>
+                <Fingerprint className="w-3.5 h-3.5 text-muted-foreground/75" />
+                <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">Profile theory</span>
               </div>
               <div className="grid grid-cols-dashboard-2-lg gap-x-4 gap-y-2.5">
                 <IcpFact label="Demographics" value={profile.demographic_foundation} Icon={Users} />
@@ -397,13 +397,13 @@ function IcpProfileCard({
           <PersonaAvatar name={profile.profile_name} />
           <div className="min-w-0">
             {rank != null && (
-              <p className="text-micro font-mono uppercase tracking-widest text-muted-foreground/45 mb-0.5">
+              <p className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">
                 ICP {String(rank).padStart(2, "0")}
                 {rankConfidenceText && ` · ${rankConfidenceText}`}
               </p>
             )}
             <p className="text-title font-semibold text-foreground leading-tight">{profile.profile_name}</p>
-            <span className="text-label font-mono text-muted-foreground/60">{profile.profile_id}</span>
+            <span className="text-label font-mono text-muted-foreground/75">{profile.profile_id}</span>
           </div>
         </div>
         {profile.confidence_level && <ConfidenceBadge value={profile.confidence_level} />}
@@ -424,12 +424,12 @@ function IcpProfileCard({
         {hasPerf && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <span className={cn(TYPE.microLabel, "text-muted-foreground/60")}>Performance</span>
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Performance</span>
               <div className="flex items-center gap-1.5">
                 {perf.confidence && <ConfidenceBadge value={perf.confidence} />}
                 {perf.scoped && !perf.confidenceRecomputed && (
                   <span
-                    className={cn(TYPE.label, "text-muted-foreground/40 normal-case")}
+                    className={cn(TYPE.label, "text-muted-foreground/75 normal-case")}
                     title="A run scope is active. Spend/CPA/Link CVR above are honestly re-derived for this scope, but this confidence grade is this profile's all-time grade — it wasn't re-derived for the scoped numbers."
                   >
                     all-time
@@ -439,7 +439,7 @@ function IcpProfileCard({
             </div>
             {perf.allTimeFallback && (
               <p
-                className={cn(TYPE.label, "text-muted-foreground/40 normal-case mb-1.5")}
+                className={cn(TYPE.label, "text-muted-foreground/75 normal-case mb-1.5")}
                 title="A run scope is active, but this profile has no matched avatar columns (or no cell-level rows) within it, so every figure below — Spend, CPA, Link CVR, and confidence — is this profile's all-time data, not scoped to the current run."
               >
                 All-time figures · no matched avatars in this scope
@@ -455,7 +455,7 @@ function IcpProfileCard({
             />
             {perf.cpa != null && avgCpa != null && avgCpa > 0 && (
               <div className="mt-2">
-                <div className="flex items-center justify-between text-label text-muted-foreground/40 mb-1">
+                <div className="flex items-center justify-between text-label text-muted-foreground/75 mb-1">
                   <span>best</span>
                   <span>avg {fmtUSD(avgCpa)}</span>
                   <span>2×avg</span>
@@ -501,7 +501,7 @@ function IcpProfileCard({
 
       {avatars && avatars.length > 0 && (
         <div className="mt-3 pt-3 border-t border-border/20 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/60">
+          <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
             Avatar{avatars.length === 1 ? "" : "s"}
           </span>
           {avatars.map((col) => (
@@ -543,7 +543,7 @@ function AudienceSegmentTile({
         <div className="flex items-center gap-2 min-w-0">
           <SegmentGenderIcon gender={seg.gender} />
           <div className="min-w-0">
-            {rank != null && <p className="text-micro font-mono uppercase tracking-widest text-muted-foreground/45 mb-0.5">SEGMENT {String(rank).padStart(2, "0")}</p>}
+            {rank != null && <p className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">SEGMENT {String(rank).padStart(2, "0")}</p>}
             <p className={cn(TYPE.title, "leading-snug truncate")}>{segmentLabel(seg)}</p>
           </div>
         </div>
@@ -555,7 +555,7 @@ function AudienceSegmentTile({
                   "shrink-0 rounded border px-1.5 py-0.5 cursor-default",
                   TYPE.label,
                   signal.state === "insufficient_coverage"
-                    ? "border-border/60 bg-foreground/[0.04] text-muted-foreground/70"
+                    ? "border-border/60 bg-foreground/[0.04] text-muted-foreground/75"
                     : signal.low
                     ? "border-status-warning/30 bg-status-warning/[0.08] text-status-warning"
                     : "border-status-success/30 bg-status-success/[0.08] text-status-success",
@@ -584,11 +584,11 @@ function AudienceSegmentTile({
           ]}
         />
       ) : (
-        <p className={cn(TYPE.caption, "text-muted-foreground/50")}>No spend data for this segment.</p>
+        <p className={cn(TYPE.caption, "text-muted-foreground/75")}>No spend data for this segment.</p>
       )}
 
       <div className="flex items-center gap-1.5 min-h-[1.25rem]">
-        <span className={cn(TYPE.label, "text-muted-foreground/50 normal-case")}>Top variable</span>
+        <span className={cn(TYPE.label, "text-muted-foreground/75 normal-case")}>Top variable</span>
         {bestVariableCode ? (
           <VariableStackChips stack={{ variable: bestVariableCode }} maxVisible={1} />
         ) : (
@@ -596,7 +596,7 @@ function AudienceSegmentTile({
           // unavailableReason) instead of discarding it — a bare "—" cannot
           // be told apart from lost data.
           <span
-            className={cn(TYPE.label, "text-muted-foreground/30 normal-case cursor-default")}
+            className={cn(TYPE.label, "text-muted-foreground/75 normal-case cursor-default")}
             title={variableUnavailableReason ?? "No variable attribution is computable for this segment."}
           >
             —
@@ -691,7 +691,7 @@ function DimensionRanking({
                   <td className="text-foreground/85 font-medium max-w-[180px] truncate" title={r.sublabel ? `${r.label} · ${r.sublabel}` : r.label}>
                     {r.label}
                     {r.sublabel && (
-                      <span className="text-muted-foreground/55 capitalize"> · {r.sublabel}</span>
+                      <span className="text-muted-foreground/75 capitalize"> · {r.sublabel}</span>
                     )}
                   </td>
                   <td className="text-right tabular-nums text-foreground/70">{fmtUSD(r.spend, 0)}</td>
@@ -705,7 +705,7 @@ function DimensionRanking({
         {rows.length > 5 && (
           <button
             onClick={() => setExpanded((o) => !o)}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 text-body font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-primary/[0.04] border-t border-border/30 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 text-body font-medium text-muted-foreground/75 hover:text-foreground/80 hover:bg-primary/[0.04] border-t border-border/30 transition-colors"
           >
             {expanded ? "Show fewer" : `Show all ${rows.length}`}
           </button>
@@ -779,7 +779,7 @@ type CoverageLevel = "proven" | "tested" | "untested";
 const COVERAGE_STYLE: Record<CoverageLevel, string> = {
   proven: "bg-status-success/15 border-status-success/35 text-status-success",
   tested: "bg-accent/10 border-accent/25 text-foreground/80",
-  untested: "border-border/25 text-muted-foreground/35",
+  untested: "border-border/25 text-muted-foreground/75",
 };
 const COVERAGE_LABEL: Record<CoverageLevel, string> = { proven: "Proven", tested: "Tested", untested: "—" };
 
@@ -794,7 +794,7 @@ function CoverageMatrix({ rows, profiles }: { rows: { pillar: MessagePillar; cel
         >
           <span />
           {profiles.map((p) => (
-            <span key={p.profile_id} className={cn(TYPE.label, "text-center text-muted-foreground/50 pb-1")} title={p.profile_name}>
+            <span key={p.profile_id} className={cn(TYPE.label, "text-center text-muted-foreground/75 pb-1")} title={p.profile_name}>
               {deriveLabel(p.profile_name, 18)}
             </span>
           ))}
@@ -1093,7 +1093,7 @@ export function AvatarsView() {
               {icpProfiles.length > 0 && (
                 <SectionCard title="ICP profiles" desc="Strategy-map customer profiles · real performance" right={<ProfileSortBar sortBy={sortBy} onSort={setSortBy} search={searchQuery} onSearch={setSearchQuery} />}>
                   {filteredProfiles.length === 0 ? (
-                    <p className={cn(TYPE.body, "text-muted-foreground/50 py-6 text-center")}>No profiles match "{searchQuery}"</p>
+                    <p className={cn(TYPE.body, "text-muted-foreground/75 py-6 text-center")}>No profiles match "{searchQuery}"</p>
                   ) : (
                     <FoldedList
                       items={filteredProfiles}

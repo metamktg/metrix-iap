@@ -67,7 +67,7 @@
 //   Codeless sentences fall back to deriveLabel. Inside <button> queue cards:
 //   <HypothesisCodeChipsRow> + a line-clamp-1 caption, drawer keeps prose.
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useId } from "react";
 import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useLocation, useSearch } from "wouter";
@@ -96,7 +96,7 @@ export function SectionInfoIcon({ tip }: { tip: string }) {
           <span
             role="img"
             aria-label="Section info"
-            className="inline-flex items-center justify-center shrink-0 cursor-default text-muted-foreground/35 hover:text-muted-foreground/65 transition-colors"
+            className="inline-flex items-center justify-center shrink-0 cursor-default text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
           >
             <Info className="w-3 h-3" />
           </span>
@@ -119,7 +119,7 @@ export function InfoTooltip({ content }: { content: string }) {
           <button
             type="button"
             aria-label="More info"
-            className="inline-flex items-center justify-center shrink-0 text-muted-foreground/45 hover:text-muted-foreground/80 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+            className="inline-flex items-center justify-center shrink-0 text-muted-foreground/75 hover:text-muted-foreground/80 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
           >
             <Info className="w-3.5 h-3.5" />
           </button>
@@ -317,7 +317,7 @@ export function ConfidenceBadge({ value }: { value: string }) {
             ? "bg-primary/10 text-primary border-primary/20"
             : c.level === "medium"
               ? "bg-status-warning/10 text-status-warning border-status-warning/20"
-              : "bg-muted text-muted-foreground/60 border-border/40";
+              : "bg-muted text-muted-foreground/75 border-border/40";
   return (
     <span
       title={c.qualifier ? value : undefined}
@@ -377,7 +377,7 @@ export function SectionTabBar({ section }: { section: "analysis" | "strategy" })
               "relative shrink-0 px-3.5 h-9 flex items-center text-body font-medium transition-colors whitespace-nowrap select-none",
               active
                 ? "text-foreground"
-                : "text-muted-foreground/55 hover:text-foreground/80 hover:bg-foreground/[0.04]"
+                : "text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.04]"
             )}
           >
             {tab.label}
@@ -429,7 +429,7 @@ export function ModuleHeader({
               {/* Nocturne breadcrumb eyebrow: view context · module. This is a
                   single-workspace agency deployment, so the view is static. */}
               <span className="mx-section-header__eyebrow">
-                <span className="text-muted-foreground/45">Agency view · </span>
+                <span className="text-muted-foreground/75">Agency view · </span>
                 {eyebrowText}
               </span>
               {subtitle && <InfoTooltip content={subtitle} />}
@@ -466,7 +466,7 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
         </span>
       )}
       {narrowed && (
-        <span className="inline-flex items-center gap-1.5 text-caption text-muted-foreground/65">
+        <span className="inline-flex items-center gap-1.5 text-caption text-muted-foreground/75">
           Flight-window scope
           <InfoTooltip content={grainNote ?? "Items are included when their flight window overlaps this range; metrics cover each item's full flight — this import has no daily grain."} />
         </span>
@@ -481,10 +481,10 @@ export function NoDataInRangeState({ what, detail }: { what: string; detail?: st
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
-        <CalendarX2 className="w-4 h-4 text-muted-foreground/60" />
+        <CalendarX2 className="w-4 h-4 text-muted-foreground/75" />
       </div>
       <p className="text-callout font-semibold text-foreground/80">No {what} in this range</p>
-      <p className="text-body text-muted-foreground/70 max-w-xs">
+      <p className="text-body text-muted-foreground/75 max-w-xs">
         {detail ?? (range ? `The selected range (${formatIsoRange(range)}) is outside this data's available window.` : "No dated data is available.")}
       </p>
       <button
@@ -719,7 +719,7 @@ export function DetailReveal({
           </span>
           <Info
             aria-hidden
-            className="w-3.5 h-3.5 shrink-0 mt-1 text-muted-foreground/45 group-hover:text-interactive/80 transition-colors"
+            className="w-3.5 h-3.5 shrink-0 mt-1 text-muted-foreground/75 group-hover:text-interactive/80 transition-colors"
           />
         </button>
       </PopoverTrigger>
@@ -734,7 +734,7 @@ export function DetailReveal({
         {content.map((s, i) => (
           <div key={i} className="space-y-1">
             {s.label && (
-              <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">{s.label}</div>
+              <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/75">{s.label}</div>
             )}
             {s.render ? s.render() : <p className={TYPE.body}>{s.text}</p>}
           </div>
@@ -773,11 +773,11 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
     <div className="rounded-xl border border-border/30 bg-foreground/[0.02] overflow-hidden">
       {/* Header + fraction */}
       <div className="px-3 py-2 border-b border-border/20 flex items-center gap-2">
-        <span className={cn(TYPE.label, allComplete ? "text-status-success/70" : "text-muted-foreground/50")}>
+        <span className={cn(TYPE.label, allComplete ? "text-status-success/70" : "text-muted-foreground/75")}>
           {allComplete ? "Loop complete" : "Setup progress"}
         </span>
         <div className="flex-1 h-px bg-border/20" />
-        <span className="text-label font-mono tabular-nums text-muted-foreground/40">{doneCount}/{steps.length}</span>
+        <span className="text-label font-mono tabular-nums text-muted-foreground/75">{doneCount}/{steps.length}</span>
       </div>
       {/* Completion banner — shown when all steps are done */}
       {allComplete ? (
@@ -786,7 +786,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
             <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
             <span className={cn(TYPE.caption, "text-status-success/90 font-semibold leading-none")}>Loop complete ✓</span>
           </div>
-          <p className={cn(TYPE.caption, "text-muted-foreground/55 leading-snug mb-2")}>
+          <p className={cn(TYPE.caption, "text-muted-foreground/75 leading-snug mb-2")}>
             All stages finished. Ready for the next re-run cycle.
           </p>
           <a
@@ -840,16 +840,16 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
                 ? <CheckCircle2 className="w-3.5 h-3.5" />
                 : isNext
                   ? <ArrowRight className="w-2.5 h-2.5 text-interactive/70" />
-                  : <span className="text-label font-bold text-muted-foreground/30 tabular-nums leading-none">{i + 1}</span>
+                  : <span className="text-label font-bold text-muted-foreground/75 tabular-nums leading-none">{i + 1}</span>
               }
             </div>
             <span className={cn(
               TYPE.caption, "leading-none",
               step.done
-                ? "text-foreground/35 line-through"
+                ? "text-foreground/55 line-through"
                 : isNext
                   ? "text-foreground/75 font-semibold"
-                  : "text-muted-foreground/45",
+                  : "text-muted-foreground/75",
             )}>
               {step.label}
             </span>
@@ -897,10 +897,10 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
         {/* Header */}
         <div className="text-center space-y-1.5">
           <div className="w-12 h-12 rounded-2xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center mx-auto mb-3">
-            <Plug className="w-5 h-5 text-muted-foreground/60" />
+            <Plug className="w-5 h-5 text-muted-foreground/75" />
           </div>
           <h2 className={HEADING.h2}>{s?.title ?? "Get started with " + account.name}</h2>
-          <p className="text-caption text-muted-foreground/60 leading-relaxed">
+          <p className="text-caption text-muted-foreground/75 leading-relaxed">
             {s?.description ?? (isManual
               ? "Upload your Meta CSV exports, then run analysis to see performance data."
               : "Connect a data source, then follow the setup checklist below.")}
@@ -912,7 +912,7 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
 
         {/* Switch account */}
         <div className="text-center space-y-1.5">
-          <p className="text-caption font-semibold uppercase tracking-widest text-muted-foreground/40">
+          <p className="text-caption font-semibold uppercase tracking-widest text-muted-foreground/75">
             Or view a different account
           </p>
           <InlineAccountPicker label="Switch ad account" excludeAccountId={account.id} />
@@ -928,12 +928,19 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
-        <Icon className="w-4 h-4 text-muted-foreground/60" />
+        <Icon className="w-4 h-4 text-muted-foreground/75" />
       </div>
-      <div className="flex items-center gap-1.5">
-        <p className="text-callout font-semibold text-foreground/80">{title}</p>
-        {message && <InfoTooltip content={message} />}
-      </div>
+      <h3 className="text-h4 font-h4 font-bold text-foreground/85 text-balance">{title}</h3>
+      {/* The message stays ON the page rather than behind an info tooltip.
+          The density rule that hides prose exists to stop a dashboard full
+          of competing text; an empty state has no competing text, and the
+          sentence explaining WHY the surface is empty is the only content
+          there is. Hiding it left the reader a title and a shrug. */}
+      {message && (
+        <p className="text-body font-body text-muted-foreground max-w-[42ch] leading-relaxed text-pretty">
+          {message}
+        </p>
+      )}
       {action && <div className="pt-1">{action}</div>}
     </div>
   );
@@ -960,10 +967,17 @@ export function SkeletonBlock({
 /** A row of evenly-sized shimmer tiles that matches the metric tile grid. */
 export function SkeletonTileRow({ count = 4 }: { count?: number }) {
   return (
+    // The real tile rows use the responsive grid-cols-dashboard-* utilities
+    // (2 columns on a phone, 4 from a tablet). This was a fixed N-column
+    // grid, so on a 390px screen it laid four tiles across at ~90px each and
+    // then re-flowed to two the instant data arrived — a skeleton that
+    // causes the layout jump it exists to prevent.
     <div
       aria-hidden="true"
-      className="grid gap-2"
-      style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
+      className={cn(
+        "grid gap-2",
+        count >= 5 ? "grid-cols-dashboard-5" : count === 3 ? "grid-cols-dashboard-3" : count <= 2 ? "grid-cols-dashboard-2" : "grid-cols-dashboard-4",
+      )}
     >
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="rounded-xl border border-border/30 bg-foreground/[0.02] px-3 py-2.5 space-y-2">
@@ -991,8 +1005,8 @@ export function MetricTile({
 }) {
   const isPrimary = variant === "primary";
   const labelCls = isPrimary
-    ? cn(TYPE.microLabel, "text-muted-foreground/65 mb-1.5 truncate")
-    : cn(TYPE.microLabel, "text-muted-foreground/40 mb-2 truncate");
+    ? cn(TYPE.microLabel, "text-muted-foreground/75 mb-1.5 truncate")
+    : cn(TYPE.microLabel, "text-muted-foreground/75 mb-2 truncate");
 
   if (onClick) {
     return (
@@ -1000,7 +1014,10 @@ export function MetricTile({
         type="button"
         onClick={onClick}
         className={cn(
-          "mx-kpi-tile p-4 transition-colors hover:border-primary/40 hover:bg-primary/[0.04] text-left w-full group/tile relative",
+          "mx-kpi-tile p-4 text-left w-full group/tile relative",
+          "hover:border-primary/40 hover:bg-primary/[0.04] active:scale-[0.98]",
+          "transition-[border-color,background-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           isPrimary && "border-primary/35 bg-primary/[0.03]"
         )}
         title="Open segment breakdown for this metric"
@@ -1008,23 +1025,34 @@ export function MetricTile({
         {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
         <div className="relative z-10">
           <div className={cn(labelCls, "group-hover/tile:text-interactive/70 transition-colors")}>{label}</div>
-          <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
-          {sub && <div className="text-caption text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
-          <div className="mt-2 text-micro font-mono uppercase tracking-wider text-interactive/0 group-hover/tile:text-interactive/50 transition-colors">Segment breakdown →</div>
+          <div className="text-bignum font-h1 font-bold text-foreground metric-num leading-none">{value}</div>
+          {sub && <div className="text-caption text-muted-foreground/75 mt-2 leading-snug line-clamp-2">{sub}</div>}
+          {/* Visible at rest, not only on hover. A touch device has no hover
+              state, so text-interactive/0 meant this affordance never
+              appeared on a phone or tablet at all — the tile looked
+              identical to the static variant beside it and gave the reader
+              no reason to press it. It brightens on hover instead of
+              materialising. */}
+          <div className="mt-2 text-micro font-mono uppercase tracking-wider text-interactive/80 group-hover/tile:text-interactive transition-[color] duration-150 ease-[cubic-bezier(0.2,0,0,1)]">
+            Segment breakdown →
+          </div>
         </div>
       </button>
     );
   }
   return (
     <div className={cn(
-      "mx-kpi-tile p-4 transition-colors group-hover:border-primary/30 relative",
+      "mx-kpi-tile p-4 relative transition-[border-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+      // group-hover only fires inside an ancestor marked .group. Several
+      // call sites have none, so the lift silently never happened there.
+      // The tile's own :hover is in .mx-kpi-tile and always applies.
       isPrimary && "border-primary/35 bg-primary/[0.03]"
     )}>
       {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
       <div className="relative z-10">
         <div className={labelCls}>{label}</div>
-        <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
-        {sub && <div className="text-caption text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
+        <div className="text-bignum font-h1 font-bold text-foreground metric-num leading-none">{value}</div>
+        {sub && <div className="text-caption text-muted-foreground/75 mt-2 leading-snug line-clamp-2">{sub}</div>}
       </div>
     </div>
   );
@@ -1137,7 +1165,7 @@ export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; 
   const [, navigate] = useLocation();
   return (
     <div>
-      <div className={cn(TYPE.microLabel, "text-muted-foreground/45 mb-2.5 px-0.5")}>{label}</div>
+      <div className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-2.5 px-0.5")}>{label}</div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {items.map((c) => (
           <button
@@ -1153,10 +1181,10 @@ export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; 
               <div className="text-title font-semibold text-foreground">{c.label}</div>
               <p className="text-caption text-muted-foreground/80 leading-relaxed mt-0.5">{c.desc}</p>
               {c.lineage && (
-                <p className={cn(TYPE.microLabel, "text-muted-foreground/40 mt-1 truncate")} data-testid="hub-nav-lineage">{c.lineage}</p>
+                <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mt-1 truncate")} data-testid="hub-nav-lineage">{c.lineage}</p>
               )}
             </div>
-            <ArrowRight className="absolute right-3.5 top-4 w-3.5 h-3.5 text-muted-foreground/30 transition-[color,background-color,border-color,box-shadow,opacity,transform] group-hover:text-interactive group-hover:translate-x-0.5" aria-hidden />
+            <ArrowRight className="absolute right-3.5 top-4 w-3.5 h-3.5 text-muted-foreground/75 transition-[color,background-color,border-color,box-shadow,opacity,transform] group-hover:text-interactive group-hover:translate-x-0.5" aria-hidden />
           </button>
         ))}
       </div>
@@ -1240,7 +1268,7 @@ export function BackLink() {
   return (
     <button
       onClick={() => navigate(url)}
-      className="inline-flex items-center gap-1 text-caption font-medium text-muted-foreground/60 hover:text-foreground/80 transition-colors"
+      className="inline-flex items-center gap-1 text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 transition-colors"
     >
       <ChevronLeft className="w-3.5 h-3.5" />
       {backLabel(fp)}
@@ -1269,13 +1297,13 @@ export function FlowCrumb({ from, fromCell, fromHyp }: FromParams) {
     <div className="px-6 py-1.5 border-b border-border/20 bg-foreground/[0.01] flex items-center gap-1.5">
       <button
         onClick={() => navigate(url)}
-        className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors"
+        className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/75 hover:text-muted-foreground/80 transition-colors"
       >
         <ChevronLeft className="w-3.5 h-3.5" />
         {origin}
       </button>
-      <span className="text-muted-foreground/30 text-label">/</span>
-      <span className="text-label text-muted-foreground/50">This page</span>
+      <span className="text-muted-foreground/75 text-label">/</span>
+      <span className="text-label text-muted-foreground/75">This page</span>
     </div>
   );
 }
@@ -1355,7 +1383,7 @@ export function StaleFocusNotice({ label = "item" }: { label?: string }) {
 export const PILL_ACTIVE =
   "border-primary/60 bg-primary/20 text-interactive shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]";
 export const PILL_INACTIVE =
-  "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-foreground/[0.04] hover:border-border/60";
+  "border-border/40 text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] hover:border-border/60";
 
 // ─── Segmented toggle ─────────────────────────────────────────────────
 // Contained 2-4 option mode switch (e.g. "Avatars / Profiles",
@@ -1392,7 +1420,7 @@ export function SegmentedToggle<T extends string>({
               "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium transition-colors",
               isActive
                 ? "bg-primary/20 text-interactive shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
-                : "text-muted-foreground/60 hover:text-foreground/80"
+                : "text-muted-foreground/75 hover:text-foreground/80"
             )}
           >
             {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
@@ -1418,7 +1446,7 @@ export function MetricSelectionBar({
 }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2.5 border-b border-border/30 bg-foreground/[0.01]">
-      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/70">
+      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75">
         Metric selection
       </span>
       {events.map((e) => {
@@ -1469,7 +1497,7 @@ export function DatePresetBar({
 }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-foreground/[0.01]">
-      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/70 shrink-0">
+      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0">
         Window
       </span>
       <div className="flex items-center gap-1 flex-wrap">
@@ -1488,12 +1516,12 @@ export function DatePresetBar({
         ))}
       </div>
       {availableWindow && (
-        <span className="text-caption text-muted-foreground/40 ml-1 tabular-nums">
+        <span className="text-caption text-muted-foreground/75 ml-1 tabular-nums">
           data: {availableWindow.start} – {availableWindow.end}
         </span>
       )}
       {isFetching && (
-        <span className="text-caption text-muted-foreground/50 ml-1 animate-pulse">loading…</span>
+        <span className="text-caption text-muted-foreground/75 ml-1 animate-pulse">loading…</span>
       )}
     </div>
   );
@@ -1550,14 +1578,14 @@ export function OverviewHeaderControls({
               "h-7 px-2.5 text-caption font-medium transition-colors",
               preset === value
                 ? "bg-primary/18 text-interactive"
-                : "text-muted-foreground/60 hover:text-foreground hover:bg-foreground/[0.04]"
+                : "text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04]"
             )}
           >
             {label}
           </button>
         ))}
       </div>
-      {isFetching && <span className="text-caption text-muted-foreground/50 animate-pulse">loading…</span>}
+      {isFetching && <span className="text-caption text-muted-foreground/75 animate-pulse">loading…</span>}
       {onToggleCompare && (
         <button
           type="button"
@@ -1591,7 +1619,7 @@ export function OverviewHeaderControls({
       <button
         type="button"
         onClick={() => navigate(exportTo)}
-        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
+        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
       >
         <Download className="w-3.5 h-3.5" />
         Export
@@ -1635,7 +1663,7 @@ export function DataWindowBar({
   const selectedKey = selected ? `${selected.start}|${selected.end}` : null;
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-foreground/[0.01]">
-      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/70 shrink-0">
+      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0">
         Period
       </span>
       <div className="flex items-center gap-1 flex-wrap">
@@ -1668,11 +1696,11 @@ export function DataWindowBar({
           );
         })}
         {windows.length === 0 && !isFetching && (
-          <span className="text-caption text-muted-foreground/40 italic">No data uploaded yet</span>
+          <span className="text-caption text-muted-foreground/75 italic">No data uploaded yet</span>
         )}
       </div>
       {isFetching && (
-        <span className="text-caption text-muted-foreground/50 ml-1 animate-pulse">loading…</span>
+        <span className="text-caption text-muted-foreground/75 ml-1 animate-pulse">loading…</span>
       )}
     </div>
   );
@@ -1683,7 +1711,7 @@ export function DataWindowBar({
 export const IMPACT_STYLE: Record<string, string> = {
   high: "bg-status-danger/10 text-status-danger border-status-danger/20",
   medium: "bg-status-warning/10 text-status-warning border-status-warning/20",
-  low: "bg-muted text-muted-foreground/60 border-border/40",
+  low: "bg-muted text-muted-foreground/75 border-border/40",
   setup: "bg-primary/10 text-interactive border-primary/20",
 };
 
@@ -1705,7 +1733,7 @@ export function ImpactBadge({ impact }: { impact: string }) {
 
 export function ScopeBadge({ scope }: { scope: string }) {
   return (
-    <span className={cn("text-label font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", SCOPE_STYLE[scope] ?? "bg-muted text-muted-foreground/60 border-border/40")}>
+    <span className={cn("text-label font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", SCOPE_STYLE[scope] ?? "bg-muted text-muted-foreground/75 border-border/40")}>
       {scope}
     </span>
   );
@@ -1733,48 +1761,74 @@ export function SectionCard({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const bodyVisible = !collapsible || open;
-  return (
-    <section className="mx-card-hero overflow-hidden">
-      <div
-        className={cn(
-          "mx-accent-bar relative flex items-center gap-2 px-3.5 py-2 border-b border-primary/10",
-          collapsible && "cursor-pointer select-none hover:bg-foreground/[0.02] transition-colors"
-        )}
-        onClick={collapsible ? () => setOpen((v) => !v) : undefined}
-      >
-        <div className="flex-1 min-w-0 flex items-center gap-1.5">
-          {/* H2: the first real content heading under the page's H1
-              (ModuleHeader) — see typography.ts's H1–H6 hierarchy doc. */}
-          <h2 className={cn(HEADING.h2, "truncate")}>{title}</h2>
-          {desc && (
-            <span onClick={(e) => e.stopPropagation()} className="shrink-0">
-              <InfoTooltip content={desc} />
-            </span>
+  const bodyId = useId();
+
+  // The disclosure control IS the heading row, so the whole strip is one
+  // button rather than a div with onClick wrapping a second button with the
+  // same onClick. That shape had three problems: the div was not reachable
+  // by keyboard, nothing announced it as a control, and the nested button
+  // meant a click near the chevron fired one handler and a click an inch
+  // left fired a different one for the same action.
+  //
+  // The right-hand slot stays OUTSIDE the button. It holds real controls
+  // (run pickers, sliders, cross-links); nesting them inside a button is
+  // invalid HTML and swallows their clicks.
+  const heading = (
+    <>
+      {/* H2: the first real content heading under the page's H1
+          (ModuleHeader) — see typography.ts's H1–H6 hierarchy doc. */}
+      <h2 className={cn(HEADING.h2, "truncate")}>{title}</h2>
+      {collapsible && (
+        <ChevronDown
+          className={cn(
+            "w-3.5 h-3.5 shrink-0 text-muted-foreground/75",
+            "transition-transform duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+            bodyVisible && "rotate-180"
           )}
-        </div>
-        <div className="shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          aria-hidden
+        />
+      )}
+    </>
+  );
+
+  return (
+    <section className="mx-card-hero">
+      <div className="mx-accent-bar relative flex items-center gap-2 pr-3.5 border-b border-primary/10">
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={bodyVisible}
+            aria-controls={bodyId}
+            aria-label={`${bodyVisible ? "Collapse" : "Expand"} section: ${title}`}
+            // h-10 is the hit-area floor. The old control was a p-0.5
+            // chevron — about 18px square, and the only part of the strip
+            // a keyboard could reach.
+            className={cn(
+              "min-w-0 flex items-center gap-1.5 h-10 pl-3.5 pr-1 text-left rounded-l-[inherit]",
+              "hover:bg-foreground/[0.02] active:scale-[0.99]",
+              "transition-[background-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+            )}
+          >
+            {heading}
+          </button>
+        ) : (
+          <div className="min-w-0 flex items-center gap-1.5 h-10 pl-3.5 pr-1">{heading}</div>
+        )}
+        {desc && <InfoTooltip content={desc} />}
+        <div className="ml-auto shrink-0 flex items-center gap-2">
           {right}
           {table && <DataSourceBadge table={table} collapsible />}
-          {collapsible && (
-            <button
-              type="button"
-              aria-label={bodyVisible ? "Collapse section" : "Expand section"}
-              aria-expanded={bodyVisible}
-              onClick={() => setOpen((v) => !v)}
-              className="p-0.5 rounded hover:bg-foreground/[0.06] transition-colors shrink-0"
-            >
-              <ChevronDown
-                className={cn(
-                  "w-3.5 h-3.5 text-muted-foreground/40 transition-transform",
-                  bodyVisible && "rotate-180"
-                )}
-                aria-hidden
-              />
-            </button>
-          )}
         </div>
       </div>
-      {bodyVisible && <div className="relative p-3 border-t-[0px] border-r-[0px] border-b-[0px] border-l-[0px]">{children}</div>}
+      {bodyVisible && (
+        // The four border-*-[0px] classes that used to sit here generated
+        // four rules that each set a border to zero it never had.
+        <div id={bodyId} className="relative p-3">
+          {children}
+        </div>
+      )}
     </section>
   );
 }
@@ -1816,7 +1870,7 @@ export function ShowMoreButton({
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className="w-full flex items-center justify-center gap-1.5 py-2 mt-2 rounded-lg text-body font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-foreground/[0.02] border border-border/25 transition-colors"
+      className="w-full flex items-center justify-center gap-1.5 py-2 mt-2 rounded-lg text-body font-medium text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.02] border border-border/25 transition-colors"
     >
       {expanded ? "Show fewer" : `Show all ${total} ${noun}`}
       <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", expanded && "rotate-180")} aria-hidden />
@@ -1918,7 +1972,7 @@ export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; cur
                     ? "bg-primary border-transparent text-primary-foreground"
                     : done
                       ? "bg-primary/25 border-transparent text-primary-foreground/90"
-                      : "bg-transparent text-muted-foreground/40 " +
+                      : "bg-transparent text-muted-foreground/75 " +
                         (locked ? "border-border/40" : "border-border/60 group-hover:border-border")
                 )}
               >
@@ -1938,8 +1992,8 @@ export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; cur
                   isCurrent
                     ? "text-foreground font-medium"
                     : locked
-                      ? "text-muted-foreground/35"
-                      : "text-muted-foreground/60 group-hover:text-foreground/80 font-normal"
+                      ? "text-muted-foreground/75"
+                      : "text-muted-foreground/75 group-hover:text-foreground/80 font-normal"
                 )}
               >
                 {s.label}
@@ -1991,7 +2045,7 @@ export function ConnectionNudgeBanner({ hasMetaConnection }: { hasMetaConnection
   if (hasMetaConnection) return null;
   return (
     <div className="mx-6 mt-4 flex items-center gap-2.5 rounded-lg border border-border/40 bg-foreground/[0.03] px-4 py-2.5 text-sm text-muted-foreground/80">
-      <Plug className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50" />
+      <Plug className="w-3.5 h-3.5 shrink-0 text-muted-foreground/75" />
       <span className="flex-1">Connect Meta in Settings to enable live data refresh.</span>
       <button
         onClick={() => navigate("/app/settings/integrations")}

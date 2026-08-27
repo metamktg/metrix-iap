@@ -56,7 +56,7 @@ function ControlSelect({
 }) {
   return (
     <label className="flex items-center gap-1.5 min-w-0">
-      <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/50 shrink-0")}>{label}</span>
+      <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0")}>{label}</span>
       <select
         aria-label={label}
         value={value}
@@ -83,7 +83,7 @@ function ViewToggle({ view, onChange }: { view: "chart" | "table"; onChange: (v:
           onClick={() => onChange(id)}
           className={cn(
             "px-2 py-1 transition-colors",
-            view === id ? "bg-primary/15 text-interactive" : "text-muted-foreground/50 hover:text-foreground/75",
+            view === id ? "bg-primary/15 text-interactive" : "text-muted-foreground/75 hover:text-foreground/75",
           )}
         >
           <Icon className="w-3.5 h-3.5" />
@@ -159,12 +159,12 @@ function BreakdownTable({ rows, metricLabel, showWindows, onDrillSegment }: {
       <table className="w-full text-left border-collapse">
         <thead>
           <tr className="border-b border-border/30">
-            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/50 uppercase tracking-widest font-medium")}>Segment</th>
-            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/50 uppercase tracking-widest font-medium text-right")}>{metricLabel}</th>
-            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/50 uppercase tracking-widest font-medium text-right")}>Spend</th>
-            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/50 uppercase tracking-widest font-medium text-right")}>Results</th>
+            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/75 uppercase tracking-widest font-medium")}>Segment</th>
+            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/75 uppercase tracking-widest font-medium text-right")}>{metricLabel}</th>
+            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/75 uppercase tracking-widest font-medium text-right")}>Spend</th>
+            <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/75 uppercase tracking-widest font-medium text-right")}>Results</th>
             {showWindows && (
-              <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/50 uppercase tracking-widest font-medium text-right")}>Window</th>
+              <th className={cn(TYPE.label, "px-3 py-1.5 text-muted-foreground/75 uppercase tracking-widest font-medium text-right")}>Window</th>
             )}
           </tr>
         </thead>
@@ -186,7 +186,7 @@ function BreakdownTable({ rows, metricLabel, showWindows, onDrillSegment }: {
                   r.label
                 )}
               </td>
-              <td className={cn(TYPE.body, "px-3 py-1.5 tabular-nums text-right", r.value == null ? "text-muted-foreground/40" : "text-foreground font-semibold")}>
+              <td className={cn(TYPE.body, "px-3 py-1.5 tabular-nums text-right", r.value == null ? "text-muted-foreground/75" : "text-foreground font-semibold")}>
                 {r.formatted}
               </td>
               <td className={cn(TYPE.body, "px-3 py-1.5 tabular-nums text-right text-foreground/60")}>
@@ -196,7 +196,7 @@ function BreakdownTable({ rows, metricLabel, showWindows, onDrillSegment }: {
                 {r.results != null ? fmtNum(r.results) : "n/a"}
               </td>
               {showWindows && (
-                <td className={cn(TYPE.label, "px-3 py-1.5 font-mono tabular-nums text-right text-muted-foreground/55 whitespace-nowrap")}>
+                <td className={cn(TYPE.label, "px-3 py-1.5 font-mono tabular-nums text-right text-muted-foreground/75 whitespace-nowrap")}>
                   {r.windowLabel}
                 </td>
               )}
@@ -214,14 +214,14 @@ function EmptyState({ title, message }: { title: string; message: string }) {
   return (
     <div className="py-8 text-center space-y-1.5" data-testid="kpi-drilldown-empty">
       <p className="text-title font-medium text-foreground/60">{title}</p>
-      <p className="text-caption text-muted-foreground/60 max-w-sm mx-auto leading-relaxed">{message}</p>
+      <p className="text-caption text-muted-foreground/75 max-w-sm mx-auto leading-relaxed">{message}</p>
     </div>
   );
 }
 
 function NoticeNote({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-3">
+    <div className="flex items-start gap-2 text-caption text-muted-foreground/75 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-3">
       <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
       <span>{children}</span>
     </div>
@@ -415,17 +415,17 @@ export function KpiDrilldownModal({
         data-testid="kpi-drilldown-modal"
       >
         <DialogHeader className="text-left space-y-1">
-          <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
+          <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest">
             {scope === "manager" ? "Metric breakdown · by ad account" : "Metric breakdown"}
           </div>
           <DialogTitle className={DIALOG.title}>{metric.label}</DialogTitle>
-          <DialogDescription className="text-caption text-muted-foreground/70 leading-relaxed">
+          <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
             {scope === "manager"
               ? "The selected metric per configured ad account. Blended ratios are computed from summed numerators and denominators — never averaged."
               : "Segmented view of this metric across the account's analysis dimensions."}
           </DialogDescription>
           {/* Window / run indicator */}
-          <div className="text-label font-mono text-muted-foreground/55 tracking-wide" data-testid="kpi-drilldown-window">
+          <div className="text-label font-mono text-muted-foreground/75 tracking-wide" data-testid="kpi-drilldown-window">
             {scope === "manager"
               ? overlapOn && overlapWindow != null
                 ? `Common overlap window · ${fmtWindowLabel(overlapWindow)}`
@@ -444,7 +444,7 @@ export function KpiDrilldownModal({
           <ViewToggle view={view} onChange={setView} />
           {scope === "manager" && (
             <label className="inline-flex items-center gap-1.5 ml-auto">
-              <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/50")}>Common overlap window</span>
+              <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75")}>Common overlap window</span>
               <Switch
                 aria-label="Restrict all accounts to their common overlap window"
                 checked={overlapOn}
@@ -471,7 +471,7 @@ export function KpiDrilldownModal({
           />
         )}
         {scope === "manager" && overlapOn && overlapWindow != null && overlapLoading && (
-          <div className="py-6 text-center text-caption text-muted-foreground/55 animate-pulse" data-testid="kpi-drilldown-loading">
+          <div className="py-6 text-center text-caption text-muted-foreground/75 animate-pulse" data-testid="kpi-drilldown-loading">
             Loading each account's data over {fmtWindowLabel(overlapWindow)}…
           </div>
         )}
@@ -517,8 +517,8 @@ export function KpiDrilldownModal({
                 <div className="space-y-0.5">
                   {rows.map((r) => (
                     <div key={r.key} className="flex items-center justify-between gap-3 px-1">
-                      <span className={cn(TYPE.label, "text-muted-foreground/55 truncate")}>{r.label}</span>
-                      <span className={cn(TYPE.label, "font-mono tabular-nums text-muted-foreground/45 shrink-0")} data-testid="account-window-label">
+                      <span className={cn(TYPE.label, "text-muted-foreground/75 truncate")}>{r.label}</span>
+                      <span className={cn(TYPE.label, "font-mono tabular-nums text-muted-foreground/75 shrink-0")} data-testid="account-window-label">
                         {r.windowLabel}
                       </span>
                     </div>

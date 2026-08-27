@@ -132,14 +132,14 @@ function ColumnAliasGuide({
         className="w-full flex items-center gap-1.5 px-2.5 py-2 text-left hover:bg-foreground/[0.03] transition-colors"
       >
         {open ? (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         )}
         <span className="text-caption font-medium text-foreground/85">
           Accepted column name variants
         </span>
-        <span className="ml-auto text-label text-muted-foreground/55">
+        <span className="ml-auto text-label text-muted-foreground/75">
           common Meta UI aliases
         </span>
       </button>
@@ -162,7 +162,7 @@ function ColumnAliasGuide({
               </div>
             </div>
           ))}
-          <p className="px-2.5 py-2 text-label text-muted-foreground/45 leading-relaxed">
+          <p className="px-2.5 py-2 text-label text-muted-foreground/75 leading-relaxed">
             The parser accepts these automatically — no need to rename columns before uploading.
           </p>
         </div>
@@ -216,7 +216,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
             <p className="text-caption text-muted-foreground/80">Loading format spec…</p>
           ) : (
             <>
-              <p className="text-label text-muted-foreground/70">
+              <p className="text-label text-muted-foreground/75">
                 Upload as CSV (preferred) or XLSX — same required columns either way.
               </p>
               <div className="rounded-md border border-border/30 p-2">
@@ -501,14 +501,14 @@ function CompletenessPanel({ accountId, runId }: { accountId: string; runId: str
         {data.surfaces.map((s) => (
           <div key={s.key} className="flex items-center gap-1.5 min-w-0">
             {s.ok ? (
-              <CheckCircle2 className={cn("w-3 h-3 shrink-0", s.rows > 0 ? "text-status-success/80" : "text-muted-foreground/50")} />
+              <CheckCircle2 className={cn("w-3 h-3 shrink-0", s.rows > 0 ? "text-status-success/80" : "text-muted-foreground/75")} />
             ) : (
               <XCircle className="w-3 h-3 text-status-warning shrink-0" />
             )}
             <span className={cn("text-label truncate", s.ok ? "text-muted-foreground/80" : "text-status-warning/90")}>
               {s.label}
             </span>
-            <span className="text-label tabular-nums text-muted-foreground/50 ml-auto shrink-0">
+            <span className="text-label tabular-nums text-muted-foreground/75 ml-auto shrink-0">
               {s.rows.toLocaleString()} row{s.rows !== 1 ? "s" : ""}
             </span>
           </div>
@@ -517,7 +517,7 @@ function CompletenessPanel({ accountId, runId }: { accountId: string; runId: str
       {data.surfaces.some((s) => s.note) && (
         <div className="space-y-0.5 pt-0.5">
           {data.surfaces.filter((s) => s.note).map((s) => (
-            <p key={s.key} className="text-label text-muted-foreground/60 leading-relaxed">
+            <p key={s.key} className="text-label text-muted-foreground/75 leading-relaxed">
               {s.label}: {s.note}
             </p>
           ))}
@@ -583,7 +583,7 @@ function CreativeLinkageStatus({
         <Images
           className={cn(
             "w-3.5 h-3.5 shrink-0 mt-px",
-            allLinked ? "text-status-success" : noneLinked ? "text-muted-foreground/70" : "text-status-warning"
+            allLinked ? "text-status-success" : noneLinked ? "text-muted-foreground/75" : "text-status-warning"
           )}
         />
         <div className="min-w-0 flex-1 space-y-1">
@@ -600,7 +600,7 @@ function CreativeLinkageStatus({
               : `${linked} of ${total} creatives linked — ${unlinked.length} ad ${unlinked.length === 1 ? "name" : "names"} unmatched`}
           </div>
           {noneLinked && (
-            <p className="text-label text-muted-foreground/70 leading-relaxed">
+            <p className="text-label text-muted-foreground/75 leading-relaxed">
               Map each staged creative file to an ad name in the upload panel, then re-sync to
               link them to this analysis run.
             </p>
@@ -818,13 +818,13 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
             onClick={() => setNoticesExpanded((v) => !v)}
             className="w-full flex items-start gap-2 text-left"
           >
-            <Info className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
+            <Info className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <div className="text-caption font-medium text-foreground/75">
                 {optionalMissing.length} optional column{optionalMissing.length > 1 ? "s" : ""} not
                 included in this export
               </div>
-              <p className="text-label text-muted-foreground/65 mt-0.5 leading-relaxed">
+              <p className="text-label text-muted-foreground/75 mt-0.5 leading-relaxed">
                 Analysis proceeds without them — no action needed. Including them in a future
                 export deepens signal coverage.{" "}
                 <span className="underline cursor-pointer">{noticesExpanded ? "Hide" : "Show"} list</span>
@@ -834,12 +834,12 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
           {noticesExpanded && (
             <ul className="space-y-1 pt-1 border-t border-border/20">
               {optionalMissing.map((p, i) => (
-                <li key={i} className="text-label leading-relaxed text-muted-foreground/70">
-                  <span className="inline-block mr-1.5 px-1 py-px rounded text-label font-medium uppercase tracking-wide border bg-foreground/[0.03] border-border/40 text-muted-foreground/70">
+                <li key={i} className="text-label leading-relaxed text-muted-foreground/75">
+                  <span className="inline-block mr-1.5 px-1 py-px rounded text-label font-medium uppercase tracking-wide border bg-foreground/[0.03] border-border/40 text-muted-foreground/75">
                     not in export
                   </span>
                   <span className="font-medium text-foreground/70">{p.canonical}</span>
-                  <span className="ml-1 text-muted-foreground/45">· {p.csvLabel}</span>
+                  <span className="ml-1 text-muted-foreground/75">· {p.csvLabel}</span>
                 </li>
               ))}
             </ul>
@@ -902,17 +902,17 @@ function ImportHistoryPanel({
         onClick={() => setExpanded((e) => !e)}
         className="w-full flex items-center gap-2 px-2.5 py-2 text-left"
       >
-        <History className="w-3.5 h-3.5 text-muted-foreground/55 shrink-0" />
-        <span className="text-caption text-muted-foreground/70 leading-snug flex-1">
+        <History className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
+        <span className="text-caption text-muted-foreground/75 leading-snug flex-1">
           <span className="font-semibold text-foreground/80">
             Import history · {runsWithFiles.length} run{runsWithFiles.length !== 1 ? "s" : ""}
           </span>
           {" "}· Restage a past batch's files to regenerate analysis without re-uploading.
         </span>
         {expanded ? (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         )}
       </button>
       {expanded && (
@@ -941,7 +941,7 @@ function ImportHistoryPanel({
                 {files.map((f) => (
                   <span
                     key={f.id}
-                    className="text-micro font-mono text-muted-foreground/50 border border-border/30 rounded px-1 py-0.5 truncate max-w-[160px]"
+                    className="text-micro font-mono text-muted-foreground/75 border border-border/30 rounded px-1 py-0.5 truncate max-w-[160px]"
                     title={f.filename}
                   >
                     {f.filename}
@@ -1238,8 +1238,8 @@ export function AnalysisControls({
       {/* Existing-runs context strip */}
       {priorRuns.length > 0 && (
         <div className="flex items-center gap-2 rounded-md border border-border/30 bg-foreground/[0.02] px-2.5 py-2">
-          <History className="w-3.5 h-3.5 text-muted-foreground/55 shrink-0" />
-          <span className="text-caption text-muted-foreground/70 leading-snug">
+          <History className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
+          <span className="text-caption text-muted-foreground/75 leading-snug">
             <span className="font-semibold text-foreground/80">
               {priorRuns.length} existing run{priorRuns.length !== 1 ? "s" : ""}
             </span>

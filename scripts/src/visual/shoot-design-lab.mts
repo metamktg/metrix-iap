@@ -160,6 +160,53 @@ const PROBE = `(() => {
     // moving the tooltip off bg-primary could have broken: eight nodes were
     // written in primary-foreground because the tooltip used to be blue, and
     // whether they survived the change is a question only a render answers.
+    // Every rendered text node, against the surface it is actually painted
+    // on. The overlay check below was measuring two nodes; this measures the
+    // page. It found 110 of 511 below AA — the text-muted-foreground/40
+    // idiom, at 2.4:1, used 894 times across the app. Nothing else caught it:
+    // the colours all came from tokens, so the token gate passed, and jsdom
+    // resolves no custom properties, so the suite could not see it either.
+    allText: (() => {
+      const out = [];
+      const painted = (el) => {
+        const stack = [];
+        for (let n = el; n; n = n.parentElement) {
+          const c = rgba(getComputedStyle(n).backgroundColor);
+          if (c[3] === 0) continue;
+          stack.push(c);
+          if (c[3] === 1) break;
+        }
+        if (stack.length === 0) return null;
+        let flat = stack[stack.length - 1];
+        for (let k = stack.length - 2; k >= 0; k--) flat = over(stack[k], flat);
+        return "rgb(" + flat[0] + ", " + flat[1] + ", " + flat[2] + ")";
+      };
+      document.querySelectorAll("*").forEach((el) => {
+        if (el.children.length > 0) return;
+        const text = (el.textContent || "").trim();
+        if (!text) return;
+        const cs = getComputedStyle(el);
+        // sr-only text is visually hidden on purpose — it has no contrast to
+        // measure, and flagging it would train the reader to ignore this gate.
+        if ((el.className || "").toString().includes("sr-only")) return;
+        if (cs.visibility === "hidden" || cs.display === "none" || cs.opacity === "0") return;
+        const r = el.getBoundingClientRect();
+        if (r.width < 1 || r.height < 1) return;
+        const bg = painted(el);
+        if (!bg) return;
+        const ink = over(rgba(cs.color), rgba(bg));
+        const size = parseFloat(cs.fontSize);
+        const weight = parseInt(cs.fontWeight) || 400;
+        out.push({
+          text: text.slice(0, 30), size,
+          // WCAG "large text": 24px, or 18.66px at 700+.
+          floor: size >= 24 || (size >= 18.66 && weight >= 700) ? 3 : 4.5,
+          cls: (el.className || "").toString().slice(0, 60),
+          ratio: +contrast("rgb(" + ink[0] + ", " + ink[1] + ", " + ink[2] + ")", bg).toFixed(2),
+        });
+      });
+      return out;
+    })(),
     overlayText: (() => {
       const out = [];
       // A translucent surface composites onto what is behind it, so the
@@ -209,6 +256,7 @@ const report = await page.evaluate(PROBE) as {
   faces: Record<string, { w: number; loaded: boolean }>;
   smoothing: string; wrap: string;
   overlayText: { text: string; size: number; ratio: number }[];
+  allText: { text: string; size: number; floor: number; cls: string; ratio: number }[];
   parserOk: boolean;
   bands: { fill: string; ratio: number }[];
   overflow: { scroll: number; client: number };
@@ -300,6 +348,24 @@ if (report.smoothing !== "antialiased") problems.push(`font smoothing is "${repo
 if (report.wrap !== "balance") problems.push(`heading text-wrap is "${report.wrap}", not balance`);
 if (overflow.scroll > overflow.client) problems.push(`the page scrolls horizontally (${overflow.scroll} > ${overflow.client})`);
 if (bands.length === 0) problems.push("no generated fills were measurable — the scale panels did not render");
+const dim = report.allText.filter((t) => t.ratio < t.floor).sort((a, b) => a.ratio - b.ratio);
+if (report.allText.length < 50) {
+  problems.push(
+    `only ${report.allText.length} text node(s) were measurable — the lab did not render, so the ` +
+      `contrast pass proves nothing.`,
+  );
+}
+// One line per distinct class string: 110 failures were 14 idioms repeated.
+const seenDim = new Set<string>();
+for (const t of dim) {
+  if (seenDim.has(t.cls)) continue;
+  seenDim.add(t.cls);
+  problems.push(
+    `text "${t.text}" is ${t.ratio}:1 at ${Math.round(t.size)}px, below AA ${t.floor}:1 — ` +
+      `${t.cls || "(no classes)"}. Dimming by opacity compounds: muted-foreground is already ` +
+      `a mid-tone, so /40 of it is 2.4:1. Hierarchy comes from the type roles.`,
+  );
+}
 if (!report.parserOk) {
   problems.push(
     "the colour parser in the probe did not round-trip rgb(1, 2, 3) — every contrast number " +
@@ -333,6 +399,10 @@ console.log(`Ladder: H1 ${sizes.h1} → H2 ${sizes.h2} → H3 ${sizes.h3} → H4
 console.log(`Faces:           ${Object.entries(report.faces).filter(([k]) => !k.startsWith("_")).map(([k, v]) => `${k} ${v.loaded ? "ok" : "FALLBACK"}`).join(" · ")}`);
 console.log(`Responsive:      ${responsive.join(" · ")}`);
 console.log(`Generated fills: ${bands.length} measured, worst text contrast ${Math.min(...bands.map((b) => b.ratio))}:1`);
+console.log(
+  `Text contrast:   ${report.allText.length} node(s) measured, ` +
+    `worst ${report.allText.length ? Math.min(...report.allText.map((t) => t.ratio)) : "n/a"}:1`,
+);
 console.log(
   `Overlay text:    ${report.overlayText.length} node(s), worst ` +
     `${report.overlayText.length ? Math.min(...report.overlayText.map((t) => t.ratio)) : "n/a"}:1`,

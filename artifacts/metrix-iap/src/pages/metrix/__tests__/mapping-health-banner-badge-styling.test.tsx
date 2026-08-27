@@ -136,7 +136,7 @@ describe("MappingHealthBanner — severity styling", () => {
     const chips = screen.getAllByText("not in export");
     expect(chips).toHaveLength(2);
     for (const chip of chips) {
-      expect(chip.className).toContain("text-muted-foreground/70");
+      expect(chip.className).toContain("text-muted-foreground/75");
       expect(chip.className).not.toContain("status-warning");
       expect(chip.className).not.toContain("red");
     }

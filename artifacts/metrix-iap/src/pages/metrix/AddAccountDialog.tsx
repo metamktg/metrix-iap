@@ -154,7 +154,7 @@ export function AddAccountDialog({
                 );
               })}
             </div>
-            <span className="text-label font-medium text-muted-foreground/40 tabular-nums">
+            <span className="text-label font-medium text-muted-foreground/75 tabular-nums">
               Step {stepNumber} of {totalSteps}
             </span>
           </div>
@@ -205,16 +205,16 @@ export function AddAccountDialog({
                 className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-border/30 bg-foreground/[0.01] opacity-70 cursor-not-allowed text-left"
               >
                 <div className="w-9 h-9 rounded-lg border border-border/30 bg-foreground/[0.02] flex items-center justify-center shrink-0">
-                  <Plug className="w-4 h-4 text-muted-foreground/50" />
+                  <Plug className="w-4 h-4 text-muted-foreground/75" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <div className="text-title font-semibold text-muted-foreground/70">Connect Meta Ad Account</div>
-                    <span className="text-label font-semibold uppercase tracking-widest border border-border/40 bg-foreground/[0.03] text-muted-foreground/60 px-1.5 py-0.5 rounded shrink-0">
+                    <div className="text-title font-semibold text-muted-foreground/75">Connect Meta Ad Account</div>
+                    <span className="text-label font-semibold uppercase tracking-widest border border-border/40 bg-foreground/[0.03] text-muted-foreground/75 px-1.5 py-0.5 rounded shrink-0">
                       Coming soon
                     </span>
                   </div>
-                  <p className="text-caption text-muted-foreground/55 leading-relaxed mt-0.5">
+                  <p className="text-caption text-muted-foreground/75 leading-relaxed mt-0.5">
                     Direct OAuth connection to Meta is in active development. Use manual upload
                     above in the meantime.
                   </p>

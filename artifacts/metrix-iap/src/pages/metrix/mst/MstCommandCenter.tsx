@@ -119,7 +119,7 @@ function DnaLociBars({ variables }: { variables: DnaVariable[] }) {
     <div className="mt-3">
       <div className="flex items-center gap-1 mb-1.5">
         <Dna className="w-3.5 h-3.5 text-interactive/70" />
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">CPA vs avatar average</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">CPA vs avatar average</span>
       </div>
       <div className="space-y-1.5">
         {rows.map(({ v, lift }, idx) => {
@@ -127,7 +127,7 @@ function DnaLociBars({ variables }: { variables: DnaVariable[] }) {
           const good = lift >= 0;
           return (
             <div key={v.code} className="flex items-center gap-2">
-              <span className="text-label w-6 shrink-0 font-mono text-muted-foreground/40">L{idx + 1}</span>
+              <span className="text-label w-6 shrink-0 font-mono text-muted-foreground/75">L{idx + 1}</span>
               <span className="text-caption w-28 shrink-0 font-mono truncate text-foreground/75" title={v.code}>{v.code}</span>
               <div className="relative flex-1 h-[5px]">
                 <div className="absolute inset-y-0 left-1/2 w-px bg-border/60" />
@@ -153,14 +153,14 @@ function DnaVariableLine({ v, resultNoun }: { v: DnaVariable; resultNoun: string
       <div className="flex items-center gap-2 min-w-0 flex-wrap">
         <VariableChip code={v.code} />
         {v.family && (
-          <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/50">
+          <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/75">
             {familyLabel(v.family)}
           </span>
         )}
       </div>
       <div className="flex items-center gap-3 shrink-0 tabular-nums">
-        <span className="text-label text-muted-foreground/70">{fmtUSD(v.spend, 0)}</span>
-        <span className="text-label text-muted-foreground/70">{fmtNum(v.results)} {resultNoun}</span>
+        <span className="text-label text-muted-foreground/75">{fmtUSD(v.spend, 0)}</span>
+        <span className="text-label text-muted-foreground/75">{fmtNum(v.results)} {resultNoun}</span>
         <span className="text-label font-semibold text-foreground/85">
           {v.cpa != null ? `${fmtUSD(v.cpa)} CPA` : "no CPA"}
         </span>
@@ -214,17 +214,17 @@ function AvatarTile({
         <div className="flex items-center gap-3 min-w-0">
           <PersonaAvatar name={flatName} />
           <div className="min-w-0">
-            <p className="text-micro font-mono uppercase tracking-widest text-muted-foreground/45 mb-0.5">
+            <p className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">
               AVATAR {String(rank).padStart(2, "0")}
             </p>
             <span className="inline-flex items-center gap-1 text-title font-semibold text-foreground leading-tight whitespace-pre-line">
               {col.name}
               <ChevronRight className="w-3.5 h-3.5 text-interactive/70 shrink-0 -translate-x-0.5 group-hover:translate-x-0 transition-transform" />
             </span>
-            <div className="text-label font-mono text-muted-foreground/60">{col.icp}</div>
+            <div className="text-label font-mono text-muted-foreground/75">{col.icp}</div>
           </div>
         </div>
-        <span className="shrink-0 text-caption font-medium text-muted-foreground/50">
+        <span className="shrink-0 text-caption font-medium text-muted-foreground/75">
           {cells.length} angle{cells.length !== 1 ? "s" : ""}
         </span>
       </button>
@@ -245,7 +245,7 @@ function AvatarTile({
 
       {maxSpend > 0 && (
         <div className="mt-2.5">
-          <div className="flex items-center justify-between text-label text-muted-foreground/40 mb-1">
+          <div className="flex items-center justify-between text-label text-muted-foreground/75 mb-1">
             <span>Spend share</span>
             <span className="tabular-nums">{spendPct.toFixed(0)}% of top</span>
           </div>
@@ -273,7 +273,7 @@ function AvatarTile({
 
       {matched.length > 0 && (
         <div className="mt-3 pt-3 border-t border-border/20 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/60">
+          <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
             ICP profile{matched.length === 1 ? "" : "s"}
           </span>
           {matched.map((p) => (
@@ -298,7 +298,7 @@ function AvatarTile({
 function AvatarSortBar({ sortBy, onSort }: { sortBy: SortKey; onSort: (k: SortKey) => void }) {
   return (
     <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Sort avatars">
-      <span className="text-label font-semibold text-muted-foreground/40 normal-case tracking-normal">Sort</span>
+      <span className="text-label font-semibold text-muted-foreground/75 normal-case tracking-normal">Sort</span>
       {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => {
         const active = sortBy === k;
         return (
@@ -310,7 +310,7 @@ function AvatarSortBar({ sortBy, onSort }: { sortBy: SortKey; onSort: (k: SortKe
               "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-body font-semibold transition-colors border",
               active
                 ? "bg-primary/12 border-primary/35 text-interactive"
-                : "bg-transparent border-border/40 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60",
+                : "bg-transparent border-border/40 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60",
             )}
           >
             {SORT_LABEL[k]}
@@ -339,7 +339,7 @@ function DrawerAdList({
 }) {
   const [showAll, setShowAll] = useState(false);
   if (matchedAds.length === 0) {
-    return <p className="text-caption text-muted-foreground/70">No ad records matched to this avatar's cells.</p>;
+    return <p className="text-caption text-muted-foreground/75">No ad records matched to this avatar's cells.</p>;
   }
   const visible = showAll ? matchedAds : matchedAds.slice(0, 8);
   return (
@@ -367,7 +367,7 @@ function DrawerAdList({
                   <TooltipProvider delayDuration={150}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55 cursor-default">
+                        <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/75 cursor-default">
                           {ad.cell}
                           <span className="sr-only">{` — matrix cell${ad.concept ? ` for ${ad.concept}` : ""}`}</span>
                         </span>
@@ -381,25 +381,25 @@ function DrawerAdList({
                   </TooltipProvider>
                 )}
                 {ad.variation && (
-                  <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55" title="Variation">
+                  <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/75" title="Variation">
                     Var {ad.variation}
                   </span>
                 )}
                 {ad.test_id && (
-                  <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55" title="Test ID">
+                  <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/75" title="Test ID">
                     {ad.test_id}
                   </span>
                 )}
-                {ad.concept && <span className="text-label text-muted-foreground/55">{ad.concept}</span>}
+                {ad.concept && <span className="text-label text-muted-foreground/75">{ad.concept}</span>}
               </div>
             </div>
             {perf && (perf.spend > 0 || perf.results > 0) && (
               <div className="flex items-center gap-3 shrink-0 tabular-nums text-right">
                 {perf.spend > 0 && (
-                  <div><p className="text-label text-muted-foreground/50">Spend</p><p className="text-body text-foreground/70">{fmtUSD(perf.spend, 0)}</p></div>
+                  <div><p className="text-label text-muted-foreground/75">Spend</p><p className="text-body text-foreground/70">{fmtUSD(perf.spend, 0)}</p></div>
                 )}
                 {perf.results > 0 && (
-                  <div><p className="text-label text-muted-foreground/50">Results</p><p className="text-body text-foreground/70">{fmtNum(perf.results)}</p></div>
+                  <div><p className="text-label text-muted-foreground/75">Results</p><p className="text-body text-foreground/70">{fmtNum(perf.results)}</p></div>
                 )}
               </div>
             )}
@@ -663,7 +663,7 @@ export function MstCommandCenter() {
                     <DrawerField label="Variable resonance — ranked by results">
                       {dna.variables.length > 0 ? (
                         <>
-                          <p className="text-label text-muted-foreground/70 leading-relaxed mb-1.5">
+                          <p className="text-label text-muted-foreground/75 leading-relaxed mb-1.5">
                             Aggregated from {dna.measuredCellIds.length} measured angle{dna.measuredCellIds.length === 1 ? "" : "s"} ({dna.measuredCellIds.join(", ")})
                             {dna.extensionCellIds.length > 0 ? ` — ${dna.extensionCellIds.length} beyond the planned grid` : ""}.
                             Planned angles without data are excluded. Variables share angles; rows overlap and are not additive.
@@ -675,7 +675,7 @@ export function MstCommandCenter() {
                           </div>
                         </>
                       ) : (
-                        <p className="text-caption text-muted-foreground/70">
+                        <p className="text-caption text-muted-foreground/75">
                           No measured variable resonance yet — none of this avatar's angles have performance data.
                         </p>
                       )}

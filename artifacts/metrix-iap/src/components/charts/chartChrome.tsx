@@ -72,7 +72,7 @@ export function ChartTooltip({
 export function ChartEmpty({ height, label }: { height: number; label: string }) {
   return (
     <div
-      className="w-full flex flex-col items-center justify-center gap-2 text-muted-foreground/50"
+      className="w-full flex flex-col items-center justify-center gap-2 text-muted-foreground/75"
       style={{ height }}
       role="img"
       aria-label={label}
@@ -137,7 +137,7 @@ export function MagnitudeLegend({
 }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="text-caption text-muted-foreground/70">{lowLabel}</span>
+      <span className="text-caption text-muted-foreground/75">{lowLabel}</span>
       <span className="inline-flex gap-px" aria-hidden="true">
         {magnitudeLegend(colorIndex).map((fill, i) => (
           <span
@@ -147,9 +147,9 @@ export function MagnitudeLegend({
           />
         ))}
       </span>
-      <span className="text-caption text-muted-foreground/70">{highLabel}</span>
+      <span className="text-caption text-muted-foreground/75">{highLabel}</span>
       <span className="sr-only">{label}: darker is {highLabel.toLowerCase()}</span>
-      <span className="text-caption text-muted-foreground/70">{label}</span>
+      <span className="text-caption text-muted-foreground/75">{label}</span>
     </span>
   );
 }
@@ -157,7 +157,7 @@ export function MagnitudeLegend({
 export function VerdictLegend({ lowLabel, highLabel }: { lowLabel: string; highLabel: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="text-caption text-muted-foreground/70">{lowLabel}</span>
+      <span className="text-caption text-muted-foreground/75">{lowLabel}</span>
       <span className="inline-flex gap-px" aria-hidden="true">
         {/* The "Not measured" entry is the hatch, which belongs beside the
             map itself rather than inside a two-ended scale strip. */}
@@ -171,7 +171,7 @@ export function VerdictLegend({ lowLabel, highLabel }: { lowLabel: string; highL
             />
           ))}
       </span>
-      <span className="text-caption text-muted-foreground/70">{highLabel}</span>
+      <span className="text-caption text-muted-foreground/75">{highLabel}</span>
     </span>
   );
 }

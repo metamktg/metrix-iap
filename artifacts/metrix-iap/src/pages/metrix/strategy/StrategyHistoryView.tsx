@@ -41,12 +41,12 @@ export function StrategyHistoryView() {
                 </div>
                 <dl className="grid grid-cols-2 gap-3 text-body">
                   <div>
-                    <dt className="text-muted-foreground/70">Started</dt>
+                    <dt className="text-muted-foreground/75">Started</dt>
                     <dd className="text-foreground/90">{new Date(run.started_at).toLocaleString()}</dd>
                   </div>
                   {run.finished_at && (
                     <div>
-                      <dt className="text-muted-foreground/70">Finished</dt>
+                      <dt className="text-muted-foreground/75">Finished</dt>
                       <dd className="text-foreground/90">{new Date(run.finished_at).toLocaleString()}</dd>
                     </div>
                   )}

@@ -168,7 +168,7 @@ export function CellCreativeUploadDialog({
               Creative filed to <span className="font-mono text-interactive">{cellId}</span> — the library will refresh automatically.
             </p>
             {validation && (
-              <div className="w-full flex items-center gap-1.5 justify-center text-caption text-muted-foreground/70">
+              <div className="w-full flex items-center gap-1.5 justify-center text-caption text-muted-foreground/75">
                 <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                 {matched
                   ? `Matched the cell's DNA${validation.overall_confidence != null ? ` · ${Math.round(validation.overall_confidence * 100)}% confidence` : ""}`
@@ -178,7 +178,7 @@ export function CellCreativeUploadDialog({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="mt-1 text-caption text-muted-foreground/60 hover:text-muted-foreground transition-colors underline underline-offset-2"
+              className="mt-1 text-caption text-muted-foreground/75 hover:text-muted-foreground transition-colors underline underline-offset-2"
             >
               Close
             </button>
@@ -250,7 +250,7 @@ export function CellCreativeUploadDialog({
                   />
                 )
               ) : (
-                <div className="flex flex-col items-center gap-2 text-muted-foreground/60 select-none">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground/75 select-none">
                   <Upload className="w-6 h-6" />
                   <span className="text-caption text-center px-4">
                     Drop an image or video, or click to browse

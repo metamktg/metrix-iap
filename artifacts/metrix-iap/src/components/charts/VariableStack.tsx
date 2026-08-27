@@ -75,7 +75,7 @@ export function VariableStack({
   const filled = slots.filter((s) => s.code).length;
 
   if (slots.length === 0) {
-    return <p className="text-caption font-body text-muted-foreground/70">No variable stack recorded.</p>;
+    return <p className="text-caption font-body text-muted-foreground/75">No variable stack recorded.</p>;
   }
 
   return (
@@ -93,7 +93,7 @@ export function VariableStack({
               </span>
               <span
                 className={`flex-1 min-w-0 truncate rounded-lg border px-2 py-1.5 text-caption font-body
-                            ${code ? PREFIX_COLORS[family.prefix] : "border-dashed border-border/35 text-muted-foreground/45"}`}
+                            ${code ? PREFIX_COLORS[family.prefix] : "border-dashed border-border/35 text-muted-foreground/75"}`}
                 title={
                   code
                     ? `${resolveVariableLabel(code)} (${code})`
@@ -144,7 +144,7 @@ export function VariableStack({
         })}
       </ul>
 
-      <p className="text-micro font-mono text-muted-foreground/55 mt-2">
+      <p className="text-micro font-mono text-muted-foreground/75 mt-2">
         <span className="tabular-nums">{filled}</span> of{" "}
         <span className="tabular-nums">{VARIABLE_FAMILIES.length}</span> families set
         {marginalLabel && (

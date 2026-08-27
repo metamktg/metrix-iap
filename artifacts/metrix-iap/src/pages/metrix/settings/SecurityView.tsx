@@ -69,12 +69,12 @@ function ActiveSessionsSection() {
   return (
     <SectionCard title="Active sessions" desc="Every browser currently signed in as you. Revoking a session signs it out immediately." table="user_sessions">
       {sessions.length === 0 ? (
-        <p className="text-caption text-muted-foreground/70">No active sessions found.</p>
+        <p className="text-caption text-muted-foreground/75">No active sessions found.</p>
       ) : (
         <div className="divide-y divide-border/20">
           {sessions.map((s) => (
             <div key={s.id} className="flex items-center gap-3 py-2.5">
-              <Monitor className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+              <Monitor className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-body font-medium text-foreground">
@@ -86,7 +86,7 @@ function ActiveSessionsSection() {
                     </span>
                   )}
                 </div>
-                <div className="text-label text-muted-foreground/70 mt-0.5">
+                <div className="text-label text-muted-foreground/75 mt-0.5">
                   Signed in {new Date(s.created_at).toLocaleString()} · expires {new Date(s.expires_at).toLocaleDateString()}
                 </div>
               </div>
@@ -268,8 +268,8 @@ export function SecurityView() {
         <PasswordSection />
         <ActiveSessionsSection />
         <div className="flex items-start gap-2.5 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
-          <ShieldCheck className="w-4 h-4 text-muted-foreground/60 shrink-0 mt-0.5" />
-          <p className="text-caption text-muted-foreground/70 leading-relaxed">
+          <ShieldCheck className="w-4 h-4 text-muted-foreground/75 shrink-0 mt-0.5" />
+          <p className="text-caption text-muted-foreground/75 leading-relaxed">
             Two-factor authentication and login history are planned but not yet built.
           </p>
         </div>

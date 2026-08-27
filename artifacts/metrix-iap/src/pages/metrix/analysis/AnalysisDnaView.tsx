@@ -84,7 +84,7 @@ function LocusBar({ lift }: { lift: number | null }) {
   if (lift == null) {
     return (
       <div className="relative h-5 flex items-center justify-center">
-        <span className={cn(TYPE.label, "text-muted-foreground/40 normal-case tracking-normal")}>n/a</span>
+        <span className={cn(TYPE.label, "text-muted-foreground/75 normal-case tracking-normal")}>n/a</span>
       </div>
     );
   }
@@ -157,7 +157,7 @@ function GeneLociCard({
             </span>
             <div className="flex flex-col gap-0.5 min-w-0">
               <VariableChip code={v.code} className="w-fit" />
-              <span className={cn(TYPE.microLabel, "text-muted-foreground/40 normal-case tracking-normal")}>
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/75 normal-case tracking-normal")}>
                 {familyLabel(v.family)}
               </span>
             </div>
@@ -239,7 +239,7 @@ export function AnalysisDnaView() {
                     own loop_status says so. Point at the honest page instead of
                     fabricating a formula sentence or stat tiles. */}
                 <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border/25 bg-foreground/[0.015] px-3.5 py-2.5">
-                  <p className={cn(TYPE.caption, "text-muted-foreground/70")}>
+                  <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
                     <span className="font-semibold text-muted-foreground/85">Golden formula — </span>
                     {optimizationLoop?.note ??
                       "Not yet computed for this account — requires the Optimization Loop stage to run."}

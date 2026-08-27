@@ -85,7 +85,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
       )}
     >
       <span className="text-caption truncate">{m.label}</span>
-      <span className="text-caption font-mono tabular-nums text-muted-foreground/55 shrink-0">
+      <span className="text-caption font-mono tabular-nums text-muted-foreground/75 shrink-0">
         {m.value != null ? m.formatted : "—"}
       </span>
     </button>
@@ -105,7 +105,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
       style={{ position: "fixed", top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? "visible" : "hidden" }}
       className="z-50 w-56 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm elevation-floating py-1 overflow-hidden"
     >
-      <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/45">
+      <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/75">
         Delivery & efficiency
       </div>
       {staticMetrics.map((m) => <Row key={m.id} m={m} />)}
@@ -113,7 +113,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
       {eventMetrics.length > 0 && (
         <>
           <div className="mx-2 my-1 border-t border-border/20" />
-          <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/45">
+          <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/75">
             Results by event
           </div>
           {eventMetrics.map((m) => <Row key={m.id} m={m} />)}
@@ -137,7 +137,7 @@ export function KpiInfoHover({ content }: { content: React.ReactNode }) {
             aria-label="Metric details"
             data-testid="kpi-tile-info"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center justify-center shrink-0 text-muted-foreground/40 hover:text-muted-foreground/75 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center justify-center shrink-0 text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Info className="w-3 h-3" />
           </button>
@@ -252,7 +252,7 @@ export function KpiTile({
           </span>
           <ChevronDown className={cn(
             "w-2.5 h-2.5 shrink-0 transition-[color,background-color,border-color,box-shadow,opacity,transform]",
-            pickerOpen ? "rotate-180 text-interactive" : "text-muted-foreground/35 group-hover/lbl:text-muted-foreground/65",
+            pickerOpen ? "rotate-180 text-interactive" : "text-muted-foreground/75 group-hover/lbl:text-muted-foreground/75",
           )} />
         </button>
         <span className="flex items-center gap-1.5 shrink-0">
@@ -284,7 +284,7 @@ export function KpiTile({
           )}>
             {trend.deltaPct >= 0 ? "▲" : "▼"} {Math.abs(trend.deltaPct).toFixed(1)}%
           </span>
-          <span className={cn(TYPE.caption, "text-muted-foreground/50 tabular-nums")}>
+          <span className={cn(TYPE.caption, "text-muted-foreground/75 tabular-nums")}>
             prior {trend.priorFormatted}
           </span>
         </div>

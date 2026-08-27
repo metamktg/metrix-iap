@@ -134,17 +134,17 @@ export function AnalysisCommandCenter() {
                 right={<CrossLink to="/app/settings/general" label="Manage imports" />}
               >
                 {stagedImports.length === 0 ? (
-                  <p className="text-caption text-muted-foreground/60">
+                  <p className="text-caption text-muted-foreground/75">
                     Upload performance exports from Settings → General before running analysis.
                   </p>
                 ) : (
                   <div className="flex flex-col">
                     {stagedImports.map((imp) => (
                       <div key={imp.id} className="flex items-center gap-2.5 py-2 border-t border-border/25 first:border-0 min-w-0">
-                        <FileText className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
                         <span className="flex-1 min-w-0">
                           <span className="block text-body text-foreground/85 truncate">{imp.filename}</span>
-                          <span className="block text-label text-muted-foreground/60">
+                          <span className="block text-label text-muted-foreground/75">
                             {IMPORT_KIND_LABEL[imp.kind] ?? imp.kind}
                             {imp.created_at && ` · ${new Date(imp.created_at).toLocaleString()}`}
                           </span>
@@ -164,7 +164,7 @@ export function AnalysisCommandCenter() {
                 right={<CrossLink to="/app/analysis/history" label="Full history" />}
               >
                 {recentRuns.length === 0 ? (
-                  <p className="text-caption text-muted-foreground/60">
+                  <p className="text-caption text-muted-foreground/75">
                     {runs.length === 0 ? "No analysis runs yet for this account." : "No analysis runs in the selected window."}
                   </p>
                 ) : (
@@ -181,7 +181,7 @@ export function AnalysisCommandCenter() {
                               : r.date_range ?? "custom range"}
                             {r.rows_ingested != null && ` · ${fmtNum(r.rows_ingested)} rows`}
                           </span>
-                          <span className="block text-label text-muted-foreground/60">
+                          <span className="block text-label text-muted-foreground/75">
                             {r.started_at ? new Date(r.started_at).toLocaleString() : r.id}
                           </span>
                         </span>
@@ -217,7 +217,7 @@ export function AnalysisCommandCenter() {
                   <FileJson className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
                   <span className="flex-1 min-w-0">
                     <span className="block text-body font-mono text-foreground/85 truncate">Analysis export</span>
-                    <span className="block text-label text-muted-foreground/60">
+                    <span className="block text-label text-muted-foreground/75">
                       {analysis
                         ? `${fmtNum(analysis.performance_by_cell.length)} cell rows · ${fmtNum(analysis.v3_variable_performance.length)} variable rows`
                         : "No analysis data yet"}

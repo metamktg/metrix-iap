@@ -163,7 +163,7 @@ describe("AnalysisCommandCenter — execution card is honest pre-run readiness",
     // old always-expanded layout this would render both warning boxes.
     mockImports = [];
     await act(async () => { renderCC(); });
-    expect(screen.getByRole("button", { name: /Run analysis/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Run analysis" })).toBeTruthy();
     expect(screen.getByText("Date range to analyze")).toBeTruthy();
     expect(screen.queryByText("Last 7 days")).toBeNull();
     expect(screen.queryByText("Spend will be underreported without an Ad Summary export")).toBeNull();

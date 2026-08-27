@@ -199,7 +199,7 @@ export function CrossmapResultsView({
             {/* Coverage bar — same "share of top" visual grammar as the MST
                avatar tiles, here showing delivered vs. planned matrix cells. */}
             <div className="px-6 pt-3">
-              <div className="flex items-center justify-between text-label text-muted-foreground/40 mb-1">
+              <div className="flex items-center justify-between text-label text-muted-foreground/75 mb-1">
                 <span>Matrix coverage</span>
                 <span className="tabular-nums">{fmtNum(ran.length)} of {fmtNum(planned)} cells · {coveragePct.toFixed(0)}%</span>
               </div>
@@ -213,12 +213,12 @@ export function CrossmapResultsView({
                  rank sort decides their order among delivered cells. */}
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-1.5">
-                  <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/40")}>
+                  <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75")}>
                     Crossmap
                   </span>
                   <SectionInfoIcon tip="Every planned matrix cell joined to its observed performance rows by cell_id. Delivered cells rank by the active sort metric; cells with no performance rows yet always sort last." />
                   {coverageFilter !== "all" && (
-                    <span className={cn(TYPE.caption, "text-muted-foreground/50 tabular-nums")}>
+                    <span className={cn(TYPE.caption, "text-muted-foreground/75 tabular-nums")}>
                       {fmtNum(displayRows.length)} of {fmtNum(rows.length)} cells
                     </span>
                   )}
@@ -316,7 +316,7 @@ function CrossmapRows({
     return (
       <tbody>
         <tr>
-          <td colSpan={8} className="px-2.5 py-6 text-center text-caption text-muted-foreground/50">
+          <td colSpan={8} className="px-2.5 py-6 text-center text-caption text-muted-foreground/75">
             No cells match this filter.
           </td>
         </tr>
@@ -337,10 +337,10 @@ function CrossmapRows({
               <Td><span className="font-mono text-caption text-muted-foreground/75">{cell.cell_id}</span></Td>
               <Td>
                 <div className="font-medium text-foreground/75">{readableVariables(cell.concept_code)}</div>
-                {cell.plain_text.headline && <div className="text-label text-muted-foreground/60 mt-0.5">{cell.plain_text.headline}</div>}
+                {cell.plain_text.headline && <div className="text-label text-muted-foreground/75 mt-0.5">{cell.plain_text.headline}</div>}
               </Td>
               <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-metrix-cyan")}>{diag}</Td>
-              <Td className="text-muted-foreground/40">—</Td>
+              <Td className="text-muted-foreground/75">—</Td>
               <Td right>—</Td>
               <Td right>—</Td>
               <Td right>—</Td>
@@ -366,7 +366,7 @@ function CrossmapRows({
                 {i === 0 && (
                   <>
                     <div className="font-medium text-foreground">{readableVariables(cell.concept_code)}</div>
-                    {cell.plain_text.headline && <div className="text-label text-muted-foreground/70 mt-0.5">{cell.plain_text.headline}</div>}
+                    {cell.plain_text.headline && <div className="text-label text-muted-foreground/75 mt-0.5">{cell.plain_text.headline}</div>}
                   </>
                 )}
               </Td>

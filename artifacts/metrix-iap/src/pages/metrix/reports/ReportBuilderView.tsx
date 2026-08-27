@@ -63,7 +63,7 @@ function PreviewBlock({ block }: { block: ReportBlock }) {
           // against the body's recessed background — the third tier of
           // the wrapper(surface)/body(bg)/figure(surface) layering.
           <div key={it.label} className="flex-1 min-w-[130px] rounded-lg border border-border/40 bg-card px-3 py-2.5">
-            <div className={cn(TYPE.microLabel, "text-muted-foreground/55")}>{it.label}</div>
+            <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{it.label}</div>
             <div className={cn("text-cardtitle font-medium text-foreground tabular-nums")}>{it.value}</div>
           </div>
         ))}
@@ -74,7 +74,7 @@ function PreviewBlock({ block }: { block: ReportBlock }) {
     const shown = block.rows.slice(0, PREVIEW_TABLE_ROWS);
     return (
       <div className="mb-2.5">
-        {block.caption && <p className={cn(TYPE.label, "text-muted-foreground/55 mb-1.5")}>{block.caption}</p>}
+        {block.caption && <p className={cn(TYPE.label, "text-muted-foreground/75 mb-1.5")}>{block.caption}</p>}
         <div className="overflow-x-auto">
           <table className="nc-table">
             <thead>
@@ -88,7 +88,7 @@ function PreviewBlock({ block }: { block: ReportBlock }) {
           </table>
         </div>
         {block.rows.length > shown.length && (
-          <p className={cn(TYPE.label, "text-muted-foreground/50 mt-1.5")}>+{block.rows.length - shown.length} more rows in the export</p>
+          <p className={cn(TYPE.label, "text-muted-foreground/75 mt-1.5")}>+{block.rows.length - shown.length} more rows in the export</p>
         )}
       </div>
     );
@@ -97,7 +97,7 @@ function PreviewBlock({ block }: { block: ReportBlock }) {
   const max = Math.max(...block.data.map((d) => d.value), 0);
   return (
     <div className="mb-2.5">
-      <p className={cn(TYPE.label, "text-muted-foreground/55 mb-1.5")}>{block.title}</p>
+      <p className={cn(TYPE.label, "text-muted-foreground/75 mb-1.5")}>{block.title}</p>
       <div className="flex flex-col gap-1.5">
         {block.data.map((d) => (
           <div key={d.label} className="grid grid-cols-[minmax(100px,150px)_1fr_minmax(64px,90px)] items-center gap-2.5">
@@ -127,7 +127,7 @@ function ReportPreviewPane({ model, audienceLabel }: { model: ReportModel; audie
     // matching the canvas's wrapper(surface)/body(bg) contrast.
     <div className="rounded-xl border border-border/40 bg-card overflow-hidden min-w-0" data-testid="report-live-preview">
       <div className="flex items-center justify-between gap-2.5 px-4 py-3 border-b border-border/30 flex-wrap">
-        <span className={cn(TYPE.caption, "text-muted-foreground/70 flex gap-1.5")}>
+        <span className={cn(TYPE.caption, "text-muted-foreground/75 flex gap-1.5")}>
           <span>Preview</span><span>·</span>
           <span>{model.sections.length} section{model.sections.length === 1 ? "" : "s"}</span>
           {model.windowLabel && (<><span>·</span><span className="tabular-nums">{model.windowLabel}</span></>)}
@@ -137,21 +137,21 @@ function ReportPreviewPane({ model, audienceLabel }: { model: ReportModel; audie
       <div className="px-5 py-5 bg-background">
         <div className={cn(TYPE.label, "font-semibold uppercase tracking-[0.14em] text-interactive/80 mb-1")}>{kicker}</div>
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        <p className={cn(TYPE.body, "text-muted-foreground/70 mt-1.5 max-w-[70ch]")}>{model.brandLine}</p>
+        <p className={cn(TYPE.body, "text-muted-foreground/75 mt-1.5 max-w-[70ch]")}>{model.brandLine}</p>
 
         {model.sections.map((s) => (
           <div key={s.title} className="border-t border-border/25 pt-3.5 mt-4">
             <div className="flex items-baseline justify-between gap-2.5 mb-2">
               <span className={cn(TYPE.body, "font-semibold text-foreground")}>{s.title}</span>
               {s.blocks[0] && blockVizNote(s.blocks[0]) && (
-                <span className={cn(TYPE.label, "text-muted-foreground/50")}>{blockVizNote(s.blocks.find((b) => b.kind !== "text") ?? s.blocks[0])}</span>
+                <span className={cn(TYPE.label, "text-muted-foreground/75")}>{blockVizNote(s.blocks.find((b) => b.kind !== "text") ?? s.blocks[0])}</span>
               )}
             </div>
             {s.blocks.map((b, i) => <PreviewBlock key={i} block={b} />)}
           </div>
         ))}
 
-        <p className={cn(TYPE.label, "text-muted-foreground/45 border-t border-border/25 pt-3 mt-4")}>{model.footerNote}</p>
+        <p className={cn(TYPE.label, "text-muted-foreground/75 border-t border-border/25 pt-3 mt-4")}>{model.footerNote}</p>
       </div>
     </div>
   );
@@ -369,7 +369,7 @@ export function ReportBuilderView() {
                     {/* Audience — the canvas's density/branding selector */}
                     <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       <div className="text-cardtitle font-semibold text-foreground mb-0.5">Audience</div>
-                      <p className={cn(TYPE.caption, "text-muted-foreground/60 mb-2.5")}>Sets branding and delivery density</p>
+                      <p className={cn(TYPE.caption, "text-muted-foreground/75 mb-2.5")}>Sets branding and delivery density</p>
                       <div className="flex flex-col gap-1.5">
                         {([
                           { id: "internal" as Mode, Icon: Building2, label: "Internal ops", desc: "Full Metrix branding · internal density" },
@@ -389,7 +389,7 @@ export function ReportBuilderView() {
                             <span className={cn(TYPE.body, "font-medium text-foreground flex items-center gap-1.5")}>
                               <a.Icon className="w-3.5 h-3.5 text-interactive/70" /> {a.label}
                             </span>
-                            <span className={cn(TYPE.label, "text-muted-foreground/60")}>{a.desc}</span>
+                            <span className={cn(TYPE.label, "text-muted-foreground/75")}>{a.desc}</span>
                           </button>
                         ))}
                       </div>
@@ -399,7 +399,7 @@ export function ReportBuilderView() {
                     <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       <div className="flex items-baseline justify-between gap-2 mb-2">
                         <div className="text-cardtitle font-semibold text-foreground">Sections</div>
-                        <span className={cn(TYPE.label, "text-muted-foreground/55 tabular-nums")}>
+                        <span className={cn(TYPE.label, "text-muted-foreground/75 tabular-nums")}>
                           {rb.report_sections.length - excludedSections.size} of {rb.report_sections.length}
                         </span>
                       </div>
@@ -428,7 +428,7 @@ export function ReportBuilderView() {
                               >
                                 {included && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
                               </span>
-                              <span className={cn(TYPE.body, "truncate", included ? "text-foreground" : "text-muted-foreground/50 line-through")}>{s}</span>
+                              <span className={cn(TYPE.body, "truncate", included ? "text-foreground" : "text-muted-foreground/75 line-through")}>{s}</span>
                             </label>
                           );
                         })}
@@ -438,21 +438,21 @@ export function ReportBuilderView() {
                     {/* Report window: inherit global range, allow per-report override */}
                     <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
-                        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Report window</span>
+                        <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
+                        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Report window</span>
                         {override && <span className="mx-inline-badge mx-inline-badge--info">Override</span>}
                       </div>
                       {reportRange ? (
                         <div className="text-caption font-medium text-foreground/80 tabular-nums mt-1.5">{formatIsoRange(reportRange)}</div>
                       ) : (
-                        <div className="text-caption text-muted-foreground/60 mt-1.5">No data window available</div>
+                        <div className="text-caption text-muted-foreground/75 mt-1.5">No data window available</div>
                       )}
                       {!override && (
-                        <p className="text-label text-muted-foreground/60 mt-1">inherited from the global date range ({rangeLabel})</p>
+                        <p className="text-label text-muted-foreground/75 mt-1">inherited from the global date range ({rangeLabel})</p>
                       )}
                       {bounds && (
                         <div className="flex items-center gap-2 flex-wrap mt-2.5">
-                          <label className="flex items-center gap-1.5 text-label text-muted-foreground/70">
+                          <label className="flex items-center gap-1.5 text-label text-muted-foreground/75">
                             From
                             <input
                               type="date"
@@ -468,7 +468,7 @@ export function ReportBuilderView() {
                               className="h-7 rounded border border-border/50 bg-foreground/[0.03] px-2 text-caption text-foreground tabular-nums [color-scheme:dark]"
                             />
                           </label>
-                          <label className="flex items-center gap-1.5 text-label text-muted-foreground/70">
+                          <label className="flex items-center gap-1.5 text-label text-muted-foreground/75">
                             To
                             <input
                               type="date"
@@ -494,7 +494,7 @@ export function ReportBuilderView() {
                           )}
                         </div>
                       )}
-                      <p className="mt-2 text-label text-muted-foreground/60">
+                      <p className="mt-2 text-label text-muted-foreground/75">
                         Affects this report only — the global date filter is untouched. Sections still summarize each item's full flight; this import has no daily grain.
                       </p>
                     </div>
@@ -533,17 +533,17 @@ export function ReportBuilderView() {
                                     "flex items-center gap-1 h-7 px-2.5 rounded text-caption font-medium transition-colors disabled:opacity-60",
                                     chosenFormat === f
                                       ? "bg-foreground/[0.06] text-foreground"
-                                      : "text-muted-foreground/70 hover:text-foreground"
+                                      : "text-muted-foreground/75 hover:text-foreground"
                                   )}
                                 >
                                   {FORMAT_LABEL[f] ?? f}
                                   {f === defaultFormat && (
-                                    <span className="text-label font-normal text-muted-foreground/60">default</span>
+                                    <span className="text-label font-normal text-muted-foreground/75">default</span>
                                   )}
                                 </button>
                               ))}
                             </div>
-                            <span className="text-label text-muted-foreground/70">
+                            <span className="text-label text-muted-foreground/75">
                               {chosenFormat === "google_doc"
                                 ? "Saves to Report History and creates a Google Doc in your Drive."
                                 : `Saves the composed document to Report History and downloads it as ${FORMAT_LABEL[chosenFormat] ?? chosenFormat}.`}
@@ -579,7 +579,7 @@ export function ReportBuilderView() {
                     <ReportPreviewPane model={previewModel} audienceLabel={audienceLabel} />
                   ) : (
                     <div className="rounded-xl border border-border/40 bg-foreground/[0.015] p-6">
-                      <p className={cn(TYPE.body, "text-muted-foreground/60")}>Include at least one section to preview the report.</p>
+                      <p className={cn(TYPE.body, "text-muted-foreground/75")}>Include at least one section to preview the report.</p>
                     </div>
                   )}
                 </div>
@@ -593,11 +593,11 @@ export function ReportBuilderView() {
                         <Palette className="w-3.5 h-3.5 text-interactive" />
                         <div>
                           <div className="text-caption font-medium text-foreground capitalize">{rb.default_branding} branding</div>
-                          <div className="text-label text-muted-foreground/70">Default on first load</div>
+                          <div className="text-label text-muted-foreground/75">Default on first load</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 text-caption text-muted-foreground/80">
-                        <Check className={cn("w-3.5 h-3.5", rb.white_label_supported ? "text-status-success" : "text-muted-foreground/70")} />
+                        <Check className={cn("w-3.5 h-3.5", rb.white_label_supported ? "text-status-success" : "text-muted-foreground/75")} />
                         White-label {rb.white_label_supported ? "supported" : "unavailable"}
                       </div>
                     </div>
@@ -636,7 +636,7 @@ export function ReportBuilderView() {
                         </button>
                       ))}
                     </div>
-                    <p className="mt-2.5 text-label text-muted-foreground/70">
+                    <p className="mt-2.5 text-label text-muted-foreground/75">
                       Exports use the current preview mode: {mode === "internal" ? "Internal dashboard (Metrix branding)" : `Client-facing (white-labeled for ${acct.name})`}.
                     </p>
                     {exportedGoogleDocUrl && (

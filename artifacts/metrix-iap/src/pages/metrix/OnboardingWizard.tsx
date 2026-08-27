@@ -62,7 +62,7 @@ function StepIndicator({ step }: { step: Step }) {
           );
         })}
       </div>
-      <span className={cn(TYPE.label, "font-medium text-muted-foreground/40 tabular-nums")}>
+      <span className={cn(TYPE.label, "font-medium text-muted-foreground/75 tabular-nums")}>
         Step {stepNumber} of {STEPS.length} · {STEP_TITLE[step]}
       </span>
     </div>

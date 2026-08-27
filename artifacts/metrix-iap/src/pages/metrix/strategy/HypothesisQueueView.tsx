@@ -42,8 +42,8 @@ function HypFact({
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-1 mb-0.5">
-        <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />
-        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+        <Icon className="w-3.5 h-3.5 text-muted-foreground/75" />
+        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">{label}</span>
       </div>
       <p className="text-caption text-foreground/80 leading-snug line-clamp-1">{deriveLabel(value, 56)}</p>
     </div>
@@ -81,8 +81,8 @@ function HypothesisCardList({
                 <HypothesisCodeChipsRow label={h.label} />
                 <p className="text-body text-foreground/80 leading-snug line-clamp-1 mt-1">{deriveLabel(h.label, 72)}</p>
                 {h.source && (
-                  <div className="flex items-center gap-1.5 mt-1.5 text-caption text-muted-foreground/60">
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/60" />
+                  <div className="flex items-center gap-1.5 mt-1.5 text-caption text-muted-foreground/75">
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/75" />
                     {h.source}
                   </div>
                 )}
@@ -97,8 +97,8 @@ function HypothesisCardList({
               <div className="flex items-center gap-4 mt-2.5 pt-2.5 border-t border-border/20 flex-wrap">
                 {inlineFacts.map((f) => (
                   <div key={f.label} className="flex items-center gap-1.5 min-w-0">
-                    <f.Icon className="w-3 h-3 text-muted-foreground/45 shrink-0" />
-                    <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/35 shrink-0">{f.label}</span>
+                    <f.Icon className="w-3 h-3 text-muted-foreground/75 shrink-0" />
+                    <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0">{f.label}</span>
                     <span className="text-caption text-foreground/70 truncate">{deriveLabel(f.value, 48)}</span>
                   </div>
                 ))}
@@ -229,7 +229,7 @@ export function HypothesisQueueView() {
                             {label}
                             <span className={cn(
                               "text-label font-mono rounded px-0.5",
-                              active ? "text-interactive/70" : "text-muted-foreground/40",
+                              active ? "text-interactive/70" : "text-muted-foreground/75",
                             )}>{count}</span>
                           </button>
                         );

@@ -131,12 +131,12 @@ export function CreativeScanView() {
                       ]}
                     />
                     {libraryFilter === "attention" && attentionCells.length === 0 && (
-                      <span className={cn(TYPE.caption, "text-muted-foreground/60")}>Nothing flagged — every concept is mapped to performance.</span>
+                      <span className={cn(TYPE.caption, "text-muted-foreground/75")}>Nothing flagged — every concept is mapped to performance.</span>
                     )}
                   </div>
 
                   {visibleLibrary.length === 0 ? (
-                    <p className={cn(TYPE.body, "text-muted-foreground/50 py-6 text-center")}>No concepts match this filter.</p>
+                    <p className={cn(TYPE.body, "text-muted-foreground/75 py-6 text-center")}>No concepts match this filter.</p>
                   ) : (
                     <div className="grid grid-cols-dashboard-4-xl gap-3">
                       {visibleLibrary.map((c) => (
@@ -171,15 +171,15 @@ export function CreativeScanView() {
                     {variableGroups.map((g) => (
                       <div key={g.label}>
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className={cn(TYPE.microLabel, "text-muted-foreground/70")}>{g.label}</h3>
-                          <span className={cn(TYPE.label, "font-mono text-muted-foreground/60")}>{g.items.length}</span>
+                          <h3 className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{g.label}</h3>
+                          <span className={cn(TYPE.label, "font-mono text-muted-foreground/75")}>{g.items.length}</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {g.items.map((it) => (
                             <div key={it.code} className="flex items-center gap-2 rounded-lg border border-border/40 bg-foreground/[0.02] px-2.5 py-1.5">
                               <div>
                                 <div className={cn(TYPE.body, "font-medium text-foreground/90 leading-tight")}>{readableVariables(it.code)}</div>
-                                <div className={cn(TYPE.label, "font-mono text-muted-foreground/60 mt-0.5")}>{it.code}</div>
+                                <div className={cn(TYPE.label, "font-mono text-muted-foreground/75 mt-0.5")}>{it.code}</div>
                               </div>
                               <span className={cn(TYPE.label, "font-mono text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5 leading-none")}>×{it.count}</span>
                             </div>

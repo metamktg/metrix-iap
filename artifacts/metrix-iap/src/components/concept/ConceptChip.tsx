@@ -73,7 +73,7 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
             {entry.what.length > 120 ? entry.what.slice(0, 120) + "…" : entry.what}
           </p>
         )}
-        <p className="text-micro text-muted-foreground/70 italic">Click to open in Library</p>
+        <p className="text-micro text-muted-foreground/75 italic">Click to open in Library</p>
       </TooltipContent>
     </Tooltip>
   );

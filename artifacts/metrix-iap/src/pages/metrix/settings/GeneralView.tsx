@@ -41,7 +41,7 @@ function SystemInfoSection() {
       <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
         <div className="space-y-0.5">
           <div className="text-caption font-medium text-foreground/80 font-mono">METRIX IAP v2.0-rc</div>
-          <div className="text-label text-muted-foreground/60 font-mono">SAMPLE / DEMO DATA</div>
+          <div className="text-label text-muted-foreground/75 font-mono">SAMPLE / DEMO DATA</div>
         </div>
         <DataSourceBadgeToggle />
       </div>
@@ -97,11 +97,11 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
             aria-invalid={tooLong || undefined}
             className={cn(
               "w-full rounded-lg border bg-foreground/[0.02] px-3 py-2 text-body text-foreground",
-              "placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/45 disabled:opacity-60",
+              "placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/45 disabled:opacity-60",
               tooLong ? "border-status-danger/50" : "border-border/40"
             )}
           />
-          <div className="text-label font-mono text-muted-foreground/60">
+          <div className="text-label font-mono text-muted-foreground/75">
             {tooLong ? `${trimmed.length}/80 — too long` : `id · ${accountId}`}
           </div>
         </div>
@@ -113,7 +113,7 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
             "shrink-0 rounded-lg border px-3 py-2 text-body transition-colors",
             canSave
               ? "border-primary/45 bg-primary/[0.06] hover:bg-primary/[0.1] text-foreground"
-              : "border-border/40 bg-foreground/[0.02] text-muted-foreground/60 cursor-not-allowed"
+              : "border-border/40 bg-foreground/[0.02] text-muted-foreground/75 cursor-not-allowed"
           )}
         >
           {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
@@ -197,7 +197,7 @@ function ObjectivesSection({ accountId, currentObjectives }: { accountId: string
                   <div className="text-body font-medium text-foreground">{c.label}</div>
                   {active && <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />}
                 </div>
-                <div className="text-label text-muted-foreground/70 mt-0.5">{c.desc}</div>
+                <div className="text-label text-muted-foreground/75 mt-0.5">{c.desc}</div>
               </div>
             </button>
           );
@@ -239,7 +239,7 @@ function PrefToggle({
       {on ? (
         <Check className="w-3 h-3 text-status-success" />
       ) : (
-        <Minus className="w-3 h-3 text-muted-foreground/70" />
+        <Minus className="w-3 h-3 text-muted-foreground/75" />
       )}
     </button>
   );
@@ -309,7 +309,7 @@ function NotificationPrefsSections() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {channels.map((c) => (
             <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
-              {c.id === "email" ? <Mail className="w-4 h-4 text-muted-foreground/70 shrink-0" /> : <MonitorSmartphone className="w-4 h-4 text-muted-foreground/70 shrink-0" />}
+              {c.id === "email" ? <Mail className="w-4 h-4 text-muted-foreground/75 shrink-0" /> : <MonitorSmartphone className="w-4 h-4 text-muted-foreground/75 shrink-0" />}
               <div className="flex-1 text-body font-medium text-foreground">{c.label}</div>
               <button
                 type="button"
@@ -322,7 +322,7 @@ function NotificationPrefsSections() {
                   "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none transition-colors",
                   c.enabled
                     ? "text-status-success border-status-success/25 bg-status-success/10 hover:bg-status-success/20"
-                    : "text-muted-foreground/70 border-border/40 bg-foreground/[0.03] hover:bg-foreground/[0.08]",
+                    : "text-muted-foreground/75 border-border/40 bg-foreground/[0.03] hover:bg-foreground/[0.08]",
                   isPending && "opacity-60 pointer-events-none"
                 )}
               >
@@ -336,16 +336,16 @@ function NotificationPrefsSections() {
       <SectionCard title="Notification events" desc="Which product events notify the workspace, per channel. Click a mark to toggle.">
         <div className="rounded-lg border border-border/30 bg-foreground/[0.02] overflow-hidden">
           <div className="grid grid-cols-[1fr_56px_56px] gap-2 px-3 py-2 border-b border-border/30">
-            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Event</span>
-            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium text-center">Email</span>
-            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium text-center">In-app</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium">Event</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium text-center">Email</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium text-center">In-app</span>
           </div>
           <div className="divide-y divide-border/20">
             {events.map((e) => (
               <div key={e.id} className="grid grid-cols-[1fr_56px_56px] gap-2 px-3 py-2.5 items-center">
                 <div className="min-w-0">
                   <div className="text-body font-medium text-foreground">{e.label}</div>
-                  <div className="text-label text-muted-foreground/70 leading-tight mt-0.5">{e.description}</div>
+                  <div className="text-label text-muted-foreground/75 leading-tight mt-0.5">{e.description}</div>
                 </div>
                 <div className="flex justify-center">
                   <PrefToggle on={e.email} onToggle={() => toggleEvent(e.id, "email")} disabled={isPending} label={`${e.label} via email`} testId={`toggle-event-${e.id}-email`} />
@@ -364,7 +364,7 @@ function NotificationPrefsSections() {
           <CalendarClock className="w-4 h-4 text-interactive shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="text-body font-medium text-foreground capitalize">{notifications.digest.frequency} · {notifications.digest.day}</div>
-            <div className="text-label text-muted-foreground/70 mt-0.5">{notifications.digest.description}</div>
+            <div className="text-label text-muted-foreground/75 mt-0.5">{notifications.digest.description}</div>
           </div>
         </div>
       </SectionCard>

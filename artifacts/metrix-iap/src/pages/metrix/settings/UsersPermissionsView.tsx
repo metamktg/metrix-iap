@@ -109,7 +109,7 @@ function PermissionToggleRow({
       </div>
       <div className="min-w-0">
         <div className="text-caption font-medium text-foreground">{label}</div>
-        <div className="text-label text-muted-foreground/70 leading-relaxed">{description}</div>
+        <div className="text-label text-muted-foreground/75 leading-relaxed">{description}</div>
       </div>
     </button>
   );
@@ -238,7 +238,7 @@ function AddMemberDialog({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@company.com"
               autoComplete="off"
-              className="w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full h-9 px-3 rounded-md bg-foreground/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
               data-testid="input-invite-email"
             />
           </div>
@@ -288,7 +288,7 @@ function AddMemberDialog({
           <div className="space-y-1.5">
             <span className="text-caption font-medium text-foreground/80">Ad account access</span>
             {adAccounts.length === 0 ? (
-              <p className="text-label text-muted-foreground/60">No ad accounts available yet.</p>
+              <p className="text-label text-muted-foreground/75">No ad accounts available yet.</p>
             ) : (
               <div className="max-h-36 overflow-y-auto rounded-md border border-border/40 divide-y divide-border/20">
                 {adAccounts.map((a) => (
@@ -411,7 +411,7 @@ function PendingInviteRow({
           <span className="text-body font-medium text-foreground truncate">{invite.email}</span>
           <span className="mx-inline-badge mx-inline-badge--warning">Invited</span>
         </div>
-        <div className="text-label text-muted-foreground/70 truncate">
+        <div className="text-label text-muted-foreground/75 truncate">
           {error ? (
             <span className="text-status-danger/90" data-testid={`text-invite-error-${invite.email}`}>{error}</span>
           ) : (
@@ -590,14 +590,14 @@ function MemberAdAccountsCell({
   };
 
   if (isLoading) {
-    return <span className="text-label text-muted-foreground/60">Loading…</span>;
+    return <span className="text-label text-muted-foreground/75">Loading…</span>;
   }
 
   return (
     <div className="space-y-1.5" data-testid={`cell-account-access-${email}`}>
       <div className="flex items-center flex-wrap gap-1.5">
         {grantedAccounts.length === 0 ? (
-          <span className="text-label text-muted-foreground/60" data-testid={`text-no-access-${email}`}>
+          <span className="text-label text-muted-foreground/75" data-testid={`text-no-access-${email}`}>
             No account access yet
           </span>
         ) : (
@@ -633,7 +633,7 @@ function MemberAdAccountsCell({
           data-testid={`picker-accounts-${email}`}
         >
           {adAccounts.length === 0 ? (
-            <p className="px-2.5 py-2 text-label text-muted-foreground/60">No ad accounts available.</p>
+            <p className="px-2.5 py-2 text-label text-muted-foreground/75">No ad accounts available.</p>
           ) : (
             adAccounts.map((a) => {
               const granted = grantedIds.has(a.id);
@@ -651,7 +651,7 @@ function MemberAdAccountsCell({
                     className="w-3.5 h-3.5 accent-primary disabled:opacity-40"
                   />
                   {a.name}
-                  {busy && <Loader2 className="w-3.5 h-3.5 animate-spin ml-auto text-muted-foreground/40" />}
+                  {busy && <Loader2 className="w-3.5 h-3.5 animate-spin ml-auto text-muted-foreground/75" />}
                 </label>
               );
             })
@@ -926,9 +926,9 @@ function TeamAccessViewInner() {
         >
           <div className="rounded-lg border border-border/30 bg-foreground/[0.02] overflow-hidden">
             <div className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2 border-b border-border/30">
-              <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Member</span>
-              <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Role</span>
-              <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium text-right w-24">Last active</span>
+              <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium">Member</span>
+              <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium">Role</span>
+              <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium text-right w-24">Last active</span>
             </div>
             <div className="divide-y divide-border/20">
               {memberRows.map((m) => (
@@ -945,7 +945,7 @@ function TeamAccessViewInner() {
                         <span className="mx-inline-badge mx-inline-badge--success">Active</span>
                       ) : null}
                     </div>
-                    <div className="text-label text-muted-foreground/70 truncate">{m.email}</div>
+                    <div className="text-label text-muted-foreground/75 truncate">{m.email}</div>
                   </div>
                   <span className={cn(
                     "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",
@@ -953,7 +953,7 @@ function TeamAccessViewInner() {
                   )}>
                     {m.role}
                   </span>
-                  <span className="text-label font-mono text-muted-foreground/70 text-right w-24">
+                  <span className="text-label font-mono text-muted-foreground/75 text-right w-24">
                     {m.lastActive
                       ? new Date(m.lastActive).toLocaleDateString(undefined, { month: "short", day: "numeric" })
                       : "—"}
@@ -972,7 +972,7 @@ function TeamAccessViewInner() {
                         <MemberAdAccountsCell workspaceId={manager.id} email={m.email} adAccounts={seed.ad_accounts} />
                       </>
                     ) : (
-                      <span className="text-label text-muted-foreground/60">
+                      <span className="text-label text-muted-foreground/75">
                         Account access can be granted once this member signs in for the first time.
                       </span>
                     )}

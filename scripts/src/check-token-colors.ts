@@ -62,6 +62,23 @@ const RAW_SHADOW = /(?<!-)\bshadow-(?:sm|md|lg|xl|2xl|inner)\b(?!-)/g;
 // size half of that pair would flag every primary CTA in the product. A size
 // shadow is a violation only when nothing on its line colours it.
 const SHADOW_TINT = /\bshadow-(?!sm\b|md\b|lg\b|xl\b|2xl\b|inner\b|none\b)[a-z][a-z0-9-]*(?:\/[0-9.]+)?/;
+// Text dimmed by opacity below what AA allows.
+//
+// A sweep of every rendered text node in the design lab found 110 of 511
+// below 4.5:1, and 894 `text-muted-foreground/NN` classes across the app sat
+// under the floor. muted-foreground is already a mid-tone — #aab6ca — so
+// multiplying it by 0.4 lands at 2.4:1, which is not dim, it is unreadable.
+//
+// The floors are measured, not chosen: on the lightest surface this text
+// actually sits on (card plus a 7% foreground tint), muted-foreground clears
+// 4.5:1 at 0.71 and foreground at 0.49. Rounded up to the nearest step the
+// codebase already spells, that is /75 (4.88:1) and /55 (5.36:1).
+//
+// The four levels of dimness this replaced were not a hierarchy — three of
+// them were illegible. Hierarchy lives in the type roles.
+const MUTED_AA_FLOOR = 75;
+const FG_AA_FLOOR = 55;
+const DIM_TEXT = /\btext-(muted-foreground|foreground)\/(\d+)\b/g;
 // Everything below 0x20 except tab, newline and carriage return.
 const CONTROL = new RegExp("[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]", "g");
 
@@ -142,6 +159,20 @@ for (const file of walk(SRC)) {
         `(${[...new Set(shadows)].join(", ")}). Use elevation-flat / elevation-raised / ` +
         `elevation-floating — the stock scale has no inset ring, so a surface wearing it ` +
         `reads as a different kind of surface from the ones beside it.`,
+    );
+  }
+
+  // Dim text below the measured AA floor.
+  const dim = [...code.matchAll(DIM_TEXT)]
+    .filter((m) => Number(m[2]) < (m[1] === "muted-foreground" ? MUTED_AA_FLOOR : FG_AA_FLOOR))
+    .map((m) => m[0]);
+  if (dim.length > 0 && !/design-lab\.tsx$/.test(file)) {
+    problems.push(
+      `${rel}: ${dim.length} dim-text class${dim.length === 1 ? "" : "es"} below the AA floor ` +
+        `(${[...new Set(dim)].slice(0, 4).join(", ")}). muted-foreground clears 4.5:1 only at /${MUTED_AA_FLOOR} ` +
+        `and foreground at /${FG_AA_FLOOR}, measured on the lightest surface these sit on (card + a 7% ` +
+        `foreground tint). Hierarchy comes from the type roles — micro / label / caption / body — not from ` +
+        `an opacity step that is only legible at one end.`,
     );
   }
 

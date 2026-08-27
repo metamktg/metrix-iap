@@ -149,7 +149,7 @@ export function ConnectMetaDialog({
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
-              <Plug className="w-4 h-4 text-muted-foreground/70" />
+              <Plug className="w-4 h-4 text-muted-foreground/75" />
             </div>
             <span className="text-label font-semibold uppercase tracking-widest border border-primary/25 bg-primary/[0.08] text-interactive/80 px-2 py-1 rounded">
               Coming soon
@@ -485,7 +485,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
                     <div className="min-w-0 flex-1">
                       <span className="font-medium text-foreground/90">{e.canonical}</span>
                       {e.found_as && e.found_as !== e.canonical && (
-                        <span className="text-muted-foreground/70"> ← {e.found_as}</span>
+                        <span className="text-muted-foreground/75"> ← {e.found_as}</span>
                       )}
                       <span
                         className={cn(
@@ -504,7 +504,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
 
           {requiredMissing.length > 0 && (
             <div className={cn("pt-2 space-y-1", resolved.length > 0 && "mt-1")}>
-              <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/60 pb-0.5">
+              <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/75 pb-0.5">
                 Required columns missing
               </p>
               {requiredMissing.map((e) => (
@@ -521,7 +521,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
 
           {optionalMissing.length > 0 && (
             <div className={cn("pt-2 space-y-1", (resolved.length > 0 || requiredMissing.length > 0) && "mt-1")}>
-              <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/60 pb-0.5">
+              <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/75 pb-0.5">
                 Optional columns not included in this export — no action needed
               </p>
               {optionalMissing.map((e) => (
@@ -529,7 +529,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
                   key={e.canonical}
                   className="flex items-center gap-2 px-2 py-1.5 rounded text-label bg-foreground/[0.02] border border-border/30"
                 >
-                  <span className="font-medium text-muted-foreground/70 min-w-0 truncate">{e.canonical}</span>
+                  <span className="font-medium text-muted-foreground/75 min-w-0 truncate">{e.canonical}</span>
                 </div>
               ))}
             </div>
@@ -805,7 +805,7 @@ function SmartCsvUpload({
         <span className="text-body font-medium text-foreground/85">
           {current !== null ? `Uploading ${current.name}…` : "Drop your Meta CSV or XLSX exports here, or click to browse"}
         </span>
-        <span className="text-caption text-muted-foreground/60">Any number of files, any order — up to {MAX_PERFORMANCE_UPLOAD_MB_LABEL} each</span>
+        <span className="text-caption text-muted-foreground/75">Any number of files, any order — up to {MAX_PERFORMANCE_UPLOAD_MB_LABEL} each</span>
         {current !== null && <div className="w-full max-w-xs mt-1"><UploadProgressBar pct={current.pct} label="" /></div>}
       </button>
 
@@ -827,7 +827,7 @@ function SmartCsvUpload({
               ) : (
                 <div className={cn("w-3.5 h-3.5 rounded-full border shrink-0", slot.optional ? "border-border/50" : "border-status-warning/50")} />
               )}
-              <span className={cn("truncate flex-1", filled ? "text-foreground/85" : "text-muted-foreground/70")}>
+              <span className={cn("truncate flex-1", filled ? "text-foreground/85" : "text-muted-foreground/75")}>
                 {slot.label}
                 {!slot.optional && !filled && <span className="text-status-warning/70"> *</span>}
                 {importsForSlot.length > 1 && (
@@ -838,7 +838,7 @@ function SmartCsvUpload({
                 <button
                   onClick={() => void handleRemove(single)}
                   disabled={deleteMutation.isPending}
-                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   aria-label={`Remove ${slot.label} file`}
                 >
                   <Trash2 className="w-3 h-3" />
@@ -847,7 +847,7 @@ function SmartCsvUpload({
               {importsForSlot.length > 1 && (
                 <button
                   onClick={() => setExpandedSlot((s) => (s === slot.kind ? null : slot.kind))}
-                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
+                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
                   aria-label={`Manage ${slot.label} files`}
                 >
                   <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", expandedSlot === slot.kind && "rotate-90")} />
@@ -860,7 +860,7 @@ function SmartCsvUpload({
 
       {expandedSlot && (staged[expandedSlot]?.length ?? 0) > 1 && (
         <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2 space-y-1">
-          <div className="text-label font-semibold text-muted-foreground/70 px-1">
+          <div className="text-label font-semibold text-muted-foreground/75 px-1">
             {SMART_CSV_SLOTS.find((s) => s.kind === expandedSlot)?.label} — every one of these files feeds the next
             analysis run
           </div>
@@ -870,7 +870,7 @@ function SmartCsvUpload({
               <button
                 onClick={() => void handleRemove(imp)}
                 disabled={deleteMutation.isPending}
-                className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/75 hover:text-status-danger hover:bg-status-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 aria-label={`Remove ${imp.filename}`}
               >
                 <Trash2 className="w-3 h-3" />
@@ -880,7 +880,7 @@ function SmartCsvUpload({
         </div>
       )}
       {!bothRequiredStaged && (
-        <p className="text-label text-muted-foreground/55 px-0.5">* Demographics and Placements are required before you can continue.</p>
+        <p className="text-label text-muted-foreground/75 px-0.5">* Demographics and Placements are required before you can continue.</p>
       )}
 
       <details className="group rounded-lg border border-border/30">
@@ -920,7 +920,7 @@ function SmartCsvUpload({
               {alarmed ? (
                 <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
               ) : (
-                <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0 mt-0.5" />
               )}
               <div className="flex-1 min-w-0 space-y-1">
                 <div className={cn("text-caption font-semibold", alarmed ? "text-status-warning" : "text-foreground/85")}>
@@ -937,13 +937,13 @@ function SmartCsvUpload({
                 )}
                 {notices.length > 0 && (
                   <details className="group/notices">
-                    <summary className="flex items-center gap-1 text-label text-muted-foreground/70 cursor-pointer hover:text-foreground/80 transition-colors [&::-webkit-details-marker]:hidden">
+                    <summary className="flex items-center gap-1 text-label text-muted-foreground/75 cursor-pointer hover:text-foreground/80 transition-colors [&::-webkit-details-marker]:hidden">
                       <ChevronRight className="w-3 h-3 shrink-0 transition-transform group-open/notices:rotate-90" />
                       {notices.length} notice{notices.length !== 1 ? "s" : ""} — automatic mappings &amp; optional columns
                     </summary>
                     <ul className="space-y-0.5 pl-4 pt-1">
                       {notices.map((w, i) => (
-                        <li key={i} className="text-label text-muted-foreground/70 leading-relaxed">{w}</li>
+                        <li key={i} className="text-label text-muted-foreground/75 leading-relaxed">{w}</li>
                       ))}
                     </ul>
                   </details>
@@ -955,7 +955,7 @@ function SmartCsvUpload({
                   "shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors",
                   alarmed
                     ? "text-status-warning/70 hover:text-status-warning hover:bg-status-warning/10"
-                    : "text-muted-foreground/60 hover:text-foreground/80 hover:bg-foreground/[0.04]",
+                    : "text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.04]",
                 )}
                 aria-label="Dismiss warning"
               >
@@ -1104,7 +1104,7 @@ function CreativeThumbnail({ accountId, asset }: { accountId: string; asset: Man
       className="w-10 h-10 rounded-md border border-border/40 bg-background/20 overflow-hidden shrink-0 flex items-center justify-center"
     >
       {broken ? (
-        <Images className="w-4 h-4 text-muted-foreground/60" />
+        <Images className="w-4 h-4 text-muted-foreground/75" />
       ) : !shouldLoad ? null : isVideo ? (
         <video src={fileUrl} className="w-full h-full object-cover" muted onError={() => setBroken(true)} />
       ) : (
@@ -1176,7 +1176,7 @@ function CreativeAdNamesEditor({
       <div className="flex items-center gap-2">
         <CreativeThumbnail accountId={accountId} asset={asset} />
         <span className="text-caption text-foreground/80 truncate flex-1">{asset.filename}</span>
-        {updateMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground/70 shrink-0" />}
+        {updateMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground/75 shrink-0" />}
       </div>
 
       {hasRegistry ? (
@@ -1417,7 +1417,7 @@ function CreativeUploadSection({
           <p className="text-caption text-foreground/75 mt-0.5">
             Stage individual ad creative files (images/videos) so they render immediately.
           </p>
-          <p className="text-label text-muted-foreground/60 leading-relaxed mt-0.5">
+          <p className="text-label text-muted-foreground/75 leading-relaxed mt-0.5">
             Map each file to the ad name(s) it represents — filenames matching an ad name are pre-mapped.
           </p>
         </div>
@@ -1647,10 +1647,10 @@ function PipelineProgress({
                 )}
               </div>
               <div className="min-w-0">
-                <div className={cn("text-label font-semibold leading-none", s.done ? "text-status-success/90" : s.active ? "text-foreground/90" : "text-muted-foreground/70")}>
+                <div className={cn("text-label font-semibold leading-none", s.done ? "text-status-success/90" : s.active ? "text-foreground/90" : "text-muted-foreground/75")}>
                   {s.label}
                 </div>
-                <div className="text-label text-muted-foreground/60 leading-none mt-0.5">{s.sublabel}</div>
+                <div className="text-label text-muted-foreground/75 leading-none mt-0.5">{s.sublabel}</div>
               </div>
             </div>
           </div>
@@ -1737,7 +1737,7 @@ export function ManualUploadPanel({
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/40">Step 2 of 2 — Review</span>
+          <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/75">Step 2 of 2 — Review</span>
         </div>
         <PipelineProgress
           demoStaged={Boolean(demoImport)}
@@ -1786,7 +1786,7 @@ export function ManualUploadPanel({
             {/* Creative files: compact count summary — avoids listing 60+ raw filenames */}
             {creativeAssets.length > 0 ? (
               <div className="flex items-center gap-2 text-caption">
-                <Images className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                <Images className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
                 <span className="text-foreground/80 flex-1">
                   {creativeAssets.length} creative {creativeAssets.length === 1 ? "file" : "files"} staged
                 </span>
@@ -1810,7 +1810,7 @@ export function ManualUploadPanel({
                 )}
               </div>
             ) : (
-              <div className="text-caption text-muted-foreground/60">No creative files staged — optional.</div>
+              <div className="text-caption text-muted-foreground/75">No creative files staged — optional.</div>
             )}
           </div>
         </div>
@@ -1856,7 +1856,7 @@ export function ManualUploadPanel({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/40">Step 1 of 2 — Upload files</span>
+        <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/75">Step 1 of 2 — Upload files</span>
       </div>
       <PipelineProgress
         demoStaged={Boolean(demoImport)}
@@ -1887,7 +1887,7 @@ export function ManualUploadPanel({
       <div className="flex items-center justify-between pt-1 border-t border-border/30 mt-1">
         <div className="max-w-[60%]">
           <p className="text-label text-foreground/75 font-medium">Both CSVs are required before you can continue.</p>
-          <p className="text-label text-muted-foreground/55 leading-relaxed mt-0.5">Files are stored raw until an analysis run explicitly processes them.</p>
+          <p className="text-label text-muted-foreground/75 leading-relaxed mt-0.5">Files are stored raw until an analysis run explicitly processes them.</p>
         </div>
         <PrimaryBtn onClick={() => setStep("review")} disabled={!bothRequiredStaged}>
           Review <ArrowRight className="w-3.5 h-3.5" />
@@ -1995,7 +1995,7 @@ function CreativeDeconstructSection({
                 </>
               ) : (
                 <>
-                  <span className="text-label text-muted-foreground/70">Not classified</span>
+                  <span className="text-label text-muted-foreground/75">Not classified</span>
                   <button
                     onClick={() => void start([asset.id])}
                     disabled={isRunning}
@@ -2012,7 +2012,7 @@ function CreativeDeconstructSection({
       </div>
       <div className="px-0.5">
         <p className="text-label text-foreground/70 font-medium">Classification grades each creative against the IAP variable registry.</p>
-        <p className="text-label text-muted-foreground/55 leading-relaxed mt-0.5">
+        <p className="text-label text-muted-foreground/75 leading-relaxed mt-0.5">
           ≥80% confidence files into the library automatically; anything lower waits in the IAP Library review queue. Videos are classified from extracted keyframes.
         </p>
       </div>

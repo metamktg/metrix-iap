@@ -107,7 +107,7 @@ function DeviceDeliveryCard({ rows }: { rows: DeviceDeliveryRow[] }) {
         <div className="grid gap-1 min-w-[620px]" style={{ gridTemplateColumns: "150px repeat(4, minmax(78px, 1fr))" }} data-testid="device-delivery-grid">
           <span />
           {["Cost / result", "Spend", "Results", "Impressions"].map((c) => (
-            <span key={c} className={cn(TYPE.label, "text-muted-foreground/60 text-center pb-1")}>{c}</span>
+            <span key={c} className={cn(TYPE.label, "text-muted-foreground/75 text-center pb-1")}>{c}</span>
           ))}
           {devices.map((d) => {
             const strength = strengthFor(d);
@@ -190,20 +190,20 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
     if (rows.length === 0) return null;
     return (
       <div className="space-y-1">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{label}</p>
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">{label}</p>
         <div className="rounded-lg border border-border/40 overflow-hidden">
           {[...rows].sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]).map((r, i) => (
             <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-foreground/[0.01]">
               <div className="min-w-0">
                 <div className="text-caption font-medium text-foreground truncate">{r.Placement}</div>
-                <div className="text-label font-mono text-muted-foreground/50 mt-0.5">
+                <div className="text-label font-mono text-muted-foreground/75 mt-0.5">
                   {fmtNum(r.Impressions)} impr · {fmtNum(r["Link clicks"] ?? 0)} clicks
                   {r.CPA != null && ` · CPA ${fmtUSD(r.CPA)}`}
                 </div>
               </div>
               <div className="shrink-0 text-right">
                 <div className="text-caption font-semibold text-foreground tabular-nums">{fmtUSD(r["Amount spent (USD)"], 0)}</div>
-                <div className="text-label text-muted-foreground/60">{fmtNum(r.Results)} results</div>
+                <div className="text-label text-muted-foreground/75">{fmtNum(r.Results)} results</div>
               </div>
             </div>
           ))}
@@ -216,11 +216,11 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
     <Dialog open={placement != null} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-xl bg-surface-deep border-border/50 max-h-[82vh] overflow-y-auto">
         <DialogHeader className="text-left space-y-1">
-          <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
+          <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest">
             Placement detail
           </div>
           <DialogTitle className={DIALOG.title}>{placement}</DialogTitle>
-          <DialogDescription className="text-caption text-muted-foreground/70 leading-relaxed">
+          <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
             {v3.length > 0 && `${v3.length} V3 row${v3.length !== 1 ? "s" : ""}`}
             {v3.length > 0 && c4e.length > 0 && " · "}
             {c4e.length > 0 && `${c4e.length} C4E row${c4e.length !== 1 ? "s" : ""}`}
@@ -232,7 +232,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
           <div className="grid grid-cols-dashboard-4-sm gap-2">
             {tiles.map(({ label, value, delta }) => (
               <div key={label} className="mx-kpi-tile px-3 py-2.5">
-                <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-0.5">{label}</div>
+                <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">{label}</div>
                 <div className="text-stat metric-num leading-none">{value}</div>
                 {delta && (
                   <div className={cn("text-label mt-1 leading-none", delta.good ? "text-accent" : "text-status-warning/80")}>
@@ -505,7 +505,7 @@ export function PlacementsView() {
                             <span className={cn(TYPE.body, "font-medium text-foreground/90 truncate group-hover:text-interactive transition-colors")}>
                               {s.placement}
                             </span>
-                            <span className={cn(TYPE.label, "text-muted-foreground/50 tabular-nums")}>
+                            <span className={cn(TYPE.label, "text-muted-foreground/75 tabular-nums")}>
                               {spendShare.toFixed(1)}% of spend
                             </span>
                           </div>
@@ -521,13 +521,13 @@ export function PlacementsView() {
                             <span className={cn(TYPE.body, "font-medium tabular-nums text-foreground")}>
                               {v != null ? activeMetric.format(v) : "—"}
                             </span>
-                            <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+                            <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground/75 group-hover:text-primary/60 transition-colors" />
                           </div>
                         </button>
                       );
                     })}
                   </div>
-                  <p className="mt-4 text-label text-muted-foreground/45 flex items-center gap-1.5">
+                  <p className="mt-4 text-label text-muted-foreground/75 flex items-center gap-1.5">
                     <BarChart2 className="w-3.5 h-3.5 shrink-0" />
                     {v3.length} V3 + {c4e.length} C4E rows · bars scale to the top placement · click for detail
                   </p>

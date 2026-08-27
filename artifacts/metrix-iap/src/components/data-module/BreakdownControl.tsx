@@ -36,7 +36,7 @@ export function BreakdownControl<Row extends Record<string, unknown>>({
 
   if (options.length === 0) {
     return (
-      <p className="text-caption font-body text-muted-foreground/70">
+      <p className="text-caption font-body text-muted-foreground/75">
         These rows carry no second dimension to break down by.
       </p>
     );
@@ -44,7 +44,7 @@ export function BreakdownControl<Row extends Record<string, unknown>>({
 
   return (
     <div className="flex items-center gap-2 flex-wrap min-w-0">
-      <span className="inline-flex items-center gap-1.5 text-micro font-mono uppercase tracking-widest text-muted-foreground/60 shrink-0">
+      <span className="inline-flex items-center gap-1.5 text-micro font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0">
         <Filter className="w-3.5 h-3.5" aria-hidden="true" />
         {label}
       </span>
@@ -71,7 +71,7 @@ export function BreakdownControl<Row extends Record<string, unknown>>({
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
                           ${
                             disabled
-                              ? "text-muted-foreground/35 cursor-not-allowed"
+                              ? "text-muted-foreground/75 cursor-not-allowed"
                               : active
                                 ? "bg-primary/20 text-foreground active:scale-[0.96]"
                                 : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04] active:scale-[0.96]"
@@ -79,7 +79,7 @@ export function BreakdownControl<Row extends Record<string, unknown>>({
             >
               <span>{o.label}</span>
               {/* The count is the reason, made visible without a hover. */}
-              <span className="text-micro font-mono tabular-nums text-muted-foreground/55">
+              <span className="text-micro font-mono tabular-nums text-muted-foreground/75">
                 {o.distinct}
               </span>
               {disabled && <span className="sr-only"> — unavailable: {o.reason}</span>}

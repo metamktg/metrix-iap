@@ -236,11 +236,11 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
       <div className="px-3 py-2.5 space-y-2.5">
         {/* Last run summary */}
         {run?.status === "success" && run.date_start && run.date_end && (
-          <div className="text-label text-muted-foreground/60 bg-status-success/[0.05] border border-status-success/15 rounded-lg px-2.5 py-1.5 leading-snug">
+          <div className="text-label text-muted-foreground/75 bg-status-success/[0.05] border border-status-success/15 rounded-lg px-2.5 py-1.5 leading-snug">
             <span className="text-status-success/80 font-medium">Last run:</span>{" "}
             {run.date_start} → {run.date_end}
             {run.rows_ingested != null && (
-              <span className="text-muted-foreground/40"> · {run.rows_ingested} rows</span>
+              <span className="text-muted-foreground/75"> · {run.rows_ingested} rows</span>
             )}
           </div>
         )}
@@ -251,7 +251,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
         )}
 
         {/* Date range label */}
-        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/55">
+        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/75">
           Date window
         </p>
 
@@ -266,7 +266,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
                 "h-7 rounded-lg border text-label font-semibold transition-colors",
                 dateRange === r.id
                   ? "border-primary/50 bg-primary/15 text-interactive"
-                  : "border-border/35 bg-foreground/[0.02] text-foreground/50 hover:bg-foreground/[0.05] hover:text-foreground/75",
+                  : "border-border/35 bg-foreground/[0.02] text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground/75",
                 isRunning && "opacity-40 cursor-not-allowed"
               )}
             >
@@ -285,7 +285,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
           (<button
             onClick={() => void handleRun()}
             disabled={startMutation.isPending}
-            className="w-full flex items-center justify-center gap-1.5 h-7 rounded-lg border border-border/30 bg-foreground/[0.02] text-caption font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-foreground/[0.05] hover:border-border/50 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 h-7 rounded-lg border border-border/30 bg-foreground/[0.02] text-caption font-medium text-muted-foreground/75 hover:text-foreground/80 hover:bg-foreground/[0.05] hover:border-border/50 transition-colors"
           >
             {startMutation.isPending ? (
               <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Starting…</>
@@ -350,7 +350,7 @@ function UploadDataLink({ accountId }: { accountId: string }) {
   return (
     <button
       onClick={() => navigate(`/app/account?account=${accountId}`)}
-      className="w-full flex items-center gap-1.5 text-label text-muted-foreground/50 hover:text-foreground/70 transition-colors justify-center py-0.5"
+      className="w-full flex items-center gap-1.5 text-label text-muted-foreground/75 hover:text-foreground/70 transition-colors justify-center py-0.5"
     >
       <Upload className="w-3.5 h-3.5" />
       Upload / manage data files
@@ -472,9 +472,9 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             className={cn(
               "text-body font-medium leading-tight",
               status === "done"
-                ? "text-foreground/40 line-through"
+                ? "text-foreground/55 line-through"
                 : status === "archived"
-                  ? "text-foreground/40"
+                  ? "text-foreground/55"
                   : "text-foreground/90",
               href && !settled && "cursor-pointer hover:text-interactive transition-colors"
             )}
@@ -495,7 +495,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
                   "text-[8px] font-semibold px-1.5 py-0.5 rounded leading-none border",
                   status === "done"
                     ? "border-status-success/20 bg-status-success/[0.07] text-status-success/80"
-                    : "border-border/30 bg-foreground/[0.04] text-muted-foreground/60"
+                    : "border-border/30 bg-foreground/[0.04] text-muted-foreground/75"
                 )}
               >
                 {status === "done" ? "Completed" : "Archived"}
@@ -511,7 +511,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
                 onClick={() => navigate(href)}
                 title="Open source"
                 aria-label={`Open source of "${title}"`}
-                className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-interactive hover:bg-foreground/5 transition-colors"
+                className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-interactive hover:bg-foreground/5 transition-colors"
               >
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
@@ -520,7 +520,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
               onClick={() => setTrayItemStatus(scopeId, id, "archived")}
               title="Archive"
               aria-label={`Archive "${title}"`}
-              className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-foreground/5 transition-colors"
+              className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/5 transition-colors"
             >
               <Archive className="w-3.5 h-3.5" />
             </button>
@@ -530,7 +530,7 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             onClick={() => setTrayItemStatus(scopeId, id, "open")}
             title="Move back to tray"
             aria-label={`Move "${title}" back to tray`}
-            className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-foreground/5 transition-colors shrink-0"
+            className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/5 transition-colors shrink-0"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -555,7 +555,7 @@ function TrayNavLink({
       onClick={() => navigate(to)}
       className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-foreground/60 hover:text-foreground hover:bg-foreground/[0.04] transition-colors text-left min-w-0 text-[14px] font-semibold"
     >
-      {Icon && <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50" />}
+      {Icon && <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/75" />}
       <span className="truncate font-extrabold text-[18px] text-metrix-cyan bg-metrix-panel border-t-[3px] border-r-[3px] border-b-[3px] border-l-[3px] rounded-tl-[8px] rounded-tr-[8px] rounded-br-[8px] rounded-bl-[8px] opacity-[0.94] ml-[14px] mr-[14px] mt-[8px] mb-[8px] pt-[8px] pb-[8px] pl-[20px] pr-[20px] border-t-[color:var(--color-sky-500)] border-r-[color:var(--color-sky-500)] border-b-[color:var(--color-sky-500)] border-l-[color:var(--color-sky-500)]">{label}</span>
       <ArrowRight className="w-3.5 h-3.5 ml-auto opacity-40 shrink-0" />
     </button>
@@ -578,7 +578,7 @@ function EmptySlot({
   const [, navigate] = useLocation();
   return (
     <div className="px-0.5 py-1.5 space-y-1">
-      <p className="text-foreground/40 text-[15px]">{message}</p>
+      <p className="text-foreground/55 text-[15px]">{message}</p>
       {nudgeLabel && nudgeTo && (
         <button
           onClick={() => navigate(nudgeTo)}
@@ -708,14 +708,14 @@ export function TaskTray() {
             onClick={toggle}
             title="Expand task tray"
             aria-label="Expand task tray"
-            className="flex flex-col items-center gap-2 w-full px-1 text-muted-foreground/60 hover:text-primary transition-colors group"
+            className="flex flex-col items-center gap-2 w-full px-1 text-muted-foreground/75 hover:text-primary transition-colors group"
           >
             <div className="relative">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-foreground/[0.05] border border-border/40 group-hover:bg-foreground/[0.08] border-t-[0px] border-r-[0px] border-b-[0px] border-l-[0px]">
                 <ClipboardList
                   className={cn(
                     "w-4 h-4 transition-transform group-hover:scale-110",
-                    hasPriorityItems ? "text-status-success" : "text-muted-foreground/70"
+                    hasPriorityItems ? "text-status-success" : "text-muted-foreground/75"
                   )}
                 />
               </div>
@@ -736,13 +736,13 @@ export function TaskTray() {
             onClick={toggle}
             title="Expand task tray"
           >
-            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/25" />
+            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75" />
           </div>
           <button
             onClick={toggle}
             title="Expand"
             aria-label="Expand task tray"
-            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-foreground/[0.05] transition-colors"
+            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/75 hover:text-primary hover:bg-foreground/[0.05] transition-colors"
           >
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
@@ -755,7 +755,7 @@ export function TaskTray() {
           <ClipboardList className="w-4 h-4 text-interactive" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-label font-mono text-muted-foreground/50 uppercase tracking-widest leading-none mb-0.5 truncate">
+          <p className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest leading-none mb-0.5 truncate">
             Workflow
           </p>
           <p className="text-title font-semibold text-foreground leading-tight truncate">
@@ -767,7 +767,7 @@ export function TaskTray() {
         <button
           onClick={close}
           aria-label="Close task tray"
-          className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-foreground/[0.06] transition-colors shrink-0"
+          className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.06] transition-colors shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
@@ -806,7 +806,7 @@ export function TaskTray() {
             <div className="mt-1">
               <button
                 onClick={() => setShowHistory((v) => !v)}
-                className="flex items-center gap-1 text-label text-muted-foreground/50 hover:text-foreground/60 transition-colors px-0.5 py-0.5"
+                className="flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/60 transition-colors px-0.5 py-0.5"
               >
                 {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 History ({historyItems.length})
@@ -911,7 +911,7 @@ export function TaskTray() {
 
       {/* Footer */}
       <div className="px-4 py-2.5 border-t border-border/40 bg-foreground/[0.01]">
-        <p className="text-[9px] text-foreground/35 leading-snug">
+        <p className="text-[9px] text-foreground/55 leading-snug">
           Action items update as you work through analysis, strategy &amp; briefs.
         </p>
       </div>

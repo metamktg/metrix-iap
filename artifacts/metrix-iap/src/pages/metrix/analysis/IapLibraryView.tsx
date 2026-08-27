@@ -368,8 +368,8 @@ export function IapLibraryView() {
 
               {/* ── Funnel stage selector ── */}
               <div className="px-6 pt-3 pb-1 flex items-center gap-2">
-                <Sliders className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
-                <span className="text-label text-muted-foreground/50 shrink-0">Funnel</span>
+                <Sliders className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
+                <span className="text-label text-muted-foreground/75 shrink-0">Funnel</span>
                 <div className="flex items-center rounded-md border border-border/30 overflow-hidden">
                   {(["upper", "lower", "custom"] as const).map((stage) => {
                     const label = stage === "upper" ? "Upper Funnel" : stage === "lower" ? "Lower Funnel" : "Custom";
@@ -391,7 +391,7 @@ export function IapLibraryView() {
                           "flex items-center gap-1 px-2.5 py-1 text-label font-medium transition-colors",
                           funnelStage === stage
                             ? "bg-foreground/10 text-foreground"
-                            : "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-foreground/[0.03]",
+                            : "text-muted-foreground/75 hover:text-muted-foreground/75 hover:bg-foreground/[0.03]",
                         ].join(" ")}
                       >
                         {icon}{label}
@@ -438,7 +438,7 @@ export function IapLibraryView() {
                     );
                   })}
                   {tileIds.length === 0 && (
-                    <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/60 border border-dashed border-border/40 rounded-lg px-3 py-4 text-center">
+                    <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/75 border border-dashed border-border/40 rounded-lg px-3 py-4 text-center">
                       No metrics selected — use "Customize" to add tiles.
                     </div>
                   )}
@@ -480,10 +480,10 @@ export function IapLibraryView() {
                       className={[
                         "flex items-center gap-1.5 text-label font-medium border px-2.5 py-1.5 rounded-md transition-colors",
                         syncMutation.isPending
-                          ? "border-border/30 text-muted-foreground/40 cursor-not-allowed"
+                          ? "border-border/30 text-muted-foreground/75 cursor-not-allowed"
                           : syncResult
                           ? "border-status-success/30 text-status-success/80 bg-status-success/[0.04] hover:bg-status-success/[0.08]"
-                          : "border-border/40 text-muted-foreground/70 hover:text-foreground bg-foreground/[0.02] hover:bg-foreground/[0.04] hover:border-border/60",
+                          : "border-border/40 text-muted-foreground/75 hover:text-foreground bg-foreground/[0.02] hover:bg-foreground/[0.04] hover:border-border/60",
                       ].join(" ")}
                     >
                       <RefreshCw className={["w-3.5 h-3.5", syncMutation.isPending ? "animate-spin" : ""].join(" ").trim()} />
@@ -503,7 +503,7 @@ export function IapLibraryView() {
                   </button>
                   <button
                     onClick={() => setCreativeLibraryOpen(true)}
-                    className="flex items-center gap-1.5 text-label font-medium text-muted-foreground/70 hover:text-foreground border border-border/40 hover:border-border/60 bg-foreground/[0.02] hover:bg-foreground/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
+                    className="flex items-center gap-1.5 text-label font-medium text-muted-foreground/75 hover:text-foreground border border-border/40 hover:border-border/60 bg-foreground/[0.02] hover:bg-foreground/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
                   >
                     <Images className="w-3.5 h-3.5" />
                     Add creatives
@@ -530,7 +530,7 @@ export function IapLibraryView() {
                           <p className="text-caption font-medium text-status-warning/90">
                             {unmappedCellIds.size} creative {unmappedCellIds.size === 1 ? "cell" : "cells"} not fully mapped to IAP library
                           </p>
-                          <p className="text-label text-muted-foreground/70">Missing library entry — assets may be incomplete.</p>
+                          <p className="text-label text-muted-foreground/75">Missing library entry — assets may be incomplete.</p>
                         </div>
                         <button
                           onClick={() => setCreativeLibraryOpen(true)}
@@ -714,7 +714,7 @@ export function IapLibraryView() {
 
                               {/* ── Pagination controls ── */}
                               <div className="flex items-center justify-between pt-3 border-t border-border/20">
-                                <span className="text-label text-muted-foreground/50 tabular-nums">
+                                <span className="text-label text-muted-foreground/75 tabular-nums">
                                   {totalCells <= pageSize
                                     ? `${totalCells} creative${totalCells === 1 ? "" : "s"} with performance data`
                                     : `${rangeStart}–${rangeEnd} of ${totalCells}`}
@@ -729,13 +729,13 @@ export function IapLibraryView() {
                                         className={`text-label font-medium px-2 py-1 rounded transition-colors ${
                                           pageSize === n
                                             ? "bg-primary/15 text-interactive"
-                                            : "text-muted-foreground/50 hover:text-foreground hover:bg-foreground/[0.04]"
+                                            : "text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04]"
                                         }`}
                                       >
                                         {n}
                                       </button>
                                     ))}
-                                    <span className="text-label text-muted-foreground/35 ml-1">per page</span>
+                                    <span className="text-label text-muted-foreground/75 ml-1">per page</span>
                                   </div>
                                   {/* Prev / page indicator / Next */}
                                   {totalPages > 1 && (
@@ -743,18 +743,18 @@ export function IapLibraryView() {
                                       <button
                                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                                         disabled={safePage === 1}
-                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/70"
+                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/75"
                                         aria-label="Previous page"
                                       >
                                         ‹
                                       </button>
-                                      <span className="text-label tabular-nums text-muted-foreground/50 px-1 min-w-[3rem] text-center">
+                                      <span className="text-label tabular-nums text-muted-foreground/75 px-1 min-w-[3rem] text-center">
                                         {safePage} / {totalPages}
                                       </span>
                                       <button
                                         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                         disabled={safePage === totalPages}
-                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/70"
+                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/75"
                                         aria-label="Next page"
                                       >
                                         ›
@@ -769,7 +769,7 @@ export function IapLibraryView() {
                           {/* ── Creative assets without performance data ── */}
                           {creativeOnlyCellIds.length > 0 && (
                             <div className="space-y-3 pt-2 border-t border-border/15">
-                              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/40">
+                              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                                 Creative assets — no performance data yet ({creativeOnlyCellIds.length})
                               </p>
                               <div className="grid grid-cols-dashboard-5-xl gap-3">
@@ -811,7 +811,7 @@ export function IapLibraryView() {
                       if (adLevelAds.length === 0) return null;
                       return (
                         <div className="space-y-3 pt-2 border-t border-border/15" data-testid="section-ad-level-tiles">
-                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/40">
+                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
                             Ads without creative cells ({adLevelAds.length})
                           </p>
                           <div className="grid grid-cols-dashboard-5-xl gap-3">
@@ -887,19 +887,19 @@ export function IapLibraryView() {
                     const p75 = rankedCpas[Math.floor(rankedCpas.length * 0.75)] ?? rankedCpas[rankedCpas.length - 1];
                     const tierFor = (cpa: number | null): { label: string; cls: string } => {
                       if (cpa == null || rankedCpas.length < 2) {
-                        return { label: "Unranked", cls: "bg-foreground/[0.05] text-muted-foreground/55 border-border/30" };
+                        return { label: "Unranked", cls: "bg-foreground/[0.05] text-muted-foreground/75 border-border/30" };
                       }
                       if (cpa <= p25) return { label: "Top 25%", cls: "bg-status-success/10 text-status-success border-status-success/25" };
                       if (cpa >= p75) return { label: "Bottom 25%", cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
-                      return { label: "Mid 50%", cls: "bg-foreground/[0.05] text-muted-foreground/70 border-border/30" };
+                      return { label: "Mid 50%", cls: "bg-foreground/[0.05] text-muted-foreground/75 border-border/30" };
                     };
 
                     return (
                       <div className="space-y-4">
                         <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
-                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">Text assets</p>
+                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">Text assets</p>
                           <h3 className="text-title font-semibold text-foreground mb-1">Meta ad copy, read against the same result</h3>
-                          <p className="text-caption text-muted-foreground/70 leading-relaxed">
+                          <p className="text-caption text-muted-foreground/75 leading-relaxed">
                             Primary text for every cell in scope, so a copy pattern can be judged next to what it actually cost.
                           </p>
                         </div>
@@ -926,7 +926,7 @@ export function IapLibraryView() {
                                 <p className="text-body italic text-foreground/90 leading-relaxed">
                                   &ldquo;{lib?.primary_message}&rdquo;
                                 </p>
-                                <div className="mt-auto pt-2 border-t border-border/20 flex items-baseline justify-between gap-2 text-label text-muted-foreground/55">
+                                <div className="mt-auto pt-2 border-t border-border/20 flex items-baseline justify-between gap-2 text-label text-muted-foreground/75">
                                   <span className="truncate">
                                     {conceptLabel}
                                     {ctx?.angleLabel ? ` · ${ctx.angleLabel}` : ""}
@@ -948,7 +948,7 @@ export function IapLibraryView() {
                 {tab === "top" && (
                   <div className="space-y-5">
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout cells</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Top checkout cells</h3>
                       {topCells.length ? (
                         <div className="grid grid-cols-dashboard-5-xl gap-3">
                           {uniqueCellRows(topCells).map((row) => (
@@ -985,7 +985,7 @@ export function IapLibraryView() {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Top checkout variables</h3>
                       {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />}
                     </div>
                   </div>
@@ -999,7 +999,7 @@ export function IapLibraryView() {
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
                           <Dna className="w-3.5 h-3.5 text-interactive/70" />
-                          <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60">
+                          <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75">
                             DNA families in selection
                           </h3>
                         </div>
@@ -1017,30 +1017,30 @@ export function IapLibraryView() {
                             >
                               <div className="flex items-center justify-between gap-2 mb-3">
                                 <span className="text-sm font-bold text-foreground">{familyLabel(f.family)}</span>
-                                <span className="text-label font-mono text-muted-foreground/40 border border-border/30 rounded px-1 py-0.5 leading-none">
+                                <span className="text-label font-mono text-muted-foreground/75 border border-border/30 rounded px-1 py-0.5 leading-none">
                                   {f.variableCount} variable{f.variableCount === 1 ? "" : "s"}
                                 </span>
                               </div>
                               <div className="flex items-center gap-3 tabular-nums">
                                 <div>
-                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">Spend</div>
+                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">Spend</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtUSD(f.spend, 0)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">Results</div>
+                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">Results</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtNum(f.results)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">CPA</div>
+                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">CPA</div>
                                   <div className="text-caption font-semibold text-foreground/80">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
                                 </div>
                               </div>
                               {f.top && (
                                 <div className="mt-2 pt-2 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-micro uppercase tracking-widest text-muted-foreground/40">Best read</span>
+                                  <span className="text-micro uppercase tracking-widest text-muted-foreground/75">Best read</span>
                                   <VariableChip code={f.top.variableId} showCode={false} className="opacity-80 scale-95 border-border/30" />
                                   {f.top.cpa != null && (
-                                    <span className="text-label tabular-nums text-muted-foreground/50">{fmtUSD(f.top.cpa)} CPA</span>
+                                    <span className="text-label tabular-nums text-muted-foreground/75">{fmtUSD(f.top.cpa)} CPA</span>
                                   )}
                                 </div>
                               )}
@@ -1136,7 +1136,7 @@ export function IapLibraryView() {
                       ];
                       return stats.map((s) => (
                         <div key={s.label}>
-                          <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">{s.label}</div>
+                          <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/75 leading-none mb-1">{s.label}</div>
                           <div className="text-caption font-semibold tabular-nums text-foreground/90">{s.value}</div>
                         </div>
                       ));
@@ -1173,7 +1173,7 @@ export function IapLibraryView() {
                   )}
                   {detail.legacy_library_match && (
                     <DrawerField label="Legacy library match">
-                      <span className="font-mono text-label text-muted-foreground/60">{detail.legacy_library_match}</span>
+                      <span className="font-mono text-label text-muted-foreground/75">{detail.legacy_library_match}</span>
                     </DrawerField>
                   )}
                   <DrawerField label="Creative">

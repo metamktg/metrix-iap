@@ -52,7 +52,7 @@ export function CsvWarningsPanel({ run, compact = false }: { run: AnalysisRun; c
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-start gap-2 text-left"
       >
-        <AlertTriangle className={cn("w-3.5 h-3.5 shrink-0 mt-0.5", alarmed ? "text-status-warning" : "text-muted-foreground/70")} />
+        <AlertTriangle className={cn("w-3.5 h-3.5 shrink-0 mt-0.5", alarmed ? "text-status-warning" : "text-muted-foreground/75")} />
         <div className="flex-1 min-w-0">
           <div className={cn("text-caption font-semibold", alarmed ? "text-status-warning" : "text-foreground/85")}>
             {reducedConfidence
@@ -61,7 +61,7 @@ export function CsvWarningsPanel({ run, compact = false }: { run: AnalysisRun; c
                 ? `Analysis succeeded — ${attention.length} warning${attention.length !== 1 ? "s" : ""} to review`
                 : "Analysis succeeded — routine column mappings only"}
           </div>
-          <p className={cn("text-label mt-0.5", alarmed ? "text-status-warning/70" : "text-muted-foreground/70")}>
+          <p className={cn("text-label mt-0.5", alarmed ? "text-status-warning/70" : "text-muted-foreground/75")}>
             {reducedConfidence
               ? "Some core metric columns were missing — key efficiency scores may be incomplete. "
               : ""}
@@ -86,13 +86,13 @@ export function CsvWarningsPanel({ run, compact = false }: { run: AnalysisRun; c
           )}
           {notices.length > 0 && (
             <details className="group/run-notices pt-1">
-              <summary className="flex items-center gap-1 text-label text-muted-foreground/70 cursor-pointer hover:text-foreground/80 transition-colors [&::-webkit-details-marker]:hidden">
+              <summary className="flex items-center gap-1 text-label text-muted-foreground/75 cursor-pointer hover:text-foreground/80 transition-colors [&::-webkit-details-marker]:hidden">
                 <ChevronRight className="w-3 h-3 shrink-0 transition-transform group-open/run-notices:rotate-90" />
                 {notices.length} routine notice{notices.length !== 1 ? "s" : ""} — automatic mappings &amp; optional columns (no action needed)
               </summary>
               <ul className="space-y-1 pl-4 pt-1">
                 {notices.map((w, i) => (
-                  <li key={i} className="text-label text-muted-foreground/70 leading-relaxed">
+                  <li key={i} className="text-label text-muted-foreground/75 leading-relaxed">
                     · {w}
                   </li>
                 ))}

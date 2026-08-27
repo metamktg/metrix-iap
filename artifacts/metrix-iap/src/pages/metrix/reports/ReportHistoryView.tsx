@@ -446,7 +446,7 @@ function ReportCardList({
               </div>
             )}
             <div className="w-9 h-9 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center shrink-0">
-              <FileText className="w-4 h-4 text-muted-foreground/70" />
+              <FileText className="w-4 h-4 text-muted-foreground/75" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -463,7 +463,7 @@ function ReportCardList({
                 </span>
               </div>
               <p className="text-caption text-muted-foreground/80 mt-1 leading-relaxed line-clamp-1">{deriveLabel(r.summary, 90)}</p>
-              <div className="flex items-center gap-3 mt-2 text-label font-mono text-muted-foreground/70 flex-wrap">
+              <div className="flex items-center gap-3 mt-2 text-label font-mono text-muted-foreground/75 flex-wrap">
                 <span>{fmtDate(r.generated_at)}</span>
                 <span className="inline-flex items-center gap-1">
                   {r.mode === "client" ? <Users className="w-3.5 h-3.5" /> : <Building2 className="w-3.5 h-3.5" />}

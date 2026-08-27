@@ -215,7 +215,7 @@ function DepBadge({
       "inline-flex items-center gap-1 text-label font-semibold rounded-md px-2 py-1 leading-none border",
       satisfied
         ? "text-status-success bg-status-success/[0.15] border-status-success/40"
-        : "text-muted-foreground/60 bg-foreground/[0.05] border-border/30",
+        : "text-muted-foreground/75 bg-foreground/[0.05] border-border/30",
     )}>
       {satisfied
         ? <CheckCircle2 className="w-3.5 h-3.5" />
@@ -277,7 +277,7 @@ function StageTile({
   );
 
   const circleCls = isLocked
-    ? "border-border/40 bg-transparent text-muted-foreground/40"
+    ? "border-border/40 bg-transparent text-muted-foreground/75"
     : isRunning
     ? "border-transparent bg-status-warning/20 text-status-warning"
     : isFailed
@@ -288,10 +288,10 @@ function StageTile({
     ? "border-transparent bg-primary/25 text-interactive"
     : isNext || isActive
     ? "border-transparent bg-primary text-primary-foreground"
-    : "border-border/40 bg-transparent text-muted-foreground/55";
+    : "border-border/40 bg-transparent text-muted-foreground/75";
 
   const labelCls = isLocked
-    ? "text-muted-foreground/40"
+    ? "text-muted-foreground/75"
     : isRunning
     ? "text-status-warning/90"
     : isFailed
@@ -302,7 +302,7 @@ function StageTile({
     ? "text-foreground font-semibold"
     : isComplete
     ? "text-foreground/65"
-    : "text-muted-foreground/55";
+    : "text-muted-foreground/75";
 
   return (
     <div className="flex items-center flex-1 min-w-0">
@@ -440,7 +440,7 @@ function StageIntelligence({
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-label text-data-caption font-medium">Entry point</span>
-          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/45" />
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/75" />
           <span className="text-label text-data-caption">Enables Analysis</span>
         </div>
         {dataComplete && (
@@ -466,7 +466,7 @@ function StageIntelligence({
         {/* Causal position */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-label text-data-caption font-medium">Root stage</span>
-          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/45" />
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/75" />
           <span className="text-label text-data-caption">Enables Strategy &amp; Briefs</span>
         </div>
 
@@ -521,7 +521,7 @@ function StageIntelligence({
             label={`Analysis${analysisWindow ? `: ${analysisWindow}` : ""}`}
             satisfied={analysisComplete}
           />
-          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/45" />
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/75" />
           <span className="text-label text-data-caption">Enables Briefs</span>
         </div>
 
@@ -545,7 +545,7 @@ function StageIntelligence({
             <Clock className="w-3.5 h-3.5 shrink-0" />
             <span>Generated {fmtFull(genDate)}</span>
             {strategyLastRun?.model && (
-              <span className="text-muted-foreground/45">· {strategyLastRun.model}</span>
+              <span className="text-muted-foreground/75">· {strategyLastRun.model}</span>
             )}
           </div>
         )}
@@ -642,7 +642,7 @@ function ReportIntelligence({
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-1.5 flex-wrap">
         <DepBadge label="Briefs" satisfied={briefsComplete} />
-        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/45" />
+        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/75" />
         <span className="text-label text-data-caption">Deliverable</span>
       </div>
       {reportComplete && (
@@ -800,7 +800,7 @@ function CommandHub({
       || (strategyComplete && stage === "briefs")
       || (briefsComplete && stage === "report")
     ? "text-interactive/90 bg-primary/[0.12] border-primary/35"
-    : "text-muted-foreground/65 bg-foreground/[0.05] border-border/30";
+    : "text-muted-foreground/75 bg-foreground/[0.05] border-border/30";
 
   const routes = STAGE_ROUTES[stage];
 
@@ -981,7 +981,7 @@ function CommandHub({
           {/* Last run context — shown when a prior run exists */}
           {analysisRun && (analysisRun.status === "success" || analysisRun.status === "error") && (
             <div className="rounded-lg border border-border/25 bg-foreground/[0.02] px-2.5 py-2 space-y-1">
-              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Last run</p>
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75">Last run</p>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {analysisRun.status === "success" ? (
                   <span className="flex items-center gap-1 text-[9px] font-semibold text-status-success/70">
@@ -998,7 +998,7 @@ function CommandHub({
                   </span>
                 )}
                 {analysisRun.rows_ingested != null && (
-                  <span className="text-label font-mono text-muted-foreground/35 tabular-nums">
+                  <span className="text-label font-mono text-muted-foreground/75 tabular-nums">
                     {analysisRun.rows_ingested.toLocaleString()} rows
                   </span>
                 )}
@@ -1008,7 +1008,7 @@ function CommandHub({
 
           {/* Data source context */}
           <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
-            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Data source</p>
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75">Data source</p>
             <p className="text-label text-foreground/70 leading-relaxed">
               {isLiveMeta
                 ? "Live Meta ad account connection"
@@ -1019,7 +1019,7 @@ function CommandHub({
           {/* Date window picker (manual accounts only) */}
           {!isLiveMeta && (
             <div className="space-y-1.5">
-              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35 flex items-center gap-1">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75 flex items-center gap-1">
                 <CalendarRange className="w-3 h-3" /> Date window
               </p>
               <div className="grid grid-cols-2 gap-1">
@@ -1031,7 +1031,7 @@ function CommandHub({
                       "h-7 px-2 rounded-md border text-label font-medium transition-colors",
                       localDateRange === r.id
                         ? "border-primary/40 bg-primary/[0.08] text-interactive"
-                        : "border-border/40 bg-foreground/[0.02] text-muted-foreground/70 hover:bg-foreground/[0.04]"
+                        : "border-border/40 bg-foreground/[0.02] text-muted-foreground/75 hover:bg-foreground/[0.04]"
                     )}
                   >
                     {r.label}
@@ -1043,8 +1043,8 @@ function CommandHub({
 
           {/* Estimated wait time */}
           <div className="flex items-center gap-1.5">
-            <Timer className="w-3 h-3 text-muted-foreground/35 shrink-0" />
-            <p className="text-[9px] text-muted-foreground/40 leading-relaxed">
+            <Timer className="w-3 h-3 text-muted-foreground/75 shrink-0" />
+            <p className="text-[9px] text-muted-foreground/75 leading-relaxed">
               Typical run time: 15–60 seconds
             </p>
           </div>
@@ -1114,15 +1114,15 @@ function CommandHub({
       return (
         <div className="flex flex-col gap-2.5">
           <div>
-            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75 mb-1.5">
               Ground strategy in
             </p>
             <RunSelector runs={candidateRuns} value={runSelection} onChange={setRunSelection} />
           </div>
           {/* Estimated time hint */}
           <div className="flex items-center gap-1.5">
-            <Timer className="w-3 h-3 text-muted-foreground/30 shrink-0" />
-            <p className="text-[9px] text-muted-foreground/35">Typical run time: 30–90 seconds</p>
+            <Timer className="w-3 h-3 text-muted-foreground/75 shrink-0" />
+            <p className="text-[9px] text-muted-foreground/75">Typical run time: 30–90 seconds</p>
           </div>
           <div className="flex gap-1.5">
             <button
@@ -1189,7 +1189,7 @@ function CommandHub({
       if (pendingConfirm === "report") return (
         <div className="flex flex-col gap-2.5">
           <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
-            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Delivery mode</p>
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75">Delivery mode</p>
             <div className="flex items-center gap-1 rounded-md border border-border/40 p-0.5 w-fit mt-1.5">
               {(["internal", "client"] as const).map((m) => (
                 <button
@@ -1199,14 +1199,14 @@ function CommandHub({
                     "h-6 px-2.5 rounded text-[9px] font-semibold transition-colors",
                     reportMode === m
                       ? "bg-foreground/[0.08] text-foreground"
-                      : "text-muted-foreground/60 hover:text-foreground",
+                      : "text-muted-foreground/75 hover:text-foreground",
                   )}
                 >
                   {m === "internal" ? "Internal" : "Client-facing"}
                 </button>
               ))}
             </div>
-            <p className="text-label text-muted-foreground/50 leading-relaxed pt-0.5">
+            <p className="text-label text-muted-foreground/75 leading-relaxed pt-0.5">
               {reportMode === "internal"
                 ? "Full Metrix branding · for the agency dashboard"
                 : "White-labeled for the client · removes Metrix marks"}
@@ -1267,7 +1267,7 @@ function CommandHub({
       <div className="flex flex-col gap-2.5">
         {/* Strategy context */}
         <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1.5">
-          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Grounded in</p>
+          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75">Grounded in</p>
           <p className="text-label text-foreground/70 leading-relaxed">
             Strategy
             {strategyLastRun?.finished_at ? ` · generated ${fmtInstantDate(strategyLastRun.finished_at)}` : ""}
@@ -1276,17 +1276,17 @@ function CommandHub({
           {(pillarCount > 0 || hypothesisCount > 0 || icpCount > 0) && (
             <div className="flex flex-wrap gap-1.5 pt-0.5">
               {pillarCount > 0 && (
-                <span className="text-[9px] font-mono text-muted-foreground/45 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                <span className="text-[9px] font-mono text-muted-foreground/75 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
                   {pillarCount} pillar{pillarCount === 1 ? "" : "s"}
                 </span>
               )}
               {hypothesisCount > 0 && (
-                <span className="text-[9px] font-mono text-muted-foreground/45 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                <span className="text-[9px] font-mono text-muted-foreground/75 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
                   {hypothesisCount} hypothesis{hypothesisCount === 1 ? "" : "es"}
                 </span>
               )}
               {icpCount > 0 && (
-                <span className="text-[9px] font-mono text-muted-foreground/45 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                <span className="text-[9px] font-mono text-muted-foreground/75 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
                   {icpCount} ICP{icpCount === 1 ? "" : "s"}
                 </span>
               )}
@@ -1304,8 +1304,8 @@ function CommandHub({
         )}
         {/* Estimated time */}
         <div className="flex items-center gap-1.5">
-          <Timer className="w-3 h-3 text-muted-foreground/35 shrink-0" />
-          <p className="text-[9px] text-muted-foreground/40 leading-relaxed">
+          <Timer className="w-3 h-3 text-muted-foreground/75 shrink-0" />
+          <p className="text-[9px] text-muted-foreground/75 leading-relaxed">
             Typical run time: 30–90 seconds
           </p>
         </div>
@@ -1380,7 +1380,7 @@ function CommandHub({
               "w-4 h-4",
               isRunning   ? "text-status-warning/80"
                 : isComplete ? "text-status-success/70"
-                : "text-muted-foreground/35",
+                : "text-muted-foreground/75",
             )} />
           </div>
 
@@ -1397,7 +1397,7 @@ function CommandHub({
 
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground/25 hover:text-foreground/60 hover:bg-foreground/[0.06] transition-colors shrink-0"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground/75 hover:text-foreground/60 hover:bg-foreground/[0.06] transition-colors shrink-0"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -1444,7 +1444,7 @@ function CommandHub({
 
         {/* ── Layer 3: Navigate ────────────────────────────────────────── */}
         <div className="px-4 py-3 border-t border-border/12">
-          <p className="text-[8px] font-bold uppercase tracking-[0.16em] text-muted-foreground/22 mb-2">
+          <p className="text-[8px] font-bold uppercase tracking-[0.16em] text-muted-foreground/75 mb-2">
             Navigate
           </p>
           <div className="grid grid-cols-2 gap-1">
@@ -1467,7 +1467,7 @@ function CommandHub({
                 >
                   <span className={cn(
                     "text-caption font-semibold leading-none",
-                    !isAccessible ? "text-muted-foreground/40"
+                    !isAccessible ? "text-muted-foreground/75"
                       : isCurrent ? "text-interactive/80"
                       : "text-foreground/65 group-hover:text-foreground/85",
                   )}>
@@ -1475,7 +1475,7 @@ function CommandHub({
                   </span>
                   <span className={cn(
                     "text-[9px] leading-none",
-                    isCurrent ? "text-interactive/45" : "text-muted-foreground/30",
+                    isCurrent ? "text-interactive/45" : "text-muted-foreground/75",
                   )}>
                     {r.desc}
                   </span>
@@ -1487,7 +1487,7 @@ function CommandHub({
 
         {/* ── Layer 4: Actions ─────────────────────────────────────────── */}
         <div className="px-4 pt-2 pb-4 border-t border-border/12">
-          <p className="text-[8px] font-bold uppercase tracking-[0.16em] text-muted-foreground/22 mb-2">
+          <p className="text-[8px] font-bold uppercase tracking-[0.16em] text-muted-foreground/75 mb-2">
             {isRunning ? "Status" : "Actions"}
           </p>
           <Actions />

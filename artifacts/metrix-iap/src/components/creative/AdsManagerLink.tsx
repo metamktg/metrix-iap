@@ -45,7 +45,7 @@ export function AdsManagerButton({
       className={
         enabled
           ? "inline-flex items-center gap-1 rounded-md border border-primary/30 text-interactive hover:bg-primary/10 active:bg-primary/20 transition-colors text-label font-medium px-2 h-6"
-          : "inline-flex items-center gap-1 rounded-md border border-border/40 text-muted-foreground/50 cursor-not-allowed text-label font-medium px-2 h-6"
+          : "inline-flex items-center gap-1 rounded-md border border-border/40 text-muted-foreground/75 cursor-not-allowed text-label font-medium px-2 h-6"
       }
     >
       <ExternalLink className="w-3.5 h-3.5" />

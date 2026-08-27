@@ -49,7 +49,7 @@ export interface DeckCard {
 const IMPACT_STYLE: Record<string, string> = {
   high: "bg-status-danger/10 text-status-danger border-status-danger/20",
   medium: "bg-status-warning/10 text-status-warning border-status-warning/20",
-  low: "bg-muted text-muted-foreground/60 border-border/40",
+  low: "bg-muted text-muted-foreground/75 border-border/40",
   setup: "bg-primary/10 text-interactive border-primary/20",
 };
 
@@ -112,7 +112,7 @@ function DetailDrawer({
       <div className="fixed right-0 top-0 h-full w-[400px] max-w-full bg-surface-deep border-l border-border/50 z-50 flex flex-col overflow-hidden elevation-floating">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-border/40">
           <div className="flex-1 min-w-0">
-            <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest mb-1">
+            <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest mb-1">
               Recommendation
             </div>
             <p className="text-title font-semibold text-foreground leading-tight">{card.title}</p>
@@ -129,28 +129,28 @@ function DetailDrawer({
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
           <div className="flex items-center gap-1.5 flex-wrap">
             {card.descriptor && <Badge text={card.descriptor} cls="bg-foreground/[0.04] text-foreground/70 border-border/40" />}
-            <Badge text={card.scope} cls={SCOPE_STYLE[card.scope] ?? "bg-muted text-muted-foreground/60 border-border/40"} />
+            <Badge text={card.scope} cls={SCOPE_STYLE[card.scope] ?? "bg-muted text-muted-foreground/75 border-border/40"} />
             <Badge text={`${card.impact} impact`} cls={IMPACT_STYLE[card.impact] ?? IMPACT_STYLE.low} />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Rationale</label>
+            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Rationale</label>
             <p className="text-body text-foreground/80 leading-relaxed"><TokenizedConceptText text={card.rationale} /></p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Recommended action</label>
+            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Recommended action</label>
             <p className="text-body text-foreground/80 leading-relaxed"><TokenizedConceptText text={card.recommendedAction} /></p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Confidence</label>
+            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Confidence</label>
             <p className="text-body text-foreground/80 capitalize">{card.confidence}</p>
           </div>
 
           {onSegments && (
             <div className="space-y-1.5">
-              <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Evidence segments</label>
+              <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Evidence segments</label>
               <div>
                 <button
                   onClick={() => onSegments(card)}
@@ -295,7 +295,7 @@ function SwipeCard({
 
         <div className="flex items-center gap-1.5 flex-wrap">
           {card.descriptor && <Badge text={card.descriptor} cls="bg-foreground/[0.04] text-foreground/70 border-border/40" />}
-          <Badge text={card.scope} cls={SCOPE_STYLE[card.scope] ?? "bg-muted text-muted-foreground/60 border-border/40"} />
+          <Badge text={card.scope} cls={SCOPE_STYLE[card.scope] ?? "bg-muted text-muted-foreground/75 border-border/40"} />
           <Badge text={`${card.impact} impact`} cls={IMPACT_STYLE[card.impact] ?? IMPACT_STYLE.low} />
         </div>
 
@@ -303,10 +303,10 @@ function SwipeCard({
           <p className="text-sm font-semibold text-foreground leading-snug">{card.title}</p>
         </div>
 
-        <p className="text-body text-muted-foreground/70 leading-snug line-clamp-2">{deriveLabel(card.rationale, 110)}</p>
+        <p className="text-body text-muted-foreground/75 leading-snug line-clamp-2">{deriveLabel(card.rationale, 110)}</p>
 
         <div className="mt-auto pt-2 border-t border-border/20">
-          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-1">Recommended</p>
+          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">Recommended</p>
           <p className="text-caption text-foreground/75 leading-snug line-clamp-1">{deriveLabel(card.recommendedAction, 90)}</p>
         </div>
       </div>
@@ -416,7 +416,7 @@ export function RecommendationDeck({
               <CheckCircle2 className="w-4 h-4 text-status-success/60" />
             </div>
             <p className="text-title font-medium text-foreground/60">{emptyLabel}</p>
-            <p className="text-caption text-muted-foreground/60">Check the Task Tray for items you added.</p>
+            <p className="text-caption text-muted-foreground/75">Check the Task Tray for items you added.</p>
           </div>
         ) : (
           <div>
@@ -464,7 +464,7 @@ export function RecommendationDeck({
               </button>
             </div>
 
-            <div className="flex items-center justify-center gap-3 mt-3 text-[9px] text-muted-foreground/60 font-mono">
+            <div className="flex items-center justify-center gap-3 mt-3 text-[9px] text-muted-foreground/75 font-mono">
               <span>← reject</span>
               <span>→ add to tray</span>
               <span>↑ / space details</span>
@@ -524,7 +524,7 @@ function TaskTray({
     <div className="space-y-5">
       {groups.map((g) => (
         <div key={g.label}>
-          <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">{g.label}</div>
+          <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">{g.label}</div>
           <div className="space-y-2">
             {g.rows.map((s) => {
               const done = isDone(scopeId, s.id);
@@ -538,8 +538,8 @@ function TaskTray({
                     <Check className="w-3.5 h-3.5" />
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className={cn("text-body font-medium leading-tight", done ? "text-foreground/50 line-through" : "text-foreground")}>{s.title}</p>
-                    <p className="text-label text-muted-foreground/70 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.recommendedAction, 90)}</p>
+                    <p className={cn("text-body font-medium leading-tight", done ? "text-foreground/55 line-through" : "text-foreground")}>{s.title}</p>
+                    <p className="text-label text-muted-foreground/75 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.recommendedAction, 90)}</p>
                     {s.descriptor && <span className="inline-flex mt-1.5 text-[8px] font-semibold border border-border/40 px-1 py-0.5 rounded text-foreground/60">{s.descriptor}</span>}
                   </div>
                   <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-label font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
@@ -567,7 +567,7 @@ function DismissedLog({ items, onRestore }: { items: DeckCard[]; onRestore: (id:
         <div key={s.id} className="flex items-start gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.01] opacity-70">
           <div className="flex-1 min-w-0">
             <p className="text-body font-medium text-foreground/60 leading-tight">{s.title}</p>
-            <p className="text-label text-muted-foreground/60 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.rationale, 90)}</p>
+            <p className="text-label text-muted-foreground/75 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.rationale, 90)}</p>
           </div>
           <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-label font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
             <RotateCcw className="w-3.5 h-3.5" />
@@ -582,10 +582,10 @@ function EmptyPanel({ Icon, title, sub }: { Icon: React.ComponentType<{ classNam
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
-        <Icon className="w-4 h-4 text-muted-foreground/60" />
+        <Icon className="w-4 h-4 text-muted-foreground/75" />
       </div>
       <p className="text-title font-medium text-foreground/60">{title}</p>
-      <p className="text-caption text-muted-foreground/60 max-w-xs">{sub}</p>
+      <p className="text-caption text-muted-foreground/75 max-w-xs">{sub}</p>
     </div>
   );
 }

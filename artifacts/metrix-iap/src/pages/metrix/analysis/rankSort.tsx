@@ -143,7 +143,7 @@ function MetricOptionList({
         return (
           <div key={g.label}>
             {gi > 0 && <div className="my-1 border-t border-border/20" />}
-            <div className={cn(TYPE.microLabel, "text-muted-foreground/45 px-2.5 py-1")}>{g.label}</div>
+            <div className={cn(TYPE.microLabel, "text-muted-foreground/75 px-2.5 py-1")}>{g.label}</div>
             {groupIds.map((id) => <Row key={id} id={id} />)}
           </div>
         );
@@ -181,14 +181,14 @@ export function RankSortBar<Row>({
             className
           )}
         >
-          <span className={cn(TYPE.microLabel, "text-muted-foreground/55")}>Sort by</span>
+          <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Sort by</span>
           <span className={cn(TYPE.body, "font-semibold text-foreground/90")}>{active.label}</span>
           {active.direction === "asc" ? (
             <ArrowUp className="w-3 h-3 text-interactive" />
           ) : (
             <ArrowDown className="w-3 h-3 text-interactive" />
           )}
-          <ChevronDown className={cn("w-3 h-3 text-muted-foreground/50 transition-transform", open && "rotate-180")} />
+          <ChevronDown className={cn("w-3 h-3 text-muted-foreground/75 transition-transform", open && "rotate-180")} />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-56 p-0 border-border/60 bg-popover/95 backdrop-blur-sm overflow-hidden">
@@ -248,7 +248,7 @@ export function MetricPickerTile({
           <button type="button" className="flex items-center gap-1 group/lbl text-left w-fit">
             <span className={cn(
               TYPE.microLabel,
-              isPrimary ? "text-muted-foreground/65" : "text-muted-foreground/50",
+              isPrimary ? "text-muted-foreground/75" : "text-muted-foreground/75",
               "transition-colors",
               open && "text-interactive"
             )}>
@@ -256,7 +256,7 @@ export function MetricPickerTile({
             </span>
             <ChevronDown className={cn(
               "w-2.5 h-2.5 shrink-0 transition-[color,background-color,border-color,box-shadow,opacity,transform]",
-              open ? "rotate-180 text-interactive" : "text-muted-foreground/35 group-hover/lbl:text-muted-foreground/65"
+              open ? "rotate-180 text-interactive" : "text-muted-foreground/75 group-hover/lbl:text-muted-foreground/75"
             )} />
           </button>
         </PopoverTrigger>
@@ -273,7 +273,7 @@ export function MetricPickerTile({
       <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em] mt-1">
         {active.formatted}
       </div>
-      {sub && <div className={cn(TYPE.caption, "text-muted-foreground/50 mt-2 leading-snug line-clamp-2")}>{sub}</div>}
+      {sub && <div className={cn(TYPE.caption, "text-muted-foreground/75 mt-2 leading-snug line-clamp-2")}>{sub}</div>}
     </div>
   );
 }

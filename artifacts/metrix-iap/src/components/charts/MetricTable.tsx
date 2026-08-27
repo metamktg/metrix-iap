@@ -125,7 +125,7 @@ export function MetricTable<Row>({
       <div className="flex items-center gap-2 mb-2">
         <div className="relative flex-1 min-w-0 max-w-xs">
           <Search
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/70 pointer-events-none"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/75 pointer-events-none"
             aria-hidden="true"
           />
           <input
@@ -135,7 +135,7 @@ export function MetricTable<Row>({
             placeholder={filterPlaceholder}
             aria-label={filterPlaceholder}
             className="w-full h-9 pl-8 pr-8 rounded-lg bg-input/40 text-body text-foreground
-                       placeholder:text-muted-foreground/60 outline-none
+                       placeholder:text-muted-foreground/75 outline-none
                        transition-[background-color,box-shadow] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
                        focus:bg-input/60 focus:shadow-[0_0_0_2px_hsl(var(--ring)/0.45)]"
           />
@@ -145,7 +145,7 @@ export function MetricTable<Row>({
               onClick={() => setQuery("")}
               aria-label="Clear filter"
               className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 grid place-items-center
-                         text-muted-foreground/70 hover:text-foreground active:scale-[0.96]
+                         text-muted-foreground/75 hover:text-foreground active:scale-[0.96]
                          transition-[color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]"
             >
               <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -165,7 +165,7 @@ export function MetricTable<Row>({
           >
             <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Metrics</span>
-            <span className="tabular-nums text-muted-foreground/70">{active.length}</span>
+            <span className="tabular-nums text-muted-foreground/75">{active.length}</span>
           </button>
           {pickerOpen && (
             // Outer radius 12px with 6px padding -> inner rows at 6px.
@@ -210,7 +210,7 @@ export function MetricTable<Row>({
       </div>
 
       {sorted.length === 0 ? (
-        <p className="text-body text-muted-foreground/70 py-6 text-center">
+        <p className="text-body text-muted-foreground/75 py-6 text-center">
           {query ? `No rows match "${query}"` : emptyLabel}
         </p>
       ) : (
@@ -272,7 +272,7 @@ export function MetricTable<Row>({
                     return (
                       <td key={c.key} className="py-2.5 px-3 text-right align-top">
                         {v == null ? (
-                          <span className="text-body text-muted-foreground/50" title="Not measured for this row">
+                          <span className="text-body text-muted-foreground/75" title="Not measured for this row">
                             —
                           </span>
                         ) : (

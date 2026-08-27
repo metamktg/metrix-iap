@@ -89,7 +89,7 @@ function mailtoForBrief(brief: DraftBrief, pillarLabel: string): string {
 function FieldPanel({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-border/40 bg-foreground/[0.015] px-3.5 py-3">
-      <div className={cn(TYPE.microLabel, "text-muted-foreground/55 mb-1")}>{label}</div>
+      <div className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-1")}>{label}</div>
       {children}
     </div>
   );
@@ -98,9 +98,9 @@ function FieldPanel({ label, children }: { label: string; children: React.ReactN
 function SpecCell({ label, value, caption }: { label: string; value: string; caption?: string | null }) {
   return (
     <div>
-      <div className={cn(TYPE.microLabel, "text-muted-foreground/50")}>{label}</div>
+      <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{label}</div>
       <div className={cn(TYPE.body, "font-medium text-foreground/90 mt-0.5")}>{value}</div>
-      {caption && <div className={cn(TYPE.label, "text-muted-foreground/50 mt-0.5")}>{caption}</div>}
+      {caption && <div className={cn(TYPE.label, "text-muted-foreground/75 mt-0.5")}>{caption}</div>}
     </div>
   );
 }
@@ -170,7 +170,7 @@ export function CreativeBriefBuilderView() {
             <div className="px-6 py-5 grid grid-cols-1 lg:grid-cols-[minmax(280px,340px)_1fr] gap-4 items-start max-w-6xl">
               {/* ── Left: brief list ── */}
               <div className="space-y-2.5" data-testid="brief-list">
-                <p className={cn(TYPE.caption, "text-muted-foreground/60")}>
+                <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
                   {briefs.length} brief{briefs.length === 1 ? "" : "s"} · draft_briefs
                 </p>
                 {briefs.map((b) => {
@@ -197,7 +197,7 @@ export function CreativeBriefBuilderView() {
                           {STATUS_LABEL[b.status] ?? b.status}
                         </span>
                       </span>
-                      <span className={cn(TYPE.label, "flex gap-1.5 flex-wrap text-muted-foreground/60 mt-1.5")}>
+                      <span className={cn(TYPE.label, "flex gap-1.5 flex-wrap text-muted-foreground/75 mt-1.5")}>
                         <span>{b.asset_type}</span>
                         {fbString(fbSection(b, "brief_metadata"), "priority") && (
                           <>
@@ -284,7 +284,7 @@ export function CreativeBriefBuilderView() {
                         onClick={() => setProdOpen((v) => !v)}
                         aria-expanded={prodOpen}
                         data-testid="brief-production-fold"
-                        className={cn(TYPE.caption, "flex items-center gap-1.5 font-medium text-muted-foreground/70 hover:text-foreground/90 transition-colors")}
+                        className={cn(TYPE.caption, "flex items-center gap-1.5 font-medium text-muted-foreground/75 hover:text-foreground/90 transition-colors")}
                       >
                         Production detail
                         <ChevronDown className={cn("w-3 h-3 transition-transform", prodOpen && "rotate-180")} />
@@ -311,7 +311,7 @@ export function CreativeBriefBuilderView() {
                               <div className="flex items-start justify-between gap-3">
                                 <p className={cn(TYPE.body, "text-foreground/80 leading-relaxed")}>{successCriteria}</p>
                                 {hypothesisId && (
-                                  <span className={cn(TYPE.label, "shrink-0 font-mono text-muted-foreground/60 border border-border/40 rounded px-1.5 py-0.5")}>{hypothesisId}</span>
+                                  <span className={cn(TYPE.label, "shrink-0 font-mono text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5")}>{hypothesisId}</span>
                                 )}
                               </div>
                             </FieldPanel>

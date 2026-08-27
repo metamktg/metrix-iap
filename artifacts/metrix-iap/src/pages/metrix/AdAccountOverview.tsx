@@ -295,7 +295,7 @@ export function AdAccountOverview() {
                   <Grid3x3 className="w-3 h-3 text-primary/60" />
                   <span className="text-caption font-medium text-foreground/75">MST active</span>
                 </div>
-                <p className="text-caption text-muted-foreground/70 leading-relaxed">
+                <p className="text-caption text-muted-foreground/75 leading-relaxed">
                   <span className="font-medium text-foreground/75">{matrixCellCount}</span> matrix cells · <span className="font-medium text-foreground/75">{libraryCount}</span> library concepts
                 </p>
                 <button onClick={() => navigate("/app/mst")} className="mt-2 inline-flex items-center gap-1 text-caption font-medium text-primary/75 hover:text-primary transition-colors">
@@ -325,8 +325,8 @@ export function AdAccountOverview() {
                       <tr key={key} className={cn(isZero && "opacity-40")}>
                         <td><span className="font-medium text-foreground/90">{eventLabel(key)}</span></td>
                         <td className="text-right tabular-nums text-foreground/85">{fmtNum(e.results)}</td>
-                        <td className="text-right tabular-nums text-muted-foreground/70">{fmtUSD(e.spend, 0)}</td>
-                        <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/35")}>
+                        <td className="text-right tabular-nums text-muted-foreground/75">{fmtUSD(e.spend, 0)}</td>
+                        <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/75")}>
                           {cpa != null ? fmtUSD(cpa) : "n/a"}
                         </td>
                       </tr>
@@ -361,8 +361,8 @@ export function AdAccountOverview() {
                   );
                 })()}
                 {primaryControlName !== core.primary_control && (
-                  <p className="text-label font-mono text-muted-foreground/40 mt-1.5">
-                    <span className="text-label text-muted-foreground/30 not-italic">Code · </span>{core.primary_control}
+                  <p className="text-label font-mono text-muted-foreground/75 mt-1.5">
+                    <span className="text-label text-muted-foreground/75 not-italic">Code · </span>{core.primary_control}
                   </p>
                 )}
               </div>
@@ -388,8 +388,8 @@ export function AdAccountOverview() {
                     );
                   })()}
                   {registrationControlName !== core.registration_control && (
-                    <p className="text-label font-mono text-muted-foreground/40 mt-1.5">
-                      <span className="text-label text-muted-foreground/30 not-italic">Code · </span>{core.registration_control}
+                    <p className="text-label font-mono text-muted-foreground/75 mt-1.5">
+                      <span className="text-label text-muted-foreground/75 not-italic">Code · </span>{core.registration_control}
                     </p>
                   )}
                 </div>

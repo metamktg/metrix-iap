@@ -41,11 +41,11 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
           {configured ? (
             <CheckCircle2 className="w-5 h-5 text-status-success shrink-0" />
           ) : (
-            <Circle className="w-5 h-5 text-muted-foreground/60 shrink-0" />
+            <Circle className="w-5 h-5 text-muted-foreground/75 shrink-0" />
           )}
           <div className="flex-1 min-w-0">
             <div className="text-body font-semibold text-foreground">{account.name}</div>
-            <div className="text-label text-muted-foreground/70">{account.platform}</div>
+            <div className="text-label text-muted-foreground/75">{account.platform}</div>
           </div>
           <span
             className={cn(
@@ -61,7 +61,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
 
         {/* Meta Ad Account ID row */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/20">
-          <div className="text-label text-muted-foreground/60 w-40 shrink-0">Meta Ad Account ID</div>
+          <div className="text-label text-muted-foreground/75 w-40 shrink-0">Meta Ad Account ID</div>
           {account.meta_ad_account_id ? (
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <span className="text-body font-mono text-foreground/85 truncate">
@@ -69,7 +69,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
               </span>
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1 text-label text-muted-foreground/60 hover:text-foreground/80 transition-colors shrink-0"
+                className="flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/80 transition-colors shrink-0"
                 title="Copy to clipboard"
               >
                 <Copy className="w-3.5 h-3.5" />
@@ -77,13 +77,13 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
               </button>
             </div>
           ) : (
-            <span className="text-body text-muted-foreground/40">—</span>
+            <span className="text-body text-muted-foreground/75">—</span>
           )}
         </div>
 
         {/* Source status row */}
         <div className="flex items-center gap-3 px-4 py-3">
-          <div className="text-label text-muted-foreground/60 w-40 shrink-0">Source status</div>
+          <div className="text-label text-muted-foreground/75 w-40 shrink-0">Source status</div>
           <span className="text-body text-foreground/80">
             {account.source_status ?? "—"}
           </span>
@@ -124,7 +124,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
       <div className="pt-1">
         <button
           onClick={selectManager}
-          className="inline-flex items-center gap-1.5 text-label text-muted-foreground/60 hover:text-foreground/80 transition-colors"
+          className="inline-flex items-center gap-1.5 text-label text-muted-foreground/75 hover:text-foreground/80 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Agency-wide integration settings

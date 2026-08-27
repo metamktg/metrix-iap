@@ -264,17 +264,40 @@
 
   /* Nocturne card — flat surface, container edge all round, top edge one
      step lighter (simulated top-light on a dark ground). No blur, no glow. */
-  .mx-card {
+  /* ── The card surface ────────────────────────────────────────────────
+   *
+   * ONE definition. There were three — .mx-card, .mx-card-hero and
+   * .mx-kpi-tile — and they were byte-identical: same border, same
+   * top-edge lift, same radius, same background, same hover. Three names
+   * for one treatment means three places to change it and three chances
+   * for one of them to drift, which is how a "hero" card and a "kpi" tile
+   * end up looking subtly unlike the plain card between them.
+   *
+   * The names are kept because ~60 files spell them, and because they do
+   * carry meaning about ROLE even where they carry none about appearance.
+   * They now alias this one rule, so the appearance cannot diverge.
+   *
+   * The radius was the literal 14px. That is not a magic number — it is
+   * exactly --radius-xl (0.625rem + 4px) — but written as a literal it
+   * could not follow a change to the scale, and read as arbitrary to
+   * anyone deciding what radius a new surface should take. */
+  .mx-card,
+  .mx-card-hero,
+  .mx-kpi-tile {
     position: relative;
     overflow: hidden;
     border: 1px solid var(--mx-edge);
+    /* A brighter top edge only: light falls from above, so this reads as a
+       raised surface without a shadow under a dense grid of them. */
     border-top-color: var(--mx-edge-strong);
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     background: hsl(var(--card));
     transition: border-color var(--mx-fast);
   }
 
-  .mx-card:hover {
+  .mx-card:hover,
+  .mx-card-hero:hover,
+  .mx-kpi-tile:hover {
     border-color: var(--mx-border-medium);
   }
 
@@ -340,38 +363,7 @@
        edits, but it is now a visual no-op. */
   }
 
-  /* ── KPI metric tile — flat card, same geometry as .mx-card. Use for all
-     KPI/metric tiles on Overview, Analysis, and sub-pages. */
-  .mx-kpi-tile {
-    position: relative;
-    overflow: hidden;
-    border: 1px solid var(--mx-edge);
-    border-top-color: var(--mx-edge-strong);
-    border-radius: 14px;
-    background: hsl(var(--card));
-    transition: border-color var(--mx-fast);
-  }
 
-  .mx-kpi-tile:hover {
-    border-color: var(--mx-border-medium);
-  }
-
-  /* ── Hero card — lead/section-lead cards (e.g. Results by Event header,
-     top module card). Same flat treatment as .mx-card; distinguished only
-     by usage, not by extra glow or elevation. */
-  .mx-card-hero {
-    position: relative;
-    overflow: hidden;
-    border: 1px solid var(--mx-edge);
-    border-top-color: var(--mx-edge-strong);
-    border-radius: 14px;
-    background: hsl(var(--card));
-    transition: border-color var(--mx-fast);
-  }
-
-  .mx-card-hero:hover {
-    border-color: var(--mx-border-medium);
-  }
 
   /* ── Accent bar — top-of-card color stripe via ::before pseudo ──────
      Apply to a positioned container. Swappable via --accent-bar-color.

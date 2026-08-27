@@ -122,7 +122,7 @@ export function AgentWaitlistSection() {
       >
         <div className="p-3 rounded-lg border border-border/30 bg-foreground/[0.02] space-y-2.5" data-testid="panel-waitlist-locked">
           <div className="flex items-center gap-2.5">
-            <Lock className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+            <Lock className="w-4 h-4 text-muted-foreground/75 shrink-0" />
             <div className="text-body font-medium text-foreground">Admin access required</div>
           </div>
           {lastKeyRejected && (
@@ -137,7 +137,7 @@ export function AgentWaitlistSection() {
               onChange={(e) => setKeyInput(e.target.value)}
               placeholder="Enter admin key"
               autoComplete="off"
-              className="flex-1 h-8 px-2.5 rounded-md bg-foreground/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex-1 h-8 px-2.5 rounded-md bg-foreground/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
               data-testid="input-admin-key"
             />
             <button
@@ -149,7 +149,7 @@ export function AgentWaitlistSection() {
               Unlock
             </button>
           </form>
-          <div className="text-label text-muted-foreground/70">
+          <div className="text-label text-muted-foreground/75">
             The admin key is set by the app owner via the ADMIN_API_KEY secret.
           </div>
         </div>
@@ -219,19 +219,19 @@ export function AgentWaitlistSection() {
     >
       {/* Search input */}
       <div className="relative mb-2">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 pointer-events-none" />
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/75 pointer-events-none" />
         <input
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search by email…"
-          className="w-full h-8 pl-8 pr-8 rounded-md bg-foreground/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+          className="w-full h-8 pl-8 pr-8 rounded-md bg-foreground/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
           data-testid="input-waitlist-search"
         />
         {searchInput && (
           <button
             onClick={() => setSearchInput("")}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/75 hover:text-muted-foreground transition-colors"
             aria-label="Clear search"
             data-testid="button-clear-waitlist-search"
           >
@@ -245,21 +245,21 @@ export function AgentWaitlistSection() {
         </div>
       )}
       {isLoading ? (
-        <div className="text-caption text-muted-foreground/70 p-3">Loading waitlist…</div>
+        <div className="text-caption text-muted-foreground/75 p-3">Loading waitlist…</div>
       ) : isError ? (
         <div className="text-caption text-status-danger/80 p-3">Could not load waitlist signups. Check that the API server is running.</div>
       ) : entries.length === 0 ? (
         <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
-          <Users className="w-4 h-4 text-muted-foreground/70 shrink-0" />
-          <div className="text-caption text-muted-foreground/70">
+          <Users className="w-4 h-4 text-muted-foreground/75 shrink-0" />
+          <div className="text-caption text-muted-foreground/75">
             {searchQuery ? `No signups matching "${searchQuery}".` : "No waitlist signups yet."}
           </div>
         </div>
       ) : (
         <div className="rounded-lg border border-border/30 bg-foreground/[0.02] overflow-hidden" data-testid="list-waitlist-entries">
           <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Email</span>
-            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Joined</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium">Email</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/75 font-medium">Joined</span>
           </div>
           <div ref={scrollRef} className="max-h-64 overflow-y-auto" data-testid="scroll-waitlist">
             {useVirtual ? (
@@ -302,7 +302,7 @@ export function AgentWaitlistSection() {
                               {isApproving ? "Approving…" : "Approve"}
                             </button>
                           )}
-                          <span className="text-label font-mono text-muted-foreground/70">
+                          <span className="text-label font-mono text-muted-foreground/75">
                             {new Date(entry.joined_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
                           </span>
                         </div>
@@ -365,7 +365,7 @@ export function AgentWaitlistSection() {
                               {isApproving ? "Approving…" : "Approve"}
                             </button>
                           )}
-                          <span className="text-label font-mono text-muted-foreground/70">
+                          <span className="text-label font-mono text-muted-foreground/75">
                             {new Date(entry.joined_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
                           </span>
                         </div>
@@ -420,7 +420,7 @@ export function AgentWaitlistSection() {
               </div>
             )}
           </div>
-          <div className="px-3 py-2 border-t border-border/30 text-label text-muted-foreground/70">
+          <div className="px-3 py-2 border-t border-border/30 text-label text-muted-foreground/75">
             Showing {entries.length} of {total} signup{total === 1 ? "" : "s"}
           </div>
         </div>

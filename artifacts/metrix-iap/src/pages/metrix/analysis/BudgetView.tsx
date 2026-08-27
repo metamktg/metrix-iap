@@ -36,11 +36,11 @@ function EventRowsList({ rows }: { rows: EventRow[] }) {
     <div className="rounded-xl border border-border/40 overflow-hidden">
       {/* Compact header row */}
       <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2 border-b border-border/30 bg-foreground/[0.015]">
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55">Event</span>
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Spend</span>
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Results</span>
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">CPA</span>
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Clicks</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Event</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 text-right">Spend</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 text-right">Results</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 text-right">CPA</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 text-right">Clicks</span>
       </div>
       {fold.visible.map(({ event, totals }) => (
         <div
@@ -51,7 +51,7 @@ function EventRowsList({ rows }: { rows: EventRow[] }) {
           <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{fmtUSD(totals.spend, 0)}</span>
           <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{fmtNum(totals.results)}</span>
           <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—"}</span>
-          <span className="text-body font-mono tabular-nums text-muted-foreground/60 text-right">{fmtNum(totals.link_clicks)}</span>
+          <span className="text-body font-mono tabular-nums text-muted-foreground/75 text-right">{fmtNum(totals.link_clicks)}</span>
         </div>
       ))}
       <ShowMoreButton total={rows.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="events" />
@@ -69,7 +69,7 @@ function ConceptRowsList({ rows, maxConcept }: { rows: [string, number][]; maxCo
         <div key={name}>
           <div className="flex items-center justify-between text-caption mb-1">
             <span className="text-foreground/85 font-medium">{name}</span>
-            <span className="text-muted-foreground/60 tabular-nums">{fmtUSD(spend, 0)}</span>
+            <span className="text-muted-foreground/75 tabular-nums">{fmtUSD(spend, 0)}</span>
           </div>
           <div className="h-1.5 rounded-full bg-foreground/[0.04] overflow-hidden">
             <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max((spend / maxConcept) * 100, 3)}%` }} />
@@ -246,15 +246,15 @@ export function BudgetView() {
                   >
                     <div className="text-left">
                       <span className="text-sm font-bold text-foreground">Placement spend</span>
-                      <span className="text-label text-muted-foreground/45 ml-2">
+                      <span className="text-label text-muted-foreground/75 ml-2">
                         {a.v3_placement_signal.length + a.c4e_placement_signal.length} rows
                       </span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <CrossLink to="/app/analysis/placements" label="Full breakdown →" />
                       {showPlacements
-                        ? <ChevronDown className="w-4 h-4 text-muted-foreground/50 group-hover:text-foreground/70 transition-colors" />
-                        : <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-foreground/70 transition-colors" />
+                        ? <ChevronDown className="w-4 h-4 text-muted-foreground/75 group-hover:text-foreground/70 transition-colors" />
+                        : <ChevronRight className="w-4 h-4 text-muted-foreground/75 group-hover:text-foreground/70 transition-colors" />
                       }
                     </div>
                   </button>
@@ -262,13 +262,13 @@ export function BudgetView() {
                     <div className="border-t border-border/20 px-4 pb-4 pt-3 space-y-4">
                       {a.v3_placement_signal.length > 0 && (
                         <div>
-                          <h4 className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">V3 signal</h4>
+                          <h4 className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">V3 signal</h4>
                           <PlacementTable rows={a.v3_placement_signal} />
                         </div>
                       )}
                       {a.c4e_placement_signal.length > 0 && (
                         <div>
-                          <h4 className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">C4E signal</h4>
+                          <h4 className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">C4E signal</h4>
                           <PlacementTable rows={a.c4e_placement_signal} />
                         </div>
                       )}

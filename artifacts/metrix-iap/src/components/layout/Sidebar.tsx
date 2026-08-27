@@ -189,12 +189,12 @@ function ChildRow({
       >
         <span className="flex-1 truncate leading-tight">{child.label}</span>
         {child.placeholder && !active && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
             Soon
           </span>
         )}
         {!child.placeholder && child.dataSource && (
-          <Database className="w-2 h-2 shrink-0 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Database className="w-2 h-2 shrink-0 text-muted-foreground/75 opacity-0 group-hover:opacity-100 transition-opacity" />
         )}
         {child.badgeKey && !child.placeholder && (
           <NavBadge count={count} badgeKey={child.badgeKey} />
@@ -247,7 +247,7 @@ function CollapsedItem({
             "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] relative overflow-hidden",
             active
               ? "bg-primary/20 text-interactive border border-primary/30"
-              : "text-foreground/45 hover:text-foreground/90 hover:bg-foreground/[0.07]",
+              : "text-foreground/55 hover:text-foreground/90 hover:bg-foreground/[0.07]",
             section.placeholder && "opacity-50"
           )}
         >
@@ -326,7 +326,7 @@ function ExpandableSection({
           name={section.icon}
           className={cn(
             "w-4 h-4 shrink-0",
-            landingActive ? "text-foreground" : sectionActive ? "text-interactive" : "text-muted-foreground/70"
+            landingActive ? "text-foreground" : sectionActive ? "text-interactive" : "text-muted-foreground/75"
           )}
         />
         <span className="flex-1 text-left truncate">{section.label}</span>
@@ -335,7 +335,7 @@ function ExpandableSection({
           className={cn(
             "w-3 h-3 shrink-0 transition-transform duration-200",
             open && "rotate-180",
-            landingActive ? "text-foreground/70" : "text-muted-foreground/40"
+            landingActive ? "text-foreground/70" : "text-muted-foreground/75"
           )}
         />
       </button>
@@ -401,12 +401,12 @@ function LeafSection({
           name={section.icon}
           className={cn(
             "w-4 h-4 shrink-0",
-            active ? "text-foreground" : "text-muted-foreground/70"
+            active ? "text-foreground" : "text-muted-foreground/75"
           )}
         />
         <span className="flex-1">{section.label}</span>
         {section.placeholder && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
             Soon
           </span>
         )}
@@ -538,7 +538,7 @@ export function Sidebar() {
               onClick={toggleCollapse}
               aria-label="Expand sidebar"
               title="Expand sidebar"
-              className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
             >
               <PanelLeftOpen className="w-3.5 h-3.5" />
             </button>
@@ -557,7 +557,7 @@ export function Sidebar() {
                 onClick={toggleCollapse}
                 aria-label="Collapse sidebar"
                 title="Collapse sidebar"
-                className="ml-auto w-6 h-6 flex items-center justify-center rounded text-muted-foreground/35 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
+                className="ml-auto w-6 h-6 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
               >
                 <PanelLeftClose className="w-3.5 h-3.5" />
               </button>
@@ -652,7 +652,7 @@ export function Sidebar() {
             {!collapsed && (
               <div className="min-w-0">
                 <p className="text-caption font-medium text-foreground/85 truncate leading-tight">{user.email}</p>
-                <p className="text-label text-muted-foreground/55 leading-tight">
+                <p className="text-label text-muted-foreground/75 leading-tight">
                   {user.role === "admin" ? "Agency (internal)" : "Member"}
                 </p>
               </div>

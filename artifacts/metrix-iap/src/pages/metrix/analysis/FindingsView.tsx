@@ -85,7 +85,7 @@ interface Intelligence {
 // ─── Helpers ──────────────────────────────────────────────────────────
 
 function tierBadge(tier: string | undefined): { label: string; cls: string } {
-  if (!tier) return { label: "—", cls: "bg-muted/40 text-muted-foreground/50 border-border/30" };
+  if (!tier) return { label: "—", cls: "bg-muted/40 text-muted-foreground/75 border-border/30" };
   const t = tier.toLowerCase();
   if (t.includes("1") || t.includes("scale") || t.includes("winner"))
     return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-status-success/10 text-status-success border-status-success/25" };
@@ -95,7 +95,7 @@ function tierBadge(tier: string | undefined): { label: string; cls: string } {
     return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
   if (t.includes("4") || t.includes("elim") || t.includes("kill") || t.includes("fail"))
     return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-status-danger/10 text-status-danger border-status-danger/25" };
-  return { label: tier, cls: "bg-muted/40 text-muted-foreground/60 border-border/30" };
+  return { label: tier, cls: "bg-muted/40 text-muted-foreground/75 border-border/30" };
 }
 
 // Performance lift convention: positive = outperforming baseline (good, green ↑),
@@ -107,7 +107,7 @@ function liftIcon(lift: string | number | null | undefined) {
   if (isNaN(n)) return null;
   if (n > 0.05)  return <TrendingUp   className="w-3 h-3 text-status-success shrink-0" />;
   if (n < -0.05) return <TrendingDown className="w-3 h-3 text-status-danger shrink-0" />;
-  return <Minus className="w-3 h-3 text-muted-foreground/40 shrink-0" />;
+  return <Minus className="w-3 h-3 text-muted-foreground/75 shrink-0" />;
 }
 
 function liftLabel(lift: string | number | null | undefined): string {
@@ -147,10 +147,10 @@ function VerdictBanner({
             AI Verdict
           </span>
           {runType && (
-            <span className="text-label text-muted-foreground/50 font-mono">{runType}</span>
+            <span className="text-label text-muted-foreground/75 font-mono">{runType}</span>
           )}
           {dateRange && (dateRange.start || dateRange.end) && (
-            <span className="text-label text-muted-foreground/50 font-mono ml-auto">
+            <span className="text-label text-muted-foreground/75 font-mono ml-auto">
               {/* window_start/window_end are calendar days, not instants
                   — see fmtDay in lib/normalize. */}
               {fmtDayRange(dateRange.start, dateRange.end, { year: true })}
@@ -174,7 +174,7 @@ function VerdictBanner({
         {(subLine || confidence) && (
           <div className="flex items-start gap-2 flex-wrap">
             {subLine && (
-              <p className="text-body text-muted-foreground/70 leading-relaxed flex-1 min-w-0 max-w-[680px]">
+              <p className="text-body text-muted-foreground/75 leading-relaxed flex-1 min-w-0 max-w-[680px]">
                 {subLine}
               </p>
             )}
@@ -237,7 +237,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
       {/* Metrics row: CPA · Spend · Results */}
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <div className="text-label uppercase tracking-widest text-muted-foreground/45 font-semibold mb-0.5">CPA</div>
+          <div className="text-label uppercase tracking-widest text-muted-foreground/75 font-semibold mb-0.5">CPA</div>
           <div
             className={cn(
               "text-title font-semibold tabular-nums leading-none",
@@ -248,13 +248,13 @@ function ConceptCard({ score }: { score: ConceptScore }) {
           </div>
         </div>
         <div>
-          <div className="text-label uppercase tracking-widest text-muted-foreground/45 font-semibold mb-0.5">Spend</div>
+          <div className="text-label uppercase tracking-widest text-muted-foreground/75 font-semibold mb-0.5">Spend</div>
           <div className="text-title font-medium tabular-nums text-foreground/70 leading-none">
             {score.spend != null ? fmtMetric("usd_total", score.spend) : "—"}
           </div>
         </div>
         <div>
-          <div className="text-label uppercase tracking-widest text-muted-foreground/45 font-semibold mb-0.5">Results</div>
+          <div className="text-label uppercase tracking-widest text-muted-foreground/75 font-semibold mb-0.5">Results</div>
           <div className="text-title font-medium tabular-nums text-foreground/70 leading-none">
             {score.results != null ? fmtNum(score.results) : "—"}
           </div>
@@ -265,7 +265,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
       {liftLbl && (
         <div className="flex items-center gap-1.5">
           {lift}
-          <span className="text-caption text-muted-foreground/55 leading-none">{liftLbl}</span>
+          <span className="text-caption text-muted-foreground/75 leading-none">{liftLbl}</span>
         </div>
       )}
 
@@ -281,7 +281,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
             />
           )}
           {soWhatText && (
-            <p className="text-label text-muted-foreground/50 leading-snug font-medium uppercase tracking-wide">
+            <p className="text-label text-muted-foreground/75 leading-snug font-medium uppercase tracking-wide">
               {deriveLabel(soWhatText, 70)}
             </p>
           )}
@@ -301,10 +301,10 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/55">
+        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
           Flagged campaigns
         </span>
-        <span className="text-label text-muted-foreground/40 font-mono ml-auto">
+        <span className="text-label text-muted-foreground/75 font-mono ml-auto">
           {fmtUSD(totalWasted, 0)} flagged spend
         </span>
       </div>
@@ -314,7 +314,7 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
             <AlertTriangle className="w-3.5 h-3.5 text-status-warning/60 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <p className="text-body font-medium text-foreground/80 truncate">{p.campaign}</p>
-              <p className="text-caption text-muted-foreground/55 leading-snug mt-0.5">{p.diagnosis}</p>
+              <p className="text-caption text-muted-foreground/75 leading-snug mt-0.5">{p.diagnosis}</p>
             </div>
             <span className="shrink-0 text-caption font-mono tabular-nums text-status-warning/70">
               {fmtUSD(p.wasted_spend ?? p.spend, 0)}
@@ -336,7 +336,7 @@ function FindingsEmptyState() {
         <span className="text-display opacity-30">🔍</span>
       </div>
       <p className="text-title font-semibold text-foreground/70">No intelligence data yet</p>
-      <p className="text-body text-muted-foreground/55 max-w-xs leading-relaxed">
+      <p className="text-body text-muted-foreground/75 max-w-xs leading-relaxed">
         Run the full IAP loop to generate concept scores, tier rankings, and the AI verdict.
       </p>
     </div>
@@ -430,7 +430,7 @@ export function FindingsView() {
   if (!account) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-24 px-6">
-        <p className="text-title text-muted-foreground/70">Select an ad account to view Findings.</p>
+        <p className="text-title text-muted-foreground/75">Select an ad account to view Findings.</p>
       </div>
     );
   }
@@ -478,7 +478,7 @@ export function FindingsView() {
               {execSummary && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-foreground/[0.02] px-4 py-3">
-                    <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Total spend</span>
+                    <span className="text-label uppercase tracking-widest text-muted-foreground/75 font-semibold">Total spend</span>
                     <span
                       className="text-display font-semibold tabular-nums leading-none text-interactive"
                     >
@@ -486,7 +486,7 @@ export function FindingsView() {
                     </span>
                   </div>
                   <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-foreground/[0.02] px-4 py-3">
-                    <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Total results</span>
+                    <span className="text-label uppercase tracking-widest text-muted-foreground/75 font-semibold">Total results</span>
                     <span
                       className="text-display font-semibold tabular-nums leading-none text-interactive"
                     >
@@ -495,7 +495,7 @@ export function FindingsView() {
                   </div>
                   {execSummary.blended_cpa_by_book && Object.entries(execSummary.blended_cpa_by_book).slice(0, 2).map(([book, cpa]) => (
                     <div key={book} className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-foreground/[0.02] px-4 py-3">
-                      <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Blended CPA · {book}</span>
+                      <span className="text-label uppercase tracking-widest text-muted-foreground/75 font-semibold">Blended CPA · {book}</span>
                       <span
                         className="text-display font-semibold tabular-nums leading-none text-interactive"
                       >
@@ -510,10 +510,10 @@ export function FindingsView() {
               {conceptScores.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/55">
+                    <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
                       Concept rankings
                     </span>
-                    <span className="text-label text-muted-foreground/35 font-mono">
+                    <span className="text-label text-muted-foreground/75 font-mono">
                       {conceptScores.length} concepts · sorted by CPA
                     </span>
                   </div>

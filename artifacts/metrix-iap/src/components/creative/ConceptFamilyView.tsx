@@ -29,7 +29,7 @@ function BlendedStatStrip({ blended }: { blended: BlendedKPI }) {
     <div className="flex items-center gap-4 tabular-nums">
       {items.map((it) => (
         <div key={it.label} className="shrink-0">
-          <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-0.5">
+          <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/75 leading-none mb-0.5">
             {it.label}
           </div>
           <div className="text-caption font-semibold text-foreground/90">{it.value}</div>
@@ -97,12 +97,12 @@ function AngleRow({
       >
         <span className="shrink-0 w-5 h-5 rounded border border-border/40 flex items-center justify-center">
           {showCells
-            ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/60" />
-            : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />}
+            ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/75" />
+            : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75" />}
         </span>
 
         <div className="flex-1 min-w-0">
-          <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-0.5">
+          <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/75 leading-none mb-0.5">
             Angle {group.angleKey}
           </div>
           <p className="text-caption font-medium text-foreground/80 truncate">{group.angleLabel}</p>
@@ -110,7 +110,7 @@ function AngleRow({
 
         <BlendedStatStrip blended={group.blended} />
 
-        <span className="shrink-0 text-[9px] font-mono text-muted-foreground/50 border border-border/30 px-1.5 py-0.5 rounded-full ml-2">
+        <span className="shrink-0 text-[9px] font-mono text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded-full ml-2">
           {group.blended.cellCount} cell{group.blended.cellCount === 1 ? "" : "s"}
         </span>
       </button>
@@ -202,11 +202,11 @@ function ConceptFamilyCard({
         )}>
           {expanded
             ? <ChevronDown className="w-3.5 h-3.5 text-interactive/80" />
-            : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />}
+            : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75" />}
         </span>
 
         <div className="flex-1 min-w-0">
-          <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/50 leading-none mb-0.5">
+          <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">
             {group.conceptId}
           </div>
           <p className="text-title font-semibold text-foreground truncate">{group.conceptName}</p>
@@ -215,10 +215,10 @@ function ConceptFamilyCard({
         <BlendedStatStrip blended={group.blended} />
 
         <div className="shrink-0 flex items-center gap-1.5 ml-3">
-          <span className="text-[9px] font-mono text-muted-foreground/50 border border-border/30 px-1.5 py-0.5 rounded-full">
+          <span className="text-[9px] font-mono text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded-full">
             {group.blended.cellCount} cell{group.blended.cellCount === 1 ? "" : "s"}
           </span>
-          <span className="text-[9px] font-mono text-muted-foreground/40 border border-border/25 px-1.5 py-0.5 rounded-full">
+          <span className="text-[9px] font-mono text-muted-foreground/75 border border-border/25 px-1.5 py-0.5 rounded-full">
             {group.angles.length} angle{group.angles.length === 1 ? "" : "s"}
           </span>
         </div>
@@ -280,7 +280,7 @@ export function ConceptFamilyView({
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <p className="text-body font-semibold text-foreground/60">No concept families in selection</p>
-        <p className="text-caption text-muted-foreground/50 mt-1">Adjust the metric selection to see grouped data.</p>
+        <p className="text-caption text-muted-foreground/75 mt-1">Adjust the metric selection to see grouped data.</p>
       </div>
     );
   }
@@ -288,7 +288,7 @@ export function ConceptFamilyView({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-label text-muted-foreground/50 tabular-nums">
+        <span className="text-label text-muted-foreground/75 tabular-nums">
           {groups.length} concept {groups.length === 1 ? "family" : "families"} · sorted by spend
         </span>
       </div>

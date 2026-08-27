@@ -41,7 +41,7 @@ export const TYPE = {
    *  strip labels, run-scope captions) — the formal home for the 9px
    *  font-mono uppercase pattern that was previously hand-copied as raw
    *  text-micro classes across several files. */
-  microLabel: "text-micro font-mono font-semibold uppercase text-muted-foreground/60",
+  microLabel: "text-micro font-mono font-semibold uppercase text-muted-foreground/75",
   /** Uppercase eyebrow/section labels above titles or field groups.
    *  text-data-caption = DS muted-foreground @85% — intentional secondary, solid step. */
   label: "text-label font-semibold uppercase text-data-caption",

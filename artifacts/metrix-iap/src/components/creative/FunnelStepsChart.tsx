@@ -46,7 +46,7 @@ export function FunnelStepsChart({ steps }: { steps: FunnelStep[] }) {
                     {convRate} conversion
                   </span>
                 ) : (
-                  <span className="text-[9px] font-mono text-muted-foreground/35">
+                  <span className="text-[9px] font-mono text-muted-foreground/75">
                     — no rate
                   </span>
                 )}
@@ -65,13 +65,13 @@ export function FunnelStepsChart({ steps }: { steps: FunnelStep[] }) {
               <div className="flex items-center justify-between mb-1.5">
                 <span className={cn(
                   "text-label font-medium",
-                  hasData ? "text-foreground/80" : "text-muted-foreground/40"
+                  hasData ? "text-foreground/80" : "text-muted-foreground/75"
                 )}>
                   {step.label}
                 </span>
                 <span className={cn(
                   "text-body font-bold tabular-nums",
-                  hasData ? "text-foreground" : "text-muted-foreground/30"
+                  hasData ? "text-foreground" : "text-muted-foreground/75"
                 )}>
                   {hasData ? step.formatted : "No data"}
                 </span>

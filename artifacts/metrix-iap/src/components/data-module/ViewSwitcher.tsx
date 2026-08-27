@@ -81,7 +81,7 @@ export function ViewSwitcher({
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
                         ${
                           disabled
-                            ? "text-muted-foreground/35 cursor-not-allowed"
+                            ? "text-muted-foreground/75 cursor-not-allowed"
                             : active
                               ? "bg-primary/20 text-foreground active:scale-[0.96]"
                               : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04] active:scale-[0.96]"

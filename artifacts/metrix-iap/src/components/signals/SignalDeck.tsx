@@ -107,7 +107,7 @@ export function SignalDeck({
 
   if (ordered.length === 0) {
     return (
-      <p className="text-body font-body text-muted-foreground/70 py-8 text-center">{emptyLabel}</p>
+      <p className="text-body font-body text-muted-foreground/75 py-8 text-center">{emptyLabel}</p>
     );
   }
 
@@ -142,13 +142,13 @@ export function SignalDeck({
                 </span>
                 {!p && (
                   <span
-                    className="text-micro font-mono text-muted-foreground/50"
+                    className="text-micro font-mono text-muted-foreground/75"
                     title="This card's producer did not rank it. The raw impact value is shown rather than a substituted bucket."
                   >
                     unranked
                   </span>
                 )}
-                <span className="text-micro font-mono text-muted-foreground/45 ml-auto truncate" title={c.scope}>
+                <span className="text-micro font-mono text-muted-foreground/75 ml-auto truncate" title={c.scope}>
                   {c.scope}
                 </span>
               </div>
@@ -215,7 +215,7 @@ export function SignalDeck({
                 )}
                 {c.evidence_ref && (
                   <span
-                    className="text-micro font-mono text-muted-foreground/50 truncate max-w-[10rem]"
+                    className="text-micro font-mono text-muted-foreground/75 truncate max-w-[10rem]"
                     title={`Evidence: ${c.evidence_ref}`}
                   >
                     {c.evidence_ref}
