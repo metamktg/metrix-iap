@@ -49,7 +49,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "check:interaction": "tsx ./src/check-interaction.ts",
-    "check:locator-ambiguity": "tsx ./src/check-locator-ambiguity.ts"
+    "check:locator-ambiguity": "tsx ./src/check-locator-ambiguity.ts",
+    "check:ad-performance-views": "tsx ./src/check-ad-performance-views.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",
