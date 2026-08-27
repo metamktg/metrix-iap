@@ -402,7 +402,21 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           <Panel title="Variable stack" note="one slot per family · reads are marginal, never attributed">
             <VariableStack
-              stack={{ hook: "HK_ProofFirst", tone: "TN_Direct", framework: "FW_PAS", cta: "CTA_StartFree" }}
+              stack={{ hk: "HK_ProofFirst", tn: "TN_Direct", fw: "FW_PAS", cta: "CTA_StartFree" }}
+              registry={[
+                { prefix: "HK", family: "Hook", status: "active", note: null },
+                { prefix: "TN", family: "Tone", status: "active", note: null },
+                { prefix: "FW", family: "Framework", status: "active", note: null },
+                { prefix: "CN", family: "Concept", status: "active", note: null },
+                { prefix: "HP", family: "Pain proof", status: "active", note: null },
+                { prefix: "PR", family: "Proof type", status: "active", note: null },
+                { prefix: "AW", family: "Awareness level", status: "registry_missing",
+                  note: "Confirmed known gap: no AW_ registry definition exists in the client library." },
+                { prefix: "CTA", family: "Call to action", status: "registry_missing",
+                  note: "Confirmed known gap: CTA_ codes appear in creative stacks but no CTA_ registry definition is backed by the client library." },
+                { prefix: "ST", family: "Structure", status: "registry_missing",
+                  note: "Confirmed known gap: no ST_ registry definition exists in the client library." },
+              ]}
               marginal={new Map([
                 ["HK_ProofFirst", { label: "CPA", value: "$18.40" }],
                 ["TN_Direct", { label: "CPA", value: "$22.10" }],

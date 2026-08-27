@@ -17,21 +17,27 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@works
 import { Funnel, Wrench, LayoutGrid, TrendingUp, Users, ArrowUpRight, Ban, FlaskConical, Search, Sparkles, ChevronDown, Dna } from "lucide-react";
 import type { MessagePillar, ICPProfile, VariableCombination, ScalingPlaybook } from "@/lib/data/seedTypes";
 import type { DnaVariable } from "@/lib/creative-dna";
+import { VARIABLE_FAMILIES } from "@/lib/variable-registry";
 
 // ─── Variable families ────────────────────────────────────────────────
 
-const FAMILY_LABEL: Record<string, string> = {
-  hook: "Hook",
-  tone: "Tone",
-  framework: "Framework",
-  concept: "Concept",
-  proof: "Proof",
-  pain_proof: "Pain point",
-  cta: "CTA",
-};
-
+/**
+ * Family name for a variable_stack key.
+ *
+ * This was a fourth local copy of the family list and it disagreed with the
+ * seed's variable_registry on three of the seven it had — "Proof" for "Proof
+ * type", "Pain point" for "Pain proof", "CTA" for "Call to action" — and it
+ * carried no short-form keys at all. Real bundles use both conventions, so
+ * familyLabel("hk") fell through to the title-case fallback and rendered the
+ * family as "Hk" in every chip tooltip and screen-reader label.
+ *
+ * VARIABLE_FAMILIES carries the registry's own names and both key forms.
+ * The fallback stays for a key no family claims, so an unrecognized stack
+ * key still reads as something rather than blank.
+ */
 export function familyLabel(family: string): string {
-  return FAMILY_LABEL[family] ?? family.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const f = VARIABLE_FAMILIES.find((x) => x.key === family || x.aliases.includes(family));
+  return f?.label ?? family.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 // ─── Pillar evidence tier ──────────────────────────────────────────────

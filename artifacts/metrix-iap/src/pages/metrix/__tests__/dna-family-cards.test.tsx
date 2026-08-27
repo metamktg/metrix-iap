@@ -20,6 +20,7 @@
 // is caught immediately.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { VARIABLE_FAMILIES } from "@/lib/variable-registry";
 import { render, cleanup, screen, within, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -60,16 +61,14 @@ if (FIXTURE_FAMILIES.join(",") !== EXPECTED_FAMILIES.join(",")) {
   );
 }
 
-// familyLabel mapping (mirrors strategyShared.tsx FAMILY_LABEL).
-const FAMILY_LABEL: Record<string, string> = {
-  hook: "Hook",
-  tone: "Tone",
-  framework: "Framework",
-  concept: "Concept",
-  proof: "Proof",
-  pain_proof: "Pain point",
-  cta: "CTA",
-};
+// The expected label comes from VARIABLE_FAMILIES, which is itself pinned
+// against the seed's variable_registry by variable-families-match-data.test.
+// It used to be a local copy of strategyShared's map — a fifth restatement
+// of the family list, carrying the same two wrong names ("Pain point" for
+// what the registry calls "Pain proof", "Proof" for "Proof type"). A test
+// that restates the labels can only confirm the code agrees with the test.
+const labelFor = (family: string): string =>
+  VARIABLE_FAMILIES.find((f) => f.key === family || f.aliases.includes(family))?.label ?? family;
 
 // ── Mocks (hoisted before component imports) ──────────────────────────────
 
@@ -302,7 +301,7 @@ describe("DNA family card title row — full label text present", () => {
       const card = container.querySelector<HTMLElement>(`[data-testid="dna-family-${family}"]`);
       expect(card, `card for family "${family}" not found`).toBeTruthy();
 
-      const expectedLabel = FAMILY_LABEL[family] ?? family;
+      const expectedLabel = labelFor(family);
 
       // The title is a <span class="text-sm font-bold ..."> inside the card.
       // Check the card's full textContent contains the expected label string —

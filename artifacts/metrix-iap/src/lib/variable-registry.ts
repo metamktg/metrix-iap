@@ -17,47 +17,90 @@ export type VariablePrefix =
 
 // ─── Family order ────────────────────────────────────────────────────
 //
-// The order a stack is READ in, which is the order the creative is built in:
-// what stops the scroll, how it sounds, how it is structured, what it is
-// about, what backs it up, and what it asks for.
+// Every value here is taken from the DATA — the seed's variable_registry
+// rows for prefix/family/status, and the variable_stack keys that actually
+// appear in the bundle for `key`/`aliases`. An earlier version of this list
+// was written from the prefix letters alone and got three things wrong:
 //
-// There were three separate copies of this list — StrategyOverview keyed by
-// variable_stack field, CreativeScanView and CreativeLibraryView keyed by
-// accessor — and they disagreed on both membership and order. StrategyOverview
-// carried a "Pain pt." family the registry has no prefix for, and none of the
-// three carried AW, ST or HP at all, so three of the nine families were
-// invisible wherever those lists drove the display.
+//   · HP was labelled "Hook position". The registry says "Pain proof", and
+//     the stacks that use it are keyed pain_proof.
+//   · It invented keys hook_position, awareness and structure. The stacks
+//     use st for structure, nothing at all for awareness, and pain_proof.
+//   · It listed only the long key form. The bundle carries BOTH — hk and
+//     hook, tn and tone, fw and framework, cn and concept, pr and proof,
+//     hp and pain_proof — so a stack written in the short form resolved to
+//     nothing and rendered as nine empty slots.
 //
-// `key` is the variable_stack field name; `prefix` is the code prefix. A
-// family with no matching prefix cannot be resolved to a label, so there is
-// exactly one list and it is keyed to both.
+// Three families are registry_missing: AW, CTA and ST. That is a confirmed,
+// documented gap ("no AW_ registry definition exists in the client library
+// and no AW_ performance rows appear in any source export"), not an
+// oversight, and it is a different fact from "this pillar did not set one".
+// registryStatusFor reads it from the seed so a view can tell them apart.
+//
+// Pinned against the checked-in seed bundle by
+// __tests__/variable-families-match-data.test.ts, because a list written
+// from letters rather than data is exactly what went wrong before.
 
 export interface VariableFamily {
-  /** The MessagePillar.variable_stack field name. */
+  /** Canonical MessagePillar.variable_stack field name. */
   key: string;
-  /** The code prefix, per docs/iap/VARIABLES_REGISTRY.md. */
+  /** Other keys the same family appears under in real bundles. */
+  aliases: string[];
+  /** The code prefix, per the seed's variable_registry. */
   prefix: Exclude<VariablePrefix, "unknown">;
+  /** Family name, verbatim from variable_registry.family. */
   label: string;
   /** Short form for a dense chip. */
   abbrev: string;
 }
 
 export const VARIABLE_FAMILIES: VariableFamily[] = [
-  { key: "hook",           prefix: "HK",  label: "Hook",           abbrev: "HK" },
-  { key: "hook_position",  prefix: "HP",  label: "Hook position",  abbrev: "HP" },
-  { key: "tone",           prefix: "TN",  label: "Tone",           abbrev: "TN" },
-  { key: "framework",      prefix: "FW",  label: "Framework",      abbrev: "FW" },
-  { key: "structure",      prefix: "ST",  label: "Structure",      abbrev: "ST" },
-  { key: "concept",        prefix: "CN",  label: "Concept",        abbrev: "CN" },
-  { key: "awareness",      prefix: "AW",  label: "Awareness",      abbrev: "AW" },
-  { key: "proof",          prefix: "PR",  label: "Proof",          abbrev: "PR" },
-  { key: "cta",            prefix: "CTA", label: "CTA",            abbrev: "CTA" },
+  { key: "hook",       aliases: ["hk"], prefix: "HK",  label: "Hook",            abbrev: "HK" },
+  { key: "tone",       aliases: ["tn"], prefix: "TN",  label: "Tone",            abbrev: "TN" },
+  { key: "framework",  aliases: ["fw"], prefix: "FW",  label: "Framework",       abbrev: "FW" },
+  { key: "structure",  aliases: ["st"], prefix: "ST",  label: "Structure",       abbrev: "ST" },
+  { key: "concept",    aliases: ["cn"], prefix: "CN",  label: "Concept",         abbrev: "CN" },
+  { key: "awareness",  aliases: ["aw"], prefix: "AW",  label: "Awareness level", abbrev: "AW" },
+  { key: "pain_proof", aliases: ["hp"], prefix: "HP",  label: "Pain proof",      abbrev: "HP" },
+  { key: "proof",      aliases: ["pr"], prefix: "PR",  label: "Proof type",      abbrev: "PR" },
+  { key: "cta",        aliases: [],     prefix: "CTA", label: "Call to action",  abbrev: "CTA" },
 ];
+
+/**
+ * A family's value in a stack, looked up under its canonical key and every
+ * alias. Returns null when the family is unset — never an empty string,
+ * which a caller would otherwise render as a set-but-blank variable.
+ */
+export function stackValue(
+  stack: Record<string, string | null | undefined>,
+  family: VariableFamily,
+): string | null {
+  for (const k of [family.key, ...family.aliases]) {
+    const v = stack[k];
+    if (typeof v === "string" && v.trim()) return v;
+  }
+  return null;
+}
 
 /** Family for a code, by its prefix. Null when the code does not parse. */
 export function familyForCode(code: string): VariableFamily | null {
   const p = getVariablePrefix(code);
   return VARIABLE_FAMILIES.find((f) => f.prefix === p) ?? null;
+}
+
+/**
+ * Whether the client library defines this family at all, per the seed's
+ * variable_registry. "registry_missing" is a confirmed gap with a stated
+ * reason — a stack slot that is empty because no definition exists is a
+ * different fact from one the author left unset, and only the registry
+ * can tell them apart. Null when the seed carried no registry.
+ */
+export function registryStatusFor(
+  registry: { prefix: string; status: string; note?: string | null }[] | undefined,
+  family: VariableFamily,
+): { status: string; note: string | null } | null {
+  const row = registry?.find((r) => r.prefix === family.prefix);
+  return row ? { status: row.status, note: row.note ?? null } : null;
 }
 
 // ─── Label registry ──────────────────────────────────────────────────

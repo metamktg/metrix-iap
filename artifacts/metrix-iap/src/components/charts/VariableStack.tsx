@@ -24,7 +24,10 @@
 // same kind of object with different lengths, and there was no way to see
 // that a pillar had no proof variable at all.
 
-import { VARIABLE_FAMILIES, resolveVariableLabel, PREFIX_COLORS } from "@/lib/variable-registry";
+import {
+  VARIABLE_FAMILIES, resolveVariableLabel, PREFIX_COLORS, stackValue, registryStatusFor,
+} from "@/lib/variable-registry";
+import type { VariableRegistryEntry } from "@/lib/data/seedTypes";
 import { HEADING } from "@/pages/metrix/typography";
 
 export interface VariableStackProps {
@@ -40,6 +43,14 @@ export interface VariableStackProps {
   onSelect?: (code: string, familyKey: string) => void;
   /** Families with no variable are shown as gaps by default. */
   hideEmpty?: boolean;
+  /**
+   * The seed's variable_registry. With it, a family the client library has
+   * no definition for is labelled as the confirmed gap it is rather than as
+   * a slot the author left empty — AW, CTA and ST are registry_missing on
+   * every account, so "not set" was telling the reader to go fill in
+   * something that does not exist to be filled in.
+   */
+  registry?: VariableRegistryEntry[];
 }
 
 export function VariableStack({
@@ -48,10 +59,19 @@ export function VariableStack({
   marginalLabel,
   onSelect,
   hideEmpty = false,
+  registry,
 }: VariableStackProps) {
-  const slots = VARIABLE_FAMILIES.map((f) => ({ family: f, code: stack[f.key] ?? null })).filter(
-    (s) => !hideEmpty || s.code,
-  );
+  // stackValue, not stack[f.key]: real bundles carry BOTH key conventions —
+  // hk and hook, tn and tone, hp and pain_proof — so a stack written in the
+  // short form resolved to nothing and the whole component rendered nine
+  // empty slots.
+  const slots = VARIABLE_FAMILIES.map((f) => ({
+    family: f,
+    code: stackValue(stack, f),
+    registryGap: registryStatusFor(registry, f)?.status === "registry_missing"
+      ? registryStatusFor(registry, f)!.note
+      : null,
+  })).filter((s) => !hideEmpty || s.code);
   const filled = slots.filter((s) => s.code).length;
 
   if (slots.length === 0) {
@@ -61,7 +81,7 @@ export function VariableStack({
   return (
     <div className="w-full">
       <ul className="flex flex-col gap-1" aria-label="Variable stack">
-        {slots.map(({ family, code }) => {
+        {slots.map(({ family, code, registryGap }) => {
           const read = code ? marginal?.get(code) : undefined;
           const inner = (
             <>
@@ -74,9 +94,13 @@ export function VariableStack({
               <span
                 className={`flex-1 min-w-0 truncate rounded-lg border px-2 py-1.5 text-caption font-body
                             ${code ? PREFIX_COLORS[family.prefix] : "border-dashed border-border/35 text-muted-foreground/45"}`}
-                title={code ? `${resolveVariableLabel(code)} (${code})` : undefined}
+                title={
+                  code
+                    ? `${resolveVariableLabel(code)} (${code})`
+                    : registryGap ?? undefined
+                }
               >
-                {code ? resolveVariableLabel(code) : "not set"}
+                {code ? resolveVariableLabel(code) : registryGap ? "no registry definition" : "not set"}
               </span>
               {marginal && (
                 <span
