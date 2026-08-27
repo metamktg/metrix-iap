@@ -33,7 +33,9 @@ const REM = 16;
 /** Read `.text-foo { font-size: N rem` declarations out of the stylesheet. */
 function readScale(src: string): Map<string, number> {
   const out = new Map<string, number>();
-  const re = /\.(text-[a-z]+)\s*\{[^}]*font-size:\s*([0-9.]+)rem/g;
+  // [a-z0-9] not [a-z] — the ramp roles are text-h2 … text-h5, and the
+  // digit-free pattern silently skipped every one of them.
+  const re = /\.(text-[a-z0-9]+)\s*\{[^}]*font-size:\s*([0-9.]+)rem/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(src)) !== null) out.set(m[1]!, Math.round(Number(m[2]) * REM));
   return out;
@@ -89,10 +91,20 @@ for (const role of ["text-micro", "text-label", "text-caption"]) {
 }
 
 // ── Rule 2: header steps ──────────────────────────────────────────────
+// The real ramp is now five heading levels above the floor, each on its own
+// face. Every adjacent pair still has to clear the 3px step — that is what
+// stops a level being a size nobody can pick out of the one above it.
+const h2 = need("text-h2");
+const h3 = need("text-h3");
+const h4 = need("text-h4");
+const h5 = need("text-h5");
+
 const steps: Array<[string, number | null, string, number | null]> = [
-  ["H1 page title", pageTitle, "H2 SectionCard title", cardtitle],
-  ["H2 SectionCard title", cardtitle, "H3 card/list title", title],
-  ["H3 card/list title", title, "body prose", body],
+  ["H1 page title", pageTitle, "H2 section title", h2],
+  ["H2 section title", h2, "H3 card title", h3],
+  ["H3 card title", h3, "H4 group header", h4],
+  ["H4 group header", h4, "H5 sub-group header", h5],
+  ["H5 sub-group header", h5, "body prose", body],
   ["dialog title", callout, "body prose", body],
 ];
 for (const [an, a, bn, b] of steps) {
@@ -123,7 +135,7 @@ function roleSizeClass(constName: string, member: string): string | null {
   if (!block) return null;
   const line = new RegExp(`\\b${member}:\\s*"([^"]+)"`).exec(block[1]!);
   if (!line) return null;
-  return line[1]!.split(/\s+/).find((c) => /^text-[a-z]+$/.test(c)) ?? null;
+  return line[1]!.split(/\s+/).find((c) => /^text-[a-z0-9]+$/.test(c)) ?? null;
 }
 
 /** Pairs that appear next to each other on screen and must be tellable apart. */
@@ -148,6 +160,31 @@ for (const [ac, am, bc, bm, why] of ADJACENT) {
   }
 }
 
+// ── Rule 4: every heading level carries its own face ──────────────────
+//
+// Five levels separated by size alone would need a range this scale does not
+// have above a 14px floor. Each level therefore also changes typeface, so a
+// reader tells an H3 from an H4 by its shape as well as its size. This
+// checks the mapping declares one; index.css defines what each face is.
+const FACE_REQUIRED: Array<[string, string]> = [
+  ["h1", "font-h1"], ["h2", "font-h2"], ["h3", "font-h3"],
+  ["h4", "font-h4"], ["h5", "font-h5"], ["h6", "font-h6"],
+];
+for (const [member, face] of FACE_REQUIRED) {
+  const block = /export const HEADING = \{([\s\S]*?)\n\} as const;/.exec(typographySrc);
+  const line = block ? new RegExp(`\\b${member}:\\s*"([^"]+)"`).exec(block[1]!) : null;
+  if (!line) {
+    problems.push(`HEADING.${member} is not defined — the ramp needs all six levels.`);
+    continue;
+  }
+  if (!line[1]!.split(/\s+/).includes(face)) {
+    problems.push(
+      `HEADING.${member} does not carry ${face}. Each heading level changes typeface as well as ` +
+        `size — five levels cannot be told apart by size alone above a 14px floor.`,
+    );
+  }
+}
+
 if (caption != null && body != null && caption >= body) {
   problems.push(`text-caption (${caption}px) is not below text-body (${body}px) — metadata must not outrank prose.`);
 }
@@ -160,7 +197,7 @@ if (problems.length > 0) {
 }
 
 const ladder = [
-  `H1 ${pageTitle}`, `H2 ${cardtitle}`, `H3 ${title}`, `body ${body}`, `caption ${caption}`,
+  `H1 ${pageTitle}`, `H2 ${h2}`, `H3 ${h3}`, `H4 ${h4}`, `H5 ${h5}`, `body ${body}`, `caption ${caption}`,
   `label ${scale.get("text-label")}`, `micro ${scale.get("text-micro")}`,
 ].join("  ->  ");
 console.log(`\nPASS  Type scale conforms: ${BODY_FLOOR}px body floor, ${MIN_HEADER_STEP}px header steps.\n      ${ladder}\n`);

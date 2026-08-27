@@ -76,13 +76,15 @@ const COLS: MetricColumn<TRow>[] = [
 ];
 
 const TYPE_LADDER: [string, string, string][] = [
-  ["mx-section-header__title", "32px", "H1 · page title"],
-  ["text-cardtitle", "21px", "H2 · section card title"],
-  ["text-title", "17px", "H3 · card / list title"],
-  ["text-body", "14px", "Body — the floor. Every sentence lands here or above."],
-  ["text-caption", "12px", "Caption · non-sentence metadata"],
-  ["text-label", "11px", "LABEL · eyebrow"],
-  ["text-micro", "10px", "MICRO · index"],
+  ["text-bignum font-h1 font-bold leading-none", "32 · Outfit 700", "H1 — route title"],
+  ["text-h2 font-h2 font-bold leading-tight", "27 · Roboto 700", "H2 — section title"],
+  ["text-h3 font-h3 font-semibold leading-snug", "23 · Outfit 600", "H3 — card title"],
+  ["text-h4 font-h4 font-bold leading-snug", "20 · Lato 700", "H4 — group header"],
+  ["text-h5 font-h5 font-semibold leading-snug", "17 · Rubik 600", "H5 — sub-group"],
+  ["text-body font-body", "14 · Figtree 400", "Body — the floor. Every sentence lands here or above."],
+  ["text-caption font-body", "12 · Figtree", "Caption — non-sentence metadata"],
+  ["text-label font-h6 font-bold uppercase", "11 · Rubik 700", "H6 / label — eyebrow"],
+  ["text-micro font-mono uppercase", "10 · mono", "Micro — index"],
 ];
 
 function App() {
@@ -94,11 +96,11 @@ function App() {
           The real stylesheet, the real tokens, fixture data · everything jsdom cannot see
         </p>
 
-        <Panel title="Type scale" note="Each role must outrank the one below it by at least 3px · body floor is 14px">
+        <Panel title="Type scale" note="Five heading levels, each on its own face · every step ≥3px · body floor 14px">
           <div className="flex flex-col gap-2">
             {TYPE_LADDER.map(([cls, px, desc]) => (
               <div key={cls} className="flex items-baseline gap-4 border-b border-border/25 pb-2">
-                <span className="text-micro font-mono text-muted-foreground/60 w-14 shrink-0 tabular-nums">{px}</span>
+                <span className="text-micro font-mono text-muted-foreground/60 w-28 shrink-0 tabular-nums">{px}</span>
                 <span className={cls}>{desc}</span>
               </div>
             ))}

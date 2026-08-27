@@ -48,11 +48,11 @@ export const TYPE = {
   /** Card / list-item titles. Bold is the one enforced title weight
    *  platform-wide — see HEADING below for the full H1-H6 scale
    *  (SectionCard's own title is HEADING.h2, not this role). */
-  title: "text-title font-bold text-foreground leading-snug",
+  title: "text-title font-h5 font-bold text-foreground leading-snug",
   /** Body prose inside cards and tiles — the 14px floor. Every sentence the
    *  product shows a user lands here or higher, including short ones.
    *  text-data-body = DS foreground @88% — clear readable prose. */
-  body: "text-body text-data-body",
+  body: "text-body font-body text-data-body",
   /** NON-SENTENCE metadata: counts, units, dates, "3 of 11" coverage notes.
    *  Anything phrased as a sentence uses TYPE.body instead — 12px is below
    *  the body floor on purpose, and prose does not belong here.
@@ -85,10 +85,19 @@ export const TYPE = {
 // never siblings — one heads a table column, the other an eyebrow above a
 // field group. They are told apart by position and context, not by size.
 export const HEADING = {
+  /** Route title (ModuleHeader). One per page — the biggest statement. */
+  h1: "text-bignum font-h1 font-bold text-foreground leading-none",
   /** SectionCard's own title, and any full-page empty/onboarding state's
    *  heading that sits directly under a route's H1 (ModuleHeader) — the
    *  first real content heading on the page besides the H1 itself. */
-  h2: "text-cardtitle font-bold text-foreground leading-tight",
+  h2: "text-h2 font-h2 font-bold text-foreground leading-tight",
+  /** A card or panel title inside a section. */
+  h3: "text-h3 font-h3 font-semibold text-foreground leading-snug",
+  /** A group header inside a card — above a cluster of rows or fields. */
+  h5: "text-h5 font-h5 font-semibold text-foreground leading-snug",
+  /** The smallest heading: an eyebrow above a field group. Chrome band,
+   *  separated by case and tracking rather than size. */
+  h6: "text-label font-h6 font-bold uppercase text-data-caption",
   /** Data-table / dense-list column-group headers.
    *
    *  Moved from text-caption (12px) to text-label (11px) because it used to
@@ -98,7 +107,7 @@ export const HEADING = {
    *  labels a column, it does not title a section, so it separates by case,
    *  weight and tracking above 14px cells rather than by size. Not a
    *  heading tag — <th> already carries the right semantics. */
-  h4: "text-label font-semibold uppercase text-data-caption",
+  h4: "text-label font-h4 font-bold uppercase text-data-caption",
 } as const;
 
 // ─── Dialog title ────────────────────────────────────────────────────

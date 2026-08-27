@@ -62,10 +62,19 @@ const PROBE = `(() => {
     bands.push({ fill: bg, ratio: +contrast(getComputedStyle(span).color, bg).toFixed(2) });
   }));
   return {
-    sizes: { h1: px(".mx-section-header__title"), h2: px(".text-cardtitle"), h3: px(".text-title"),
-             body: px(".text-body"), caption: px(".text-caption"), label: px(".text-label"), micro: px(".text-micro") },
+    sizes: { h1: px(".text-bignum"), h2: px(".text-h2"), h3: px(".text-h3"), h4: px(".text-h4"),
+             h5: px(".text-h5"), body: px(".text-body"), caption: px(".text-caption"),
+             label: px(".text-label"), micro: px(".text-micro") },
+    faces: (() => {
+      const out = {};
+      for (const sel of [".text-bignum", ".text-h2", ".text-h3", ".text-h4", ".text-h5", ".text-body"]) {
+        const el = document.querySelector(sel);
+        out[sel] = el ? getComputedStyle(el).fontFamily : null;
+      }
+      return out;
+    })(),
     smoothing: getComputedStyle(document.documentElement).webkitFontSmoothing,
-    wrap: getComputedStyle(document.querySelector(".text-cardtitle")).textWrap,
+    wrap: getComputedStyle(document.querySelector(".text-h3")).textWrap,
     bands,
     overflow: { scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth },
   };
@@ -73,6 +82,7 @@ const PROBE = `(() => {
 
 const report = await page.evaluate(PROBE) as {
   sizes: Record<string, number | null>;
+  faces: Record<string, string | null>;
   smoothing: string; wrap: string;
   bands: { fill: string; ratio: number }[];
   overflow: { scroll: number; client: number };
@@ -81,13 +91,26 @@ await browser.close();
 
 const { sizes, bands, overflow } = report;
 const ladder: [string, number | null, string, number | null][] = [
-  ["H1", sizes.h1, "H2", sizes.h2], ["H2", sizes.h2, "H3", sizes.h3], ["H3", sizes.h3, "body", sizes.body],
+  ["H1", sizes.h1, "H2", sizes.h2], ["H2", sizes.h2, "H3", sizes.h3],
+  ["H3", sizes.h3, "H4", sizes.h4], ["H4", sizes.h4, "H5", sizes.h5],
+  ["H5", sizes.h5, "body", sizes.body],
 ];
 for (const [an, a, bn, b] of ladder) {
   if (a == null || b == null) { problems.push(`could not measure ${an} or ${bn} in the browser`); continue; }
   if (a - b < MIN_STEP) problems.push(`${an} (${a}px) is only ${a - b}px above ${bn} (${b}px) — needs ${MIN_STEP}px`);
 }
 if (sizes.body != null && sizes.body < BODY_FLOOR) problems.push(`body computes to ${sizes.body}px, below the ${BODY_FLOOR}px floor`);
+const FACE_EXPECT: [string, string][] = [
+  [".text-bignum", "Outfit"], [".text-h2", "Roboto"], [".text-h3", "Outfit"],
+  [".text-h4", "Lato"], [".text-h5", "Rubik"], [".text-body", "Figtree"],
+];
+for (const [sel, family] of FACE_EXPECT) {
+  const got = report.faces?.[sel];
+  if (!got) { problems.push(`could not measure the face on ${sel}`); continue; }
+  if (!got.toLowerCase().includes(family.toLowerCase())) {
+    problems.push(`${sel} renders in "${got}" — expected ${family}. A heading level that falls back to the body face loses the only signal separating it from its neighbour.`);
+  }
+}
 if (report.smoothing !== "antialiased") problems.push(`font smoothing is "${report.smoothing}", not antialiased`);
 if (report.wrap !== "balance") problems.push(`heading text-wrap is "${report.wrap}", not balance`);
 if (overflow.scroll > overflow.client) problems.push(`the page scrolls horizontally (${overflow.scroll} > ${overflow.client})`);
@@ -98,7 +121,7 @@ for (const b of bands) {
 for (const e of consoleErrors) problems.push(`uncaught page error: ${e}`);
 
 console.log(`\nScreenshot → ${path.join(OUT, "design-lab.png")}`);
-console.log(`Ladder: H1 ${sizes.h1} → H2 ${sizes.h2} → H3 ${sizes.h3} → body ${sizes.body} → caption ${sizes.caption} → label ${sizes.label} → micro ${sizes.micro}`);
+console.log(`Ladder: H1 ${sizes.h1} → H2 ${sizes.h2} → H3 ${sizes.h3} → H4 ${sizes.h4} → H5 ${sizes.h5} → body ${sizes.body} → caption ${sizes.caption} → label ${sizes.label} → micro ${sizes.micro}`);
 console.log(`Generated fills: ${bands.length} measured, worst text contrast ${Math.min(...bands.map((b) => b.ratio))}:1`);
 
 if (problems.length > 0) {

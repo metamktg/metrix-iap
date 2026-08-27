@@ -87,7 +87,8 @@ export const tokens = {
   },
   "fontFamily": {
     "sans": [
-      "Inter",
+      "Figtree",
+      "system-ui",
       "sans-serif"
     ],
     "serif": [

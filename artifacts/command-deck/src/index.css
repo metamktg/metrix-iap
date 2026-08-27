@@ -160,7 +160,7 @@
   --chart-4: 26 90.5% 37.1%;
   --chart-5: 215 16.3% 46.9%;
 
-  --app-font-sans: Inter, sans-serif;
+  --app-font-sans: Figtree, system-ui, sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: Share Tech Mono, monospace;
   --radius: 0.625rem;

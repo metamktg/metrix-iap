@@ -187,8 +187,9 @@
   /* Headings balance across lines (no lone word on the last line); prose
      avoids orphans. Applied to the type ROLES rather than to elements, so a
      heading rendered as a <div> — which most of ours are — still gets it. */
+  .text-h2, .text-h3, .text-h4, .text-h5,
   .text-title, .text-cardtitle, .text-callout, .text-display,
-  .text-section, .text-hero, .mx-section-header__title {
+  .text-section, .text-bignum, .text-hero, .mx-section-header__title {
     text-wrap: balance;
   }
   .text-body, .text-caption, .mx-section-header__sub {
@@ -509,10 +510,36 @@
      rather than sprawling. This is the difference between text that is
      merely bigger and text that is properly set.
 
-     Scale: micro(10) · label(11) · caption(12) · body(14) · title(17) ·
-            callout(18) · cardtitle(21) · display(24) · section(26) ·
-            stat(30) · bignum(32) · hero(44)
+     Scale: micro(10) · label(11) · caption(12) · body(14) · h5/title(17) ·
+            callout(18) · h4(20) · cardtitle(21) · h3(23) · display(24) ·
+            section(26) · h2(27) · stat(30) · h1/bignum(32) · hero(44)
+
+     Five heading levels have to fit above a 14px floor with a >=3px step
+     between each, so they are spread across the range — 32/27/23/20/17 —
+     rather than clustered near the top the way a three-level ramp can be.
      ─────────────────────────────────────────────────────────────────── */
+
+  /* ── Faces ────────────────────────────────────────────────────────
+     Five families, one per heading level, because each level is doing a
+     different job and a size change alone is a weak signal at these
+     densities. Every stack names a metric-compatible fallback so a
+     failed webfont shifts weight, not layout.
+
+       H1  Outfit   geometric, wide apertures — the one big statement
+       H2  Roboto   neutral and workmanlike; section titles should not
+                    compete with the page title for character
+       H3  Outfit   picks the display voice back up one level down
+       H4  Lato     humanist, slightly warmer — group headers
+       H5  Rubik    rounded terminals read as UI rather than prose
+       H6  Rubik    the uppercase chrome label, separated by case and
+                    tracking rather than size
+       body Figtree tall x-height, which is what makes 14px hold
+     ──────────────────────────────────────────────────────────────── */
+  .font-h1, .font-h3 { font-family: Outfit, "Segoe UI", system-ui, sans-serif; }
+  .font-h2           { font-family: Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .font-h4           { font-family: Lato, "Segoe UI", system-ui, sans-serif; }
+  .font-h5, .font-h6 { font-family: Rubik, "Segoe UI", system-ui, sans-serif; }
+  .font-body         { font-family: Figtree, system-ui, sans-serif; }
 
   /* ── Chrome band — labels and indices, never sentences ───────────── */
   .text-micro   { font-size: 0.625rem;   line-height: 1.4;  letter-spacing: 0.1em; }    /* 10px */
@@ -521,9 +548,13 @@
   /* ── Reading band — 14px floor for anything phrased as a sentence ── */
   .text-caption { font-size: 0.75rem;    line-height: 1.5;  letter-spacing: 0; }        /* 12px — non-sentence metadata only */
   .text-body    { font-size: 0.875rem;   line-height: 1.6;  letter-spacing: 0; }        /* 14px — BODY FLOOR */
-  .text-title   { font-size: 1.0625rem;  line-height: 1.35; letter-spacing: -0.006em; } /* 17px — H3 */
+  .text-h5      { font-size: 1.0625rem;  line-height: 1.4;  letter-spacing: 0; }         /* 17px — H5 */
+  .text-title   { font-size: 1.0625rem;  line-height: 1.35; letter-spacing: -0.006em; } /* 17px — alias of H5's step */
   .text-callout { font-size: 1.125rem;   line-height: 1.4;  letter-spacing: -0.008em; } /* 18px — dialog title */
+  .text-h4      { font-size: 1.25rem;    line-height: 1.35; letter-spacing: -0.004em; } /* 20px — H4 */
+  .text-h3      { font-size: 1.4375rem;  line-height: 1.3;  letter-spacing: -0.008em; } /* 23px — H3 */
   .text-display { font-size: 1.5rem;     line-height: 1.2;  letter-spacing: -0.014em; } /* 24px */
+  .text-h2      { font-size: 1.6875rem;  line-height: 1.22; letter-spacing: -0.012em; } /* 27px — H2 */
   .text-section { font-size: 1.625rem;   line-height: 1.2;  letter-spacing: -0.014em; } /* 26px */
   .text-stat    { font-size: 1.875rem;   line-height: 1.1;  letter-spacing: -0.02em; }  /* 30px */
   .text-bignum  { font-size: 2rem;       line-height: 1.05; letter-spacing: -0.022em; } /* 32px — H1 / hero number */
