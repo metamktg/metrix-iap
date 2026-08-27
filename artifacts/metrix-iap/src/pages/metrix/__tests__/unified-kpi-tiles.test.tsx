@@ -86,7 +86,9 @@ describe("unified KPI tiles mount on every migrated view", () => {
     // Dropdown works: open the first tile's label picker.
     const label = within(tiles[0]).getAllByRole("button")[0];
     fireEvent.click(label);
-    expect(within(container).getByTestId("kpi-metric-dropdown")).toBeTruthy();
+    // Portalled to document.body so .mx-kpi-tile's overflow:hidden cannot
+    // clip it — so it is not a descendant of the render container.
+    expect(screen.getByTestId("kpi-metric-dropdown")).toBeTruthy();
   });
 
   for (const [name, View] of ACCOUNT_SCOPED) {
@@ -137,7 +139,9 @@ describe("tile metric selection persists per view", () => {
     const first = renderView(BudgetView);
     const tiles = within(first.container).getAllByTestId("kpi-tile");
     fireEvent.click(within(tiles[1]).getAllByRole("button")[0]); // open dropdown
-    const dropdown = within(first.container).getByTestId("kpi-metric-dropdown");
+    // Portalled to document.body so .mx-kpi-tile's overflow:hidden cannot
+    // clip it — so it is not a descendant of the render container.
+    const dropdown = screen.getByTestId("kpi-metric-dropdown");
     fireEvent.click(within(dropdown).getByRole("button", { name: /cpm/i }));
     expect(within(first.container).getAllByTestId("kpi-tile")[1].textContent).toContain("CPM");
     first.unmount();

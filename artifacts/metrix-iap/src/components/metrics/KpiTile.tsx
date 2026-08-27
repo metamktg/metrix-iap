@@ -9,7 +9,8 @@
 // Styling is composed strictly from Command Deck / app tokens already in
 // use (mx-kpi-tile, TYPE, text-bignum, border-primary, …) — no new styles.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowUpRight, ChevronDown, Info } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
@@ -24,19 +25,49 @@ interface KpiMetricDropdownProps {
   activeId: string;
   onSelect: (id: string) => void;
   onClose: () => void;
+  /** The trigger button, used to place the portalled menu under its tile. */
+  anchorRef: React.RefObject<HTMLButtonElement | null>;
 }
 
-function KpiMetricDropdown({ catalog, activeId, onSelect, onClose }: KpiMetricDropdownProps) {
+function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: KpiMetricDropdownProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  // Anchor to the trigger in VIEWPORT coordinates. The dropdown is rendered
+  // through a portal (see below), so it has no positioned ancestor to lay
+  // itself out against — position: fixed plus the trigger's own rect is the
+  // only thing that keeps it under its tile.
+  useLayoutEffect(() => {
+    const el = anchorRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const width = 224; // w-56
+    // Keep it on screen when a tile sits near the right edge.
+    const left = Math.min(r.left, Math.max(8, window.innerWidth - width - 8));
+    setPos({ top: r.bottom + 4, left });
+  }, [anchorRef]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      const target = e.target as Node;
+      if (ref.current?.contains(target)) return;
+      if (anchorRef.current?.contains(target)) return;
+      onClose();
     };
+    // A fixed-position menu cannot follow the page, so close rather than
+    // drift away from the tile it belongs to.
+    const dismiss = () => onClose();
     // micro-delay so the click that opened the dropdown doesn't immediately close it
     const tid = setTimeout(() => document.addEventListener("mousedown", handler), 50);
-    return () => { clearTimeout(tid); document.removeEventListener("mousedown", handler); };
-  }, [onClose]);
+    window.addEventListener("scroll", dismiss, true);
+    window.addEventListener("resize", dismiss);
+    return () => {
+      clearTimeout(tid);
+      document.removeEventListener("mousedown", handler);
+      window.removeEventListener("scroll", dismiss, true);
+      window.removeEventListener("resize", dismiss);
+    };
+  }, [onClose, anchorRef]);
 
   const staticMetrics = catalog.filter((m) => !m.isResultEvent);
   const eventMetrics = catalog.filter((m) => m.isResultEvent);
@@ -60,11 +91,19 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose }: KpiMetricDr
     </button>
   );
 
-  return (
+  // PORTALLED ON PURPOSE. .mx-kpi-tile sets `overflow: hidden` (index.css),
+  // and this menu is positioned below the tile's bottom edge — so as an
+  // in-flow absolute child it was clipped away entirely, on every KPI tile
+  // in the product. z-50 does nothing against an overflow-hidden ancestor.
+  // The metric picker is the whole point of the customizable tile rows, and
+  // it was invisible everywhere. Rendering into document.body is what takes
+  // it out of that clipping context; nothing else does.
+  const menu = (
     <div
       ref={ref}
       data-testid="kpi-metric-dropdown"
-      className="absolute top-full left-0 mt-1 z-50 w-56 rounded-lg border border-border/60 bg-[hsl(var(--surface-raised))] shadow-2xl py-1 overflow-hidden"
+      style={{ position: "fixed", top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? "visible" : "hidden" }}
+      className="z-50 w-56 rounded-lg border border-border/60 bg-[hsl(var(--surface-raised))] shadow-2xl py-1 overflow-hidden"
     >
       <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/45">
         Delivery & efficiency
@@ -82,6 +121,8 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose }: KpiMetricDr
       )}
     </div>
   );
+
+  return createPortal(menu, document.body);
 }
 
 // ─── Info hover (disclosure slot) ──────────────────────────────────────
@@ -156,6 +197,7 @@ export function KpiTile({
   disclosure, hideInfo = false, variant = "default", trend, sparkPoints,
 }: KpiTileProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const m = metricById(catalog, metricId);
   if (!m) return null;
 
@@ -193,6 +235,7 @@ export function KpiTile({
       {/* Label row: dropdown trigger + drill affordance + optional info hover */}
       <div className="flex items-center justify-between gap-1.5 min-w-0">
         <button
+          ref={triggerRef}
           type="button"
           aria-haspopup="listbox"
           aria-expanded={pickerOpen}
@@ -268,6 +311,7 @@ export function KpiTile({
 
       {pickerOpen && (
         <KpiMetricDropdown
+          anchorRef={triggerRef}
           catalog={catalog}
           activeId={metricId}
           onSelect={(id) => { onSelect(id); setPickerOpen(false); }}

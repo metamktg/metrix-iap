@@ -52,7 +52,9 @@ describe("KpiTile", () => {
       <KpiTile metricId="spend" catalog={catalog} onSelect={onSelect} />
     );
     fireEvent.click(within(container).getByRole("button", { name: /total spend/i }));
-    const dropdown = within(container).getByTestId("kpi-metric-dropdown");
+    // Portalled to document.body so .mx-kpi-tile's overflow:hidden cannot
+    // clip it — so it is not a descendant of the render container.
+    const dropdown = screen.getByTestId("kpi-metric-dropdown");
     fireEvent.click(within(dropdown).getByRole("button", { name: /purchases/i }));
     expect(onSelect).toHaveBeenCalledWith("result:Website purchases");
   });
@@ -118,7 +120,9 @@ describe("KpiTileRow — per-view persistence", () => {
     const first = renderRow();
     // Open the first tile's dropdown and swap Total spend → CPM.
     fireEvent.click(within(first.container).getAllByRole("button", { name: /total spend/i })[0]);
-    const dropdown = within(first.container).getByTestId("kpi-metric-dropdown");
+    // Portalled to document.body so .mx-kpi-tile's overflow:hidden cannot
+    // clip it — so it is not a descendant of the render container.
+    const dropdown = screen.getByTestId("kpi-metric-dropdown");
     fireEvent.click(within(dropdown).getByRole("button", { name: /cpm/i }));
     expect(first.container.textContent).toContain("CPM");
     first.unmount();
@@ -257,5 +261,75 @@ describe("KpiTile — a null value is never unexplainable", () => {
   it("adds no affordance to a tile that has a real value and no note", () => {
     const { container } = render(<KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />);
     expect(within(container).queryByTestId("kpi-tile-info")).toBeNull();
+  });
+});
+
+// ─── The metric picker must escape the tile's clipping box ────────────
+//
+// .mx-kpi-tile sets `overflow: hidden` (index.css), and the dropdown is
+// positioned below the tile's bottom edge — so as an in-flow absolute
+// child it was clipped away entirely, on every KPI tile in the product.
+// z-50 does nothing against an overflow-hidden ancestor. The metric picker
+// is the whole point of the customizable tile rows, and it was invisible
+// everywhere; jsdom applies no CSS, which is why no test caught it.
+//
+// The structural property is what these can assert: the menu must not be a
+// descendant of the tile, because any ancestor is free to clip it.
+
+describe("KpiTile — metric picker escapes the tile's overflow", () => {
+  it("renders the dropdown outside the tile element", () => {
+    const { container } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />
+    );
+    fireEvent.click(within(container).getByText("Total spend"));
+
+    const tile = within(container).getByTestId("kpi-tile");
+    const dropdown = screen.getByTestId("kpi-metric-dropdown");
+    expect(dropdown).toBeTruthy();
+    // The assertion that would have failed before the portal.
+    expect(tile.contains(dropdown)).toBe(false);
+  });
+
+  it("attaches the dropdown to the document body", () => {
+    const { container } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />
+    );
+    fireEvent.click(within(container).getByText("Total spend"));
+    const dropdown = screen.getByTestId("kpi-metric-dropdown");
+    expect(dropdown.closest("[data-testid='kpi-tile']")).toBeNull();
+    expect(document.body.contains(dropdown)).toBe(true);
+  });
+
+  it("positions itself with fixed coordinates, having no positioned ancestor", () => {
+    const { container } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />
+    );
+    fireEvent.click(within(container).getByText("Total spend"));
+    const dropdown = screen.getByTestId("kpi-metric-dropdown") as HTMLElement;
+    // Portalled content cannot lay itself out against the trigger, so the
+    // position must come from the trigger's own rect.
+    expect(dropdown.style.position).toBe("fixed");
+  });
+
+  it("closes on scroll, since a fixed menu cannot follow its tile", () => {
+    const { container } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />
+    );
+    fireEvent.click(within(container).getByText("Total spend"));
+    expect(screen.queryByTestId("kpi-metric-dropdown")).not.toBeNull();
+
+    fireEvent.scroll(window);
+    expect(screen.queryByTestId("kpi-metric-dropdown")).toBeNull();
+  });
+
+  it("leaves nothing behind in the body once closed", () => {
+    const { container, unmount } = render(
+      <KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />
+    );
+    fireEvent.click(within(container).getByText("Total spend"));
+    expect(screen.queryByTestId("kpi-metric-dropdown")).not.toBeNull();
+    unmount();
+    // A portal that outlives its owner is a leak the user sees as a stuck menu.
+    expect(screen.queryByTestId("kpi-metric-dropdown")).toBeNull();
   });
 });
