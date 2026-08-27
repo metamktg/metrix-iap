@@ -17,7 +17,7 @@ const MetrixLoadingContext = createContext<{ isRefetching: boolean }>({ isRefetc
 
 function FullScreen({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-screen w-screen mx-app-bg flex items-center justify-center">
+    <div className="h-dvh w-full mx-app-bg flex items-center justify-center">
       <div className="text-center space-y-3 max-w-sm px-6">{children}</div>
     </div>
   );
