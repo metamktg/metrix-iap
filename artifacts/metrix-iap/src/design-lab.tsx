@@ -23,6 +23,9 @@ import { MetricBarChart } from "@/components/charts/MetricBarChart";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { MetricTable, type MetricColumn } from "@/components/charts/MetricTable";
 import { SharePieChart } from "@/components/charts/SharePieChart";
+import { FunnelChart } from "@/components/charts/FunnelChart";
+import { HeatMatrix } from "@/components/charts/HeatMatrix";
+import { ViewSwitcher } from "@/components/data-module/ViewSwitcher";
 import { ChartTooltip, ChartEmpty, ChartSkeleton } from "@/components/charts/chartChrome";
 import { SERIES_VARS, seriesColor, divergingFill, divergingLegend, magnitudeFill, magnitudeLegend, VERDICT } from "@/components/charts/chartTokens";
 
@@ -210,6 +213,71 @@ function App() {
                 { key: "ctr", label: "Link CTR", values: wave(1.8, 0.7, 4), format: pct },
               ]}
               height={200}
+            />
+          </Panel>
+        </div>
+
+        <Panel title="View switcher" note="Every view always present · unsupported ones disabled WITH the reason, never hidden">
+          <div className="flex flex-col gap-3">
+            {(["performance_by_cell", "conversion_tracking_signal", "historical_matrix_4x4"] as const).map((shape) => (
+              <div key={shape} className="flex items-center gap-3 flex-wrap">
+                <span className="text-micro font-mono text-muted-foreground/60 w-56 shrink-0">{shape}</span>
+                <ViewSwitcher shape={shape} value="table" onChange={() => {}} />
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="Funnel" note="Proportional bars on a common baseline · a stage the export never carried is a hatched GAP, not a zero">
+          <FunnelChart
+            stages={[
+              { key: "impr", label: "Impressions", value: 2_140_882 },
+              { key: "clicks", label: "Clicks (all)", value: 41_204 },
+              { key: "link", label: "Link clicks", value: 28_917 },
+              { key: "atc", label: "Adds to cart", value: 3_940 },
+              { key: "checkout", label: "Checkouts", value: null },
+              { key: "purchase", label: "Purchases", value: 1_207 },
+            ]}
+            unitLabel="conversion-attributed actions"
+          />
+        </Panel>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Panel title="Map — verdict scale" note="CPA against a $20 goal · lower is better · diverging">
+            <HeatMatrix
+              rows={["18–24", "25–34", "35–44", "45–54", "55+"]}
+              cols={["Female", "Male", "Unknown"]}
+              rowHeaderLabel="Age"
+              scale="verdict"
+              lowerIsBetter
+              goal={20}
+              measureLabel="Cost per result"
+              format={money2}
+              onSelect={() => {}}
+              cells={[
+                { row: "18–24", col: "Female", value: 31.2 }, { row: "18–24", col: "Male", value: 44.9 }, { row: "18–24", col: "Unknown", value: null },
+                { row: "25–34", col: "Female", value: 12.4 }, { row: "25–34", col: "Male", value: 19.8 }, { row: "25–34", col: "Unknown", value: 26.0 },
+                { row: "35–44", col: "Female", value: 9.1 },  { row: "35–44", col: "Male", value: 15.2 }, { row: "35–44", col: "Unknown", value: null },
+                { row: "45–54", col: "Female", value: 20.4 }, { row: "45–54", col: "Male", value: 21.1 }, { row: "45–54", col: "Unknown", value: null },
+                { row: "55+",   col: "Female", value: 38.7 }, { row: "55+",   col: "Male", value: null }, { row: "55+",   col: "Unknown", value: null },
+              ]}
+            />
+          </Panel>
+          <Panel title="Map — magnitude scale" note="Spend across the MST 4×4 · more is simply more · one hue">
+            <HeatMatrix
+              rows={["Hook A", "Hook B", "Hook C", "Hook D"]}
+              cols={["Avatar 1", "Avatar 2", "Avatar 3", "Avatar 4"]}
+              rowHeaderLabel="Concept"
+              scale="magnitude"
+              measureLabel="Spend"
+              format={money}
+              onSelect={() => {}}
+              cells={[
+                { row: "Hook A", col: "Avatar 1", value: 4820, sub: "C1·A1" }, { row: "Hook A", col: "Avatar 2", value: 1210, sub: "C1·A2" }, { row: "Hook A", col: "Avatar 3", value: 310, sub: "C1·A3" }, { row: "Hook A", col: "Avatar 4", value: null },
+                { row: "Hook B", col: "Avatar 1", value: 2940, sub: "C2·A1" }, { row: "Hook B", col: "Avatar 2", value: 3810, sub: "C2·A2" }, { row: "Hook B", col: "Avatar 3", value: null },              { row: "Hook B", col: "Avatar 4", value: 640, sub: "C2·A4" },
+                { row: "Hook C", col: "Avatar 1", value: 880, sub: "C3·A1" },  { row: "Hook C", col: "Avatar 2", value: null },              { row: "Hook C", col: "Avatar 3", value: 5120, sub: "C3·A3" }, { row: "Hook C", col: "Avatar 4", value: 1490, sub: "C3·A4" },
+                { row: "Hook D", col: "Avatar 1", value: null },               { row: "Hook D", col: "Avatar 2", value: 720, sub: "C4·A2" },  { row: "Hook D", col: "Avatar 3", value: 2260, sub: "C4·A3" }, { row: "Hook D", col: "Avatar 4", value: 3370, sub: "C4·A4" },
+              ]}
             />
           </Panel>
         </div>
