@@ -14,12 +14,15 @@ complete record and the zip is no longer needed.
 2. `METRIX_Phase2_Enabler_Sprint_202608.md` — the E1–E5 work order, each section annotated
    with its landed status and the two places the specification was corrected against live data.
 3. `METRIX_Phase3_Design_Brief_202608.md` — the design assessment the whole sprint feeds.
-4. `DESIGN_SESSION_RECONCILIATION.md` — read before using output from any separate
+4. `METRIX_Disclosure_Audit_202608.md` — audit only, no code changed. Which hover-gated
+   content is a descriptor (correct) and which is IAP run output the user came to read
+   (the violation). 14 sites across 8 files, tiered by severity.
+5. `DESIGN_SESSION_RECONCILIATION.md` — read before using output from any separate
    design-exploration session; it flags what from that exploration holds up against the real
    brief and what the brief overrides.
-5. `METRIX_Phase1_Closeout_202608.md`, `../../BUG_TRACKER.md` — where Phase 1 ended, and the
+6. `METRIX_Phase1_Closeout_202608.md`, `../../BUG_TRACKER.md` — where Phase 1 ended, and the
    full defect register.
-6. `METRIX_Phase2_Kickoff_Prompt_Final.md` — the sprint's original kickoff prompt, kept for
+7. `METRIX_Phase2_Kickoff_Prompt_Final.md` — the sprint's original kickoff prompt, kept for
    provenance. Its Track 1 / Track 2 instructions are now history: both tracks are merged.
 
 ## Where the work actually stands
