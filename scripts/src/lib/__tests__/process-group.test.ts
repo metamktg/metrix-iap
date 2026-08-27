@@ -3,9 +3,16 @@
 //
 // The real shape is `pnpm run dev` → sh → node vite.js, and the old
 // `child.kill()` reached only pnpm, leaving vite alive on its port. These
-// tests reproduce that shape with `sh -c "sleep …"`, which is the same
-// two-level tree, and assert the grandchild is actually gone afterwards —
-// not merely that the call returned.
+// tests reproduce that shape and assert the grandchild is actually gone
+// afterwards — not merely that the call returned.
+//
+// The child is spawned as `sh -c "sleep 60 & wait"`, not `sh -c "sleep 60"`.
+// A shell handed one simple command is free to `exec` it, becoming the sleep
+// rather than parenting it — in which case there is no grandchild and these
+// tests would be asserting nothing. /bin/sh is dash here and on the CI
+// runners, and whether it takes that optimisation is a detail of the build,
+// not something to bet a test on. Backgrounding with `&` and holding the
+// shell open with `wait` forces the two-level tree on every shell.
 
 import { describe, it, expect, afterEach } from "vitest";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -59,6 +66,9 @@ function childPidsOf(pid: number): number[] {
   return out;
 }
 
+/** A shell that definitely parents a child rather than exec-ing into it. */
+const TWO_LEVEL_TREE = "sleep 60 & wait";
+
 async function settle(ms = 200): Promise<void> {
   await new Promise((r) => setTimeout(r, ms));
 }
@@ -77,12 +87,13 @@ const LINUX = existsSync("/proc/self/stat");
 
 describe.skipIf(!LINUX)("killGroup", () => {
   it("kills the grandchild, which is the whole point", async () => {
-    const parent = spawnGroup("sh", ["-c", "sleep 60"], { stdio: "ignore" });
+    const parent = spawnGroup("sh", ["-c", TWO_LEVEL_TREE], { stdio: "ignore" });
     started.push(parent);
     await settle();
 
     const grandchildren = childPidsOf(parent.pid!);
-    expect(grandchildren.length).toBeGreaterThan(0);
+    expect(grandchildren, "shell exec'd instead of forking — see TWO_LEVEL_TREE")
+      .not.toHaveLength(0);
     const sleeper = grandchildren[0]!;
     expect(alive(sleeper)).toBe(true);
 
@@ -96,11 +107,13 @@ describe.skipIf(!LINUX)("killGroup", () => {
     // Guards against the fix being quietly reverted to `child.kill()`: if this
     // ever starts passing with the grandchild dead, the premise changed and
     // the test above stopped proving anything.
-    const parent = spawn("sh", ["-c", "sleep 60"], { stdio: "ignore" });
+    const parent = spawn("sh", ["-c", TWO_LEVEL_TREE], { stdio: "ignore" });
     started.push(parent);
     await settle();
 
-    const sleeper = childPidsOf(parent.pid!)[0]!;
+    const kids = childPidsOf(parent.pid!);
+    expect(kids, "shell exec'd instead of forking — see TWO_LEVEL_TREE").not.toHaveLength(0);
+    const sleeper = kids[0]!;
     expect(alive(sleeper)).toBe(true);
 
     parent.kill();
