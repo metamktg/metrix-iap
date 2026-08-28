@@ -1088,7 +1088,7 @@ function UsersSection() {
       )}
       <div className="flex items-center justify-between">
         <div className="flex items-baseline gap-3">
-          <h2 className="text-title font-semibold text-foreground">Provisioned users</h2>
+          <h2 className="text-title font-bold text-foreground">Provisioned users</h2>
           <span className="text-caption text-muted-foreground">
             {users.data?.total ?? 0} total
           </span>
@@ -1151,7 +1151,7 @@ function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChange
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-title font-semibold text-foreground truncate">
+          <div className="text-title font-bold text-foreground truncate">
             {entry.full_name}
           </div>
           <div className="text-caption text-muted-foreground truncate">{entry.email}</div>
@@ -1408,7 +1408,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
 
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-title font-semibold text-foreground">Access requests</h2>
+            <h2 className="text-title font-bold text-foreground">Access requests</h2>
             <span className="text-caption text-muted-foreground">
               {requestEntries.length} total · {pendingRequests} pending
             </span>
@@ -1440,7 +1440,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
 
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-title font-semibold text-foreground">Waitlist emails</h2>
+            <h2 className="text-title font-bold text-foreground">Waitlist emails</h2>
             <span className="text-caption text-muted-foreground">
               {waitlist.data?.total ?? 0} total · {pendingWaitlist} pending
             </span>

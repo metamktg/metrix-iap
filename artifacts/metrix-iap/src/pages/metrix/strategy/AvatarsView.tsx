@@ -402,7 +402,7 @@ function IcpProfileCard({
                 {rankConfidenceText && ` · ${rankConfidenceText}`}
               </p>
             )}
-            <p className="text-title font-semibold text-foreground leading-tight">{profile.profile_name}</p>
+            <p className="text-title font-bold text-foreground leading-tight">{profile.profile_name}</p>
             <span className="text-label font-mono text-muted-foreground/75">{profile.profile_id}</span>
           </div>
         </div>

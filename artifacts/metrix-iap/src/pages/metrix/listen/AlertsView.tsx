@@ -101,7 +101,7 @@ export function AlertsView() {
                               <ImpactBadge impact={s.impact} />
                               <ConfidenceBadge value={s.confidence} />
                             </div>
-                            <p className="text-title font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
+                            <p className="text-title font-bold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
                             <p className="text-body text-muted-foreground/75 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
                           </button>
                         ))}

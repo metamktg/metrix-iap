@@ -86,6 +86,10 @@ args = "type-scale"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
+args = "optical-authority"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
 args = "chart-palette"
 
 [[workflows.workflow.tasks]]
@@ -284,6 +288,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run check:type-scale"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "optical-authority"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:optical-authority"
 
 [workflows.workflow.metadata]
 isValidation = true

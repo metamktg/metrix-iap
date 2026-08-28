@@ -217,7 +217,7 @@ function AvatarTile({
             <p className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">
               AVATAR {String(rank).padStart(2, "0")}
             </p>
-            <span className="inline-flex items-center gap-1 text-title font-semibold text-foreground leading-tight whitespace-pre-line">
+            <span className="inline-flex items-center gap-1 text-title font-bold text-foreground leading-tight whitespace-pre-line">
               {col.name}
               <ChevronRight className="w-3.5 h-3.5 text-interactive/70 shrink-0 -translate-x-0.5 group-hover:translate-x-0 transition-transform" />
             </span>

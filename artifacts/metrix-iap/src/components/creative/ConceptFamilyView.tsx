@@ -140,7 +140,7 @@ function AngleRow({
                   expandFooter={(close) => (
                     <button
                       onClick={() => { close(); onDetail(row); }}
-                      className="pressable inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
+                      className="pressable inline-flex items-center gap-1.5 text-title font-bold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                     >
                       Full detail →
                     </button>
@@ -209,7 +209,7 @@ function ConceptFamilyCard({
           <div className="text-micro font-mono uppercase text-muted-foreground/75 leading-none mb-0.5">
             {group.conceptId}
           </div>
-          <p className="text-title font-semibold text-foreground truncate">{group.conceptName}</p>
+          <p className="text-title font-bold text-foreground truncate">{group.conceptName}</p>
         </div>
 
         <BlendedStatStrip blended={group.blended} />

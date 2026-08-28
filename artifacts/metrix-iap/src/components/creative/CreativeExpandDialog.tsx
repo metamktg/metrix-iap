@@ -391,7 +391,7 @@ function DemographicsTab({
             >
               {/* Row header: age + value */}
               <div className="flex items-center justify-between mb-2">
-                <span className={cn("text-title font-semibold", isActive ? "text-foreground" : "text-foreground/75")}>
+                <span className={cn("text-title font-bold", isActive ? "text-foreground" : "text-foreground/75")}>
                   {b.age}
                 </span>
                 <span className="text-body tabular-nums text-muted-foreground/75 font-medium">

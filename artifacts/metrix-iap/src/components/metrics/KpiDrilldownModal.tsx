@@ -213,7 +213,7 @@ function BreakdownTable({ rows, metricLabel, showWindows, onDrillSegment }: {
 function EmptyState({ title, message }: { title: string; message: string }) {
   return (
     <div className="py-8 text-center space-y-1.5" data-testid="kpi-drilldown-empty">
-      <p className="text-title font-medium text-foreground/60">{title}</p>
+      <p className="text-title font-bold text-foreground/60">{title}</p>
       <p className="text-caption text-muted-foreground/75 max-w-sm mx-auto leading-relaxed">{message}</p>
     </div>
   );

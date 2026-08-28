@@ -281,7 +281,7 @@ function RecommendationCardItem({
       <div>
         <TokenizedConceptText
           text={card.title}
-          className="text-title font-semibold text-foreground leading-snug"
+          className="text-title font-bold text-foreground leading-snug"
         />
       </div>
 

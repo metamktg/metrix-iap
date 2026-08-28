@@ -91,12 +91,12 @@ const COLS: MetricColumn<TRow>[] = [
 const TYPE_LADDER: [string, string, string][] = [
   ["text-bignum font-h1 font-bold leading-none", "32 · Outfit 700", "H1 — route title"],
   ["text-h2 font-h2 font-bold leading-tight", "27 · Outfit 700", "H2 — section title"],
-  ["text-h3 font-h3 font-semibold leading-snug", "23 · Outfit 600", "H3 — card title"],
+  ["text-h3 font-h3 font-bold leading-snug", "23 · Outfit 700", "H3 — card title"],
   ["text-h4 font-h4 font-bold leading-snug", "20 · Outfit 700", "H4 — group header"],
-  ["text-h5 font-h5 font-semibold leading-snug", "17 · Outfit 600", "H5 — sub-group"],
+  ["text-h5 font-h5 font-bold leading-snug", "17 · Outfit 700", "H5 — sub-group"],
   ["text-body font-body", "14 · Figtree 400", "Body — the floor. Every sentence lands here or above."],
   ["text-caption font-body", "12 · Figtree", "Caption — non-sentence metadata"],
-  ["text-label font-h6 font-bold uppercase", "11 · Figtree 700", "H6 / label — eyebrow"],
+  ["text-label font-h6 font-semibold uppercase", "11 · Figtree 600", "H6 / label — eyebrow"],
   ["text-micro font-mono uppercase", "10 · Share Tech Mono", "Micro — index"],
 ];
 
@@ -109,7 +109,7 @@ function App() {
           The real stylesheet, the real tokens, fixture data · everything jsdom cannot see
         </p>
 
-        <Panel title="Type scale" note="Five heading levels, each on its own face · every step ≥3px · body floor 14px">
+        <Panel title="Type scale" note="One heading face · every step ≥3px · body floor 14px · weight never inverts the ramp">
           <div className="flex flex-col gap-2">
             {TYPE_LADDER.map(([cls, px, desc]) => (
               <div key={cls} className="flex items-baseline gap-4 border-b border-border/25 pb-2">

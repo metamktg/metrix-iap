@@ -406,7 +406,7 @@ export function BreakdownExplorer({
       {!restriction && (
         rows.length === 0 || !hasValues ? (
           <div className="py-8 text-center space-y-1.5" data-testid="breakdown-empty">
-            <p className="text-title font-medium text-foreground/60">No segment data for this selection</p>
+            <p className="text-title font-bold text-foreground/60">No segment data for this selection</p>
             <p className="text-caption text-muted-foreground/75 max-w-sm mx-auto leading-relaxed">
               No rows back this metric for the selected dimension in the current import — values that can't be
               honestly computed show as n/a, never zero.

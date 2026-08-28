@@ -702,7 +702,7 @@ export function IapLibraryView() {
                                         <button
                                           onClick={() => { close(); setDetail(row); }}
                                           data-testid={`button-full-detail-${row.cell_id}`}
-                                          className="pressable inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
+                                          className="pressable inline-flex items-center gap-1.5 text-title font-bold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                         >
                                           Full detail →
                                         </button>
@@ -898,7 +898,7 @@ export function IapLibraryView() {
                       <div className="space-y-4">
                         <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
                           <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">Text assets</p>
-                          <h3 className="text-title font-semibold text-foreground mb-1">Meta ad copy, read against the same result</h3>
+                          <h3 className="text-title font-bold text-foreground mb-1">Meta ad copy, read against the same result</h3>
                           <p className="text-caption text-muted-foreground/75 leading-relaxed">
                             Primary text for every cell in scope, so a copy pattern can be judged next to what it actually cost.
                           </p>
@@ -972,7 +972,7 @@ export function IapLibraryView() {
                                 <button
                                   onClick={() => { close(); setDetail(row); }}
                                   data-testid={`button-full-detail-top-${row.cell_id}`}
-                                  className="pressable inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
+                                  className="pressable inline-flex items-center gap-1.5 text-title font-bold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                 >
                                   Full detail →
                                 </button>

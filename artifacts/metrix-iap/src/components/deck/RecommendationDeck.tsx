@@ -117,7 +117,7 @@ function DetailDrawer({
             <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest mb-1">
               Recommendation
             </div>
-            <p className="text-title font-semibold text-foreground leading-tight">{card.title}</p>
+            <p className="text-title font-bold text-foreground leading-tight">{card.title}</p>
           </div>
           <button
             onClick={onClose}
@@ -355,7 +355,7 @@ export function RecommendationDeck({
             <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4 text-status-success/60" />
             </div>
-            <p className="text-title font-medium text-foreground/60">{emptyLabel}</p>
+            <p className="text-title font-bold text-foreground/60">{emptyLabel}</p>
             <p className="text-caption text-muted-foreground/75">Check the Task Tray for items you added.</p>
           </div>
         ) : (
@@ -522,7 +522,7 @@ function EmptyPanel({ Icon, title, sub }: { Icon: React.ComponentType<{ classNam
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
         <Icon className="w-4 h-4 text-muted-foreground/75" />
       </div>
-      <p className="text-title font-medium text-foreground/60">{title}</p>
+      <p className="text-title font-bold text-foreground/60">{title}</p>
       <p className="text-caption text-muted-foreground/75 max-w-xs">{sub}</p>
     </div>
   );

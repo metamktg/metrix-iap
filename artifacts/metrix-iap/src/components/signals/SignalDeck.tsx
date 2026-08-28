@@ -179,7 +179,7 @@ export function SignalDeck({
                 </div>
               )}
 
-              <h3 className={`${lead ? "text-h5 font-h5 font-semibold" : "text-h4 font-h4 font-bold"} text-foreground leading-snug mb-1.5`}>
+              <h3 className={`${lead ? "text-h5 font-h5 font-bold" : "text-h4 font-h4 font-bold"} text-foreground leading-snug mb-1.5`}>
                 {heading}
               </h3>
 

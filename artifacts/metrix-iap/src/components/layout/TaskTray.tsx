@@ -251,7 +251,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
         )}
 
         {/* Date range label */}
-        <p className="text-micro font-bold uppercase text-muted-foreground/75">
+        <p className="text-micro font-semibold uppercase text-muted-foreground/75">
           Date window
         </p>
 
@@ -378,7 +378,7 @@ function TraySection({
         {accentColor && (
           <span className={cn("w-1 h-3 rounded-full shrink-0", accentColor)} />
         )}
-        <span className="text-label font-bold uppercase text-muted-foreground/75">
+        <span className="text-label font-semibold uppercase text-muted-foreground/75">
           {title}
         </span>
         {count != null && count > 0 && (
@@ -430,7 +430,7 @@ function TrayItem({
 }) {
   return (
     <TrayCard accent={accent}>
-      <p className="text-title font-medium text-foreground/90 line-clamp-2 py-1 mb-2.5 pr-10">{label}</p>
+      <p className="text-title font-bold text-foreground/90 line-clamp-2 py-1 mb-2.5 pr-10">{label}</p>
       {sub && (
         <span className="inline-block font-semibold uppercase tracking-wide bg-foreground/[0.06] border border-border/30 rounded px-1.5 py-0.5 text-foreground/55 text-label">
           {sub}
@@ -764,7 +764,7 @@ export function TaskTray() {
           <p className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest leading-none mb-0.5 truncate">
             Workflow
           </p>
-          <p className="text-title font-semibold text-foreground leading-tight truncate">
+          <p className="text-title font-bold text-foreground leading-tight truncate">
             {totalItems === 0
               ? "All caught up"
               : `${totalItems} action${totalItems !== 1 ? "s" : ""} pending`}

@@ -1444,7 +1444,7 @@ function CommandHub({
 
         {/* ── Layer 3: Navigate ────────────────────────────────────────── */}
         <div className="px-4 py-3 border-t border-border/12">
-          <p className="text-micro font-bold uppercase text-muted-foreground/75 mb-2">
+          <p className="text-micro font-semibold uppercase text-muted-foreground/75 mb-2">
             Navigate
           </p>
           <div className="grid grid-cols-2 gap-1">
@@ -1487,7 +1487,7 @@ function CommandHub({
 
         {/* ── Layer 4: Actions ─────────────────────────────────────────── */}
         <div className="px-4 pt-2 pb-4 border-t border-border/12">
-          <p className="text-micro font-bold uppercase text-muted-foreground/75 mb-2">
+          <p className="text-micro font-semibold uppercase text-muted-foreground/75 mb-2">
             {isRunning ? "Status" : "Actions"}
           </p>
           <Actions />

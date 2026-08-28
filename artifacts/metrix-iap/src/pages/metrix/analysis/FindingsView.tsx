@@ -143,7 +143,7 @@ function VerdictBanner({
       >
         {/* Eyebrow */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-label font-bold uppercase tracking-widest text-interactive/80">
+          <span className="text-label font-semibold uppercase tracking-widest text-interactive/80">
             AI Verdict
           </span>
           {runType && (
@@ -221,7 +221,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
         </span>
         <span
           className={cn(
-            "inline-flex text-label font-bold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+            "inline-flex text-label font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
             tb.cls
           )}
         >
@@ -240,7 +240,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
           <div className="text-label uppercase tracking-widest text-muted-foreground/75 font-semibold mb-0.5">CPA</div>
           <div
             className={cn(
-              "text-title font-semibold tabular-nums leading-none",
+              "text-title font-bold tabular-nums leading-none",
               score.cpa != null ? "text-interactive" : "text-muted-foreground",
             )}
           >
@@ -249,13 +249,13 @@ function ConceptCard({ score }: { score: ConceptScore }) {
         </div>
         <div>
           <div className="text-label uppercase tracking-widest text-muted-foreground/75 font-semibold mb-0.5">Spend</div>
-          <div className="text-title font-medium tabular-nums text-foreground/70 leading-none">
+          <div className="text-title font-bold tabular-nums text-foreground/70 leading-none">
             {score.spend != null ? fmtMetric("usd_total", score.spend) : "—"}
           </div>
         </div>
         <div>
           <div className="text-label uppercase tracking-widest text-muted-foreground/75 font-semibold mb-0.5">Results</div>
-          <div className="text-title font-medium tabular-nums text-foreground/70 leading-none">
+          <div className="text-title font-bold tabular-nums text-foreground/70 leading-none">
             {score.results != null ? fmtNum(score.results) : "—"}
           </div>
         </div>
@@ -335,7 +335,7 @@ function FindingsEmptyState() {
       <div className="w-12 h-12 rounded-xl border border-border/40 bg-foreground/[0.02] flex items-center justify-center">
         <span className="text-display opacity-30">🔍</span>
       </div>
-      <p className="text-title font-semibold text-foreground/70">No intelligence data yet</p>
+      <p className="text-title font-bold text-foreground/70">No intelligence data yet</p>
       <p className="text-body text-muted-foreground/75 max-w-xs leading-relaxed">
         Run the full IAP loop to generate concept scores, tier rankings, and the AI verdict.
       </p>

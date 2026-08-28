@@ -115,7 +115,7 @@ export function LoginPage() {
 
             {/* Headline */}
             <div className="space-y-4">
-              <p className="flex items-center gap-2 text-label font-bold uppercase tracking-widest text-muted-foreground/75">
+              <p className="flex items-center gap-2 text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
                 <span className="w-5 h-px bg-border shrink-0" />
                 Performance Intelligence Platform
               </p>
@@ -184,7 +184,7 @@ export function LoginPage() {
           </div>
 
           {/* Footer */}
-          <p className="text-label font-medium uppercase tracking-[0.18em] text-muted-foreground/75">
+          <p className="text-label font-medium uppercase text-muted-foreground/75">
             Built for marketers · Engineered for growth · METRIX.AD
           </p>
         </div>
@@ -305,7 +305,7 @@ export function LoginPage() {
             <div
               className="mt-7 pt-6 space-y-3 border-t border-border/40"
             >
-              <p className="text-label font-bold uppercase tracking-widest text-muted-foreground/75 text-center">
+              <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 text-center">
                 No account?
               </p>
               <a

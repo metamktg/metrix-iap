@@ -318,7 +318,7 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
                   style={{ width: `${barW}%` }}
                 />
               </div>
-              <span className="text-title font-semibold text-foreground tabular-nums w-24 text-right shrink-0">
+              <span className="text-title font-bold text-foreground tabular-nums w-24 text-right shrink-0">
                 {fmtNum(stage.value)}
               </span>
             </div>

@@ -450,7 +450,7 @@ function ReportCardList({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-title font-semibold text-foreground leading-tight">{r.title}</h3>
+                <h3 className="text-title font-bold text-foreground leading-tight">{r.title}</h3>
                 <span
                   className={cn(
                     "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",

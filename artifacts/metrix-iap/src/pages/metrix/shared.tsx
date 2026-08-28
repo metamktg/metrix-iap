@@ -731,12 +731,12 @@ export function DetailReveal({
         className="w-[380px] max-w-[min(90vw,420px)] max-h-[min(60vh,480px)] overflow-y-auto p-4 space-y-3"
       >
         {eyebrow && (
-          <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">{eyebrow}</div>
+          <div className="text-label font-semibold uppercase text-muted-foreground/80">{eyebrow}</div>
         )}
         {content.map((s, i) => (
           <div key={i} className="space-y-1">
             {s.label && (
-              <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/75">{s.label}</div>
+              <div className="text-label font-semibold uppercase text-muted-foreground/75">{s.label}</div>
             )}
             {s.render ? s.render() : <p className={TYPE.body}>{s.text}</p>}
           </div>
@@ -1180,7 +1180,7 @@ export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; 
               <c.Icon className="w-4 h-4 text-interactive" />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-title font-semibold text-foreground">{c.label}</div>
+              <div className="text-title font-bold text-foreground">{c.label}</div>
               <p className="text-caption text-muted-foreground/80 leading-relaxed mt-0.5">{c.desc}</p>
               {c.lineage && (
                 <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mt-1 truncate")} data-testid="hub-nav-lineage">{c.lineage}</p>
