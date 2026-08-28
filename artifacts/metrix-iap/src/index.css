@@ -315,6 +315,35 @@
     border-color: var(--mx-border-medium);
   }
 
+  /* ── The module header band ──────────────────────────────────────
+   *
+   * A card's title and its data used to sit on ONE plane: .mx-card paints
+   * the whole section with hsl(var(--card)) and the header row was a flex
+   * div separated by a 1px border at primary/10 — a line you have to look
+   * for. So the module title, the column headers and the data all shared a
+   * ground, and the title competed with the content it was supposed to
+   * label. That is the friction: nothing tells the eye where the chrome
+   * stops and the data starts, so it reads every part at the same weight
+   * and sorts them out afterwards.
+   *
+   * The band gives the header its own surface, half a step off the card. It
+   * is deliberately subtle — this is a dark cockpit, not a document — but
+   * it is a PLANE, and the eye resolves planes pre-attentively in a way it
+   * never resolves a hairline.
+   *
+   * Three planes now, in order of authority:
+   *   1. .mx-module-header   the frame — what this is, how to look at it
+   *   2. surface-table       the column headers — chrome for the data
+   *   3. the card ground     the data itself
+   *
+   * The bottom edge is a real border rather than a tint boundary so it
+   * survives on both themes and against a sticky table header scrolling
+   * under it. */
+  .mx-module-header {
+    background: hsl(var(--foreground) / 0.028);
+    border-bottom: 1px solid var(--mx-edge-strong);
+  }
+
   /* Active nav item — flat accent tint, no gradient or glow. */
   .mx-nav-active {
     color: hsl(var(--primary)) !important;

@@ -110,14 +110,16 @@ export function DataModule({
 
   return (
     <section
-      className={cn("mx-card p-4 sm:p-5", className)}
+      className={cn("mx-card", className)}
       aria-labelledby={titleId}
       data-testid={testId}
     >
       {/* The header wraps rather than truncating: on a narrow viewport the
           view switcher drops under the title instead of squeezing it, which
           is the failure mode of every header built as a single flex row. */}
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 mb-4">
+      {/* The header sits on its own plane — see .mx-module-header. A title
+          that shares a ground with its own data competes with it. */}
+      <div className="mx-module-header flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 sm:px-5 py-3">
         {/* h2, at the section rank — NOT h3.
             A DataModule sits exactly where a SectionCard sits and holds the
             same kind of content, so ranking it a level lower made one panel's
@@ -136,9 +138,10 @@ export function DataModule({
         </div>
       </div>
 
-      {children}
+      <div className="p-4 sm:p-5">
+        {children}
 
-      {scope.length > 0 && (
+        {scope.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mt-4 pt-3 border-t border-border/30">
           {scope.map((c) => (
             <span
@@ -155,9 +158,10 @@ export function DataModule({
               <span aria-hidden className="opacity-40">·</span>
               <span className="font-semibold">{c.value}</span>
             </span>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

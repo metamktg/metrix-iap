@@ -15,11 +15,13 @@
 // widths remain normal table layout (no absolute positioning hacks).
 
 import { useMemo, useRef, useState } from "react";
-import { barScale, barWidth, type BarScale } from "@/lib/bar-scale";
+import { barScale, type BarScale } from "@/lib/bar-scale";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel, PILL_ACTIVE, PILL_INACTIVE } from "../shared";
+import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel, SectionInfoIcon, PILL_ACTIVE, PILL_INACTIVE } from "../shared";
+import { TYPE } from "../typography";
 import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
@@ -78,6 +80,20 @@ export function useColumnSort<Row>(rows: Row[], accessors: ColumnAccessors<Row>)
   return { sorted, sort, toggle, reset };
 }
 
+/**
+ * The one thing about these bars a reader cannot work out by looking.
+ *
+ * Longer-is-more needs no explanation. An INVERTED column does: without this,
+ * the cheapest CPA in the account wears the longest bar and reads as the
+ * worst performer. It sits on the column header — where the question forms —
+ * rather than as a note above the table, which is prose on the first layer
+ * and the wrong place besides.
+ */
+const INVERTED_BAR_TIP =
+  "The bar under each CPA is INVERTED: lower is better, so the cheapest CPA draws " +
+  "the longest bar and the most expensive draws the shortest. Bars on the other " +
+  "columns read the usual way — longer is more. A cell with no bar was not measured.";
+
 export function SortableTh({
   children,
   right,
@@ -85,6 +101,7 @@ export function SortableTh({
   sort,
   onToggle,
   onReset,
+  info,
 }: {
   children: React.ReactNode;
   right?: boolean;
@@ -92,6 +109,12 @@ export function SortableTh({
   sort: { key: string; dir: SortDir } | null;
   onToggle: (key: string) => void;
   onReset?: () => void;
+  /**
+   * Explanation for a column whose reading is not self-evident. A SIBLING of
+   * the sort control, never inside it: an info button nested in the sort
+   * button would be invalid HTML and the browser would drop one of them.
+   */
+  info?: string;
 }) {
   const active = sort?.key === sortKey;
   const ariaSort: React.AriaAttributes["aria-sort"] = active
@@ -124,6 +147,7 @@ export function SortableTh({
               <ArrowDown className="w-3.5 h-3.5 text-interactive/70" />
             ))}
         </button>
+        {info && <SectionInfoIcon tip={info} />}
         {active && onReset && (
           <button
             onClick={(e) => { e.stopPropagation(); onReset(); }}
@@ -177,61 +201,42 @@ export function MagnitudeCell({
   value,
   display,
   scale,
+  label = "value",
 }: {
   /** The raw number. Null means not measured — no bar is drawn. */
   value: number | null | undefined;
   /** The formatted string the reader actually sees. */
   display: React.ReactNode;
   scale: BarScale;
+  /** Names the measure for the meter widget beneath the figure. */
+  label?: string;
 }) {
-  const width = barWidth(scale, value);
+  const share = scale.share(value);
   return (
     <td className="relative text-right align-top tabular-nums text-foreground/85 pb-3.5">
-      {width !== null && (
-        // A THIN RAIL ANCHORED RIGHT, not a block anchored left.
+      {share !== null && (
+        // Composes the ProgressMeter widget instead of hand-rolling a span.
+        // That was the first version's mistake: a bare div with a Tailwind
+        // background has no TRACK, no shared radius, no shared transition
+        // and no relationship to the meter used everywhere else in the
+        // product. Without a track you see the value but not what full
+        // would be, which is half the point of a bar.
         //
-        // The first version drew a tall tinted block from the left edge of
-        // the cell. Rendered, it was wrong in two ways at once: on a wide
-        // column the block ended well before the number began, so it read as
-        // a stray rectangle rather than as that number's bar; and at ~28px
-        // tall it read as a highlight — "this cell is special" — rather than
-        // as a measurement.
-        //
-        // Anchored right, every bar's end sits against the figure it
-        // measures, and the right edge is the common baseline lengths are
-        // compared from. At 4px it is unmistakably a scale and never
-        // competes with the number sitting above it.
-        //
-        // aria-hidden: the bar restates the number beside it. Announcing it
-        // would read every figure twice to a screen reader.
-        <span
-          aria-hidden
-          className="absolute bottom-1 right-3 h-[4px] rounded-full bg-primary/45 pointer-events-none"
-          style={{ width }}
-        />
+        // aria-hidden sits on the WRAPPER, which suppresses the meter's own
+        // role and label. In a table the cell's text is already the
+        // accessible value; role="meter" on all 166 bars would announce
+        // every figure twice. The widget is right and its ARIA is right for
+        // a standalone bar — it is redundant HERE, and that is a property
+        // of the context, not of the widget.
+        <span aria-hidden className="absolute bottom-1 left-3 right-3 pointer-events-none">
+          <ProgressMeter value={share} total={1} label={label} size="sm" />
+        </span>
       )}
       <span className="relative">{display}</span>
     </td>
   );
 }
 
-/**
- * One line under the table saying what bar length means.
- *
- * Not decoration. On an inverted column the LONGEST bar is the SMALLEST
- * number, and a reader who has not been told that reads the best CPA in the
- * account as the worst. The inversion is the right call — length should
- * agree with rank — but it is only safe if it is stated.
- */
-export function BarScaleNote({ inverted }: { inverted?: string }) {
-  return (
-    <p className="px-1 text-caption text-muted-foreground/75">
-      Bar length shows each row's share of the column's largest value.
-      {inverted ? ` On ${inverted}, lower is better, so the shortest ${inverted} draws the longest bar.` : ""}
-      {" "}A column with no bar was not measured.
-    </p>
-  );
-}
 
 
 // ─── Virtual table body ───────────────────────────────────────────────
@@ -351,12 +356,13 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
           <VariableCodeChips row={r} />
         </Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} />
-        <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} />
+        <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
+        <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
         <MagnitudeCell
           value={r.CPA_result}
           display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
           scale={cpaScale}
+          label="CPA"
         />
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
         <Td right>{fmtPct(r.Result_per_link_click_pct)}</Td>
@@ -371,7 +377,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
         <Th>Result type</Th>
         <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
         <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
-        <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+        <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset} info={INVERTED_BAR_TIP}>CPA</SortableTh>
         <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle} onReset={reset}>Link CTR</SortableTh>
         <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle} onReset={reset}>Result/click</SortableTh>
       </tr>
@@ -380,7 +386,6 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
 
   return (
     <div className="space-y-1.5">
-      <BarScaleNote inverted="CPA" />
       <TableShellInner scrollRef={scrollRef}>
         {thead}
         {useVirtual
@@ -436,13 +441,14 @@ export function VariableTable({
         </Td>
         <Td className="capitalize">{r.variable_family}</Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} />
+        <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
         <Td right>{fmtNum(r.unique_ads)}</Td>
-        <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} />
+        <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
         <MagnitudeCell
           value={r.CPA_result}
           display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
           scale={cpaScale}
+          label="CPA"
         />
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
       </tr>
@@ -458,7 +464,7 @@ export function VariableTable({
         <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
         <SortableTh right sortKey="ads" sort={sort} onToggle={toggle} onReset={reset}>Ads</SortableTh>
         <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
-        <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+        <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset} info={INVERTED_BAR_TIP}>CPA</SortableTh>
         <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle} onReset={reset}>Link CTR</SortableTh>
       </tr>
     </thead>
@@ -466,7 +472,6 @@ export function VariableTable({
 
   return (
     <div className="space-y-1.5">
-      <BarScaleNote inverted="CPA" />
       <TableShellInner scrollRef={scrollRef}>
         {thead}
         {useVirtual
@@ -503,7 +508,6 @@ export function DemographicTable({
   const cvrScale = useMemo(() => barScale(rows.map((r) => r.Result_per_link_click_pct)), [rows]);
   return (
     <div>
-      <BarScaleNote inverted="CPA" />
       <TableShell>
         <thead className="sticky top-0 bg-surface-table z-10">
           <tr>
@@ -512,7 +516,7 @@ export function DemographicTable({
             <SortableTh sortKey="gender" sort={sort} onToggle={toggle} onReset={reset}>Gender</SortableTh>
             <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
             <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
-            <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+            <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset} info={INVERTED_BAR_TIP}>CPA</SortableTh>
             <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle} onReset={reset}>Result/click</SortableTh>
           </tr>
         </thead>
@@ -532,17 +536,19 @@ export function DemographicTable({
                 <Td><span className=" text-label text-muted-foreground/75">{r.cell_id}</span></Td>
                 <Td>{r.Age}</Td>
                 <Td className="capitalize">{r.Gender}</Td>
-                <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} />
-                <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} />
+                <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
+                <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
                 <MagnitudeCell
                   value={r.CPA_result}
                   display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
                   scale={cpaScale}
+                  label="CPA"
                 />
                 <MagnitudeCell
                   value={r.Result_per_link_click_pct}
                   display={fmtPct(r.Result_per_link_click_pct)}
                   scale={cvrScale}
+                  label="Result per click"
                 />
               </tr>
             );
@@ -567,8 +573,6 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
   const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
   const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA), true), [rows]);
   return (
-    <>
-    <BarScaleNote inverted="CPA" />
     <TableShell>
       <thead className="sticky top-0 bg-surface-table z-10">
         <tr>
@@ -576,7 +580,7 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
           <SortableTh sortKey="platform" sort={sort} onToggle={toggle} onReset={reset}>Platform</SortableTh>
           <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
           <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
-          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset} info={INVERTED_BAR_TIP}>CPA</SortableTh>
         </tr>
       </thead>
       <tbody>
@@ -584,14 +588,13 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
           <tr key={r.Placement + r.Platform + i}>
             <Td className="font-medium text-foreground">{r.Placement}</Td>
             <Td className="capitalize">{r.Platform}</Td>
-            <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} />
-            <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} />
-            <MagnitudeCell value={r.CPA} display={r.CPA != null ? fmtUSD(r.CPA) : "—"} scale={cpaScale} />
+            <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
+            <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
+            <MagnitudeCell value={r.CPA} display={r.CPA != null ? fmtUSD(r.CPA) : "—"} scale={cpaScale} label="CPA" />
           </tr>
         ))}
       </tbody>
     </TableShell>
-    </>
   );
 }
 
@@ -619,8 +622,6 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
   const checkoutScale = useMemo(() => barScale(rows.map((r) => r.checkouts_initiated)), [rows]);
   const purchaseScale = useMemo(() => barScale(rows.map((r) => r.purchases)), [rows]);
   return (
-    <>
-    <BarScaleNote />
     <TableShell>
       <thead className="sticky top-0 bg-surface-table z-10">
         <tr>
@@ -636,15 +637,14 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
         {sorted.map((r, i) => (
           <tr key={r.label + i}>
             <Td className="font-medium text-foreground capitalize">{r.label}</Td>
-            <MagnitudeCell value={r.link_clicks} display={r.link_clicks != null ? fmtNum(r.link_clicks) : "—"} scale={clickScale} />
-            <MagnitudeCell value={r.adds_to_cart} display={r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"} scale={cartScale} />
-            <MagnitudeCell value={r.checkouts_initiated} display={r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"} scale={checkoutScale} />
-            <MagnitudeCell value={r.purchases} display={r.purchases != null ? fmtNum(r.purchases) : "—"} scale={purchaseScale} />
+            <MagnitudeCell value={r.link_clicks} display={r.link_clicks != null ? fmtNum(r.link_clicks) : "—"} scale={clickScale} label="Link clicks" />
+            <MagnitudeCell value={r.adds_to_cart} display={r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"} scale={cartScale} label="Adds to cart" />
+            <MagnitudeCell value={r.checkouts_initiated} display={r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"} scale={checkoutScale} label="Checkouts initiated" />
+            <MagnitudeCell value={r.purchases} display={r.purchases != null ? fmtNum(r.purchases) : "—"} scale={purchaseScale} label="Purchases" />
             <Td>{r.confidence ? <span className="text-label uppercase tracking-wider text-muted-foreground/75">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
           </tr>
         ))}
       </tbody>
     </TableShell>
-    </>
   );
 }

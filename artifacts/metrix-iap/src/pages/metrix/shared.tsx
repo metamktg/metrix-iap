@@ -1868,7 +1868,12 @@ export function SectionCard({
 
   return (
     <section className="mx-card-hero">
-      <div className="mx-accent-bar relative flex items-center gap-2 pr-3.5 border-b border-primary/10">
+      {/* mx-module-header gives this row its own PLANE. Before, the header
+          and the data shared the card's ground with only a primary/10
+          hairline between them, so a module title competed with the numbers
+          it labelled instead of framing them. See the .mx-module-header
+          comment in index.css for the three-plane hierarchy. */}
+      <div className="mx-accent-bar mx-module-header relative flex items-center gap-2 pr-3.5">
         {collapsible ? (
           <button
             type="button"
