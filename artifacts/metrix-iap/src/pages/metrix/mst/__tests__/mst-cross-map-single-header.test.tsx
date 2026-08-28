@@ -5,6 +5,7 @@
 // that already restated the same title. Guards that exactly one <h1>
 // renders regardless of which tab is active.
 
+import { withUnconfiguredAccount } from "@/test-fixtures/unconfigured";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, cleanup, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -12,7 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const seed = JSON.parse(
+const seed = withUnconfiguredAccount(JSON.parse(
   fs.readFileSync(
     path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
@@ -20,7 +21,7 @@ const seed = JSON.parse(
     ),
     "utf-8"
   )
-);
+), "skov_pet");
 
 vi.mock("@/contexts/MetrixDataContext", () => ({
   useMetrixSeed: () => seed,

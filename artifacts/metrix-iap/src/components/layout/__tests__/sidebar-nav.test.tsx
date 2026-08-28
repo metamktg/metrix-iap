@@ -4,6 +4,7 @@
 // (click reopens the full rail on that section — no hover flyout, per the
 // Metrix v1 design handoff), and the inline ad account picker.
 
+import { withUnconfiguredAccount } from "@/test-fixtures/unconfigured";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, cleanup, fireEvent, screen, within, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -11,7 +12,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const seed = JSON.parse(
+// One account is guaranteed unconfigured — the test below FINDS an
+// unconfigured account, and a fixture refresh can leave the demo DB with
+// none at all.
+const seed = withUnconfiguredAccount(JSON.parse(
   fs.readFileSync(
     path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
@@ -19,7 +23,7 @@ const seed = JSON.parse(
     ),
     "utf-8"
   )
-);
+));
 
 vi.mock("@/contexts/MetrixDataContext", () => ({
   useMetrixSeed: () => seed,
@@ -417,7 +421,7 @@ describe("Inline account picker", () => {
     expect(screen.getByText("No ad account selected")).toBeTruthy();
     openDropdown(screen.getByText("Choose ad account").closest("button")!);
 
-    const configured = seed.ad_accounts.find((a: { status: string }) => a.status === "configured");
+    const configured = seed.ad_accounts.find((a: { status: string }) => a.status === "configured")!;
     fireEvent.click(screen.getByText(configured.name));
 
     expect(window.location.pathname).toBe("/");
@@ -432,7 +436,8 @@ describe("Inline account picker", () => {
   });
 
   it("offers other accounts from the unconfigured state", () => {
-    const unconfigured = seed.ad_accounts.find((a: { status: string }) => a.status !== "configured");
+    // Guaranteed by withUnconfiguredAccount — the fixture alone no longer is.
+    const unconfigured = seed.ad_accounts.find((a: { status: string }) => a.status !== "configured")!;
     sessionStorage.setItem(
       SESSION_KEY,
       JSON.stringify({ type: "ad_account", adAccountId: unconfigured.id })
@@ -443,7 +448,7 @@ describe("Inline account picker", () => {
     const menu = screen.getByRole("menu");
     expect(within(menu).queryByText(unconfigured.name)).toBeNull();
 
-    const configured = seed.ad_accounts.find((a: { status: string }) => a.status === "configured");
+    const configured = seed.ad_accounts.find((a: { status: string }) => a.status === "configured")!;
     fireEvent.click(within(menu).getByText(configured.name));
     expect(screen.queryByText("Switch ad account")).toBeNull();
     expect(JSON.parse(localStorage.getItem(SESSION_KEY)!).adAccountId).toBe(configured.id);

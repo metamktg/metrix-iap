@@ -69,6 +69,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
   MetrixDataProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+import { resolveObjectivesMeta } from "@/lib/data/cohortMeta";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
@@ -143,9 +144,15 @@ describe("AnalysisCommandCenter — execution card is honest pre-run readiness",
     expect(screen.getByText("Staged imports")).toBeTruthy();
     expect(screen.getByText("Ads in scope")).toBeTruthy();
     expect(screen.getByText("Objectives")).toBeTruthy();
-    // Bookster's fixture account has 61 registered ads and one configured objective ("app" → "App").
-    expect(screen.getByText("61")).toBeTruthy();
-    expect(screen.getByText("App")).toBeTruthy();
+    // DERIVED from the fixture, not hardcoded. This assertion once read
+    // `expect(getByText("61"))` — Bookster's ad count on the day it was
+    // written — and the next data refresh (62 ads, a second objective)
+    // failed it with nothing broken. The claim under test is "the tiles
+    // show THIS account's real values", so compute them the way the view
+    // does and assert the match.
+    const bookster = baseSeed.ad_accounts.find((a: { id: string }) => a.id === "bookster")!;
+    expect(screen.getByText(String((bookster.ads ?? []).length))).toBeTruthy();
+    expect(screen.getByText(resolveObjectivesMeta(bookster.objectives).label)).toBeTruthy();
     // Default run window mirrors AnalysisControls' own default ("30d").
     expect(screen.getByText("30 days")).toBeTruthy();
   });

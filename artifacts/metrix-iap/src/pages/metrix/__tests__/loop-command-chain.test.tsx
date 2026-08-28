@@ -10,6 +10,7 @@
 // AdAccountOverview above the early-return guards) does not regress under
 // the jsdom test harness.
 
+import { withUnconfiguredAccount } from "@/test-fixtures/unconfigured";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, cleanup, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -19,7 +20,7 @@ import { fileURLToPath } from "node:url";
 
 // ── Seed fixture ─────────────────────────────────────────────────────────
 
-const baseSeed = JSON.parse(
+const baseSeed = withUnconfiguredAccount(JSON.parse(
   fs.readFileSync(
     path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
@@ -27,7 +28,7 @@ const baseSeed = JSON.parse(
     ),
     "utf-8"
   )
-);
+), "skov_pet");
 
 // ── Per-test mutable state ────────────────────────────────────────────────
 //
@@ -146,10 +147,12 @@ function isDisabled(el: HTMLElement): boolean {
  * core_reanalysis_read is kept (non-null) so the `!core` early-return guard
  * in AdAccountOverview passes and LoopCommandChain actually renders.
  */
-function seedWithNoAnalysisAccount() {
+function seedWithNoAnalysisAccount(): typeof baseSeed {
   const bookster = baseSeed.ad_accounts.find(
     (a: { id: string }) => a.id === "bookster"
-  );
+  )!;
+  // Deliberately partial: the account under test HAS no analysis, which is
+  // exactly what the strict seed type will not express — hence the cast.
   const noAnalysisAccount = {
     ...bookster,
     id: "fresh_account",
@@ -164,7 +167,7 @@ function seedWithNoAnalysisAccount() {
       brief_builder: null,
       optimization_loop: null,
     },
-  };
+  } as unknown as (typeof baseSeed)["ad_accounts"][number];
   return {
     ...baseSeed,
     ad_accounts: [...baseSeed.ad_accounts, noAnalysisAccount],
