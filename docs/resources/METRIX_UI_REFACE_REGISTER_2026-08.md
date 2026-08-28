@@ -89,12 +89,26 @@ These are bugs, not style. Each was invisible in a passing suite.
 | Closed mobile drawer was `aria-hidden` only | ~20 invisible nav controls stayed in the tab order on a phone | fixed with `inert` |
 | Sidebar resize handle: `role="separator"` + one `onPointerDown` | Announced itself as a resize control, unreachable by Tab | fixed, full splitter pattern, 5 tests |
 | **Testing Library cleanup never registered** (`globals` unset) | Every component test leaked its DOM into the next; `getAllBy*` counted every render in the file | fixed; suite still passes at 2045 |
+| **`DenseText` gated its More/Less button on a CHARACTER count while the clamp counts LINES** | Every one of ~20 call sites could show a "More" control over text that was not clipped. Measured on the provenance page at 1440px: three notes with `scrollHeight === clientHeight === 48`, each carrying a button that did nothing visible. An affordance that promises hidden content and delivers none teaches people the control is a lie, and they stop pressing the ones that work | fixed — measures real overflow via `ResizeObserver`, re-measured on resize; 6 tests, browser-verified at 1440 (0 buttons) and 390 (3 buttons, all over genuinely clipped text) |
+
+The `DenseText` defect is the clearest argument in this document for
+**rendering** as a verification step. No static check can see it: the class is
+present, the prop is passed, the component is correct in isolation. It is only
+wrong once a browser has done layout — and only at some widths.
 
 ### 1.4 Widget layer shipped
 
 `DisclosureStack` · `SwipeDeck` · `ActionSlider` · `RunProgress` ·
 `FilterDisclosure` · `RankedBars` · `DataModule` · travelling tab indicator
 (`TabRail`, `SegmentedToggle`) · `lib/motion.ts`.
+
+### 1.5 Data Provenance — a new surface, not a reface
+
+`/app/settings/provenance` (`DataProvenanceView.tsx` + `lib/data/provenance.ts`).
+The chain of custody for every number in the product: the assembly statement
+verbatim, which variable families have no registry definition, and per account
+the file behind each loop stage, the MST source artifacts and the full run
+metadata. Detail in §3.
 
 ---
 
@@ -136,30 +150,49 @@ breakpoint. By kind:
 
 ---
 
-## 3. OPEN — data the JSON carries and the interface drops
+## 3. Data the JSON carries and the interface drops
 
-`check:field-coverage`: **32 of 450** fields never read. Triaged by what
-losing them costs.
+`check:field-coverage` measured **32 of 450** fields never read. Triaged by
+what losing them costs — and re-measured after the provenance pass.
 
-### Tier A — analysis computed and never shown
+### Tier A — provenance · **CLOSED**
 
-| Field | What it is | Where it belongs |
+Every field below was computed server-side on every seed build and reachable
+from no screen. They are now one surface: **Settings → Data Provenance**
+(`/app/settings/provenance`, `DataProvenanceView.tsx`, reading
+`lib/data/provenance.ts`).
+
+| Field | What it is | Where it now surfaces |
 |---|---|---|
-| `CreativeDeconstruction.detected_copy` | Detected primary message, secondary message, CTA, visual system, **per creative** | Creative card / expand dialog |
-| `MetrixSeed.variable_registry` | The data layer's own truth about variable families, incl. explicit `registry_missing` (ST_/AW_/CTA_) | Variable surfaces — it explains empty chips |
-| `MST.source_artifacts` | Which artifacts an MST result came from | MST results provenance |
-| `LoopStageStatus.source_file` | Which file produced a loop stage | Loop chain provenance |
-| `IAPData.metadata` | Run metadata for the IAP bundle | Analysis history |
+| `MetrixSeed.integrity_note` | The assembly statement — how the bundle was built, and its explicit "do not fabricate missing values" rule | Assembly statement card, **verbatim** |
+| `MetrixSeed.schema_version` | The contract the bundle was built against | Assembly statement card |
+| `MetrixSeed.variable_registry` | The data layer's own truth about variable families, incl. explicit `registry_missing` (ST_/AW_/CTA_) | Variable registry backing — unbacked families sorted first, each with its confirmed-gap note |
+| `LoopStageStatus.source_file` | Which file produced a loop stage | Per-account stage table, plus a `named / total` coverage fraction |
+| `MST.source_artifacts` | Which artifacts an MST result came from | Per-account MST source artifacts |
+| `IAPData.metadata` | Run metadata for the IAP bundle (untyped record) | Per-account run facts, **flattened** to dotted paths — not pick-listed, so a key added upstream still reaches the screen |
 
-### Tier B — honesty qualifiers dropped
+Three design rules the surface enforces, each with a test that fails when the
+rule is broken (verified by mutation — see §6):
 
-| Field | Why it matters |
+1. **Nothing is invented.** A seed with no `integrity_note` reports *"no
+   assembly statement"*. The server substitutes a default when config carries
+   none; if the client did too, a seed with no provenance would be
+   indistinguishable from one with real provenance.
+2. **Nothing is dropped.** `metadata` is `Record<string, unknown>` whose shape
+   this app does not control, so it is traversed totally. `null` survives as
+   the word `null`; `false` and `0` render rather than reading as missing.
+3. **An unknown status fails toward "flag it".** Any registry status that is
+   not literally `active` counts as unbacked.
+
+### Tier B — honesty qualifiers · **partly closed**
+
+| Field | Status |
 |---|---|
-| `ConversionTrackingSignal.tracking_basis: "conversion"` | Declares these rows are **conversion-attributed, not delivery-attributed**. The type's own doc says this is the fallback when Meta omits the impression-device breakdown. Showing conversion-attributed numbers without saying so is the same class of defect as the funnel dropping zeros. Verified unread — appears only in test fixtures. |
-| `MetrixSeed.integrity_note` | A seed-level integrity statement, never rendered |
-| `CampaignWindow.campaign_name`, `.os` | Window scope the reader cannot see |
+| `ConversionTrackingSignal.tracking_basis` | **CLOSED.** `PlacementsView` had the same disclaimer hand-written three times — *"delivery spend not applicable for this tracking basis"* — while the basis it described sat unread in the field. That sentence is true only of the conversion basis, so a second basis from the assembler would have printed a **false** disclaimer over rows where spend *is* attributable. Copy is now looked up from the basis; an unrecognised basis gets a caveat that names it and claims nothing about it. The basis also labels the caveat strip. |
+| `MetrixSeed.integrity_note` | **CLOSED** — see Tier A. |
+| `CampaignWindow.campaign_name`, `.os` | **OPEN.** The reader cannot see which campaign and OS a window covers. Belongs on the campaign-window surface, not in Settings. |
 
-### Tier C — server-directed UI state the client ignores
+### Tier C — server-directed UI state the client ignores · OPEN
 
 `AdAccountOverviewState.primary_action` / `.secondary_action` ·
 `OptimizationLoop.manager_overview_visibility` / `.dismiss_policy` ·
@@ -170,10 +203,20 @@ The server computes a recommended next action per account and the UI does not
 read it. Either surface it or delete it from the contract — shipping a field
 nobody consumes is a promise to a future reader that it means something.
 
-### Tier D — unbuilt feature, not a reface item
+`CreativeDeconstruction.detected_copy` moves here from Tier A on inspection:
+it is per-creative detected message/CTA/visual-system text, which belongs on
+the creative card, not on a provenance page. It stays open.
 
-`WorkspaceBilling` (7 fields) · `WorkspaceInvoice.amount_usd` ·
-`MetrixSeed.schema_version` · `AdAccount.facebook_page_dp_url`
+### Tier D — correctly unread, with a reason · CLOSED as a worklist item
+
+`WorkspaceBilling` (7 fields) · `WorkspaceInvoice.amount_usd` —
+**deliberately not shown.** `BillingView` renders an honest beta pending state
+because Metrix has no live billing; rendering plan/usage/invoice values from
+the seed would be fabricating a subscription that does not exist. These stay
+unread on purpose, and `check:field-coverage` will keep listing them. That is
+the tool working: it reports, a human decides.
+
+`AdAccount.facebook_page_dp_url` — a page avatar, cosmetic, still open.
 
 ---
 
@@ -240,13 +283,20 @@ anything that moves.
 
 **Exit:** `check:ui-inventory --kind=panel` shows TYPE ≥ 90%, RESP ≥ 80%.
 
-### Phase 2 — Tier A and Tier B field coverage
+### Phase 2 — Tier A and Tier B field coverage · **DONE except one**
 
-Surface the six Tier-A fields and the three Tier-B qualifiers. `tracking_basis`
-first: it qualifies every conversion number on the surfaces that show it.
+Six Tier-A provenance fields and `tracking_basis` are shipped (§3). Remaining:
+`CampaignWindow.campaign_name` / `.os` — the campaign and OS a window covers,
+which belong on the campaign-window surface, not in Settings.
 
 **Exit:** `check:field-coverage` Tier A/B count reaches 0; each new surface has
-a test asserting the field renders and a gap renders as a gap.
+a test asserting the field renders and a gap renders as a gap. Currently 2 of 9
+remain.
+
+Note the exit criterion is deliberately NOT "`check:field-coverage` reports 0
+unread". Tier D fields are unread *correctly* — see §3. A gate that forces
+every declared field onto a screen would have forced fabricated billing data
+into the product.
 
 ### Phase 3 — inline-table-control, replacing three modals
 

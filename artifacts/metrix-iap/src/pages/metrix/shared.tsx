@@ -67,7 +67,7 @@
 //   Codeless sentences fall back to deriveLabel. Inside <button> queue cards:
 //   <HypothesisCodeChipsRow> + a line-clamp-1 caption, drawer keeps prose.
 
-import { useState, useCallback, useId } from "react";
+import { useState, useCallback, useId, useRef, useLayoutEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { SPRING_SNAPPY } from "@/lib/motion";
 import { TabRail } from "@/components/nav/TabRail";
@@ -559,6 +559,29 @@ export function CaveatNote({
 // is always one click away. Not for use inside <button> cards (nested
 // buttons are invalid HTML): clamp with raw `line-clamp-N` there and let
 // the drawer/modal carry the full prose.
+//
+// WHY THE BUTTON IS MEASURED AND NOT GUESSED
+// This used to show "More" whenever `text.length > threshold`. The clamp,
+// though, is CSS and counts LINES, not characters — so how much fits
+// depends on the column width, which the character count knows nothing
+// about. Rendering the provenance page at 1440px caught the consequence:
+// three registry notes of ~135 characters each fit entirely inside
+// `line-clamp-2` (measured `scrollHeight === clientHeight === 48`) and every
+// one still carried a "More" button. Pressing it did nothing a reader could
+// see. An affordance that promises hidden content and delivers none is worse
+// than no affordance — it teaches people that this control is a lie, and
+// they stop pressing the ones that work.
+//
+// So the button now appears only when the paragraph is ACTUALLY clipped,
+// re-measured whenever the element resizes. That makes it correct at every
+// width for free: the same note that needs no button on a desktop column
+// gets one on a phone.
+//
+// The character threshold survives as a FALLBACK for environments with no
+// layout — jsdom reports every height as 0, and suppressing the control
+// there would silently change what component tests can reach. When
+// `clientHeight` is 0 there is nothing to measure, so the old heuristic
+// answers; the moment a real measurement exists, it wins.
 
 export function DenseText({
   text,
@@ -571,24 +594,60 @@ export function DenseText({
   render?: (text: string) => React.ReactNode;
   className?: string;
   clampClass?: string;
+  /** Fallback only — used when the environment reports no layout at all. */
   threshold?: number;
 }) {
-  const isLong = text.length > threshold;
   const [expanded, setExpanded] = useState(false);
+  // null = not measured yet (or unmeasurable); true/false = a real answer.
+  const [clipped, setClipped] = useState<boolean | null>(null);
+  const paraRef = useRef<HTMLParagraphElement | null>(null);
+
+  const measure = useCallback(() => {
+    const el = paraRef.current;
+    if (!el) return;
+    // A zero client height means no layout engine (jsdom, display:none, a
+    // detached subtree). Reporting "not clipped" from that would hide the
+    // control everywhere it cannot be measured.
+    if (el.clientHeight === 0) {
+      setClipped(null);
+      return;
+    }
+    setClipped(el.scrollHeight > el.clientHeight + 1);
+  }, []);
+
+  useLayoutEffect(() => {
+    // Only the clamped state can be measured for overflow; once expanded the
+    // paragraph is its full height by definition, so keep the last verdict.
+    if (expanded) return;
+    measure();
+    const el = paraRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure, expanded, text, clampClass, className]);
+
+  const showToggle = clipped ?? text.length > threshold;
   const content = render ? render(text) : text;
-  if (!isLong) return <p className={className}>{content}</p>;
+
+  // Still render the ref'd paragraph when nothing is clipped — the element
+  // has to exist and be observed for a later resize to change the answer.
   return (
     <div className="min-w-0">
-      <p className={cn(className, !expanded && clampClass)}>{content}</p>
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-        className="pressable mt-0.5 inline-flex items-center gap-0.5 text-label font-semibold text-interactive/80 hover:text-interactive transition-colors"
-      >
-        {expanded ? "Less" : "More"}
-        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-150", expanded && "rotate-180")} />
-      </button>
+      <p ref={paraRef} className={cn(className, !expanded && clampClass)}>
+        {content}
+      </p>
+      {(showToggle || expanded) && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="pressable mt-0.5 inline-flex items-center gap-0.5 text-label font-semibold text-interactive/80 hover:text-interactive transition-colors"
+        >
+          {expanded ? "Less" : "More"}
+          <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-150", expanded && "rotate-180")} />
+        </button>
+      )}
     </div>
   );
 }
