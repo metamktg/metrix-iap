@@ -125,10 +125,10 @@ function EventRowsList({ rows }: { rows: EventRow[] }) {
         { label: "Ranked", value: lower ? "best first (lower is better)" : "highest first" },
       ]}
       actions={
-        <SegmentedToggle<EventMetric>
+        <SegmentedToggle
           options={EVENT_METRICS.map((m) => ({ id: m.id, label: m.label }))}
           active={metric}
-          onChange={setMetric}
+          onChange={setMetric as (id: EventMetric) => void}
           ariaLabel="Rank events by"
           responsiveLabels
         />
