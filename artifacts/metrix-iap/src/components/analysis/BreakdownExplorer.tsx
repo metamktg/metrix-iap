@@ -25,6 +25,7 @@ import { TYPE } from "@/pages/metrix/typography";
 import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
 import type { AnalysisData, CellPerformanceRow } from "@/lib/data/seedTypes";
 import type { MetricDef } from "@/lib/data/metricsCatalog";
+import { RankedBars } from "@/components/charts/RankedBars";
 import {
   buildAccountBreakdown, listBreakdownDimensions, dimensionMetricRestriction,
   sortBreakdownRows, lowerIsBetter,
@@ -91,42 +92,20 @@ function ChartFormToggle({ form, onChange }: { form: ChartForm; onChange: (f: Ch
 }
 
 // ─── Chart forms — single hue, stepped opacity (magnitude, not identity) ──
+//
+// The bar form used to be a SECOND, private RankedBars living in this file,
+// with four defects the shared one does not have:
+//
+//   · axis labels and value labels at 10px, under the 13px reading floor
+//   · `.filter(value != null)` — rows with no measurement silently vanished
+//     rather than showing an empty track, so a gap read as "not in the data"
+//   · `.slice(0, 12)` with no "+N more" note — the same silent loss again
+//   · no inversion, so on a cost metric the WORST performer drew the
+//     longest bar and read as the winner
+//
+// Two implementations of one chart is how a fix lands in only one of them.
+// It now renders the shared component.
 
-function RankedBars({ rows }: { rows: BreakdownRow[] }) {
-  const charted = rows.filter((r) => r.value != null).slice(0, 12);
-  const data = charted.map((r) => ({
-    name: r.label.length > 22 ? r.label.slice(0, 21) + "…" : r.label,
-    value: r.value as number,
-    display: r.formatted,
-  }));
-  if (data.length === 0) return null;
-  const h = Math.min(Math.max(data.length * 30 + 16, 90), 340);
-  return (
-    <ChartContainer config={CHART_CONFIG} className="aspect-auto w-full" style={{ height: h }}>
-      <BarChart layout="vertical" data={data} margin={{ top: 0, right: 56, bottom: 0, left: 0 }} barSize={12}>
-        <XAxis type="number" hide />
-        <YAxis
-          type="category"
-          dataKey="name"
-          width={140}
-          tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontFamily: "inherit", opacity: 0.9 }}
-          tickLine={false}
-          axisLine={false}
-        />
-        <Bar dataKey="value" radius={[0, 3, 3, 0]}>
-          {data.map((_, i) => (
-            <RechartsCell key={i} fill="hsl(var(--interactive))" fillOpacity={Math.max(0.95 - i * 0.06, 0.35)} />
-          ))}
-          <LabelList
-            dataKey="display"
-            position="right"
-            style={{ fontSize: 10, fill: "hsl(var(--foreground))", opacity: 0.9, fontFamily: "inherit", fontWeight: 500 }}
-          />
-        </Bar>
-      </BarChart>
-    </ChartContainer>
-  );
-}
 
 const DONUT_MAX_SEGMENTS = 8;
 
@@ -414,7 +393,16 @@ export function BreakdownExplorer({
           </div>
         ) : (
           <div className="space-y-3">
-            {form === "bar" && <RankedBars rows={rows} />}
+            {form === "bar" && (
+              <RankedBars
+                data={rows}
+                format={(n) => rows.find((r) => r.value === n)?.formatted ?? String(n)}
+                measureLabel={metricLabel}
+                order={lowerIsBetter(metricId) ? "asc" : "desc"}
+                invertLength={lowerIsBetter(metricId)}
+                limit={12}
+              />
+            )}
             {form === "donut" && !donutBlocked && <DonutShare rows={rows} />}
             {form === "funnel" && <FunnelRanking rows={rows} />}
             <MirrorTable rows={rows} metricLabel={metricLabel} dimensionLabel={dimension?.label ?? "Segment"} onDrillSegment={onDrillSegment} />

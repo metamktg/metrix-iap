@@ -1001,11 +1001,17 @@
 .nc-table th {
   text-align: left;
   /* Column headers are CHROME, not a heading: uppercase, tracked and
-     weighted, sitting above 14px data cells. They label a column rather
-     than titling a section, which is why they sit below the body floor
-     instead of 3px above it — the near-universal dense-table convention.
-     Matches text-label (11px). */
-  font-size: 0.6875rem; /* 11px — matches text-label */
+     weighted, sitting above the data cells. They label a column rather than
+     titling a section, which is why they sit below the body floor instead
+     of 3px above it — the near-universal dense-table convention.
+     Matches .text-label.
+
+     WAS 11px with a comment claiming it matched text-label. It did, until
+     the type ramp moved text-label to 12px and this rule stayed behind. A
+     comment that names a role has to keep naming the right one — a stale
+     one is worse than none, because the next reader trusts it. 11px is
+     .text-micro's step, which is the numeric-index role, not a label. */
+  font-size: 0.75rem; /* 12px — matches .text-label */
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: hsl(var(--muted-foreground) / 0.8);
@@ -1014,14 +1020,21 @@
   border-bottom: 1px solid transparent; /* layout only; the row paints the fading rule */
 }
 .nc-table td {
-  /* Was 13px — an orphan that belonged to no scale step and sat below the
-     body floor. Table cells are the primary content of an analytics
-     product; they get the floor, and the density comes from padding
-     rather than from shrinking the numbers people are here to read. */
+  /* Table cells are the primary content of an analytics product. They get
+     the body floor, and the density comes from padding rather than from
+     shrinking the numbers people came here to read.
+
+     This rule has now been left behind by the ramp TWICE: first at 13px,
+     then at 14px when the body floor moved to 15px. Both times the comment
+     claimed it matched .text-body and both times that stopped being true
+     without anything failing. check:type-scale could not see it — it reads
+     `.text-*` utilities, and this is a component class. The gate now reads
+     .nc-table directly, which is the only reason a third drift would be
+     caught. */
   padding: 10px 12px;
   border-bottom: 1px solid transparent;
-  font-size: 0.875rem;  /* 14px — text-body */
-  line-height: 1.45;
+  font-size: 0.9375rem;  /* 15px — matches .text-body, the body floor */
+  line-height: 1.5;
 }
 .nc-table thead tr {
   background: linear-gradient(to right,

@@ -1158,7 +1158,6 @@ export function AvatarsView() {
                 <SectionCard title="Audience signal" desc="Age × gender · CVR heatmap · click row to explore">
                   <DemographicTable
                     rows={scopedAnalysis.demographic_registration_signal ?? []}
-                    heatmap={true}
                     onSegmentClick={(seg) => setAudienceSegment(seg)}
                   />
                 </SectionCard>

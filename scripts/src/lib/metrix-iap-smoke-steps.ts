@@ -43,6 +43,16 @@ export const IAP_SMOKE_STEPS: SmokeStep[] = [
     script: "smoke:metrix-iap-hover-popover",
   },
   { label: "Manual import flow e2e", script: "smoke:metrix-iap-manual-import" },
+  {
+    // Walks every authenticated route in a real browser looking for a
+    // <button> inside a <button> (or a link inside a button). check:interaction
+    // scans for the same thing statically and cannot see the real instances,
+    // because they are formed by composition across two files. The browser
+    // resolves that nesting by DROPPING one control, so an action silently
+    // stops working with no error and no visual difference.
+    label: "DOM validity e2e (no nested interactive controls)",
+    script: "smoke:metrix-iap-dom-validity",
+  },
 ];
 
 /**

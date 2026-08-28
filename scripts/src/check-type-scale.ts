@@ -163,6 +163,51 @@ if (titleBlock == null) {
   );
 }
 
+// ── The dense-table pair, which is also not a text-* utility ──────────
+//
+// .nc-table td is the single most-read text in the product: every analysis
+// table's data cells. It has now been left behind by the ramp TWICE — first
+// sitting at 13px, then at 14px after the body floor moved to 15px — and
+// BOTH times its comment claimed it matched .text-body. Nothing failed
+// either time, because this file read only `.text-*` utilities and
+// .nc-table is a component class.
+//
+// Two orphan sizes in the most-used table CSS in the app, and two comments
+// asserting a role they no longer had. That is the exact failure mode this
+// gate exists to prevent, sitting in its blind spot.
+//
+// So both are asserted against the ramp BY NAME: the cell must equal
+// .text-body, the header must equal .text-label. Not "at least the floor" —
+// equal — because the whole point of a ramp is that every size on screen is
+// a step somebody chose, not a number somebody typed.
+const TABLE_RULES: Array<[string, string, string]> = [
+  [
+    "\\.nc-table td",
+    "text-body",
+    "the data cells of every analysis table — the most-read text in the product",
+  ],
+  [
+    "\\.nc-table th",
+    "text-label",
+    "the column headers of every analysis table",
+  ],
+];
+
+for (const [selector, role, what] of TABLE_RULES) {
+  const m = new RegExp(`${selector}\\s*\\{[^}]*font-size:\\s*([0-9.]+)rem`).exec(src);
+  const px = m ? Math.round(Number(m[1]) * REM) : null;
+  const expected = need(role);
+  if (px == null) {
+    problems.push(`could not read ${selector.replace(/\\/g, "")}'s font-size from index.css`);
+  } else if (expected != null && px !== expected) {
+    problems.push(
+      `${selector.replace(/\\/g, "")} is ${px}px but .${role} is ${expected}px — ` +
+        `an orphan size on ${what}. Match the role or change the role; do not ` +
+        `leave a third size that belongs to neither.`,
+    );
+  }
+}
+
 // ── Rule 2: header steps ──────────────────────────────────────────────
 // The real ramp is now five heading levels above the floor, each on its own
 // face. Every adjacent pair still has to clear the 3px step — that is what

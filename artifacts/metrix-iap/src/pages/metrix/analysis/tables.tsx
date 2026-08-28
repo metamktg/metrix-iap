@@ -15,8 +15,7 @@
 // widths remain normal table layout (no absolute positioning hacks).
 
 import { useMemo, useRef, useState } from "react";
-import { divergingFill, magnitudeFill } from "@/components/charts/chartTokens";
-import { MagnitudeLegend, VerdictLegend } from "@/components/charts/chartChrome";
+import { barScale, barWidth, type BarScale } from "@/lib/bar-scale";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -148,22 +147,92 @@ export function Td({ children, right, className, style }: { children: React.Reac
 }
 
 /** Binary spend/CPA-intensity overlay toggle, shared by CellTable and VariableTable. */
-export function HeatmapToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+// ─── Magnitude cell — the racing-form row ─────────────────────────────
+//
+// WHAT CHANGED AND WHY
+// These tables encoded magnitude as a BACKGROUND TINT, behind a toggle that
+// defaulted to off. Two problems with that, and the toggle is the smaller one.
+//
+// Colour intensity is close to the weakest way there is to encode a
+// quantity. Asked to rank five tinted cells, people get the order wrong;
+// asked to rank five bars, they get it right without trying. Length is the
+// strongest encoding available and it costs the same pixels — the bar sits
+// in the cell the tint used to fill.
+//
+// And it should not be a mode. A table you have to switch into a readable
+// state is a table most people read in the unreadable one. Bars are on.
+//
+// The number stays right-aligned where numerals belong; the bar grows from
+// the left, so every row shares a start edge and lengths are comparable at a
+// glance. One accent colour for every bar: length already carries the
+// meaning, and a second encoding on top of it is the competing-element
+// problem this whole pass exists to remove.
+//
+// All three honesty rules come from lib/bar-scale: an unmeasured value draws
+// NO bar (not a zero-length one), a measured zero keeps a hairline stub, and
+// a cost metric inverts so the best CPA has the longest bar rather than the
+// worst.
+
+export function MagnitudeCell({
+  value,
+  display,
+  scale,
+}: {
+  /** The raw number. Null means not measured — no bar is drawn. */
+  value: number | null | undefined;
+  /** The formatted string the reader actually sees. */
+  display: React.ReactNode;
+  scale: BarScale;
+}) {
+  const width = barWidth(scale, value);
   return (
-    <div className="flex items-center justify-end">
-      <button
-        onClick={onToggle}
-        aria-pressed={on}
-        className={cn(
-          "pressable h-6 px-2.5 rounded-md border text-label uppercase tracking-widest transition-colors",
-          on ? PILL_ACTIVE : PILL_INACTIVE
-        )}
-      >
-        Heatmap
-      </button>
-    </div>
+    <td className="relative text-right align-top tabular-nums text-foreground/85 pb-3.5">
+      {width !== null && (
+        // A THIN RAIL ANCHORED RIGHT, not a block anchored left.
+        //
+        // The first version drew a tall tinted block from the left edge of
+        // the cell. Rendered, it was wrong in two ways at once: on a wide
+        // column the block ended well before the number began, so it read as
+        // a stray rectangle rather than as that number's bar; and at ~28px
+        // tall it read as a highlight — "this cell is special" — rather than
+        // as a measurement.
+        //
+        // Anchored right, every bar's end sits against the figure it
+        // measures, and the right edge is the common baseline lengths are
+        // compared from. At 4px it is unmistakably a scale and never
+        // competes with the number sitting above it.
+        //
+        // aria-hidden: the bar restates the number beside it. Announcing it
+        // would read every figure twice to a screen reader.
+        <span
+          aria-hidden
+          className="absolute bottom-1 right-3 h-[4px] rounded-full bg-primary/45 pointer-events-none"
+          style={{ width }}
+        />
+      )}
+      <span className="relative">{display}</span>
+    </td>
   );
 }
+
+/**
+ * One line under the table saying what bar length means.
+ *
+ * Not decoration. On an inverted column the LONGEST bar is the SMALLEST
+ * number, and a reader who has not been told that reads the best CPA in the
+ * account as the worst. The inversion is the right call — length should
+ * agree with rank — but it is only safe if it is stated.
+ */
+export function BarScaleNote({ inverted }: { inverted?: string }) {
+  return (
+    <p className="px-1 text-caption text-muted-foreground/75">
+      Bar length shows each row's share of the column's largest value.
+      {inverted ? ` On ${inverted}, lower is better, so the shortest ${inverted} draws the longest bar.` : ""}
+      {" "}A column with no bar was not measured.
+    </p>
+  );
+}
+
 
 // ─── Virtual table body ───────────────────────────────────────────────
 // Used when row count exceeds VIRTUAL_THRESHOLD. Uses the padding-row
@@ -256,25 +325,16 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
   const { sorted, sort, toggle, reset } = useColumnSort(rows, CELL_COLUMNS);
   const scrollRef = useRef<HTMLDivElement>(null);
   const useVirtual = sorted.length > VIRTUAL_THRESHOLD;
-  const [heatmapOn, setHeatmapOn] = useState(false);
 
-  // Heatmap precomputation
-  const maxSpend = useMemo(
-    () => (heatmapOn ? Math.max(...rows.map((r) => r["Amount spent (USD)"]), 0.0001) : 0),
-    [rows, heatmapOn]
-  );
-  const { minCpa: cellMinCpa, maxCpa: cellMaxCpa } = useMemo(() => {
-    if (!heatmapOn) return { minCpa: 0, maxCpa: 0 };
-    const cpas = rows.map((r) => r.CPA_result).filter((v): v is number => v != null);
-    return { minCpa: cpas.length ? Math.min(...cpas) : 0, maxCpa: cpas.length ? Math.max(...cpas) : 0 };
-  }, [rows, heatmapOn]);
+  // Scales are built from the WHOLE row set, not the visible page. With
+  // virtualisation on, scaling to what happens to be on screen would make a
+  // bar change length as you scroll — the same value drawn two ways.
+  const spendScale = useMemo(() => barScale(rows.map((r) => r["Amount spent (USD)"])), [rows]);
+  const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
+  // invert: on CPA the best value is the smallest, so it gets the longest bar.
+  const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA_result), true), [rows]);
 
   const renderRow = (r: CellPerformanceRow, _i: number) => {
-    const spendIntensity = heatmapOn && maxSpend > 0 ? r["Amount spent (USD)"] / maxSpend : 0;
-    const cpaIntensity =
-      heatmapOn && r.CPA_result != null && cellMaxCpa > cellMinCpa
-        ? 1 - (r.CPA_result - cellMinCpa) / (cellMaxCpa - cellMinCpa)
-        : 0;
     return (
       <tr
         key={r.cell_id + r["Result type"]}
@@ -291,13 +351,13 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
           <VariableCodeChips row={r} />
         </Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <Td right style={spendIntensity > 0 ? { background: magnitudeFill(spendIntensity, 0) } : undefined}>
-          {fmtUSD(r["Amount spent (USD)"])}
-        </Td>
-        <Td right>{fmtNum(r.Results)}</Td>
-        <Td right style={cpaIntensity > 0 ? { background: divergingFill(cpaIntensity) } : undefined}>
-          {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
-        </Td>
+        <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} />
+        <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} />
+        <MagnitudeCell
+          value={r.CPA_result}
+          display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+          scale={cpaScale}
+        />
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
         <Td right>{fmtPct(r.Result_per_link_click_pct)}</Td>
       </tr>
@@ -320,13 +380,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
 
   return (
     <div className="space-y-1.5">
-      <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
-      {heatmapOn && (
-        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/75">
-          <MagnitudeLegend label="Spend" colorIndex={0} />
-          <VerdictLegend lowLabel="Above goal" highLabel="At goal" />
-        </div>
-      )}
+      <BarScaleNote inverted="CPA" />
       <TableShellInner scrollRef={scrollRef}>
         {thead}
         {useVirtual
@@ -359,25 +413,12 @@ export function VariableTable({
   const { sorted, sort, toggle, reset } = useColumnSort(rows, VARIABLE_COLUMNS);
   const scrollRef = useRef<HTMLDivElement>(null);
   const useVirtual = sorted.length > VIRTUAL_THRESHOLD;
-  const [heatmapOn, setHeatmapOn] = useState(false);
 
-  // Heatmap precomputation
-  const maxSpend = useMemo(
-    () => (heatmapOn ? Math.max(...rows.map((r) => r["Amount spent (USD)"]), 0.0001) : 0),
-    [rows, heatmapOn]
-  );
-  const { minCpa: varMinCpa, maxCpa: varMaxCpa } = useMemo(() => {
-    if (!heatmapOn) return { minCpa: 0, maxCpa: 0 };
-    const cpas = rows.map((r) => r.CPA_result).filter((v): v is number => v != null);
-    return { minCpa: cpas.length ? Math.min(...cpas) : 0, maxCpa: cpas.length ? Math.max(...cpas) : 0 };
-  }, [rows, heatmapOn]);
+  const spendScale = useMemo(() => barScale(rows.map((r) => r["Amount spent (USD)"])), [rows]);
+  const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
+  const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA_result), true), [rows]);
 
   const renderRow = (r: VariablePerformanceRow, i: number) => {
-    const spendIntensity = heatmapOn && maxSpend > 0 ? r["Amount spent (USD)"] / maxSpend : 0;
-    const cpaIntensity =
-      heatmapOn && r.CPA_result != null && varMaxCpa > varMinCpa
-        ? 1 - (r.CPA_result - varMinCpa) / (varMaxCpa - varMinCpa)
-        : 0;
     return (
       <tr
         key={r.variable_id + r["Result type"] + i}
@@ -395,24 +436,14 @@ export function VariableTable({
         </Td>
         <Td className="capitalize">{r.variable_family}</Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <Td right style={spendIntensity > 0 ? { background: magnitudeFill(spendIntensity, 0) } : undefined}>
-          <div className="flex flex-col gap-0.5">
-            <span>{fmtUSD(r["Amount spent (USD)"])}</span>
-            {heatmapOn && maxSpend > 0 && (
-              <div className="h-[3px] rounded-full bg-foreground/[0.06] overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${spendIntensity * 100}%`, background: "hsl(var(--chart-1) / 0.65)" }}
-                />
-              </div>
-            )}
-          </div>
-        </Td>
+        <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} />
         <Td right>{fmtNum(r.unique_ads)}</Td>
-        <Td right>{fmtNum(r.Results)}</Td>
-        <Td right style={cpaIntensity > 0 ? { background: divergingFill(cpaIntensity) } : undefined}>
-          {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
-        </Td>
+        <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} />
+        <MagnitudeCell
+          value={r.CPA_result}
+          display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+          scale={cpaScale}
+        />
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
       </tr>
     );
@@ -435,13 +466,7 @@ export function VariableTable({
 
   return (
     <div className="space-y-1.5">
-      <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
-      {heatmapOn && (
-        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/75">
-          <MagnitudeLegend label="Spend" colorIndex={0} />
-          <VerdictLegend lowLabel="Above goal" highLabel="At goal" />
-        </div>
-      )}
+      <BarScaleNote inverted="CPA" />
       <TableShellInner scrollRef={scrollRef}>
         {thead}
         {useVirtual
@@ -466,25 +491,19 @@ const DEMOGRAPHIC_COLUMNS: ColumnAccessors<DemographicRow> = {
 export function DemographicTable({
   rows,
   onSegmentClick,
-  heatmap = false,
 }: {
   rows: DemographicRow[];
   /** When provided, rows become clickable and open the segment drill-down. */
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
-  /** When true, tints the Result/click column by CVR intensity with a colour legend. */
-  heatmap?: boolean;
 }) {
   const { sorted, sort, toggle, reset } = useColumnSort(rows, DEMOGRAPHIC_COLUMNS);
-  const maxCvr = heatmap
-    ? Math.max(...rows.map((r) => r.Result_per_link_click_pct ?? 0), 0.0001)
-    : 0;
+  const spendScale = useMemo(() => barScale(rows.map((r) => r["Amount spent (USD)"])), [rows]);
+  const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
+  const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA_result), true), [rows]);
+  const cvrScale = useMemo(() => barScale(rows.map((r) => r.Result_per_link_click_pct)), [rows]);
   return (
     <div>
-      {heatmap && maxCvr > 0 && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-foreground/[0.01]">
-          <MagnitudeLegend label="Result / click" colorIndex={0} />
-        </div>
-      )}
+      <BarScaleNote inverted="CPA" />
       <TableShell>
         <thead className="sticky top-0 bg-surface-table z-10">
           <tr>
@@ -499,8 +518,6 @@ export function DemographicTable({
         </thead>
         <tbody>
           {sorted.map((r, i) => {
-            const cvr = r.Result_per_link_click_pct ?? 0;
-            const intensity = heatmap && maxCvr > 0 ? Math.min(cvr / maxCvr, 1) : 0;
             return (
               <tr
                 key={r.cell_id + r.Age + r.Gender + i}
@@ -515,15 +532,18 @@ export function DemographicTable({
                 <Td><span className=" text-label text-muted-foreground/75">{r.cell_id}</span></Td>
                 <Td>{r.Age}</Td>
                 <Td className="capitalize">{r.Gender}</Td>
-                <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
-                <Td right>{fmtNum(r.Results)}</Td>
-                <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
-                <Td
-                  right
-                  style={intensity > 0 ? { background: magnitudeFill(intensity, 0) } : undefined}
-                >
-                  {fmtPct(r.Result_per_link_click_pct)}
-                </Td>
+                <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} />
+                <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} />
+                <MagnitudeCell
+                  value={r.CPA_result}
+                  display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+                  scale={cpaScale}
+                />
+                <MagnitudeCell
+                  value={r.Result_per_link_click_pct}
+                  display={fmtPct(r.Result_per_link_click_pct)}
+                  scale={cvrScale}
+                />
               </tr>
             );
           })}
@@ -543,7 +563,12 @@ const PLACEMENT_COLUMNS: ColumnAccessors<PlacementRow> = {
 
 export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
   const { sorted, sort, toggle, reset } = useColumnSort(rows, PLACEMENT_COLUMNS);
+  const spendScale = useMemo(() => barScale(rows.map((r) => r["Amount spent (USD)"])), [rows]);
+  const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
+  const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA), true), [rows]);
   return (
+    <>
+    <BarScaleNote inverted="CPA" />
     <TableShell>
       <thead className="sticky top-0 bg-surface-table z-10">
         <tr>
@@ -559,13 +584,14 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
           <tr key={r.Placement + r.Platform + i}>
             <Td className="font-medium text-foreground">{r.Placement}</Td>
             <Td className="capitalize">{r.Platform}</Td>
-            <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
-            <Td right>{fmtNum(r.Results)}</Td>
-            <Td right>{r.CPA != null ? fmtUSD(r.CPA) : "—"}</Td>
+            <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} />
+            <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} />
+            <MagnitudeCell value={r.CPA} display={r.CPA != null ? fmtUSD(r.CPA) : "—"} scale={cpaScale} />
           </tr>
         ))}
       </tbody>
     </TableShell>
+    </>
   );
 }
 
@@ -584,7 +610,17 @@ const FUNNEL_COLUMNS: ColumnAccessors<ConversionFunnelRow & { label: string }> =
  */
 export function ConversionFunnelTable({ rows, labelHeader }: { rows: (ConversionFunnelRow & { label: string })[]; labelHeader: string }) {
   const { sorted, sort, toggle, reset } = useColumnSort(rows, FUNNEL_COLUMNS);
+  // One scale per stage column. NOT one scale across all four: link clicks
+  // outnumber purchases by orders of magnitude, so a shared scale would draw
+  // every purchase count as an invisible sliver and hide the column that
+  // matters most.
+  const clickScale = useMemo(() => barScale(rows.map((r) => r.link_clicks)), [rows]);
+  const cartScale = useMemo(() => barScale(rows.map((r) => r.adds_to_cart)), [rows]);
+  const checkoutScale = useMemo(() => barScale(rows.map((r) => r.checkouts_initiated)), [rows]);
+  const purchaseScale = useMemo(() => barScale(rows.map((r) => r.purchases)), [rows]);
   return (
+    <>
+    <BarScaleNote />
     <TableShell>
       <thead className="sticky top-0 bg-surface-table z-10">
         <tr>
@@ -600,14 +636,15 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
         {sorted.map((r, i) => (
           <tr key={r.label + i}>
             <Td className="font-medium text-foreground capitalize">{r.label}</Td>
-            <Td right>{r.link_clicks != null ? fmtNum(r.link_clicks) : "—"}</Td>
-            <Td right>{r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"}</Td>
-            <Td right>{r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"}</Td>
-            <Td right>{r.purchases != null ? fmtNum(r.purchases) : "—"}</Td>
+            <MagnitudeCell value={r.link_clicks} display={r.link_clicks != null ? fmtNum(r.link_clicks) : "—"} scale={clickScale} />
+            <MagnitudeCell value={r.adds_to_cart} display={r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"} scale={cartScale} />
+            <MagnitudeCell value={r.checkouts_initiated} display={r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"} scale={checkoutScale} />
+            <MagnitudeCell value={r.purchases} display={r.purchases != null ? fmtNum(r.purchases) : "—"} scale={purchaseScale} />
             <Td>{r.confidence ? <span className="text-label uppercase tracking-wider text-muted-foreground/75">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
           </tr>
         ))}
       </tbody>
     </TableShell>
+    </>
   );
 }

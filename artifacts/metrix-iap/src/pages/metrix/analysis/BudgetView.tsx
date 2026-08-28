@@ -360,25 +360,39 @@ export function BudgetView() {
 
               {a && (a.v3_placement_signal.length > 0 || a.c4e_placement_signal.length > 0) && (
                 <div className="rounded-xl border border-border/30 bg-foreground/[0.01] overflow-hidden">
-                  <button
-                    onClick={() => setShowPlacements((v) => !v)}
-                    className="pressable-lg w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-foreground/[0.02] transition-colors group"
-                    aria-expanded={showPlacements}
-                  >
-                    <div className="text-left">
-                      <span className="text-sm font-bold text-foreground">Placement spend</span>
-                      <span className="text-label text-muted-foreground/75 ml-2">
-                        {a.v3_placement_signal.length + a.c4e_placement_signal.length} rows
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <CrossLink to="/app/analysis/placements" label="Full breakdown →" />
+                  {/* The "Full breakdown" link used to live INSIDE this
+                      button. A <button> inside a <button> is invalid HTML —
+                      the browser keeps one and drops the other, so one of the
+                      two actions silently stopped working and nothing said
+                      so. check:interaction looks for this, but it could not
+                      see it: the outer button is written here and the inner
+                      one comes out of CrossLink, so no single file contains
+                      the nesting. Found by walking the live DOM instead.
+
+                      The disclosure control and the link are now siblings in
+                      a row, which is also what they are conceptually: one
+                      opens this section, the other leaves the page. */}
+                  <div className="flex items-center gap-2 pr-4">
+                    <button
+                      onClick={() => setShowPlacements((v) => !v)}
+                      className="pressable-lg flex-1 min-w-0 flex items-center justify-between gap-3 px-4 py-3 hover:bg-foreground/[0.02] transition-colors group"
+                      aria-expanded={showPlacements}
+                    >
+                      <div className="text-left">
+                        <span className="text-sm font-bold text-foreground">Placement spend</span>
+                        <span className="text-label text-muted-foreground/75 ml-2">
+                          {a.v3_placement_signal.length + a.c4e_placement_signal.length} rows
+                        </span>
+                      </div>
                       {showPlacements
-                        ? <ChevronDown className="w-4 h-4 text-muted-foreground/75 group-hover:text-foreground/70 transition-colors" />
-                        : <ChevronRight className="w-4 h-4 text-muted-foreground/75 group-hover:text-foreground/70 transition-colors" />
+                        ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground/75 group-hover:text-foreground/70 transition-colors" />
+                        : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground/75 group-hover:text-foreground/70 transition-colors" />
                       }
+                    </button>
+                    <div className="shrink-0">
+                      <CrossLink to="/app/analysis/placements" label="Full breakdown →" />
                     </div>
-                  </button>
+                  </div>
                   {showPlacements && (
                     <div className="border-t border-border/20 px-4 pb-4 pt-3 space-y-4">
                       {a.v3_placement_signal.length > 0 && (
