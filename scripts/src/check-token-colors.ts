@@ -45,6 +45,14 @@ const RAW_CLASS = new RegExp(`\\b(?:${PREFIX})-(?:${FAMILIES})-\\d{2,3}(?:/[0-9.
 // it does not follow a re-theme. bg-foreground/[0.02] is the same tint taken
 // from the token.
 const RAW_TONE = new RegExp(`\\b(?:${PREFIX})-(?:white|black)(?:/(?:\\[[0-9.]+\\]|[0-9]+))?\\b`, "g");
+// The same palette, through the back door. Tailwind v4 publishes every stock
+// colour as a theme variable, so `border-[color:var(--color-sky-500)]` paints
+// exactly what `border-sky-500` paints — and RAW_CLASS never matched it,
+// because the family name is inside an arbitrary value rather than in the
+// utility. That is not hypothetical: a nudge link in the task tray wore four
+// of them and passed this gate for as long as it existed. A gate that can be
+// stepped around by spelling the same colour differently is not a gate.
+const RAW_PALETTE_VAR = new RegExp(`var\\(\\s*--color-(?:${FAMILIES})-\\d{2,3}\\s*\\)`, "g");
 // A literal colour inside a component. The stylesheet may hold them; a .tsx
 // may not — that is where they escape review.
 const RAW_LITERAL = /(?:#[0-9a-fA-F]{3,8}\b|\brgba?\(\s*\d)/g;
@@ -122,6 +130,18 @@ for (const file of walk(SRC)) {
         `Use a token: status-success / status-warning / status-danger for state, ` +
         `interactive / primary / metrix-cyan for brand, muted-foreground / border for chrome, ` +
         `or a --mx-<role>-<step> ramp value when a specific step is needed.`,
+    );
+  }
+
+  const paletteVars = [...code.matchAll(RAW_PALETTE_VAR)].map((m) => m[0]);
+  if (paletteVars.length > 0) {
+    const distinct = [...new Set(paletteVars)];
+    problems.push(
+      `${rel}: ${paletteVars.length} stock-palette CSS variable${paletteVars.length === 1 ? "" : "s"} ` +
+        `(${distinct.slice(0, 3).join(", ")}${distinct.length > 3 ? ", …" : ""}). ` +
+        `--color-sky-500 IS bg-sky-500 — reaching it through an arbitrary value ` +
+        `paints the same stock colour and skips the same review. Use the token ` +
+        `the role calls for (metrix-cyan / interactive / status-*).`,
     );
   }
 

@@ -395,6 +395,12 @@ export const navTree: NavSection[] = [
         to: "/app/settings/billing",
         dataSource: "workspace_settings",
       },
+      {
+        id: "settings-provenance",
+        label: "Data Provenance",
+        to: "/app/settings/provenance",
+        dataSource: "integrity_note",
+      },
     ],
   },
 ];

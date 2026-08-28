@@ -67,7 +67,7 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
         side="top"
         className="max-w-[220px] space-y-1 text-left"
       >
-        <p className="font-mono text-label text-muted-foreground">{code}</p>
+        <p className=" text-label text-muted-foreground">{code}</p>
         {entry?.what && (
           <p className="text-label leading-relaxed text-foreground/90">
             {entry.what.length > 120 ? entry.what.slice(0, 120) + "…" : entry.what}

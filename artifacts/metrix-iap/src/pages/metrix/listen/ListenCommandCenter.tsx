@@ -136,7 +136,7 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
           <div className="rounded-xl border border-status-danger/20 bg-status-danger/[0.03] p-4 flex items-center gap-3">
             <AlertTriangle className="w-4 h-4 text-status-danger shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="text-title font-semibold text-foreground">{highImpact} high-impact signal{highImpact === 1 ? "" : "s"}</div>
+              <div className="text-title font-bold text-foreground">{highImpact} high-impact signal{highImpact === 1 ? "" : "s"}</div>
               <div className="text-label text-muted-foreground/75 mt-0.5">Review in Alerts for details and recommended actions.</div>
             </div>
           </div>

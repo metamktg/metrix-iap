@@ -239,7 +239,7 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
                         <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "hsl(var(--primary))" }} />
                         <span className="text-muted-foreground">Spend</span>
                       </div>
-                      <span className="font-mono tabular-nums text-foreground">{fmtUSD(d.spend, 0)}</span>
+                      <span className=" tabular-nums text-foreground">{fmtUSD(d.spend, 0)}</span>
                     </div>
                     {d.results > 0 && (
                       <div className="flex items-center justify-between gap-4">
@@ -247,7 +247,7 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
                           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "hsl(var(--metrix-success))" }} />
                           <span className="text-muted-foreground">Results</span>
                         </div>
-                        <span className="font-mono tabular-nums text-foreground">{fmtNum(d.results)}</span>
+                        <span className=" tabular-nums text-foreground">{fmtNum(d.results)}</span>
                       </div>
                     )}
                   </div>
@@ -352,10 +352,10 @@ function CellPerfBars({ items, resultNoun }: {
                 <ChartTooltipCard>
                   <div className="font-semibold text-foreground mb-1 max-w-[220px] truncate">{d.name}</div>
                   <div className="space-y-0.5">
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Spend</span><span className="font-mono tabular-nums text-foreground">{fmtUSD(d.spend, 0)}</span></div>
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">{resultNoun}</span><span className="font-mono tabular-nums text-foreground">{fmtNum(d.results)}</span></div>
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">CPA</span><span className="font-mono tabular-nums text-foreground">{d.cpa != null ? fmtUSD(d.cpa) : "—"}</span></div>
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Type</span><span className="font-mono tabular-nums text-foreground">{eventLabel(d.resultType)}</span></div>
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Spend</span><span className=" tabular-nums text-foreground">{fmtUSD(d.spend, 0)}</span></div>
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">{resultNoun}</span><span className=" tabular-nums text-foreground">{fmtNum(d.results)}</span></div>
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">CPA</span><span className=" tabular-nums text-foreground">{d.cpa != null ? fmtUSD(d.cpa) : "—"}</span></div>
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Type</span><span className=" tabular-nums text-foreground">{eventLabel(d.resultType)}</span></div>
                   </div>
                 </ChartTooltipCard>
               );
@@ -410,7 +410,7 @@ function PlacementTable({ placements }: {
               >
                 {p.placement.length > 24 ? p.placement.slice(0, 23) + "…" : p.placement}
               </span>
-              <span className={cn(TYPE.label, "font-mono tabular-nums text-muted-foreground/75 ml-2 shrink-0")}>
+              <span className={cn(TYPE.label, " tabular-nums text-muted-foreground/75 ml-2 shrink-0")}>
                 {fmtUSD(p.spend, 0)}
               </span>
             </div>
@@ -419,14 +419,14 @@ function PlacementTable({ placements }: {
           {/* CPA badge */}
           <div className="text-right shrink-0 w-[52px]">
             <div className={cn(TYPE.label, "text-muted-foreground/75 mb-0.5")}>CPA</div>
-            <div className={cn(TYPE.caption, "font-mono font-semibold tabular-nums", cpaBadgeCls(p.cpa))}>
+            <div className={cn(TYPE.caption, " font-semibold tabular-nums", cpaBadgeCls(p.cpa))}>
               {p.cpa != null ? fmtUSD(p.cpa, 0) : "—"}
             </div>
           </div>
           {/* CTR badge */}
           <div className="text-right shrink-0 w-[42px]">
             <div className={cn(TYPE.label, "text-muted-foreground/75 mb-0.5")}>CTR</div>
-            <div className={cn(TYPE.caption, "font-mono tabular-nums text-foreground/60")}>
+            <div className={cn(TYPE.caption, " tabular-nums text-foreground/60")}>
               {p.ctr != null ? fmtPct(p.ctr, 1) : "—"}
             </div>
           </div>
@@ -588,7 +588,7 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
                     onClick={() => setSortKey(c.key)}
                     aria-label={`Sort by ${c.label}${active ? (dir === "asc" ? ", currently ascending" : ", currently descending") : ""}`}
                     className={cn(
-                      "pressable inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors whitespace-nowrap",
+                      "pressable inline-flex items-center gap-0.5 text-label uppercase tracking-widest font-semibold transition-colors whitespace-nowrap",
                       active
                         ? "text-interactive"
                         : "text-muted-foreground/75 hover:text-foreground/80",
@@ -609,10 +609,10 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
             <tr key={r.variable_id + i}>
               <td className="font-medium text-foreground/90 whitespace-nowrap">{readableVariables(r.variable_id)}</td>
               <td className="text-muted-foreground/75 capitalize">{r.variable_family}</td>
-              <td className="text-right font-mono tabular-nums text-foreground/85">{fmtUSD(r["Amount spent (USD)"], 0)}</td>
-              <td className="text-right font-mono tabular-nums text-foreground/85">{fmtNum(r.Results)}</td>
-              <td className="text-right font-mono tabular-nums text-foreground/85">{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</td>
-              <td className="text-right font-mono tabular-nums text-foreground/85">{fmtPct(r.CTR_link_pct)}</td>
+              <td className="text-right tabular-nums text-foreground/85">{fmtUSD(r["Amount spent (USD)"], 0)}</td>
+              <td className="text-right tabular-nums text-foreground/85">{fmtNum(r.Results)}</td>
+              <td className="text-right tabular-nums text-foreground/85">{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</td>
+              <td className="text-right tabular-nums text-foreground/85">{fmtPct(r.CTR_link_pct)}</td>
             </tr>
           ))}
         </tbody>
@@ -1075,7 +1075,7 @@ export function AnalysisOverview() {
                           {/* Top-N slider */}
                           <div className="flex items-center gap-2">
                             <span className="text-label text-muted-foreground/75 whitespace-nowrap">
-                              Top N: <span className="text-foreground/80 font-mono">{topN}</span>
+                              Top N: <span className="text-foreground/80">{topN}</span>
                             </span>
                             <Slider
                               aria-label="Number of top concepts to display"
@@ -1149,7 +1149,7 @@ export function AnalysisOverview() {
                           {medianCpa != null && (
                             <div className="flex items-center gap-2">
                               <span className="text-label text-muted-foreground/75 whitespace-nowrap">
-                                Goal CPA: <span className="text-foreground/80 font-mono">{fmtUSD(effectiveGoalCpa ?? medianCpa, 0)}</span>
+                                Goal CPA: <span className="text-foreground/80">{fmtUSD(effectiveGoalCpa ?? medianCpa, 0)}</span>
                               </span>
                               <Slider
                                 aria-label="Goal CPA threshold for heatmap coloring"
@@ -1175,7 +1175,7 @@ export function AnalysisOverview() {
                     <SectionCard title="Core control reads" desc="Control creative · per funnel depth" right={<SectionInfoIcon tip="The benchmark creative concepts that set the efficiency floor — new tests are judged against these." />}>
                       <div className="grid grid-cols-dashboard-2 gap-3">
                         <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
-                          <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">Primary control</div>
+                          <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-1">Primary control</div>
                           <p className="text-sm font-bold text-foreground">{resolveConceptName(controls.primary_control)}</p>
                           <div className="mt-1.5">
                             {(() => {
@@ -1191,7 +1191,7 @@ export function AnalysisOverview() {
                             })()}
                           </div>
                           {resolveConceptName(controls.primary_control) !== controls.primary_control && (
-                            <p className="text-label font-mono text-muted-foreground/75 mt-1.5">{controls.primary_control}</p>
+                            <p className="text-label text-muted-foreground/75 mt-1.5">{controls.primary_control}</p>
                           )}
                         </div>
                         {controls.registration_control && (() => {
@@ -1199,7 +1199,7 @@ export function AnalysisOverview() {
                           const regName = resolveConceptName(regId);
                           return (
                             <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
-                              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">{term.Singular} control</div>
+                              <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-1">{term.Singular} control</div>
                               <p className="text-sm font-bold text-foreground">{regName}</p>
                               {controls.registration_control_read && (() => {
                                 const read = resolveControlText(controls.registration_control_read, regId);
@@ -1215,7 +1215,7 @@ export function AnalysisOverview() {
                                 );
                               })()}
                               {regName !== regId && (
-                                <p className="text-label font-mono text-muted-foreground/75 mt-1.5">{regId}</p>
+                                <p className="text-label text-muted-foreground/75 mt-1.5">{regId}</p>
                               )}
                             </div>
                           );
@@ -1235,7 +1235,7 @@ export function AnalysisOverview() {
                             <InfoTooltip content={s.desc} />
                           </div>
                           <div className="flex items-center justify-between mt-auto pt-1">
-                            <span className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75">{s.stat}</span>
+                            <span className="text-micro uppercase tracking-widest text-muted-foreground/75">{s.stat}</span>
                             <CrossLink to={s.to} label="Open" />
                           </div>
                         </div>

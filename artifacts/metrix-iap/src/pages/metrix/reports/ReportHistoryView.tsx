@@ -450,7 +450,7 @@ function ReportCardList({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-title font-semibold text-foreground leading-tight">{r.title}</h3>
+                <h3 className="text-title font-bold text-foreground leading-tight">{r.title}</h3>
                 <span
                   className={cn(
                     "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",
@@ -463,7 +463,7 @@ function ReportCardList({
                 </span>
               </div>
               <p className="text-caption text-muted-foreground/80 mt-1 leading-relaxed line-clamp-1">{deriveLabel(r.summary, 90)}</p>
-              <div className="flex items-center gap-3 mt-2 text-label font-mono text-muted-foreground/75 flex-wrap">
+              <div className="flex items-center gap-3 mt-2 text-label text-muted-foreground/75 flex-wrap">
                 <span>{fmtDate(r.generated_at)}</span>
                 <span className="inline-flex items-center gap-1">
                   {r.mode === "client" ? <Users className="w-3.5 h-3.5" /> : <Building2 className="w-3.5 h-3.5" />}

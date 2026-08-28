@@ -772,7 +772,7 @@ function MemberActionsCell({
       </button>
       {tempPassword && (
         <span
-          className="text-label text-status-warning/90 font-mono w-full"
+          className="text-label text-status-warning/90 w-full"
           data-testid={`text-temp-password-${email}`}
         >
           Email didn't send — temp password: {tempPassword}
@@ -953,7 +953,7 @@ function TeamAccessViewInner() {
                   )}>
                     {m.role}
                   </span>
-                  <span className="text-label font-mono text-muted-foreground/75 text-right w-24">
+                  <span className="text-label text-muted-foreground/75 text-right w-24">
                     {m.lastActive
                       ? new Date(m.lastActive).toLocaleDateString(undefined, { month: "short", day: "numeric" })
                       : "—"}

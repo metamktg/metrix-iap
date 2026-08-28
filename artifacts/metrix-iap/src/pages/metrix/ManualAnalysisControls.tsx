@@ -36,6 +36,8 @@ import { guessedCreativeImports } from "./manualImportUtils";
 import { ImportConfidenceReport } from "./ImportConfidenceReport";
 import { InfoTooltip, DetailReveal, DenseText } from "./shared";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { ActionSlider } from "@/components/widgets/ActionSlider";
+import { RunProgress } from "@/components/widgets/RunProgress";
 import { CsvWarningsPanel } from "@/components/analysis/CsvWarningsPanel";
 import {
   AlertDialog,
@@ -154,7 +156,7 @@ function ColumnAliasGuide({
                 {aliasList.map((alias) => (
                   <span
                     key={alias}
-                    className="px-1.5 py-0.5 rounded bg-foreground/[0.05] border border-border/30 text-label text-muted-foreground/80 font-mono"
+                    className="px-1.5 py-0.5 rounded bg-foreground/[0.05] border border-border/30 text-label text-muted-foreground/80"
                   >
                     {alias}
                   </span>
@@ -941,7 +943,7 @@ function ImportHistoryPanel({
                 {files.map((f) => (
                   <span
                     key={f.id}
-                    className="text-micro font-mono text-muted-foreground/75 border border-border/30 rounded px-1 py-0.5 truncate max-w-[160px]"
+                    className="text-micro text-muted-foreground/75 border border-border/30 rounded px-1 py-0.5 truncate max-w-[160px]"
                     title={f.filename}
                   >
                     {f.filename}
@@ -1167,6 +1169,41 @@ export function AnalysisControls({
 
   const priorRuns = (runsData?.runs ?? []).filter((r) => r.status === "success");
 
+  // Would pressing this replace rows that already exist?
+  //
+  // Only a prior SUCCESSFUL run can have left rows behind — a failed or
+  // still-running one has nothing to supersede — so that is the test.
+  //
+  // What this deliberately does NOT do is claim to know the exact overlap.
+  // The run's window is anchored server-side to the latest date found in the
+  // data, not to wall-clock time, so the client cannot compute which dates
+  // the next run will cover without guessing. Guessing here would put a
+  // fabricated range in front of a destructive action, which is worse than
+  // saying less. So the sentence states the mechanism ("any dates this run
+  // covers") and then names the one thing that IS known and counted: what
+  // the last successful run actually covered.
+  // [0] is the most recent: listAnalysisRuns orders by started_at DESC.
+  // If that ordering ever changes this sentence starts naming the OLDEST run
+  // while calling it the last one, so it is worth stating rather than
+  // assuming.
+  const lastSuccess = priorRuns[0] ?? null;
+  const runReplacesData = priorRuns.length > 0;
+  const replaceConsequence = (() => {
+    if (!lastSuccess) return "";
+    const rows = lastSuccess.rows_ingested;
+    const scope =
+      lastSuccess.date_start && lastSuccess.date_end
+        ? `${lastSuccess.date_start} \u2192 ${lastSuccess.date_end}`
+        : null;
+    const covered =
+      scope && rows != null
+        ? `The last successful run covered ${scope} (${rows.toLocaleString()} rows).`
+        : scope
+          ? `The last successful run covered ${scope}.`
+          : "The last successful run did not record its window.";
+    return `Replaces existing rows for any dates this run covers. ${covered}`;
+  })();
+
   // Grouped so both the wizard (always inline) and the Command Center
   // (collapsed behind DetailReveal, see `detailsOpen`) render the exact
   // same date-range grid + pre-run warnings — no duplicated markup.
@@ -1341,16 +1378,40 @@ export function AnalysisControls({
         ) : (
           <span className="text-label text-muted-foreground/75">No analysis has been run yet.</span>
         )}
-        <RunAnalysisBtn
-          onClick={() => handleRun()}
-          disabled={
-            isRunning ||
-            startMutation.isPending ||
-            missingRequiredCsv ||
-            (hasRequiredMissing && !forceRunAcknowledged)
-          }
-          warning={hasRequiredMissing && forceRunAcknowledged}
-        >
+{runReplacesData ? (
+          // A RE-RUN is destructive by design: ingestion is an idempotent
+          // rebuild, so each rollup table is cleared for the run's window
+          // immediately before its insert. Re-running replaces the rows that
+          // were there. A plain button one click from that is the wrong
+          // affordance — so a re-run takes a deliberate gesture and states
+          // what it will replace, in counted, scoped terms.
+          //
+          // A FIRST run keeps the plain button. It replaces nothing, and a
+          // slider on an action with no consequence is theatre that devalues
+          // the ones that have one.
+          <ActionSlider
+            className="max-w-xs"
+            label="Re-run analysis"
+            tone="warning"
+            consequence={replaceConsequence}
+            busy={isRunning || startMutation.isPending}
+            disabled={
+              missingRequiredCsv || (hasRequiredMissing && !forceRunAcknowledged)
+            }
+            onConfirm={() => handleRun()}
+            data-testid="rerun-analysis-slider"
+          />
+        ) : (
+          <RunAnalysisBtn
+            onClick={() => handleRun()}
+            disabled={
+              isRunning ||
+              startMutation.isPending ||
+              missingRequiredCsv ||
+              (hasRequiredMissing && !forceRunAcknowledged)
+            }
+            warning={hasRequiredMissing && forceRunAcknowledged}
+          >
           {isRunning || startMutation.isPending ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Running…
@@ -1369,6 +1430,7 @@ export function AnalysisControls({
             </>
           )}
         </RunAnalysisBtn>
+        )}
       </div>
 
       <AlertDialog
@@ -1399,27 +1461,19 @@ export function AnalysisControls({
       {/* Real per-stage progress bar — polls every 1 s while running */}
       {(isRunning || run?.status === "success") && (
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between gap-2 text-label text-muted-foreground/75">
-            <span className="truncate">
-              {isRunning
-                ? (run?.progress_stage || "Starting analysis…")
-                : "Analysis complete"}
-            </span>
-            <span className="tabular-nums shrink-0">
-              {run?.status === "success" ? 100 : (run?.progress_pct ?? 0)}%
-            </span>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
-            <div
-              className={cn(
-                "h-full rounded-full transition-[width] duration-700 ease-out",
-                run?.status === "success" ? "bg-status-success/70" : "bg-primary/70"
-              )}
-              style={{
-                width: `${run?.status === "success" ? 100 : (run?.progress_pct ?? 0)}%`,
-              }}
-            />
-          </div>
+          {/* Was a static bar with a static label. Between polls — 2.5s, and a
+              stage can hold for twenty seconds — neither moved, which is
+              indistinguishable from a job that has died. RunProgress sweeps
+              the filled part instead of inventing a creeping percentage, and
+              animates the stage name when the stage actually changes.
+              progress_pct of null now renders as "—" rather than 0%: no
+              number yet is a different claim from a measured zero. */}
+          <RunProgress
+            phase={run?.status === "success" ? "success" : run?.status === "error" ? "error" : "running"}
+            stage={run?.progress_stage}
+            pct={run?.progress_pct}
+            doneLabel="Analysis complete"
+          />
           {isRunning && (
             <div className="grid grid-cols-5 gap-0.5 pt-0.5">
               {[

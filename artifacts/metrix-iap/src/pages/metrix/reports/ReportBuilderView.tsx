@@ -439,7 +439,7 @@ export function ReportBuilderView() {
                     <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
-                        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Report window</span>
+                        <span className="text-label uppercase tracking-widest text-muted-foreground/75">Report window</span>
                         {override && <span className="mx-inline-badge mx-inline-badge--info">Override</span>}
                       </div>
                       {reportRange ? (

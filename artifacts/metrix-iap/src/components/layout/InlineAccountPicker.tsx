@@ -55,7 +55,7 @@ export function InlineAccountPicker({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="center" sideOffset={4} className="w-[232px] bg-surface-overlay border-border/50 elevation-floating p-1 z-50">
-        <DropdownMenuLabel className="px-2 py-1 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/75">
+        <DropdownMenuLabel className="px-2 py-1 text-micro font-semibold uppercase text-muted-foreground/75">
           Ad Accounts
         </DropdownMenuLabel>
         {options.map((a) => {
@@ -71,11 +71,11 @@ export function InlineAccountPicker({
               </div>
               <div className="flex-1 min-w-0">
                 <div className={cn("text-caption font-medium leading-tight truncate", isActive ? "text-foreground" : "text-foreground/80")}>{a.name}</div>
-                <div className="text-[9px] text-muted-foreground/75 leading-tight capitalize">{a.status}</div>
+                <div className="text-caption text-muted-foreground/75 leading-tight capitalize">{a.status}</div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 {a.status === "unconfigured" && (
-                  <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none">Setup</span>
+                  <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none">Setup</span>
                 )}
                 <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT[a.status] ?? "bg-muted-foreground/60")} />
                 {isActive && <Check className="w-3.5 h-3.5 text-interactive" />}

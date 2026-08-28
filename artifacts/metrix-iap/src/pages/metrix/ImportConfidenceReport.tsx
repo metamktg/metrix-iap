@@ -216,7 +216,7 @@ function SingleCsvConfidenceReport({
               {missingColumns.map((col) => (
                 <div key={col.canonical} className="flex items-center gap-2">
                   <span className="flex-1 text-label text-foreground/80 truncate">{col.canonical}</span>
-                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-status-danger/10 border border-status-danger/25 text-label text-status-danger font-mono shrink-0">
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-status-danger/10 border border-status-danger/25 text-label text-status-danger shrink-0">
                     <TrendingDown className="w-3 h-3" />
                     −{Math.round(col.signalWeight * 100)}% signal
                   </span>
@@ -237,7 +237,7 @@ function SingleCsvConfidenceReport({
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-label font-medium text-foreground/85 truncate">{col.canonical}</span>
                       {col.found_as && col.found_as !== col.canonical && (
-                        <span className="text-label text-muted-foreground/75 font-mono truncate">← {col.found_as}</span>
+                        <span className="text-label text-muted-foreground/75 truncate">← {col.found_as}</span>
                       )}
                     </div>
                   </div>

@@ -20,8 +20,24 @@
 //
 // The active tab is marked with aria-selected AND an underline, never colour
 // alone.
+//
+// THE UNDERLINE TRAVELS. It used to be a border on whichever button was
+// active, so switching tabs made it vanish from one place and appear in
+// another — and the eye has to re-find it, every time, on every rail in the
+// product. A shared-layout indicator moves between tabs instead, so the
+// reader is led to the new section rather than having to locate it. It is a
+// spring rather than a tween because the distance varies with tab width and
+// a fixed duration reads slow across a short hop and abrupt across a long
+// one.
+//
+// The layoutId is per-INSTANCE (useId). Two rails on one page sharing an id
+// would animate their indicators into each other across the layout — the
+// classic shared-layout bug, and this app routinely renders a module rail
+// above a panel rail.
 
-import { useRef, type KeyboardEvent, type ComponentType } from "react";
+import { useId, useRef, type KeyboardEvent, type ComponentType } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { SPRING_SNAPPY } from "@/lib/motion";
 
 export interface TabItem<T extends string> {
   id: T;
@@ -47,6 +63,8 @@ export function TabRail<T extends string>({
   tabs, active, onChange, label, className = "",
 }: TabRailProps<T>) {
   const railRef = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const indicatorId = `tabrail-${useId()}`;
 
   const move = (e: KeyboardEvent<HTMLDivElement>) => {
     const usable = tabs.filter((t) => !t.disabledReason);
@@ -98,14 +116,25 @@ export function TabRail<T extends string>({
                         text-body font-body font-medium border-b-2 -mb-px
                         transition-[color,border-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded-t-lg
+                        relative border-transparent
                         ${
                           off
-                            ? "border-transparent text-muted-foreground/75 cursor-not-allowed"
+                            ? "text-muted-foreground/75 cursor-not-allowed"
                             : on
-                              ? "border-primary text-foreground active:scale-[0.96]"
-                              : "border-transparent text-muted-foreground/75 hover:text-foreground active:scale-[0.96]"
-                        }`}
-          >
+                              ? "text-foreground active:scale-[0.96]"
+                              : "text-muted-foreground/75 hover:text-foreground active:scale-[0.96]"
+                        }`}>
+            {on && !off && (
+              <motion.span
+                layoutId={indicatorId}
+                // Under reduced motion the indicator still MOVES — it just
+                // arrives instantly. Dropping it entirely would take away the
+                // only non-colour marker of which tab is active.
+                transition={reduced ? { duration: 0 } : SPRING_SNAPPY}
+                className="absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-primary"
+                aria-hidden
+              />
+            )}
             {t.Icon && <t.Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
             <span>{t.label}</span>
             {t.count != null && (
@@ -114,7 +143,7 @@ export function TabRail<T extends string>({
               // where the tint claimed a verdict on the bucket — a green "3"
               // beside "Dismissed" is not good news.
               <span
-                className={`text-micro font-mono tabular-nums px-1.5 py-0.5 rounded-full
+                className={`text-micro tabular-nums px-1.5 py-0.5 rounded-full
                             ${on ? "bg-primary/15 text-interactive" : "bg-foreground/[0.06] text-muted-foreground/75"}`}
               >
                 {t.count}

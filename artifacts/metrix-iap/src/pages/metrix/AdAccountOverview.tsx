@@ -346,7 +346,7 @@ export function AdAccountOverview() {
                   <span className="text-caption font-semibold text-foreground">Primary control</span>
                   <SectionInfoIcon tip="The top-performing creative benchmark for this funnel stage." />
                 </div>
-                <p className="text-title font-semibold text-foreground mb-1">{primaryControlName}</p>
+                <p className="text-title font-bold text-foreground mb-1">{primaryControlName}</p>
                 {(() => {
                   const read = resolveControlText(core.primary_control_read, core.primary_control);
                   return (
@@ -361,7 +361,7 @@ export function AdAccountOverview() {
                   );
                 })()}
                 {primaryControlName !== core.primary_control && (
-                  <p className="text-label font-mono text-muted-foreground/75 mt-1.5">
+                  <p className="text-label text-muted-foreground/75 mt-1.5">
                     <span className="text-label text-muted-foreground/75 not-italic">Code · </span>{core.primary_control}
                   </p>
                 )}
@@ -373,7 +373,7 @@ export function AdAccountOverview() {
                     <span className="text-caption font-semibold text-foreground">{term.Singular} control</span>
                     <SectionInfoIcon tip={`The control creative for the ${term.Singular} conversion stage.`} />
                   </div>
-                  <p className="text-title font-semibold text-foreground mb-1">{registrationControlName ?? core.registration_control}</p>
+                  <p className="text-title font-bold text-foreground mb-1">{registrationControlName ?? core.registration_control}</p>
                   {core.registration_control_read && core.registration_control && (() => {
                     const read = resolveControlText(core.registration_control_read, core.registration_control);
                     return (
@@ -388,7 +388,7 @@ export function AdAccountOverview() {
                     );
                   })()}
                   {registrationControlName !== core.registration_control && (
-                    <p className="text-label font-mono text-muted-foreground/75 mt-1.5">
+                    <p className="text-label text-muted-foreground/75 mt-1.5">
                       <span className="text-label text-muted-foreground/75 not-italic">Code · </span>{core.registration_control}
                     </p>
                   )}

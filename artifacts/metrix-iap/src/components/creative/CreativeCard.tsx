@@ -19,6 +19,7 @@ import { useMemo, useState, useCallback, useRef } from "react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { ImageOff, Maximize2, Upload, AlertTriangle } from "lucide-react";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
+import { motion } from "framer-motion";
 import { CreativeExpandDialog } from "./CreativeExpandDialog";
 import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 
@@ -95,12 +96,12 @@ function PlaceholderVisual({ code, format, className }: { code: string; format?:
       >
         {code}
       </span>
-      <span className="flex items-center gap-1 text-[8px] font-mono uppercase tracking-widest text-foreground/55">
+      <span className="flex items-center gap-1 text-micro uppercase text-foreground/55">
         <ImageOff className="w-3.5 h-3.5" />
         No asset
       </span>
       {format && (
-        <span className="absolute top-1.5 right-1.5 text-[8px] font-mono uppercase tracking-wide text-foreground/55 border border-foreground/10 px-1 py-0.5 rounded leading-none">
+        <span className="absolute top-1.5 right-1.5 text-micro uppercase text-foreground/55 border border-foreground/10 px-1 py-0.5 rounded leading-none">
           {format}
         </span>
       )}
@@ -183,7 +184,7 @@ export function VariableTagChips({ codes, max }: { codes: string[]; max?: number
           key={c + i}
           title={c}
           className={cn(
-            "text-[9px] font-medium border px-1.5 py-0.5 rounded leading-none",
+            "text-caption font-medium border px-1.5 py-0.5 rounded leading-none",
             PREFIX_COLORS[getVariablePrefix(c)]
           )}
         >
@@ -191,7 +192,7 @@ export function VariableTagChips({ codes, max }: { codes: string[]; max?: number
         </span>
       ))}
       {hidden > 0 && (
-        <span className="text-[8px] font-mono text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none">
+        <span className="text-caption text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none">
           +{hidden}
         </span>
       )}
@@ -210,7 +211,7 @@ function StatStrip({ stats }: { stats: CreativeCardStats }) {
     <div className="grid grid-cols-2 gap-px bg-border/30 rounded-md overflow-hidden border border-border/30">
       {items.map((it) => (
         <div key={it.label} className="bg-surface-table px-2 py-1.5 text-center">
-          <div className="text-[7px] font-mono uppercase tracking-wider text-muted-foreground/75 truncate">{it.label}</div>
+          <div className="text-micro uppercase text-muted-foreground/75 truncate">{it.label}</div>
           <div className="text-label font-semibold text-foreground/90 tabular-nums mt-0.5">{it.value}</div>
         </div>
       ))}
@@ -294,10 +295,30 @@ export function CreativeCard({
       >
         {/* Visual area — pointer-events-none so root div click fires reliably */}
         <div className="relative aspect-[4/5] w-full overflow-hidden border-b border-foreground/[0.06]">
-          {/* Asset or placeholder (pointer-events-none so clicks bubble to root) */}
-          <div className="absolute inset-0 transition-transform duration-500 will-change-transform group-hover:scale-[1.04] pointer-events-none">
-            <CreativeVisual data={data} />
-          </div>
+          {/*
+           * SHARED-LAYOUT PARTICIPANT.
+           *
+           * This div and the expand dialog's media pane carry the same
+           * `layoutId`, so opening the dialog INTERPOLATES this rectangle
+           * into that one: the creative travels and grows instead of the
+           * tile vanishing and a modal fading in somewhere else. On a wall
+           * of tiles that removes a re-find on every single expand.
+           *
+           * It stays mounted while the dialog is open — the close animation
+           * needs a destination rectangle, and unmounting leaves it with
+           * none, so the panel would pop out of existence instead of
+           * shrinking back to its tile.
+           *
+           * The 1.04 hover lift sits on an INNER element on purpose: put it
+           * on the layout participant and the hover transform overwrites the
+           * layout transform mid-flight.
+           */}
+          <motion.div layoutId={`creative-media-${data.conceptCode}`} className="absolute inset-0">
+            {/* Asset or placeholder (pointer-events-none so clicks bubble to root) */}
+            <div className="absolute inset-0 transition-transform duration-500 will-change-transform group-hover:scale-[1.04] pointer-events-none">
+              <CreativeVisual data={data} />
+            </div>
+          </motion.div>
 
           {/* Unmapped → "Map creative" pill — pointer-events-auto, stopPropagation */}
           {unmapped && (
@@ -308,7 +329,7 @@ export function CreativeCard({
                 onUploadCreatives?.();
               }}
               title="Map this creative to an IAP library entry"
-              className="pressable absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-status-warning/20 border border-status-warning/35 text-status-warning text-[8px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm hover:bg-status-warning/30 transition-colors"
+              className="pressable absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-status-warning/20 border border-status-warning/35 text-status-warning text-micro-num font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm hover:bg-status-warning/30 transition-colors"
             >
               <span className="w-1 h-1 rounded-full bg-status-warning shrink-0" />
               Map creative
@@ -335,7 +356,7 @@ export function CreativeCard({
               type="button"
               onClick={(e) => { e.stopPropagation(); openDialog(); }}
               title="Expand creative"
-              className="pressable flex items-center gap-1 text-[9px] font-medium text-foreground/80 hover:text-foreground transition-colors"
+              className="pressable flex items-center gap-1 text-caption font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               <Maximize2 className="w-3.5 h-3.5" />
               Expand
@@ -346,7 +367,7 @@ export function CreativeCard({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onUploadCreative(data.conceptCode); }}
                   title={data.assetUrl ? "Replace creative" : "Upload creative"}
-                  className="pressable flex items-center gap-1 text-[9px] font-medium text-foreground/70 hover:text-foreground transition-colors"
+                  className="pressable flex items-center gap-1 text-caption font-medium text-foreground/70 hover:text-foreground transition-colors"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   {data.assetUrl ? "Replace" : "Upload"}
@@ -363,16 +384,16 @@ export function CreativeCard({
         <div className="p-2.5 space-y-1.5 flex-1 flex flex-col pointer-events-none">
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-mono text-muted-foreground/75">{data.conceptCode}</span>
+              <span className="text-caption text-muted-foreground/75">{data.conceptCode}</span>
               {data.stage && (
-                <span className="text-[8px] font-mono uppercase text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none">
+                <span className="text-micro uppercase text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none">
                   {data.stage}
                 </span>
               )}
               {qaFlagged && (
                 <span
                   title={`QA mapping: ${data.qaMappingStatus}`}
-                  className="flex items-center gap-0.5 text-[8px] font-semibold uppercase text-status-warning border border-status-warning/30 bg-status-warning/10 px-1 py-0.5 rounded leading-none"
+                  className="flex items-center gap-0.5 text-micro font-semibold uppercase text-status-warning border border-status-warning/30 bg-status-warning/10 px-1 py-0.5 rounded leading-none"
                 >
                   <AlertTriangle className="w-2.5 h-2.5" />
                   QA

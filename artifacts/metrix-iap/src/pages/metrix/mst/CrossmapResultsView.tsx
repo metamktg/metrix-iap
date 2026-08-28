@@ -213,7 +213,7 @@ export function CrossmapResultsView({
                  rank sort decides their order among delivered cells. */}
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-1.5">
-                  <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75")}>
+                  <span className={cn(TYPE.label, " uppercase tracking-widest text-muted-foreground/75")}>
                     Crossmap
                   </span>
                   <SectionInfoIcon tip="Every planned matrix cell joined to its observed performance rows by cell_id. Delivered cells rank by the active sort metric; cells with no performance rows yet always sort last." />
@@ -334,7 +334,7 @@ function CrossmapRows({
               onClick={() => onSelectCell(cell)}
               className="cursor-pointer"
             >
-              <Td><span className="font-mono text-caption text-muted-foreground/75">{cell.cell_id}</span></Td>
+              <Td><span className=" text-caption text-muted-foreground/75">{cell.cell_id}</span></Td>
               <Td>
                 <div className="font-medium text-foreground/75">{readableVariables(cell.concept_code)}</div>
                 {cell.plain_text.headline && <div className="text-label text-muted-foreground/75 mt-0.5">{cell.plain_text.headline}</div>}
@@ -361,7 +361,7 @@ function CrossmapRows({
               onClick={() => onSelectCell(cell)}
               className="cursor-pointer"
             >
-              <Td>{i === 0 ? <span className="font-mono text-caption text-foreground/85">{cell.cell_id}</span> : null}</Td>
+              <Td>{i === 0 ? <span className=" text-caption text-foreground/85">{cell.cell_id}</span> : null}</Td>
               <Td>
                 {i === 0 && (
                   <>

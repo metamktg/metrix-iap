@@ -10,7 +10,7 @@
 // the library refreshes automatically.
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { TYPE } from "../typography";
+import { TYPE, HEADING } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { Images, Dna, RefreshCw, AlertTriangle, PlayCircle, TrendingUp, TrendingDown, Sliders } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -67,7 +67,9 @@ import {
 import {
   CreativeFilterPanel, DEFAULT_FILTER_STATE, applyCreativeFilters, sortValueForCell,
   type CreativeFilterState,
+  describeCreativeFilters,
 } from "@/components/creative/CreativeFilterPanel";
+import { FilterDisclosure } from "@/components/widgets/FilterDisclosure";
 
 const SECTION = "Analysis · 03";
 
@@ -406,7 +408,7 @@ export function IapLibraryView() {
                   {/* Funnel stage badge + section info */}
                   <div className="flex items-center gap-1.5">
                     {funnelConfig && (
-                      <span className="text-micro font-mono font-semibold uppercase tracking-widest text-interactive/70 border border-primary/25 bg-primary/[0.06] px-2 py-0.5 rounded">
+                      <span className="text-micro font-semibold uppercase tracking-widest text-interactive/70 border border-primary/25 bg-primary/[0.06] px-2 py-0.5 rounded">
                         {funnelConfig.badge}
                       </span>
                     )}
@@ -585,14 +587,24 @@ export function IapLibraryView() {
 
                       return (
                         <div className="space-y-4">
-                          {/* ── Creative filter panel (same as flat grid) ── */}
-                          <CreativeFilterPanel
-                            filters={creativeFilters}
-                            onChange={(f) => { setCreativeFilters(f); setPage(1); }}
-                            conceptOptions={conceptOptionNames}
-                            shownCount={filteredDeduped.length}
-                            totalCount={totalBeforeFilter}
-                          />
+                          {/* Collapsed by default — most sessions never touch it, and
+                              it sat between the reader and the grid on every visit. The
+                              ACTIVE filters stay on screen as chips whether it is open
+                              or shut: a hidden filter would make this grid claim the
+                              account has fewer creatives than it does. */}
+                          <FilterDisclosure
+                            activeSummary={describeCreativeFilters(creativeFilters)}
+                            resultNote={`${filteredDeduped.length} of ${totalBeforeFilter} cells`}
+                            onClear={() => { setCreativeFilters(DEFAULT_FILTER_STATE); setPage(1); }}
+                          >
+                            <CreativeFilterPanel
+                              filters={creativeFilters}
+                              onChange={(f) => { setCreativeFilters(f); setPage(1); }}
+                              conceptOptions={conceptOptionNames}
+                              shownCount={filteredDeduped.length}
+                              totalCount={totalBeforeFilter}
+                            />
+                          </FilterDisclosure>
 
                           {filteredConceptGroups.length === 0 ? (
                             <PendingState
@@ -652,14 +664,19 @@ export function IapLibraryView() {
 
                       return (
                         <div className="space-y-4">
-                          {/* ── Creative filter panel ── */}
-                          <CreativeFilterPanel
-                            filters={creativeFilters}
-                            onChange={(f) => { setCreativeFilters(f); setPage(1); }}
-                            conceptOptions={conceptOptionNames}
-                            shownCount={totalCells}
-                            totalCount={totalBeforeFilter}
-                          />
+                          <FilterDisclosure
+                            activeSummary={describeCreativeFilters(creativeFilters)}
+                            resultNote={`${totalCells} of ${totalBeforeFilter} cells`}
+                            onClear={() => { setCreativeFilters(DEFAULT_FILTER_STATE); setPage(1); }}
+                          >
+                            <CreativeFilterPanel
+                              filters={creativeFilters}
+                              onChange={(f) => { setCreativeFilters(f); setPage(1); }}
+                              conceptOptions={conceptOptionNames}
+                              shownCount={totalCells}
+                              totalCount={totalBeforeFilter}
+                            />
+                          </FilterDisclosure>
 
                           {totalCells === 0 && (
                             <PendingState
@@ -702,7 +719,7 @@ export function IapLibraryView() {
                                         <button
                                           onClick={() => { close(); setDetail(row); }}
                                           data-testid={`button-full-detail-${row.cell_id}`}
-                                          className="pressable inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
+                                          className="pressable inline-flex items-center gap-1.5 text-title font-bold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                         >
                                           Full detail →
                                         </button>
@@ -769,7 +786,7 @@ export function IapLibraryView() {
                           {/* ── Creative assets without performance data ── */}
                           {creativeOnlyCellIds.length > 0 && (
                             <div className="space-y-3 pt-2 border-t border-border/15">
-                              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
+                              <p className="text-label uppercase tracking-widest text-muted-foreground/75">
                                 Creative assets — no performance data yet ({creativeOnlyCellIds.length})
                               </p>
                               <div className="grid grid-cols-dashboard-5-xl gap-3">
@@ -811,7 +828,7 @@ export function IapLibraryView() {
                       if (adLevelAds.length === 0) return null;
                       return (
                         <div className="space-y-3 pt-2 border-t border-border/15" data-testid="section-ad-level-tiles">
-                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
+                          <p className="text-label uppercase tracking-widest text-muted-foreground/75">
                             Ads without creative cells ({adLevelAds.length})
                           </p>
                           <div className="grid grid-cols-dashboard-5-xl gap-3">
@@ -897,8 +914,8 @@ export function IapLibraryView() {
                     return (
                       <div className="space-y-4">
                         <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
-                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">Text assets</p>
-                          <h3 className="text-title font-semibold text-foreground mb-1">Meta ad copy, read against the same result</h3>
+                          <p className="text-label uppercase tracking-widest text-muted-foreground/75 mb-1">Text assets</p>
+                          <h3 className="text-title font-bold text-foreground mb-1">Meta ad copy, read against the same result</h3>
                           <p className="text-caption text-muted-foreground/75 leading-relaxed">
                             Primary text for every cell in scope, so a copy pattern can be judged next to what it actually cost.
                           </p>
@@ -918,7 +935,7 @@ export function IapLibraryView() {
                                 className="rounded-xl border border-border/40 bg-foreground/[0.02] hover:border-primary/30 hover:bg-foreground/[0.04] active:bg-foreground/[0.06] transition-colors p-3.5 text-left flex flex-col gap-2.5 focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="text-label font-mono text-interactive/80">{row.cell_id}</span>
+                                  <span className="text-label text-interactive/80">{row.cell_id}</span>
                                   <span className={cn("text-micro font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border shrink-0", tier.cls)}>
                                     {tier.label}
                                   </span>
@@ -948,7 +965,7 @@ export function IapLibraryView() {
                 {tab === "top" && (
                   <div className="space-y-5">
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Top checkout cells</h3>
+                      <h3 className={cn(HEADING.h5, "mb-2")}>Top checkout cells</h3>
                       {topCells.length ? (
                         <div className="grid grid-cols-dashboard-5-xl gap-3">
                           {uniqueCellRows(topCells).map((row) => (
@@ -972,7 +989,7 @@ export function IapLibraryView() {
                                 <button
                                   onClick={() => { close(); setDetail(row); }}
                                   data-testid={`button-full-detail-top-${row.cell_id}`}
-                                  className="pressable inline-flex items-center gap-1.5 text-title font-semibold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
+                                  className="pressable inline-flex items-center gap-1.5 text-title font-bold text-foreground bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                                 >
                                   Full detail →
                                 </button>
@@ -985,7 +1002,7 @@ export function IapLibraryView() {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Top checkout variables</h3>
+                      <h3 className={cn(HEADING.h5, "mb-2")}>Top checkout variables</h3>
                       {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />}
                     </div>
                   </div>
@@ -999,7 +1016,7 @@ export function IapLibraryView() {
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
                           <Dna className="w-3.5 h-3.5 text-interactive/70" />
-                          <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75">
+                          <h3 className={cn(HEADING.h5)}>
                             DNA families in selection
                           </h3>
                         </div>
@@ -1017,21 +1034,21 @@ export function IapLibraryView() {
                             >
                               <div className="flex items-center justify-between gap-2 mb-3">
                                 <span className="text-sm font-bold text-foreground">{familyLabel(f.family)}</span>
-                                <span className="text-label font-mono text-muted-foreground/75 border border-border/30 rounded px-1 py-0.5 leading-none">
+                                <span className="text-label text-muted-foreground/75 border border-border/30 rounded px-1 py-0.5 leading-none">
                                   {f.variableCount} variable{f.variableCount === 1 ? "" : "s"}
                                 </span>
                               </div>
                               <div className="flex items-center gap-3 tabular-nums">
                                 <div>
-                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">Spend</div>
+                                  <div className="text-micro uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">Spend</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtUSD(f.spend, 0)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">Results</div>
+                                  <div className="text-micro uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">Results</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtNum(f.results)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">CPA</div>
+                                  <div className="text-micro uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">CPA</div>
                                   <div className="text-caption font-semibold text-foreground/80">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
                                 </div>
                               </div>
@@ -1136,7 +1153,7 @@ export function IapLibraryView() {
                       ];
                       return stats.map((s) => (
                         <div key={s.label}>
-                          <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/75 leading-none mb-1">{s.label}</div>
+                          <div className="text-label uppercase tracking-wider text-muted-foreground/75 leading-none mb-1">{s.label}</div>
                           <div className="text-caption font-semibold tabular-nums text-foreground/90">{s.value}</div>
                         </div>
                       ));
@@ -1173,7 +1190,7 @@ export function IapLibraryView() {
                   )}
                   {detail.legacy_library_match && (
                     <DrawerField label="Legacy library match">
-                      <span className="font-mono text-label text-muted-foreground/75">{detail.legacy_library_match}</span>
+                      <span className=" text-label text-muted-foreground/75">{detail.legacy_library_match}</span>
                     </DrawerField>
                   )}
                   <DrawerField label="Creative">

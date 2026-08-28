@@ -190,13 +190,13 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
     if (rows.length === 0) return null;
     return (
       <div className="space-y-1">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">{label}</p>
+        <p className="text-label uppercase tracking-widest text-muted-foreground/75">{label}</p>
         <div className="rounded-lg border border-border/40 overflow-hidden">
           {[...rows].sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]).map((r, i) => (
             <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-foreground/[0.01]">
               <div className="min-w-0">
                 <div className="text-caption font-medium text-foreground truncate">{r.Placement}</div>
-                <div className="text-label font-mono text-muted-foreground/75 mt-0.5">
+                <div className="text-label text-muted-foreground/75 mt-0.5">
                   {fmtNum(r.Impressions)} impr · {fmtNum(r["Link clicks"] ?? 0)} clicks
                   {r.CPA != null && ` · CPA ${fmtUSD(r.CPA)}`}
                 </div>
@@ -216,7 +216,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
     <Dialog open={placement != null} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-xl bg-surface-deep border-border/50 max-h-[82vh] overflow-y-auto">
         <DialogHeader className="text-left space-y-1">
-          <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest">
+          <div className="text-label text-muted-foreground/75 uppercase tracking-widest">
             Placement detail
           </div>
           <DialogTitle className={DIALOG.title}>{placement}</DialogTitle>
@@ -232,7 +232,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
           <div className="grid grid-cols-dashboard-4-sm gap-2">
             {tiles.map(({ label, value, delta }) => (
               <div key={label} className="mx-kpi-tile px-3 py-2.5">
-                <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">{label}</div>
+                <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-0.5">{label}</div>
                 <div className="text-stat metric-num leading-none">{value}</div>
                 {delta && (
                   <div className={cn("text-label mt-1 leading-none", delta.good ? "text-accent" : "text-status-warning/80")}>
@@ -251,41 +251,78 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
   );
 }
 
-// ─── Conversion sections (unchanged) ──────────────────────────────────
+// ─── Conversion sections ──────────────────────────────────────────────
+//
+// WHY THE CAVEAT IS DERIVED AND NOT WRITTEN
+// These three sections used to carry the same hand-written sentence —
+// "delivery spend not applicable for this tracking basis" — pasted three
+// times. That sentence is TRUE ONLY OF THE CONVERSION BASIS, and the basis
+// it describes was sitting unread in `cts.tracking_basis` the whole time.
+//
+// The type says the field is the literal "conversion", but the type is an
+// assertion about a JSON document assembled server-side, not a runtime
+// guarantee. The day the assembler emits a second basis, hardcoded prose
+// prints a false disclaimer over rows where spend IS attributable — a
+// caveat that lies is worse than no caveat, because a reader who sees one
+// stops looking for the other. So the copy is looked up FROM the basis, and
+// a basis this code has never seen gets a caveat that names it and claims
+// nothing about it.
+
+/** Per-basis copy. A basis absent from this table gets the honest fallback. */
+const TRACKING_BASIS_COPY: Record<string, { attribution: string; caveat: string }> = {
+  conversion: {
+    attribution: "the converting",
+    caveat:
+      "Conversion-attributed rows — spend and impressions are not attributable under this tracking basis, so no CPA or CTR exists here by design.",
+  },
+};
+
+function basisCopy(basis: string): { attribution: string; caveat: string } {
+  return (
+    TRACKING_BASIS_COPY[basis] ?? {
+      attribution: "the recorded",
+      // Names the basis, asserts nothing about what it does or does not
+      // support. An unknown basis is a gap in this table, and it should read
+      // as one rather than borrowing the conversion basis's disclaimer.
+      caveat: `Rows attributed on the "${basis}" tracking basis. Metrix has no description for this basis yet — read the metrics below against the source export, not against delivery-basis figures elsewhere in this view.`,
+    }
+  );
+}
 
 function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) {
   const windowLabel =
     cts.window_start && cts.window_end ? `Export window ${cts.window_start} → ${cts.window_end}.` : undefined;
+  const { attribution, caveat } = basisCopy(cts.tracking_basis);
   return (
     <>
-      <CaveatNote text={cts.note} />
+      <CaveatNote text={cts.note} source={`Tracking basis · ${cts.tracking_basis}`} />
       {cts.placements.length > 0 && (
         <SectionCard
           title="Conversion-attributed placements"
-          desc={`Funnel actions attributed to the converting placement. ${windowLabel ?? ""}`.trim()}
+          desc={`Funnel actions attributed to ${attribution} placement. ${windowLabel ?? ""}`.trim()}
           right={<SectionInfoIcon tip="Shows funnel actions (clicks, add-to-carts, purchases) attributed to each placement by the conversion tracking export." />}
         >
-          <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
+          <CaveatNote text={caveat} />
           <ConversionFunnelTable rows={cts.placements.map((r) => ({ ...r, label: r.placement }))} labelHeader="Placement" />
         </SectionCard>
       )}
       {cts.platforms.length > 0 && (
         <SectionCard
           title="Conversion-attributed platforms"
-          desc="Funnel actions · by converting platform"
+          desc={`Funnel actions · by ${attribution} platform`}
           right={<SectionInfoIcon tip="Breaks down conversion-tracked funnel actions by the platform where the conversion was recorded." />}
         >
-          <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
+          <CaveatNote text={caveat} />
           <ConversionFunnelTable rows={cts.platforms.map((r) => ({ ...r, label: r.platform }))} labelHeader="Platform" />
         </SectionCard>
       )}
       {cts.devices.length > 0 && (
         <SectionCard
           title="Conversion-attributed devices"
-          desc="Funnel actions · by converting device"
+          desc={`Funnel actions · by ${attribution} device`}
           right={<SectionInfoIcon tip="Shows which device types are completing conversions so you can align creative formats to the highest-converting device." />}
         >
-          <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
+          <CaveatNote text={caveat} />
           <ConversionFunnelTable rows={cts.devices.map((r) => ({ ...r, label: r.device }))} labelHeader="Device" />
         </SectionCard>
       )}

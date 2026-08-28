@@ -77,8 +77,24 @@ export function AppShell({ children }: AppShellProps) {
           <div
             className={`fixed inset-y-0 left-0 z-50 flex transition-transform duration-200
                         ease-[cubic-bezier(0.2,0,0,1)] ${navOpen ? "translate-x-0" : "-translate-x-full"}`}
-            // Inert rather than unmounted: unmounting would reset the
-            // sidebar's own expanded-section state every time it closes.
+            // INERT, not just aria-hidden.
+            //
+            // aria-hidden hides a subtree from assistive tech and does
+            // nothing about focus. The closed drawer is still in the layout
+            // — translated off-screen, not unmounted — so every link and
+            // button inside it stayed in the tab order. On a phone, tabbing
+            // off the menu button walked into ~20 invisible nav controls
+            // before reaching the page. Focusing an aria-hidden element is
+            // also a spec violation that Chrome logs.
+            //
+            // `inert` is the attribute that actually means it: no focus, no
+            // pointer events, no AT, no find-in-page. React 19 supports it
+            // as a boolean prop.
+            //
+            // Still not unmounted, for the original reason: unmounting would
+            // reset the sidebar's own expanded-section state every time the
+            // drawer closes.
+            inert={!navOpen}
             aria-hidden={!navOpen}
           >
             <Sidebar />

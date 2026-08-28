@@ -64,7 +64,7 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
         <RunStatusIcon status={run.status} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-title font-semibold text-foreground capitalize">{run.status}</span>
+            <span className="text-title font-bold text-foreground capitalize">{run.status}</span>
             {isLatest && (
               <span className="text-micro font-semibold uppercase tracking-wider text-status-success/70 bg-status-success/[0.08] border border-status-success/15 rounded px-1.5 py-0.5 leading-none">
                 Latest

@@ -90,6 +90,7 @@ const SecurityView = lazyView(() => import("@/pages/metrix/settings/SecurityView
 const IntegrationsView = lazyView(() => import("@/pages/metrix/settings/IntegrationsView"), "IntegrationsView");
 const UsersPermissionsView = lazyView(() => import("@/pages/metrix/settings/UsersPermissionsView"), "UsersPermissionsView");
 const BillingView = lazyView(() => import("@/pages/metrix/settings/BillingView"), "BillingView");
+const DataProvenanceView = lazyView(() => import("@/pages/metrix/settings/DataProvenanceView"), "DataProvenanceView");
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
@@ -195,6 +196,7 @@ export function Router() {
       <Route path="/app/settings/security"      component={SecurityView} />
       <Route path="/app/settings/integrations"  component={IntegrationsView} />
       <Route path="/app/settings/billing"       component={BillingView} />
+      <Route path="/app/settings/provenance"    component={DataProvenanceView} />
 
       {/* ── Legacy route redirects (old IA → new IA, zero dead ends) ──── */}
       <Route path="/app/analysis/overview" component={AnalysisOverview} />

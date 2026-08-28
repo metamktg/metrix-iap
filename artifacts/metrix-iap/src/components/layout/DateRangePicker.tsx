@@ -69,7 +69,7 @@ export function DateRangePicker() {
           <span className="hidden md:inline tabular-nums">{rangeLabel}</span>
           <span className="md:hidden">{PRESET_LABELS[preset]}</span>
           {compare && (
-            <span className="text-[8px] font-semibold uppercase tracking-wide text-interactive border border-primary/25 bg-primary/10 px-1 py-0.5 rounded leading-none">
+            <span className="text-micro font-semibold uppercase text-interactive border border-primary/25 bg-primary/10 px-1 py-0.5 rounded leading-none">
               vs prev
             </span>
           )}
@@ -78,7 +78,7 @@ export function DateRangePicker() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[280px] p-0 bg-surface-overlay border-border/50">
         <div className="px-3 py-2.5 border-b border-border/40">
-          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Date range</p>
+          <p className="text-label uppercase tracking-widest text-muted-foreground/75">Date range</p>
           <p className="text-label text-muted-foreground/75 mt-1">
             Data available {formatIsoRange(bounds)}
           </p>
@@ -106,7 +106,7 @@ export function DateRangePicker() {
         </div>
 
         <div className="px-3 py-2.5 border-t border-border/40 space-y-2">
-          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Custom range</p>
+          <p className="text-label uppercase tracking-widest text-muted-foreground/75">Custom range</p>
           <div className="flex items-center gap-1.5">
             <input
               type="date"
@@ -141,7 +141,7 @@ export function DateRangePicker() {
           <div className="flex-1 min-w-0">
             <p className="text-caption font-medium text-foreground/80">Compare to previous period</p>
             {compare && compareRange && (
-              <p className="text-[9px] text-muted-foreground/75 tabular-nums mt-0.5">
+              <p className="text-micro-num text-muted-foreground/75 tabular-nums mt-0.5">
                 vs {formatIsoRange(compareRange)}
               </p>
             )}

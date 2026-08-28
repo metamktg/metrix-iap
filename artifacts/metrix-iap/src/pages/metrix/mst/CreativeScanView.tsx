@@ -172,16 +172,16 @@ export function CreativeScanView() {
                       <div key={g.label}>
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{g.label}</h3>
-                          <span className={cn(TYPE.label, "font-mono text-muted-foreground/75")}>{g.items.length}</span>
+                          <span className={cn(TYPE.label, " text-muted-foreground/75")}>{g.items.length}</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {g.items.map((it) => (
                             <div key={it.code} className="flex items-center gap-2 rounded-lg border border-border/40 bg-foreground/[0.02] px-2.5 py-1.5">
                               <div>
                                 <div className={cn(TYPE.body, "font-medium text-foreground/90 leading-tight")}>{readableVariables(it.code)}</div>
-                                <div className={cn(TYPE.label, "font-mono text-muted-foreground/75 mt-0.5")}>{it.code}</div>
+                                <div className={cn(TYPE.label, " text-muted-foreground/75 mt-0.5")}>{it.code}</div>
                               </div>
-                              <span className={cn(TYPE.label, "font-mono text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5 leading-none")}>×{it.count}</span>
+                              <span className={cn(TYPE.label, " text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5 leading-none")}>×{it.count}</span>
                             </div>
                           ))}
                         </div>

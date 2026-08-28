@@ -4,17 +4,19 @@
 // the readability pass, and both are the kind of thing that decays one
 // well-meaning tweak at a time — so they are checked rather than trusted.
 //
-//   1. THE BODY FLOOR IS 14px. Any role the reader takes in as a sentence
-//      sits at 14px or above. Body prose used to be 12px beneath a 14px
-//      card title: a 2px step, which asks the eye to work out the
-//      hierarchy instead of handing it over.
+//   1. THE BODY FLOOR IS 15px, AND NOTHING A READER TAKES IN SITS UNDER
+//      13px. The ramp was lifted to those two numbers: caption (the
+//      smallest role carrying real information — counts, units, dates) is
+//      13px, and body prose is 15px. Everything below 13 is chrome that is
+//      LOOKED AT rather than read: an uppercase eyebrow at 12px and a badge
+//      numeral at 11px, both separated by case and colour rather than by
+//      being small enough to squint at.
 //
 //   2. A HEADER IS >= 3px ABOVE THE CONTENT IT LABELS.
-//        H1 32 -> H2 21 -> H3 17 -> body 14
-//      The rule stops at 12px, because 3px steps below that run out of
-//      readable sizes almost immediately (12 -> 9 -> 6). Everything under
-//      the floor is CHROME — uppercase micro-labels separated by case,
-//      weight, tracking and colour. Nothing carrying a sentence lives there.
+//        H1 34 -> H2 28 -> H3 24 -> H4 21 -> H5 18 -> body 15
+//      Under 13px the rule stops applying, because 3px steps run out of
+//      readable sizes almost immediately. Nothing carrying a sentence lives
+//      there.
 //
 // Sizes are read from index.css rather than duplicated here, so this
 // cannot pass while disagreeing with what actually ships.
@@ -99,7 +101,7 @@ if (fs.existsSync(DS_TEMPLATE)) {
   }
 }
 
-export const BODY_FLOOR = 14;
+export const BODY_FLOOR = 15;
 const MIN_HEADER_STEP = 3;
 
 // ── Rule 1: the body floor ────────────────────────────────────────────
@@ -119,6 +121,90 @@ for (const role of ["text-micro", "text-label", "text-caption"]) {
   const size = scale.get(role);
   if (size != null && size >= BODY_FLOOR) {
     problems.push(`${role} is ${size}px — at or above the body floor. Chrome labels must stay below it; if this role now carries sentences it should be TYPE.body instead.`);
+  }
+}
+
+// ── The page-header pair, which is not a text-* utility ───────────────
+//
+// .mx-section-header__title and __sub are the H1 and the page's one-line
+// explanation of itself, and neither is a text-* class — so every rule above
+// reads straight past them. Two things had already drifted there unnoticed:
+// the subtitle sat at 14px after the floor moved to 15, and the title had no
+// font-family at all, rendering the biggest heading in the product in the
+// body face while every .font-h* class set the heading face.
+//
+// A missing declaration has no class name to grep for, so the second one was
+// only ever going to be caught by rendering the page. This asserts both, so
+// neither can drift again.
+const subM = /\.mx-section-header__sub\s*\{[^}]*font-size:\s*([0-9.]+)rem/.exec(src);
+const pageSub = subM ? Math.round(Number(subM[1]) * REM) : null;
+if (pageSub == null) {
+  problems.push("could not read .mx-section-header__sub's font-size from index.css");
+} else if (pageSub < BODY_FLOOR) {
+  problems.push(
+    `.mx-section-header__sub is ${pageSub}px — below the ${BODY_FLOOR}px body floor. ` +
+      `It is the page's own sentence about itself; it sits at the floor or above.`,
+  );
+}
+
+// Match the rule that actually SIZES the title, not the shared
+// `text-wrap: balance` selector group the class also appears in — that one
+// matched first and made this fail against a file that already had the fix.
+const titleBlock = [...src.matchAll(/\.mx-section-header__title\s*\{([^}]*)\}/g)]
+  .map((m) => m[1]!)
+  .find((body) => /font-size:/.test(body));
+if (titleBlock == null) {
+  problems.push("could not find the .mx-section-header__title sizing rule in index.css");
+} else if (!/font-family:/.test(titleBlock)) {
+  problems.push(
+    ".mx-section-header__title declares no font-family, so the H1 of every route " +
+      "inherits the body face while every .font-h* class sets the heading face. " +
+      "It is the largest heading in the product and the one most obviously wrong.",
+  );
+}
+
+// ── The dense-table pair, which is also not a text-* utility ──────────
+//
+// .nc-table td is the single most-read text in the product: every analysis
+// table's data cells. It has now been left behind by the ramp TWICE — first
+// sitting at 13px, then at 14px after the body floor moved to 15px — and
+// BOTH times its comment claimed it matched .text-body. Nothing failed
+// either time, because this file read only `.text-*` utilities and
+// .nc-table is a component class.
+//
+// Two orphan sizes in the most-used table CSS in the app, and two comments
+// asserting a role they no longer had. That is the exact failure mode this
+// gate exists to prevent, sitting in its blind spot.
+//
+// So both are asserted against the ramp BY NAME: the cell must equal
+// .text-body, the header must equal .text-label. Not "at least the floor" —
+// equal — because the whole point of a ramp is that every size on screen is
+// a step somebody chose, not a number somebody typed.
+const TABLE_RULES: Array<[string, string, string]> = [
+  [
+    "\\.nc-table td",
+    "text-body",
+    "the data cells of every analysis table — the most-read text in the product",
+  ],
+  [
+    "\\.nc-table th",
+    "text-label",
+    "the column headers of every analysis table",
+  ],
+];
+
+for (const [selector, role, what] of TABLE_RULES) {
+  const m = new RegExp(`${selector}\\s*\\{[^}]*font-size:\\s*([0-9.]+)rem`).exec(src);
+  const px = m ? Math.round(Number(m[1]) * REM) : null;
+  const expected = need(role);
+  if (px == null) {
+    problems.push(`could not read ${selector.replace(/\\/g, "")}'s font-size from index.css`);
+  } else if (expected != null && px !== expected) {
+    problems.push(
+      `${selector.replace(/\\/g, "")} is ${px}px but .${role} is ${expected}px — ` +
+        `an orphan size on ${what}. Match the role or change the role; do not ` +
+        `leave a third size that belongs to neither.`,
+    );
   }
 }
 

@@ -44,7 +44,7 @@ export function BreakdownControl<Row extends Record<string, unknown>>({
 
   return (
     <div className="flex items-center gap-2 flex-wrap min-w-0">
-      <span className="inline-flex items-center gap-1.5 text-micro font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0">
+      <span className="inline-flex items-center gap-1.5 text-micro uppercase text-muted-foreground/75 shrink-0">
         <Filter className="w-3.5 h-3.5" aria-hidden="true" />
         {label}
       </span>
@@ -79,7 +79,7 @@ export function BreakdownControl<Row extends Record<string, unknown>>({
             >
               <span>{o.label}</span>
               {/* The count is the reason, made visible without a hover. */}
-              <span className="text-micro font-mono tabular-nums text-muted-foreground/75">
+              <span className="text-micro tabular-nums text-muted-foreground/75">
                 {o.distinct}
               </span>
               {disabled && <span className="sr-only"> — unavailable: {o.reason}</span>}

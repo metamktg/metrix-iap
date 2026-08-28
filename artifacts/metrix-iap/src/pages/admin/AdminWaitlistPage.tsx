@@ -132,7 +132,7 @@ function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
           Email could not be sent — share this temporary password with {outcome.email} manually:
         </div>
         <div className="flex items-center gap-2">
-          <code className="text-body font-mono text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded">
+          <code className="text-body text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded">
             {outcome.temp_password}
           </code>
           <CopyButton value={outcome.temp_password} />
@@ -309,7 +309,7 @@ function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email:
       </div>
       {outcome.value && (
         <div className="flex items-center gap-2 min-w-0">
-          <code className="text-caption font-mono text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded truncate">
+          <code className="text-caption text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded truncate">
             {outcome.value}
           </code>
           <CopyButton value={outcome.value} />
@@ -636,7 +636,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
                   Email could not be sent — share this temporary password with {outcome.email} manually:
                 </div>
                 <div className="flex items-center gap-2">
-                  <code className="text-body font-mono text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded">
+                  <code className="text-body text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded">
                     {outcome.temp_password}
                   </code>
                   <CopyButton value={outcome.temp_password} />
@@ -871,7 +871,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
                   user.ad_account_ids.map((id) => (
                     <span
                       key={id}
-                      className="text-[9px] px-1.5 py-0.5 rounded bg-foreground/[0.06] border border-border/30 text-muted-foreground/75 font-mono leading-none"
+                      className="text-[9px] px-1.5 py-0.5 rounded bg-foreground/[0.06] border border-border/30 text-muted-foreground/75 leading-none"
                     >
                       {id}
                     </span>
@@ -1088,7 +1088,7 @@ function UsersSection() {
       )}
       <div className="flex items-center justify-between">
         <div className="flex items-baseline gap-3">
-          <h2 className="text-title font-semibold text-foreground">Provisioned users</h2>
+          <h2 className="text-title font-bold text-foreground">Provisioned users</h2>
           <span className="text-caption text-muted-foreground">
             {users.data?.total ?? 0} total
           </span>
@@ -1151,7 +1151,7 @@ function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChange
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-title font-semibold text-foreground truncate">
+          <div className="text-title font-bold text-foreground truncate">
             {entry.full_name}
           </div>
           <div className="text-caption text-muted-foreground truncate">{entry.email}</div>
@@ -1408,7 +1408,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
 
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-title font-semibold text-foreground">Access requests</h2>
+            <h2 className="text-title font-bold text-foreground">Access requests</h2>
             <span className="text-caption text-muted-foreground">
               {requestEntries.length} total · {pendingRequests} pending
             </span>
@@ -1440,7 +1440,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
 
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-title font-semibold text-foreground">Waitlist emails</h2>
+            <h2 className="text-title font-bold text-foreground">Waitlist emails</h2>
             <span className="text-caption text-muted-foreground">
               {waitlist.data?.total ?? 0} total · {pendingWaitlist} pending
             </span>

@@ -87,7 +87,7 @@ function NavBadge({ count, badgeKey }: { count: number | null; badgeKey: string 
   if (count == null || count <= 0) return null;
   return (
     <span className={cn(
-      "ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded border leading-none tabular-nums shrink-0",
+      "ml-auto text-micro-num font-bold px-1.5 py-0.5 rounded border leading-none tabular-nums shrink-0",
       BADGE_STYLE[badgeKey] ?? "bg-muted text-muted-foreground border-border/40"
     )}>
       {count}
@@ -181,7 +181,7 @@ function ChildRow({
         }}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-caption transition-[color,background-color,border-color,box-shadow,opacity,transform]",
           active
             ? "font-semibold text-foreground bg-primary/8"
             : "text-foreground/65 hover:text-foreground hover:bg-primary/10"
@@ -189,7 +189,7 @@ function ChildRow({
       >
         <span className="flex-1 truncate leading-tight">{child.label}</span>
         {child.placeholder && !active && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
+          <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
             Soon
           </span>
         )}
@@ -256,7 +256,7 @@ function CollapsedItem({
           )}
           <NavIcon name={section.icon} className="w-4 h-4" />
           {badgeCount != null && badgeCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[7px] font-bold text-foreground flex items-center justify-center leading-none">
+            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-micro-num font-bold text-foreground flex items-center justify-center leading-none">
               {badgeCount > 9 ? "9+" : badgeCount}
             </span>
           )}
@@ -314,7 +314,7 @@ function ExpandableSection({
         onClick={handleClick}
         title={landing ? `Click to expand · double-click to open ${section.label}` : undefined}
         className={cn(
-          "pressable-lg w-full flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-[color,background-color,border-color,box-shadow,opacity,transform] select-none",
+          "pressable-lg w-full flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-lg text-body transition-[color,background-color,border-color,box-shadow,opacity,transform] select-none",
           landingActive
             ? "mx-nav-active font-medium"
             : sectionActive
@@ -390,7 +390,7 @@ function LeafSection({
         onClick={(e) => navigate(to, e)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[13px] tracking-[-0.005em] transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-body transition-[color,background-color,border-color,box-shadow,opacity,transform]",
           active
             ? "mx-nav-active font-medium"
             : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10",
@@ -406,7 +406,7 @@ function LeafSection({
         />
         <span className="flex-1">{section.label}</span>
         {section.placeholder && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
+          <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
             Soon
           </span>
         )}
@@ -551,7 +551,7 @@ export function Sidebar() {
                 alt="Metrix"
                 className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
               />
-              <span className="text-[16px] font-semibold tracking-tight text-foreground/90">metrix</span>
+              <span className="text-[16px] font-semibold tracking-tight text-foreground/90">metrix</span> {/* disclosure-ok: wordmark, sized to the 20px mark beside it, not a type role */}
               {/* Collapse button — right-aligned in logo row */}
               <button
                 onClick={toggleCollapse}
@@ -617,16 +617,69 @@ export function Sidebar() {
       </nav>
 
       {/* Slide-to-collapse handle — drag left to shrink toward the rail
-          (never past EXPANDED_WIDTH going the other way); click to toggle. */}
+          (never past EXPANDED_WIDTH going the other way); click to toggle.
+
+          It announced itself as a resize handle and then did nothing for a
+          keyboard: role="separator" with an aria-label, an aria-orientation,
+          and a single onPointerDown. A control that tells a screen-reader
+          user it resizes the sidebar and then cannot be reached by Tab is
+          worse than an unlabelled one — it promises an affordance that is
+          not there.
+
+          This is the WAI-ARIA window-splitter pattern, which is what a
+          focusable separator actually is: it takes a tab stop, carries the
+          value it is separating on (aria-valuenow/min/max), and moves on the
+          arrow keys. Home and End jump to the two committed states, which is
+          what people want 95% of the time; Enter and Space toggle, matching
+          a plain click. */}
       <div
         role="separator"
+        tabIndex={0}
         aria-orientation="vertical"
-        aria-label="Sidebar resize handle"
+        aria-label="Sidebar width"
+        aria-valuemin={COLLAPSED_WIDTH}
+        aria-valuemax={EXPANDED_WIDTH}
+        aria-valuenow={dragWidth ?? (collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH)}
+        aria-valuetext={collapsed ? "Collapsed" : "Expanded"}
         title={collapsed ? "Click to expand" : "Drag to collapse"}
         onPointerDown={onHandlePointerDown}
+        onKeyDown={(e) => {
+          const KEY_STEP = 24;
+          const current = dragWidth ?? (collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH);
+          const commit = (w: number) => {
+            const shouldCollapse = w < COLLAPSE_SNAP_WIDTH;
+            setDragWidth(null);
+            if (shouldCollapse !== collapsed) {
+              setCollapsed(shouldCollapse);
+              saveCollapsed(shouldCollapse);
+            }
+          };
+          if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+            e.preventDefault();
+            const next = Math.min(
+              EXPANDED_WIDTH,
+              Math.max(COLLAPSED_WIDTH, current + (e.key === "ArrowRight" ? KEY_STEP : -KEY_STEP)),
+            );
+            // Live width while stepping, so the rail tracks the keys the way
+            // it tracks a pointer; committed on release of the extremes.
+            setDragWidth(next);
+            if (next === EXPANDED_WIDTH || next === COLLAPSED_WIDTH) commit(next);
+          } else if (e.key === "Home") {
+            e.preventDefault();
+            commit(COLLAPSED_WIDTH);
+          } else if (e.key === "End") {
+            e.preventDefault();
+            commit(EXPANDED_WIDTH);
+          } else if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setDragWidth(null);
+            toggleCollapse();
+          }
+        }}
         className={cn(
           "absolute top-0 right-0 h-full w-1.5 -mr-0.5 z-10 cursor-col-resize group/handle",
-          "flex items-center justify-center"
+          "flex items-center justify-center",
+          "focus-visible:outline-none focus-visible:bg-primary/40",
         )}
       >
         <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />

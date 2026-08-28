@@ -29,6 +29,40 @@
 //   text-display 24px · text-section 26px · text-stat 30px
 //   text-bignum  32px  H1 page title / hero stat
 //
+// ─── RULE 3: WEIGHT IS MONOTONIC WITH RANK ───────────────────────────
+//
+// Weight is the property that says "this outranks that", so it must never
+// contradict the size ramp. Measured across the app before this rule
+// existed, it contradicted it almost everywhere:
+//
+//   331 weight-emphasized elements in the 10-12px CHROME band
+//    55 weight-emphasized elements at 17px and above
+//
+// Six to one — and worse than the ratio, the direction. Fifteen 11px
+// uppercase eyebrows were font-BOLD while forty 17px card titles had been
+// downgraded to font-semibold or font-medium at their call sites. An
+// eyebrow was literally outranking the title it labelled. That is what
+// "everything competes for attention" means mechanically: not too much
+// text, but weight applied against the hierarchy instead of with it.
+//
+// The ceiling, by band:
+//
+//   10-12px CHROME LABEL   semibold max, NEVER bold. These already separate
+//                          by case, tracking and colour — three signals —
+//                          so weight is the fourth on an element that is
+//                          subordinate by definition.
+//   10-12px CHROME VALUE   bold is fine. A count badge or a set of initials
+//                          is DATA, not a label, and it sits inside a
+//                          coloured pill that already scopes it. The gate
+//                          tells them apart by the `uppercase` class: a
+//                          label is uppercased by CSS, a value is not.
+//   14px BODY              regular, medium for genuine emphasis.
+//   17px+ TITLE            bold, and never downgraded at a call site. The
+//                          role already carries it; re-stating a lighter
+//                          weight beside it is how the inversion happened.
+//
+// Enforced by scripts/src/check-optical-authority.ts.
+//
 // Choosing between caption and body: ask whether the text is a SENTENCE.
 // "12 segments · updated Aug 3" is metadata and takes caption. "Clusters
 // need results, so this grouping is empty" is a sentence and takes body,
@@ -50,14 +84,21 @@
 // Full literal class strings so the Tailwind JIT scanner picks them up.
 
 export const TYPE = {
-  /** Micro mono index/eyebrow labels below TYPE.label (e.g. "Spend"/"Results"
-   *  strip labels, run-scope captions) — the formal home for the 9px
-   *  font-mono uppercase pattern that was previously hand-copied as raw
-   *  text-micro classes across several files. */
-  microLabel: "text-micro font-mono font-semibold uppercase text-muted-foreground/75",
+  /** The smallest chrome: badge numerals and index labels below TYPE.label
+   *  ("Spend"/"Results" strip labels, run-scope captions).
+   *
+   *  It used to be MONO. The mono face is gone from the product entirely —
+   *  305 usages across 78 files — because it was doing two jobs and only
+   *  one of them was real. The real job was aligning figures so columns of
+   *  numbers do not jitter, and `tabular-nums` does that properly: it is a
+   *  font-variant that makes the SANS's own digits equal-width, with none
+   *  of the terminal aesthetic. The other job was decorative, and a
+   *  measurement product that dresses its numbers as console output reads
+   *  as a debug view rather than an instrument. */
+  microLabel: "text-micro font-medium uppercase text-muted-foreground/75",
   /** Uppercase eyebrow/section labels above titles or field groups.
    *  text-data-caption = DS muted-foreground @85% — intentional secondary, solid step. */
-  label: "text-label font-semibold uppercase text-data-caption",
+  label: "text-label font-medium uppercase text-data-caption",
   /** Card / list-item titles. Bold is the one enforced title weight
    *  platform-wide — see HEADING below for the full H1-H6 scale
    *  (SectionCard's own title is HEADING.h2, not this role). */
@@ -105,12 +146,12 @@ export const HEADING = {
    *  first real content heading on the page besides the H1 itself. */
   h2: "text-h2 font-h2 font-bold text-foreground leading-tight text-balance",
   /** A card or panel title inside a section. */
-  h3: "text-h3 font-h3 font-semibold text-foreground leading-snug text-balance",
+  h3: "text-h3 font-h3 font-bold text-foreground leading-snug text-balance",
   /** A group header inside a card — above a cluster of rows or fields. */
-  h5: "text-h5 font-h5 font-semibold text-foreground leading-snug text-balance",
+  h5: "text-h5 font-h5 font-bold text-foreground leading-snug text-balance",
   /** The smallest heading: an eyebrow above a field group. Chrome band,
    *  separated by case and tracking rather than size. */
-  h6: "text-label font-h6 font-bold uppercase text-data-caption",
+  h6: "text-label font-h6 font-semibold uppercase text-data-caption",
   /** Data-table / dense-list column-group headers.
    *
    *  Moved from text-caption (12px) to text-label (11px) because it used to
@@ -120,7 +161,7 @@ export const HEADING = {
    *  labels a column, it does not title a section, so it separates by case,
    *  weight and tracking above 14px cells rather than by size. Not a
    *  heading tag — <th> already carries the right semantics. */
-  h4: "text-label font-h4 font-bold uppercase text-data-caption",
+  h4: "text-label font-h4 font-semibold uppercase text-data-caption",
 } as const;
 
 // ─── Dialog title ────────────────────────────────────────────────────

@@ -15,12 +15,13 @@
 // widths remain normal table layout (no absolute positioning hacks).
 
 import { useMemo, useRef, useState } from "react";
-import { divergingFill, magnitudeFill } from "@/components/charts/chartTokens";
-import { MagnitudeLegend, VerdictLegend } from "@/components/charts/chartChrome";
+import { barScale, type BarScale } from "@/lib/bar-scale";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel, PILL_ACTIVE, PILL_INACTIVE } from "../shared";
+import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel, SectionInfoIcon, PILL_ACTIVE, PILL_INACTIVE } from "../shared";
+import { TYPE } from "../typography";
 import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
@@ -79,6 +80,20 @@ export function useColumnSort<Row>(rows: Row[], accessors: ColumnAccessors<Row>)
   return { sorted, sort, toggle, reset };
 }
 
+/**
+ * The one thing about these bars a reader cannot work out by looking.
+ *
+ * Longer-is-more needs no explanation. An INVERTED column does: without this,
+ * the cheapest CPA in the account wears the longest bar and reads as the
+ * worst performer. It sits on the column header — where the question forms —
+ * rather than as a note above the table, which is prose on the first layer
+ * and the wrong place besides.
+ */
+const INVERTED_BAR_TIP =
+  "The bar under each CPA is INVERTED: lower is better, so the cheapest CPA draws " +
+  "the longest bar and the most expensive draws the shortest. Bars on the other " +
+  "columns read the usual way — longer is more. A cell with no bar was not measured.";
+
 export function SortableTh({
   children,
   right,
@@ -86,6 +101,7 @@ export function SortableTh({
   sort,
   onToggle,
   onReset,
+  info,
 }: {
   children: React.ReactNode;
   right?: boolean;
@@ -93,6 +109,12 @@ export function SortableTh({
   sort: { key: string; dir: SortDir } | null;
   onToggle: (key: string) => void;
   onReset?: () => void;
+  /**
+   * Explanation for a column whose reading is not self-evident. A SIBLING of
+   * the sort control, never inside it: an info button nested in the sort
+   * button would be invalid HTML and the browser would drop one of them.
+   */
+  info?: string;
 }) {
   const active = sort?.key === sortKey;
   const ariaSort: React.AriaAttributes["aria-sort"] = active
@@ -112,7 +134,7 @@ export function SortableTh({
           title={active ? (sort!.dir === "asc" ? "Sorted ascending — click for descending" : "Sorted descending — click for ascending") : "Click to sort"}
           aria-label={`Sort by ${String(children)}${active ? (sort!.dir === "asc" ? ", currently ascending" : ", currently descending") : ""}`}
           className={cn(
-            "pressable inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors",
+            "pressable inline-flex items-center gap-0.5 text-label uppercase tracking-widest font-semibold transition-colors",
             active ? "text-foreground" : "text-muted-foreground/90 hover:text-foreground",
             right && "flex-row-reverse"
           )}
@@ -125,6 +147,7 @@ export function SortableTh({
               <ArrowDown className="w-3.5 h-3.5 text-interactive/70" />
             ))}
         </button>
+        {info && <SectionInfoIcon tip={info} />}
         {active && onReset && (
           <button
             onClick={(e) => { e.stopPropagation(); onReset(); }}
@@ -148,22 +171,73 @@ export function Td({ children, right, className, style }: { children: React.Reac
 }
 
 /** Binary spend/CPA-intensity overlay toggle, shared by CellTable and VariableTable. */
-export function HeatmapToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+// ─── Magnitude cell — the racing-form row ─────────────────────────────
+//
+// WHAT CHANGED AND WHY
+// These tables encoded magnitude as a BACKGROUND TINT, behind a toggle that
+// defaulted to off. Two problems with that, and the toggle is the smaller one.
+//
+// Colour intensity is close to the weakest way there is to encode a
+// quantity. Asked to rank five tinted cells, people get the order wrong;
+// asked to rank five bars, they get it right without trying. Length is the
+// strongest encoding available and it costs the same pixels — the bar sits
+// in the cell the tint used to fill.
+//
+// And it should not be a mode. A table you have to switch into a readable
+// state is a table most people read in the unreadable one. Bars are on.
+//
+// The number stays right-aligned where numerals belong; the bar grows from
+// the left, so every row shares a start edge and lengths are comparable at a
+// glance. One accent colour for every bar: length already carries the
+// meaning, and a second encoding on top of it is the competing-element
+// problem this whole pass exists to remove.
+//
+// All three honesty rules come from lib/bar-scale: an unmeasured value draws
+// NO bar (not a zero-length one), a measured zero keeps a hairline stub, and
+// a cost metric inverts so the best CPA has the longest bar rather than the
+// worst.
+
+export function MagnitudeCell({
+  value,
+  display,
+  scale,
+  label = "value",
+}: {
+  /** The raw number. Null means not measured — no bar is drawn. */
+  value: number | null | undefined;
+  /** The formatted string the reader actually sees. */
+  display: React.ReactNode;
+  scale: BarScale;
+  /** Names the measure for the meter widget beneath the figure. */
+  label?: string;
+}) {
+  const share = scale.share(value);
   return (
-    <div className="flex items-center justify-end">
-      <button
-        onClick={onToggle}
-        aria-pressed={on}
-        className={cn(
-          "pressable h-6 px-2.5 rounded-md border text-label font-mono uppercase tracking-widest transition-colors",
-          on ? PILL_ACTIVE : PILL_INACTIVE
-        )}
-      >
-        Heatmap
-      </button>
-    </div>
+    <td className="relative text-right align-top tabular-nums text-foreground/85 pb-3.5">
+      {share !== null && (
+        // Composes the ProgressMeter widget instead of hand-rolling a span.
+        // That was the first version's mistake: a bare div with a Tailwind
+        // background has no TRACK, no shared radius, no shared transition
+        // and no relationship to the meter used everywhere else in the
+        // product. Without a track you see the value but not what full
+        // would be, which is half the point of a bar.
+        //
+        // aria-hidden sits on the WRAPPER, which suppresses the meter's own
+        // role and label. In a table the cell's text is already the
+        // accessible value; role="meter" on all 166 bars would announce
+        // every figure twice. The widget is right and its ARIA is right for
+        // a standalone bar — it is redundant HERE, and that is a property
+        // of the context, not of the widget.
+        <span aria-hidden className="absolute bottom-1 left-3 right-3 pointer-events-none">
+          <ProgressMeter value={share} total={1} label={label} size="sm" />
+        </span>
+      )}
+      <span className="relative">{display}</span>
+    </td>
   );
 }
+
+
 
 // ─── Virtual table body ───────────────────────────────────────────────
 // Used when row count exceeds VIRTUAL_THRESHOLD. Uses the padding-row
@@ -235,7 +309,7 @@ export function VariableCodeChips({ row }: { row: CellPerformanceRow }) {
   return (
     <div className="flex flex-wrap gap-1 mt-1">
       {codes.map((c) => (
-        <span key={c} className="text-label font-mono text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
+        <span key={c} className="text-label text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
           {c}
         </span>
       ))}
@@ -256,25 +330,16 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
   const { sorted, sort, toggle, reset } = useColumnSort(rows, CELL_COLUMNS);
   const scrollRef = useRef<HTMLDivElement>(null);
   const useVirtual = sorted.length > VIRTUAL_THRESHOLD;
-  const [heatmapOn, setHeatmapOn] = useState(false);
 
-  // Heatmap precomputation
-  const maxSpend = useMemo(
-    () => (heatmapOn ? Math.max(...rows.map((r) => r["Amount spent (USD)"]), 0.0001) : 0),
-    [rows, heatmapOn]
-  );
-  const { minCpa: cellMinCpa, maxCpa: cellMaxCpa } = useMemo(() => {
-    if (!heatmapOn) return { minCpa: 0, maxCpa: 0 };
-    const cpas = rows.map((r) => r.CPA_result).filter((v): v is number => v != null);
-    return { minCpa: cpas.length ? Math.min(...cpas) : 0, maxCpa: cpas.length ? Math.max(...cpas) : 0 };
-  }, [rows, heatmapOn]);
+  // Scales are built from the WHOLE row set, not the visible page. With
+  // virtualisation on, scaling to what happens to be on screen would make a
+  // bar change length as you scroll — the same value drawn two ways.
+  const spendScale = useMemo(() => barScale(rows.map((r) => r["Amount spent (USD)"])), [rows]);
+  const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
+  // invert: on CPA the best value is the smallest, so it gets the longest bar.
+  const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA_result), true), [rows]);
 
   const renderRow = (r: CellPerformanceRow, _i: number) => {
-    const spendIntensity = heatmapOn && maxSpend > 0 ? r["Amount spent (USD)"] / maxSpend : 0;
-    const cpaIntensity =
-      heatmapOn && r.CPA_result != null && cellMaxCpa > cellMinCpa
-        ? 1 - (r.CPA_result - cellMinCpa) / (cellMaxCpa - cellMinCpa)
-        : 0;
     return (
       <tr
         key={r.cell_id + r["Result type"]}
@@ -287,17 +352,18 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
       >
         <Td>
           <div className="font-medium text-foreground">{r.book2_concept_name}</div>
-          <div className="text-label font-mono text-muted-foreground/75 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
+          <div className="text-label text-muted-foreground/75 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
           <VariableCodeChips row={r} />
         </Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <Td right style={spendIntensity > 0 ? { background: magnitudeFill(spendIntensity, 0) } : undefined}>
-          {fmtUSD(r["Amount spent (USD)"])}
-        </Td>
-        <Td right>{fmtNum(r.Results)}</Td>
-        <Td right style={cpaIntensity > 0 ? { background: divergingFill(cpaIntensity) } : undefined}>
-          {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
-        </Td>
+        <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
+        <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
+        <MagnitudeCell
+          value={r.CPA_result}
+          display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+          scale={cpaScale}
+          label="CPA"
+        />
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
         <Td right>{fmtPct(r.Result_per_link_click_pct)}</Td>
       </tr>
@@ -311,7 +377,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
         <Th>Result type</Th>
         <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
         <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
-        <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+        <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset} info={INVERTED_BAR_TIP}>CPA</SortableTh>
         <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle} onReset={reset}>Link CTR</SortableTh>
         <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle} onReset={reset}>Result/click</SortableTh>
       </tr>
@@ -320,13 +386,6 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
 
   return (
     <div className="space-y-1.5">
-      <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
-      {heatmapOn && (
-        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/75 font-mono">
-          <MagnitudeLegend label="Spend" colorIndex={0} />
-          <VerdictLegend lowLabel="Above goal" highLabel="At goal" />
-        </div>
-      )}
       <TableShellInner scrollRef={scrollRef}>
         {thead}
         {useVirtual
@@ -359,25 +418,12 @@ export function VariableTable({
   const { sorted, sort, toggle, reset } = useColumnSort(rows, VARIABLE_COLUMNS);
   const scrollRef = useRef<HTMLDivElement>(null);
   const useVirtual = sorted.length > VIRTUAL_THRESHOLD;
-  const [heatmapOn, setHeatmapOn] = useState(false);
 
-  // Heatmap precomputation
-  const maxSpend = useMemo(
-    () => (heatmapOn ? Math.max(...rows.map((r) => r["Amount spent (USD)"]), 0.0001) : 0),
-    [rows, heatmapOn]
-  );
-  const { minCpa: varMinCpa, maxCpa: varMaxCpa } = useMemo(() => {
-    if (!heatmapOn) return { minCpa: 0, maxCpa: 0 };
-    const cpas = rows.map((r) => r.CPA_result).filter((v): v is number => v != null);
-    return { minCpa: cpas.length ? Math.min(...cpas) : 0, maxCpa: cpas.length ? Math.max(...cpas) : 0 };
-  }, [rows, heatmapOn]);
+  const spendScale = useMemo(() => barScale(rows.map((r) => r["Amount spent (USD)"])), [rows]);
+  const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
+  const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA_result), true), [rows]);
 
   const renderRow = (r: VariablePerformanceRow, i: number) => {
-    const spendIntensity = heatmapOn && maxSpend > 0 ? r["Amount spent (USD)"] / maxSpend : 0;
-    const cpaIntensity =
-      heatmapOn && r.CPA_result != null && varMaxCpa > varMinCpa
-        ? 1 - (r.CPA_result - varMinCpa) / (varMaxCpa - varMinCpa)
-        : 0;
     return (
       <tr
         key={r.variable_id + r["Result type"] + i}
@@ -391,28 +437,19 @@ export function VariableTable({
       >
         <Td>
           <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
-          <div className="text-label font-mono text-muted-foreground/75 mt-0.5">{r.variable_id}</div>
+          <div className="text-label text-muted-foreground/75 mt-0.5">{r.variable_id}</div>
         </Td>
         <Td className="capitalize">{r.variable_family}</Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <Td right style={spendIntensity > 0 ? { background: magnitudeFill(spendIntensity, 0) } : undefined}>
-          <div className="flex flex-col gap-0.5">
-            <span>{fmtUSD(r["Amount spent (USD)"])}</span>
-            {heatmapOn && maxSpend > 0 && (
-              <div className="h-[3px] rounded-full bg-foreground/[0.06] overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${spendIntensity * 100}%`, background: "hsl(var(--chart-1) / 0.65)" }}
-                />
-              </div>
-            )}
-          </div>
-        </Td>
+        <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
         <Td right>{fmtNum(r.unique_ads)}</Td>
-        <Td right>{fmtNum(r.Results)}</Td>
-        <Td right style={cpaIntensity > 0 ? { background: divergingFill(cpaIntensity) } : undefined}>
-          {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
-        </Td>
+        <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
+        <MagnitudeCell
+          value={r.CPA_result}
+          display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+          scale={cpaScale}
+          label="CPA"
+        />
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
       </tr>
     );
@@ -427,7 +464,7 @@ export function VariableTable({
         <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
         <SortableTh right sortKey="ads" sort={sort} onToggle={toggle} onReset={reset}>Ads</SortableTh>
         <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
-        <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+        <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset} info={INVERTED_BAR_TIP}>CPA</SortableTh>
         <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle} onReset={reset}>Link CTR</SortableTh>
       </tr>
     </thead>
@@ -435,13 +472,6 @@ export function VariableTable({
 
   return (
     <div className="space-y-1.5">
-      <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
-      {heatmapOn && (
-        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/75 font-mono">
-          <MagnitudeLegend label="Spend" colorIndex={0} />
-          <VerdictLegend lowLabel="Above goal" highLabel="At goal" />
-        </div>
-      )}
       <TableShellInner scrollRef={scrollRef}>
         {thead}
         {useVirtual
@@ -466,25 +496,18 @@ const DEMOGRAPHIC_COLUMNS: ColumnAccessors<DemographicRow> = {
 export function DemographicTable({
   rows,
   onSegmentClick,
-  heatmap = false,
 }: {
   rows: DemographicRow[];
   /** When provided, rows become clickable and open the segment drill-down. */
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
-  /** When true, tints the Result/click column by CVR intensity with a colour legend. */
-  heatmap?: boolean;
 }) {
   const { sorted, sort, toggle, reset } = useColumnSort(rows, DEMOGRAPHIC_COLUMNS);
-  const maxCvr = heatmap
-    ? Math.max(...rows.map((r) => r.Result_per_link_click_pct ?? 0), 0.0001)
-    : 0;
+  const spendScale = useMemo(() => barScale(rows.map((r) => r["Amount spent (USD)"])), [rows]);
+  const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
+  const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA_result), true), [rows]);
+  const cvrScale = useMemo(() => barScale(rows.map((r) => r.Result_per_link_click_pct)), [rows]);
   return (
     <div>
-      {heatmap && maxCvr > 0 && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-foreground/[0.01]">
-          <MagnitudeLegend label="Result / click" colorIndex={0} />
-        </div>
-      )}
       <TableShell>
         <thead className="sticky top-0 bg-surface-table z-10">
           <tr>
@@ -493,14 +516,12 @@ export function DemographicTable({
             <SortableTh sortKey="gender" sort={sort} onToggle={toggle} onReset={reset}>Gender</SortableTh>
             <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
             <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
-            <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+            <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset} info={INVERTED_BAR_TIP}>CPA</SortableTh>
             <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle} onReset={reset}>Result/click</SortableTh>
           </tr>
         </thead>
         <tbody>
           {sorted.map((r, i) => {
-            const cvr = r.Result_per_link_click_pct ?? 0;
-            const intensity = heatmap && maxCvr > 0 ? Math.min(cvr / maxCvr, 1) : 0;
             return (
               <tr
                 key={r.cell_id + r.Age + r.Gender + i}
@@ -512,18 +533,23 @@ export function DemographicTable({
                 aria-label={onSegmentClick ? `Open segment for ${r.Age}, ${r.Gender}` : undefined}
                 data-testid={onSegmentClick ? `row-demographic-${r.Age}-${r.Gender}-${i}` : undefined}
               >
-                <Td><span className="font-mono text-label text-muted-foreground/75">{r.cell_id}</span></Td>
+                <Td><span className=" text-label text-muted-foreground/75">{r.cell_id}</span></Td>
                 <Td>{r.Age}</Td>
                 <Td className="capitalize">{r.Gender}</Td>
-                <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
-                <Td right>{fmtNum(r.Results)}</Td>
-                <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
-                <Td
-                  right
-                  style={intensity > 0 ? { background: magnitudeFill(intensity, 0) } : undefined}
-                >
-                  {fmtPct(r.Result_per_link_click_pct)}
-                </Td>
+                <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
+                <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
+                <MagnitudeCell
+                  value={r.CPA_result}
+                  display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+                  scale={cpaScale}
+                  label="CPA"
+                />
+                <MagnitudeCell
+                  value={r.Result_per_link_click_pct}
+                  display={fmtPct(r.Result_per_link_click_pct)}
+                  scale={cvrScale}
+                  label="Result per click"
+                />
               </tr>
             );
           })}
@@ -543,6 +569,9 @@ const PLACEMENT_COLUMNS: ColumnAccessors<PlacementRow> = {
 
 export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
   const { sorted, sort, toggle, reset } = useColumnSort(rows, PLACEMENT_COLUMNS);
+  const spendScale = useMemo(() => barScale(rows.map((r) => r["Amount spent (USD)"])), [rows]);
+  const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
+  const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA), true), [rows]);
   return (
     <TableShell>
       <thead className="sticky top-0 bg-surface-table z-10">
@@ -551,7 +580,7 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
           <SortableTh sortKey="platform" sort={sort} onToggle={toggle} onReset={reset}>Platform</SortableTh>
           <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
           <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
-          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset} info={INVERTED_BAR_TIP}>CPA</SortableTh>
         </tr>
       </thead>
       <tbody>
@@ -559,9 +588,9 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
           <tr key={r.Placement + r.Platform + i}>
             <Td className="font-medium text-foreground">{r.Placement}</Td>
             <Td className="capitalize">{r.Platform}</Td>
-            <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
-            <Td right>{fmtNum(r.Results)}</Td>
-            <Td right>{r.CPA != null ? fmtUSD(r.CPA) : "—"}</Td>
+            <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
+            <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
+            <MagnitudeCell value={r.CPA} display={r.CPA != null ? fmtUSD(r.CPA) : "—"} scale={cpaScale} label="CPA" />
           </tr>
         ))}
       </tbody>
@@ -584,6 +613,14 @@ const FUNNEL_COLUMNS: ColumnAccessors<ConversionFunnelRow & { label: string }> =
  */
 export function ConversionFunnelTable({ rows, labelHeader }: { rows: (ConversionFunnelRow & { label: string })[]; labelHeader: string }) {
   const { sorted, sort, toggle, reset } = useColumnSort(rows, FUNNEL_COLUMNS);
+  // One scale per stage column. NOT one scale across all four: link clicks
+  // outnumber purchases by orders of magnitude, so a shared scale would draw
+  // every purchase count as an invisible sliver and hide the column that
+  // matters most.
+  const clickScale = useMemo(() => barScale(rows.map((r) => r.link_clicks)), [rows]);
+  const cartScale = useMemo(() => barScale(rows.map((r) => r.adds_to_cart)), [rows]);
+  const checkoutScale = useMemo(() => barScale(rows.map((r) => r.checkouts_initiated)), [rows]);
+  const purchaseScale = useMemo(() => barScale(rows.map((r) => r.purchases)), [rows]);
   return (
     <TableShell>
       <thead className="sticky top-0 bg-surface-table z-10">
@@ -600,11 +637,11 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
         {sorted.map((r, i) => (
           <tr key={r.label + i}>
             <Td className="font-medium text-foreground capitalize">{r.label}</Td>
-            <Td right>{r.link_clicks != null ? fmtNum(r.link_clicks) : "—"}</Td>
-            <Td right>{r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"}</Td>
-            <Td right>{r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"}</Td>
-            <Td right>{r.purchases != null ? fmtNum(r.purchases) : "—"}</Td>
-            <Td>{r.confidence ? <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/75">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
+            <MagnitudeCell value={r.link_clicks} display={r.link_clicks != null ? fmtNum(r.link_clicks) : "—"} scale={clickScale} label="Link clicks" />
+            <MagnitudeCell value={r.adds_to_cart} display={r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"} scale={cartScale} label="Adds to cart" />
+            <MagnitudeCell value={r.checkouts_initiated} display={r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"} scale={checkoutScale} label="Checkouts initiated" />
+            <MagnitudeCell value={r.purchases} display={r.purchases != null ? fmtNum(r.purchases) : "—"} scale={purchaseScale} label="Purchases" />
+            <Td>{r.confidence ? <span className="text-label uppercase tracking-wider text-muted-foreground/75">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
           </tr>
         ))}
       </tbody>

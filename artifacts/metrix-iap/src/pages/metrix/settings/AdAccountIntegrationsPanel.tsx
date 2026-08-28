@@ -64,7 +64,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
           <div className="text-label text-muted-foreground/75 w-40 shrink-0">Meta Ad Account ID</div>
           {account.meta_ad_account_id ? (
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-body font-mono text-foreground/85 truncate">
+              <span className="text-body text-foreground/85 truncate">
                 {account.meta_ad_account_id}
               </span>
               <button

@@ -144,7 +144,7 @@ export function VariableStack({
         })}
       </ul>
 
-      <p className="text-micro font-mono text-muted-foreground/75 mt-2">
+      <p className="text-micro text-muted-foreground/75 mt-2">
         <span className="tabular-nums">{filled}</span> of{" "}
         <span className="tabular-nums">{VARIABLE_FAMILIES.length}</span> families set
         {marginalLabel && (

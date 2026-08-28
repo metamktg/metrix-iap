@@ -47,6 +47,8 @@ import {
   rankBarPct, type RankMetric,
 } from "./rankSort";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { sumStrict } from "@/lib/strict-sum";
+import { FunnelChart } from "@/components/charts/FunnelChart";
 import {
   TrendingUp, Layers, Table2, Activity, ArrowDown, ArrowUp,
   ChevronsUpDown, Video, ArrowRight,
@@ -99,6 +101,15 @@ export interface FunnelStage {
   zone: "awareness" | "engagement" | "intent" | "conversion";
 }
 
+/** Zone display names. The zones group the funnel into labelled bands;
+ *  they are not a colour dimension — see FunnelWaterfall for why. */
+export const ZONE_LABEL: Record<FunnelStage["zone"], string> = {
+  awareness: "Awareness",
+  engagement: "Engagement",
+  intent: "Intent",
+  conversion: "Conversion",
+};
+
 export const ZONE_COLOR: Record<FunnelStage["zone"], { bar: string; text: string; bg: string; border: string }> = {
   awareness:  { bar: "bg-chart-1/70",   text: "text-interactive",   bg: "bg-chart-1/[0.06]",   border: "border-primary/25" },
   engagement: { bar: "bg-primary/70", text: "text-interactive", bg: "bg-primary/[0.06]", border: "border-primary/25" },
@@ -110,35 +121,58 @@ export const ZONE_COLOR: Record<FunnelStage["zone"], { bar: string; text: string
  *  "Buyer-intent funnel" card) can reuse the exact same stage math instead
  *  of re-deriving it. */
 export function buildFunnelStages(rows: DemographicRow[]): FunnelStage[] {
-  const totals = rows.reduce(
-    (acc, r) => {
-      acc.impressions += r.Impressions ?? 0;
-      acc.clicksAll   += r["Clicks (all)"] ?? 0;
-      acc.linkClicks  += r["Link clicks"] ?? 0;
-      acc.atc         += r.adds_to_cart ?? 0;
-      acc.checkout    += r.checkouts_initiated ?? 0;
-      acc.purchases   += r.purchases ?? 0;
-      return acc;
-    },
-    { impressions: 0, clicksAll: 0, linkClicks: 0, atc: 0, checkout: 0, purchases: 0 }
-  );
+  // A MEASURED ZERO IS NOT A GAP, and this used to erase the difference.
+  //
+  // The old shape was `acc.purchases += r.purchases ?? 0` followed by
+  // `value: s.v > 0 ? s.v : null`. Two coercions in opposite directions:
+  // every missing row counted as zero, and then a genuine total of zero was
+  // relabelled "not measured". The renderer below then dropped nulls
+  // entirely, so on an account with real traffic and no purchases the
+  // Purchase row VANISHED from the funnel.
+  //
+  // That is the most misleading thing this view could do. A reader sees a
+  // funnel that stops at Add to cart and concludes the data ends there —
+  // when what actually happened is that nobody bought. "Zero purchases" is
+  // not the absence of a finding, it IS the finding, and it is the one a
+  // buyer-intent funnel exists to surface.
+  //
+  // sumStrict is the platform's single aggregation-null policy (BUG-11): a
+  // sum is null unless EVERY contributing row carried the value, and it is
+  // null rather than 0 precisely because zero is meaningful in every metric
+  // that feeds this. Applied here it separates the two cases for the first
+  // time: no rows carry `purchases` -> null, the column exists and totals
+  // zero -> 0.
+  const totals = {
+    impressions: sumStrict(rows, (r) => r.Impressions),
+    clicksAll: sumStrict(rows, (r) => r["Clicks (all)"]),
+    linkClicks: sumStrict(rows, (r) => r["Link clicks"]),
+    atc: sumStrict(rows, (r) => r.adds_to_cart),
+    checkout: sumStrict(rows, (r) => r.checkouts_initiated),
+    purchases: sumStrict(rows, (r) => r.purchases),
+  };
 
-  const stages: { id: string; label: string; v: number; zone: FunnelStage["zone"] }[] = [
-    { id: "impressions", label: "Impressions",   v: totals.impressions, zone: "awareness"  },
-    { id: "clicks_all",  label: "Clicks (all)",  v: totals.clicksAll,   zone: "engagement" },
-    { id: "link_clicks", label: "Link clicks",   v: totals.linkClicks,  zone: "engagement" },
-    { id: "atc",         label: "Add to cart",   v: totals.atc,         zone: "intent"     },
-    { id: "checkout",    label: "Checkout",       v: totals.checkout,    zone: "intent"     },
-    { id: "purchases",   label: "Purchase",       v: totals.purchases,   zone: "conversion" },
+  const stages: { id: string; label: string; v: number | null; zone: FunnelStage["zone"] }[] = [
+    { id: "impressions", label: "Impressions",  v: totals.impressions, zone: "awareness"  },
+    { id: "clicks_all",  label: "Clicks (all)", v: totals.clicksAll,   zone: "engagement" },
+    { id: "link_clicks", label: "Link clicks",  v: totals.linkClicks,  zone: "engagement" },
+    { id: "atc",         label: "Add to cart",  v: totals.atc,         zone: "intent"     },
+    { id: "checkout",    label: "Checkout",     v: totals.checkout,    zone: "intent"     },
+    { id: "purchases",   label: "Purchase",     v: totals.purchases,   zone: "conversion" },
   ];
 
-  return stages.map((s, i) => ({
-    id: s.id,
-    label: s.label,
-    value: s.v > 0 ? s.v : null,
-    pctOfPrev: i === 0 ? null : pct(s.v, stages[i - 1].v),
-    zone: s.zone,
-  }));
+  return stages.map((s, i) => {
+    const prev = i === 0 ? null : stages[i - 1]!.v;
+    return {
+      id: s.id,
+      label: s.label,
+      value: s.v,
+      // A step share needs BOTH ends measured. Previously `pct` was handed
+      // coerced zeros, so a null previous stage produced a percentage
+      // derived from a number nobody measured.
+      pctOfPrev: s.v != null && prev != null && prev > 0 ? pct(s.v, prev) : null,
+      zone: s.zone,
+    };
+  });
 }
 
 // ─── breakdown types ──────────────────────────────────────────────────
@@ -296,46 +330,67 @@ const BREAKDOWN_METRICS: RankMetric<BreakdownRow>[] = [
 
 // ─── sub-components ───────────────────────────────────────────────────
 
+// ─── The funnel, drawn by the chart that already knows how ────────────
+//
+// This was a hand-rolled waterfall: one bar per stage, `if (!stage.value)
+// return null` at the top of the map, and a zone tint per stage. Three
+// things were wrong with it, and FunnelChart already solves all three.
+//
+//   1. IT DROPPED STAGES. `!stage.value` is true for null AND for zero, so
+//      a measured zero disappeared — see buildFunnelStages above for why
+//      that is the worst thing this view could do. FunnelChart draws a gap
+//      as a gap and a zero as a zero, and counts how many of each.
+//
+//   2. NO BASIS CHOICE. Bars were scaled against the largest stage, always.
+//      Against a 2.1M-impression top, every lower-funnel bar is a sliver —
+//      true, and unreadable. FunnelChart lets the reader measure against
+//      the previous stage instead, states which basis is active, and never
+//      changes the numbers inside the bars.
+//
+//   3. THREE HUES FOR ONE MEASURE. The zone tint painted awareness,
+//      intent and conversion bars in three different colours down a single
+//      funnel — one measure wearing a categorical scale, which is the thing
+//      the palette rules exist to prevent, and three competing colours in a
+//      column the eye should be able to read top to bottom in one pass.
+//
+// The ZONES are real and worth keeping — they are just not a colour
+// dimension. They now group the stages as labelled bands, so the reader
+// still sees where awareness ends and intent begins without three hues
+// arguing about it. ZONE_COLOR stays exported: other surfaces use its text
+// and border steps for zone chips, where a tint IS carrying a category.
+
 function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
-  const maxVal = Math.max(...stages.map((s) => s.value ?? 0), 1);
-  const hasLowerFunnel = stages.some((s) => (s.zone === "intent" || s.zone === "conversion") && s.value != null && s.value > 0);
+  const hasLowerFunnel = stages.some(
+    (s) => (s.zone === "intent" || s.zone === "conversion") && s.value != null && s.value > 0,
+  );
+
+  // Zone bands, in stage order, skipping any zone with no stages.
+  const bands = useMemo(() => {
+    const out: { zone: FunnelStage["zone"]; label: string; stages: FunnelStage[] }[] = [];
+    for (const stage of stages) {
+      const last = out[out.length - 1];
+      if (last && last.zone === stage.zone) last.stages.push(stage);
+      else out.push({ zone: stage.zone, label: ZONE_LABEL[stage.zone], stages: [stage] });
+    }
+    return out;
+  }, [stages]);
 
   return (
-    <div className="space-y-1.5">
-      {stages.map((stage, i) => {
-        if (!stage.value) return null;
-        const c = ZONE_COLOR[stage.zone];
-        const barW = Math.max((stage.value / maxVal) * 100, 1.5);
-        return (
-          <div key={stage.id} className={cn("rounded-lg border p-3", c.bg, c.border)}>
-            <div className="flex items-center gap-3 mb-1.5">
-              <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 w-28 shrink-0">
-                {stage.label}
-              </span>
-              <div className="flex-1 h-5 bg-foreground/[0.04] rounded overflow-hidden">
-                <div
-                  className={cn("h-full rounded transition-[color,background-color,border-color,box-shadow,opacity,transform]", c.bar)}
-                  style={{ width: `${barW}%` }}
-                />
-              </div>
-              <span className="text-title font-semibold text-foreground tabular-nums w-24 text-right shrink-0">
-                {fmtNum(stage.value)}
-              </span>
-            </div>
-            {stage.pctOfPrev != null && (
-              <div className="flex items-center gap-1 ml-28 pl-3">
-                <ArrowRight className="w-3 h-3 text-muted-foreground/75" />
-                <span className={cn("text-label font-medium", stage.pctOfPrev >= 20 ? "text-status-success/70" : stage.pctOfPrev >= 5 ? c.text : "text-status-danger/70")}>
-                  {stage.pctOfPrev.toFixed(1)}% of previous stage
-                </span>
-              </div>
-            )}
-          </div>
-        );
-      })}
+    <div className="space-y-4">
+      {bands.map((band) => (
+        <div key={band.zone}>
+          <div className={cn(TYPE.label, "mb-1.5", ZONE_COLOR[band.zone].text)}>{band.label}</div>
+          <FunnelChart
+            stages={band.stages.map((st) => ({ key: st.id, label: st.label, value: st.value }))}
+            unitLabel=""
+            emptyLabel={`No ${band.label.toLowerCase()} data in this window`}
+            defaultBasis="previous"
+          />
+        </div>
+      ))}
       {!hasLowerFunnel && (
         <div className="mt-2">
-          <CaveatNote text="Add-to-cart, checkout, and purchase data comes from the demographic export when the account is configured for ecommerce tracking. These fields appear once a matching export is staged and analyzed." />
+          <CaveatNote text="Add-to-cart, checkout, and purchase data comes from the demographic export when the account is configured for ecommerce conversion tracking. Stages with no measurement are shown as gaps rather than zeros." />
         </div>
       )}
     </div>

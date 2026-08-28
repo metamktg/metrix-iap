@@ -19,6 +19,9 @@
     "check:signal-weights-drift": "tsx ./src/check-signal-weights-drift.ts",
     "check:token-colors": "tsx ./src/check-token-colors.ts",
     "check:type-scale": "tsx ./src/check-type-scale.ts",
+    "check:optical-authority": "tsx ./src/check-optical-authority.ts",
+    "check:ui-inventory": "tsx ./src/check-ui-inventory.ts",
+    "check:field-coverage": "tsx ./src/check-field-coverage.ts",
     "check:communications-section-icons": "tsx ./src/check-communications-section-icons.ts",
     "check:generation-runs-migration": "tsx ./src/check-generation-runs-migration.ts",
     "check:db-credentials": "tsx ./src/check-db-credentials.ts",
@@ -49,7 +52,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "check:interaction": "tsx ./src/check-interaction.ts",
-    "check:locator-ambiguity": "tsx ./src/check-locator-ambiguity.ts"
+    "check:locator-ambiguity": "tsx ./src/check-locator-ambiguity.ts",
+    "check:ad-performance-views": "tsx ./src/check-ad-performance-views.ts",
+    "apply:ad-performance-views": "tsx ./src/apply-ad-performance-views.ts",
+    "smoke:metrix-iap-dom-validity": "tsx ./src/smoke-metrix-iap-dom-validity.ts",
+    "smoke:metrix-iap-shared-layout": "tsx ./src/smoke-metrix-iap-shared-layout.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",
