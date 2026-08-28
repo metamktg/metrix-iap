@@ -469,20 +469,32 @@
   }
 
   .mx-section-header__title {
-    font-size: 2.125rem;   /* 34px — matches text-bignum. 6px clear of the
-                               21px H2 below it, so the page title reads as
+    /* THE HEADING FACE. This was missing, and it is the biggest heading in
+       the product — the H1 of every route rendered in Figtree while every
+       .font-h* class set Outfit. The class predates the face system and
+       never joined it, and no static check could see the omission: a
+       missing declaration has no class name to grep for. Caught by
+       rendering the page and reading the computed style. */
+    font-family: Outfit, "Segoe UI", system-ui, sans-serif;
+    font-size: 2.125rem;   /* 34px — matches text-bignum, 6px clear of the
+                               28px H2 below it, so the page title reads as
                                the page's one anchor rather than competing
                                with the first card. */
     font-weight: 700;
     color: hsl(var(--text-primary));
-    letter-spacing: -0.02em;
-    line-height: 1.2;
+    letter-spacing: -0.022em;
+    line-height: 1.05;
   }
 
   .mx-section-header__sub {
     /* This is the page's one-line explanation of itself — a sentence, so
-       it sits at the body floor rather than in the chrome band. */
-    font-size: 0.875rem;   /* 14px — text-body */
+       it sits at the body floor rather than in the chrome band.
+
+       It was still 14px after the ramp lift moved the floor to 15px, so it
+       had drifted BELOW the floor its own comment claims it sits on.
+       check:type-scale reads .text-* utilities and this is not one, which
+       is why nothing caught it; the gate now asserts this pair explicitly. */
+    font-size: 0.9375rem;  /* 15px — the body floor */
     color: hsl(var(--text-muted));
     line-height: 1.6;
   }

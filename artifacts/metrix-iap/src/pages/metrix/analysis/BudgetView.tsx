@@ -118,6 +118,7 @@ function EventRowsList({ rows }: { rows: EventRow[] }) {
       view={view}
       onViewChange={setView}
       views={["compare", "table"]}
+      info="Breaks down spend, results, and CPA by each tracked result event so you can see which conversion goals are running efficiently."
       scope={[
         { label: "Metric", value: metricLabel, active: metric !== "spend" },
         { label: "Events", value: String(rows.length) },

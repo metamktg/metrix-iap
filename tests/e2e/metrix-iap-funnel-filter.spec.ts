@@ -139,6 +139,29 @@ async function gotoLibrary(page: Page): Promise<void> {
     .waitFor({ state: "visible", timeout: 30_000 });
 }
 
+/**
+ * Open the creative filter panel.
+ *
+ * The filter row used to be permanent furniture at the top of the grid. It is
+ * now collapsed behind a "Filters" trigger, because most sessions never touch
+ * it and it sat between the reader and the data on every visit — so reaching
+ * any filter control is one deliberate click, and these tests take that click
+ * exactly as a user would.
+ *
+ * Idempotent: if the panel is already open (a later test in the same page, a
+ * view that arrives pre-filtered) this leaves it open rather than toggling it
+ * shut, which would be a very confusing way to fail.
+ */
+async function openFilters(page: Page): Promise<void> {
+  const trigger = page.getByRole("button", { name: /^Filters/ });
+  await trigger.waitFor({ state: "visible", timeout: 30_000 });
+  if ((await trigger.getAttribute("aria-expanded")) !== "true") {
+    await trigger.click();
+  }
+  // The panel springs open; wait for a control inside it rather than a timeout.
+  await page.getByLabel("Minimum spend filter").waitFor({ state: "visible", timeout: 15_000 });
+}
+
 // ── main ───────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -259,6 +282,7 @@ async function main() {
 
           // Type a very high spend floor so most (or all) cells get filtered out.
           // Use 999999 as the ceiling — guaranteed to filter in a test fixture.
+          await openFilters(page);
           const spendInput = page.getByLabel("Minimum spend filter");
           await spendInput.fill("999999");
           // Debounce is 400 ms; wait a bit longer for the filter to apply.
@@ -338,6 +362,7 @@ async function main() {
             timeout: 20_000,
           });
 
+          await openFilters(page);
           const totalCells = await page.locator("[data-concept-cell]").count();
           assert(
             totalCells > 0,
@@ -396,6 +421,9 @@ async function main() {
           // a clean slate avoids any top25→bottom25 state-transition quirk
           // where the React filter state briefly resets between two tier clicks.
           await gotoLibrary(page);
+          // Re-navigating resets the page, which closes the filter panel with
+          // it — so it has to be reopened before reaching for a tier pill.
+          await openFilters(page);
           await page.locator("[data-concept-cell]").first().waitFor({
             state: "visible",
             timeout: 20_000,

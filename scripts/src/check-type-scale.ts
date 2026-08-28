@@ -124,6 +124,45 @@ for (const role of ["text-micro", "text-label", "text-caption"]) {
   }
 }
 
+// ── The page-header pair, which is not a text-* utility ───────────────
+//
+// .mx-section-header__title and __sub are the H1 and the page's one-line
+// explanation of itself, and neither is a text-* class — so every rule above
+// reads straight past them. Two things had already drifted there unnoticed:
+// the subtitle sat at 14px after the floor moved to 15, and the title had no
+// font-family at all, rendering the biggest heading in the product in the
+// body face while every .font-h* class set the heading face.
+//
+// A missing declaration has no class name to grep for, so the second one was
+// only ever going to be caught by rendering the page. This asserts both, so
+// neither can drift again.
+const subM = /\.mx-section-header__sub\s*\{[^}]*font-size:\s*([0-9.]+)rem/.exec(src);
+const pageSub = subM ? Math.round(Number(subM[1]) * REM) : null;
+if (pageSub == null) {
+  problems.push("could not read .mx-section-header__sub's font-size from index.css");
+} else if (pageSub < BODY_FLOOR) {
+  problems.push(
+    `.mx-section-header__sub is ${pageSub}px — below the ${BODY_FLOOR}px body floor. ` +
+      `It is the page's own sentence about itself; it sits at the floor or above.`,
+  );
+}
+
+// Match the rule that actually SIZES the title, not the shared
+// `text-wrap: balance` selector group the class also appears in — that one
+// matched first and made this fail against a file that already had the fix.
+const titleBlock = [...src.matchAll(/\.mx-section-header__title\s*\{([^}]*)\}/g)]
+  .map((m) => m[1]!)
+  .find((body) => /font-size:/.test(body));
+if (titleBlock == null) {
+  problems.push("could not find the .mx-section-header__title sizing rule in index.css");
+} else if (!/font-family:/.test(titleBlock)) {
+  problems.push(
+    ".mx-section-header__title declares no font-family, so the H1 of every route " +
+      "inherits the body face while every .font-h* class sets the heading face. " +
+      "It is the largest heading in the product and the one most obviously wrong.",
+  );
+}
+
 // ── Rule 2: header steps ──────────────────────────────────────────────
 // The real ramp is now five heading levels above the floor, each on its own
 // face. Every adjacent pair still has to clear the 3px step — that is what
