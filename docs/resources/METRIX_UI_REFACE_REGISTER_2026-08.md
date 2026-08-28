@@ -5,6 +5,23 @@
 
 ### Post-sync reconciliation — read before resuming the paused design session
 
+#### Instruction for Claude when resuming at 7:20 AM
+
+Do not rely on the prior Replit conclusion that the intended visualization was
+restored. That conclusion only proved that the repository's existing Daily
+Trend component could render after a database repair; it did **not** prove that
+Claude's in-progress visual changes survived the premature sync.
+
+Before making new design changes, independently compare the current working
+tree and `main` against the state, commits, and available pre-sync checkpoints
+from Claude's paused session. Discern what the premature sync changed, removed,
+overwrote, or left incomplete in the work Claude was actively doing, then
+restore the intended visual and interaction changes from the best available
+evidence. Preserve the parser-safe JSX compatibility repair, but do not treat
+the currently rendered Daily Trend module as proof that Claude's intended work
+is present. Do not replay the paused working tree wholesale: recover the
+specific intended changes after inspecting both sides of the sync.
+
 The Claude design session paused while a Replit-side change was still in flight,
 then its branch was merged and `main` advanced once more. The sync boundary has
 now been inspected against repository history and the current source.
@@ -27,14 +44,14 @@ now been inspected against repository history and the current source.
 Two separate follow-ups were found; neither is evidence that the design branch
 was lost:
 
-1. **Repaired 2026-08-28:** the analysis API selects
+1. The analysis API selects
    `demographic_performance.impressions`, but that column was missing from the
    connected live schema. The repository's existing additive migration was
    applied as nullable `bigint`, with no historical zero-fill or data import.
    The all-time summary, explicit date-range summary, and daily-series routes
-   now return HTTP 200 for Bookster, and a browser pass confirms that the KPI
-   tiles and Daily Trend chart are visible again. Do not rewrite the Analysis
-   Overview UI or restore old JSX generic syntax; the failure was schema drift.
+   now return HTTP 200 for Bookster. This repaired one live data failure only;
+   it does not establish that Claude's intended in-progress visualization or
+   design changes survived the sync.
 2. Browser warnings for duplicate keys `C2B` and `Feed` point to dimensional
    rows being keyed too narrowly. `C2B` is valid across multiple result/creative
    rows and `Feed` can be valid across platforms. Confirm the emitting route,
