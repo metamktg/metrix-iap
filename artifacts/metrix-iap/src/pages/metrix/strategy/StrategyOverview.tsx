@@ -26,6 +26,7 @@ import { Compass, Map, Users, ListChecks, ChevronDown } from "lucide-react";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import { PREFIX_COLORS, getVariablePrefix, resolveVariableLabel } from "@/lib/variable-registry";
 import type { MessagePillar, ActiveHypothesis } from "@/lib/data/seedTypes";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 
 const SECTION = "Strategy · 04";
 
@@ -109,20 +110,19 @@ function PillarCoverageStrip({
                   )}
                 </div>
               </div>
-              <div className="h-1.5 rounded-full bg-foreground/[0.05] overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300"
-                  style={{
-                    width: `${pct}%`,
-                    background:
-                      tier === "high"
-                        ? "hsl(var(--metrix-success) / 0.8)"
-                        : tier === "medium"
-                          ? "hsl(var(--metrix-gold) / 0.8)"
-                          : "hsl(var(--foreground) / 0.18)",
-                  }}
-                />
-              </div>
+              <ProgressMeter
+                value={pct}
+                total={100}
+                label={`${p.label} coverage`}
+                size="md"
+                fill={
+                  tier === "high"
+                    ? "hsl(var(--metrix-success) / 0.8)"
+                    : tier === "medium"
+                      ? "hsl(var(--metrix-gold) / 0.8)"
+                      : "hsl(var(--foreground) / 0.18)"
+                }
+              />
             </div>
           </div>
         );

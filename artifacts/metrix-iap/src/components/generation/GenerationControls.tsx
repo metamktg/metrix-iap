@@ -19,6 +19,9 @@ import {
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
 import { fmtElapsed, pacePhrase } from "@/lib/generation-pace";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { cn } from "@workspace/command-deck/lib/utils";
+import { TYPE } from "@/pages/metrix/typography";
 
 export type GenerationKind = "strategy" | "briefs";
 
@@ -281,7 +284,7 @@ export function GenerationProgressBar({
   const showClock = typeof elapsedSeconds === "number";
   return (
     <div className="space-y-1.5" data-testid="generation-progress-bar">
-      <div className="flex items-center justify-between gap-2 text-label text-muted-foreground/75">
+      <div className={cn(TYPE.caption, "flex items-center justify-between gap-2 text-muted-foreground/75")}>
         <span className="truncate">{stageLabel}</span>
         <span className="flex items-center gap-1.5 tabular-nums shrink-0">
           {showClock && (
@@ -290,12 +293,13 @@ export function GenerationProgressBar({
           <span>{progressPercent}%</span>
         </span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
-        <div
-          className="h-full rounded-full bg-primary/70 transition-[width] duration-700 ease-out"
-          style={{ width: `${progressPercent}%` }}
-        />
-      </div>
+      <ProgressMeter
+        value={progressPercent}
+        total={100}
+        label={stageLabel}
+        size="md"
+        fillClassName="bg-primary/70"
+      />
       {showClock && typeof typicalSeconds === "number" && (
         <div className="text-caption text-muted-foreground/75" data-testid="generation-pace-note">
           {pacePhrase(elapsedSeconds, typicalSeconds)}
@@ -308,7 +312,7 @@ export function GenerationProgressBar({
 export function ProvenanceBadge({ provenance }: { provenance?: string }) {
   if (provenance !== "generated") return null;
   return (
-    <span className="inline-flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-interactive border border-primary/25 bg-primary/10 px-1.5 py-0.5 rounded leading-none">
+    <span className={cn(TYPE.label, "inline-flex items-center gap-1 font-semibold text-interactive border border-primary/25 bg-primary/10 px-1.5 py-0.5 rounded leading-none")}>
       <Sparkles className="w-3.5 h-3.5" /> Generated in-app
     </span>
   );

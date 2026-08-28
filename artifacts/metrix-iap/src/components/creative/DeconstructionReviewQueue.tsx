@@ -11,6 +11,8 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Check, Loader2, Pencil, ShieldAlert, Trash2, X } from "lucide-react";
 import type { CreativeDeconstruction, DetectedCreativeVariable } from "@workspace/api-client-react";
 import { LayeredDisclosure, LayeredDisclosureLeaf } from "@/components/widgets/LayeredDisclosure";
+import { cn } from "@workspace/command-deck/lib/utils";
+import { TYPE } from "@/pages/metrix/typography";
 import {
   DECONSTRUCTION_STATUS_LABEL,
   REGISTRY_FAMILIES,
@@ -167,7 +169,7 @@ function ReviewItem({
       {/* Detected variables (and brief comparison when a brief is linked) */}
       <div className={briefVariables ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : ""}>
         <div>
-          <div className="text-label font-medium text-muted-foreground/85 mb-1.5">Detected in creative</div>
+          <div className={cn(TYPE.label, "mb-1.5")}>Detected in creative</div>
           {editing ? (
             <div className="space-y-1.5">
               {draft.map((v, i) => (
@@ -211,7 +213,7 @@ function ReviewItem({
                 </button>
               </div>
               {!draftValid && (
-                <p className="text-label text-status-danger">
+                <p className={cn(TYPE.caption, "text-status-danger")}>
                   Each code must use its family's registry prefix (e.g. CN_, FW_, TN_, HK_).
                 </p>
               )}
@@ -235,7 +237,7 @@ function ReviewItem({
 
         {briefVariables && (
           <div>
-            <div className="text-label font-medium text-muted-foreground/85 mb-1.5">Brief intended</div>
+            <div className={cn(TYPE.label, "mb-1.5")}>Brief intended</div>
             <div className="flex flex-wrap gap-1.5">
               {briefVariables.map((code) => {
                 const matched = detectedCodes.has(code);
@@ -285,7 +287,7 @@ function ReviewItem({
               ] as const).map(([label, value]) =>
                 value ? (
                   <div key={label} className="min-w-0">
-                    <dt className="text-label uppercase text-muted-foreground/75">{label}</dt>
+                    <dt className={cn(TYPE.label)}>{label}</dt>
                     <dd className="text-caption text-foreground/85 mt-0.5 break-words">{value}</dd>
                   </div>
                 ) : null,
@@ -374,7 +376,7 @@ export function DeconstructionReviewQueue({ accountId }: { accountId: string | n
         queue.map((item) => <ReviewItem key={item.id} item={item} onReview={review} reviewPending={reviewPending} />)
       )}
       {resolved.length > 0 && (
-        <p className="text-label text-muted-foreground/75">
+        <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
           {resolved.filter((d) => d.status === "auto_filed").length} auto-classified ·{" "}
           {resolved.filter((d) => d.status === "user_overridden").length} accepted via override ·{" "}
           {resolved.filter((d) => d.status === "discarded").length} discarded

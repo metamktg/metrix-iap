@@ -97,6 +97,12 @@ function isInfrastructure(rel: string): boolean {
   if (dir === "App.tsx" || dir === "main.tsx" || dir === "design-lab.tsx") return true;
   if (dir.startsWith("contexts/")) return true;
   if (/(?:^|\/)[A-Za-z]+(?:Context|Provider)\.tsx$/.test(dir)) return true;
+  // Kebab-case providers escape the suffix test above: lib/concept-registry-
+  // context.tsx is a context provider in every way that matters (it returns
+  // <Ctx.Provider> and renders no surface), and it sat in the panel bucket
+  // dragging the class average exactly the way the nine CamelCase providers
+  // did before they were excluded.
+  if (/(?:^|\/)[a-z-]+-context\.tsx$/.test(dir)) return true;
   return false;
 }
 

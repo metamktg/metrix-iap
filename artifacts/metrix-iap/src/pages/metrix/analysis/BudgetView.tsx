@@ -27,6 +27,7 @@ import { HEADING, TYPE } from "../typography";
 import { DataModule } from "@/components/data-module/DataModule";
 import { RankedBars } from "@/components/charts/RankedBars";
 import type { DataView } from "@/lib/data-module/viewSupport";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 
 const SECTION = "Analysis · 03";
 
@@ -186,9 +187,13 @@ function ConceptRowsList({ rows, maxConcept }: { rows: [string, number][]; maxCo
             <span className="text-foreground/85 font-medium">{name}</span>
             <span className="text-muted-foreground/75 tabular-nums">{fmtUSD(spend, 0)}</span>
           </div>
-          <div className="h-1.5 rounded-full bg-foreground/[0.04] overflow-hidden">
-            <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max((spend / maxConcept) * 100, 3)}%` }} />
-          </div>
+          <ProgressMeter
+            value={spend}
+            total={maxConcept}
+            label={`${name} spend vs top concept`}
+            size="md"
+            fillClassName="bg-primary/50"
+          />
         </div>
       ))}
       <ShowMoreButton total={rows.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="concepts" />

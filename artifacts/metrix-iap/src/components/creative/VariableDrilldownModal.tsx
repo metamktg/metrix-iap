@@ -25,6 +25,7 @@ import { segmentLabel, type SegmentId } from "@/lib/segment-analytics";
 import { familyLabel } from "@/pages/metrix/strategy/strategyShared";
 import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel } from "@/pages/metrix/shared";
 import type { AnalysisData, VariablePerformanceRow } from "@/lib/data/seedTypes";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -184,12 +185,14 @@ export function VariableDrilldownModal({
                         <span className="text-caption font-medium text-foreground/85 w-32 shrink-0 capitalize">
                           {segmentLabel(seg)}
                         </span>
-                        <span className="flex-1 h-2.5 rounded-full bg-foreground/[0.06] overflow-hidden">
-                          <span
-                            className="block h-full rounded-full bg-gradient-to-r from-primary/60 to-primary/60 group-hover:from-primary/85 group-hover:to-primary/85 transition-colors"
-                            style={{ width: `${Math.max(share * 100, 2)}%` }}
-                          />
-                        </span>
+                        <ProgressMeter
+                          value={share * 100}
+                          total={100}
+                          label={`${segmentLabel(seg)} share`}
+                          size="md"
+                          fillClassName="bg-primary/60 group-hover:bg-primary/85 transition-colors"
+                          className="flex-1"
+                        />
                         <span className="text-label tabular-nums text-muted-foreground/75 w-16 text-right shrink-0">
                           {totals.spend != null ? fmtUSD(totals.spend, 0) : "—"}
                         </span>

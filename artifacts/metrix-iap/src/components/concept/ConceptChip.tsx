@@ -8,6 +8,8 @@
 import { useLocation } from "wouter";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@workspace/command-deck/components/ui/tooltip";
 import { useConceptRegistry, useConceptDescriptor } from "@/lib/concept-registry-context";
+import { cn } from "@workspace/command-deck/lib/utils";
+import { TYPE } from "@/pages/metrix/typography";
 
 interface ConceptChipProps {
   code: string;
@@ -67,13 +69,15 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
         side="top"
         className="max-w-[220px] space-y-1 text-left"
       >
-        <p className=" text-label text-muted-foreground">{code}</p>
+        <p className={cn(TYPE.caption, "text-muted-foreground")}>{code}</p>
         {entry?.what && (
-          <p className="text-label leading-relaxed text-foreground/90">
+          // A sentence, so it sits on the body floor — it was text-label
+          // (12px), three points under the floor every sentence must clear.
+          <p className={cn(TYPE.body, "leading-relaxed text-foreground/90")}>
             {entry.what.length > 120 ? entry.what.slice(0, 120) + "…" : entry.what}
           </p>
         )}
-        <p className="text-micro text-muted-foreground/75 italic">Click to open in Library</p>
+        <p className={cn(TYPE.caption, "text-muted-foreground/75 italic")}>Click to open in Library</p>
       </TooltipContent>
     </Tooltip>
   );

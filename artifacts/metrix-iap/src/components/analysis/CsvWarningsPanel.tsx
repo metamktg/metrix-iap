@@ -13,6 +13,7 @@ import { AlertTriangle, ChevronRight } from "lucide-react";
 import type { AnalysisRun } from "@workspace/api-client-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { splitWarningsBySeverity, hasReducedConfidence } from "@/lib/warningSeverity";
+import { TYPE } from "@/pages/metrix/typography";
 
 /**
  * Shows CSV column warnings from a completed analysis run.
@@ -61,7 +62,7 @@ export function CsvWarningsPanel({ run, compact = false }: { run: AnalysisRun; c
                 ? `Analysis succeeded — ${attention.length} warning${attention.length !== 1 ? "s" : ""} to review`
                 : "Analysis succeeded — routine column mappings only"}
           </div>
-          <p className={cn("text-label mt-0.5", alarmed ? "text-status-warning/70" : "text-muted-foreground/75")}>
+          <p className={cn(TYPE.caption, "mt-0.5", alarmed ? "text-status-warning/70" : "text-muted-foreground/75")}>
             {reducedConfidence
               ? "Some core metric columns were missing — key efficiency scores may be incomplete. "
               : ""}
@@ -76,9 +77,12 @@ export function CsvWarningsPanel({ run, compact = false }: { run: AnalysisRun; c
       {expanded && (
         <div className={cn("space-y-1 pt-1 border-t", alarmed ? "border-status-warning/20" : "border-border/30")}>
           {attention.length > 0 && (
+            // Warning lines are sentences, so they sit on the body floor —
+            // they were text-label (12px), under the floor every sentence
+            // must clear.
             <ul className="space-y-1">
               {attention.map((w, i) => (
-                <li key={i} className="text-label text-status-warning/75 leading-relaxed">
+                <li key={i} className={cn(TYPE.body, "text-status-warning/75 leading-relaxed")}>
                   · {w}
                 </li>
               ))}
@@ -92,7 +96,7 @@ export function CsvWarningsPanel({ run, compact = false }: { run: AnalysisRun; c
               </summary>
               <ul className="space-y-1 pl-4 pt-1">
                 {notices.map((w, i) => (
-                  <li key={i} className="text-label text-muted-foreground/75 leading-relaxed">
+                  <li key={i} className={cn(TYPE.body, "text-muted-foreground/75 leading-relaxed")}>
                     · {w}
                   </li>
                 ))}

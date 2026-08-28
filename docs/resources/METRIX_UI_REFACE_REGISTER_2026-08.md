@@ -305,6 +305,32 @@ breakpoint or a container query, disclosure where the surface is dense, and
 **Exit:** `check:ui-inventory --kind=panel` shows TYPE ≥ 90%, RESP ≥ 80% —
 now reachable, because every file counted can reach it.
 
+**TYPE pass executed (2026-08-28): 33% → 76%, and 76% is the honest
+ceiling.** Second classifier correction first: `lib/concept-registry-context`
+is a context provider in kebab-case, which the CamelCase suffix test missed —
+excluded, n=30→29. Then every panel with hierarchy text was converted to
+reference the roles (17 files; the rank carriers — uppercase eyebrows,
+titles, group headers — plus four real body-floor violations found on the
+way: ConceptChip's tooltip prose at 12px/11px, CsvWarningsPanel's warning
+sentences at 12px, LoopCommandChain's two error messages at 12px, all
+sentences, all now on TYPE.body). The seven panels still scored `.` are
+LoopStatusStrip, AddToTrayButton, DataSourceBadge (pure control/badge text,
+correctly on raw chrome classes), MetrixBootLoader (bespoke branded boot
+type), FunnelStepsChart (chart-family text), ProgressMeter (renders no
+visible text — aria only) and BrandMark (wordmark deliberately non-role,
+suppression comment in file). Scored as "panels with hierarchy text",
+coverage is 22/22. Converting a button label to a role to reach the 90%
+number would be optimising the instrument; the 90% gate should be read
+against scoreable panels.
+
+**RESP stays open, and blanket breakpoints are the wrong fix.** Chips,
+badges and buttons are intrinsically fluid (inline-flex); stamping `sm:` on
+them satisfies the regex and changes nothing. The real RESP work is the
+handful of panels with multi-column internal layout — LoopCommandChain's
+stage chain, CreativeFilterPanel's popover grid, DeconstructionReviewQueue's
+two-column diff — each needing a designed reflow, not a prefix. That is its
+own pass.
+
 ### Phase 2 — Tier A and Tier B field coverage · **DONE except one**
 
 Six Tier-A provenance fields and `tracking_basis` are shipped (§3). Remaining:

@@ -18,6 +18,7 @@ import { FunnelStepsChart, buildFunnelSteps } from "./FunnelStepsChart";
 import { AdsManagerButton } from "./AdsManagerLink";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 import { useCreativeEmptyReasons } from "@/hooks/useCreativeEmptyReasons";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 
 // ─── QA mapping status ─────────────────────────────────────────────────
 // MSTLibraryCell.qa_mapping_status, observed values: "pass",
@@ -585,12 +586,13 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
                   {metric === "spend" ? usd(b["Amount spent (USD)"]) : cpa != null ? usd(cpa) : "—"}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-foreground/[0.05] overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-700"
-                  style={{ width: `${barW}%` }}
-                />
-              </div>
+              <ProgressMeter
+                value={barW}
+                total={100}
+                label={`${b.Placement} ${metric === "spend" ? "spend" : "CPA"} share`}
+                size="md"
+                fillClassName="bg-primary/50"
+              />
               <div className={cn(TYPE.caption, "text-muted-foreground/75")}>
                 {num(b.Results)} results · {usd(b["Amount spent (USD)"])} spend
               </div>

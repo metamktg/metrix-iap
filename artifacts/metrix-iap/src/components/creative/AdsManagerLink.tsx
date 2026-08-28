@@ -9,6 +9,8 @@
 // prefix (the prefix is stripped defensively if present).
 
 import { ExternalLink } from "lucide-react";
+import { cn } from "@workspace/command-deck/lib/utils";
+import { TYPE } from "@/pages/metrix/typography";
 import {
   Tooltip,
   TooltipContent,
@@ -51,7 +53,7 @@ export function AdsManagerButton({
       <ExternalLink className="w-3.5 h-3.5" />
       {compact ? "Ads Manager" : "View in Ads Manager"}
       {!enabled && !compact && (
-        <span className="text-micro font-semibold uppercase border border-border/30 px-1 py-0.5 rounded leading-none ml-0.5">
+        <span className={cn(TYPE.microLabel, "font-semibold border border-border/30 px-1 py-0.5 rounded leading-none ml-0.5")}>
           Pending
         </span>
       )}

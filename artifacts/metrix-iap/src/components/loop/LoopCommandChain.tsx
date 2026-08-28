@@ -58,6 +58,8 @@ import { computeStaleStages } from "./staleStageDetection";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, serializeReportModel, downloadReportExport, parseReportModel } from "@/lib/reportExport";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { TYPE } from "@/pages/metrix/typography";
 import {
   BarChart3, Layers, FileText, Database, FileBarChart,
   CheckCircle2, XCircle, Lock, Loader2, X,
@@ -427,7 +429,7 @@ function StageIntelligence({
     return (
       <div className="flex items-start gap-2 rounded-lg border border-status-warning/20 bg-status-warning/[0.06] px-2.5 py-2 mt-1">
         <AlertTriangle className="w-3.5 h-3.5 text-status-warning/70 mt-0.5 shrink-0" />
-        <p className="text-label text-status-warning/65 leading-relaxed">{message}</p>
+        <p className={cn(TYPE.body, "text-status-warning/65 leading-relaxed")}>{message}</p>
       </div>
     );
   }
@@ -619,7 +621,7 @@ function StageIntelligence({
       {hasError && briefsLastRun?.error_message && (
         <div className="flex items-start gap-2 rounded-lg border border-status-warning/20 bg-status-warning/[0.06] px-2.5 py-2 mt-1">
           <AlertTriangle className="w-3.5 h-3.5 text-status-warning/70 mt-0.5 shrink-0" />
-          <p className="text-label text-status-warning/65 leading-relaxed">{briefsLastRun.error_message}</p>
+          <p className={cn(TYPE.body, "text-status-warning/65 leading-relaxed")}>{briefsLastRun.error_message}</p>
         </div>
       )}
     </div>
@@ -876,12 +878,13 @@ function CommandHub({
             </div>
           </div>
           {/* Deterministic progress bar */}
-          <div className="relative h-[4px] rounded-full overflow-hidden bg-status-warning/10">
-            <span
-              className="absolute inset-y-0 left-0 bg-status-warning/50 rounded-full transition-[width] duration-1000 ease-out"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
+          <ProgressMeter
+            value={progressPct}
+            total={100}
+            label="Analysis run progress"
+            size="sm"
+            fillClassName="bg-status-warning/50"
+          />
           <p className="text-body text-status-warning/40 leading-none">Views update automatically on completion</p>
         </div>
       );
@@ -981,7 +984,7 @@ function CommandHub({
           {/* Last run context — shown when a prior run exists */}
           {analysisRun && (analysisRun.status === "success" || analysisRun.status === "error") && (
             <div className="rounded-lg border border-border/25 bg-foreground/[0.02] px-2.5 py-2 space-y-1">
-              <p className="text-micro uppercase text-muted-foreground/75">Last run</p>
+              <p className={cn(TYPE.microLabel)}>Last run</p>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {analysisRun.status === "success" ? (
                   <span className="flex items-center gap-1 text-caption font-semibold text-status-success/70">
@@ -1008,7 +1011,7 @@ function CommandHub({
 
           {/* Data source context */}
           <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
-            <p className="text-micro uppercase text-muted-foreground/75">Data source</p>
+            <p className={cn(TYPE.microLabel)}>Data source</p>
             <p className="text-label text-foreground/70 leading-relaxed">
               {isLiveMeta
                 ? "Live Meta ad account connection"
@@ -1019,7 +1022,7 @@ function CommandHub({
           {/* Date window picker (manual accounts only) */}
           {!isLiveMeta && (
             <div className="space-y-1.5">
-              <p className="text-micro uppercase text-muted-foreground/75 flex items-center gap-1">
+              <p className={cn(TYPE.microLabel, "flex items-center gap-1")}>
                 <CalendarRange className="w-3 h-3" /> Date window
               </p>
               <div className="grid grid-cols-2 gap-1">
@@ -1114,7 +1117,7 @@ function CommandHub({
       return (
         <div className="flex flex-col gap-2.5">
           <div>
-            <p className="text-micro uppercase text-muted-foreground/75 mb-1.5">
+            <p className={cn(TYPE.microLabel, "mb-1.5")}>
               Ground strategy in
             </p>
             <RunSelector runs={candidateRuns} value={runSelection} onChange={setRunSelection} />
@@ -1189,7 +1192,7 @@ function CommandHub({
       if (pendingConfirm === "report") return (
         <div className="flex flex-col gap-2.5">
           <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
-            <p className="text-micro uppercase text-muted-foreground/75">Delivery mode</p>
+            <p className={cn(TYPE.microLabel)}>Delivery mode</p>
             <div className="flex items-center gap-1 rounded-md border border-border/40 p-0.5 w-fit mt-1.5">
               {(["internal", "client"] as const).map((m) => (
                 <button
@@ -1267,7 +1270,7 @@ function CommandHub({
       <div className="flex flex-col gap-2.5">
         {/* Strategy context */}
         <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1.5">
-          <p className="text-micro uppercase text-muted-foreground/75">Grounded in</p>
+          <p className={cn(TYPE.microLabel)}>Grounded in</p>
           <p className="text-label text-foreground/70 leading-relaxed">
             Strategy
             {strategyLastRun?.finished_at ? ` · generated ${fmtInstantDate(strategyLastRun.finished_at)}` : ""}
@@ -1385,9 +1388,10 @@ function CommandHub({
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-title font-bold text-foreground/85 leading-none">{stageLabel}</p>
+            <p className={cn(TYPE.title, "text-foreground/85 leading-none")}>{stageLabel}</p>
             <span className={cn(
-              "inline-flex items-center gap-1 text-micro font-semibold uppercase border rounded-md px-1.5 py-0.5 mt-1.5 leading-none",
+              TYPE.microLabel,
+              "inline-flex items-center gap-1 font-semibold border rounded-md px-1.5 py-0.5 mt-1.5 leading-none",
               statusClass,
             )}>
               {isRunning && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -1444,7 +1448,7 @@ function CommandHub({
 
         {/* ── Layer 3: Navigate ────────────────────────────────────────── */}
         <div className="px-4 py-3 border-t border-border/12">
-          <p className="text-micro font-semibold uppercase text-muted-foreground/75 mb-2">
+          <p className={cn(TYPE.microLabel, "font-semibold mb-2")}>
             Navigate
           </p>
           <div className="grid grid-cols-2 gap-1">
@@ -1487,7 +1491,7 @@ function CommandHub({
 
         {/* ── Layer 4: Actions ─────────────────────────────────────────── */}
         <div className="px-4 pt-2 pb-4 border-t border-border/12">
-          <p className="text-micro font-semibold uppercase text-muted-foreground/75 mb-2">
+          <p className={cn(TYPE.microLabel, "font-semibold mb-2")}>
             {isRunning ? "Status" : "Actions"}
           </p>
           <Actions />
@@ -1870,12 +1874,13 @@ export function LoopCommandChain({
                   </span>
                 </div>
               </div>
-              <div className="relative h-[3px] rounded-full overflow-hidden bg-status-warning/[0.08]">
-                <span
-                  className="absolute inset-y-0 left-0 bg-status-warning/50 rounded-full transition-[width] duration-1000 ease-out"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
+              <ProgressMeter
+                value={pct}
+                total={100}
+                label={`${stageLabel} progress`}
+                size="sm"
+                fillClassName="bg-status-warning/50"
+              />
             </div>
           );
         })()}
