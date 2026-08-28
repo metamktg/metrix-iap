@@ -15,6 +15,7 @@
 
 import { useState } from "react";
 import {
+  Check,
   Compass,
   FileSpreadsheet,
   Images,
@@ -26,6 +27,7 @@ import {
   Boxes,
   AlertTriangle,
 } from "lucide-react";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { AddAccountDialog } from "./AddAccountDialog";
 import { PrimaryBtn, GhostBtn } from "./ConnectAccountDialogs";
@@ -41,30 +43,70 @@ const STEP_TITLE: Record<Step, string> = {
   link: "Link account",
 };
 
-// Same dot + "Step X of Y" chrome as AddAccountDialog's own step indicator —
-// reused verbatim so a wizard entered from the empty state and a wizard
-// entered mid-dialog read as the same system.
-function StepIndicator({ step }: { step: Step }) {
-  const stepNumber = STEPS.indexOf(step) + 1;
+// Watermelon onboarding-checklist, taken as its mechanic: setup progress is
+// a CHECKLIST, not a wizard. Every step is visible and clickable from the
+// start — nothing about the path is hidden behind "Next" — a visited step
+// wears a check, the current one is highlighted, and the segmented meter
+// (our own ProgressMeter, ordinal mode) carries the count. Completion here
+// is honest to what this screen can know: "visited" — the only real
+// completion signal (an account existing) dismisses this whole surface.
+function SetupChecklist({
+  step,
+  visited,
+  onJump,
+}: {
+  step: Step;
+  visited: ReadonlySet<Step>;
+  onJump: (s: Step) => void;
+}) {
+  const doneCount = STEPS.filter((s) => visited.has(s) && s !== step).length;
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-1.5">
-        {STEPS.map((s, i) => {
-          const n = i + 1;
-          return (
-            <div
-              key={s}
-              className={cn(
-                "w-1.5 h-1.5 rounded-full transition-colors",
-                n < stepNumber ? "bg-status-success/60" : n === stepNumber ? "bg-primary/70" : "bg-border/40"
-              )}
-            />
-          );
-        })}
+    <div className="mb-6 space-y-2.5">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 flex-wrap">
+          {STEPS.map((s, i) => {
+            const isCurrent = s === step;
+            const isDone = visited.has(s) && !isCurrent;
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => onJump(s)}
+                aria-current={isCurrent ? "step" : undefined}
+                className={cn(
+                  "pressable inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border transition-colors",
+                  TYPE.caption,
+                  isCurrent
+                    ? "border-primary/40 bg-primary/10 text-foreground font-semibold"
+                    : isDone
+                      ? "border-status-success/30 text-status-success/90 hover:bg-status-success/[0.06]"
+                      : "border-border/40 text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04]",
+                )}
+              >
+                <span
+                  className={cn(
+                    "w-4 h-4 rounded-full border flex items-center justify-center shrink-0",
+                    isDone
+                      ? "border-transparent bg-status-success/20"
+                      : isCurrent
+                        ? "border-transparent bg-primary text-primary-foreground"
+                        : "border-border/50",
+                  )}
+                >
+                  {isDone
+                    ? <Check className="w-2.5 h-2.5" />
+                    : <span className="text-micro-num font-semibold leading-none">{i + 1}</span>}
+                </span>
+                {STEP_TITLE[s]}
+              </button>
+            );
+          })}
+        </div>
+        <span className={cn(TYPE.label, "font-medium text-muted-foreground/75 tabular-nums ml-auto shrink-0")}>
+          {doneCount}/{STEPS.length} visited
+        </span>
       </div>
-      <span className={cn(TYPE.label, "font-medium text-muted-foreground/75 tabular-nums")}>
-        Step {stepNumber} of {STEPS.length} · {STEP_TITLE[step]}
-      </span>
+      <ProgressMeter value={doneCount} total={STEPS.length} label="Setup steps visited" size="sm" segments={STEPS.length} />
     </div>
   );
 }
@@ -80,13 +122,23 @@ function IconTile({ icon: Icon }: { icon: typeof Compass }) {
 }
 
 export function OnboardingWizard({ managerName }: { managerName: string }) {
-  const [step, setStep] = useState<Step>("welcome");
+  const [step, setStepRaw] = useState<Step>("welcome");
+  const [visited, setVisited] = useState<Set<Step>>(() => new Set(["welcome"]));
   const [addOpen, setAddOpen] = useState(false);
+  const setStep = (s: Step) => {
+    setVisited((prev) => new Set(prev).add(s));
+    setStepRaw(s);
+  };
 
   return (
-    <div className="flex-1 flex items-center justify-center px-6 py-10 overflow-y-auto">
-      <div className="max-w-2xl w-full">
-        <StepIndicator step={step} />
+    // my-auto on the CHILD, not items-center on this scroller: with
+    // items-center, content taller than the viewport clips its own top
+    // unreachably (the checklist rail vanished above the fold on the
+    // prepare step). my-auto centers short content and yields to natural
+    // top alignment the moment content overflows.
+    <div className="flex-1 flex justify-center px-6 py-10 overflow-y-auto">
+      <div className="max-w-2xl w-full my-auto">
+        <SetupChecklist step={step} visited={visited} onJump={setStep} />
 
         {step === "welcome" && (
           <div className="max-w-md mx-auto text-center space-y-5">
