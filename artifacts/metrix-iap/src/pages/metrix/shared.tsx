@@ -422,11 +422,16 @@ export function ModuleHeader({
   // comparison against the bare `title`, not the account-prefixed H1 below —
   // the account name belongs only in the H1, never duplicated into the eyebrow.
   const eyebrowText = sectionLabel.toLowerCase() === title.toLowerCase() ? section : sectionLabel;
-  const displayTitle = accountName ? `${accountName} · ${title}` : title;
+
   return (
     <div className="shrink-0">
       <div className={cn("px-6 py-4", !tabs && "border-b border-border/40")}>
-        <div className="flex items-start gap-3">
+        {/* flex-wrap: at phone width the right slot (date presets, export,
+            table chips — 500px of controls on some routes) drops onto its
+            own line under the title instead of overlaying the eyebrow. Its
+            own inner flex-wrap only works once it has a full line to wrap
+            within. */}
+        <div className="flex items-start gap-3 flex-wrap">
           <div className="flex-1 min-w-0 mx-section-header">
             <div className="flex items-center gap-1.5">
               {/* Nocturne breadcrumb eyebrow: view context · module. This is a
@@ -437,9 +442,22 @@ export function ModuleHeader({
               </span>
               {subtitle && <InfoTooltip content={subtitle} />}
             </div>
-            <h1 className="mx-section-header__title">{displayTitle}</h1>
+            <h1 className="mx-section-header__title">
+              {/* The nowrap span keeps "Name ·" together so the separator
+                  never orphans onto its own line at phone width — while the
+                  DOM text stays plain-spaced for assertions and copy-paste
+                  (an NBSP here made four exact-textContent tests fail on an
+                  invisible character). */}
+              {accountName ? (
+                <>
+                  <span className="whitespace-nowrap">{accountName} ·</span> {title}
+                </>
+              ) : (
+                title
+              )}
+            </h1>
           </div>
-          <div className="shrink-0 pt-0.5 flex items-center gap-2">
+          <div className="shrink-0 max-w-full pt-0.5 flex items-center gap-2 flex-wrap">
             {right}
             {table && <DataSourceBadge table={table} collapsible />}
           </div>
