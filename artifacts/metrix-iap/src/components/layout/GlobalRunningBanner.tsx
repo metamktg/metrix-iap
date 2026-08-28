@@ -128,7 +128,7 @@ function BannerInner({ label }: BannerInnerProps) {
     <div className="flex items-center gap-2.5 px-4 py-1.5 border-b border-status-warning/20 bg-status-warning/[0.04]">
       <Loader2 className="w-3 h-3 text-status-warning/70 animate-spin shrink-0" />
       <span className="text-label font-medium text-status-warning/75">{label} processing</span>
-      <span className="text-micro-num font-mono tabular-nums text-status-warning/45 leading-none">{fmtElapsed(elapsed)}</span>
+      <span className="text-micro-num tabular-nums text-status-warning/45 leading-none">{fmtElapsed(elapsed)}</span>
 
       {/* Progress bar */}
       <div className="flex-1 relative h-[3px] rounded-full overflow-hidden bg-status-warning/[0.08]">

@@ -143,7 +143,7 @@ export function TabRail<T extends string>({
               // where the tint claimed a verdict on the bucket — a green "3"
               // beside "Dismissed" is not good news.
               <span
-                className={`text-micro font-mono tabular-nums px-1.5 py-0.5 rounded-full
+                className={`text-micro tabular-nums px-1.5 py-0.5 rounded-full
                             ${on ? "bg-primary/15 text-interactive" : "bg-foreground/[0.06] text-muted-foreground/75"}`}
               >
                 {t.count}

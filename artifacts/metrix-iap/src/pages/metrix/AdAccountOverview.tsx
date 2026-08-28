@@ -361,7 +361,7 @@ export function AdAccountOverview() {
                   );
                 })()}
                 {primaryControlName !== core.primary_control && (
-                  <p className="text-label font-mono text-muted-foreground/75 mt-1.5">
+                  <p className="text-label text-muted-foreground/75 mt-1.5">
                     <span className="text-label text-muted-foreground/75 not-italic">Code · </span>{core.primary_control}
                   </p>
                 )}
@@ -388,7 +388,7 @@ export function AdAccountOverview() {
                     );
                   })()}
                   {registrationControlName !== core.registration_control && (
-                    <p className="text-label font-mono text-muted-foreground/75 mt-1.5">
+                    <p className="text-label text-muted-foreground/75 mt-1.5">
                       <span className="text-label text-muted-foreground/75 not-italic">Code · </span>{core.registration_control}
                     </p>
                   )}

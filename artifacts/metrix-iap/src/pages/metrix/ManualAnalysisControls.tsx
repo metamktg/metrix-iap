@@ -156,7 +156,7 @@ function ColumnAliasGuide({
                 {aliasList.map((alias) => (
                   <span
                     key={alias}
-                    className="px-1.5 py-0.5 rounded bg-foreground/[0.05] border border-border/30 text-label text-muted-foreground/80 font-mono"
+                    className="px-1.5 py-0.5 rounded bg-foreground/[0.05] border border-border/30 text-label text-muted-foreground/80"
                   >
                     {alias}
                   </span>
@@ -943,7 +943,7 @@ function ImportHistoryPanel({
                 {files.map((f) => (
                   <span
                     key={f.id}
-                    className="text-micro font-mono text-muted-foreground/75 border border-border/30 rounded px-1 py-0.5 truncate max-w-[160px]"
+                    className="text-micro text-muted-foreground/75 border border-border/30 rounded px-1 py-0.5 truncate max-w-[160px]"
                     title={f.filename}
                   >
                     {f.filename}

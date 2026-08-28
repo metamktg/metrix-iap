@@ -75,12 +75,12 @@ export function VariableChip({ code, showCode = false, className }: { code: stri
           )}
         >
           {resolveVariableLabel(code)}
-          {showCode && <span className="font-mono text-label opacity-60">{code}</span>}
+          {showCode && <span className=" text-label opacity-60">{code}</span>}
           {!showCode && <span className="sr-only">{` (${code})`}</span>}
         </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] space-y-0.5 text-left">
-        <p className="font-mono text-label text-muted-foreground">{code}</p>
+        <p className=" text-label text-muted-foreground">{code}</p>
         <p className="text-label leading-relaxed text-foreground/90">{resolveVariableLabel(code)}</p>
       </TooltipContent>
     </Tooltip>
@@ -135,7 +135,7 @@ export function VariableStackChips({ stack, maxVisible = 4 }: { stack: Record<st
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] space-y-0.5 text-left">
         <p className="text-label font-semibold text-foreground/90">{familyLabel(family)}</p>
-        <p className="font-mono text-label text-muted-foreground">{code}</p>
+        <p className=" text-label text-muted-foreground">{code}</p>
         <p className="text-label leading-relaxed text-foreground/90">{resolveVariableLabel(code)}</p>
       </TooltipContent>
     </Tooltip>
@@ -211,7 +211,7 @@ function RefChips({ refs }: { refs: HierarchyRef[] }) {
       {refs.map((r, i) => (
         <span
           key={i}
-          className="inline-flex items-center text-label font-mono font-semibold text-foreground/90 border border-border/50 bg-foreground/[0.04] px-1.5 py-0.5 rounded leading-none whitespace-nowrap"
+          className="inline-flex items-center text-label font-semibold text-foreground/90 border border-border/50 bg-foreground/[0.04] px-1.5 py-0.5 rounded leading-none whitespace-nowrap"
         >
           {formatHierarchyRef(r)}
         </span>
@@ -662,7 +662,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
     <div data-testid={testId}>
       <div className="flex items-center gap-1 mb-1.5">
         <Dna className="w-3.5 h-3.5 text-interactive/70" />
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">{label}</span>
+        <span className="text-label uppercase tracking-widest text-muted-foreground/75">{label}</span>
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         {visible.map((v) => (

@@ -102,7 +102,7 @@ export function RunScopePicker({
           <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
           <span className="truncate font-medium">{triggerLabel}</span>
           {!value.allTime && selectedRuns.length > 1 && (
-            <span className="text-caption font-mono text-muted-foreground/75 shrink-0">
+            <span className="text-caption text-muted-foreground/75 shrink-0">
               {selectedRuns.length}
             </span>
           )}
@@ -110,7 +110,7 @@ export function RunScopePicker({
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-2">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 px-1 pb-2">
+        <p className="text-label uppercase tracking-widest text-muted-foreground/75 px-1 pb-2">
           Scope to analysis run
         </p>
         <button
@@ -158,7 +158,7 @@ export function RunScopePicker({
                     </span>
                   )}
                   {run.rows_ingested != null && (
-                    <span className="text-caption font-mono text-muted-foreground/75">
+                    <span className="text-caption text-muted-foreground/75">
                       {run.rows_ingested.toLocaleString()} rows
                     </span>
                   )}
@@ -248,7 +248,7 @@ export function RunSelector({
                     </span>
                   )}
                   {run.rows_ingested != null && (
-                    <span className="text-caption font-mono text-muted-foreground/75">
+                    <span className="text-caption text-muted-foreground/75">
                       {run.rows_ingested.toLocaleString()} rows
                     </span>
                   )}

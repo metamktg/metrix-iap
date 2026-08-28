@@ -163,7 +163,7 @@ function MetricToggle({ options, value, onChange }: {
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "pressable px-2.5 py-1 font-mono uppercase tracking-wide transition-colors",
+            "pressable px-2.5 py-1 uppercase tracking-wide transition-colors",
             value === o.value
               ? "bg-foreground/10 text-foreground"
               : "text-muted-foreground/75 hover:text-muted-foreground/75"
@@ -191,7 +191,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
             { label: "Link CTR", value: pct(s.ctrPct) },
           ] as const).map((item) => (
             <div key={item.label} className="rounded-lg border border-border/30 bg-foreground/[0.02] px-3 py-2.5 text-center">
-              <div className="text-micro font-mono uppercase text-muted-foreground/75 mb-1">{item.label}</div>
+              <div className="text-micro uppercase text-muted-foreground/75 mb-1">{item.label}</div>
               <div className="text-lg font-bold text-foreground tabular-nums leading-none">{item.value}</div>
             </div>
           ))}
@@ -356,7 +356,7 @@ function DemographicsTab({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Age × Gender</p>
+        <p className="text-label uppercase tracking-widest text-muted-foreground/75">Age × Gender</p>
         <MetricToggle
           options={[{ value: "spend", label: "Spend" }, { value: "results", label: "Results" }]}
           value={metric}
@@ -429,7 +429,7 @@ function DemographicsTab({
                   F {metric === "spend" ? usd(fSpend) : num(fRes)}
                 </span>
                 {isActive && (
-                  <span className="ml-auto text-micro font-mono uppercase text-interactive/70">
+                  <span className="ml-auto text-micro uppercase text-interactive/70">
                     Selected ↑
                   </span>
                 )}
@@ -445,7 +445,7 @@ function DemographicsTab({
           {/* Panel header */}
           <div className="px-4 py-2.5 border-b border-border/30 flex items-center justify-between">
             <div>
-              <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Segment KPIs</span>
+              <span className="text-label uppercase tracking-widest text-muted-foreground/75">Segment KPIs</span>
               <span className="ml-2 text-body font-semibold text-foreground">{activeBucket.age}</span>
             </div>
           </div>
@@ -623,7 +623,7 @@ function FunnelTab({ perfRow, emptyReason }: { perfRow: CellPerformanceRow | nul
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Conversion funnel</p>
+        <p className="text-label uppercase tracking-widest text-muted-foreground/75">Conversion funnel</p>
       </div>
       <FunnelStepsChart steps={steps} />
       {!hasAnyFunnel && (
@@ -709,7 +709,7 @@ export function CreativeExpandDialog({
 
             {data.assetFormat && (
               <div className="absolute bottom-3 left-3">
-                <span className="text-micro font-mono uppercase text-foreground/55 border border-foreground/10 bg-background/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                <span className="text-micro uppercase text-foreground/55 border border-foreground/10 bg-background/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
                   {data.assetFormat}
                 </span>
               </div>

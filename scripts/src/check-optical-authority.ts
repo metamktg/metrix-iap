@@ -60,13 +60,33 @@ const TITLE = /\btext-(?:title|h5)\b/;
 const ROLE_WITH_TRACKING = /\btext-(?:micro|label|title|h5)\b/;
 /** A real heading element. */
 const HEADING_TAG = /<h[1-6][\s>]/;
+/**
+ * The mono face, which is not part of this product's type system.
+ *
+ * It was used 305 times across 78 files, doing two jobs, and only one was
+ * real: aligning figures so a column of numbers does not jitter as it
+ * updates. `tabular-nums` does that properly — a font-variant that makes
+ * Figtree's own digits equal-width, with none of the terminal aesthetic.
+ * The other job was decorative, and a measurement product that dresses its
+ * numbers as console output reads as a debug view rather than an instrument.
+ *
+ * `--app-font-mono` still resolves to a real monospace for the one case
+ * that needs one — a code block, where character alignment IS the content.
+ * Reaching for it on a metric is what this catches.
+ */
+const MONO_CLASS = /\bfont-mono\b/;
 
 const SUPPRESS = "authority-ok";
 
 interface Finding {
   file: string;
   line: number;
-  kind: "bold-chrome-label" | "downgraded-title" | "tracking-tie" | "chrome-sized-heading";
+  kind:
+    | "bold-chrome-label"
+    | "downgraded-title"
+    | "tracking-tie"
+    | "chrome-sized-heading"
+    | "mono-face";
   snippet: string;
 }
 
@@ -115,6 +135,9 @@ for (const root of ROOTS) {
       if (HEADING_TAG.test(line) && CHROME.test(line)) {
         findings.push({ ...at, kind: "chrome-sized-heading" });
       }
+      if (MONO_CLASS.test(line)) {
+        findings.push({ ...at, kind: "mono-face" });
+      }
     });
   }
 }
@@ -135,6 +158,12 @@ const EXPLAIN: Record<Finding["kind"], string> = {
     "        heading was SMALLER than its own content. Either give it a heading\n" +
     "        role (HEADING.h5 is 'a group header inside a card') or, if it is\n" +
     "        really an eyebrow rather than a heading, make it a <span>.",
+  "mono-face":
+    "font-mono is not part of this type system. If the intent is aligned\n" +
+    "        figures, that is `tabular-nums` — a font-variant on the sans's own\n" +
+    "        digits, which is what 305 of these were actually reaching for. If it\n" +
+    "        is genuinely a code block, where character alignment is the content,\n" +
+    "        mark the line `// authority-ok` and say so.",
   "tracking-tie":
     "This role defines its own letter-spacing. A tracking-[…] beside it is a tie\n" +
     "        resolved by generated-CSS order rather than by intent — and the app\n" +

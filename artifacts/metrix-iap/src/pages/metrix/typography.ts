@@ -84,11 +84,18 @@
 // Full literal class strings so the Tailwind JIT scanner picks them up.
 
 export const TYPE = {
-  /** Micro mono index/eyebrow labels below TYPE.label (e.g. "Spend"/"Results"
-   *  strip labels, run-scope captions) — the formal home for the 9px
-   *  font-mono uppercase pattern that was previously hand-copied as raw
-   *  text-micro classes across several files. */
-  microLabel: "text-micro font-mono font-medium uppercase text-muted-foreground/75",
+  /** The smallest chrome: badge numerals and index labels below TYPE.label
+   *  ("Spend"/"Results" strip labels, run-scope captions).
+   *
+   *  It used to be MONO. The mono face is gone from the product entirely —
+   *  305 usages across 78 files — because it was doing two jobs and only
+   *  one of them was real. The real job was aligning figures so columns of
+   *  numbers do not jitter, and `tabular-nums` does that properly: it is a
+   *  font-variant that makes the SANS's own digits equal-width, with none
+   *  of the terminal aesthetic. The other job was decorative, and a
+   *  measurement product that dresses its numbers as console output reads
+   *  as a debug view rather than an instrument. */
+  microLabel: "text-micro font-medium uppercase text-muted-foreground/75",
   /** Uppercase eyebrow/section labels above titles or field groups.
    *  text-data-caption = DS muted-foreground @85% — intentional secondary, solid step. */
   label: "text-label font-medium uppercase text-data-caption",

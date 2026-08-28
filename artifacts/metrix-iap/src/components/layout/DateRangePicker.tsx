@@ -78,7 +78,7 @@ export function DateRangePicker() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[280px] p-0 bg-surface-overlay border-border/50">
         <div className="px-3 py-2.5 border-b border-border/40">
-          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Date range</p>
+          <p className="text-label uppercase tracking-widest text-muted-foreground/75">Date range</p>
           <p className="text-label text-muted-foreground/75 mt-1">
             Data available {formatIsoRange(bounds)}
           </p>
@@ -106,7 +106,7 @@ export function DateRangePicker() {
         </div>
 
         <div className="px-3 py-2.5 border-t border-border/40 space-y-2">
-          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Custom range</p>
+          <p className="text-label uppercase tracking-widest text-muted-foreground/75">Custom range</p>
           <div className="flex items-center gap-1.5">
             <input
               type="date"

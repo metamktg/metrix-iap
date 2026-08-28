@@ -85,7 +85,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
       )}
     >
       <span className="text-caption truncate">{m.label}</span>
-      <span className="text-caption font-mono tabular-nums text-muted-foreground/75 shrink-0">
+      <span className="text-caption tabular-nums text-muted-foreground/75 shrink-0">
         {m.value != null ? m.formatted : "—"}
       </span>
     </button>
@@ -105,7 +105,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
       style={{ position: "fixed", top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? "visible" : "hidden" }}
       className="z-50 w-56 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm elevation-floating py-1 overflow-hidden"
     >
-      <div className="px-2.5 py-1 text-micro font-mono uppercase text-muted-foreground/75">
+      <div className="px-2.5 py-1 text-micro uppercase text-muted-foreground/75">
         Delivery & efficiency
       </div>
       {staticMetrics.map((m) => <Row key={m.id} m={m} />)}
@@ -113,7 +113,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
       {eventMetrics.length > 0 && (
         <>
           <div className="mx-2 my-1 border-t border-border/20" />
-          <div className="px-2.5 py-1 text-micro font-mono uppercase text-muted-foreground/75">
+          <div className="px-2.5 py-1 text-micro uppercase text-muted-foreground/75">
             Results by event
           </div>
           {eventMetrics.map((m) => <Row key={m.id} m={m} />)}

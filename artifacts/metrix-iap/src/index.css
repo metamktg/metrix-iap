@@ -469,7 +469,7 @@
   }
 
   .mx-section-header__title {
-    font-size: 2rem;       /* 32px — matches text-bignum. 11px clear of the
+    font-size: 2.125rem;   /* 34px — matches text-bignum. 6px clear of the
                                21px H2 below it, so the page title reads as
                                the page's one anchor rather than competing
                                with the first card. */
@@ -542,9 +542,16 @@
      So the ramp collapses to three faces with a rule small enough to hold
      in your head:
 
-       HEADINGS  Outfit           H1–H5 — every level that sets a title
-       PROSE     Figtree          body, captions, and the H6 eyebrow band
-       INDEX     Share Tech Mono  the 10px micro-index strip only
+       HEADINGS  Outfit    H1–H5 — every level that sets a title
+       PROSE     Figtree   everything else: body, captions, eyebrows, badges
+
+     TWO faces now, not three. Share Tech Mono is gone — 305 usages across
+     78 files. It was doing two jobs and only one was real: aligning figures
+     so columns of numbers do not jitter. `tabular-nums` does that properly,
+     as a font-variant on Figtree's own digits, with none of the terminal
+     aesthetic. The other job was decorative, and a measurement product that
+     dresses its numbers as console output reads as a debug view rather than
+     an instrument.
 
      Outfit is the differentiator. It is a geometric sans with near-monoline
      strokes, circular bowls and a tall x-height, and at 27–32px with the
@@ -580,7 +587,7 @@
   .font-body         { font-family: Figtree, system-ui, sans-serif; }
 
   /* ── Chrome band — labels and indices, never sentences ───────────── */
-  .text-micro   { font-size: 0.625rem;   line-height: 1.4;  letter-spacing: 0.1em; }    /* 10px */
+  .text-micro { font-size: 0.6875rem; line-height: 1.4; letter-spacing: 0.08em; }  /* 11px — badge / index numerals. Never a sentence. */
   /* The micro role for NUMBERS — a count badge, a notification bubble, a
      tabular figure in a chip. Same size and leading, no tracking.
      0.1em on "12" adds a trailing gap the glyphs do not balance, so a
@@ -589,24 +596,24 @@
      utilities both setting letter-spacing is a tie resolved by generated-CSS
      order rather than by intent — and a tie you cannot read off the markup
      is one somebody will lose later. */
-  .text-micro-num { font-size: 0.625rem; line-height: 1.4;  letter-spacing: 0; }        /* 10px, numerals */
-  .text-label   { font-size: 0.6875rem;  line-height: 1.45; letter-spacing: 0.08em; }   /* 11px */
+  .text-micro-num { font-size: 0.6875rem; line-height: 1.4; letter-spacing: 0; }  /* 11px, numerals — no tracking, see below */
+  .text-label { font-size: 0.75rem; line-height: 1.45; letter-spacing: 0.07em; }  /* 12px — uppercase eyebrow / column header. Never a sentence. */
 
   /* ── Reading band — 14px floor for anything phrased as a sentence ── */
-  .text-caption { font-size: 0.75rem;    line-height: 1.5;  letter-spacing: 0; }        /* 12px — non-sentence metadata only */
-  .text-body    { font-size: 0.875rem;   line-height: 1.6;  letter-spacing: 0; }        /* 14px — BODY FLOOR */
-  .text-h5      { font-size: 1.0625rem;  line-height: 1.4;  letter-spacing: 0; }         /* 17px — H5 */
-  .text-title   { font-size: 1.0625rem;  line-height: 1.35; letter-spacing: -0.006em; } /* 17px — alias of H5's step */
-  .text-callout { font-size: 1.125rem;   line-height: 1.4;  letter-spacing: -0.008em; } /* 18px — dialog title */
-  .text-h4      { font-size: 1.25rem;    line-height: 1.35; letter-spacing: -0.004em; } /* 20px — H4 */
-  .text-h3      { font-size: 1.4375rem;  line-height: 1.3;  letter-spacing: -0.008em; } /* 23px — H3 */
-  .text-display { font-size: 1.5rem;     line-height: 1.2;  letter-spacing: -0.014em; } /* 24px */
-  .text-h2      { font-size: 1.6875rem;  line-height: 1.22; letter-spacing: -0.012em; } /* 27px — H2 */
-  .text-section { font-size: 1.625rem;   line-height: 1.2;  letter-spacing: -0.014em; } /* 26px */
-  .text-stat    { font-size: 1.875rem;   line-height: 1.1;  letter-spacing: -0.02em; }  /* 30px */
-  .text-bignum  { font-size: 2rem;       line-height: 1.05; letter-spacing: -0.022em; } /* 32px — H1 / hero number */
-  .text-hero    { font-size: 2.75rem;    line-height: 1.0;  letter-spacing: -0.025em; } /* 44px */
-  .text-cardtitle { font-size: 1.3125rem; line-height: 1.25; letter-spacing: -0.012em; } /* 21px — H2 */
+  .text-caption { font-size: 0.8125rem; line-height: 1.5; letter-spacing: 0; }  /* 13px — THE READING FLOOR. Non-sentence metadata. */
+  .text-body { font-size: 0.9375rem; line-height: 1.6; letter-spacing: 0; }  /* 15px — body prose. Every sentence lands here or above. */
+  .text-h5 { font-size: 1.125rem; line-height: 1.4; letter-spacing: -0.004em; }  /* 18px — H5 */
+  .text-title { font-size: 1.125rem; line-height: 1.35; letter-spacing: -0.006em; }  /* 18px — alias of H5's step */
+  .text-callout { font-size: 1.1875rem; line-height: 1.4; letter-spacing: -0.008em; }  /* 19px — dialog title */
+  .text-h4 { font-size: 1.3125rem; line-height: 1.35; letter-spacing: -0.006em; }  /* 21px — H4 */
+  .text-h3 { font-size: 1.5rem; line-height: 1.3; letter-spacing: -0.012em; }  /* 24px — H3 */
+  .text-display { font-size: 1.5625rem; line-height: 1.25; letter-spacing: -0.014em; }  /* 25px */
+  .text-h2 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.016em; }  /* 28px — H2 */
+  .text-section { font-size: 1.6875rem; line-height: 1.2; letter-spacing: -0.016em; }  /* 27px */
+  .text-stat { font-size: 2rem; line-height: 1.1; letter-spacing: -0.02em; }  /* 32px — hero stat */
+  .text-bignum { font-size: 2.125rem; line-height: 1.05; letter-spacing: -0.022em; }  /* 34px — H1 / hero number */
+  .text-hero { font-size: 2.875rem; line-height: 1.0; letter-spacing: -0.025em; }  /* 46px */
+  .text-cardtitle { font-size: 1.375rem; line-height: 1.3; letter-spacing: -0.01em; }  /* 22px — SectionCard title */
 
   /* ── Data text hierarchy — DS-derived steps, predictable contrast ──
        text-data-primary  foreground            — values, headings

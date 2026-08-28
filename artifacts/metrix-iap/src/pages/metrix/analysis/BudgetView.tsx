@@ -37,11 +37,11 @@ function EventRowsList({ rows }: { rows: EventRow[] }) {
     <div className="rounded-xl border border-border/40 overflow-hidden">
       {/* Compact header row */}
       <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2 border-b border-border/30 bg-foreground/[0.015]">
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Event</span>
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 text-right">Spend</span>
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 text-right">Results</span>
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 text-right">CPA</span>
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 text-right">Clicks</span>
+        <span className="text-label uppercase tracking-widest text-muted-foreground/75">Event</span>
+        <span className="text-label uppercase tracking-widest text-muted-foreground/75 text-right">Spend</span>
+        <span className="text-label uppercase tracking-widest text-muted-foreground/75 text-right">Results</span>
+        <span className="text-label uppercase tracking-widest text-muted-foreground/75 text-right">CPA</span>
+        <span className="text-label uppercase tracking-widest text-muted-foreground/75 text-right">Clicks</span>
       </div>
       {fold.visible.map(({ event, totals }) => (
         <div
@@ -49,10 +49,10 @@ function EventRowsList({ rows }: { rows: EventRow[] }) {
           className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2.5 border-b border-border/15 last:border-b-0 hover:bg-foreground/[0.02] transition-colors"
         >
           <span className="text-body font-medium text-foreground/90 truncate">{eventLabel(event)}</span>
-          <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{fmtUSD(totals.spend, 0)}</span>
-          <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{fmtNum(totals.results)}</span>
-          <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—"}</span>
-          <span className="text-body font-mono tabular-nums text-muted-foreground/75 text-right">{fmtNum(totals.link_clicks)}</span>
+          <span className="text-body tabular-nums text-foreground/80 text-right">{fmtUSD(totals.spend, 0)}</span>
+          <span className="text-body tabular-nums text-foreground/80 text-right">{fmtNum(totals.results)}</span>
+          <span className="text-body tabular-nums text-foreground/80 text-right">{totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—"}</span>
+          <span className="text-body tabular-nums text-muted-foreground/75 text-right">{fmtNum(totals.link_clicks)}</span>
         </div>
       ))}
       <ShowMoreButton total={rows.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="events" />

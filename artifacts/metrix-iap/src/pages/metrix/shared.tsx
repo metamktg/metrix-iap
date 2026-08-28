@@ -531,7 +531,7 @@ export function CaveatNote({
         <Info className="w-3.5 h-3.5 text-status-warning/70 shrink-0 mt-1" />
         <div className="flex-1 min-w-0">
           {source && (
-            <span className="text-label font-mono uppercase tracking-widest text-status-warning/65 block mb-0.5">
+            <span className="text-label uppercase tracking-widest text-status-warning/65 block mb-0.5">
               {source}
             </span>
           )}
@@ -779,7 +779,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
           {allComplete ? "Loop complete" : "Setup progress"}
         </span>
         <div className="flex-1 h-px bg-border/20" />
-        <span className="text-label font-mono tabular-nums text-muted-foreground/75">{doneCount}/{steps.length}</span>
+        <span className="text-label tabular-nums text-muted-foreground/75">{doneCount}/{steps.length}</span>
       </div>
       {/* Completion banner — shown when all steps are done */}
       {allComplete ? (
@@ -1035,7 +1035,7 @@ export function MetricTile({
               identical to the static variant beside it and gave the reader
               no reason to press it. It brightens on hover instead of
               materialising. */}
-          <div className="mt-2 text-micro font-mono uppercase tracking-wider text-interactive/80 group-hover/tile:text-interactive transition-[color] duration-150 ease-[cubic-bezier(0.2,0,0,1)]">
+          <div className="mt-2 text-micro uppercase tracking-wider text-interactive/80 group-hover/tile:text-interactive transition-[color] duration-150 ease-[cubic-bezier(0.2,0,0,1)]">
             Segment breakdown →
           </div>
         </div>
@@ -1462,7 +1462,7 @@ export function MetricSelectionBar({
 }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2.5 border-b border-border/30 bg-foreground/[0.01]">
-      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75">
+      <span className="text-caption uppercase tracking-widest text-muted-foreground/75">
         Metric selection
       </span>
       {events.map((e) => {
@@ -1513,7 +1513,7 @@ export function DatePresetBar({
 }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-foreground/[0.01]">
-      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0">
+      <span className="text-caption uppercase tracking-widest text-muted-foreground/75 shrink-0">
         Window
       </span>
       <div className="flex items-center gap-1 flex-wrap">
@@ -1679,7 +1679,7 @@ export function DataWindowBar({
   const selectedKey = selected ? `${selected.start}|${selected.end}` : null;
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-foreground/[0.01]">
-      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0">
+      <span className="text-caption uppercase tracking-widest text-muted-foreground/75 shrink-0">
         Period
       </span>
       <div className="flex items-center gap-1 flex-wrap">

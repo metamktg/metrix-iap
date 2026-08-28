@@ -165,7 +165,7 @@ export function CreativeCommandCenter() {
                       <div className="min-w-0">
                         <p className="text-body font-medium text-foreground/90 capitalize truncate">
                           {run.status}
-                          <span className="ml-2 text-caption font-mono font-normal text-muted-foreground/75 normal-case">{run.id}</span>
+                          <span className="ml-2 text-caption font-normal text-muted-foreground/75 normal-case">{run.id}</span>
                         </p>
                         <p className="text-caption text-muted-foreground/75">
                           {new Date(run.started_at).toLocaleString()}

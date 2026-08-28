@@ -114,7 +114,7 @@ function DetailDrawer({
       <div className="fixed right-0 top-0 h-full w-[400px] max-w-full bg-surface-deep border-l border-border/50 z-50 flex flex-col overflow-hidden elevation-floating">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-border/40">
           <div className="flex-1 min-w-0">
-            <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest mb-1">
+            <div className="text-label text-muted-foreground/75 uppercase tracking-widest mb-1">
               Recommendation
             </div>
             <p className="text-title font-bold text-foreground leading-tight">{card.title}</p>
@@ -136,23 +136,23 @@ function DetailDrawer({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Rationale</label>
+            <label className="text-label uppercase tracking-widest text-muted-foreground/75">Rationale</label>
             <p className="text-body text-foreground/80 leading-relaxed"><TokenizedConceptText text={card.rationale} /></p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Recommended action</label>
+            <label className="text-label uppercase tracking-widest text-muted-foreground/75">Recommended action</label>
             <p className="text-body text-foreground/80 leading-relaxed"><TokenizedConceptText text={card.recommendedAction} /></p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Confidence</label>
+            <label className="text-label uppercase tracking-widest text-muted-foreground/75">Confidence</label>
             <p className="text-body text-foreground/80 capitalize">{card.confidence}</p>
           </div>
 
           {onSegments && (
             <div className="space-y-1.5">
-              <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Evidence segments</label>
+              <label className="text-label uppercase tracking-widest text-muted-foreground/75">Evidence segments</label>
               <div>
                 <button
                   onClick={() => onSegments(card)}
@@ -402,7 +402,7 @@ export function RecommendationDeck({
               </button>
             </div>
 
-            <div className="flex items-center justify-center gap-3 mt-3 text-caption text-muted-foreground/75 font-mono">
+            <div className="flex items-center justify-center gap-3 mt-3 text-caption text-muted-foreground/75">
               <span>← reject</span>
               <span>→ add to tray</span>
               <span>↑ / space details</span>
@@ -462,7 +462,7 @@ function TaskTray({
     <div className="space-y-5">
       {groups.map((g) => (
         <div key={g.label}>
-          <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">{g.label}</div>
+          <div className="text-label uppercase tracking-widest text-muted-foreground/75 mb-2">{g.label}</div>
           <div className="space-y-2">
             {g.rows.map((s) => {
               const done = isDone(scopeId, s.id);

@@ -147,10 +147,10 @@ function VerdictBanner({
             AI Verdict
           </span>
           {runType && (
-            <span className="text-label text-muted-foreground/75 font-mono">{runType}</span>
+            <span className="text-label text-muted-foreground/75">{runType}</span>
           )}
           {dateRange && (dateRange.start || dateRange.end) && (
-            <span className="text-label text-muted-foreground/75 font-mono ml-auto">
+            <span className="text-label text-muted-foreground/75 ml-auto">
               {/* window_start/window_end are calendar days, not instants
                   — see fmtDay in lib/normalize. */}
               {fmtDayRange(dateRange.start, dateRange.end, { year: true })}
@@ -216,7 +216,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
     >
       {/* Header row: concept code + tier badge + confidence */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-caption font-bold font-mono text-foreground/60 bg-foreground/[0.05] px-1.5 py-0.5 rounded border border-foreground/[0.08]">
+        <span className="text-caption font-bold text-foreground/60 bg-foreground/[0.05] px-1.5 py-0.5 rounded border border-foreground/[0.08]">
           {score.book} {score.concept_code}
         </span>
         <span
@@ -304,7 +304,7 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
         <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
           Flagged campaigns
         </span>
-        <span className="text-label text-muted-foreground/75 font-mono ml-auto">
+        <span className="text-label text-muted-foreground/75 ml-auto">
           {fmtUSD(totalWasted, 0)} flagged spend
         </span>
       </div>
@@ -316,7 +316,7 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
               <p className="text-body font-medium text-foreground/80 truncate">{p.campaign}</p>
               <p className="text-caption text-muted-foreground/75 leading-snug mt-0.5">{p.diagnosis}</p>
             </div>
-            <span className="shrink-0 text-caption font-mono tabular-nums text-status-warning/70">
+            <span className="shrink-0 text-caption tabular-nums text-status-warning/70">
               {fmtUSD(p.wasted_spend ?? p.spend, 0)}
             </span>
           </div>
@@ -513,7 +513,7 @@ export function FindingsView() {
                     <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
                       Concept rankings
                     </span>
-                    <span className="text-label text-muted-foreground/75 font-mono">
+                    <span className="text-label text-muted-foreground/75">
                       {conceptScores.length} concepts · sorted by CPA
                     </span>
                   </div>

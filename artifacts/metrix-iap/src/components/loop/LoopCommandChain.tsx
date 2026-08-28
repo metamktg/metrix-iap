@@ -339,7 +339,7 @@ function StageTile({
           {isFailed ? "Failed" : label}
         </span>
         {isRunning && elapsedSeconds !== undefined && (
-          <span className="text-label font-mono tabular-nums text-status-warning/80 leading-none">
+          <span className="text-label tabular-nums text-status-warning/80 leading-none">
             {fmtElapsed(elapsedSeconds)}
           </span>
         )}
@@ -869,7 +869,7 @@ function CommandHub({
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-micro-num font-bold tabular-nums text-status-warning/65">{progressPct}%</span>
               {elapsedSeconds > 0 && (
-                <span className="text-micro-num font-mono tabular-nums text-status-warning/35 leading-none">
+                <span className="text-micro-num tabular-nums text-status-warning/35 leading-none">
                   {fmtElapsed(elapsedSeconds)}
                 </span>
               )}
@@ -981,7 +981,7 @@ function CommandHub({
           {/* Last run context — shown when a prior run exists */}
           {analysisRun && (analysisRun.status === "success" || analysisRun.status === "error") && (
             <div className="rounded-lg border border-border/25 bg-foreground/[0.02] px-2.5 py-2 space-y-1">
-              <p className="text-micro font-mono uppercase text-muted-foreground/75">Last run</p>
+              <p className="text-micro uppercase text-muted-foreground/75">Last run</p>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {analysisRun.status === "success" ? (
                   <span className="flex items-center gap-1 text-caption font-semibold text-status-success/70">
@@ -998,7 +998,7 @@ function CommandHub({
                   </span>
                 )}
                 {analysisRun.rows_ingested != null && (
-                  <span className="text-label font-mono text-muted-foreground/75 tabular-nums">
+                  <span className="text-label text-muted-foreground/75 tabular-nums">
                     {analysisRun.rows_ingested.toLocaleString()} rows
                   </span>
                 )}
@@ -1008,7 +1008,7 @@ function CommandHub({
 
           {/* Data source context */}
           <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
-            <p className="text-micro font-mono uppercase text-muted-foreground/75">Data source</p>
+            <p className="text-micro uppercase text-muted-foreground/75">Data source</p>
             <p className="text-label text-foreground/70 leading-relaxed">
               {isLiveMeta
                 ? "Live Meta ad account connection"
@@ -1019,7 +1019,7 @@ function CommandHub({
           {/* Date window picker (manual accounts only) */}
           {!isLiveMeta && (
             <div className="space-y-1.5">
-              <p className="text-micro font-mono uppercase text-muted-foreground/75 flex items-center gap-1">
+              <p className="text-micro uppercase text-muted-foreground/75 flex items-center gap-1">
                 <CalendarRange className="w-3 h-3" /> Date window
               </p>
               <div className="grid grid-cols-2 gap-1">
@@ -1114,7 +1114,7 @@ function CommandHub({
       return (
         <div className="flex flex-col gap-2.5">
           <div>
-            <p className="text-micro font-mono uppercase text-muted-foreground/75 mb-1.5">
+            <p className="text-micro uppercase text-muted-foreground/75 mb-1.5">
               Ground strategy in
             </p>
             <RunSelector runs={candidateRuns} value={runSelection} onChange={setRunSelection} />
@@ -1189,7 +1189,7 @@ function CommandHub({
       if (pendingConfirm === "report") return (
         <div className="flex flex-col gap-2.5">
           <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
-            <p className="text-micro font-mono uppercase text-muted-foreground/75">Delivery mode</p>
+            <p className="text-micro uppercase text-muted-foreground/75">Delivery mode</p>
             <div className="flex items-center gap-1 rounded-md border border-border/40 p-0.5 w-fit mt-1.5">
               {(["internal", "client"] as const).map((m) => (
                 <button
@@ -1267,7 +1267,7 @@ function CommandHub({
       <div className="flex flex-col gap-2.5">
         {/* Strategy context */}
         <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1.5">
-          <p className="text-micro font-mono uppercase text-muted-foreground/75">Grounded in</p>
+          <p className="text-micro uppercase text-muted-foreground/75">Grounded in</p>
           <p className="text-label text-foreground/70 leading-relaxed">
             Strategy
             {strategyLastRun?.finished_at ? ` · generated ${fmtInstantDate(strategyLastRun.finished_at)}` : ""}
@@ -1276,17 +1276,17 @@ function CommandHub({
           {(pillarCount > 0 || hypothesisCount > 0 || icpCount > 0) && (
             <div className="flex flex-wrap gap-1.5 pt-0.5">
               {pillarCount > 0 && (
-                <span className="text-caption font-mono text-muted-foreground/75 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                <span className="text-caption text-muted-foreground/75 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
                   {pillarCount} pillar{pillarCount === 1 ? "" : "s"}
                 </span>
               )}
               {hypothesisCount > 0 && (
-                <span className="text-caption font-mono text-muted-foreground/75 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                <span className="text-caption text-muted-foreground/75 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
                   {hypothesisCount} hypothesis{hypothesisCount === 1 ? "" : "es"}
                 </span>
               )}
               {icpCount > 0 && (
-                <span className="text-caption font-mono text-muted-foreground/75 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                <span className="text-caption text-muted-foreground/75 bg-foreground/[0.04] border border-border/25 rounded px-1.5 py-0.5">
                   {icpCount} ICP{icpCount === 1 ? "" : "s"}
                 </span>
               )}
@@ -1865,7 +1865,7 @@ export function LoopCommandChain({
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-micro-num font-bold tabular-nums text-status-warning/65">{pct}%</span>
-                  <span className="text-micro-num font-mono tabular-nums text-status-warning/35 leading-none">
+                  <span className="text-micro-num tabular-nums text-status-warning/35 leading-none">
                     {fmtElapsed(activeElapsed)}
                   </span>
                 </div>

@@ -164,7 +164,7 @@ export function AlertsView() {
                 <DrawerField label="Recommended action"><TokenizedConceptText text={detail.recommended_action} /></DrawerField>
                 {detail.source_path && (
                   <DrawerField label="Source">
-                    <span className="font-mono text-label text-muted-foreground/75">{detail.source_path}</span>
+                    <span className=" text-label text-muted-foreground/75">{detail.source_path}</span>
                   </DrawerField>
                 )}
               </InfoDrawer>

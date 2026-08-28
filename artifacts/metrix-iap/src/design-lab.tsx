@@ -85,19 +85,19 @@ const COLS: MetricColumn<TRow>[] = [
   { key: "ctr", label: "Link CTR", value: (r) => r.ctr, format: pct, optional: true },
 ];
 
-// Three faces, one job each: Outfit sets every heading, Figtree sets every
-// sentence and the eyebrow band, Share Tech Mono sets the micro-index. The
-// levels separate by size, weight and tracking — never by typeface.
+// TWO faces: Outfit sets every heading, Figtree sets everything else. The
+// levels separate by size, weight and tracking — never by typeface. Nothing
+// a reader takes in sits under 13px.
 const TYPE_LADDER: [string, string, string][] = [
-  ["text-bignum font-h1 font-bold leading-none", "32 · Outfit 700", "H1 — route title"],
-  ["text-h2 font-h2 font-bold leading-tight", "27 · Outfit 700", "H2 — section title"],
-  ["text-h3 font-h3 font-bold leading-snug", "23 · Outfit 700", "H3 — card title"],
-  ["text-h4 font-h4 font-bold leading-snug", "20 · Outfit 700", "H4 — group header"],
-  ["text-h5 font-h5 font-bold leading-snug", "17 · Outfit 700", "H5 — sub-group"],
-  ["text-body font-body", "14 · Figtree 400", "Body — the floor. Every sentence lands here or above."],
-  ["text-caption font-body", "12 · Figtree", "Caption — non-sentence metadata"],
-  ["text-label font-h6 font-semibold uppercase", "11 · Figtree 600", "H6 / label — eyebrow"],
-  ["text-micro font-mono uppercase", "10 · Share Tech Mono", "Micro — index"],
+  ["text-bignum font-h1 font-bold leading-none", "34 · Outfit 700", "H1 — route title"],
+  ["text-h2 font-h2 font-bold leading-tight", "28 · Outfit 700", "H2 — section title"],
+  ["text-h3 font-h3 font-bold leading-snug", "24 · Outfit 700", "H3 — card title"],
+  ["text-h4 font-h4 font-bold leading-snug", "21 · Outfit 700", "H4 — group header"],
+  ["text-h5 font-h5 font-bold leading-snug", "18 · Outfit 700", "H5 — sub-group"],
+  ["text-body font-body", "15 · Figtree 400", "Body — the floor. Every sentence lands here or above."],
+  ["text-caption font-body", "13 · Figtree", "Caption — the reading floor. Counts, units, dates."],
+  ["text-label font-h6 font-semibold uppercase", "12 · Figtree 600", "H6 / label — eyebrow. Looked at, not read."],
+  ["text-micro-num tabular-nums", "11 · Figtree", "Micro — badge numerals"],
 ];
 
 function App() {
@@ -109,11 +109,11 @@ function App() {
           The real stylesheet, the real tokens, fixture data · everything jsdom cannot see
         </p>
 
-        <Panel title="Type scale" note="One heading face · every step ≥3px · body floor 14px · weight never inverts the ramp">
+        <Panel title="Type scale" note="Two faces · every header step ≥3px · body floor 15px · nothing readable under 13px">
           <div className="flex flex-col gap-2">
             {TYPE_LADDER.map(([cls, px, desc]) => (
               <div key={cls} className="flex items-baseline gap-4 border-b border-border/25 pb-2">
-                <span className="text-micro font-mono text-muted-foreground/75 w-28 shrink-0 tabular-nums">{px}</span>
+                <span className="text-micro text-muted-foreground/75 w-28 shrink-0 tabular-nums">{px}</span>
                 <span className={cls}>{desc}</span>
               </div>
             ))}
@@ -142,14 +142,14 @@ function App() {
                 <div className="w-16 h-12 rounded-md grid place-items-center" style={{ background: divergingFill(t) }}>
                   <span className="text-caption text-foreground tabular-nums">$12.44</span>
                 </div>
-                <span className="text-micro font-mono text-muted-foreground/75 tabular-nums">{t.toFixed(2)}</span>
+                <span className="text-micro text-muted-foreground/75 tabular-nums">{t.toFixed(2)}</span>
               </div>
             ))}
             <div className="flex flex-col gap-1.5">
               <div className="w-16 h-12 rounded-md grid place-items-center" style={{ background: divergingFill(null) }}>
                 <span className="text-caption text-muted-foreground/75">—</span>
               </div>
-              <span className="text-micro font-mono text-muted-foreground/75">n/a</span>
+              <span className="text-micro text-muted-foreground/75">n/a</span>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -174,11 +174,11 @@ function App() {
         <Panel title="v3 tonal ramps" note="Six roles, one shared perceptual lightness scale · 100 lightest → 900 darkest">
           {["blue", "cyan", "neutral", "success", "danger", "warning"].map((role) => (
             <div key={role} className="flex items-center gap-1 mb-1">
-              <span className="text-micro font-mono text-muted-foreground/75 w-16 shrink-0">{role}</span>
+              <span className="text-micro text-muted-foreground/75 w-16 shrink-0">{role}</span>
               {[100, 200, 300, 400, 500, 600, 700, 800, 900].map((step) => (
                 <div key={step} className="flex-1 min-w-0">
                   <div className="h-9 rounded-md" style={{ background: `var(--mx-${role}-${step})` }} />
-                  <div className="text-micro font-mono tabular-nums text-muted-foreground text-center mt-1">{step}</div>
+                  <div className="text-micro tabular-nums text-muted-foreground text-center mt-1">{step}</div>
                 </div>
               ))}
             </div>
@@ -192,7 +192,7 @@ function App() {
                 <div className="w-16 h-12 rounded-md border border-border/25 grid place-items-center" style={{ background: magnitudeFill(t, 0) }}>
                   <span className="text-caption text-foreground tabular-nums">$4,820</span>
                 </div>
-                <span className="text-micro font-mono text-muted-foreground/75 tabular-nums">{t.toFixed(2)}</span>
+                <span className="text-micro text-muted-foreground/75 tabular-nums">{t.toFixed(2)}</span>
               </div>
             ))}
             <div className="flex items-center gap-1 ml-4">
@@ -267,7 +267,7 @@ function App() {
           <div className="flex flex-col gap-3">
             {(["performance_by_cell", "conversion_tracking_signal", "historical_matrix_4x4"] as const).map((shape) => (
               <div key={shape} className="flex items-center gap-3 flex-wrap">
-                <span className="text-micro font-mono text-muted-foreground/75 w-56 shrink-0">{shape}</span>
+                <span className="text-micro text-muted-foreground/75 w-56 shrink-0">{shape}</span>
                 <ViewSwitcher shape={shape} value="table" onChange={() => {}} />
               </div>
             ))}

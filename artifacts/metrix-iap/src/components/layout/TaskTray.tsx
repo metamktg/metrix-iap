@@ -119,7 +119,7 @@ function TrayAnalysisUnconfigured({ accountId }: { accountId: string }) {
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30 bg-primary/[0.04]">
         <CalendarRange className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
         <span className="text-caption font-semibold text-foreground/80 flex-1">IAP Analysis</span>
-        <span className="text-micro font-mono uppercase text-status-warning/70 border border-status-warning/25 bg-status-warning/[0.08] rounded px-1.5 py-0.5 leading-none">
+        <span className="text-micro uppercase text-status-warning/70 border border-status-warning/25 bg-status-warning/[0.08] rounded px-1.5 py-0.5 leading-none">
           Setup required
         </span>
       </div>
@@ -382,7 +382,7 @@ function TraySection({
           {title}
         </span>
         {count != null && count > 0 && (
-          <span className="text-micro-num font-mono text-interactive bg-primary/12 border border-primary/20 rounded px-1 leading-tight tabular-nums">
+          <span className="text-micro-num text-interactive bg-primary/12 border border-primary/20 rounded px-1 leading-tight tabular-nums">
             {count}
           </span>
         )}
@@ -761,7 +761,7 @@ export function TaskTray() {
           <ClipboardList className="w-4 h-4 text-interactive" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest leading-none mb-0.5 truncate">
+          <p className="text-label text-muted-foreground/75 uppercase tracking-widest leading-none mb-0.5 truncate">
             Workflow
           </p>
           <p className="text-title font-bold text-foreground leading-tight truncate">

@@ -119,7 +119,7 @@ function DnaLociBars({ variables }: { variables: DnaVariable[] }) {
     <div className="mt-3">
       <div className="flex items-center gap-1 mb-1.5">
         <Dna className="w-3.5 h-3.5 text-interactive/70" />
-        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">CPA vs avatar average</span>
+        <span className="text-label uppercase tracking-widest text-muted-foreground/75">CPA vs avatar average</span>
       </div>
       <div className="space-y-1.5">
         {rows.map(({ v, lift }, idx) => {
@@ -127,8 +127,8 @@ function DnaLociBars({ variables }: { variables: DnaVariable[] }) {
           const good = lift >= 0;
           return (
             <div key={v.code} className="flex items-center gap-2">
-              <span className="text-label w-6 shrink-0 font-mono text-muted-foreground/75">L{idx + 1}</span>
-              <span className="text-caption w-28 shrink-0 font-mono truncate text-foreground/75" title={v.code}>{v.code}</span>
+              <span className="text-label w-6 shrink-0 text-muted-foreground/75">L{idx + 1}</span>
+              <span className="text-caption w-28 shrink-0 truncate text-foreground/75" title={v.code}>{v.code}</span>
               <div className="relative flex-1 h-[5px]">
                 <div className="absolute inset-y-0 left-1/2 w-px bg-border/60" />
                 <div
@@ -153,7 +153,7 @@ function DnaVariableLine({ v, resultNoun }: { v: DnaVariable; resultNoun: string
       <div className="flex items-center gap-2 min-w-0 flex-wrap">
         <VariableChip code={v.code} />
         {v.family && (
-          <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/75">
+          <span className="text-label uppercase tracking-wider text-muted-foreground/75">
             {familyLabel(v.family)}
           </span>
         )}
@@ -214,14 +214,14 @@ function AvatarTile({
         <div className="flex items-center gap-3 min-w-0">
           <PersonaAvatar name={flatName} />
           <div className="min-w-0">
-            <p className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">
+            <p className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-0.5">
               AVATAR {String(rank).padStart(2, "0")}
             </p>
             <span className="inline-flex items-center gap-1 text-title font-bold text-foreground leading-tight whitespace-pre-line">
               {col.name}
               <ChevronRight className="w-3.5 h-3.5 text-interactive/70 shrink-0 -translate-x-0.5 group-hover:translate-x-0 transition-transform" />
             </span>
-            <div className="text-label font-mono text-muted-foreground/75">{col.icp}</div>
+            <div className="text-label text-muted-foreground/75">{col.icp}</div>
           </div>
         </div>
         <span className="shrink-0 text-caption font-medium text-muted-foreground/75">
@@ -367,26 +367,26 @@ function DrawerAdList({
                   <TooltipProvider delayDuration={150}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/75 cursor-default">
+                        <span className="text-label border border-border/30 px-1 py-0.5 rounded text-muted-foreground/75 cursor-default">
                           {ad.cell}
                           <span className="sr-only">{` — matrix cell${ad.concept ? ` for ${ad.concept}` : ""}`}</span>
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[240px]">
                         <p className="text-caption leading-relaxed">
-                          Matrix cell <span className="font-mono">{ad.cell}</span>{ad.concept ? ` — ${ad.concept}` : ""}
+                          Matrix cell <span className="">{ad.cell}</span>{ad.concept ? ` — ${ad.concept}` : ""}
                         </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 )}
                 {ad.variation && (
-                  <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/75" title="Variation">
+                  <span className="text-label border border-border/30 px-1 py-0.5 rounded text-muted-foreground/75" title="Variation">
                     Var {ad.variation}
                   </span>
                 )}
                 {ad.test_id && (
-                  <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/75" title="Test ID">
+                  <span className="text-label border border-border/30 px-1 py-0.5 rounded text-muted-foreground/75" title="Test ID">
                     {ad.test_id}
                   </span>
                 )}

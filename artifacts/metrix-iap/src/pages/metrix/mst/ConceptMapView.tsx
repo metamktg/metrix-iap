@@ -250,7 +250,7 @@ function ConceptGroupList({
           >
             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
               {g.cellIds.map((c) => (
-                <span key={c} className={cn(TYPE.label, "font-mono text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none")}>{c}</span>
+                <span key={c} className={cn(TYPE.label, " text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none")}>{c}</span>
               ))}
             </div>
             <p className={cn(TYPE.title, "leading-tight")}>{g.name}</p>

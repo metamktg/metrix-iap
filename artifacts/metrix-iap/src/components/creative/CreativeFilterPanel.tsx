@@ -170,7 +170,7 @@ function ConceptMultiSelect({
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-52 max-h-[280px] overflow-y-auto p-1.5">
-        <p className="text-micro font-mono uppercase text-muted-foreground/75 px-1.5 pb-1 mb-0.5 border-b border-border/20">
+        <p className="text-micro uppercase text-muted-foreground/75 px-1.5 pb-1 mb-0.5 border-b border-border/20">
           Concept family
         </p>
         {options.length === 0 ? (

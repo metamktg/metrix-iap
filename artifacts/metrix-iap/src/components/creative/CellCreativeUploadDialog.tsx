@@ -157,7 +157,7 @@ export function CellCreativeUploadDialog({
       <DialogContent className="max-w-xs">
         <DialogHeader>
           <DialogTitle className={DIALOG.title}>
-            Upload creative · <span className="font-mono text-interactive">{cellId}</span>
+            Upload creative · <span className=" text-interactive">{cellId}</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -165,7 +165,7 @@ export function CellCreativeUploadDialog({
           <div className="flex flex-col items-center gap-3 py-6">
             <CheckCircle className="w-8 h-8 text-status-success" />
             <p className="text-body text-center text-muted-foreground">
-              Creative filed to <span className="font-mono text-interactive">{cellId}</span> — the library will refresh automatically.
+              Creative filed to <span className=" text-interactive">{cellId}</span> — the library will refresh automatically.
             </p>
             {validation && (
               <div className="w-full flex items-center gap-1.5 justify-center text-caption text-muted-foreground/75">
@@ -190,10 +190,10 @@ export function CellCreativeUploadDialog({
               <div className="space-y-1.5 text-caption text-status-warning/90">
                 <p className="font-medium text-status-warning">Doesn't match this cell's recorded DNA</p>
                 {validation.missing.length > 0 && (
-                  <p>Missing: <span className="font-mono">{validation.missing.join(", ")}</span></p>
+                  <p>Missing: <span className="">{validation.missing.join(", ")}</span></p>
                 )}
                 {validation.conflicting.length > 0 && (
-                  <p>Conflicts: <span className="font-mono">{validation.conflicting.join(", ")}</span></p>
+                  <p>Conflicts: <span className="">{validation.conflicting.join(", ")}</span></p>
                 )}
                 {validation.overall_confidence != null && (
                   <p>Detection confidence: {Math.round(validation.overall_confidence * 100)}%</p>

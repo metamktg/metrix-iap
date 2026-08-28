@@ -67,7 +67,7 @@ function VariableEditorRow({
         list={`codes-${variable.family}`}
         aria-label="Variable code"
         className={[
-          "h-7 flex-1 min-w-0 rounded border bg-background text-label text-foreground px-2 font-mono",
+          "h-7 flex-1 min-w-0 rounded border bg-background text-label text-foreground px-2",
           valid ? "border-border/50" : "border-status-danger/50",
         ].join(" ")}
       />
@@ -199,7 +199,7 @@ function ReviewItem({
                 <span
                   key={v.code}
                   title={v.evidence ?? undefined}
-                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-border/50 bg-foreground/[0.03] text-label font-mono text-foreground/90"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-border/50 bg-foreground/[0.03] text-label text-foreground/90"
                 >
                   {v.code}
                   <span className="text-muted-foreground/75">{pct(v.confidence)}</span>
@@ -220,7 +220,7 @@ function ReviewItem({
                   <span
                     key={code}
                     className={[
-                      "inline-flex items-center gap-1 px-2 py-1 rounded border text-label font-mono",
+                      "inline-flex items-center gap-1 px-2 py-1 rounded border text-label",
                       matched
                         ? "border-status-success/30 bg-status-success/[0.05] text-status-success"
                         : "border-status-warning/30 bg-status-warning/[0.05] text-status-warning",

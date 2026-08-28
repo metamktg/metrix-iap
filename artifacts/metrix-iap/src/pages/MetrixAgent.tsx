@@ -71,7 +71,7 @@ function WaitlistForm() {
 
   return (
     <form onSubmit={submit} className="p-4 rounded-xl border border-primary/25 bg-primary/[0.04]">
-      <div className="text-label font-mono uppercase tracking-widest text-interactive/60 mb-2">
+      <div className="text-label uppercase tracking-widest text-interactive/60 mb-2">
         Join the waitlist
       </div>
       <p className="text-caption text-muted-foreground/75 mb-3 leading-relaxed">
@@ -169,7 +169,7 @@ export function MetrixAgent() {
 
           {/* Status card */}
           <div className="p-4 rounded-xl border border-border/40 bg-foreground/[0.02]">
-            <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 mb-3">
+            <div className="text-label uppercase tracking-widest text-muted-foreground/75 mb-3">
               Build status
             </div>
             <PendingRow
@@ -190,7 +190,7 @@ export function MetrixAgent() {
             />
           </div>
 
-          <p className="text-label font-mono text-muted-foreground/75 text-center">
+          <p className="text-label text-muted-foreground/75 text-center">
             No fake chat messages · No demo agent output · No simulated responses
           </p>
         </div>

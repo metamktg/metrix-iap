@@ -98,7 +98,7 @@ function HypothesisCardList({
                 {inlineFacts.map((f) => (
                   <div key={f.label} className="flex items-center gap-1.5 min-w-0">
                     <f.Icon className="w-3 h-3 text-muted-foreground/75 shrink-0" />
-                    <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0">{f.label}</span>
+                    <span className="text-label uppercase tracking-widest text-muted-foreground/75 shrink-0">{f.label}</span>
                     <span className="text-caption text-foreground/70 truncate">{deriveLabel(f.value, 48)}</span>
                   </div>
                 ))}
@@ -228,7 +228,7 @@ export function HypothesisQueueView() {
                           >
                             {label}
                             <span className={cn(
-                              "text-label font-mono rounded px-0.5",
+                              "text-label rounded px-0.5",
                               active ? "text-interactive/70" : "text-muted-foreground/75",
                             )}>{count}</span>
                           </button>
@@ -275,7 +275,7 @@ export function HypothesisQueueView() {
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="max-w-[240px]">
                                     <p className="text-caption leading-relaxed">
-                                      Source matrix cell <span className="font-mono">{c}</span> — opens it in the IAP Library.
+                                      Source matrix cell <span className="">{c}</span> — opens it in the IAP Library.
                                     </p>
                                   </TooltipContent>
                                 </Tooltip>

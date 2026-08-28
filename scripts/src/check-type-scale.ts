@@ -4,17 +4,19 @@
 // the readability pass, and both are the kind of thing that decays one
 // well-meaning tweak at a time — so they are checked rather than trusted.
 //
-//   1. THE BODY FLOOR IS 14px. Any role the reader takes in as a sentence
-//      sits at 14px or above. Body prose used to be 12px beneath a 14px
-//      card title: a 2px step, which asks the eye to work out the
-//      hierarchy instead of handing it over.
+//   1. THE BODY FLOOR IS 15px, AND NOTHING A READER TAKES IN SITS UNDER
+//      13px. The ramp was lifted to those two numbers: caption (the
+//      smallest role carrying real information — counts, units, dates) is
+//      13px, and body prose is 15px. Everything below 13 is chrome that is
+//      LOOKED AT rather than read: an uppercase eyebrow at 12px and a badge
+//      numeral at 11px, both separated by case and colour rather than by
+//      being small enough to squint at.
 //
 //   2. A HEADER IS >= 3px ABOVE THE CONTENT IT LABELS.
-//        H1 32 -> H2 21 -> H3 17 -> body 14
-//      The rule stops at 12px, because 3px steps below that run out of
-//      readable sizes almost immediately (12 -> 9 -> 6). Everything under
-//      the floor is CHROME — uppercase micro-labels separated by case,
-//      weight, tracking and colour. Nothing carrying a sentence lives there.
+//        H1 34 -> H2 28 -> H3 24 -> H4 21 -> H5 18 -> body 15
+//      Under 13px the rule stops applying, because 3px steps run out of
+//      readable sizes almost immediately. Nothing carrying a sentence lives
+//      there.
 //
 // Sizes are read from index.css rather than duplicated here, so this
 // cannot pass while disagreeing with what actually ships.
@@ -99,7 +101,7 @@ if (fs.existsSync(DS_TEMPLATE)) {
   }
 }
 
-export const BODY_FLOOR = 14;
+export const BODY_FLOOR = 15;
 const MIN_HEADER_STEP = 3;
 
 // ── Rule 1: the body floor ────────────────────────────────────────────

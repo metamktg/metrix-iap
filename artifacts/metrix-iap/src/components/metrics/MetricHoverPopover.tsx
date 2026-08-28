@@ -145,14 +145,14 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
         {/* Header */}
         <div className="px-3 pt-2.5 pb-2.5 border-b border-[hsl(var(--border-subtle))]">
           <div
-            className="text-micro font-mono uppercase text-muted-foreground/75 mb-1"
+            className="text-micro uppercase text-muted-foreground/75 mb-1"
             data-testid="metric-popover-header-label"
           >
             {metric.label}
           </div>
           <div className="text-stat metric-num leading-none text-foreground">{metric.formatted}</div>
           {metric.sub && (
-            <div className="text-caption font-mono text-muted-foreground/75 mt-1 truncate tracking-wide">{metric.sub}</div>
+            <div className="text-caption text-muted-foreground/75 mt-1 truncate tracking-wide">{metric.sub}</div>
           )}
         </div>
 
@@ -160,7 +160,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
         <div className="px-3 py-3">
           {hasChart ? (
             <>
-              <div className="text-micro font-mono uppercase text-interactive/70 mb-2">
+              <div className="text-micro uppercase text-interactive/70 mb-2">
                 Top concepts
               </div>
               <ChartContainer
@@ -218,7 +218,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
                   : "Only one concept found — full breakdown available in the diagnostic."}
               </div>
               {metric.sub && (
-                <div className="text-caption font-mono text-muted-foreground/75">{metric.sub}</div>
+                <div className="text-caption text-muted-foreground/75">{metric.sub}</div>
               )}
             </div>
           )}

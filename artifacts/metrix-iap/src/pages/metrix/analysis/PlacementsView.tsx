@@ -190,13 +190,13 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
     if (rows.length === 0) return null;
     return (
       <div className="space-y-1">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">{label}</p>
+        <p className="text-label uppercase tracking-widest text-muted-foreground/75">{label}</p>
         <div className="rounded-lg border border-border/40 overflow-hidden">
           {[...rows].sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]).map((r, i) => (
             <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-foreground/[0.01]">
               <div className="min-w-0">
                 <div className="text-caption font-medium text-foreground truncate">{r.Placement}</div>
-                <div className="text-label font-mono text-muted-foreground/75 mt-0.5">
+                <div className="text-label text-muted-foreground/75 mt-0.5">
                   {fmtNum(r.Impressions)} impr · {fmtNum(r["Link clicks"] ?? 0)} clicks
                   {r.CPA != null && ` · CPA ${fmtUSD(r.CPA)}`}
                 </div>
@@ -216,7 +216,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
     <Dialog open={placement != null} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-xl bg-surface-deep border-border/50 max-h-[82vh] overflow-y-auto">
         <DialogHeader className="text-left space-y-1">
-          <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest">
+          <div className="text-label text-muted-foreground/75 uppercase tracking-widest">
             Placement detail
           </div>
           <DialogTitle className={DIALOG.title}>{placement}</DialogTitle>
@@ -232,7 +232,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
           <div className="grid grid-cols-dashboard-4-sm gap-2">
             {tiles.map(({ label, value, delta }) => (
               <div key={label} className="mx-kpi-tile px-3 py-2.5">
-                <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">{label}</div>
+                <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-0.5">{label}</div>
                 <div className="text-stat metric-num leading-none">{value}</div>
                 {delta && (
                   <div className={cn("text-label mt-1 leading-none", delta.good ? "text-accent" : "text-status-warning/80")}>

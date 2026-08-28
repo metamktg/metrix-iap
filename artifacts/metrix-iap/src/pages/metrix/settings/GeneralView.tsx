@@ -40,8 +40,8 @@ function SystemInfoSection() {
     <SectionCard title="System" desc="Build and data source">
       <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
         <div className="space-y-0.5">
-          <div className="text-caption font-medium text-foreground/80 font-mono">METRIX IAP v2.0-rc</div>
-          <div className="text-label text-muted-foreground/75 font-mono">SAMPLE / DEMO DATA</div>
+          <div className="text-caption font-medium text-foreground/80">METRIX IAP v2.0-rc</div>
+          <div className="text-label text-muted-foreground/75">SAMPLE / DEMO DATA</div>
         </div>
         <DataSourceBadgeToggle />
       </div>
@@ -101,7 +101,7 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
               tooLong ? "border-status-danger/50" : "border-border/40"
             )}
           />
-          <div className="text-label font-mono text-muted-foreground/75">
+          <div className="text-label text-muted-foreground/75">
             {tooLong ? `${trimmed.length}/80 — too long` : `id · ${accountId}`}
           </div>
         </div>
@@ -504,7 +504,7 @@ export function GeneralView() {
 
         <SystemInfoSection />
 
-        <div className={cn("text-label font-mono text-muted-foreground/80", "px-1")}>
+        <div className={cn("text-label text-muted-foreground/80", "px-1")}>
           Account ID · {account.id}
         </div>
       </div>

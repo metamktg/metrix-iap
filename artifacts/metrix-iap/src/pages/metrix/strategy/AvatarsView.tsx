@@ -397,13 +397,13 @@ function IcpProfileCard({
           <PersonaAvatar name={profile.profile_name} />
           <div className="min-w-0">
             {rank != null && (
-              <p className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">
+              <p className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-0.5">
                 ICP {String(rank).padStart(2, "0")}
                 {rankConfidenceText && ` · ${rankConfidenceText}`}
               </p>
             )}
             <p className="text-title font-bold text-foreground leading-tight">{profile.profile_name}</p>
-            <span className="text-label font-mono text-muted-foreground/75">{profile.profile_id}</span>
+            <span className="text-label text-muted-foreground/75">{profile.profile_id}</span>
           </div>
         </div>
         {profile.confidence_level && <ConfidenceBadge value={profile.confidence_level} />}
@@ -543,7 +543,7 @@ function AudienceSegmentTile({
         <div className="flex items-center gap-2 min-w-0">
           <SegmentGenderIcon gender={seg.gender} />
           <div className="min-w-0">
-            {rank != null && <p className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">SEGMENT {String(rank).padStart(2, "0")}</p>}
+            {rank != null && <p className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-0.5">SEGMENT {String(rank).padStart(2, "0")}</p>}
             <p className={cn(TYPE.title, "leading-snug truncate")}>{segmentLabel(seg)}</p>
           </div>
         </div>

@@ -117,7 +117,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
             return (
               <div key={c.id} className={cn("p-2 text-center transition-opacity", dimmedCol(c.id) && "opacity-30")}>
                 <div className="text-body font-semibold text-foreground leading-tight whitespace-pre-line">{c.name}</div>
-                <div className="text-micro font-mono text-muted-foreground/75 mt-1">
+                <div className="text-micro text-muted-foreground/75 mt-1">
                   {c.id}
                   {perf && (
                     <span className={cn("ml-1.5", (perf.results ?? 0) === 0 ? "text-status-warning/70" : "text-interactive/80")} data-testid={`matrix-col-perf-${c.id}`}>
@@ -133,7 +133,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
             <div key={row.id} className="contents">
               <div className={cn("p-2 flex flex-col justify-center rounded-l-lg border-l-2 my-0.5", ROW_COLOR[row.color] ?? "border-border/40")}>
                 <div className="text-body font-semibold text-foreground">Row {row.id}</div>
-                <div className="text-micro font-mono text-muted-foreground/75 mt-0.5">{row.shared}</div>
+                <div className="text-micro text-muted-foreground/75 mt-0.5">{row.shared}</div>
               </div>
               {matrix.columns.map((col) => {
                 const cell = cellOf(col.id, row.id);
@@ -180,7 +180,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                             Creative <span className="text-interactive text-caption leading-none" aria-hidden="true">›</span>
                           </button>
                         )}
-                        <div className="text-micro font-mono text-muted-foreground/75">{cell.cell_id}</div>
+                        <div className="text-micro text-muted-foreground/75">{cell.cell_id}</div>
                         {cell.plain_text.headline && (
                           <div className="text-body font-semibold text-foreground leading-tight line-clamp-3">{cell.plain_text.headline}</div>
                         )}
@@ -348,7 +348,7 @@ export function MstSprintsView() {
 
               {availableTiers.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75")}>
+                  <span className={cn(TYPE.label, " uppercase tracking-widest text-muted-foreground/75")}>
                     Filter by tier
                   </span>
                   <SegmentedToggle

@@ -56,7 +56,7 @@ function ControlSelect({
 }) {
   return (
     <label className="flex items-center gap-1.5 min-w-0">
-      <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0")}>{label}</span>
+      <span className={cn(TYPE.label, " uppercase tracking-widest text-muted-foreground/75 shrink-0")}>{label}</span>
       <select
         aria-label={label}
         value={value}
@@ -196,7 +196,7 @@ function BreakdownTable({ rows, metricLabel, showWindows, onDrillSegment }: {
                 {r.results != null ? fmtNum(r.results) : "n/a"}
               </td>
               {showWindows && (
-                <td className={cn(TYPE.label, "px-3 py-1.5 font-mono tabular-nums text-right text-muted-foreground/75 whitespace-nowrap")}>
+                <td className={cn(TYPE.label, "px-3 py-1.5 tabular-nums text-right text-muted-foreground/75 whitespace-nowrap")}>
                   {r.windowLabel}
                 </td>
               )}
@@ -415,7 +415,7 @@ export function KpiDrilldownModal({
         data-testid="kpi-drilldown-modal"
       >
         <DialogHeader className="text-left space-y-1">
-          <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest">
+          <div className="text-label text-muted-foreground/75 uppercase tracking-widest">
             {scope === "manager" ? "Metric breakdown · by ad account" : "Metric breakdown"}
           </div>
           <DialogTitle className={DIALOG.title}>{metric.label}</DialogTitle>
@@ -425,7 +425,7 @@ export function KpiDrilldownModal({
               : "Segmented view of this metric across the account's analysis dimensions."}
           </DialogDescription>
           {/* Window / run indicator */}
-          <div className="text-label font-mono text-muted-foreground/75 tracking-wide" data-testid="kpi-drilldown-window">
+          <div className="text-label text-muted-foreground/75 tracking-wide" data-testid="kpi-drilldown-window">
             {scope === "manager"
               ? overlapOn && overlapWindow != null
                 ? `Common overlap window · ${fmtWindowLabel(overlapWindow)}`
@@ -444,7 +444,7 @@ export function KpiDrilldownModal({
           <ViewToggle view={view} onChange={setView} />
           {scope === "manager" && (
             <label className="inline-flex items-center gap-1.5 ml-auto">
-              <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75")}>Common overlap window</span>
+              <span className={cn(TYPE.label, " uppercase tracking-widest text-muted-foreground/75")}>Common overlap window</span>
               <Switch
                 aria-label="Restrict all accounts to their common overlap window"
                 checked={overlapOn}
@@ -518,7 +518,7 @@ export function KpiDrilldownModal({
                   {rows.map((r) => (
                     <div key={r.key} className="flex items-center justify-between gap-3 px-1">
                       <span className={cn(TYPE.label, "text-muted-foreground/75 truncate")}>{r.label}</span>
-                      <span className={cn(TYPE.label, "font-mono tabular-nums text-muted-foreground/75 shrink-0")} data-testid="account-window-label">
+                      <span className={cn(TYPE.label, " tabular-nums text-muted-foreground/75 shrink-0")} data-testid="account-window-label">
                         {r.windowLabel}
                       </span>
                     </div>

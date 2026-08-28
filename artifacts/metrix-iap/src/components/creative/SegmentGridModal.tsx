@@ -217,7 +217,7 @@ export function SegmentGridModal({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-3xl bg-surface-deep border-border/50">
         <DialogHeader className="text-left space-y-1">
-          <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest">{kicker}</div>
+          <div className="text-label text-muted-foreground/75 uppercase tracking-widest">{kicker}</div>
           <DialogTitle className={DIALOG.title}>{title} — avatar × placement</DialogTitle>
           <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
             Avatar rows and placement columns are real marginals from this import, broken out by{" "}
@@ -240,16 +240,16 @@ export function SegmentGridModal({
               <table className="w-full min-w-[500px] border-collapse">
                 <thead className="sticky top-0 bg-surface-table z-10">
                   <tr className="border-b border-border/40">
-                    <th className="text-left text-micro font-mono uppercase text-muted-foreground/75 font-semibold px-2.5 py-2">
+                    <th className="text-left text-micro uppercase text-muted-foreground/75 font-semibold px-2.5 py-2">
                       Avatar segment
                     </th>
                     {placements.map(({ row: p }) => (
-                      <th key={p.Placement + p.Platform} className="text-center text-micro font-mono uppercase text-muted-foreground/75 font-semibold px-2 py-2 min-w-[76px]">
+                      <th key={p.Placement + p.Platform} className="text-center text-micro uppercase text-muted-foreground/75 font-semibold px-2 py-2 min-w-[76px]">
                         <div className="normal-case">{p.Placement}</div>
                         <div className="text-caption text-muted-foreground/75 capitalize">{p.Platform}</div>
                       </th>
                     ))}
-                    <th className="text-right text-micro font-mono uppercase text-interactive/70 font-semibold px-2.5 py-2">
+                    <th className="text-right text-micro uppercase text-interactive/70 font-semibold px-2.5 py-2">
                       Blended
                     </th>
                   </tr>
@@ -284,7 +284,7 @@ export function SegmentGridModal({
                   {/* Placement marginal row (account level) */}
                   <tr className="border-t border-border/40 bg-foreground/[0.015]">
                     <td className="px-2.5 py-2">
-                      <div className="text-label font-mono uppercase tracking-wide text-interactive/70">All avatars</div>
+                      <div className="text-label uppercase tracking-wide text-interactive/70">All avatars</div>
                       <div className="text-caption text-muted-foreground/75">placement marginals · account level</div>
                     </td>
                     {placements.map(({ row: p, totals }) => {

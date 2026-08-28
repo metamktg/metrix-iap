@@ -67,7 +67,7 @@ function AccountMenu({
             <p className="text-caption font-semibold text-foreground/90 truncate leading-tight">
               {email ?? "My account"}
             </p>
-            <p className="text-micro text-muted-foreground/75 font-mono uppercase leading-tight mt-0.5">
+            <p className="text-micro text-muted-foreground/75 uppercase leading-tight mt-0.5">
               Workspace member
             </p>
           </div>

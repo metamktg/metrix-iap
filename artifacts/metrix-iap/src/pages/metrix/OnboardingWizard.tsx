@@ -153,18 +153,18 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
                 <li>
                   Add a <span className="font-medium text-foreground">breakdown</span>: for the
                   Demographics export use{" "}
-                  <span className="font-mono text-foreground/90">Age</span> and{" "}
-                  <span className="font-mono text-foreground/90">Gender</span>; for the Placements
-                  export use <span className="font-mono text-foreground/90">Impression device</span>,{" "}
-                  <span className="font-mono text-foreground/90">Platform</span>, and{" "}
-                  <span className="font-mono text-foreground/90">Placement</span>. Meta applies one
+                  <span className=" text-foreground/90">Age</span> and{" "}
+                  <span className=" text-foreground/90">Gender</span>; for the Placements
+                  export use <span className=" text-foreground/90">Impression device</span>,{" "}
+                  <span className=" text-foreground/90">Platform</span>, and{" "}
+                  <span className=" text-foreground/90">Placement</span>. Meta applies one
                   breakdown combination per export, so this needs to be done twice.
                 </li>
                 <li>
-                  Make sure <span className="font-mono text-foreground/90">Date</span>,{" "}
-                  <span className="font-mono text-foreground/90">Campaign name</span>,{" "}
-                  <span className="font-mono text-foreground/90">Ad set name</span>, and{" "}
-                  <span className="font-mono text-foreground/90">Ad name</span> are included as
+                  Make sure <span className=" text-foreground/90">Date</span>,{" "}
+                  <span className=" text-foreground/90">Campaign name</span>,{" "}
+                  <span className=" text-foreground/90">Ad set name</span>, and{" "}
+                  <span className=" text-foreground/90">Ad name</span> are included as
                   columns, along with your performance metrics (spend, impressions, clicks, results).
                 </li>
                 <li>Export → Export table data → CSV. The exact columns required are below.</li>

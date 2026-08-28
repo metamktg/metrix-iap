@@ -198,7 +198,7 @@ function SourceCellCard({
         {registry[cellId] ? (
           <ConceptChip code={cellId} />
         ) : (
-          <span className="text-label font-mono font-semibold text-interactive/80 border border-primary/20 bg-primary/[0.04] px-1.5 py-0.5 rounded leading-none">
+          <span className="text-label font-semibold text-interactive/80 border border-primary/20 bg-primary/[0.04] px-1.5 py-0.5 rounded leading-none">
             {cellId}
           </span>
         )}

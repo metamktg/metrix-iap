@@ -127,7 +127,7 @@ export function GoalProgressCard({
               {over && lowerIsBetter ? " of ceiling" : over ? " of target" : ""}
             </span>
             {goalSource && (
-              <span className="text-micro font-mono text-muted-foreground/75 truncate" title={goalSource}>
+              <span className="text-micro text-muted-foreground/75 truncate" title={goalSource}>
                 {goalSource}
               </span>
             )}

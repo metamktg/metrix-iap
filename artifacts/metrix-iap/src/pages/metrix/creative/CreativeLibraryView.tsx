@@ -167,7 +167,7 @@ export function CreativeLibraryView() {
                       return (
                         <div key={c.id} className="flex flex-col gap-1.5 rounded-lg border border-border/40 bg-foreground/[0.02] p-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-label font-mono text-interactive/80">{c.id}</span>
+                            <span className="text-label text-interactive/80">{c.id}</span>
                             <span className={`text-micro font-semibold uppercase tracking-wide border rounded px-1.5 py-0.5 leading-none ${kind.cls}`}>
                               {kind.label}
                             </span>
@@ -256,7 +256,7 @@ export function CreativeLibraryView() {
                       <div key={g.label}>
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className={cn(HEADING.h5)}>{g.label}</h3>
-                          <span className="text-label font-mono text-muted-foreground/75">{g.items.length}</span>
+                          <span className="text-label text-muted-foreground/75">{g.items.length}</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {g.items.map((it) => (
@@ -271,9 +271,9 @@ export function CreativeLibraryView() {
                             >
                               <div>
                                 <div className="text-body font-medium text-foreground/90 leading-tight">{readableVariables(it.code)}</div>
-                                <div className="text-label font-mono text-muted-foreground/75 mt-0.5">{it.code}</div>
+                                <div className="text-label text-muted-foreground/75 mt-0.5">{it.code}</div>
                               </div>
-                              <span className="text-label font-mono text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5 leading-none">×{it.count}</span>
+                              <span className="text-label text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5 leading-none">×{it.count}</span>
                             </button>
                           ))}
                         </div>

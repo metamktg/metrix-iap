@@ -29,7 +29,7 @@ import type { AnalysisData, VariablePerformanceRow } from "@/lib/data/seedTypes"
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2.5">
-      <div className="text-micro font-mono uppercase text-muted-foreground/75">{label}</div>
+      <div className="text-micro uppercase text-muted-foreground/75">{label}</div>
       <div className="text-base font-bold tabular-nums leading-tight mt-0.5 text-foreground">{value}</div>
       {sub && <div className="text-caption text-muted-foreground/75 leading-snug mt-0.5">{sub}</div>}
     </div>
@@ -92,12 +92,12 @@ export function VariableDrilldownModal({
                 Back
               </button>
             )}
-            <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest">
+            <div className="text-label text-muted-foreground/75 uppercase tracking-widest">
               Variable drill-down{data.family ? ` · ${familyLabel(data.family)}` : ""}
             </div>
             <DialogTitle className={cn(DIALOG.title, "flex items-center gap-2 flex-wrap")} data-testid="title-variable-drilldown">
               {readableVariables(code)}
-              <span className="text-caption font-mono font-normal text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded">{code}</span>
+              <span className="text-caption font-normal text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded">{code}</span>
             </DialogTitle>
             <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
               Numbers come from this import's own variable-level rows and the creative cells that actually carried this
@@ -131,7 +131,7 @@ export function VariableDrilldownModal({
 
             {/* ── Top ads carrying this variable ── */}
             <div className="space-y-1.5">
-              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
+              <p className="text-label uppercase tracking-widest text-muted-foreground/75">
                 Top ads carrying this variable
               </p>
               {topCells.length > 0 ? (
@@ -166,7 +166,7 @@ export function VariableDrilldownModal({
 
             {/* ── Segment performance ── */}
             <div className="space-y-1.5">
-              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
+              <p className="text-label uppercase tracking-widest text-muted-foreground/75">
                 Segment performance — scoped to this variable's cells
               </p>
               {data.segments.available ? (
@@ -212,14 +212,14 @@ export function VariableDrilldownModal({
             {/* ── Copy variants ── */}
             {data.textVariants.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
+                <p className="text-label uppercase tracking-widest text-muted-foreground/75">
                   Copy that ran with this variable
                 </p>
                 <div className="space-y-2">
                   {data.textVariants.map((v) => (
                     <div key={v.cellId} className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2.5 space-y-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-caption font-mono text-muted-foreground/75">{v.cellId}</span>
+                        <span className="text-caption text-muted-foreground/75">{v.cellId}</span>
                         {v.conceptName && <span className="text-label font-medium text-foreground/80">{v.conceptName}</span>}
                       </div>
                       {v.primary && <p className="text-caption text-foreground/85 leading-relaxed">{v.primary}</p>}

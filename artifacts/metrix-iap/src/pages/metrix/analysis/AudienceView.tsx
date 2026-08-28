@@ -450,7 +450,7 @@ function ShareOfSpendCard({
             <div key={g.id} className="rounded-lg px-2 py-1.5 -mx-2">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className={cn(TYPE.caption, "font-medium text-foreground/85 inline-flex items-center gap-1.5 min-w-0")}>
-                  <span className="shrink-0 font-mono text-muted-foreground/75">{g.id}</span>
+                  <span className="shrink-0 text-muted-foreground/75">{g.id}</span>
                   <span className="truncate">{g.label}</span>
                 </span>
                 <span className={cn(
@@ -540,7 +540,7 @@ function GroupDetailRow({
   return (
     <div className="flex items-center justify-between gap-3 py-2.5 border-b border-border/10 last:border-0 flex-wrap">
       <div className="flex items-center gap-2 min-w-0">
-        <span className={cn(TYPE.label, "font-mono text-muted-foreground/75 shrink-0")}>{group.id}</span>
+        <span className={cn(TYPE.label, " text-muted-foreground/75 shrink-0")}>{group.id}</span>
         <DetailReveal
           label={group.label}
           labelClassName={cn(TYPE.title, "text-foreground/90")}
@@ -672,7 +672,7 @@ function RankedListTab({
               style={{ borderLeftColor: accentColor, borderLeftWidth: "3px" }}
             >
               <div className="flex items-center gap-2.5 mb-2.5">
-                <span className="w-4 shrink-0 font-mono text-muted-foreground/75 tabular-nums text-right text-label">
+                <span className="w-4 shrink-0 text-muted-foreground/75 tabular-nums text-right text-label">
                   {idx + 1}
                 </span>
                 <SegmentGenderIcon gender={e.seg.gender} />
@@ -681,14 +681,14 @@ function RankedListTab({
                 </span>
                 {e.signal.state === "insufficient_coverage" ? (
                   <span
-                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-muted-foreground/75 shrink-0"
+                    className="inline-flex items-center gap-0.5 text-label uppercase text-muted-foreground/75 shrink-0"
                     title={e.signal.reasons.join(" ")}
                   >
                     <AlertTriangle className="w-3.5 h-3.5" /> Coverage
                   </span>
                 ) : e.signal.low ? (
                   <span
-                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-status-warning/65 shrink-0"
+                    className="inline-flex items-center gap-0.5 text-label uppercase text-status-warning/65 shrink-0"
                     title={e.signal.reasons.join(" ")}
                   >
                     <AlertTriangle className="w-3.5 h-3.5" /> Low

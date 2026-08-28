@@ -216,7 +216,7 @@ export function AnalysisCommandCenter() {
                 >
                   <FileJson className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
                   <span className="flex-1 min-w-0">
-                    <span className="block text-body font-mono text-foreground/85 truncate">Analysis export</span>
+                    <span className="block text-body text-foreground/85 truncate">Analysis export</span>
                     <span className="block text-label text-muted-foreground/75">
                       {analysis
                         ? `${fmtNum(analysis.performance_by_cell.length)} cell rows · ${fmtNum(analysis.v3_variable_performance.length)} variable rows`

@@ -322,7 +322,7 @@ export function DeepDivePanel() {
           <div className={TYPE.microLabel}>{current.kicker}</div>
           <h3 className={TYPE.title} data-testid="deep-dive-title">{current.title}</h3>
           {current.subtitle && (
-            <div className={cn(TYPE.label, "font-mono text-muted-foreground/75 tracking-wide normal-case mt-0.5")}>
+            <div className={cn(TYPE.label, " text-muted-foreground/75 tracking-wide normal-case mt-0.5")}>
               {current.subtitle}
             </div>
           )}

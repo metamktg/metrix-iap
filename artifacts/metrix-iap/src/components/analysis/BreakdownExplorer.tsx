@@ -48,7 +48,7 @@ function ControlSelect({ label, value, onChange, options }: {
 }) {
   return (
     <label className="flex items-center gap-1.5 min-w-0">
-      <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0")}>{label}</span>
+      <span className={cn(TYPE.label, " uppercase tracking-widest text-muted-foreground/75 shrink-0")}>{label}</span>
       <select
         aria-label={label}
         value={value}
