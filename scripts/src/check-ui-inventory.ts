@@ -65,9 +65,17 @@ const SIGNAL = {
   motion: /from "@\/lib\/motion"|framer-motion/,
   disclose:
     /\b(DetailReveal|DisclosureStack|FilterDisclosure|useShowMore|ShowMoreButton|AccordionToggle|DenseText|ClampedProse|ExpandableText)\b/,
-  viz: /\b(MetricBarChart|TrendChart|SharePieChart|FunnelChart|HeatMatrix|VariableStack|MetricTable|RankedBars|ProgressMeter|RunProgress|DataModule|SwipeDeck)\b/,
-  // A breakpoint prefix on any utility, or a container query.
-  responsive: /\b(sm:|md:|lg:|xl:|2xl:|@container|@[a-z]+:)/,
+  // BreakdownExplorer is a composite that renders its charts internally —
+  // a page wiring it has a working dimension×metric visualization even
+  // though no primitive's name appears in that page's source.
+  viz: /\b(MetricBarChart|TrendChart|SharePieChart|FunnelChart|HeatMatrix|VariableStack|MetricTable|RankedBars|ProgressMeter|RunProgress|DataModule|SwipeDeck|BreakdownExplorer)\b/,
+  // A breakpoint prefix on any utility, a container query, or one of the
+  // dashboard grid classes — those carry their breakpoints inside index.css
+  // (2 cols at base → 4 at ≥768px, etc.), so a file using one IS responsive
+  // even though no `sm:` appears in its source. ManagerOverview scored `.`
+  // for RESP while reflowing correctly at every width for exactly this
+  // reason.
+  responsive: /\b(sm:|md:|lg:|xl:|2xl:|@container|@[a-z]+:|grid-cols-dashboard-)/,
   a11y: /\b(aria-[a-z]+|role=)/,
 };
 

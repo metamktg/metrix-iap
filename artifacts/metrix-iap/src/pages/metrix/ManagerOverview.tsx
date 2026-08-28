@@ -15,7 +15,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
-  CheckCircle2, Plug, Plus, ArrowRight, ChevronDown, ChevronUp, Download,
+  CheckCircle2, Plug, Plus, ArrowRight, ChevronDown, Download, HelpCircle,
 } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
@@ -23,7 +23,10 @@ import { getManagerOverview } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, SectionCard, ConfidenceBadge, ImpactBadge, ScopeBadge,
   fmtUSD, fmtNum, eventLabel, SkeletonTileRow,
+  useShowMore, ShowMoreButton,
 } from "./shared";
+import { AccordionToggle } from "./strategy/strategyShared";
+import { RankedBars } from "@/components/charts/RankedBars";
 import { AddAccountDialog } from "./AddAccountDialog";
 import { OnboardingWizard } from "./OnboardingWizard";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -54,37 +57,41 @@ interface AccountTotals {
 
 function AccountBadge({ text }: { text: string }) {
   return (
-    <span className="inline-flex text-label font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none bg-primary/10 text-interactive border-primary/20">
+    <span className={cn(TYPE.label, "inline-flex font-semibold border px-1.5 py-0.5 rounded leading-none bg-primary/10 text-interactive border-primary/20")}>
       {text}
     </span>
   );
 }
 
-// ─── Per-account breakdown table ─────────────────────────────────────────
+// ─── Per-account spend comparison ────────────────────────────────────────
+// The "By account" fold used to be a four-column numeric grid. The question
+// it answers — "which account is taking the money, and at what CPA?" — is a
+// ranked comparison, so it renders as RankedBars: order and relative length
+// carry the answer in one pass, results and CPA ride along as detail and
+// note, and clicking a row opens that account.
 
-function AccountBreakdownTable({ rows }: { rows: AccountTotals[] }) {
+function AccountSpendRanking({
+  rows,
+  onOpen,
+}: {
+  rows: AccountTotals[];
+  onOpen: (accountId: string) => void;
+}) {
   if (rows.length === 0) return null;
   return (
-    <div className="rounded-lg border border-border/40 overflow-hidden">
-      <div className="grid text-left" style={{ gridTemplateColumns: "1fr auto auto auto" }}>
-        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/75 uppercase tracking-widest")}>Account</div>
-        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/75 uppercase tracking-widest text-right")}>Spend</div>
-        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/75 uppercase tracking-widest text-right")}>Results</div>
-        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/75 uppercase tracking-widest text-right")}>CPA</div>
-        {rows.map((r, i) => {
-          const isLast = i === rows.length - 1;
-          const rowBorder = isLast ? "" : "border-b border-border/20";
-          return (
-            <>
-              <div key={`${r.id}-name`} className={cn(TYPE.body, "px-3 py-2 text-foreground/85 font-medium truncate", rowBorder)}>{r.name}</div>
-              <div key={`${r.id}-spend`} className={cn(TYPE.body, "px-3 py-2 text-foreground/70 tabular-nums text-right", rowBorder)}>{fmtUSD(r.spend, 0)}</div>
-              <div key={`${r.id}-results`} className={cn(TYPE.body, "px-3 py-2 text-foreground/70 tabular-nums text-right", rowBorder)}>{fmtNum(r.results)}</div>
-              <div key={`${r.id}-cpa`} className={cn(TYPE.body, "px-3 py-2 text-foreground/70 tabular-nums text-right", rowBorder)}>{r.cpa != null ? fmtUSD(r.cpa) : "—"}</div>
-            </>
-          );
-        })}
-      </div>
-    </div>
+    <RankedBars
+      data={rows.map((r) => ({
+        key: r.id,
+        label: r.name,
+        value: r.spend,
+        detail: `${fmtNum(r.results)} result${r.results === 1 ? "" : "s"}`,
+        note: r.cpa != null ? `${fmtUSD(r.cpa)} CPA` : undefined,
+      }))}
+      format={(n) => fmtUSD(n, 0)}
+      measureLabel="Spend"
+      onRowClick={(d) => onOpen(d.key)}
+      data-testid="manager-account-spend-ranking"
+    />
   );
 }
 
@@ -215,16 +222,16 @@ function AdAccountCard({
         {configured && totals && (totals.spend > 0 || totals.results > 0) && (
           <div className="flex items-center gap-4 mt-2.5 pt-2 border-t border-border/20">
             <div>
-              <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-0.5">Spend</div>
+              <div className={cn(TYPE.microLabel, "mb-0.5")}>Spend</div>
               <div className={cn(TYPE.body, "font-semibold tabular-nums text-foreground/80")}>{fmtUSD(totals.spend, 0)}</div>
             </div>
             <div>
-              <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-0.5">Results</div>
+              <div className={cn(TYPE.microLabel, "mb-0.5")}>Results</div>
               <div className={cn(TYPE.body, "tabular-nums text-foreground/65")}>{fmtNum(totals.results)}</div>
             </div>
             {totals.cpa != null && (
               <div>
-                <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-0.5">CPA</div>
+                <div className={cn(TYPE.microLabel, "mb-0.5")}>CPA</div>
                 <div className={cn(TYPE.body, "tabular-nums text-foreground/65")}>{fmtUSD(totals.cpa)}</div>
               </div>
             )}
@@ -281,14 +288,14 @@ function RecommendationCardItem({
       <div>
         <TokenizedConceptText
           text={card.title}
-          className="text-title font-bold text-foreground leading-snug"
+          className={cn(TYPE.title, "leading-snug")}
         />
       </div>
 
       {/* ③ Action block — the most important second thing, never hidden */}
       {card.recommended_action && (
         <div className="rounded-lg border border-border/25 bg-foreground/[0.04] px-3 py-2.5">
-          <div className="text-micro uppercase tracking-widest text-interactive/55 mb-1.5">
+          <div className={cn(TYPE.microLabel, "text-interactive/55 mb-1.5")}>
             Recommended action
           </div>
           <TokenizedConceptText
@@ -298,16 +305,17 @@ function RecommendationCardItem({
         </div>
       )}
 
-      {/* ④ Rationale — expandable to keep first layer scannable */}
+      {/* ④ Rationale — expandable to keep first layer scannable. Uses the
+          shared AccordionToggle so every in-card expander in the product is
+          the same control, not a per-file chevron button. */}
       {card.rationale && (
         <div>
-          <button
-            onClick={() => setRationaleOpen((v) => !v)}
-            className="pressable flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/65 transition-colors font-medium"
-          >
-            {rationaleOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            {rationaleOpen ? "Hide rationale" : "Why this?"}
-          </button>
+          <AccordionToggle
+            label="Why this?"
+            open={rationaleOpen}
+            onToggle={() => setRationaleOpen((v) => !v)}
+            icon={HelpCircle}
+          />
           {rationaleOpen && (
             <div className="mt-2 px-1">
               <TokenizedConceptText
@@ -406,6 +414,18 @@ export function ManagerOverview() {
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
 
+  // Recommendations, impact-ranked, folded past four. The platform density
+  // rule: an unbounded card list shows the first N and folds the rest — a
+  // landing page with nine accounts' worth of cards should not scroll for
+  // three screens before the reader chooses to go deeper.
+  const sortedCards = useMemo(() => {
+    const rank: Record<string, number> = { high: 4, medium: 3, setup: 2, low: 1 };
+    return [...data.recommendation_cards].sort(
+      (a, b) => (rank[b.impact?.toLowerCase()] ?? 0) - (rank[a.impact?.toLowerCase()] ?? 0),
+    );
+  }, [data.recommendation_cards]);
+  const cardsFold = useShowMore(sortedCards, 4);
+
   // ── Onboarding: guided first-run wizard ───────────────────────────────
   // Purely a display-state fork on adAccounts.length; nothing is persisted,
   // so the moment an account exists the normal dashboard below renders on
@@ -434,7 +454,7 @@ export function ManagerOverview() {
         subtitle="Blended performance · all ad accounts"
         right={
           <div className="flex items-center gap-2.5">
-            <span className={cn(TYPE.label, " text-muted-foreground/75 uppercase tracking-widest")}>
+            <span className={cn(TYPE.label, "text-muted-foreground/75")}>
               {data.configured_ad_accounts} configured · {data.unconfigured_ad_accounts} to set up
             </span>
             {/* Manager scope has no windowed KPI-tile data source to drive a
@@ -492,8 +512,8 @@ export function ManagerOverview() {
           )}
 
           {breakdownOpen && !isRefetching && (
-            <div className="mt-3">
-              <AccountBreakdownTable rows={accountTotals} />
+            <div className="mt-3 rounded-lg border border-border/40 p-3">
+              <AccountSpendRanking rows={accountTotals} onOpen={selectAdAccount} />
             </div>
           )}
         </div>
@@ -558,19 +578,14 @@ export function ManagerOverview() {
           title="Account recommendations"
           desc="Cross-account signals · read-only · act from the source account"
         >
-          {data.recommendation_cards.length === 0 ? (
+          {sortedCards.length === 0 ? (
             <p className={cn(TYPE.body, "text-muted-foreground/75 py-4 text-center")}>
               No account recommendations at the moment.
             </p>
           ) : (
-            <div className="grid grid-cols-dashboard-2-lg gap-3">
-              {[...data.recommendation_cards]
-                .sort((a, b) => {
-                  // High impact first, then medium, setup, low.
-                  const rank: Record<string, number> = { high: 4, medium: 3, setup: 2, low: 1 };
-                  return (rank[b.impact?.toLowerCase()] ?? 0) - (rank[a.impact?.toLowerCase()] ?? 0);
-                })
-                .map((c) => (
+            <>
+              <div className="grid grid-cols-dashboard-2-lg gap-3">
+                {cardsFold.visible.map((c) => (
                   <RecommendationCardItem
                     key={c.id}
                     card={c}
@@ -578,7 +593,15 @@ export function ManagerOverview() {
                     onOpen={() => selectAdAccount(c.account_id)}
                   />
                 ))}
-            </div>
+              </div>
+              <ShowMoreButton
+                total={sortedCards.length}
+                hiddenCount={cardsFold.hiddenCount}
+                expanded={cardsFold.expanded}
+                onToggle={cardsFold.toggle}
+                noun="recommendations"
+              />
+            </>
           )}
         </SectionCard>
       </div>
