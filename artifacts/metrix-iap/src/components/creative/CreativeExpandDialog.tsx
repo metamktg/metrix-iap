@@ -10,6 +10,7 @@ import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
 import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle, TrendingDown } from "lucide-react";
+import { motion } from "framer-motion";
 import { Dialog, DialogContent } from "@workspace/command-deck/components/ui/dialog";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { CreativeCardData } from "./CreativeCard";
@@ -696,9 +697,16 @@ export function CreativeExpandDialog({
       >
         <div className="grid grid-rows-[260px_1fr] sm:grid-rows-none sm:grid-cols-[42%_1fr] min-h-0 max-h-[92vh] overflow-hidden">
 
-          {/* ── Left: creative visual ── */}
+          {/* ── Left: creative visual ──
+              The other half of the shared-layout pair. This carries the same
+              `layoutId` as the tile's visual in CreativeCard, so the creative
+              travels from the grid into this pane rather than the tile
+              disappearing and a modal fading in elsewhere. See the comment on
+              the card side for why the tile stays mounted. */}
           <div className="relative overflow-hidden bg-surface-preview sm:border-r border-b sm:border-b-0 border-border/30">
-            <ExpandVisual data={data} className="absolute inset-0" />
+            <motion.div layoutId={`creative-media-${data.conceptCode}`} className="absolute inset-0">
+              <ExpandVisual data={data} className="absolute inset-0" />
+            </motion.div>
 
             {unmapped && (
               <div className="absolute top-3 left-3 flex items-center gap-1 bg-status-warning/20 border border-status-warning/30 text-status-warning text-micro font-semibold px-2 py-1 rounded-full backdrop-blur-sm">

@@ -19,6 +19,7 @@ import { useMemo, useState, useCallback, useRef } from "react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { ImageOff, Maximize2, Upload, AlertTriangle } from "lucide-react";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
+import { motion } from "framer-motion";
 import { CreativeExpandDialog } from "./CreativeExpandDialog";
 import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 
@@ -294,10 +295,30 @@ export function CreativeCard({
       >
         {/* Visual area — pointer-events-none so root div click fires reliably */}
         <div className="relative aspect-[4/5] w-full overflow-hidden border-b border-foreground/[0.06]">
-          {/* Asset or placeholder (pointer-events-none so clicks bubble to root) */}
-          <div className="absolute inset-0 transition-transform duration-500 will-change-transform group-hover:scale-[1.04] pointer-events-none">
-            <CreativeVisual data={data} />
-          </div>
+          {/*
+           * SHARED-LAYOUT PARTICIPANT.
+           *
+           * This div and the expand dialog's media pane carry the same
+           * `layoutId`, so opening the dialog INTERPOLATES this rectangle
+           * into that one: the creative travels and grows instead of the
+           * tile vanishing and a modal fading in somewhere else. On a wall
+           * of tiles that removes a re-find on every single expand.
+           *
+           * It stays mounted while the dialog is open — the close animation
+           * needs a destination rectangle, and unmounting leaves it with
+           * none, so the panel would pop out of existence instead of
+           * shrinking back to its tile.
+           *
+           * The 1.04 hover lift sits on an INNER element on purpose: put it
+           * on the layout participant and the hover transform overwrites the
+           * layout transform mid-flight.
+           */}
+          <motion.div layoutId={`creative-media-${data.conceptCode}`} className="absolute inset-0">
+            {/* Asset or placeholder (pointer-events-none so clicks bubble to root) */}
+            <div className="absolute inset-0 transition-transform duration-500 will-change-transform group-hover:scale-[1.04] pointer-events-none">
+              <CreativeVisual data={data} />
+            </div>
+          </motion.div>
 
           {/* Unmapped → "Map creative" pill — pointer-events-auto, stopPropagation */}
           {unmapped && (

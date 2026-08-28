@@ -53,6 +53,14 @@ export const IAP_SMOKE_STEPS: SmokeStep[] = [
     label: "DOM validity e2e (no nested interactive controls)",
     script: "smoke:metrix-iap-dom-validity",
   },
+  {
+    // Measures the creative tile's media pane on every animation frame as it
+    // expands. A shared-layout morph is invisible to every other kind of
+    // test: delete a layoutId and the app still renders, still opens, still
+    // passes — it just stops being continuous.
+    label: "Shared-layout morph e2e (creative tile → expand panel)",
+    script: "smoke:metrix-iap-shared-layout",
+  },
 ];
 
 /**
