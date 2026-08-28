@@ -648,28 +648,34 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
   );
 }
 
-// ─── Buyer-intent funnel — cohort-aware compact read ───────────────────
+// ─── Buyer-intent funnel — data-first, objective-aware absence copy ────
 // Reuses EngagementFunnelView's real stage math (buildFunnelStages) rather
-// than re-deriving it. Ecommerce-only stages (add to cart, checkout,
-// purchase) are dropped outright for any account whose configured
-// objectives aren't purely "ecommerce" — never rendered as fabricated zero
-// bars for a cohort they don't apply to. An ecommerce account whose lower
-// funnel genuinely reads zero (tracking not wired up yet) still gets the
-// original "not configured for ecommerce tracking" caveat, not the
-// cohort-mismatch one.
+// than re-deriving it.
+//
+// THE OBJECTIVE LABEL IS A LENS, NEVER A WALL (owner decision, 2026-08-28):
+// analysis applies no manual emphasis and no objective-based filtering —
+// "the data should speak for itself based on the specific campaign
+// objectives defined", flowing downstream undistorted; weighting and
+// curation live in the STRATEGY layer. An earlier version of this card
+// dropped intent/conversion stages for any account not labelled purely
+// "ecommerce", which hid a lead-gen account's 26 real measured purchases —
+// exactly the distortion the decision forbids. Now: a stage renders iff it
+// carries measured data, whatever the label. The objectives' only remaining
+// job here is to pick the honest ABSENCE explanation when the lower funnel
+// has no data at all — a non-ecommerce account gets the cohort-flavored
+// note naming its real terminal metric, an ecommerce account gets the
+// tracking-configuration note. Neither ever covers measured data.
 
 function BuyerIntentFunnelCard({
-  stages, isEcommerceCohort, cohortMeta,
+  stages, objectivesIncludeEcommerce, cohortMeta,
 }: {
   stages: FunnelStage[];
-  isEcommerceCohort: boolean;
+  objectivesIncludeEcommerce: boolean;
   cohortMeta: CohortMeta;
 }) {
-  const droppedForCohort = !isEcommerceCohort;
   const lowerFunnelStages = stages.filter((s) => s.zone === "intent" || s.zone === "conversion");
   const hasLowerFunnelData = lowerFunnelStages.some((s) => s.value != null);
-  const visibleStages = (droppedForCohort ? stages.filter((s) => s.zone !== "intent" && s.zone !== "conversion") : stages)
-    .filter((s) => s.value != null);
+  const visibleStages = stages.filter((s) => s.value != null);
 
   if (visibleStages.length === 0) return null;
   const maxVal = visibleStages[0]!.value!;
@@ -678,7 +684,7 @@ function BuyerIntentFunnelCard({
     <SectionCard
       title="Buyer-intent funnel"
       desc="Impressions through real intent signal · stage-over-stage retention"
-      right={<SectionInfoIcon tip="Impressions → Clicks (all) → Link clicks, plus Add to cart / Checkout / Purchase for ecommerce-cohort accounts only. Each stage's % is measured against the previous real stage, never fabricated." />}
+      right={<SectionInfoIcon tip="Every stage with measured data renders — impressions through purchases — whatever the account's objectives. Each stage's % is measured against the previous real stage; absent stages are explained, never faked as zero bars." />}
     >
       <div className="space-y-1.5" data-testid="buyer-intent-funnel">
         {visibleStages.map((stage) => {
@@ -709,15 +715,17 @@ function BuyerIntentFunnelCard({
           );
         })}
       </div>
-      {droppedForCohort ? (
+      {!hasLowerFunnelData && (
         <div className="mt-2">
-          <CaveatNote text={`Cohort: ${cohortMeta.label} — no ecommerce funnel stages. Terminal metric: ${cohortMeta.terminalMetricLabel}.`} />
+          <CaveatNote
+            text={
+              objectivesIncludeEcommerce
+                ? "Add-to-cart, checkout, and purchase data comes from the demographic export when the account is configured for ecommerce tracking. These fields appear once a matching export is staged and analyzed."
+                : `No purchase-funnel events in this data — terminal metric ${cohortMeta.terminalMetricLabel} (${cohortMeta.label}). Add-to-cart, checkout and purchase stages appear here automatically if the data ever carries them; nothing is gated on the objective label.`
+            }
+          />
         </div>
-      ) : !hasLowerFunnelData ? (
-        <div className="mt-2">
-          <CaveatNote text="Add-to-cart, checkout, and purchase data comes from the demographic export when the account is configured for ecommerce tracking. These fields appear once a matching export is staged and analyzed." />
-        </div>
-      ) : null}
+      )}
       <div className="pt-2.5">
         <CrossLink to="/app/analysis/funnel" label="Open full funnel breakdown" />
       </div>
@@ -880,7 +888,7 @@ export function AdPerformanceView() {
         // mixed-objective accounts stay conservative and drop them rather
         // than assume ecommerce.
         const cohortMeta = resolveObjectivesMeta(acct.objectives);
-        const isEcommerceCohort = acct.objectives?.length === 1 && acct.objectives[0] === "ecommerce";
+        const objectivesIncludeEcommerce = acct.objectives?.includes("ecommerce") ?? false;
         const funnelStages = buildFunnelStages(a.demographic_registration_signal);
 
         const mst = getMST(seed, adAccountId);
@@ -1045,7 +1053,7 @@ export function AdPerformanceView() {
               <SignalCards flags={acct.iap?.data_quality ?? []} scopeId={acct.id} detailOn={detailOn} />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <BuyerIntentFunnelCard stages={funnelStages} isEcommerceCohort={isEcommerceCohort} cohortMeta={cohortMeta} />
+                <BuyerIntentFunnelCard stages={funnelStages} objectivesIncludeEcommerce={objectivesIncludeEcommerce} cohortMeta={cohortMeta} />
                 <CostPerResultCard adAccountId={adAccountId} accountConfigured={acct.status === "configured"} />
               </div>
 

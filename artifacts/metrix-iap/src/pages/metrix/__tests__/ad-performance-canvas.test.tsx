@@ -262,30 +262,60 @@ describe("buyer-intent funnel (cohort-aware)", () => {
     expect(within(funnel).getByText("Purchase")).toBeTruthy();
   });
 
-  it("drops ecommerce-only stages for a non-ecommerce cohort instead of showing fake zero bars", () => {
-    // The objectives are OVERRIDDEN for this test, not read from the
-    // fixture. This originally trusted that bookster's objectives were
-    // ["app"] in the demo DB — then the agency enabled ecommerce on the
-    // real account, the fixture refresh carried that in, and the test broke
-    // while the component behaved correctly. The behaviour under test is
-    // "an app-only cohort never shows ecommerce stages", so the test now
-    // constructs that cohort explicitly.
+  it("keeps measured lower-funnel stages under ANY objective label — the label is a lens, never a wall", () => {
+    // CONTRACT FLIP (owner decision, 2026-08-28). The previous contract —
+    // "an app-only cohort never shows ecommerce stages" — hid a lead-gen
+    // account's 26 real measured purchases behind its label. The decided
+    // principle: analysis applies no objective-based filtering; the data
+    // speaks for itself, and weighting lives in the strategy layer. So:
+    // ecas has REAL atc/checkout/purchase data; relabelling its objectives
+    // to lead_gen must not hide a single measured stage.
+    const ecas = seed.ad_accounts.find((a: { id: string }) => a.id === "ecas")!;
+    const prevObjectives = ecas.objectives;
+    ecas.objectives = ["lead_gen"];
+    try {
+      renderFor("ecas");
+      const funnel = screen.getByTestId("buyer-intent-funnel");
+      expect(within(funnel).getByText("Add to cart")).toBeTruthy();
+      expect(within(funnel).getByText("Checkout")).toBeTruthy();
+      expect(within(funnel).getByText("Purchase")).toBeTruthy();
+    } finally {
+      ecas.objectives = prevObjectives;
+    }
+  });
+
+  it("explains an EMPTY lower funnel with the objectives-flavored note, never a fake zero bar", () => {
+    // The absence case is CONSTRUCTED, not assumed: the lower-funnel fields
+    // (adds_to_cart / checkouts_initiated / purchases) are stripped from the
+    // demographic rows so sumStrict yields null — genuinely unmeasured. With
+    // non-ecommerce objectives the caveat names the account's own terminal
+    // metric and promises the stages appear if the data ever carries them —
+    // it claims nothing false and hides nothing measured.
     const bookster = seed.ad_accounts.find((a: { id: string }) => a.id === "bookster")!;
     const prevObjectives = bookster.objectives;
+    const rows = bookster.iap.analysis.demographic_registration_signal as Array<Record<string, unknown>>;
+    const stripped = rows.map((r) => {
+      const { adds_to_cart, checkouts_initiated, purchases, ...rest } = r;
+      void adds_to_cart; void checkouts_initiated; void purchases;
+      return rest;
+    });
+    const prevRows = rows.slice();
     bookster.objectives = ["app"];
+    rows.splice(0, rows.length, ...stripped);
     try {
       renderFor("bookster");
-    const funnel = screen.getByTestId("buyer-intent-funnel");
-    expect(within(funnel).queryByText("Add to cart")).toBeNull();
-    expect(within(funnel).queryByText("Checkout")).toBeNull();
-    expect(within(funnel).queryByText("Purchase")).toBeNull();
-    // Upstream stages with real data still render.
-    expect(within(funnel).getByText("Impressions")).toBeTruthy();
-    expect(within(funnel).getByText("Link clicks")).toBeTruthy();
-    // The cohort-mismatch caveat names the account's real terminal metric.
-    expect(screen.getByText(/cost per activation/i)).toBeTruthy();
+      const funnel = screen.getByTestId("buyer-intent-funnel");
+      // Absent because unmeasured — not because of the label.
+      expect(within(funnel).queryByText("Add to cart")).toBeNull();
+      expect(within(funnel).queryByText("Purchase")).toBeNull();
+      expect(within(funnel).getByText("Impressions")).toBeTruthy();
+      expect(within(funnel).getByText("Link clicks")).toBeTruthy();
+      // The absence note names the account's real terminal metric.
+      expect(screen.getByText(/cost per activation/i)).toBeTruthy();
+      expect(screen.getByText(/no purchase-funnel events/i)).toBeTruthy();
     } finally {
       bookster.objectives = prevObjectives;
+      rows.splice(0, rows.length, ...prevRows);
     }
   });
 });
