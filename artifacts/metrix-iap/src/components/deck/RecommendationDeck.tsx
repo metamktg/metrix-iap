@@ -33,6 +33,8 @@ import {
 import { addToTray, removeFromTray } from "@/lib/data/trayStore";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 import { deriveLabel } from "@/pages/metrix/shared";
+import { TYPE } from "@/pages/metrix/typography";
+import { SwipeDeck } from "@/components/widgets/SwipeDeck";
 
 export interface DeckCard {
   id: string;
@@ -77,7 +79,7 @@ const SCOPE_STYLE: Record<string, string> = {
 
 function Badge({ text, cls }: { text: string; cls: string }) {
   return (
-    <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", cls)}>
+    <span className={cn("text-micro font-semibold border px-1.5 py-0.5 rounded uppercase leading-none", cls)}>
       {text}
     </span>
   );
@@ -112,10 +114,10 @@ function DetailDrawer({
       <div className="fixed right-0 top-0 h-full w-[400px] max-w-full bg-surface-deep border-l border-border/50 z-50 flex flex-col overflow-hidden elevation-floating">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-border/40">
           <div className="flex-1 min-w-0">
-            <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest mb-1">
+            <div className="text-label text-muted-foreground/75 uppercase tracking-widest mb-1">
               Recommendation
             </div>
-            <p className="text-title font-semibold text-foreground leading-tight">{card.title}</p>
+            <p className="text-title font-bold text-foreground leading-tight">{card.title}</p>
           </div>
           <button
             onClick={onClose}
@@ -134,23 +136,23 @@ function DetailDrawer({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Rationale</label>
+            <label className="text-label uppercase tracking-widest text-muted-foreground/75">Rationale</label>
             <p className="text-body text-foreground/80 leading-relaxed"><TokenizedConceptText text={card.rationale} /></p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Recommended action</label>
+            <label className="text-label uppercase tracking-widest text-muted-foreground/75">Recommended action</label>
             <p className="text-body text-foreground/80 leading-relaxed"><TokenizedConceptText text={card.recommendedAction} /></p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Confidence</label>
+            <label className="text-label uppercase tracking-widest text-muted-foreground/75">Confidence</label>
             <p className="text-body text-foreground/80 capitalize">{card.confidence}</p>
           </div>
 
           {onSegments && (
             <div className="space-y-1.5">
-              <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Evidence segments</label>
+              <label className="text-label uppercase tracking-widest text-muted-foreground/75">Evidence segments</label>
               <div>
                 <button
                   onClick={() => onSegments(card)}
@@ -190,125 +192,30 @@ function DetailDrawer({
   );
 }
 
-// ─── Swipe card (interactive, top of stack) ───────────────────────────
+// ─── Card face ────────────────────────────────────────────────────────
+// Presentation only. The gesture, the thresholds, the rotation, the intent
+// stamps and the commit sequencing all live in SwipeDeck now — this used to
+// be 120 lines of pointer bookkeeping wrapped around 20 lines of card.
 
-function SwipeCard({
-  card,
-  onApprove,
-  onReject,
-  onDetails,
-  depth,
-}: {
-  card: DeckCard;
-  onApprove: () => void;
-  onReject: () => void;
-  onDetails: () => void;
-  depth: number; // 0 = top, deeper = behind
-}) {
-  const [dx, setDx] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const startX = useRef(0);
-  const moved = useRef(0);
-  const isTop = depth === 0;
-
-  const THRESHOLD = 110;
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (!isTop) return;
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-    startX.current = e.clientX;
-    moved.current = 0;
-    setDragging(true);
-  };
-
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragging || !isTop) return;
-    const delta = e.clientX - startX.current;
-    moved.current = Math.max(moved.current, Math.abs(delta));
-    setDx(delta);
-  };
-
-  const commit = (dir: "left" | "right") => {
-    setDx(dir === "right" ? 600 : -600);
-    window.setTimeout(() => {
-      if (dir === "right") onApprove();
-      else onReject();
-      setDx(0);
-    }, 160);
-  };
-
-  const onPointerUp = () => {
-    if (!isTop) return;
-    setDragging(false);
-    if (dx > THRESHOLD) commit("right");
-    else if (dx < -THRESHOLD) commit("left");
-    else if (moved.current < 6) onDetails();
-    else setDx(0);
-  };
-
-  const rot = dx / 22;
-  const approveOpacity = Math.min(Math.max(dx / THRESHOLD, 0), 1);
-  const rejectOpacity = Math.min(Math.max(-dx / THRESHOLD, 0), 1);
-
+function RecommendationCardFace({ card }: { card: DeckCard }) {
   return (
-    <div
-      className={cn(
-        "absolute inset-0 select-none",
-        !isTop && "pointer-events-none"
-      )}
-      style={{
-        transform: isTop
-          ? `translateX(${dx}px) rotate(${rot}deg)`
-          : `scale(${1 - depth * 0.04}) translateY(${depth * 10}px)`,
-        transition: dragging ? "none" : "transform 0.18s ease-out",
-        zIndex: 10 - depth,
-        opacity: depth > 2 ? 0 : 1,
-      }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={() => { setDragging(false); setDx(0); }}
-    >
-      <div
-        className={cn(
-          "relative h-full flex flex-col gap-3 p-5 rounded-2xl border bg-surface-overlay",
-          isTop ? "border-border/60 elevation-floating cursor-grab active:cursor-grabbing" : "border-border/40"
-        )}
-      >
-        {/* Swipe intent overlays */}
-        {isTop && (
-          <>
-            <div
-              className="absolute top-4 left-4 text-caption font-bold uppercase tracking-widest text-status-success border-2 border-status-success rounded px-2 py-1 rotate-[-12deg]"
-              style={{ opacity: approveOpacity }}
-            >
-              Add to Tray
-            </div>
-            <div
-              className="absolute top-4 right-4 text-caption font-bold uppercase tracking-widest text-status-danger border-2 border-status-danger rounded px-2 py-1 rotate-[12deg]"
-              style={{ opacity: rejectOpacity }}
-            >
-              Reject
-            </div>
-          </>
-        )}
+    <div className="h-full flex flex-col gap-3 p-5">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {card.descriptor && <Badge text={card.descriptor} cls="bg-foreground/[0.04] text-foreground/70 border-border/40" />}
+        <Badge text={card.scope} cls={SCOPE_STYLE[card.scope] ?? "bg-muted text-muted-foreground/75 border-border/40"} />
+        <Badge text={`${card.impact} impact`} cls={IMPACT_STYLE[card.impact] ?? IMPACT_STYLE.low} />
+      </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {card.descriptor && <Badge text={card.descriptor} cls="bg-foreground/[0.04] text-foreground/70 border-border/40" />}
-          <Badge text={card.scope} cls={SCOPE_STYLE[card.scope] ?? "bg-muted text-muted-foreground/75 border-border/40"} />
-          <Badge text={`${card.impact} impact`} cls={IMPACT_STYLE[card.impact] ?? IMPACT_STYLE.low} />
-        </div>
+      {/* Was `text-sm font-semibold` — 14px, the same size as the rationale
+          under it, so the card had a title and a body at one size and no
+          hierarchy between them. TYPE.title is the role for a card title. */}
+      <p className={cn(TYPE.title, "line-clamp-2")}>{card.title}</p>
 
-        <div>
-          <p className="text-sm font-semibold text-foreground leading-snug">{card.title}</p>
-        </div>
+      <p className="text-body text-muted-foreground/75 leading-snug line-clamp-2">{deriveLabel(card.rationale, 110)}</p>
 
-        <p className="text-body text-muted-foreground/75 leading-snug line-clamp-2">{deriveLabel(card.rationale, 110)}</p>
-
-        <div className="mt-auto pt-2 border-t border-border/20">
-          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">Recommended</p>
-          <p className="text-caption text-foreground/75 leading-snug line-clamp-1">{deriveLabel(card.recommendedAction, 90)}</p>
-        </div>
+      <div className="mt-auto pt-2 border-t border-border/20">
+        <p className={cn(TYPE.microLabel, "tracking-widest mb-1")}>Recommended</p>
+        <p className="text-caption text-foreground/75 leading-snug line-clamp-1">{deriveLabel(card.recommendedAction, 90)}</p>
       </div>
     </div>
   );
@@ -376,10 +283,43 @@ export function RecommendationDeck({
     [scopeId]
   );
 
-  // Keyboard on deck
+  // Keyboard on deck.
+  //
+  // This is a WINDOW listener, and it was completely unguarded: while the
+  // Deck tab was selected, ArrowRight anywhere on the page approved the top
+  // recommendation and wrote it to the tray. Put the caret in the account
+  // search box, press ArrowRight to move one character, and you have
+  // silently approved a recommendation you never read. The date picker, the
+  // account switcher and every dialog on an Overview route are all in that
+  // blast radius. A keystroke meant for a text field must not mutate a
+  // decision store — that is a data defect wearing an interaction bug's
+  // clothes.
+  //
+  // Two guards, both necessary:
+  //
+  //   · Ignore events whose target is an editable field. Arrow keys, space
+  //     and Enter all mean something inside an input, a textarea, a select
+  //     or a contenteditable, and none of those meanings is "approve".
+  //   · Ignore events aimed at another interactive control. Space on a
+  //     focused button activates it; stealing that makes every button on
+  //     the page open a recommendation detail instead.
+  //
+  // The card itself also handles arrows when focused (SwipeDeck), which is
+  // the correct scoped path. This listener stays because the deck is a
+  // queue you clear without hunting for focus first — but it now only fires
+  // when nothing else has a claim on the key.
   useEffect(() => {
     if (tab !== "deck") return;
+    function isTypingTarget(el: EventTarget | null): boolean {
+      if (!(el instanceof HTMLElement)) return false;
+      if (el.isContentEditable) return true;
+      const tag = el.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      // A focused control that has its own meaning for Space/Enter.
+      return el.closest("button, a[href], [role='button'], [role='tab'], [role='menuitem']") !== null;
+    }
     function onKey(e: KeyboardEvent) {
+      if (isTypingTarget(e.target)) return;
       const top = pending[0];
       if (e.key === "z" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); undoLast(); return; }
       if (!top) return;
@@ -415,7 +355,7 @@ export function RecommendationDeck({
             <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4 text-status-success/60" />
             </div>
-            <p className="text-title font-medium text-foreground/60">{emptyLabel}</p>
+            <p className="text-title font-bold text-foreground/60">{emptyLabel}</p>
             <p className="text-caption text-muted-foreground/75">Check the Task Tray for items you added.</p>
           </div>
         ) : (
@@ -423,20 +363,18 @@ export function RecommendationDeck({
             {/* Card stack */}
             <div
               ref={deckRef}
-              tabIndex={0}
-              className="relative w-full max-w-md mx-auto h-[300px] focus-visible:outline-none"
+              className="relative w-full max-w-md mx-auto h-[300px]"
               aria-label="Recommendation deck. Use arrow keys to decide."
             >
-              {pending.slice(0, 3).map((c, i) => (
-                <SwipeCard
-                  key={c.id}
-                  card={c}
-                  depth={i}
-                  onApprove={() => approve(c.id)}
-                  onReject={() => reject(c.id)}
-                  onDetails={() => setDetailId(c.id)}
-                />
-              ))}
+              <SwipeDeck
+                items={pending}
+                keyOf={(c) => c.id}
+                renderCard={(c) => <RecommendationCardFace card={c} />}
+                onCommit={(c, dir) => (dir === "right" ? approve(c.id) : reject(c.id))}
+                onTap={(c) => setDetailId(c.id)}
+                right={{ label: "Add to Tray", tone: "success" }}
+                left={{ label: "Reject", tone: "danger" }}
+              />
             </div>
 
             {/* Controls */}
@@ -464,7 +402,7 @@ export function RecommendationDeck({
               </button>
             </div>
 
-            <div className="flex items-center justify-center gap-3 mt-3 text-[9px] text-muted-foreground/75 font-mono">
+            <div className="flex items-center justify-center gap-3 mt-3 text-caption text-muted-foreground/75">
               <span>← reject</span>
               <span>→ add to tray</span>
               <span>↑ / space details</span>
@@ -524,7 +462,7 @@ function TaskTray({
     <div className="space-y-5">
       {groups.map((g) => (
         <div key={g.label}>
-          <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">{g.label}</div>
+          <div className="text-label uppercase tracking-widest text-muted-foreground/75 mb-2">{g.label}</div>
           <div className="space-y-2">
             {g.rows.map((s) => {
               const done = isDone(scopeId, s.id);
@@ -540,7 +478,7 @@ function TaskTray({
                   <div className="flex-1 min-w-0">
                     <p className={cn("text-body font-medium leading-tight", done ? "text-foreground/55 line-through" : "text-foreground")}>{s.title}</p>
                     <p className="text-label text-muted-foreground/75 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.recommendedAction, 90)}</p>
-                    {s.descriptor && <span className="inline-flex mt-1.5 text-[8px] font-semibold border border-border/40 px-1 py-0.5 rounded text-foreground/60">{s.descriptor}</span>}
+                    {s.descriptor && <span className="inline-flex mt-1.5 text-caption font-semibold border border-border/40 px-1 py-0.5 rounded text-foreground/60">{s.descriptor}</span>}
                   </div>
                   <button onClick={() => onRestore(s.id)} className="pressable h-6 px-2 rounded text-label font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -584,7 +522,7 @@ function EmptyPanel({ Icon, title, sub }: { Icon: React.ComponentType<{ classNam
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
         <Icon className="w-4 h-4 text-muted-foreground/75" />
       </div>
-      <p className="text-title font-medium text-foreground/60">{title}</p>
+      <p className="text-title font-bold text-foreground/60">{title}</p>
       <p className="text-caption text-muted-foreground/75 max-w-xs">{sub}</p>
     </div>
   );

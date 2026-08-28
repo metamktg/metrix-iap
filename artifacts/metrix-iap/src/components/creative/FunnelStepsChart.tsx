@@ -42,11 +42,11 @@ export function FunnelStepsChart({ steps }: { steps: FunnelStep[] }) {
               <div className="flex items-center gap-2 pl-2 py-1">
                 <div className="w-px h-4 bg-border/30 shrink-0 ml-1.5" />
                 {convRate ? (
-                  <span className="text-[9px] font-mono text-interactive/70 tabular-nums">
+                  <span className="text-micro-num text-interactive/70 tabular-nums">
                     {convRate} conversion
                   </span>
                 ) : (
-                  <span className="text-[9px] font-mono text-muted-foreground/75">
+                  <span className="text-caption text-muted-foreground/75">
                     — no rate
                   </span>
                 )}

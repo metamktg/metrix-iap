@@ -10,6 +10,7 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, Check, Loader2, Pencil, ShieldAlert, Trash2, X } from "lucide-react";
 import type { CreativeDeconstruction, DetectedCreativeVariable } from "@workspace/api-client-react";
+import { LayeredDisclosure, LayeredDisclosureLeaf } from "@/components/widgets/LayeredDisclosure";
 import {
   DECONSTRUCTION_STATUS_LABEL,
   REGISTRY_FAMILIES,
@@ -67,7 +68,7 @@ function VariableEditorRow({
         list={`codes-${variable.family}`}
         aria-label="Variable code"
         className={[
-          "h-7 flex-1 min-w-0 rounded border bg-background text-label text-foreground px-2 font-mono",
+          "h-7 flex-1 min-w-0 rounded border bg-background text-label text-foreground px-2",
           valid ? "border-border/50" : "border-status-danger/50",
         ].join(" ")}
       />
@@ -122,23 +123,45 @@ function ReviewItem({
     }
   };
 
+  // Editing forces the layer open. A reviewer who presses Correct and then
+  // finds the editor inside a collapsed panel has been handed a control that
+  // appears to do nothing.
+  const [expanded, setExpanded] = useState(true);
+  const copy = item.detected_copy ?? null;
+  const hasCopy =
+    copy != null &&
+    Boolean(copy.primary_message || copy.secondary_message || copy.cta || copy.visual_system);
+
   return (
-    <div
+    <LayeredDisclosure
       data-testid={`review-item-${item.id}`}
-      className="rounded-lg border border-status-warning/25 bg-status-warning/[0.03] p-4 space-y-3"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-body font-semibold text-foreground truncate">{item.filename}</div>
-          <div className="text-caption text-muted-foreground/85 truncate">
-            {item.ad_names.length > 0 ? item.ad_names.join(", ") : "Not mapped to a live ad"}
-            {item.brief_ref ? ` · brief ${item.brief_ref}` : " · no linked brief (historical upload)"}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-label text-muted-foreground/80">Overall</span>
+      className="border border-status-warning/25"
+      // OPEN BY DEFAULT, and that is not a hedge.
+      //
+      // This is a WORK queue: every item in it is waiting for a decision, and
+      // the reviewer is going to open every one. Collapsing them by default
+      // would add a click per item and buy nothing — disclosure that hides
+      // the work is not progressive, it is just in the way. The e2e spec
+      // caught exactly this: it asserts the variables are visible when the
+      // queue renders, and it was right to.
+      //
+      // The layering still earns its place one level down, where the depth
+      // is real: detected copy is EVIDENCE for the variables, not a peer of
+      // them, and it belongs on its own plane behind its own control.
+      open={expanded || editing}
+      onOpenChange={setExpanded}
+      label={item.filename}
+      summary={
+        <span className="flex items-center gap-2">
+          <span>{item.variables.length} variables</span>
           <ConfidenceBadge value={item.overall_confidence} />
-        </div>
+        </span>
+      }
+    >
+      <div className="space-y-3 px-1 pb-1">
+      <div className="text-caption text-muted-foreground/85">
+        {item.ad_names.length > 0 ? item.ad_names.join(", ") : "Not mapped to a live ad"}
+        {item.brief_ref ? ` · brief ${item.brief_ref}` : " · no linked brief (historical upload)"}
       </div>
 
       {/* Detected variables (and brief comparison when a brief is linked) */}
@@ -199,7 +222,7 @@ function ReviewItem({
                 <span
                   key={v.code}
                   title={v.evidence ?? undefined}
-                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-border/50 bg-foreground/[0.03] text-label font-mono text-foreground/90"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-border/50 bg-foreground/[0.03] text-label text-foreground/90"
                 >
                   {v.code}
                   <span className="text-muted-foreground/75">{pct(v.confidence)}</span>
@@ -220,7 +243,7 @@ function ReviewItem({
                   <span
                     key={code}
                     className={[
-                      "inline-flex items-center gap-1 px-2 py-1 rounded border text-label font-mono",
+                      "inline-flex items-center gap-1 px-2 py-1 rounded border text-label",
                       matched
                         ? "border-status-success/30 bg-status-success/[0.05] text-status-success"
                         : "border-status-warning/30 bg-status-warning/[0.05] text-status-warning",
@@ -241,6 +264,35 @@ function ReviewItem({
         <p className="text-caption text-status-danger flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {error}
         </p>
+      )}
+
+      {/* LAYER 2 — the copy the variables were READ FROM.
+          `detected_copy` has been in the seed contract the whole time and no
+          screen has ever shown it. It is the evidence behind every chip
+          above: a reviewer deciding whether a hook code was detected
+          correctly has, until now, had no way to see the hook it was
+          detected in. It nests one plane deeper because that is what it is —
+          evidence under a finding, not a peer of it. */}
+      {hasCopy && (
+        <LayeredDisclosure label="Detected copy" summary="what the variables were read from">
+          <LayeredDisclosureLeaf>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+              {([
+                ["Primary message", copy!.primary_message],
+                ["Secondary message", copy!.secondary_message],
+                ["Call to action", copy!.cta],
+                ["Visual system", copy!.visual_system],
+              ] as const).map(([label, value]) =>
+                value ? (
+                  <div key={label} className="min-w-0">
+                    <dt className="text-label uppercase text-muted-foreground/75">{label}</dt>
+                    <dd className="text-caption text-foreground/85 mt-0.5 break-words">{value}</dd>
+                  </div>
+                ) : null,
+              )}
+            </dl>
+          </LayeredDisclosureLeaf>
+        </LayeredDisclosure>
       )}
 
       {/* Actions */}
@@ -291,7 +343,8 @@ function ReviewItem({
           </button>
         </div>
       )}
-    </div>
+      </div>
+    </LayeredDisclosure>
   );
 }
 

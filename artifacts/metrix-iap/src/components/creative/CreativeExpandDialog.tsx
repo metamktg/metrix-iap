@@ -10,6 +10,7 @@ import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
 import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle, TrendingDown } from "lucide-react";
+import { motion } from "framer-motion";
 import { Dialog, DialogContent } from "@workspace/command-deck/components/ui/dialog";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { CreativeCardData } from "./CreativeCard";
@@ -163,7 +164,7 @@ function MetricToggle({ options, value, onChange }: {
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "pressable px-2.5 py-1 font-mono uppercase tracking-wide transition-colors",
+            "pressable px-2.5 py-1 uppercase tracking-wide transition-colors",
             value === o.value
               ? "bg-foreground/10 text-foreground"
               : "text-muted-foreground/75 hover:text-muted-foreground/75"
@@ -191,7 +192,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
             { label: "Link CTR", value: pct(s.ctrPct) },
           ] as const).map((item) => (
             <div key={item.label} className="rounded-lg border border-border/30 bg-foreground/[0.02] px-3 py-2.5 text-center">
-              <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">{item.label}</div>
+              <div className="text-micro uppercase text-muted-foreground/75 mb-1">{item.label}</div>
               <div className="text-lg font-bold text-foreground tabular-nums leading-none">{item.value}</div>
             </div>
           ))}
@@ -356,7 +357,7 @@ function DemographicsTab({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Age × Gender</p>
+        <p className="text-label uppercase tracking-widest text-muted-foreground/75">Age × Gender</p>
         <MetricToggle
           options={[{ value: "spend", label: "Spend" }, { value: "results", label: "Results" }]}
           value={metric}
@@ -391,7 +392,7 @@ function DemographicsTab({
             >
               {/* Row header: age + value */}
               <div className="flex items-center justify-between mb-2">
-                <span className={cn("text-title font-semibold", isActive ? "text-foreground" : "text-foreground/75")}>
+                <span className={cn("text-title font-bold", isActive ? "text-foreground" : "text-foreground/75")}>
                   {b.age}
                 </span>
                 <span className="text-body tabular-nums text-muted-foreground/75 font-medium">
@@ -429,7 +430,7 @@ function DemographicsTab({
                   F {metric === "spend" ? usd(fSpend) : num(fRes)}
                 </span>
                 {isActive && (
-                  <span className="ml-auto text-micro font-mono uppercase tracking-wider text-interactive/70">
+                  <span className="ml-auto text-micro uppercase text-interactive/70">
                     Selected ↑
                   </span>
                 )}
@@ -445,7 +446,7 @@ function DemographicsTab({
           {/* Panel header */}
           <div className="px-4 py-2.5 border-b border-border/30 flex items-center justify-between">
             <div>
-              <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Segment KPIs</span>
+              <span className="text-label uppercase tracking-widest text-muted-foreground/75">Segment KPIs</span>
               <span className="ml-2 text-body font-semibold text-foreground">{activeBucket.age}</span>
             </div>
           </div>
@@ -623,7 +624,7 @@ function FunnelTab({ perfRow, emptyReason }: { perfRow: CellPerformanceRow | nul
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">Conversion funnel</p>
+        <p className="text-label uppercase tracking-widest text-muted-foreground/75">Conversion funnel</p>
       </div>
       <FunnelStepsChart steps={steps} />
       {!hasAnyFunnel && (
@@ -696,9 +697,16 @@ export function CreativeExpandDialog({
       >
         <div className="grid grid-rows-[260px_1fr] sm:grid-rows-none sm:grid-cols-[42%_1fr] min-h-0 max-h-[92vh] overflow-hidden">
 
-          {/* ── Left: creative visual ── */}
+          {/* ── Left: creative visual ──
+              The other half of the shared-layout pair. This carries the same
+              `layoutId` as the tile's visual in CreativeCard, so the creative
+              travels from the grid into this pane rather than the tile
+              disappearing and a modal fading in elsewhere. See the comment on
+              the card side for why the tile stays mounted. */}
           <div className="relative overflow-hidden bg-surface-preview sm:border-r border-b sm:border-b-0 border-border/30">
-            <ExpandVisual data={data} className="absolute inset-0" />
+            <motion.div layoutId={`creative-media-${data.conceptCode}`} className="absolute inset-0">
+              <ExpandVisual data={data} className="absolute inset-0" />
+            </motion.div>
 
             {unmapped && (
               <div className="absolute top-3 left-3 flex items-center gap-1 bg-status-warning/20 border border-status-warning/30 text-status-warning text-micro font-semibold px-2 py-1 rounded-full backdrop-blur-sm">
@@ -709,7 +717,7 @@ export function CreativeExpandDialog({
 
             {data.assetFormat && (
               <div className="absolute bottom-3 left-3">
-                <span className="text-[8px] font-mono uppercase text-foreground/55 border border-foreground/10 bg-background/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                <span className="text-micro uppercase text-foreground/55 border border-foreground/10 bg-background/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
                   {data.assetFormat}
                 </span>
               </div>

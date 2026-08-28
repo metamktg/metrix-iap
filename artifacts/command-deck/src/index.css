@@ -437,6 +437,6 @@
    * ramp is the consuming app's (metrix-iap defines .text-h1..h6 and the
    * body floor); these two are here so a tooltip rendered from this package
    * is not sized by a class that only exists downstream. */
-  .text-caption { font-size: 0.75rem;  line-height: 1.5; letter-spacing: 0; }
-  .text-body    { font-size: 0.875rem; line-height: 1.6; letter-spacing: 0; }
+  .text-caption { font-size: 0.8125rem; line-height: 1.5; letter-spacing: 0; }
+  .text-body    { font-size: 0.9375rem; line-height: 1.6; letter-spacing: 0; }
 }

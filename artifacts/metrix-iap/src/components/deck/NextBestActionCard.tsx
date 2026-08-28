@@ -81,7 +81,7 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
       >
         <div className="flex items-center gap-1.5 mb-1.5">
           <Zap className="w-3.5 h-3.5 text-muted-foreground/75" />
-          <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/75")}>
+          <span className={cn(TYPE.label, " uppercase tracking-widest text-muted-foreground/75")}>
             Next best action
           </span>
         </div>
@@ -103,7 +103,7 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
         <div className="flex-1 min-w-[240px]">
           <div className="flex items-center gap-1.5 mb-1.5">
             <Zap className="w-3.5 h-3.5 text-interactive/80" />
-            <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-interactive/80")}>
+            <span className={cn(TYPE.label, " uppercase tracking-widest text-interactive/80")}>
               Next best action
             </span>
           </div>

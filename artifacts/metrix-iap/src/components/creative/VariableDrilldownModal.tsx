@@ -29,9 +29,9 @@ import type { AnalysisData, VariablePerformanceRow } from "@/lib/data/seedTypes"
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2.5">
-      <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75">{label}</div>
+      <div className="text-micro uppercase text-muted-foreground/75">{label}</div>
       <div className="text-base font-bold tabular-nums leading-tight mt-0.5 text-foreground">{value}</div>
-      {sub && <div className="text-[9px] text-muted-foreground/75 leading-snug mt-0.5">{sub}</div>}
+      {sub && <div className="text-caption text-muted-foreground/75 leading-snug mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -92,12 +92,12 @@ export function VariableDrilldownModal({
                 Back
               </button>
             )}
-            <div className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest">
+            <div className="text-label text-muted-foreground/75 uppercase tracking-widest">
               Variable drill-down{data.family ? ` · ${familyLabel(data.family)}` : ""}
             </div>
             <DialogTitle className={cn(DIALOG.title, "flex items-center gap-2 flex-wrap")} data-testid="title-variable-drilldown">
               {readableVariables(code)}
-              <span className="text-[9px] font-mono font-normal text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded">{code}</span>
+              <span className="text-caption font-normal text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded">{code}</span>
             </DialogTitle>
             <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
               Numbers come from this import's own variable-level rows and the creative cells that actually carried this
@@ -131,7 +131,7 @@ export function VariableDrilldownModal({
 
             {/* ── Top ads carrying this variable ── */}
             <div className="space-y-1.5">
-              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
+              <p className="text-label uppercase tracking-widest text-muted-foreground/75">
                 Top ads carrying this variable
               </p>
               {topCells.length > 0 ? (
@@ -158,7 +158,7 @@ export function VariableDrilldownModal({
                 </p>
               )}
               {data.rankedCells.length > 3 && (
-                <p className="text-[9px] text-muted-foreground/75">
+                <p className="text-body text-muted-foreground/75">
                   Top 3 of {data.rankedCells.length} carrier cells, ranked by results.
                 </p>
               )}
@@ -166,7 +166,7 @@ export function VariableDrilldownModal({
 
             {/* ── Segment performance ── */}
             <div className="space-y-1.5">
-              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
+              <p className="text-label uppercase tracking-widest text-muted-foreground/75">
                 Segment performance — scoped to this variable's cells
               </p>
               {data.segments.available ? (
@@ -212,20 +212,20 @@ export function VariableDrilldownModal({
             {/* ── Copy variants ── */}
             {data.textVariants.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/75">
+                <p className="text-label uppercase tracking-widest text-muted-foreground/75">
                   Copy that ran with this variable
                 </p>
                 <div className="space-y-2">
                   {data.textVariants.map((v) => (
                     <div key={v.cellId} className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2.5 space-y-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] font-mono text-muted-foreground/75">{v.cellId}</span>
+                        <span className="text-caption text-muted-foreground/75">{v.cellId}</span>
                         {v.conceptName && <span className="text-label font-medium text-foreground/80">{v.conceptName}</span>}
                       </div>
                       {v.primary && <p className="text-caption text-foreground/85 leading-relaxed">{v.primary}</p>}
                       {v.secondary && <p className="text-label text-muted-foreground/75 leading-relaxed">{v.secondary}</p>}
                       {v.cta && (
-                        <span className="inline-block text-[9px] font-medium text-interactive/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded">
+                        <span className="inline-block text-caption font-medium text-interactive/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded">
                           {v.cta}
                         </span>
                       )}
@@ -235,7 +235,7 @@ export function VariableDrilldownModal({
               </div>
             )}
 
-            <p className={cn("text-[9px] text-muted-foreground/75 leading-relaxed")}>
+            <p className={cn("text-body text-muted-foreground/75 leading-relaxed")}>
               Placement data is account-level in this import and can't be attributed to a single variable, so it's not
               shown here.
             </p>

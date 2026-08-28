@@ -138,7 +138,7 @@ export function MstDirectionView() {
                     return (
                       <div key={`${row.book}:${row.concept}`} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4" data-testid={`direction-concept-${row.book}-${row.concept}`}>
                         <div className="flex items-center justify-between gap-2 mb-2.5">
-                          <span className={cn(TYPE.label, "font-mono text-muted-foreground/75")}>{row.book} · {row.concept}</span>
+                          <span className={cn(TYPE.label, " text-muted-foreground/75")}>{row.book} · {row.concept}</span>
                           <span className={cn("inline-flex items-center gap-1 text-label font-semibold border px-1.5 py-0.5 rounded leading-none", BUCKET_STYLE[bucket])}>
                             <Icon className="w-3 h-3" />
                             {BUCKET_LABEL[bucket]}

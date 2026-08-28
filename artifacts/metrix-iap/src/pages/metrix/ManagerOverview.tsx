@@ -215,16 +215,16 @@ function AdAccountCard({
         {configured && totals && (totals.spend > 0 || totals.results > 0) && (
           <div className="flex items-center gap-4 mt-2.5 pt-2 border-t border-border/20">
             <div>
-              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">Spend</div>
+              <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-0.5">Spend</div>
               <div className={cn(TYPE.body, "font-semibold tabular-nums text-foreground/80")}>{fmtUSD(totals.spend, 0)}</div>
             </div>
             <div>
-              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">Results</div>
+              <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-0.5">Results</div>
               <div className={cn(TYPE.body, "tabular-nums text-foreground/65")}>{fmtNum(totals.results)}</div>
             </div>
             {totals.cpa != null && (
               <div>
-                <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/75 mb-0.5">CPA</div>
+                <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-0.5">CPA</div>
                 <div className={cn(TYPE.body, "tabular-nums text-foreground/65")}>{fmtUSD(totals.cpa)}</div>
               </div>
             )}
@@ -281,14 +281,14 @@ function RecommendationCardItem({
       <div>
         <TokenizedConceptText
           text={card.title}
-          className="text-title font-semibold text-foreground leading-snug"
+          className="text-title font-bold text-foreground leading-snug"
         />
       </div>
 
       {/* ③ Action block — the most important second thing, never hidden */}
       {card.recommended_action && (
         <div className="rounded-lg border border-border/25 bg-foreground/[0.04] px-3 py-2.5">
-          <div className="text-micro font-mono uppercase tracking-widest text-interactive/55 mb-1.5">
+          <div className="text-micro uppercase tracking-widest text-interactive/55 mb-1.5">
             Recommended action
           </div>
           <TokenizedConceptText
@@ -329,7 +329,7 @@ function RecommendationCardItem({
         </button>
         {card.source_path && (
           <span
-            className="text-micro font-mono text-muted-foreground/75 truncate max-w-[130px]"
+            className="text-micro text-muted-foreground/75 truncate max-w-[130px]"
             title={card.source_path}
           >
             {card.source_path}
@@ -434,7 +434,7 @@ export function ManagerOverview() {
         subtitle="Blended performance · all ad accounts"
         right={
           <div className="flex items-center gap-2.5">
-            <span className={cn(TYPE.label, "font-mono text-muted-foreground/75 uppercase tracking-widest")}>
+            <span className={cn(TYPE.label, " text-muted-foreground/75 uppercase tracking-widest")}>
               {data.configured_ad_accounts} configured · {data.unconfigured_ad_accounts} to set up
             </span>
             {/* Manager scope has no windowed KPI-tile data source to drive a

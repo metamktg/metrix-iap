@@ -82,7 +82,7 @@ function InlineDrawer({
     <div className="mt-2 rounded-xl border border-[hsl(var(--border-default))] bg-secondary p-4 space-y-3 text-left">
       {/* Close handle */}
       <div className="flex items-center justify-between">
-        <span className="text-label font-bold uppercase tracking-[0.18em] text-muted-foreground/75">
+        <span className="text-label font-semibold uppercase text-muted-foreground/75">
           Full Detail
         </span>
         <button
@@ -97,14 +97,14 @@ function InlineDrawer({
 
       {/* Rationale */}
       <div className="space-y-1">
-        <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/75">Rationale</p>
+        <p className="text-label font-semibold uppercase text-muted-foreground/75">Rationale</p>
         <DenseText text={card.rationale} className="text-body text-foreground/80 leading-relaxed" />
       </div>
 
       {/* Recommended action */}
       {card.recommended_action && (
         <div className="space-y-1">
-          <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/75">
+          <p className="text-label font-semibold uppercase text-muted-foreground/75">
             Recommended action
           </p>
           <p className="text-body text-foreground/75 leading-relaxed italic">
@@ -197,7 +197,7 @@ function QueueCard({
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span
             className={cn(
-              "inline-flex text-label font-bold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+              "inline-flex text-label font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
               verb.cls
             )}
           >
@@ -217,7 +217,7 @@ function QueueCard({
         </div>
 
         {/* Title */}
-        <p className="text-title font-semibold text-foreground leading-snug mb-1.5">
+        <p className="text-title font-bold text-foreground leading-snug mb-1.5">
           {card.title}
         </p>
 
@@ -316,14 +316,14 @@ function EmptyQueue({ reason }: { reason: "no-loop" | "all-done" }) {
       </div>
       {reason === "all-done" ? (
         <>
-          <p className="text-title font-medium text-foreground/60">All caught up</p>
+          <p className="text-title font-bold text-foreground/60">All caught up</p>
           <p className="text-body text-muted-foreground/75 max-w-[280px]">
             All recommendations have been reviewed. Approved items are in your Task Tray.
           </p>
         </>
       ) : (
         <>
-          <p className="text-title font-medium text-foreground/60">No actions yet</p>
+          <p className="text-title font-bold text-foreground/60">No actions yet</p>
           <p className="text-body text-muted-foreground/75 max-w-[280px]">
             Run analysis to generate optimization recommendations for this account.
           </p>

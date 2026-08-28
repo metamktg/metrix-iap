@@ -397,9 +397,18 @@ async function main() {
             .first()
             .waitFor({ state: "visible", timeout: 10_000 });
 
-          // Cell-code chips: font-mono spans whose sr-only mentions "matrix cell".
+          // Cell-code chips: spans whose sr-only text mentions "matrix cell".
+          //
+          // This used to be `span.font-mono`. The mono face has been removed
+          // from the product — figures align with tabular-nums instead — so
+          // that class no longer exists and the locator matched nothing while
+          // the chip itself was rendering correctly the whole time. A spec
+          // that identifies an element by a STYLING class fails the moment the
+          // styling changes, and says nothing about whether the element is
+          // right. The sr-only text is what actually identifies this chip, and
+          // it is also what the test is here to assert.
           const chip = page
-            .locator("span.font-mono", {
+            .locator("span", {
               has: page.locator(".sr-only", { hasText: /matrix cell/i }),
             })
             .first();

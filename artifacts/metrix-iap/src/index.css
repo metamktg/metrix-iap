@@ -33,6 +33,23 @@
   --color-status-warning: hsl(var(--status-warning));
   --color-status-danger: hsl(var(--status-danger));
   --color-status-info: hsl(var(--status-info));
+
+  /* ── Display face ─────────────────────────────────────────────────
+     The DISPLAY face is the heading face, not the base sans. Two things
+     were wrong with the previous `--font-display: var(--app-font-sans)`
+     in :root:
+
+       1. It aliased Figtree, so `font-display` was a no-op synonym for
+          body text — the two call sites reaching for a display voice
+          silently got the text voice instead.
+       2. It lived in :root rather than @theme, so Tailwind v4 never
+          generated the `font-display` UTILITY from it at all. The class
+          in AvatarsView matched nothing; only FindingsView's direct
+          `var(--font-display)` read resolved.
+
+     Declared here it emits both the variable and the utility, and it
+     names Outfit — the same face every .font-h* rule sets. */
+  --font-display: Outfit, "Segoe UI", system-ui, sans-serif;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -158,9 +175,6 @@
   --metrix-success: var(--success);
   --metrix-danger: var(--destructive);
   --metrix-panel: var(--card);
-
-  /* Display face follows the design system's sans (Inter). */
-  --font-display: var(--app-font-sans);
 
   --shadow-2xs: 0 1px 2px 0 rgba(0,0,0,0.4);
   --shadow-xs: 0 1px 3px 0 rgba(0,0,0,0.5);
@@ -299,6 +313,35 @@
   .mx-card-hero:hover,
   .mx-kpi-tile:hover {
     border-color: var(--mx-border-medium);
+  }
+
+  /* ── The module header band ──────────────────────────────────────
+   *
+   * A card's title and its data used to sit on ONE plane: .mx-card paints
+   * the whole section with hsl(var(--card)) and the header row was a flex
+   * div separated by a 1px border at primary/10 — a line you have to look
+   * for. So the module title, the column headers and the data all shared a
+   * ground, and the title competed with the content it was supposed to
+   * label. That is the friction: nothing tells the eye where the chrome
+   * stops and the data starts, so it reads every part at the same weight
+   * and sorts them out afterwards.
+   *
+   * The band gives the header its own surface, half a step off the card. It
+   * is deliberately subtle — this is a dark cockpit, not a document — but
+   * it is a PLANE, and the eye resolves planes pre-attentively in a way it
+   * never resolves a hairline.
+   *
+   * Three planes now, in order of authority:
+   *   1. .mx-module-header   the frame — what this is, how to look at it
+   *   2. surface-table       the column headers — chrome for the data
+   *   3. the card ground     the data itself
+   *
+   * The bottom edge is a real border rather than a tint boundary so it
+   * survives on both themes and against a sticky table header scrolling
+   * under it. */
+  .mx-module-header {
+    background: hsl(var(--foreground) / 0.028);
+    border-bottom: 1px solid var(--mx-edge-strong);
   }
 
   /* Active nav item — flat accent tint, no gradient or glow. */
@@ -455,20 +498,32 @@
   }
 
   .mx-section-header__title {
-    font-size: 2rem;       /* 32px — matches text-bignum. 11px clear of the
-                               21px H2 below it, so the page title reads as
+    /* THE HEADING FACE. This was missing, and it is the biggest heading in
+       the product — the H1 of every route rendered in Figtree while every
+       .font-h* class set Outfit. The class predates the face system and
+       never joined it, and no static check could see the omission: a
+       missing declaration has no class name to grep for. Caught by
+       rendering the page and reading the computed style. */
+    font-family: Outfit, "Segoe UI", system-ui, sans-serif;
+    font-size: 2.125rem;   /* 34px — matches text-bignum, 6px clear of the
+                               28px H2 below it, so the page title reads as
                                the page's one anchor rather than competing
                                with the first card. */
     font-weight: 700;
     color: hsl(var(--text-primary));
-    letter-spacing: -0.02em;
-    line-height: 1.2;
+    letter-spacing: -0.022em;
+    line-height: 1.05;
   }
 
   .mx-section-header__sub {
     /* This is the page's one-line explanation of itself — a sentence, so
-       it sits at the body floor rather than in the chrome band. */
-    font-size: 0.875rem;   /* 14px — text-body */
+       it sits at the body floor rather than in the chrome band.
+
+       It was still 14px after the ramp lift moved the floor to 15px, so it
+       had drifted BELOW the floor its own comment claims it sits on.
+       check:type-scale reads .text-* utilities and this is not one, which
+       is why nothing caught it; the gate now asserts this pair explicitly. */
+    font-size: 0.9375rem;  /* 15px — the body floor */
     color: hsl(var(--text-muted));
     line-height: 1.6;
   }
@@ -511,52 +566,95 @@
      rather than clustered near the top the way a three-level ramp can be.
      ─────────────────────────────────────────────────────────────────── */
 
-  /* ── Faces ────────────────────────────────────────────────────────
-     Five families, one per heading level, because each level is doing a
-     different job and a size change alone is a weak signal at these
-     densities. Every stack names a metric-compatible fallback so a
-     failed webfont shifts weight, not layout.
+  /* ── Faces — THREE, one job each ──────────────────────────────────
+     This used to be five families, one per heading level, on the theory
+     that each level is doing a different job and a size change alone is a
+     weak signal. Space Grotesk (H1–H2), Outfit (H3), Lato (H4), Rubik
+     (H5–H6), Figtree (body). It is the wrong theory, and the evidence is
+     what the app actually looked like: a heading tree that changed
+     TYPEFACE between a section title and the card title inside it. Nobody
+     perceives a five-family hierarchy — they perceive an interface that
+     was assembled rather than designed. Five faces is not a hierarchy, it
+     is five brands sharing a page.
 
-       H1  Space Grotesk  the brand voice. Flat terminals, an angular G and
-       H2  Space Grotesk  tightly-set numerals — drafting-table shapes rather
-                    than humanist ones, which is what makes it read as an
-                    instrument rather than an app. H2 routinely carries a
-                    metric ("$18.40 cost per result"), so its numerals matter
-                    as much as its letters. H1 and H2 share a voice because
-                    they are both titles; H3 down are structural.
-       H3  Outfit   geometric and wide — a clear step away from the display
-                    face without dropping to the body face
-       H4  Lato     humanist, slightly warmer — group headers
-       H5  Rubik    rounded terminals read as UI rather than prose
-       H6  Rubik    the uppercase chrome label, separated by case and
-                    tracking rather than size
-       body Figtree tall x-height, which is what makes 14px hold
+     Differentiation does not come from how many families are stacked. It
+     comes from how one voice is SET: the scale, the tracking, the weight
+     contrast, and the one place a second voice is allowed to interrupt.
+     So the ramp collapses to three faces with a rule small enough to hold
+     in your head:
+
+       HEADINGS  Outfit    H1–H5 — every level that sets a title
+       PROSE     Figtree   everything else: body, captions, eyebrows, badges
+
+     TWO faces now, not three. Share Tech Mono is gone — 305 usages across
+     78 files. It was doing two jobs and only one was real: aligning figures
+     so columns of numbers do not jitter. `tabular-nums` does that properly,
+     as a font-variant on Figtree's own digits, with none of the terminal
+     aesthetic. The other job was decorative, and a measurement product that
+     dresses its numbers as console output reads as a debug view rather than
+     an instrument.
+
+     Outfit is the differentiator. It is a geometric sans with near-monoline
+     strokes, circular bowls and a tall x-height, and at 27–32px with the
+     negative tracking below it reads as a considered product mark rather
+     than the Inter-shaped default every analytics dashboard ships with.
+     Its numerals are even-width and unfussy, which matters because a
+     heading here routinely carries a metric ("$18.40 cost per result").
+     Space Grotesk was the previous display face and does have more
+     personality, but its idiosyncratic g/a/1 fight Outfit's geometry at
+     adjacent sizes and read as a period style rather than an instrument.
+
+     Figtree stays as the text face for the reason it was picked: a tall
+     x-height is what makes 14px hold on a dark ground, and a humanist
+     text face is the classic counterpoint to a geometric display one.
+
+     H6 is the one heading class pointed at Figtree, and deliberately. H6
+     is the 11px uppercase eyebrow — and TYPE.label is the SAME role at the
+     SAME size spelled without a font class, so it renders in the base sans
+     (Figtree). Pointing .font-h6 at Outfit would make two spellings of one
+     eyebrow render in two different faces, which is the exact defect this
+     consolidation exists to remove. At 11px under 0.08em tracking the face
+     is barely legible as a face anyway: that band separates by case,
+     weight and colour, and the x-height is what carries it.
+
+     Heading levels now separate by SIZE, WEIGHT and TRACKING — the three
+     signals that actually survive being read quickly — rather than by
+     typeface. Every stack names a metric-compatible fallback so a failed
+     webfont shifts weight, not layout.
      ──────────────────────────────────────────────────────────────── */
-  .font-h1, .font-h2 { font-family: "Space Grotesk", "Segoe UI", system-ui, sans-serif; }
-  .font-h3           { font-family: Outfit, "Segoe UI", system-ui, sans-serif; }
-  .font-h4           { font-family: Lato, "Segoe UI", system-ui, sans-serif; }
-  .font-h5, .font-h6 { font-family: Rubik, "Segoe UI", system-ui, sans-serif; }
+  .font-h1, .font-h2, .font-h3,
+  .font-h4, .font-h5 { font-family: Outfit, "Segoe UI", system-ui, sans-serif; }
+  .font-h6           { font-family: Figtree, system-ui, sans-serif; }
   .font-body         { font-family: Figtree, system-ui, sans-serif; }
 
   /* ── Chrome band — labels and indices, never sentences ───────────── */
-  .text-micro   { font-size: 0.625rem;   line-height: 1.4;  letter-spacing: 0.1em; }    /* 10px */
-  .text-label   { font-size: 0.6875rem;  line-height: 1.45; letter-spacing: 0.08em; }   /* 11px */
+  .text-micro { font-size: 0.6875rem; line-height: 1.4; letter-spacing: 0.08em; }  /* 11px — badge / index numerals. Never a sentence. */
+  /* The micro role for NUMBERS — a count badge, a notification bubble, a
+     tabular figure in a chip. Same size and leading, no tracking.
+     0.1em on "12" adds a trailing gap the glyphs do not balance, so a
+     number centred in a circular badge sits visibly left of centre. It is
+     its own class rather than `text-micro tracking-normal` because two
+     utilities both setting letter-spacing is a tie resolved by generated-CSS
+     order rather than by intent — and a tie you cannot read off the markup
+     is one somebody will lose later. */
+  .text-micro-num { font-size: 0.6875rem; line-height: 1.4; letter-spacing: 0; }  /* 11px, numerals — no tracking, see below */
+  .text-label { font-size: 0.75rem; line-height: 1.45; letter-spacing: 0.07em; }  /* 12px — uppercase eyebrow / column header. Never a sentence. */
 
   /* ── Reading band — 14px floor for anything phrased as a sentence ── */
-  .text-caption { font-size: 0.75rem;    line-height: 1.5;  letter-spacing: 0; }        /* 12px — non-sentence metadata only */
-  .text-body    { font-size: 0.875rem;   line-height: 1.6;  letter-spacing: 0; }        /* 14px — BODY FLOOR */
-  .text-h5      { font-size: 1.0625rem;  line-height: 1.4;  letter-spacing: 0; }         /* 17px — H5 */
-  .text-title   { font-size: 1.0625rem;  line-height: 1.35; letter-spacing: -0.006em; } /* 17px — alias of H5's step */
-  .text-callout { font-size: 1.125rem;   line-height: 1.4;  letter-spacing: -0.008em; } /* 18px — dialog title */
-  .text-h4      { font-size: 1.25rem;    line-height: 1.35; letter-spacing: -0.004em; } /* 20px — H4 */
-  .text-h3      { font-size: 1.4375rem;  line-height: 1.3;  letter-spacing: -0.008em; } /* 23px — H3 */
-  .text-display { font-size: 1.5rem;     line-height: 1.2;  letter-spacing: -0.014em; } /* 24px */
-  .text-h2      { font-size: 1.6875rem;  line-height: 1.22; letter-spacing: -0.012em; } /* 27px — H2 */
-  .text-section { font-size: 1.625rem;   line-height: 1.2;  letter-spacing: -0.014em; } /* 26px */
-  .text-stat    { font-size: 1.875rem;   line-height: 1.1;  letter-spacing: -0.02em; }  /* 30px */
-  .text-bignum  { font-size: 2rem;       line-height: 1.05; letter-spacing: -0.022em; } /* 32px — H1 / hero number */
-  .text-hero    { font-size: 2.75rem;    line-height: 1.0;  letter-spacing: -0.025em; } /* 44px */
-  .text-cardtitle { font-size: 1.3125rem; line-height: 1.25; letter-spacing: -0.012em; } /* 21px — H2 */
+  .text-caption { font-size: 0.8125rem; line-height: 1.5; letter-spacing: 0; }  /* 13px — THE READING FLOOR. Non-sentence metadata. */
+  .text-body { font-size: 0.9375rem; line-height: 1.6; letter-spacing: 0; }  /* 15px — body prose. Every sentence lands here or above. */
+  .text-h5 { font-size: 1.125rem; line-height: 1.4; letter-spacing: -0.004em; }  /* 18px — H5 */
+  .text-title { font-size: 1.125rem; line-height: 1.35; letter-spacing: -0.006em; }  /* 18px — alias of H5's step */
+  .text-callout { font-size: 1.1875rem; line-height: 1.4; letter-spacing: -0.008em; }  /* 19px — dialog title */
+  .text-h4 { font-size: 1.3125rem; line-height: 1.35; letter-spacing: -0.006em; }  /* 21px — H4 */
+  .text-h3 { font-size: 1.5rem; line-height: 1.3; letter-spacing: -0.012em; }  /* 24px — H3 */
+  .text-display { font-size: 1.5625rem; line-height: 1.25; letter-spacing: -0.014em; }  /* 25px */
+  .text-h2 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.016em; }  /* 28px — H2 */
+  .text-section { font-size: 1.6875rem; line-height: 1.2; letter-spacing: -0.016em; }  /* 27px */
+  .text-stat { font-size: 2rem; line-height: 1.1; letter-spacing: -0.02em; }  /* 32px — hero stat */
+  .text-bignum { font-size: 2.125rem; line-height: 1.05; letter-spacing: -0.022em; }  /* 34px — H1 / hero number */
+  .text-hero { font-size: 2.875rem; line-height: 1.0; letter-spacing: -0.025em; }  /* 46px */
+  .text-cardtitle { font-size: 1.375rem; line-height: 1.3; letter-spacing: -0.01em; }  /* 22px — SectionCard title */
 
   /* ── Data text hierarchy — DS-derived steps, predictable contrast ──
        text-data-primary  foreground            — values, headings
@@ -932,11 +1030,17 @@
 .nc-table th {
   text-align: left;
   /* Column headers are CHROME, not a heading: uppercase, tracked and
-     weighted, sitting above 14px data cells. They label a column rather
-     than titling a section, which is why they sit below the body floor
-     instead of 3px above it — the near-universal dense-table convention.
-     Matches text-label (11px). */
-  font-size: 0.6875rem; /* 11px — matches text-label */
+     weighted, sitting above the data cells. They label a column rather than
+     titling a section, which is why they sit below the body floor instead
+     of 3px above it — the near-universal dense-table convention.
+     Matches .text-label.
+
+     WAS 11px with a comment claiming it matched text-label. It did, until
+     the type ramp moved text-label to 12px and this rule stayed behind. A
+     comment that names a role has to keep naming the right one — a stale
+     one is worse than none, because the next reader trusts it. 11px is
+     .text-micro's step, which is the numeric-index role, not a label. */
+  font-size: 0.75rem; /* 12px — matches .text-label */
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: hsl(var(--muted-foreground) / 0.8);
@@ -945,14 +1049,21 @@
   border-bottom: 1px solid transparent; /* layout only; the row paints the fading rule */
 }
 .nc-table td {
-  /* Was 13px — an orphan that belonged to no scale step and sat below the
-     body floor. Table cells are the primary content of an analytics
-     product; they get the floor, and the density comes from padding
-     rather than from shrinking the numbers people are here to read. */
+  /* Table cells are the primary content of an analytics product. They get
+     the body floor, and the density comes from padding rather than from
+     shrinking the numbers people came here to read.
+
+     This rule has now been left behind by the ramp TWICE: first at 13px,
+     then at 14px when the body floor moved to 15px. Both times the comment
+     claimed it matched .text-body and both times that stopped being true
+     without anything failing. check:type-scale could not see it — it reads
+     `.text-*` utilities, and this is a component class. The gate now reads
+     .nc-table directly, which is the only reason a third drift would be
+     caught. */
   padding: 10px 12px;
   border-bottom: 1px solid transparent;
-  font-size: 0.875rem;  /* 14px — text-body */
-  line-height: 1.45;
+  font-size: 0.9375rem;  /* 15px — matches .text-body, the body floor */
+  line-height: 1.5;
 }
 .nc-table thead tr {
   background: linear-gradient(to right,

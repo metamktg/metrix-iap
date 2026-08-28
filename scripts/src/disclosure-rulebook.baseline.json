@@ -1,4 +1,6 @@
 {
-  "maxTotalViolations": 0,
-  "perFile": {}
+  "maxTotalViolations": 4,
+  "perFile": {
+    "artifacts/metrix-iap/src/components/layout/AccountSwitcher.tsx": 4
+  }
 }

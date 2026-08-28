@@ -303,7 +303,7 @@ export function CreativeBriefBuilderView() {
                           )}
                           {stack && (
                             <FieldPanel label="Variable stack">
-                              <p className={cn(TYPE.body, "font-mono text-foreground/80")}>{stack}</p>
+                              <p className={cn(TYPE.body, " text-foreground/80")}>{stack}</p>
                             </FieldPanel>
                           )}
                           {successCriteria && (
@@ -311,7 +311,7 @@ export function CreativeBriefBuilderView() {
                               <div className="flex items-start justify-between gap-3">
                                 <p className={cn(TYPE.body, "text-foreground/80 leading-relaxed")}>{successCriteria}</p>
                                 {hypothesisId && (
-                                  <span className={cn(TYPE.label, "shrink-0 font-mono text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5")}>{hypothesisId}</span>
+                                  <span className={cn(TYPE.label, "shrink-0 text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5")}>{hypothesisId}</span>
                                 )}
                               </div>
                             </FieldPanel>

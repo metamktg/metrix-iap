@@ -37,7 +37,7 @@ export function StrategyHistoryView() {
                   {run.status === "running" && <Loader2 className="w-4 h-4 text-status-warning animate-spin" />}
                   {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-status-success" />}
                   {run.status === "error" && <XCircle className="w-4 h-4 text-status-danger" />}
-                  <span className="text-title font-semibold text-foreground capitalize">{run.status}</span>
+                  <span className="text-title font-bold text-foreground capitalize">{run.status}</span>
                 </div>
                 <dl className="grid grid-cols-2 gap-3 text-body">
                   <div>

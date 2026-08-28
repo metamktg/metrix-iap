@@ -602,7 +602,7 @@ export function StrategyOverview() {
                                     window.history.pushState({}, "", `/app/analysis/library?focus=${c}`);
                                     window.dispatchEvent(new PopStateEvent("popstate"));
                                   }}
-                                  className="text-label font-mono text-interactive/80 hover:text-primary border border-primary/20 hover:border-primary/40 bg-primary/[0.04] px-1.5 py-0.5 rounded leading-none transition-colors"
+                                  className="text-label text-interactive/80 hover:text-primary border border-primary/20 hover:border-primary/40 bg-primary/[0.04] px-1.5 py-0.5 rounded leading-none transition-colors"
                                 >
                                   {c}
                                 </a>
@@ -679,7 +679,7 @@ export function StrategyOverview() {
 
                       {/* Stat + arrow */}
                       <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/20">
-                        <span className={cn(TYPE.label, "text-muted-foreground/75 font-mono")}>{s.stat}</span>
+                        <span className={cn(TYPE.label, "text-muted-foreground/75")}>{s.stat}</span>
                         <span className={cn(TYPE.label, "text-interactive/60 group-hover:text-interactive transition-colors font-semibold")}>
                           Open →
                         </span>

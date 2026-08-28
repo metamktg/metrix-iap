@@ -64,6 +64,11 @@ session picking up phase work:
 - `CARRY_FORWARD_REGISTER.md` — the E6 register, reconciled against live code. Every item
   carries a verdict (`[shipped]` / `[open]` / `[decision]`) established by reading the file it
   names. Update an item's status in place as you work it; never drop one silently.
+- `METRIX_UI_REFACE_REGISTER_2026-08.md` — the UI reface register. What the design pass has
+  closed, what is open, the Watermelon component mapping, and the phased plan. Every claim in it
+  is produced by a re-runnable command (`check:ui-inventory`, `check:field-coverage`, and the
+  seven design gates); where a number is an estimate it says so, and where a check is known to
+  be approximate the approximation is named. Read §0 before trusting any figure in it.
 
 ## Working rules for docs
 

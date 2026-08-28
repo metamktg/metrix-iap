@@ -186,7 +186,7 @@ export function AddAccountDialog({
                   <FileUp className="w-4 h-4 text-interactive" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-title font-semibold text-foreground">Upload manual reports</div>
+                  <div className="text-title font-bold text-foreground">Upload manual reports</div>
                   <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">
                     Create an account without a live connection and stage exported Meta reports
                     for the analysis pipeline.
@@ -209,7 +209,7 @@ export function AddAccountDialog({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <div className="text-title font-semibold text-muted-foreground/75">Connect Meta Ad Account</div>
+                    <div className="text-title font-bold text-muted-foreground/75">Connect Meta Ad Account</div>
                     <span className="text-label font-semibold uppercase tracking-widest border border-border/40 bg-foreground/[0.03] text-muted-foreground/75 px-1.5 py-0.5 rounded shrink-0">
                       Coming soon
                     </span>

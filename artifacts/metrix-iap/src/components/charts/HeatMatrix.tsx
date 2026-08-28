@@ -207,7 +207,7 @@ export function HeatMatrix({
                         {isGap ? "—" : format(v)}
                       </span>
                       {cell?.sub && !isGap && (
-                        <span className="text-micro font-mono text-foreground truncate max-w-full">
+                        <span className="text-micro text-foreground truncate max-w-full">
                           {cell.sub}
                         </span>
                       )}

@@ -142,13 +142,13 @@ export function SignalDeck({
                 </span>
                 {!p && (
                   <span
-                    className="text-micro font-mono text-muted-foreground/75"
+                    className="text-micro text-muted-foreground/75"
                     title="This card's producer did not rank it. The raw impact value is shown rather than a substituted bucket."
                   >
                     unranked
                   </span>
                 )}
-                <span className="text-micro font-mono text-muted-foreground/75 ml-auto truncate" title={c.scope}>
+                <span className="text-micro text-muted-foreground/75 ml-auto truncate" title={c.scope}>
                   {c.scope}
                 </span>
               </div>
@@ -179,7 +179,7 @@ export function SignalDeck({
                 </div>
               )}
 
-              <h3 className={`${lead ? "text-h5 font-h5 font-semibold" : "text-h4 font-h4 font-bold"} text-foreground leading-snug mb-1.5`}>
+              <h3 className={`${lead ? "text-h5 font-h5 font-bold" : "text-h4 font-h4 font-bold"} text-foreground leading-snug mb-1.5`}>
                 {heading}
               </h3>
 
@@ -199,7 +199,7 @@ export function SignalDeck({
               <div className="mt-auto flex items-center gap-2 flex-wrap pt-1">
                 {c.confidence_level && (
                   <span
-                    className="text-micro font-mono uppercase px-1.5 py-0.5 rounded bg-foreground/[0.06] text-muted-foreground"
+                    className="text-micro uppercase px-1.5 py-0.5 rounded bg-foreground/[0.06] text-muted-foreground"
                     title="Confidence the producer assigned to this signal"
                   >
                     {c.confidence_level}
@@ -207,7 +207,7 @@ export function SignalDeck({
                 )}
                 {c.needs_validation && (
                   <span
-                    className="text-micro font-mono uppercase px-1.5 py-0.5 rounded bg-status-warning/15 text-status-warning"
+                    className="text-micro uppercase px-1.5 py-0.5 rounded bg-status-warning/15 text-status-warning"
                     title="Flagged by its producer as needing validation before it is acted on"
                   >
                     validate
@@ -215,7 +215,7 @@ export function SignalDeck({
                 )}
                 {c.evidence_ref && (
                   <span
-                    className="text-micro font-mono text-muted-foreground/75 truncate max-w-[10rem]"
+                    className="text-micro text-muted-foreground/75 truncate max-w-[10rem]"
                     title={`Evidence: ${c.evidence_ref}`}
                   >
                     {c.evidence_ref}

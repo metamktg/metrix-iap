@@ -65,7 +65,28 @@ export function GoalProgressCard({
   // number, so a 240%-of-ceiling overrun reads as 240% and not as "100%".
   const filled = ratio == null ? 0 : Math.min(1, Math.max(0, ratio));
   const over = ratio != null && ratio > 1;
-  const good = ratio == null ? null : lowerIsBetter ? !over : ratio >= 1;
+
+  // THREE STATES, NOT TWO.
+  //
+  // This was `good = lowerIsBetter ? !over : ratio >= 1`, painted straight
+  // into a two-way `good ? VERDICT.good : VERDICT.bad`. For a more-is-better
+  // metric that made EVERY value short of its goal red: 318 results toward a
+  // target of 500 rendered as a failure, and so would 499. Being partway
+  // through a window is not a failure — it is the normal state of a goal that
+  // has not finished yet, and colouring it red asserts a verdict nobody
+  // computed. Caught by rendering the card and looking at it; no static check
+  // can see it, because the code is perfectly well-formed.
+  //
+  //   good     the goal is MET — under a ceiling, or at/over a target
+  //   bad      a ceiling is BREACHED. The only real failure this card knows
+  //   neutral  in progress toward a target. Not a verdict.
+  //
+  // A more-is-better metric is therefore never red: this card does not know
+  // whether the window is over, so it cannot know the target was missed
+  // rather than simply not reached yet.
+  type Verdict = "good" | "bad" | "neutral";
+  const verdict: Verdict | null =
+    ratio == null ? null : lowerIsBetter ? (over ? "bad" : "good") : ratio >= 1 ? "good" : "neutral";
   const delta = fmtDelta(deltaPct);
 
   return (
@@ -117,7 +138,10 @@ export function GoalProgressCard({
               className="h-full rounded-full transition-[width] duration-300 ease-[cubic-bezier(0.2,0,0,1)]"
               style={{
                 width: `${filled * 100}%`,
-                background: good ? VERDICT.good : VERDICT.bad,
+                background:
+                  verdict === "good" ? VERDICT.good
+                  : verdict === "bad" ? VERDICT.bad
+                  : VERDICT.neutral,
               }}
             />
           </div>
@@ -127,7 +151,7 @@ export function GoalProgressCard({
               {over && lowerIsBetter ? " of ceiling" : over ? " of target" : ""}
             </span>
             {goalSource && (
-              <span className="text-micro font-mono text-muted-foreground/75 truncate" title={goalSource}>
+              <span className="text-micro text-muted-foreground/75 truncate" title={goalSource}>
                 {goalSource}
               </span>
             )}

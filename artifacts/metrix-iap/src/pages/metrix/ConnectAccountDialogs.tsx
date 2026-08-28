@@ -1737,7 +1737,7 @@ export function ManualUploadPanel({
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/75">Step 2 of 2 — Review</span>
+          <span className="text-label font-semibold uppercase text-muted-foreground/75">Step 2 of 2 — Review</span>
         </div>
         <PipelineProgress
           demoStaged={Boolean(demoImport)}
@@ -1856,7 +1856,7 @@ export function ManualUploadPanel({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/75">Step 1 of 2 — Upload files</span>
+        <span className="text-label font-semibold uppercase text-muted-foreground/75">Step 1 of 2 — Upload files</span>
       </div>
       <PipelineProgress
         demoStaged={Boolean(demoImport)}

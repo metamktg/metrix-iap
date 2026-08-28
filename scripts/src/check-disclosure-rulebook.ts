@@ -36,7 +36,23 @@ const repoRoot = path.resolve(
   "../..",
 );
 
-const TARGET_DIR = path.join(repoRoot, "artifacts/metrix-iap/src/pages/metrix");
+// SCAN ROOTS — plural, and that is the point.
+//
+// This check scanned ONLY pages/metrix for its whole life, which made
+// components/ a blind spot big enough to drive a design system through. It was
+// found the way blind spots usually are: a third-party card component was
+// dropped into components/ verbatim to see what the gates would say, and this
+// one said PASS while check:token-colors found 29 violations in the same file.
+// The gate was not lenient — it never looked. Measured afterwards, the
+// unscanned directory held 152 raw-pixel classes, more than the scanned one.
+//
+// The ratchet is exactly the right instrument for that: those 152 go into the
+// baseline where they can only go down, and a NEW file under either root still
+// gets zero. Adding a root is cheap; forgetting one costs a year of drift.
+const TARGET_DIRS = [
+  path.join(repoRoot, "artifacts/metrix-iap/src/pages/metrix"),
+  path.join(repoRoot, "artifacts/metrix-iap/src/components"),
+];
 const BASELINE_PATH = path.join(repoRoot, "scripts/src/disclosure-rulebook.baseline.json");
 const EXTENSIONS = new Set([".tsx", ".ts"]);
 
@@ -124,11 +140,14 @@ function writeBaseline(byFile: Map<string, Violation[]>, totalCount: number): vo
 }
 
 function main() {
-  if (!fs.existsSync(TARGET_DIR)) {
-    fail(`Target directory not found: ${TARGET_DIR}`);
+  // Every root must exist. A renamed or moved directory would otherwise make
+  // this check quietly scan less and still print PASS — which is the exact
+  // failure mode that let components/ go unexamined in the first place.
+  for (const dir of TARGET_DIRS) {
+    if (!fs.existsSync(dir)) fail(`Target directory not found: ${dir}`);
   }
 
-  const files = collectFiles(TARGET_DIR);
+  const files = TARGET_DIRS.flatMap(collectFiles);
   const allViolations: Violation[] = [];
   for (const file of files.sort()) {
     allViolations.push(...scanFile(file));
@@ -157,7 +176,8 @@ function main() {
   if (overBaseline.length === 0 && noBaselineEntry.length === 0 && !totalOverBaseline) {
     console.log(
       `\nPASS  ${allViolations.length} raw pixel text-size class(es) — at or under the ` +
-        `${baseline.maxTotalViolations}-violation baseline across ${files.length} module page file(s).\n` +
+        `${baseline.maxTotalViolations}-violation baseline across ${files.length} ` +
+        `module page and component file(s).\n` +
         "      No file exceeds its recorded baseline; no new file introduces fresh violations.",
     );
     process.exit(0);
@@ -165,7 +185,8 @@ function main() {
 
   console.error(
     `\nFAIL  Disclosure-rulebook baseline exceeded.\n` +
-      `      Scanned ${files.length} file(s) under ${path.relative(repoRoot, TARGET_DIR)}\n`,
+      `      Scanned ${files.length} file(s) under ` +
+      `${TARGET_DIRS.map((d) => path.relative(repoRoot, d)).join(", ")}\n`,
   );
 
   if (noBaselineEntry.length > 0) {

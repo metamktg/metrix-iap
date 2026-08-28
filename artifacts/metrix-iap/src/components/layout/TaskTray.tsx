@@ -119,7 +119,7 @@ function TrayAnalysisUnconfigured({ accountId }: { accountId: string }) {
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30 bg-primary/[0.04]">
         <CalendarRange className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
         <span className="text-caption font-semibold text-foreground/80 flex-1">IAP Analysis</span>
-        <span className="text-[9px] font-mono uppercase tracking-widest text-status-warning/70 border border-status-warning/25 bg-status-warning/[0.08] rounded px-1.5 py-0.5 leading-none">
+        <span className="text-micro uppercase text-status-warning/70 border border-status-warning/25 bg-status-warning/[0.08] rounded px-1.5 py-0.5 leading-none">
           Setup required
         </span>
       </div>
@@ -217,17 +217,17 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
         <CalendarRange className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
         <span className="text-caption font-semibold text-foreground/80 flex-1">Run Analysis</span>
         {run?.status === "success" && (
-          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-status-success">
+          <span className="flex items-center gap-0.5 text-caption font-semibold text-status-success">
             <CheckCircle2 className="w-3.5 h-3.5" /> Complete
           </span>
         )}
         {run?.status === "running" && (
-          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-status-warning">
+          <span className="flex items-center gap-0.5 text-caption font-semibold text-status-warning">
             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Running
           </span>
         )}
         {run?.status === "error" && (
-          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-status-danger">
+          <span className="flex items-center gap-0.5 text-caption font-semibold text-status-danger">
             <XCircle className="w-3.5 h-3.5" /> Failed
           </span>
         )}
@@ -251,7 +251,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
         )}
 
         {/* Date range label */}
-        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/75">
+        <p className="text-micro font-semibold uppercase text-muted-foreground/75">
           Date window
         </p>
 
@@ -374,15 +374,15 @@ function TraySection({
 }) {
   return (
     <div className="px-4">
-      <div className="flex items-center gap-1.5 mb-[0px] ml-[4px] text-[17px]">
+      <div className="flex items-center gap-1.5 ml-1">
         {accentColor && (
           <span className={cn("w-1 h-3 rounded-full shrink-0", accentColor)} />
         )}
-        <span className="font-bold uppercase tracking-[0.18em] text-muted-foreground/75 text-[17px]">
+        <span className="text-label font-semibold uppercase text-muted-foreground/75">
           {title}
         </span>
         {count != null && count > 0 && (
-          <span className="text-[9px] font-mono text-interactive bg-primary/12 border border-primary/20 rounded px-1 leading-tight tabular-nums">
+          <span className="text-micro-num text-interactive bg-primary/12 border border-primary/20 rounded px-1 leading-tight tabular-nums">
             {count}
           </span>
         )}
@@ -430,16 +430,16 @@ function TrayItem({
 }) {
   return (
     <TrayCard accent={accent}>
-      <p className="font-medium text-foreground/90 line-clamp-2 text-[15px] pt-[4px] pb-[4px] mb-[10px] mt-[0px] pr-[40px]">{label}</p>
+      <p className="text-title font-bold text-foreground/90 line-clamp-2 py-1 mb-2.5 pr-10">{label}</p>
       {sub && (
-        <span className="inline-block font-semibold uppercase tracking-wide bg-foreground/[0.06] border border-border/30 rounded px-1.5 py-0.5 text-foreground/55 text-[15px]">
+        <span className="inline-block font-semibold uppercase tracking-wide bg-foreground/[0.06] border border-border/30 rounded px-1.5 py-0.5 text-foreground/55 text-label">
           {sub}
         </span>
       )}
       {onAction && (
         <button
           onClick={onAction}
-          className="pressable inline-flex items-center gap-1 font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded px-2 py-0.5 transition-colors text-[16px] pb-[4px] pt-[4px] pl-[8px] pr-[8px] ml-[2px] mr-[2px] mt-[4px] mb-[4px]"
+          className="pressable inline-flex items-center gap-1 font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded transition-colors text-caption px-2 py-1 mx-0.5 my-1"
         >
           {actionLabel}
           <ArrowRight className="w-3.5 h-3.5" />
@@ -486,13 +486,13 @@ function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
             <p className="text-label text-foreground/60 mt-0.5 leading-snug line-clamp-2">{sub}</p>
           )}
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <span className="text-[8px] font-semibold border border-border/30 bg-foreground/[0.05] px-1.5 py-0.5 rounded text-foreground/55 leading-none">
+            <span className="text-caption font-semibold border border-border/30 bg-foreground/[0.05] px-1.5 py-0.5 rounded text-foreground/55 leading-none">
               {KIND_LABEL[kind]}
             </span>
             {settled && (
               <span
                 className={cn(
-                  "text-[8px] font-semibold px-1.5 py-0.5 rounded leading-none border",
+                  "text-caption font-semibold px-1.5 py-0.5 rounded leading-none border",
                   status === "done"
                     ? "border-status-success/20 bg-status-success/[0.07] text-status-success/80"
                     : "border-border/30 bg-foreground/[0.04] text-muted-foreground/75"
@@ -553,10 +553,16 @@ function TrayNavLink({
   return (
     <button
       onClick={() => navigate(to)}
-      className="pressable-lg w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-foreground/60 hover:text-foreground hover:bg-foreground/[0.04] transition-colors text-left min-w-0 text-[14px] font-semibold"
+      className="pressable-lg w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-foreground/60 hover:text-foreground hover:bg-foreground/[0.04] transition-colors text-left min-w-0 text-body font-semibold"
     >
       {Icon && <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/75" />}
-      <span className="truncate font-extrabold text-[18px] text-metrix-cyan bg-metrix-panel border-t-[3px] border-r-[3px] border-b-[3px] border-l-[3px] rounded-tl-[8px] rounded-tr-[8px] rounded-br-[8px] rounded-bl-[8px] opacity-[0.94] ml-[14px] mr-[14px] mt-[8px] mb-[8px] pt-[8px] pb-[8px] pl-[20px] pr-[20px] border-t-[color:var(--color-sky-500)] border-r-[color:var(--color-sky-500)] border-b-[color:var(--color-sky-500)] border-l-[color:var(--color-sky-500)]">{label}</span>
+      {/* Was a hand-nudged pill: 18px extrabold, four separate 3px borders and
+          four separate 8px corners, ten arbitrary margin/padding values, and
+          border-[color:var(--color-sky-500)] — a raw Tailwind palette colour
+          smuggled past check:token-colors through an arbitrary CSS-var
+          reference the gate did not match. Same treatment, on tokens and on
+          the scale. */}
+      <span className="truncate text-body font-semibold text-metrix-cyan bg-metrix-panel border-2 border-metrix-cyan/70 rounded-lg opacity-95 mx-3.5 my-2 px-5 py-2">{label}</span>
       <ArrowRight className="w-3.5 h-3.5 ml-auto opacity-40 shrink-0" />
     </button>
   );
@@ -578,7 +584,7 @@ function EmptySlot({
   const [, navigate] = useLocation();
   return (
     <div className="px-0.5 py-1.5 space-y-1">
-      <p className="text-foreground/55 text-[15px]">{message}</p>
+      <p className="text-body text-foreground/55">{message}</p>
       {nudgeLabel && nudgeTo && (
         <button
           onClick={() => navigate(nudgeTo)}
@@ -721,7 +727,7 @@ export function TaskTray() {
               </div>
               {totalItems > 0 && (
                 <span className={cn(
-                  "absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold leading-none px-1 tabular-nums border",
+                  "absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full flex items-center justify-center text-micro-num font-bold leading-none px-1 tabular-nums border",
                   hasPriorityItems
                     ? "bg-status-success text-foreground border-status-success/50"
                     : "bg-primary text-primary-foreground border-primary/50"
@@ -755,10 +761,10 @@ export function TaskTray() {
           <ClipboardList className="w-4 h-4 text-interactive" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-label font-mono text-muted-foreground/75 uppercase tracking-widest leading-none mb-0.5 truncate">
+          <p className="text-label text-muted-foreground/75 uppercase tracking-widest leading-none mb-0.5 truncate">
             Workflow
           </p>
-          <p className="text-title font-semibold text-foreground leading-tight truncate">
+          <p className="text-title font-bold text-foreground leading-tight truncate">
             {totalItems === 0
               ? "All caught up"
               : `${totalItems} action${totalItems !== 1 ? "s" : ""} pending`}
@@ -911,7 +917,7 @@ export function TaskTray() {
 
       {/* Footer */}
       <div className="px-4 py-2.5 border-t border-border/40 bg-foreground/[0.01]">
-        <p className="text-[9px] text-foreground/55 leading-snug">
+        <p className="text-body text-foreground/55 leading-snug">
           Action items update as you work through analysis, strategy &amp; briefs.
         </p>
       </div>

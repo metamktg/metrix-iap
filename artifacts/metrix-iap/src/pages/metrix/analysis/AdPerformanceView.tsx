@@ -111,7 +111,7 @@ function SignalHeadlineCard({ tier, flag }: { tier: SignalTier; flag: DataQualit
     >
       <div className="flex items-center gap-1.5">
         <Icon className={cn("w-3.5 h-3.5 shrink-0", flag && isActNow ? "text-status-warning/80" : "text-muted-foreground/75")} />
-        <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", flag && isActNow ? "text-status-warning/85" : "text-muted-foreground/75")}>
+        <span className={cn(TYPE.label, " uppercase tracking-widest", flag && isActNow ? "text-status-warning/85" : "text-muted-foreground/75")}>
           {TIER_LABEL[tier]}
         </span>
       </div>
@@ -175,7 +175,7 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
               )}
             >
               {label}
-              <span className={cn("text-label font-mono rounded px-0.5", active ? "text-interactive/70" : "text-muted-foreground/75")}>
+              <span className={cn("text-label rounded px-0.5", active ? "text-interactive/70" : "text-muted-foreground/75")}>
                 {counts[id] ?? 0}
               </span>
             </button>
@@ -203,7 +203,7 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
                   : tier === "watch"
                     ? <Eye className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
                     : <Search className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />}
-                <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", isActNow ? "text-status-warning/85" : "text-muted-foreground/75")}>
+                <span className={cn(TYPE.label, " uppercase tracking-widest", isActNow ? "text-status-warning/85" : "text-muted-foreground/75")}>
                   {TIER_LABEL[tier]}
                 </span>
                 {/* Real spend-affected badge — never a fabricated confidence percentage. */}
@@ -522,7 +522,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
               )}
             >
               {label}
-              <span className={cn("text-label font-mono rounded px-0.5", active ? "text-interactive/70" : "text-muted-foreground/75")}>
+              <span className={cn("text-label rounded px-0.5", active ? "text-interactive/70" : "text-muted-foreground/75")}>
                 {counts[id] ?? 0}
               </span>
             </button>
@@ -1064,7 +1064,7 @@ export function AdPerformanceView() {
                           {/* Unresolved codes (no human name in local_book2_library) render
                               de-emphasized instead of borrowing the resolved-name treatment —
                               a raw composite ID is not a headline. */}
-                          <p className={primaryResolved ? TYPE.title : cn(TYPE.body, "font-mono text-muted-foreground/75")}>
+                          <p className={primaryResolved ? TYPE.title : cn(TYPE.body, " text-muted-foreground/75")}>
                             {primaryName}
                           </p>
                           <p className={cn(TYPE.body, "text-muted-foreground/80 mt-1.5")}>{resolveControlText(controls.primary_control_read, controls.primary_control)}</p>
@@ -1081,7 +1081,7 @@ export function AdPerformanceView() {
                       return (
                         <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4 md:col-span-2">
                           <div className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-1.5")}>{term.Singular} control</div>
-                          <p className={regResolved ? TYPE.title : cn(TYPE.body, "font-mono text-muted-foreground/75")}>
+                          <p className={regResolved ? TYPE.title : cn(TYPE.body, " text-muted-foreground/75")}>
                             {regName}
                           </p>
                           {controls.registration_control_read && (

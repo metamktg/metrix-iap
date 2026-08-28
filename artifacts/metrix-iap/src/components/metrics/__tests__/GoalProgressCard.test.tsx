@@ -55,9 +55,31 @@ describe("GoalProgressCard — the verdict flips with the metric's direction", (
   });
 
   it("short of a results target is not good — the same ratio, the opposite reading", () => {
+    // The flip this case exists to protect is real and still holds: 18 of 25
+    // is GOOD under a cost ceiling and NOT good toward a results target.
+    //
+    // What changed is which non-good colour it takes. This used to assert
+    // danger, which conflates "not good" with "bad" — and they are different.
+    // 18 of 25 results is not a failure, it is a goal that has not finished;
+    // under the old binary, 24 of 25 was red too. Painting that red asserts a
+    // verdict nobody computed, since the card has no idea whether the window
+    // is over. Neutral is the honest colour, and the flip is asserted below.
     render(<GoalProgressCard label="Results" value={18} goal={25} format={usd} />);
     const bar = screen.getByRole("meter").firstElementChild as HTMLElement;
-    expect(bar.style.background).toContain("--status-danger");
+    expect(bar.style.background).toContain("--muted-foreground");
+    expect(bar.style.background).not.toContain("--status-success");
+  });
+
+  it("the flip is real: one ratio, two readings", () => {
+    // The point of the whole describe block, asserted directly rather than
+    // implied by two separate cases.
+    render(<GoalProgressCard label="CPA" value={18} goal={25} format={usd} lowerIsBetter />);
+    const cost = (screen.getByRole("meter").firstElementChild as HTMLElement).style.background;
+    cleanup();
+    render(<GoalProgressCard label="Results" value={18} goal={25} format={usd} />);
+    const results = (screen.getByRole("meter").firstElementChild as HTMLElement).style.background;
+    expect(cost).not.toBe(results);
+    expect(cost).toContain("--status-success");
   });
 
   it("at or past a results target is", () => {

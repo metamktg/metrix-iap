@@ -25,4 +25,21 @@ export const MANUAL_ONLY_CHECK_SCRIPTS: Record<string, string> = {
     "SUPABASE_DB_PASSWORD already lives. It exits 2 (not 0) when no credential " +
     "resolves, precisely so an unattended runner cannot mistake 'nothing was " +
     "checked' for 'the views are fine'.",
+  "check:ui-inventory":
+    "a REPORT, not a gate: it prints which of the app's surfaces carry type " +
+    "roles, motion, disclosure, shared dataviz, a breakpoint and a11y wiring, " +
+    "and it always exits 0 because there is no threshold that would be honest " +
+    "to fail on — a chart primitive needs no disclosure and a layout shell has " +
+    "nothing to type. Wiring it into a validation would spend runtime on output " +
+    "nobody reads and assert nothing. Run it when picking the next target: " +
+    "`-- --gaps` narrows to what is missing, `-- --kind=panel` to one class.",
+  "check:field-coverage":
+    "a REPORT, not a gate: it lists the seed-bundle fields no component reads — " +
+    "analysis that was computed, shipped and never shown. It exits 0 always, " +
+    "because its matching is deliberately generous (a field reached through " +
+    "string indirection cannot be seen statically, so the tool is tuned to " +
+    "UNDER-report) and every entry needs a human to decide whether the field " +
+    "should surface, leave the contract, or is genuinely internal. Failing a " +
+    "build on a worklist that is known to be approximate would train people to " +
+    "ignore it. Run it when auditing what the interface is dropping.",
 };

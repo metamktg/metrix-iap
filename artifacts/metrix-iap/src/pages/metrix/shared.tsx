@@ -67,7 +67,9 @@
 //   Codeless sentences fall back to deriveLabel. Inside <button> queue cards:
 //   <HypothesisCodeChipsRow> + a line-clamp-1 caption, drawer keeps prose.
 
-import { useState, useCallback, useId } from "react";
+import { useState, useCallback, useId, useRef, useLayoutEffect } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { SPRING_SNAPPY } from "@/lib/motion";
 import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useLocation, useSearch } from "wouter";
@@ -529,7 +531,7 @@ export function CaveatNote({
         <Info className="w-3.5 h-3.5 text-status-warning/70 shrink-0 mt-1" />
         <div className="flex-1 min-w-0">
           {source && (
-            <span className="text-label font-mono uppercase tracking-widest text-status-warning/65 block mb-0.5">
+            <span className="text-label uppercase tracking-widest text-status-warning/65 block mb-0.5">
               {source}
             </span>
           )}
@@ -557,6 +559,29 @@ export function CaveatNote({
 // is always one click away. Not for use inside <button> cards (nested
 // buttons are invalid HTML): clamp with raw `line-clamp-N` there and let
 // the drawer/modal carry the full prose.
+//
+// WHY THE BUTTON IS MEASURED AND NOT GUESSED
+// This used to show "More" whenever `text.length > threshold`. The clamp,
+// though, is CSS and counts LINES, not characters — so how much fits
+// depends on the column width, which the character count knows nothing
+// about. Rendering the provenance page at 1440px caught the consequence:
+// three registry notes of ~135 characters each fit entirely inside
+// `line-clamp-2` (measured `scrollHeight === clientHeight === 48`) and every
+// one still carried a "More" button. Pressing it did nothing a reader could
+// see. An affordance that promises hidden content and delivers none is worse
+// than no affordance — it teaches people that this control is a lie, and
+// they stop pressing the ones that work.
+//
+// So the button now appears only when the paragraph is ACTUALLY clipped,
+// re-measured whenever the element resizes. That makes it correct at every
+// width for free: the same note that needs no button on a desktop column
+// gets one on a phone.
+//
+// The character threshold survives as a FALLBACK for environments with no
+// layout — jsdom reports every height as 0, and suppressing the control
+// there would silently change what component tests can reach. When
+// `clientHeight` is 0 there is nothing to measure, so the old heuristic
+// answers; the moment a real measurement exists, it wins.
 
 export function DenseText({
   text,
@@ -569,24 +594,60 @@ export function DenseText({
   render?: (text: string) => React.ReactNode;
   className?: string;
   clampClass?: string;
+  /** Fallback only — used when the environment reports no layout at all. */
   threshold?: number;
 }) {
-  const isLong = text.length > threshold;
   const [expanded, setExpanded] = useState(false);
+  // null = not measured yet (or unmeasurable); true/false = a real answer.
+  const [clipped, setClipped] = useState<boolean | null>(null);
+  const paraRef = useRef<HTMLParagraphElement | null>(null);
+
+  const measure = useCallback(() => {
+    const el = paraRef.current;
+    if (!el) return;
+    // A zero client height means no layout engine (jsdom, display:none, a
+    // detached subtree). Reporting "not clipped" from that would hide the
+    // control everywhere it cannot be measured.
+    if (el.clientHeight === 0) {
+      setClipped(null);
+      return;
+    }
+    setClipped(el.scrollHeight > el.clientHeight + 1);
+  }, []);
+
+  useLayoutEffect(() => {
+    // Only the clamped state can be measured for overflow; once expanded the
+    // paragraph is its full height by definition, so keep the last verdict.
+    if (expanded) return;
+    measure();
+    const el = paraRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure, expanded, text, clampClass, className]);
+
+  const showToggle = clipped ?? text.length > threshold;
   const content = render ? render(text) : text;
-  if (!isLong) return <p className={className}>{content}</p>;
+
+  // Still render the ref'd paragraph when nothing is clipped — the element
+  // has to exist and be observed for a later resize to change the answer.
   return (
     <div className="min-w-0">
-      <p className={cn(className, !expanded && clampClass)}>{content}</p>
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-        className="pressable mt-0.5 inline-flex items-center gap-0.5 text-label font-semibold text-interactive/80 hover:text-interactive transition-colors"
-      >
-        {expanded ? "Less" : "More"}
-        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-150", expanded && "rotate-180")} />
-      </button>
+      <p ref={paraRef} className={cn(className, !expanded && clampClass)}>
+        {content}
+      </p>
+      {(showToggle || expanded) && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="pressable mt-0.5 inline-flex items-center gap-0.5 text-label font-semibold text-interactive/80 hover:text-interactive transition-colors"
+        >
+          {expanded ? "Less" : "More"}
+          <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-150", expanded && "rotate-180")} />
+        </button>
+      )}
     </div>
   );
 }
@@ -729,12 +790,12 @@ export function DetailReveal({
         className="w-[380px] max-w-[min(90vw,420px)] max-h-[min(60vh,480px)] overflow-y-auto p-4 space-y-3"
       >
         {eyebrow && (
-          <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">{eyebrow}</div>
+          <div className="text-label font-semibold uppercase text-muted-foreground/80">{eyebrow}</div>
         )}
         {content.map((s, i) => (
           <div key={i} className="space-y-1">
             {s.label && (
-              <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/75">{s.label}</div>
+              <div className="text-label font-semibold uppercase text-muted-foreground/75">{s.label}</div>
             )}
             {s.render ? s.render() : <p className={TYPE.body}>{s.text}</p>}
           </div>
@@ -777,7 +838,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
           {allComplete ? "Loop complete" : "Setup progress"}
         </span>
         <div className="flex-1 h-px bg-border/20" />
-        <span className="text-label font-mono tabular-nums text-muted-foreground/75">{doneCount}/{steps.length}</span>
+        <span className="text-label tabular-nums text-muted-foreground/75">{doneCount}/{steps.length}</span>
       </div>
       {/* Completion banner — shown when all steps are done */}
       {allComplete ? (
@@ -1033,7 +1094,7 @@ export function MetricTile({
               identical to the static variant beside it and gave the reader
               no reason to press it. It brightens on hover instead of
               materialising. */}
-          <div className="mt-2 text-micro font-mono uppercase tracking-wider text-interactive/80 group-hover/tile:text-interactive transition-[color] duration-150 ease-[cubic-bezier(0.2,0,0,1)]">
+          <div className="mt-2 text-micro uppercase tracking-wider text-interactive/80 group-hover/tile:text-interactive transition-[color] duration-150 ease-[cubic-bezier(0.2,0,0,1)]">
             Segment breakdown →
           </div>
         </div>
@@ -1178,7 +1239,7 @@ export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; 
               <c.Icon className="w-4 h-4 text-interactive" />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-title font-semibold text-foreground">{c.label}</div>
+              <div className="text-title font-bold text-foreground">{c.label}</div>
               <p className="text-caption text-muted-foreground/80 leading-relaxed mt-0.5">{c.desc}</p>
               {c.lineage && (
                 <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mt-1 truncate")} data-testid="hub-nav-lineage">{c.lineage}</p>
@@ -1403,6 +1464,10 @@ export function SegmentedToggle<T extends string>({
   /** Collapse to icon-only below the sm breakpoint, for tight header rows. */
   responsiveLabels?: boolean;
 }) {
+  const reduced = useReducedMotion();
+  // Per-instance, for the same reason TabRail's is: two toggles on one page
+  // sharing a layoutId animate their pills into each other across the page.
+  const pillId = `segmented-${useId()}`;
   return (
     <div
       className="flex items-center gap-0.5 rounded-lg border border-border/30 bg-foreground/[0.03] p-0.5"
@@ -1417,14 +1482,24 @@ export function SegmentedToggle<T extends string>({
             onClick={() => onChange(id)}
             aria-pressed={isActive}
             className={cn(
-              "pressable inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium transition-colors",
-              isActive
-                ? "bg-primary/20 text-interactive shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
-                : "text-muted-foreground/75 hover:text-foreground/80"
+              "pressable relative inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium transition-colors",
+              isActive ? "text-interactive" : "text-muted-foreground/75 hover:text-foreground/80"
             )}
           >
-            {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
-            <span className={responsiveLabels ? "hidden sm:inline" : undefined}>{label}</span>
+            {/* The pill TRAVELS between options rather than blinking out of one
+                and into another. In a two-to-four option switch the distance is
+                short enough that a jump reads as a flicker — the eye registers
+                that something changed without registering what. */}
+            {isActive && (
+              <motion.span
+                layoutId={pillId}
+                transition={reduced ? { duration: 0 } : SPRING_SNAPPY}
+                className="absolute inset-0 rounded-md bg-primary/20 shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
+                aria-hidden
+              />
+            )}
+            {Icon && <Icon className="relative w-3.5 h-3.5 shrink-0" />}
+            <span className={cn("relative", responsiveLabels && "hidden sm:inline")}>{label}</span>
           </button>
         );
       })}
@@ -1446,7 +1521,7 @@ export function MetricSelectionBar({
 }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2.5 border-b border-border/30 bg-foreground/[0.01]">
-      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75">
+      <span className="text-caption uppercase tracking-widest text-muted-foreground/75">
         Metric selection
       </span>
       {events.map((e) => {
@@ -1497,7 +1572,7 @@ export function DatePresetBar({
 }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-foreground/[0.01]">
-      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0">
+      <span className="text-caption uppercase tracking-widest text-muted-foreground/75 shrink-0">
         Window
       </span>
       <div className="flex items-center gap-1 flex-wrap">
@@ -1663,7 +1738,7 @@ export function DataWindowBar({
   const selectedKey = selected ? `${selected.start}|${selected.end}` : null;
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-foreground/[0.01]">
-      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 shrink-0">
+      <span className="text-caption uppercase tracking-widest text-muted-foreground/75 shrink-0">
         Period
       </span>
       <div className="flex items-center gap-1 flex-wrap">
@@ -1793,7 +1868,12 @@ export function SectionCard({
 
   return (
     <section className="mx-card-hero">
-      <div className="mx-accent-bar relative flex items-center gap-2 pr-3.5 border-b border-primary/10">
+      {/* mx-module-header gives this row its own PLANE. Before, the header
+          and the data shared the card's ground with only a primary/10
+          hairline between them, so a module title competed with the numbers
+          it labelled instead of framing them. See the .mx-module-header
+          comment in index.css for the three-plane hierarchy. */}
+      <div className="mx-accent-bar mx-module-header relative flex items-center gap-2 pr-3.5">
         {collapsible ? (
           <button
             type="button"

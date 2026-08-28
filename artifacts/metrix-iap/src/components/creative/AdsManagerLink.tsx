@@ -51,7 +51,7 @@ export function AdsManagerButton({
       <ExternalLink className="w-3.5 h-3.5" />
       {compact ? "Ads Manager" : "View in Ads Manager"}
       {!enabled && !compact && (
-        <span className="text-[8px] font-semibold uppercase tracking-wide border border-border/30 px-1 py-0.5 rounded leading-none ml-0.5">
+        <span className="text-micro font-semibold uppercase border border-border/30 px-1 py-0.5 rounded leading-none ml-0.5">
           Pending
         </span>
       )}
