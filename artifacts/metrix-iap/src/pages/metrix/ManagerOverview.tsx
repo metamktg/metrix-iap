@@ -12,6 +12,7 @@
 //
 // Data wiring is unchanged; only the presentation layer is redesigned.
 
+import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
@@ -316,14 +317,14 @@ function RecommendationCardItem({
             onToggle={() => setRationaleOpen((v) => !v)}
             icon={HelpCircle}
           />
-          {rationaleOpen && (
+          <RevealPanel open={rationaleOpen}>
             <div className="mt-2 px-1">
               <TokenizedConceptText
                 text={card.rationale}
                 className={cn(TYPE.body, "text-foreground/65 leading-relaxed")}
               />
             </div>
-          )}
+          </RevealPanel>
         </div>
       )}
 
@@ -511,11 +512,11 @@ export function ManagerOverview() {
             </div>
           )}
 
-          {breakdownOpen && !isRefetching && (
+          <RevealPanel open={breakdownOpen && !isRefetching}>
             <div className="mt-3 rounded-lg border border-border/40 p-3">
               <AccountSpendRanking rows={accountTotals} onOpen={selectAdAccount} />
             </div>
-          )}
+          </RevealPanel>
         </div>
 
         {/* ── Results by event ────────────────────────────────────────── */}

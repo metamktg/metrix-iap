@@ -230,3 +230,41 @@ export function LayeredDisclosureLeaf({
   const p = plane(depth);
   return <div className={cn(p.surface, p.radius, "px-3 py-2.5", className)}>{children}</div>;
 }
+
+/**
+ * The reveal signature alone — height + opacity + blur(4px) + y:-8 travel —
+ * for surfaces that already own their trigger (a bespoke header row with a
+ * stat strip, a table row) and only need the BODY to arrive the way every
+ * layered reveal in the product arrives. Composing this instead of copying
+ * the values is what keeps "revealed content reads as arriving" one
+ * decision rather than five drifting ones.
+ *
+ * Render it ALWAYS (it holds its own AnimatePresence); drive it with
+ * `open`. Content unmounts on close, same as LayeredDisclosure's body.
+ */
+export function RevealPanel({
+  open,
+  children,
+  className,
+}: {
+  open: boolean;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const reduced = useReducedMotion();
+  return (
+    <AnimatePresence initial={false}>
+      {open && (
+        <motion.div
+          initial={{ height: 0, opacity: 0, filter: "blur(4px)", y: -8 }}
+          animate={{ height: "auto", opacity: 1, filter: "blur(0px)", y: 0 }}
+          exit={{ height: 0, opacity: 0, filter: "blur(4px)", y: -8 }}
+          transition={motionOr(reduced, { duration: DUR_MED, ease: EASE })}
+          className={cn("overflow-hidden", className)}
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}

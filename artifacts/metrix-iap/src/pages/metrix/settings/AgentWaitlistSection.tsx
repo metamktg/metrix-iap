@@ -2,6 +2,7 @@
 // Lists waitlist signups from the API with paging and CSV export.
 // Access is gated behind the ADMIN_API_KEY admin key (Bearer auth).
 
+import { CopyConfirmButton } from "@/components/widgets/CopyConfirmButton";
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { SectionCard } from "../shared";
@@ -318,13 +319,7 @@ export function AgentWaitlistSection() {
                               Email not sent — share this temporary password manually:{" "}
                               <span className=" text-caption text-status-warning">{result.temp_password}</span>
                             </div>
-                            <button
-                              onClick={() => void handleCopyTempPassword(entry.id, result.temp_password!)}
-                              className="pressable flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0"
-                              data-testid={`button-copy-temp-password-${entry.email}`}
-                            >
-                              <Copy className="w-3.5 h-3.5" /> {copiedEntryId === entry.id ? "Copied" : "Copy"}
-                            </button>
+                            <CopyConfirmButton value={result.temp_password!} data-testid={`button-copy-temp-password-${entry.email}`} />
                           </div>
                         ) : null
                       )}
@@ -381,13 +376,7 @@ export function AgentWaitlistSection() {
                               Email not sent — share this temporary password manually:{" "}
                               <span className=" text-caption text-status-warning">{result.temp_password}</span>
                             </div>
-                            <button
-                              onClick={() => void handleCopyTempPassword(entry.id, result.temp_password!)}
-                              className="pressable flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-label text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0"
-                              data-testid={`button-copy-temp-password-${entry.email}`}
-                            >
-                              <Copy className="w-3.5 h-3.5" /> {copiedEntryId === entry.id ? "Copied" : "Copy"}
-                            </button>
+                            <CopyConfirmButton value={result.temp_password!} data-testid={`button-copy-temp-password-${entry.email}`} />
                           </div>
                         ) : null
                       )}

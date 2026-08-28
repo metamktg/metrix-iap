@@ -60,6 +60,7 @@ import { getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, serializeReportModel, downloadReportExport, parseReportModel } from "@/lib/reportExport";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { TYPE } from "@/pages/metrix/typography";
+import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
 import {
   BarChart3, Layers, FileText, Database, FileBarChart,
   CheckCircle2, XCircle, Lock, Loader2, X,
@@ -2020,8 +2021,8 @@ export function LoopCommandChain({
         </div>
       </div>
 
-      {activeStage && (
-        <CommandHub
+      <RevealPanel open={activeStage != null}>
+        {activeStage && (<CommandHub
           stage={activeStage}
           onClose={() => setActiveStage(null)}
           currentPath={location}
@@ -2067,8 +2068,8 @@ export function LoopCommandChain({
           reportError={reportError}
           reportDone={reportDone}
           onGenerateReport={handleGenerateReport}
-        />
-      )}
+        />)}
+      </RevealPanel>
 
       <AlertDialog
         open={!!conversionExportConfirm}
