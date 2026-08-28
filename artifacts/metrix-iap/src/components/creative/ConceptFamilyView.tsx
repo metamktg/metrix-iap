@@ -29,7 +29,7 @@ function BlendedStatStrip({ blended }: { blended: BlendedKPI }) {
     <div className="flex items-center gap-4 tabular-nums">
       {items.map((it) => (
         <div key={it.label} className="shrink-0">
-          <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/75 leading-none mb-0.5">
+          <div className="text-micro font-mono uppercase text-muted-foreground/75 leading-none mb-0.5">
             {it.label}
           </div>
           <div className="text-caption font-semibold text-foreground/90">{it.value}</div>
@@ -102,7 +102,7 @@ function AngleRow({
         </span>
 
         <div className="flex-1 min-w-0">
-          <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/75 leading-none mb-0.5">
+          <div className="text-micro font-mono uppercase text-muted-foreground/75 leading-none mb-0.5">
             Angle {group.angleKey}
           </div>
           <p className="text-caption font-medium text-foreground/80 truncate">{group.angleLabel}</p>
@@ -110,7 +110,7 @@ function AngleRow({
 
         <BlendedStatStrip blended={group.blended} />
 
-        <span className="shrink-0 text-[9px] font-mono text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded-full ml-2">
+        <span className="shrink-0 text-micro-num font-mono text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded-full ml-2">
           {group.blended.cellCount} cell{group.blended.cellCount === 1 ? "" : "s"}
         </span>
       </button>
@@ -122,7 +122,7 @@ function AngleRow({
             {rankedCells.map((row, idx) => (
               <div key={row.cell_id} className="relative">
                 {idx === 0 && topCellId === row.cell_id && (
-                  <div className="absolute -top-2 left-2 z-10 flex items-center gap-1 bg-status-warning/20 border border-status-warning/40 text-status-warning text-[8px] font-semibold px-1.5 py-0.5 rounded-full">
+                  <div className="absolute -top-2 left-2 z-10 flex items-center gap-1 bg-status-warning/20 border border-status-warning/40 text-status-warning text-micro-num font-semibold px-1.5 py-0.5 rounded-full">
                     <Trophy className="w-3.5 h-3.5 shrink-0" />
                     Top
                   </div>
@@ -206,7 +206,7 @@ function ConceptFamilyCard({
         </span>
 
         <div className="flex-1 min-w-0">
-          <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">
+          <div className="text-micro font-mono uppercase text-muted-foreground/75 leading-none mb-0.5">
             {group.conceptId}
           </div>
           <p className="text-title font-semibold text-foreground truncate">{group.conceptName}</p>
@@ -215,10 +215,10 @@ function ConceptFamilyCard({
         <BlendedStatStrip blended={group.blended} />
 
         <div className="shrink-0 flex items-center gap-1.5 ml-3">
-          <span className="text-[9px] font-mono text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded-full">
+          <span className="text-micro-num font-mono text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded-full">
             {group.blended.cellCount} cell{group.blended.cellCount === 1 ? "" : "s"}
           </span>
-          <span className="text-[9px] font-mono text-muted-foreground/75 border border-border/25 px-1.5 py-0.5 rounded-full">
+          <span className="text-micro-num font-mono text-muted-foreground/75 border border-border/25 px-1.5 py-0.5 rounded-full">
             {group.angles.length} angle{group.angles.length === 1 ? "" : "s"}
           </span>
         </div>

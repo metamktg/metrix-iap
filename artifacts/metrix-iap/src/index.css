@@ -581,6 +581,15 @@
 
   /* ── Chrome band — labels and indices, never sentences ───────────── */
   .text-micro   { font-size: 0.625rem;   line-height: 1.4;  letter-spacing: 0.1em; }    /* 10px */
+  /* The micro role for NUMBERS — a count badge, a notification bubble, a
+     tabular figure in a chip. Same size and leading, no tracking.
+     0.1em on "12" adds a trailing gap the glyphs do not balance, so a
+     number centred in a circular badge sits visibly left of centre. It is
+     its own class rather than `text-micro tracking-normal` because two
+     utilities both setting letter-spacing is a tie resolved by generated-CSS
+     order rather than by intent — and a tie you cannot read off the markup
+     is one somebody will lose later. */
+  .text-micro-num { font-size: 0.625rem; line-height: 1.4;  letter-spacing: 0; }        /* 10px, numerals */
   .text-label   { font-size: 0.6875rem;  line-height: 1.45; letter-spacing: 0.08em; }   /* 11px */
 
   /* ── Reading band — 14px floor for anything phrased as a sentence ── */

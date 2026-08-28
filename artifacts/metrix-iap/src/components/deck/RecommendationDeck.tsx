@@ -79,7 +79,7 @@ const SCOPE_STYLE: Record<string, string> = {
 
 function Badge({ text, cls }: { text: string; cls: string }) {
   return (
-    <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", cls)}>
+    <span className={cn("text-micro font-semibold border px-1.5 py-0.5 rounded uppercase leading-none", cls)}>
       {text}
     </span>
   );
@@ -402,7 +402,7 @@ export function RecommendationDeck({
               </button>
             </div>
 
-            <div className="flex items-center justify-center gap-3 mt-3 text-[9px] text-muted-foreground/75 font-mono">
+            <div className="flex items-center justify-center gap-3 mt-3 text-caption text-muted-foreground/75 font-mono">
               <span>← reject</span>
               <span>→ add to tray</span>
               <span>↑ / space details</span>
@@ -478,7 +478,7 @@ function TaskTray({
                   <div className="flex-1 min-w-0">
                     <p className={cn("text-body font-medium leading-tight", done ? "text-foreground/55 line-through" : "text-foreground")}>{s.title}</p>
                     <p className="text-label text-muted-foreground/75 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.recommendedAction, 90)}</p>
-                    {s.descriptor && <span className="inline-flex mt-1.5 text-[8px] font-semibold border border-border/40 px-1 py-0.5 rounded text-foreground/60">{s.descriptor}</span>}
+                    {s.descriptor && <span className="inline-flex mt-1.5 text-caption font-semibold border border-border/40 px-1 py-0.5 rounded text-foreground/60">{s.descriptor}</span>}
                   </div>
                   <button onClick={() => onRestore(s.id)} className="pressable h-6 px-2 rounded text-label font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
                     <RotateCcw className="w-3.5 h-3.5" />

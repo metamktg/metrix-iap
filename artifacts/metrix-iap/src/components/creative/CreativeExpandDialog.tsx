@@ -191,7 +191,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
             { label: "Link CTR", value: pct(s.ctrPct) },
           ] as const).map((item) => (
             <div key={item.label} className="rounded-lg border border-border/30 bg-foreground/[0.02] px-3 py-2.5 text-center">
-              <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">{item.label}</div>
+              <div className="text-micro font-mono uppercase text-muted-foreground/75 mb-1">{item.label}</div>
               <div className="text-lg font-bold text-foreground tabular-nums leading-none">{item.value}</div>
             </div>
           ))}
@@ -429,7 +429,7 @@ function DemographicsTab({
                   F {metric === "spend" ? usd(fSpend) : num(fRes)}
                 </span>
                 {isActive && (
-                  <span className="ml-auto text-micro font-mono uppercase tracking-wider text-interactive/70">
+                  <span className="ml-auto text-micro font-mono uppercase text-interactive/70">
                     Selected ↑
                   </span>
                 )}
@@ -709,7 +709,7 @@ export function CreativeExpandDialog({
 
             {data.assetFormat && (
               <div className="absolute bottom-3 left-3">
-                <span className="text-[8px] font-mono uppercase text-foreground/55 border border-foreground/10 bg-background/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                <span className="text-micro font-mono uppercase text-foreground/55 border border-foreground/10 bg-background/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
                   {data.assetFormat}
                 </span>
               </div>

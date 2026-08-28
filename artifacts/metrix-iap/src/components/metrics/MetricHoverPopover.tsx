@@ -145,14 +145,14 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
         {/* Header */}
         <div className="px-3 pt-2.5 pb-2.5 border-b border-[hsl(var(--border-subtle))]">
           <div
-            className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75 mb-1"
+            className="text-micro font-mono uppercase text-muted-foreground/75 mb-1"
             data-testid="metric-popover-header-label"
           >
             {metric.label}
           </div>
           <div className="text-stat metric-num leading-none text-foreground">{metric.formatted}</div>
           {metric.sub && (
-            <div className="text-[9px] font-mono text-muted-foreground/75 mt-1 truncate tracking-wide">{metric.sub}</div>
+            <div className="text-caption font-mono text-muted-foreground/75 mt-1 truncate tracking-wide">{metric.sub}</div>
           )}
         </div>
 
@@ -160,7 +160,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
         <div className="px-3 py-3">
           {hasChart ? (
             <>
-              <div className="text-[9px] font-mono uppercase tracking-widest text-interactive/70 mb-2">
+              <div className="text-micro font-mono uppercase text-interactive/70 mb-2">
                 Top concepts
               </div>
               <ChartContainer
@@ -212,13 +212,13 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
             </>
           ) : (
             <div className="py-2 space-y-1">
-              <div className="text-[10px] text-muted-foreground/75 leading-relaxed">
+              <div className="text-caption text-muted-foreground/75 leading-relaxed">
                 {concepts.length === 0
                   ? "No concept rows available for this metric in the current import."
                   : "Only one concept found — full breakdown available in the diagnostic."}
               </div>
               {metric.sub && (
-                <div className="text-[10px] font-mono text-muted-foreground/75">{metric.sub}</div>
+                <div className="text-caption font-mono text-muted-foreground/75">{metric.sub}</div>
               )}
             </div>
           )}
@@ -228,7 +228,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
         <div className="px-3 pb-3 border-t border-[hsl(var(--border-subtle))] pt-2">
           <button
             onClick={onDiagnose}
-            className="pressable inline-flex items-center gap-1 text-[10px] font-semibold text-interactive hover:text-interactive/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+            className="pressable inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
           >
             Diagnose full breakdown <ArrowRight className="w-3 h-3" />
           </button>

@@ -102,7 +102,7 @@ export function RunScopePicker({
           <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
           <span className="truncate font-medium">{triggerLabel}</span>
           {!value.allTime && selectedRuns.length > 1 && (
-            <span className="text-[9px] font-mono text-muted-foreground/75 shrink-0">
+            <span className="text-caption font-mono text-muted-foreground/75 shrink-0">
               {selectedRuns.length}
             </span>
           )}
@@ -126,7 +126,7 @@ export function RunScopePicker({
         >
           <Checkbox checked={value.allTime} className="pointer-events-none" />
           <span className="text-label font-semibold flex-1">All time</span>
-          <span className="text-[9px] text-muted-foreground/75">
+          <span className="text-caption text-muted-foreground/75">
             {runs.length} run{runs.length !== 1 ? "s" : ""} total
           </span>
         </button>
@@ -149,16 +149,16 @@ export function RunScopePicker({
                 <Checkbox checked={isSel} className="pointer-events-none" />
                 <div className="flex-1 min-w-0">
                   <span className="text-label font-medium block truncate">{runLabel(run)}</span>
-                  <span className="text-[9px] text-muted-foreground/75 block">{runTimestamp(run)}</span>
+                  <span className="text-caption text-muted-foreground/75 block">{runTimestamp(run)}</span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {idx === 0 && (
-                    <span className="text-[8px] font-semibold uppercase tracking-wider text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none">
+                    <span className="text-micro font-semibold uppercase text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none">
                       Latest
                     </span>
                   )}
                   {run.rows_ingested != null && (
-                    <span className="text-[9px] font-mono text-muted-foreground/75">
+                    <span className="text-caption font-mono text-muted-foreground/75">
                       {run.rows_ingested.toLocaleString()} rows
                     </span>
                   )}
@@ -168,7 +168,7 @@ export function RunScopePicker({
           })}
         </div>
         {capHit && (
-          <p data-testid="text-run-cap" className="text-[10px] text-status-warning/80 px-1 pt-2">
+          <p data-testid="text-run-cap" className="text-body text-status-warning/80 px-1 pt-2">
             Up to {RUN_SCOPE_MAX} runs at a time — deselect one to add another.
           </p>
         )}
@@ -212,7 +212,7 @@ export function RunSelector({
       >
         <Checkbox checked={value.allTime} className="pointer-events-none" />
         <span className="text-label font-semibold flex-1">All time</span>
-        <span className="text-[9px] text-muted-foreground/75">
+        <span className="text-caption text-muted-foreground/75">
           {runs.length} run{runs.length !== 1 ? "s" : ""} total
         </span>
       </button>
@@ -243,12 +243,12 @@ export function RunSelector({
                 <span className="text-label font-medium flex-1 truncate">{runLabel(run)}</span>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {idx === 0 && (
-                    <span className="text-[8px] font-semibold uppercase tracking-wider text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none">
+                    <span className="text-micro font-semibold uppercase text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none">
                       Latest
                     </span>
                   )}
                   {run.rows_ingested != null && (
-                    <span className="text-[9px] font-mono text-muted-foreground/75">
+                    <span className="text-caption font-mono text-muted-foreground/75">
                       {run.rows_ingested.toLocaleString()} rows
                     </span>
                   )}
@@ -258,7 +258,7 @@ export function RunSelector({
           })}
           {hiddenCount > 0 && (
             <div className="px-2.5 py-1.5 bg-foreground/[0.01]">
-              <span className="text-[9px] text-muted-foreground/75">
+              <span className="text-caption text-muted-foreground/75">
                 +{hiddenCount} older run{hiddenCount !== 1 ? "s" : ""} not shown
               </span>
             </div>

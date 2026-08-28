@@ -240,16 +240,16 @@ export function SegmentGridModal({
               <table className="w-full min-w-[500px] border-collapse">
                 <thead className="sticky top-0 bg-surface-table z-10">
                   <tr className="border-b border-border/40">
-                    <th className="text-left text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75 font-semibold px-2.5 py-2">
+                    <th className="text-left text-micro font-mono uppercase text-muted-foreground/75 font-semibold px-2.5 py-2">
                       Avatar segment
                     </th>
                     {placements.map(({ row: p }) => (
-                      <th key={p.Placement + p.Platform} className="text-center text-[9px] font-mono uppercase tracking-wide text-muted-foreground/75 font-semibold px-2 py-2 min-w-[76px]">
+                      <th key={p.Placement + p.Platform} className="text-center text-micro font-mono uppercase text-muted-foreground/75 font-semibold px-2 py-2 min-w-[76px]">
                         <div className="normal-case">{p.Placement}</div>
-                        <div className="text-[8px] text-muted-foreground/75 capitalize">{p.Platform}</div>
+                        <div className="text-caption text-muted-foreground/75 capitalize">{p.Platform}</div>
                       </th>
                     ))}
-                    <th className="text-right text-[9px] font-mono uppercase tracking-widest text-interactive/70 font-semibold px-2.5 py-2">
+                    <th className="text-right text-micro font-mono uppercase text-interactive/70 font-semibold px-2.5 py-2">
                       Blended
                     </th>
                   </tr>
@@ -261,7 +261,7 @@ export function SegmentGridModal({
                       <tr key={seg.key} className="border-b border-border/20">
                         <td className="px-2.5 py-2">
                           <div className="text-caption font-medium text-foreground">{seg.age}</div>
-                          <div className="text-[9px] text-muted-foreground/75 capitalize">{seg.gender}</div>
+                          <div className="text-caption text-muted-foreground/75 capitalize">{seg.gender}</div>
                         </td>
                         {placements.map(({ row: p }) => (
                           <td
@@ -274,9 +274,9 @@ export function SegmentGridModal({
                         ))}
                         <td className="px-2.5 py-2 text-right tabular-nums">
                           <div className="text-caption font-semibold text-foreground">
-                            {blended.display} <span className="text-[8px] font-normal text-muted-foreground/75">{metricLabel}</span>
+                            {blended.display} <span className="text-caption font-normal text-muted-foreground/75">{metricLabel}</span>
                           </div>
-                          <div className="text-[9px] text-muted-foreground/75">{usd(seg.totals.spend, 0)} · {num(seg.totals.results)} res</div>
+                          <div className="text-caption text-muted-foreground/75">{usd(seg.totals.spend, 0)} · {num(seg.totals.results)} res</div>
                         </td>
                       </tr>
                     );
@@ -285,14 +285,14 @@ export function SegmentGridModal({
                   <tr className="border-t border-border/40 bg-foreground/[0.015]">
                     <td className="px-2.5 py-2">
                       <div className="text-label font-mono uppercase tracking-wide text-interactive/70">All avatars</div>
-                      <div className="text-[8px] text-muted-foreground/75">placement marginals · account level</div>
+                      <div className="text-caption text-muted-foreground/75">placement marginals · account level</div>
                     </td>
                     {placements.map(({ row: p, totals }) => {
                       const v = metricValueForSegment(totals, metric ?? { id: "cpa_blended", isResultEvent: false });
                       return (
                         <td key={p.Placement + p.Platform} className="px-2 py-2 text-center tabular-nums">
                           <div className="text-label font-semibold text-foreground/90">{v.display}</div>
-                          <div className="text-[8px] text-muted-foreground/75">{usd(p["Amount spent (USD)"], 0)}</div>
+                          <div className="text-caption text-muted-foreground/75">{usd(p["Amount spent (USD)"], 0)}</div>
                         </td>
                       );
                     })}

@@ -255,7 +255,7 @@ export function CellCreativeUploadDialog({
                   <span className="text-caption text-center px-4">
                     Drop an image or video, or click to browse
                     <br />
-                    <span className="text-[10px] opacity-70">Max 8 MB</span>
+                    <span className="text-caption opacity-70">Max 8 MB</span>
                   </span>
                 </div>
               )}
@@ -282,7 +282,7 @@ export function CellCreativeUploadDialog({
                     fileRef.current?.click();
                   }}
                   title="Replace file"
-                  className="pressable absolute bottom-1.5 left-1.5 z-10 text-[9px] font-medium px-1.5 py-0.5 rounded bg-background/60 text-foreground/70 hover:text-foreground transition-colors"
+                  className="pressable absolute bottom-1.5 left-1.5 z-10 text-caption font-medium px-1.5 py-0.5 rounded bg-background/60 text-foreground/70 hover:text-foreground transition-colors"
                 >
                   Replace
                 </button>

@@ -1,31 +1,6 @@
 {
-  "maxTotalViolations": 152,
+  "maxTotalViolations": 4,
   "perFile": {
-    "artifacts/metrix-iap/src/components/analysis/RunSelector.tsx": 10,
-    "artifacts/metrix-iap/src/components/brand/MetrixBootLoader.tsx": 1,
-    "artifacts/metrix-iap/src/components/creative/AdsManagerLink.tsx": 1,
-    "artifacts/metrix-iap/src/components/creative/CellCreativeUploadDialog.tsx": 2,
-    "artifacts/metrix-iap/src/components/creative/ConceptFamilyView.tsx": 7,
-    "artifacts/metrix-iap/src/components/creative/CreativeCard.tsx": 11,
-    "artifacts/metrix-iap/src/components/creative/CreativeExpandDialog.tsx": 2,
-    "artifacts/metrix-iap/src/components/creative/CreativeFilterPanel.tsx": 1,
-    "artifacts/metrix-iap/src/components/creative/FunnelStepsChart.tsx": 2,
-    "artifacts/metrix-iap/src/components/creative/MetricPicker.tsx": 2,
-    "artifacts/metrix-iap/src/components/creative/SegmentDrilldownModal.tsx": 2,
-    "artifacts/metrix-iap/src/components/creative/SegmentGridModal.tsx": 9,
-    "artifacts/metrix-iap/src/components/creative/VariableDrilldownModal.tsx": 7,
-    "artifacts/metrix-iap/src/components/deck/RecommendationDeck.tsx": 3,
-    "artifacts/metrix-iap/src/components/deck/TaskTrayPanel.tsx": 6,
-    "artifacts/metrix-iap/src/components/layout/AccountSwitcher.tsx": 17,
-    "artifacts/metrix-iap/src/components/layout/DateRangePicker.tsx": 2,
-    "artifacts/metrix-iap/src/components/layout/GlobalRunningBanner.tsx": 2,
-    "artifacts/metrix-iap/src/components/layout/InlineAccountPicker.tsx": 3,
-    "artifacts/metrix-iap/src/components/layout/Sidebar.tsx": 8,
-    "artifacts/metrix-iap/src/components/layout/TaskTray.tsx": 18,
-    "artifacts/metrix-iap/src/components/layout/Topbar.tsx": 1,
-    "artifacts/metrix-iap/src/components/loop/LoopCommandChain.tsx": 25,
-    "artifacts/metrix-iap/src/components/metrics/MetricHoverPopover.tsx": 6,
-    "artifacts/metrix-iap/src/components/ui/DataSourceBadge.tsx": 3,
-    "artifacts/metrix-iap/src/components/ui/LoopStatusStrip.tsx": 1
+    "artifacts/metrix-iap/src/components/layout/AccountSwitcher.tsx": 4
   }
 }

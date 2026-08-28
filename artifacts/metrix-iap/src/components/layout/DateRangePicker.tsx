@@ -69,7 +69,7 @@ export function DateRangePicker() {
           <span className="hidden md:inline tabular-nums">{rangeLabel}</span>
           <span className="md:hidden">{PRESET_LABELS[preset]}</span>
           {compare && (
-            <span className="text-[8px] font-semibold uppercase tracking-wide text-interactive border border-primary/25 bg-primary/10 px-1 py-0.5 rounded leading-none">
+            <span className="text-micro font-semibold uppercase text-interactive border border-primary/25 bg-primary/10 px-1 py-0.5 rounded leading-none">
               vs prev
             </span>
           )}
@@ -141,7 +141,7 @@ export function DateRangePicker() {
           <div className="flex-1 min-w-0">
             <p className="text-caption font-medium text-foreground/80">Compare to previous period</p>
             {compare && compareRange && (
-              <p className="text-[9px] text-muted-foreground/75 tabular-nums mt-0.5">
+              <p className="text-micro-num text-muted-foreground/75 tabular-nums mt-0.5">
                 vs {formatIsoRange(compareRange)}
               </p>
             )}

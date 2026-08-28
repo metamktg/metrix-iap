@@ -96,7 +96,7 @@ export function MetrixBootLoader() {
             logo/progress-bar axis. */}
         <div className="h-10 w-full flex items-center justify-center" aria-hidden="true">
           <span
-            className="mx-boot-callout block w-full text-center text-[13px] font-normal leading-snug tracking-normal text-text-secondary"
+            className="mx-boot-callout block w-full text-center text-body font-normal leading-snug tracking-normal text-text-secondary"
             style={{
               opacity: visible ? 1 : 0,
               transform: visible ? "translateY(0)" : "translateY(3px)",

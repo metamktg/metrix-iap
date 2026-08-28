@@ -490,7 +490,7 @@ function CompareSortTh({
   return (
     <th
       className={cn(
-        "text-micro font-mono uppercase tracking-widest font-semibold px-3 py-2 cursor-pointer select-none group",
+        "text-micro font-mono uppercase font-semibold px-3 py-2 cursor-pointer select-none group",
         "hover:text-foreground transition-colors",
         align === "right" ? "text-right" : "text-left",
         active ? "text-foreground/80" : "text-muted-foreground/75",
@@ -586,7 +586,7 @@ function CompareMetricTable({
               <CompareSortTh sortKey="a" current={sortKey} dir={sortDir} onSort={handleSort}>
                 <span className="text-interactive/70 normal-case">{label}</span>
               </CompareSortTh>
-              <th className="text-micro font-mono uppercase tracking-widest font-semibold px-2 py-2 text-center text-muted-foreground/75 w-[64px]">
+              <th className="text-micro font-mono uppercase font-semibold px-2 py-2 text-center text-muted-foreground/75 w-[64px]">
                 Δ
               </th>
               <CompareSortTh sortKey="b" current={sortKey} dir={sortDir} onSort={handleSort}>
@@ -902,7 +902,7 @@ export function SegmentDrilldownModal({
                               {c.totals.results != null && (
                                 <div className="shrink-0 text-right">
                                   <span className="text-sm font-bold tabular-nums text-foreground/90 leading-none">{fmtNum(c.totals.results)}</span>
-                                  <span className="block text-[8px] font-mono uppercase tracking-wide text-muted-foreground/75 leading-none mt-0.5">results</span>
+                                  <span className="block text-micro font-mono uppercase text-muted-foreground/75 leading-none mt-0.5">results</span>
                                 </div>
                               )}
                             </div>
@@ -925,7 +925,7 @@ export function SegmentDrilldownModal({
                                   return v ? <VariableChip key={code} v={v} /> : null;
                                 })}
                                 {c.variableCodes.length > 3 && (
-                                  <span className="text-[8px] text-muted-foreground/75 font-mono">+{c.variableCodes.length - 3}</span>
+                                  <span className="text-caption text-muted-foreground/75 font-mono">+{c.variableCodes.length - 3}</span>
                                 )}
                               </div>
                             )}

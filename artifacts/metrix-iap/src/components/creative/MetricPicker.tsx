@@ -46,7 +46,7 @@ export function MetricPickerButton({
 
         {selected.length > 0 && (
           <div className="mb-3 space-y-1">
-            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">Selected order</p>
+            <p className="text-micro font-mono uppercase text-muted-foreground/75 mb-1">Selected order</p>
             {selected.map((id, i) => {
               const m = byId.get(id);
               if (!m) return null;
@@ -73,7 +73,7 @@ export function MetricPickerButton({
           </div>
         )}
 
-        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/75 mb-1">All metrics</p>
+        <p className="text-micro font-mono uppercase text-muted-foreground/75 mb-1">All metrics</p>
         <div className="space-y-0.5">
           {catalog.map((m) => {
             const on = selected.includes(m.id);
