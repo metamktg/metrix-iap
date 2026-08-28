@@ -23,6 +23,35 @@ export const DEFAULT_FILTER_STATE: CreativeFilterState = {
   conceptNames: [],
 };
 
+/**
+ * The filter state, in words — one short phrase per active filter.
+ *
+ * Lives here rather than at the call site because the panel is the only
+ * thing that knows what its controls mean, and because FilterDisclosure
+ * REQUIRES a caller to be able to say what its filters are doing before it
+ * will let them be collapsed. A hidden active filter is a lie about the
+ * data: a reader who sees fourteen creatives where the account has
+ * sixty-two, with nothing on screen to say why, will draw conclusions from
+ * the fourteen.
+ *
+ * Empty array means nothing is filtering.
+ */
+export function describeCreativeFilters(f: CreativeFilterState): string[] {
+  const out: string[] = [];
+  if (f.minSpendUsd != null) out.push(`Min spend $${f.minSpendUsd.toLocaleString()}`);
+  if (f.tier !== "all") {
+    out.push(TIERS.find((t) => t.value === f.tier)?.label ?? f.tier);
+  }
+  if (f.conceptNames.length > 0) {
+    out.push(
+      f.conceptNames.length === 1
+        ? f.conceptNames[0]!
+        : `${f.conceptNames.length} concepts`,
+    );
+  }
+  return out;
+}
+
 const TIERS: { value: PerformanceTier; label: string }[] = [
   { value: "all",      label: "All" },
   { value: "top25",    label: "Top 25%" },

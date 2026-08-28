@@ -67,7 +67,9 @@ import {
 import {
   CreativeFilterPanel, DEFAULT_FILTER_STATE, applyCreativeFilters, sortValueForCell,
   type CreativeFilterState,
+  describeCreativeFilters,
 } from "@/components/creative/CreativeFilterPanel";
+import { FilterDisclosure } from "@/components/widgets/FilterDisclosure";
 
 const SECTION = "Analysis · 03";
 
@@ -585,14 +587,24 @@ export function IapLibraryView() {
 
                       return (
                         <div className="space-y-4">
-                          {/* ── Creative filter panel (same as flat grid) ── */}
-                          <CreativeFilterPanel
-                            filters={creativeFilters}
-                            onChange={(f) => { setCreativeFilters(f); setPage(1); }}
-                            conceptOptions={conceptOptionNames}
-                            shownCount={filteredDeduped.length}
-                            totalCount={totalBeforeFilter}
-                          />
+                          {/* Collapsed by default — most sessions never touch it, and
+                              it sat between the reader and the grid on every visit. The
+                              ACTIVE filters stay on screen as chips whether it is open
+                              or shut: a hidden filter would make this grid claim the
+                              account has fewer creatives than it does. */}
+                          <FilterDisclosure
+                            activeSummary={describeCreativeFilters(creativeFilters)}
+                            resultNote={`${filteredDeduped.length} of ${totalBeforeFilter} cells`}
+                            onClear={() => { setCreativeFilters(DEFAULT_FILTER_STATE); setPage(1); }}
+                          >
+                            <CreativeFilterPanel
+                              filters={creativeFilters}
+                              onChange={(f) => { setCreativeFilters(f); setPage(1); }}
+                              conceptOptions={conceptOptionNames}
+                              shownCount={filteredDeduped.length}
+                              totalCount={totalBeforeFilter}
+                            />
+                          </FilterDisclosure>
 
                           {filteredConceptGroups.length === 0 ? (
                             <PendingState
@@ -652,14 +664,19 @@ export function IapLibraryView() {
 
                       return (
                         <div className="space-y-4">
-                          {/* ── Creative filter panel ── */}
-                          <CreativeFilterPanel
-                            filters={creativeFilters}
-                            onChange={(f) => { setCreativeFilters(f); setPage(1); }}
-                            conceptOptions={conceptOptionNames}
-                            shownCount={totalCells}
-                            totalCount={totalBeforeFilter}
-                          />
+                          <FilterDisclosure
+                            activeSummary={describeCreativeFilters(creativeFilters)}
+                            resultNote={`${totalCells} of ${totalBeforeFilter} cells`}
+                            onClear={() => { setCreativeFilters(DEFAULT_FILTER_STATE); setPage(1); }}
+                          >
+                            <CreativeFilterPanel
+                              filters={creativeFilters}
+                              onChange={(f) => { setCreativeFilters(f); setPage(1); }}
+                              conceptOptions={conceptOptionNames}
+                              shownCount={totalCells}
+                              totalCount={totalBeforeFilter}
+                            />
+                          </FilterDisclosure>
 
                           {totalCells === 0 && (
                             <PendingState
