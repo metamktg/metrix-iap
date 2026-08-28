@@ -58,13 +58,15 @@ const CHROME = /\btext-(?:micro|label|caption)\b/;
 const TITLE = /\btext-(?:title|h5)\b/;
 /** Roles that define their own tracking; an arbitrary value beside one is a tie. */
 const ROLE_WITH_TRACKING = /\btext-(?:micro|label|title|h5)\b/;
+/** A real heading element. */
+const HEADING_TAG = /<h[1-6][\s>]/;
 
 const SUPPRESS = "authority-ok";
 
 interface Finding {
   file: string;
   line: number;
-  kind: "bold-chrome-label" | "downgraded-title" | "tracking-tie";
+  kind: "bold-chrome-label" | "downgraded-title" | "tracking-tie" | "chrome-sized-heading";
   snippet: string;
 }
 
@@ -107,6 +109,12 @@ for (const root of ROOTS) {
       if (ROLE_WITH_TRACKING.test(line) && /\btracking-\[[^\]]+\]/.test(line)) {
         findings.push({ ...at, kind: "tracking-tie" });
       }
+      // A heading ELEMENT sized in the chrome band. This is the inversion in
+      // its purest form: the DOM says "level-3 heading", the pixels say
+      // "metadata", and the heading ends up SMALLER than the body it heads.
+      if (HEADING_TAG.test(line) && CHROME.test(line)) {
+        findings.push({ ...at, kind: "chrome-sized-heading" });
+      }
     });
   }
 }
@@ -121,6 +129,12 @@ const EXPLAIN: Record<Finding["kind"], string> = {
     "A title role already states font-bold. Re-stating a lighter weight beside\n" +
     "        it is exactly how forty card titles ended up under their own eyebrows.\n" +
     "        Drop the font-medium/font-semibold and let the role carry it.",
+  "chrome-sized-heading":
+    "A real <h1>-<h6> sized in the 10-12px chrome band. Nine of these existed:\n" +
+    "        an <h3> at 12px mono-uppercase heading a stack of 14px cards, so the\n" +
+    "        heading was SMALLER than its own content. Either give it a heading\n" +
+    "        role (HEADING.h5 is 'a group header inside a card') or, if it is\n" +
+    "        really an eyebrow rather than a heading, make it a <span>.",
   "tracking-tie":
     "This role defines its own letter-spacing. A tracking-[…] beside it is a tie\n" +
     "        resolved by generated-CSS order rather than by intent — and the app\n" +
@@ -148,5 +162,6 @@ if (findings.length > 0) {
 
 console.log(
   `\nPASS  Weight follows the hierarchy across ${scanned} file(s): no bold chrome label,\n` +
-    `      no title downgraded below its role, no arbitrary tracking racing a role.\n`,
+    `      no title downgraded below its role, no heading sized as chrome, and no\n` +
+    `      arbitrary tracking racing a role.\n`,
 );

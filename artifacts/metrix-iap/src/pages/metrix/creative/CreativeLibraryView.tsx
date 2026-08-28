@@ -20,6 +20,8 @@
 // a fabricated interaction.
 
 import { Fragment, useState } from "react";
+import { cn } from "@workspace/command-deck/lib/utils";
+import { HEADING } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext, getOptimizationLoop } from "@/lib/data/metrixSeedAdapter";
@@ -253,7 +255,7 @@ export function CreativeLibraryView() {
                     {variableGroups.map((g) => (
                       <div key={g.label}>
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75">{g.label}</h3>
+                          <h3 className={cn(HEADING.h5)}>{g.label}</h3>
                           <span className="text-label font-mono text-muted-foreground/75">{g.items.length}</span>
                         </div>
                         <div className="flex flex-wrap gap-2">

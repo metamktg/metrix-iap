@@ -17,7 +17,7 @@ import { useGetMetaConnection } from "@workspace/api-client-react";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { AlertTriangle, BellOff } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { TYPE } from "../typography";
+import { TYPE, HEADING } from "../typography";
 import type { SignalCard, DataQualityFlag } from "@/lib/data/seedTypes";
 import { flagHeadline, flagBody } from "@/lib/dataQualityFlags";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
@@ -87,7 +87,7 @@ export function AlertsView() {
                 <>
                   {highSignals.length > 0 && (
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">High-impact signals</h3>
+                      <h3 className={cn(HEADING.h5, "mb-2")}>High-impact signals</h3>
                       <div className="space-y-3">
                         {highSignals.map((s) => (
                           <button
@@ -111,7 +111,7 @@ export function AlertsView() {
 
                   {caveats.length > 0 && (
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Data caveats</h3>
+                      <h3 className={cn(HEADING.h5, "mb-2")}>Data caveats</h3>
                       <div className="space-y-2">
                         {caveats.map((c) => (
                           <CaveatNote key={c.id} text={c.text} source={c.source} />
@@ -122,7 +122,7 @@ export function AlertsView() {
 
                   {qualityFlags.length > 0 && (
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Data-quality findings</h3>
+                      <h3 className={cn(HEADING.h5, "mb-2")}>Data-quality findings</h3>
                       <div className="space-y-2">
                         {qualityFlags.map((f, i) => (
                           <CaveatNote

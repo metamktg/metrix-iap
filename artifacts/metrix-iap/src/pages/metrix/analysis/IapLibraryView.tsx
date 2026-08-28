@@ -10,7 +10,7 @@
 // the library refreshes automatically.
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { TYPE } from "../typography";
+import { TYPE, HEADING } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { Images, Dna, RefreshCw, AlertTriangle, PlayCircle, TrendingUp, TrendingDown, Sliders } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -948,7 +948,7 @@ export function IapLibraryView() {
                 {tab === "top" && (
                   <div className="space-y-5">
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Top checkout cells</h3>
+                      <h3 className={cn(HEADING.h5, "mb-2")}>Top checkout cells</h3>
                       {topCells.length ? (
                         <div className="grid grid-cols-dashboard-5-xl gap-3">
                           {uniqueCellRows(topCells).map((row) => (
@@ -985,7 +985,7 @@ export function IapLibraryView() {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75 mb-2">Top checkout variables</h3>
+                      <h3 className={cn(HEADING.h5, "mb-2")}>Top checkout variables</h3>
                       {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />}
                     </div>
                   </div>
@@ -999,7 +999,7 @@ export function IapLibraryView() {
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
                           <Dna className="w-3.5 h-3.5 text-interactive/70" />
-                          <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/75">
+                          <h3 className={cn(HEADING.h5)}>
                             DNA families in selection
                           </h3>
                         </div>
