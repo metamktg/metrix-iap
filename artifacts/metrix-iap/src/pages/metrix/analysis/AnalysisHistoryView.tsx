@@ -27,6 +27,9 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { DisclosureStack, type DisclosureItem } from "@/components/widgets/DisclosureStack";
+import { TYPE } from "../typography";
+import { useMemo } from "react";
 
 const SECTION = "Analysis · 03";
 
@@ -41,7 +44,8 @@ function RunStatusIcon({ status }: { status: AnalysisRun["status"] }) {
   return <XCircle className="w-4 h-4 text-status-danger shrink-0" />;
 }
 
-function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; isLatest: boolean }) {
+/** The disclosed body of one run — everything below the face row. */
+function RunDetail({ run }: { run: AnalysisRun }) {
   const coverageLabel =
     run.date_start && run.date_end
       // Calendar days, not instants — see fmtDay in lib/normalize.
@@ -49,40 +53,7 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
       : null;
 
   return (
-    <div
-      className={cn(
-        "rounded-lg border p-4 space-y-3",
-        run.status === "success"
-          ? "border-border/40 bg-foreground/[0.02]"
-          : run.status === "running"
-          ? "border-status-warning/25 bg-status-warning/[0.03]"
-          : "border-status-danger/20 bg-status-danger/[0.03]"
-      )}
-    >
-      {/* Header row */}
-      <div className="flex items-start gap-2.5">
-        <RunStatusIcon status={run.status} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-title font-bold text-foreground capitalize">{run.status}</span>
-            {isLatest && (
-              <span className="text-micro font-semibold uppercase tracking-wider text-status-success/70 bg-status-success/[0.08] border border-status-success/15 rounded px-1.5 py-0.5 leading-none">
-                Latest
-              </span>
-            )}
-            <span className="text-caption text-muted-foreground/75 ml-auto shrink-0">
-              Run #{index + 1}
-            </span>
-          </div>
-          {run.started_at && (
-            <p className="text-caption text-muted-foreground/75 mt-0.5">
-              {fmtDateTime(run.started_at)}
-              {run.finished_at && ` · finished ${fmtDateTime(run.finished_at)}`}
-            </p>
-          )}
-        </div>
-      </div>
-
+    <div className="space-y-3">
       {/* Coverage + rows */}
       {run.status === "success" && (
         <div className="grid grid-cols-2 gap-3">
@@ -169,6 +140,64 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
   );
 }
 
+// Watermelon DisclosureStack, function-matched: run history was a wall of
+// fully-expanded cards — every run's stats, warnings and integrity rows on
+// the first layer. Now each run is a face row (status, when, coverage, row
+// count) that SPLITS open in place. Honesty rules shape the defaults: a run
+// with warnings or a failure must never hide its signal behind a fold, so
+// the face meta carries the warning count / failed state, and those runs —
+// plus the latest — start open (multi mode).
+function RunHistoryStack({ runs }: { runs: AnalysisRun[] }) {
+  const items = useMemo<DisclosureItem[]>(() => runs.map((run, i) => {
+    const warnings = run.csv_warnings ?? [];
+    return {
+      id: run.id,
+      title: `Run #${i + 1} — ${run.status === "success" ? "Success" : run.status === "running" ? "Running" : "Failed"}`,
+      icon: run.status === "running" ? Loader2 : run.status === "success" ? CheckCircle2 : XCircle,
+      meta: (
+        <span className="inline-flex items-center gap-2">
+          {i === 0 && (
+            <span className={cn(TYPE.microLabel, "font-semibold text-status-success/70 bg-status-success/[0.08] border border-status-success/15 rounded px-1.5 py-0.5 leading-none")}>
+              Latest
+            </span>
+          )}
+          {warnings.length > 0 && (
+            <span className={cn(TYPE.microLabel, "inline-flex items-center gap-1 font-semibold text-status-warning/80")}>
+              <AlertTriangle className="w-3 h-3" /> {warnings.length}
+            </span>
+          )}
+          {run.status === "error" && (
+            <span className={cn(TYPE.microLabel, "font-semibold text-status-danger/80")}>Failed</span>
+          )}
+          {run.started_at && (
+            <span className={cn(TYPE.caption, "text-muted-foreground/75 tabular-nums")}>{fmtDateTime(run.started_at)}</span>
+          )}
+        </span>
+      ),
+      content: <RunDetail run={run} />,
+    };
+  }), [runs]);
+
+  const defaultOpen = useMemo(() => {
+    const open = new Set<string>();
+    if (runs[0]) open.add(runs[0].id);
+    for (const r of runs) {
+      if ((r.csv_warnings ?? []).length > 0 || r.status === "error") open.add(r.id);
+    }
+    return [...open];
+  }, [runs]);
+
+  return (
+    <DisclosureStack
+      items={items}
+      mode="multi"
+      defaultOpen={defaultOpen}
+      label="Analysis runs"
+      data-testid="run-history-stack"
+    />
+  );
+}
+
 export function AnalysisHistoryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
@@ -218,11 +247,7 @@ export function AnalysisHistoryView() {
                 title={`${runs.length} run${runs.length !== 1 ? "s" : ""}`}
                 desc="Most recent first. Each successful run can be independently selected for strategy generation."
               >
-                <div className="space-y-3">
-                  {runs.map((run, i) => (
-                    <RunCard key={run.id} run={run} index={i} isLatest={i === 0} />
-                  ))}
-                </div>
+                <RunHistoryStack runs={runs} />
               </SectionCard>
             )}
           </div>
