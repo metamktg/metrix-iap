@@ -617,16 +617,69 @@ export function Sidebar() {
       </nav>
 
       {/* Slide-to-collapse handle — drag left to shrink toward the rail
-          (never past EXPANDED_WIDTH going the other way); click to toggle. */}
+          (never past EXPANDED_WIDTH going the other way); click to toggle.
+
+          It announced itself as a resize handle and then did nothing for a
+          keyboard: role="separator" with an aria-label, an aria-orientation,
+          and a single onPointerDown. A control that tells a screen-reader
+          user it resizes the sidebar and then cannot be reached by Tab is
+          worse than an unlabelled one — it promises an affordance that is
+          not there.
+
+          This is the WAI-ARIA window-splitter pattern, which is what a
+          focusable separator actually is: it takes a tab stop, carries the
+          value it is separating on (aria-valuenow/min/max), and moves on the
+          arrow keys. Home and End jump to the two committed states, which is
+          what people want 95% of the time; Enter and Space toggle, matching
+          a plain click. */}
       <div
         role="separator"
+        tabIndex={0}
         aria-orientation="vertical"
-        aria-label="Sidebar resize handle"
+        aria-label="Sidebar width"
+        aria-valuemin={COLLAPSED_WIDTH}
+        aria-valuemax={EXPANDED_WIDTH}
+        aria-valuenow={dragWidth ?? (collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH)}
+        aria-valuetext={collapsed ? "Collapsed" : "Expanded"}
         title={collapsed ? "Click to expand" : "Drag to collapse"}
         onPointerDown={onHandlePointerDown}
+        onKeyDown={(e) => {
+          const KEY_STEP = 24;
+          const current = dragWidth ?? (collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH);
+          const commit = (w: number) => {
+            const shouldCollapse = w < COLLAPSE_SNAP_WIDTH;
+            setDragWidth(null);
+            if (shouldCollapse !== collapsed) {
+              setCollapsed(shouldCollapse);
+              saveCollapsed(shouldCollapse);
+            }
+          };
+          if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+            e.preventDefault();
+            const next = Math.min(
+              EXPANDED_WIDTH,
+              Math.max(COLLAPSED_WIDTH, current + (e.key === "ArrowRight" ? KEY_STEP : -KEY_STEP)),
+            );
+            // Live width while stepping, so the rail tracks the keys the way
+            // it tracks a pointer; committed on release of the extremes.
+            setDragWidth(next);
+            if (next === EXPANDED_WIDTH || next === COLLAPSED_WIDTH) commit(next);
+          } else if (e.key === "Home") {
+            e.preventDefault();
+            commit(COLLAPSED_WIDTH);
+          } else if (e.key === "End") {
+            e.preventDefault();
+            commit(EXPANDED_WIDTH);
+          } else if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setDragWidth(null);
+            toggleCollapse();
+          }
+        }}
         className={cn(
           "absolute top-0 right-0 h-full w-1.5 -mr-0.5 z-10 cursor-col-resize group/handle",
-          "flex items-center justify-center"
+          "flex items-center justify-center",
+          "focus-visible:outline-none focus-visible:bg-primary/40",
         )}
       >
         <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />

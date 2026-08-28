@@ -20,6 +20,7 @@
     "check:token-colors": "tsx ./src/check-token-colors.ts",
     "check:type-scale": "tsx ./src/check-type-scale.ts",
     "check:optical-authority": "tsx ./src/check-optical-authority.ts",
+    "check:ui-inventory": "tsx ./src/check-ui-inventory.ts",
     "check:communications-section-icons": "tsx ./src/check-communications-section-icons.ts",
     "check:generation-runs-migration": "tsx ./src/check-generation-runs-migration.ts",
     "check:db-credentials": "tsx ./src/check-db-credentials.ts",
