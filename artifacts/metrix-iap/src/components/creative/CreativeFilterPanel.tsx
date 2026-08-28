@@ -8,6 +8,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronDown, Check, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
+import { TYPE } from "@/pages/metrix/typography";
 
 export type PerformanceTier = "all" | "top25" | "mid50" | "bottom25";
 
@@ -170,7 +171,7 @@ function ConceptMultiSelect({
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-52 max-h-[280px] overflow-y-auto p-1.5">
-        <p className="text-micro uppercase text-muted-foreground/75 px-1.5 pb-1 mb-0.5 border-b border-border/20">
+        <p className={cn(TYPE.microLabel, "px-1.5 pb-1 mb-0.5 border-b border-border/20")}>
           Concept family
         </p>
         {options.length === 0 ? (

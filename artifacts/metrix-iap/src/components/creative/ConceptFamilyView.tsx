@@ -15,6 +15,7 @@ import { CreativeCard } from "./CreativeCard";
 import { cardFromCell } from "@/lib/creative-assembly";
 import type { CardAssemblyOpts } from "@/lib/creative-assembly";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
+import { TYPE } from "@/pages/metrix/typography";
 
 // ─── Blended stat strip ───────────────────────────────────────────────
 
@@ -29,7 +30,7 @@ function BlendedStatStrip({ blended }: { blended: BlendedKPI }) {
     <div className="flex items-center gap-4 tabular-nums">
       {items.map((it) => (
         <div key={it.label} className="shrink-0">
-          <div className="text-micro uppercase text-muted-foreground/75 leading-none mb-0.5">
+          <div className={cn(TYPE.microLabel, "leading-none mb-0.5")}>
             {it.label}
           </div>
           <div className="text-caption font-semibold text-foreground/90">{it.value}</div>
@@ -102,7 +103,7 @@ function AngleRow({
         </span>
 
         <div className="flex-1 min-w-0">
-          <div className="text-micro uppercase text-muted-foreground/75 leading-none mb-0.5">
+          <div className={cn(TYPE.microLabel, "leading-none mb-0.5")}>
             Angle {group.angleKey}
           </div>
           <p className="text-caption font-medium text-foreground/80 truncate">{group.angleLabel}</p>
@@ -206,10 +207,10 @@ function ConceptFamilyCard({
         </span>
 
         <div className="flex-1 min-w-0">
-          <div className="text-micro uppercase text-muted-foreground/75 leading-none mb-0.5">
+          <div className={cn(TYPE.microLabel, "leading-none mb-0.5")}>
             {group.conceptId}
           </div>
-          <p className="text-title font-bold text-foreground truncate">{group.conceptName}</p>
+          <p className={cn(TYPE.title, "truncate")}>{group.conceptName}</p>
         </div>
 
         <BlendedStatStrip blended={group.blended} />

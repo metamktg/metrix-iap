@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck
 import { cn } from "@workspace/command-deck/lib/utils";
 import { ChevronDown, CalendarRange } from "lucide-react";
 import type { AnalysisRun } from "@workspace/api-client-react";
+import { TYPE } from "@/pages/metrix/typography";
 
 export interface RunSelectorValue {
   allTime: boolean;
@@ -110,7 +111,7 @@ export function RunScopePicker({
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-2">
-        <p className="text-label uppercase tracking-widest text-muted-foreground/75 px-1 pb-2">
+        <p className={cn(TYPE.label, "px-1 pb-2")}>
           Scope to analysis run
         </p>
         <button
@@ -125,7 +126,7 @@ export function RunScopePicker({
           )}
         >
           <Checkbox checked={value.allTime} className="pointer-events-none" />
-          <span className="text-label font-semibold flex-1">All time</span>
+          <span className={cn(TYPE.caption, "font-semibold text-foreground flex-1")}>All time</span>
           <span className="text-caption text-muted-foreground/75">
             {runs.length} run{runs.length !== 1 ? "s" : ""} total
           </span>
@@ -148,12 +149,12 @@ export function RunScopePicker({
               >
                 <Checkbox checked={isSel} className="pointer-events-none" />
                 <div className="flex-1 min-w-0">
-                  <span className="text-label font-medium block truncate">{runLabel(run)}</span>
+                  <span className={cn(TYPE.caption, "font-medium text-foreground block truncate")}>{runLabel(run)}</span>
                   <span className="text-caption text-muted-foreground/75 block">{runTimestamp(run)}</span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {idx === 0 && (
-                    <span className="text-micro font-semibold uppercase text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none">
+                    <span className={cn(TYPE.microLabel, "font-semibold text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none")}>
                       Latest
                     </span>
                   )}
@@ -211,7 +212,7 @@ export function RunSelector({
         )}
       >
         <Checkbox checked={value.allTime} className="pointer-events-none" />
-        <span className="text-label font-semibold flex-1">All time</span>
+        <span className={cn(TYPE.caption, "font-semibold text-foreground flex-1")}>All time</span>
         <span className="text-caption text-muted-foreground/75">
           {runs.length} run{runs.length !== 1 ? "s" : ""} total
         </span>
@@ -240,10 +241,10 @@ export function RunSelector({
                 )}
               >
                 <Checkbox checked={isSel} className="pointer-events-none" />
-                <span className="text-label font-medium flex-1 truncate">{runLabel(run)}</span>
+                <span className={cn(TYPE.caption, "font-medium text-foreground flex-1 truncate")}>{runLabel(run)}</span>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {idx === 0 && (
-                    <span className="text-micro font-semibold uppercase text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none">
+                    <span className={cn(TYPE.microLabel, "font-semibold text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none")}>
                       Latest
                     </span>
                   )}

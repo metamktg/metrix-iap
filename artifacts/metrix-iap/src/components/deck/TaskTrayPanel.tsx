@@ -7,6 +7,7 @@ import { Check, ClipboardList, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useDecisions, getDecision, toggleDone, isDone } from "@/lib/data/decisionStore";
 import type { DeckCard } from "@/components/deck/RecommendationDeck";
+import { TYPE } from "@/pages/metrix/typography";
 
 export function TaskTrayPanel({
   scopeId,
@@ -67,7 +68,7 @@ export function TaskTrayPanel({
             )}>
               <ClipboardList className={cn("text-muted-foreground/75", compact ? "w-3.5 h-3.5" : "w-4 h-4")} />
             </div>
-            <p className="text-label text-muted-foreground/75 font-medium leading-tight">No approved tasks</p>
+            <p className={cn(TYPE.caption, "font-medium leading-tight")}>No approved tasks</p>
             <p className="text-body text-muted-foreground/75 leading-relaxed max-w-[140px]">
               Approve recommendations from the loop to add tasks here.
             </p>
@@ -110,7 +111,7 @@ export function TaskTrayPanel({
                         {s.recommendedAction}
                       </p>
                     )}
-                    <span className="inline-flex mt-1 text-micro font-semibold border border-border/30 bg-foreground/[0.03] px-1 py-0.5 rounded text-muted-foreground/75 uppercase">
+                    <span className={cn(TYPE.microLabel, "inline-flex mt-1 font-semibold border border-border/30 bg-foreground/[0.03] px-1 py-0.5 rounded")}>
                       {s.actionGroup.replace(" actions", "").replace(" updates", "")}
                     </span>
                   </div>

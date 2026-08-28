@@ -7,6 +7,7 @@ import { Settings2, Check, ChevronUp, ChevronDown, RotateCcw } from "lucide-reac
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 import { cn } from "@workspace/command-deck/lib/utils";
 import type { MetricDef } from "@/lib/data/metricsCatalog";
+import { TYPE } from "@/pages/metrix/typography";
 
 export function MetricPickerButton({
   catalog,
@@ -33,7 +34,7 @@ export function MetricPickerButton({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 max-h-[420px] overflow-y-auto">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-label uppercase tracking-widest text-muted-foreground/75">
+          <span className={cn(TYPE.label, "text-muted-foreground/75")}>
             Metric tiles
           </span>
           <button
@@ -46,7 +47,7 @@ export function MetricPickerButton({
 
         {selected.length > 0 && (
           <div className="mb-3 space-y-1">
-            <p className="text-micro uppercase text-muted-foreground/75 mb-1">Selected order</p>
+            <p className={cn(TYPE.microLabel, "mb-1")}>Selected order</p>
             {selected.map((id, i) => {
               const m = byId.get(id);
               if (!m) return null;
@@ -73,7 +74,7 @@ export function MetricPickerButton({
           </div>
         )}
 
-        <p className="text-micro uppercase text-muted-foreground/75 mb-1">All metrics</p>
+        <p className={cn(TYPE.microLabel, "mb-1")}>All metrics</p>
         <div className="space-y-0.5">
           {catalog.map((m) => {
             const on = selected.includes(m.id);

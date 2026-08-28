@@ -22,6 +22,7 @@ import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/va
 import { motion } from "framer-motion";
 import { CreativeExpandDialog } from "./CreativeExpandDialog";
 import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
+import { TYPE } from "@/pages/metrix/typography";
 
 // ─── Data shape ───────────────────────────────────────────────────────
 
@@ -96,12 +97,12 @@ function PlaceholderVisual({ code, format, className }: { code: string; format?:
       >
         {code}
       </span>
-      <span className="flex items-center gap-1 text-micro uppercase text-foreground/55">
+      <span className={cn(TYPE.microLabel, "flex items-center gap-1 text-foreground/55")}>
         <ImageOff className="w-3.5 h-3.5" />
         No asset
       </span>
       {format && (
-        <span className="absolute top-1.5 right-1.5 text-micro uppercase text-foreground/55 border border-foreground/10 px-1 py-0.5 rounded leading-none">
+        <span className={cn(TYPE.microLabel, "absolute top-1.5 right-1.5 text-foreground/55 border border-foreground/10 px-1 py-0.5 rounded leading-none")}>
           {format}
         </span>
       )}
@@ -211,8 +212,8 @@ function StatStrip({ stats }: { stats: CreativeCardStats }) {
     <div className="grid grid-cols-2 gap-px bg-border/30 rounded-md overflow-hidden border border-border/30">
       {items.map((it) => (
         <div key={it.label} className="bg-surface-table px-2 py-1.5 text-center">
-          <div className="text-micro uppercase text-muted-foreground/75 truncate">{it.label}</div>
-          <div className="text-label font-semibold text-foreground/90 tabular-nums mt-0.5">{it.value}</div>
+          <div className={cn(TYPE.microLabel, "truncate")}>{it.label}</div>
+          <div className={cn(TYPE.caption, "font-semibold text-foreground/90 tabular-nums mt-0.5")}>{it.value}</div>
         </div>
       ))}
     </div>
@@ -386,14 +387,14 @@ export function CreativeCard({
             <div className="flex items-center gap-1.5">
               <span className="text-caption text-muted-foreground/75">{data.conceptCode}</span>
               {data.stage && (
-                <span className="text-micro uppercase text-muted-foreground/75 border border-border/30 px-1 py-0.5 rounded leading-none">
+                <span className={cn(TYPE.microLabel, "border border-border/30 px-1 py-0.5 rounded leading-none")}>
                   {data.stage}
                 </span>
               )}
               {qaFlagged && (
                 <span
                   title={`QA mapping: ${data.qaMappingStatus}`}
-                  className="flex items-center gap-0.5 text-micro font-semibold uppercase text-status-warning border border-status-warning/30 bg-status-warning/10 px-1 py-0.5 rounded leading-none"
+                  className={cn(TYPE.microLabel, "flex items-center gap-0.5 font-semibold text-status-warning border border-status-warning/30 bg-status-warning/10 px-1 py-0.5 rounded leading-none")}
                 >
                   <AlertTriangle className="w-2.5 h-2.5" />
                   QA

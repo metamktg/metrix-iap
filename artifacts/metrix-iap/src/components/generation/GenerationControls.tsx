@@ -20,6 +20,8 @@ import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
 import { fmtElapsed, pacePhrase } from "@/lib/generation-pace";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { cn } from "@workspace/command-deck/lib/utils";
+import { TYPE } from "@/pages/metrix/typography";
 
 export type GenerationKind = "strategy" | "briefs";
 
@@ -282,7 +284,7 @@ export function GenerationProgressBar({
   const showClock = typeof elapsedSeconds === "number";
   return (
     <div className="space-y-1.5" data-testid="generation-progress-bar">
-      <div className="flex items-center justify-between gap-2 text-label text-muted-foreground/75">
+      <div className={cn(TYPE.caption, "flex items-center justify-between gap-2 text-muted-foreground/75")}>
         <span className="truncate">{stageLabel}</span>
         <span className="flex items-center gap-1.5 tabular-nums shrink-0">
           {showClock && (
@@ -310,7 +312,7 @@ export function GenerationProgressBar({
 export function ProvenanceBadge({ provenance }: { provenance?: string }) {
   if (provenance !== "generated") return null;
   return (
-    <span className="inline-flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-interactive border border-primary/25 bg-primary/10 px-1.5 py-0.5 rounded leading-none">
+    <span className={cn(TYPE.label, "inline-flex items-center gap-1 font-semibold text-interactive border border-primary/25 bg-primary/10 px-1.5 py-0.5 rounded leading-none")}>
       <Sparkles className="w-3.5 h-3.5" /> Generated in-app
     </span>
   );
