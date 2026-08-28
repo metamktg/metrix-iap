@@ -10,6 +10,7 @@
 //                   the structural "all sections present" assertions so that
 //                   schema drift is caught as soon as the fixture is refreshed.
 
+import { withUnconfiguredAccount } from "@/test-fixtures/unconfigured";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -290,9 +291,11 @@ describe("buildReportModel — fixture seed structural checks", () => {
     expect(serializeReportModel(parsed)).toBe(json);
   });
 
-  it("returns null for unconfigured fixture accounts (skov_pet)", () => {
-    // skov_pet is present in the fixture but has status 'unconfigured' — no report.
-    expect(buildReportModel(fixtureSeed, "skov_pet", "internal")).toBeNull();
+  it("returns null for unconfigured accounts", () => {
+    // Synthesized, not found: the demo DB no longer guarantees any account
+    // is unconfigured, and this test is about the STATE, not the account.
+    const seed = withUnconfiguredAccount(fixtureSeed, "skov_pet");
+    expect(buildReportModel(seed, "skov_pet", "internal")).toBeNull();
   });
 });
 

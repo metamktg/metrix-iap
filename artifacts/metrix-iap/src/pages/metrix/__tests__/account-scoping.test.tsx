@@ -7,20 +7,32 @@
 // production data.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { withUnconfiguredAccount } from "@/test-fixtures/unconfigured";
 import { render, cleanup, fireEvent, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const seed = JSON.parse(
-  fs.readFileSync(
-    path.resolve(
-      path.dirname(fileURLToPath(import.meta.url)),
-      "../../../test-fixtures/metrix_seed_bundle.json"
-    ),
-    "utf-8"
-  )
+// The raw fixture, then ONE account stripped to the unconfigured shape.
+//
+// These tests used to rely on skov_pet HAPPENING to be unconfigured in the
+// demo database. A fixture refresh configured every account and 25 tests
+// failed at once with nothing broken — they were asserting database state,
+// not behaviour. The synthesizer keeps the account id (so the selection
+// plumbing below is untouched) and guarantees the state the tests are
+// actually about, whatever the demo server holds this month.
+const seed = withUnconfiguredAccount(
+  JSON.parse(
+    fs.readFileSync(
+      path.resolve(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../../../test-fixtures/metrix_seed_bundle.json"
+      ),
+      "utf-8"
+    )
+  ),
+  "skov_pet"
 );
 
 vi.mock("@/contexts/MetrixDataContext", () => ({

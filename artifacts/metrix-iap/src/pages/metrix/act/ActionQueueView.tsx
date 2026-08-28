@@ -402,7 +402,7 @@ export function ActionQueueView() {
 
         {/* ── Tabs ────────────────────────────────────────────────────── */}
         {allCards.length > 0 && (
-          <TabRail<QueueTab> tabs={TABS} active={tab} onChange={setTab} label="Queue status" />
+          <TabRail tabs={TABS} active={tab} onChange={setTab as (id: QueueTab) => void} label="Queue status" />
         )}
 
         {/* ── Card list ───────────────────────────────────────────────── */}
