@@ -5,6 +5,7 @@
 // mounted at the parent /app/analysis route) owns execution + run
 // history — this page is read-only.
 
+import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
 import { useState, useMemo, useEffect, Fragment } from "react";
 import { scopeToRun, supersededCount } from "@/lib/run-supersede";
 import { useLocation } from "wouter";
@@ -560,7 +561,11 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
               return (
                 <Fragment key={key}>
                   <tr
-                    className={cn(zero && "opacity-50", "cursor-pointer")}
+                    className={cn(
+                      "cursor-pointer transition-opacity duration-300",
+                      zero && "opacity-50",
+                      expandedKeys.size > 0 && !isOpen && "opacity-40",
+                    )}
                     onClick={() => toggleRow(key)}
                     aria-expanded={isOpen}
                   >
@@ -590,6 +595,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
                   {isOpen && (
                     <tr>
                       <td colSpan={7} className="pb-3 pt-0">
+                        <RevealPanel open>
                         <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                           <div className="rounded-lg border border-border/40 bg-foreground/[0.02] px-3 py-2">
                             <div className={cn(TYPE.microLabel, "mb-1")}>Confidence</div>
@@ -628,6 +634,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
                             <span className={cn(TYPE.caption, "text-muted-foreground/75 italic")}>No mapped creative cell for this concept yet.</span>
                           )}
                         </div>
+                        </RevealPanel>
                       </td>
                     </tr>
                   )}

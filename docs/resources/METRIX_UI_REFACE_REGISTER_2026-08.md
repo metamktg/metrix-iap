@@ -243,6 +243,24 @@ chips beside the count it produced. `activeSummary` is a **required** prop.
 
 ### Mapped, not yet built — in priority order
 
+**Wave-1 status (2026-08-28, autonomous pass).** Shipped: `copy-confirm` →
+`CopyConfirmButton` (three hand-rolled sites unified); `RevealPanel` extracted
+as the composable reveal signature and wired into `ConceptFamilyView` (both
+disclosure levels — `collection-grid-disclosure` taken as mechanic; no member
+morph because the collapsed face shows counts, not previews), ManagerOverview's
+folds, and the Command Hub's arrival (arrival-only — no interior fold may hide
+an action); `inline-table-control` → the AdPerformanceView concept table
+(sibling rows dim at 0.4 while one is open — the reference's blur dropped, it
+makes 15px table text illegible — and the detail row arrives with the
+signature). **Function-mismatch, deliberately not applied:** AudienceView's
+segment cards already lead with their quick layer and "Explore" escalates to
+the full dossier — an inline intermediate layer would add a step without
+adding information; same judgement holds for KpiDrilldownModal's tile-opened
+dossier. **Still open from this table:** `VariableTable` rows → inline quick
+layer (same shape as the concept table, needs its payload designed);
+`dialog-stack`, `quick-switcher`, `morphing-sidebar-controls`,
+`onboarding-checklist`, `inline-toast` on exports.
+
 | Reference | Metrix surface | Why this one | Data it must surface |
 |---|---|---|---|
 | `inline-table-control` | `analysis/tables.tsx`, and the three drilldown **modals** | Row expands **in place** while the rest of the table dims — replaces `SegmentDrilldownModal`, `VariableDrilldownModal`, `KpiDrilldownModal`, all of which take you out of context to read one row | every column already in the row, plus the drilldown payload those modals fetch |
