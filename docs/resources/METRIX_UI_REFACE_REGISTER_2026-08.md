@@ -27,11 +27,14 @@ now been inspected against repository history and the current source.
 Two separate follow-ups were found; neither is evidence that the design branch
 was lost:
 
-1. The analysis API selects `demographic_performance.impressions`, while the
-   connected live schema has reported that column missing. The canonical schema
-   already carries an idempotent `add column if not exists` migration. Treat this
-   as schema-application drift and repair/verify the schema independently; do
-   not rewrite the Analysis Overview UI to mask a 502.
+1. **Repaired 2026-08-28:** the analysis API selects
+   `demographic_performance.impressions`, but that column was missing from the
+   connected live schema. The repository's existing additive migration was
+   applied as nullable `bigint`, with no historical zero-fill or data import.
+   The all-time summary, explicit date-range summary, and daily-series routes
+   now return HTTP 200 for Bookster, and a browser pass confirms that the KPI
+   tiles and Daily Trend chart are visible again. Do not rewrite the Analysis
+   Overview UI or restore old JSX generic syntax; the failure was schema drift.
 2. Browser warnings for duplicate keys `C2B` and `Feed` point to dimensional
    rows being keyed too narrowly. `C2B` is valid across multiple result/creative
    rows and `Feed` can be valid across platforms. Confirm the emitting route,
@@ -39,7 +42,9 @@ was lost:
    multi-platform placement rows by placement plus platform. Do not globally
    discard valid rows just to silence the warning.
 
-The reconciliation itself made no runtime-code, schema, data, or branch changes.
+The original repository reconciliation made no runtime-code, schema, data, or
+branch changes. The later visualization repair changed only the live schema by
+adding the already-canonical nullable column described above.
 
 Every claim in this file is produced by a command you can re-run. Where a
 number is an estimate rather than a measurement, it says so. Where a check is
