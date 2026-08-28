@@ -13,6 +13,7 @@ export type VariablePrefix =
   | "AW"   // Awareness level
   | "ST"   // Structure
   | "HP"   // Hook position
+  | "ICP"  // Customer persona reference (ICP_BOOK0_Name) — not a creative family
   | "unknown";
 
 // ─── Family order ────────────────────────────────────────────────────
@@ -212,16 +213,31 @@ const DESCRIPTIONS: Record<string, string> = {
 export function resolveVariableLabel(code: string): string {
   if (!code) return code;
   if (LABELS[code]) return LABELS[code];
-  // Fallback: strip prefix (e.g. "HK_"), split CamelCase, capitalize
   const parts = code.split("_");
+  // ICP codes are ICP_<BOOKn>_<PersonaName>: the persona name is the label;
+  // the book id and raw code belong in the title attr at the call site, not
+  // on the chip face.
+  if (parts[0] === "ICP" && parts.length >= 3) {
+    return camelSplit(parts[parts.length - 1]!);
+  }
+  // Fallback: strip prefix (e.g. "HK_"), split CamelCase
   if (parts.length >= 2) {
-    const remainder = parts.slice(1).join("_");
-    return remainder
-      .replace(/([A-Z])/g, " $1")
-      .replace(/_/g, " ")
-      .trim();
+    return parts.slice(1).map(camelSplit).join(" ").trim();
   }
   return code;
+}
+
+/**
+ * "MaleEfficiencyPocket" → "Male Efficiency Pocket", keeping acronym runs
+ * intact ("BOOK0" stays "BOOK0"). A space before EVERY capital — the old
+ * fallback — turned any all-caps segment into spaced-out letters
+ * ("B O O K0"), which is what an ICP chip rendered before this existed.
+ */
+function camelSplit(segment: string): string {
+  return segment
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .trim();
 }
 
 /**
@@ -244,7 +260,7 @@ export function resolveVariableStackLabel(codes: string[]): string {
  */
 export function getVariablePrefix(code: string): VariablePrefix {
   const prefix = code.split("_")[0] as VariablePrefix;
-  const valid: VariablePrefix[] = ["HK", "TN", "FW", "CN", "PR", "CTA", "AW", "ST", "HP"];
+  const valid: VariablePrefix[] = ["HK", "TN", "FW", "CN", "PR", "CTA", "AW", "ST", "HP", "ICP"];
   return valid.includes(prefix) ? prefix : "unknown";
 }
 
@@ -304,6 +320,7 @@ export const PREFIX_COLORS: Record<VariablePrefix, string> = {
   AW: VARIABLE_CHIP,
   ST: VARIABLE_CHIP,
   HP: VARIABLE_CHIP,
+  ICP: VARIABLE_CHIP,
   /** Not a family — the code did not parse. Recessive on purpose. */
   unknown: "bg-foreground/[0.03] text-muted-foreground border-border/30",
 };

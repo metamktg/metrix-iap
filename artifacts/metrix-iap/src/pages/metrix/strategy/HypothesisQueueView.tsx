@@ -3,6 +3,7 @@
 // build on. Every field the engine produced is surfaced: test variant,
 // isolated variable, success criteria, expected impact, status, risk.
 
+import { TYPE } from "../typography";
 import { useState, useEffect } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -282,7 +283,7 @@ export function HypothesisQueueView() {
                               </TooltipProvider>
                             ))}
                           </div>
-                          <p className="text-sm font-semibold text-foreground leading-tight">{p.label}</p>
+                          <p className={cn(TYPE.title, "leading-tight")}>{p.label}</p>
                           <div className="mt-1">
                             <DetailReveal
                               label={deriveLabel(p.plain_descriptor, 72)}

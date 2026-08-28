@@ -863,7 +863,7 @@ export function SegmentDrilldownModal({
                         data-testid={`tile-segment-metric-${id}`}
                       >
                         <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{m.label}</div>
-                        <div className={cn("text-base font-bold tabular-nums leading-tight mt-0.5", unavailable ? "text-muted-foreground/75" : "text-foreground")}>
+                        <div className={cn("text-callout font-bold tabular-nums leading-tight mt-0.5", unavailable ? "text-muted-foreground/75" : "text-foreground")}>
                           {m.formatted}
                         </div>
                         {unavailable && (
@@ -901,7 +901,7 @@ export function SegmentDrilldownModal({
                               </div>
                               {c.totals.results != null && (
                                 <div className="shrink-0 text-right">
-                                  <span className="text-sm font-bold tabular-nums text-foreground/90 leading-none">{fmtNum(c.totals.results)}</span>
+                                  <span className="text-body font-bold tabular-nums text-foreground/90 leading-none">{fmtNum(c.totals.results)}</span>
                                   <span className="block text-micro uppercase text-muted-foreground/75 leading-none mt-0.5">results</span>
                                 </div>
                               )}

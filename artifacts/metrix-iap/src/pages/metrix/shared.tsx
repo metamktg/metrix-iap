@@ -1194,7 +1194,7 @@ export function CrossLink({ to, label, srNote }: { to: string; label: string; sr
   return (
     <button
       onClick={() => navigate(to)}
-      className="pressable inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-interactive hover:bg-primary/20 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] shadow-sm shadow-primary/5"
+      className="pressable inline-flex items-center gap-2 text-caption font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-interactive hover:bg-primary/20 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] shadow-sm shadow-primary/5"
     >
       {label}
       {srNote && <span className="sr-only">{` — ${srNote}`}</span>}
@@ -1271,7 +1271,7 @@ export function LoopAction({
     <button
       onClick={() => navigate(to)}
       className={cn(
-        "pressable inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+        "pressable inline-flex items-center gap-2 text-caption font-semibold px-4 py-2.5 rounded-lg border transition-[color,background-color,border-color,box-shadow,opacity,transform]",
         variant === "primary"
           ? "bg-primary text-foreground border-primary hover:bg-primary/90 shadow-md shadow-primary/25 hover:shadow-primary/35"
           : "bg-foreground/[0.07] border-border/55 text-foreground/90 hover:bg-foreground/[0.11] hover:text-foreground hover:border-border/75 elevation-raised",
@@ -2124,7 +2124,7 @@ export function ConnectionNudgeBanner({ hasMetaConnection }: { hasMetaConnection
   const [, navigate] = useLocation();
   if (hasMetaConnection) return null;
   return (
-    <div className="mx-6 mt-4 flex items-center gap-2.5 rounded-lg border border-border/40 bg-foreground/[0.03] px-4 py-2.5 text-sm text-muted-foreground/80">
+    <div className="mx-6 mt-4 flex items-center gap-2.5 rounded-lg border border-border/40 bg-foreground/[0.03] px-4 py-2.5 text-caption text-muted-foreground/80">
       <Plug className="w-3.5 h-3.5 shrink-0 text-muted-foreground/75" />
       <span className="flex-1">Connect Meta in Settings to enable live data refresh.</span>
       <button

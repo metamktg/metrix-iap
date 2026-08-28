@@ -206,7 +206,7 @@ function RecommendationCardFace({ card }: { card: DeckCard }) {
         <Badge text={`${card.impact} impact`} cls={IMPACT_STYLE[card.impact] ?? IMPACT_STYLE.low} />
       </div>
 
-      {/* Was `text-sm font-semibold` — 14px, the same size as the rationale
+      {/* Was 14px stock semibold — the same size as the rationale
           under it, so the card had a title and a body at one size and no
           hierarchy between them. TYPE.title is the role for a card title. */}
       <p className={cn(TYPE.title, "line-clamp-2")}>{card.title}</p>

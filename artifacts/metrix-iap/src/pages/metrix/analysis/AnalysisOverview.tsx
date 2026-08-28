@@ -988,7 +988,7 @@ export function AnalysisOverview() {
                     {/* Right: result type donut — inline with tiles */}
                     {resultTypePie.length > 0 && (
                       <div className="w-[196px] shrink-0 rounded-xl border border-border/40 bg-foreground/[0.02] p-3 flex flex-col">
-                        <div className="text-sm font-bold text-foreground mb-1.5">
+                        <div className={cn(TYPE.title, "mb-1.5")}>
                           By result type
                         </div>
                         <SharePieChart
@@ -1176,7 +1176,7 @@ export function AnalysisOverview() {
                       <div className="grid grid-cols-dashboard-2 gap-3">
                         <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
                           <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-1">Primary control</div>
-                          <p className="text-sm font-bold text-foreground">{resolveConceptName(controls.primary_control)}</p>
+                          <p className={TYPE.title}>{resolveConceptName(controls.primary_control)}</p>
                           <div className="mt-1.5">
                             {(() => {
                               const read = resolveControlText(controls.primary_control_read, controls.primary_control);
@@ -1200,7 +1200,7 @@ export function AnalysisOverview() {
                           return (
                             <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
                               <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-1">{term.Singular} control</div>
-                              <p className="text-sm font-bold text-foreground">{regName}</p>
+                              <p className={TYPE.title}>{regName}</p>
                               {controls.registration_control_read && (() => {
                                 const read = resolveControlText(controls.registration_control_read, regId);
                                 return (
@@ -1231,7 +1231,7 @@ export function AnalysisOverview() {
                         <div key={s.to} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4 flex flex-col gap-2">
                           <div className="flex items-center gap-2">
                             <s.Icon className="w-3.5 h-3.5 text-interactive" />
-                            <span className="text-sm font-bold text-foreground">{s.label}</span>
+                            <span className={TYPE.title}>{s.label}</span>
                             <InfoTooltip content={s.desc} />
                           </div>
                           <div className="flex items-center justify-between mt-auto pt-1">

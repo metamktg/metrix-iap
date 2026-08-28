@@ -1033,7 +1033,7 @@ export function IapLibraryView() {
                               data-testid={`dna-family-${f.family}`}
                             >
                               <div className="flex items-center justify-between gap-2 mb-3">
-                                <span className="text-sm font-bold text-foreground">{familyLabel(f.family)}</span>
+                                <span className={TYPE.title}>{familyLabel(f.family)}</span>
                                 <span className="text-label text-muted-foreground/75 border border-border/30 rounded px-1 py-0.5 leading-none">
                                   {f.variableCount} variable{f.variableCount === 1 ? "" : "s"}
                                 </span>

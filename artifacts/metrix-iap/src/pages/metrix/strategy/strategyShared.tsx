@@ -468,11 +468,11 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
           <div className="mt-auto pt-2 border-t border-border/20 flex items-center gap-4">
             <div>
               <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>CPA</div>
-              <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("usd_unit", c.cpa)}</div>
+              <div className="text-body font-bold text-foreground tabular-nums">{fmtMetric("usd_unit", c.cpa)}</div>
             </div>
             <div>
               <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>CVR</div>
-              <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("pct", c.cvr_pct)}</div>
+              <div className="text-body font-bold text-foreground tabular-nums">{fmtMetric("pct", c.cvr_pct)}</div>
             </div>
             {c.confidence && (
               <div className="ml-auto">
@@ -672,7 +672,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="pressable rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
+            className="pressable rounded-full border border-border/40 bg-foreground/[0.03] text-caption px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
           >
             +{overflow} more
           </button>
@@ -681,7 +681,7 @@ export function DnaChipStrip({ variables, label, testId }: { variables: DnaVaria
           <button
             type="button"
             onClick={() => setExpanded(false)}
-            className="pressable rounded-full border border-border/40 bg-foreground/[0.03] text-xs px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
+            className="pressable rounded-full border border-border/40 bg-foreground/[0.03] text-caption px-2 py-0.5 text-muted-foreground/75 hover:text-foreground/80 hover:border-border/60 transition-colors"
           >
             − less
           </button>

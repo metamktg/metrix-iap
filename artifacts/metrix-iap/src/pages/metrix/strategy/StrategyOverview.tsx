@@ -543,7 +543,7 @@ export function StrategyOverview() {
                             {String(i + 1).padStart(2, "0")}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-foreground leading-snug line-clamp-2" title={p.label}>
+                            <p className={cn(TYPE.title, "line-clamp-2")} title={p.label}>
                               {t.main}
                             </p>
                             {t.qualifier && (
@@ -669,7 +669,7 @@ export function StrategyOverview() {
                         <div className="w-7 h-7 rounded-lg bg-primary/[0.06] border border-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/[0.10] transition-colors">
                           <s.Icon className="w-3.5 h-3.5 text-interactive" />
                         </div>
-                        <span className="text-sm font-bold text-foreground group-hover:text-foreground transition-colors">{s.label}</span>
+                        <span className={cn(TYPE.title, "transition-colors")}>{s.label}</span>
                       </div>
 
                       {/* Description — always visible */}

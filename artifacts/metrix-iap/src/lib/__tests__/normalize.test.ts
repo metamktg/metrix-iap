@@ -32,6 +32,7 @@ import {
   extractVariableCodes,
   compactIcpName,
   fmtDelta,
+  humanizeEnum,
 } from "../normalize";
 
 // ─── 1. Export-set equality ───────────────────────────────────────────
@@ -40,6 +41,7 @@ import {
 const RUNTIME_EXPORTS: Array<keyof typeof normalize> = [
   "splitTitle",
   "fmtDelta",
+  "humanizeEnum",
   "parseHierarchyRef",
   "formatHierarchyRef",
   "extractVariableCodes",
@@ -294,8 +296,13 @@ describe("extractVariableCodes", () => {
 
   it("matches multi-segment codes but never inner fragments", () => {
     expect(extractVariableCodes("targets CN_ICP_Achiever directly")).toEqual(["CN_ICP_Achiever"]);
-    // ICP_… has no registered prefix — nothing inside it may match either.
-    expect(extractVariableCodes("a creative for ICP_BOOK0_MaleEfficiencyPocket")).toEqual([]);
+    // ICP_ WAS deliberately unregistered here; the cost showed up on screen
+    // as "C2 concept (ICP_BOOK0_C2_TimePoorLearner): …" — a raw machine id
+    // sitting inline in why-panel prose. It is a token now, and it must
+    // match as ONE whole id — never as inner fragments of itself.
+    expect(extractVariableCodes("a creative for ICP_BOOK0_MaleEfficiencyPocket")).toEqual([
+      "ICP_BOOK0_MaleEfficiencyPocket",
+    ]);
   });
 
   it("returns empty for prose without codes, null, and undefined", () => {
@@ -363,5 +370,44 @@ describe("fmtDelta", () => {
     // value was not addressable as a single string — by a test, or by a
     // reader's find-in-page.
     expect(typeof fmtDelta(12.5)).toBe("string");
+  });
+});
+
+describe("humanizeEnum", () => {
+  it("turns the raw generation statuses into readable chips", () => {
+    // THE BUG: STATUS_LABEL knew five statuses, the generation engine
+    // started writing three new ones, and the fallback printed the raw
+    // enum — GENERATED_MEDIUM sat on screen in an uppercase chip reading
+    // as leftover debug output. The fallback decides whether a stale map
+    // fails quietly or embarrassingly.
+    expect(humanizeEnum("generated_medium")).toBe("Generated · Medium");
+    expect(humanizeEnum("generated_high")).toBe("Generated · High");
+    expect(humanizeEnum("generated_p1")).toBe("Generated · P1");
+  });
+
+  it("reads a plain multi-word enum as a sentence-case phrase", () => {
+    expect(humanizeEnum("needs_review")).toBe("Needs review");
+    expect(humanizeEnum("user_overridden")).toBe("User overridden");
+  });
+
+  it("never invents copy — output words are segments of the input", () => {
+    expect(humanizeEnum("draft")).toBe("Draft");
+    expect(humanizeEnum("")).toBe("");
+    expect(humanizeEnum(null)).toBe("");
+    expect(humanizeEnum(undefined)).toBe("");
+  });
+});
+
+describe("extractVariableCodes — ICP ids", () => {
+  it("extracts ICP_* ids from prose alongside variable codes", () => {
+    // "C2 concept (ICP_BOOK0_C2_TimePoorLearner): $7.09 CPA" rendered the
+    // raw id inline in the why-panel prose. The tokenizer already chips
+    // every variable family; ICP ids are the same kind of machine token
+    // and get the same treatment.
+    const codes = extractVariableCodes(
+      "C2 concept (ICP_BOOK0_C2_TimePoorLearner) with HK_PROBLEM opener",
+    );
+    expect(codes).toContain("ICP_BOOK0_C2_TimePoorLearner");
+    expect(codes).toContain("HK_PROBLEM");
   });
 });
