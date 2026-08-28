@@ -5,6 +5,7 @@ import { describe, it, expect } from "vitest";
 import { resultTerm } from "../shared";
 import { seed } from "../../../navigation/__tests__/seed";
 import type { AdAccount } from "@/lib/data/seedTypes";
+import { withUnconfiguredAccount } from "@/test-fixtures/unconfigured";
 
 const account = (id: string): AdAccount => {
   const acct = (seed.ad_accounts as AdAccount[]).find((a) => a.id === id);
@@ -32,7 +33,11 @@ describe("resultTerm", () => {
   });
 
   it("falls back to the neutral 'result' for accounts without analysis data", () => {
-    expect(resultTerm(account("skov_pet")).plural).toBe("results");
+    // Synthesized: the fixture no longer guarantees any account lacks
+    // analysis data, and this test is about the fallback, not skov_pet.
+    const stripped = withUnconfiguredAccount(seed, "skov_pet");
+    const a = stripped.ad_accounts.find((x) => x.id === "skov_pet") as AdAccount;
+    expect(resultTerm(a).plural).toBe("results");
   });
 
   it("falls back to the neutral 'result' for null/unconfigured accounts", () => {

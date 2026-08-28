@@ -8,6 +8,7 @@
 // state — live Meta OAuth connect/disconnect controls are gated UI, not
 // reactive to the underlying (real, untouched) connection status.
 
+import { withUnconfiguredAccount, UNCONFIGURED_ID } from "@/test-fixtures/unconfigured";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, cleanup, fireEvent, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -15,7 +16,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const seed = JSON.parse(
+const seed = withUnconfiguredAccount(JSON.parse(
   fs.readFileSync(
     path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
@@ -23,7 +24,7 @@ const seed = JSON.parse(
     ),
     "utf-8"
   )
-);
+));
 
 vi.mock("@/contexts/MetrixDataContext", () => ({
   useMetrixSeed: () => seed,
@@ -131,8 +132,11 @@ describe("ad_account scoped", () => {
   });
 
   it("shows the 'Not connected' chip for an unconfigured account", () => {
-    // "manual_OO2Jaeb2PBfu" has status "unconfigured".
-    select("ad_account", "manual_OO2Jaeb2PBfu");
+    // Synthesized: the fixture is refreshed from the live demo DB and no
+    // longer guarantees ANY unconfigured account exists (the id this test
+    // used to name is gone entirely). The state, not the account, is what
+    // is under test.
+    select("ad_account", UNCONFIGURED_ID);
     const { container } = renderView();
     expect(container.textContent).toContain("Not connected");
     expect(container.textContent).not.toContain('"Connected"');

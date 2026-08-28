@@ -263,7 +263,18 @@ describe("buyer-intent funnel (cohort-aware)", () => {
   });
 
   it("drops ecommerce-only stages for a non-ecommerce cohort instead of showing fake zero bars", () => {
-    renderFor("bookster"); // objectives: ["app"]
+    // The objectives are OVERRIDDEN for this test, not read from the
+    // fixture. This originally trusted that bookster's objectives were
+    // ["app"] in the demo DB — then the agency enabled ecommerce on the
+    // real account, the fixture refresh carried that in, and the test broke
+    // while the component behaved correctly. The behaviour under test is
+    // "an app-only cohort never shows ecommerce stages", so the test now
+    // constructs that cohort explicitly.
+    const bookster = seed.ad_accounts.find((a: { id: string }) => a.id === "bookster")!;
+    const prevObjectives = bookster.objectives;
+    bookster.objectives = ["app"];
+    try {
+      renderFor("bookster");
     const funnel = screen.getByTestId("buyer-intent-funnel");
     expect(within(funnel).queryByText("Add to cart")).toBeNull();
     expect(within(funnel).queryByText("Checkout")).toBeNull();
@@ -273,6 +284,9 @@ describe("buyer-intent funnel (cohort-aware)", () => {
     expect(within(funnel).getByText("Link clicks")).toBeTruthy();
     // The cohort-mismatch caveat names the account's real terminal metric.
     expect(screen.getByText(/cost per activation/i)).toBeTruthy();
+    } finally {
+      bookster.objectives = prevObjectives;
+    }
   });
 });
 
