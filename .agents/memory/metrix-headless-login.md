@@ -16,3 +16,14 @@ so `page.waitForURL("**/app**")` times out even though auth succeeded.
 and `page.goto()` the target route directly. Key routes: manager overview at `/` (or
 `/app/account`), signals at `/app/listen/signal` (singular), strategy at
 `/app/strategy/{overview,map,hypotheses,avatars}`; scope with `?account=<id>`.
+
+Disposable users inserted directly for browser verification may still be sent
+through the temporary-password change screen before an app route will load.
+
+**Why:** an end-to-end trend verification hit the password-change gate even
+though the test insert attempted to disable it; treating that page as an
+unexpected login failure would have hidden a healthy authenticated session.
+
+**How to apply:** tell browser tests to complete the change-password gate if it
+appears, then navigate directly to the target route. Always delete the temporary
+user and its sessions after the run.
