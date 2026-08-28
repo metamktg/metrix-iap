@@ -43,6 +43,7 @@ import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/va
 import { fmtUSD, fmtNum, fmtPct } from "@/pages/metrix/shared";
 import { TYPE, DIALOG } from "@/pages/metrix/typography";
 import type { AnalysisData } from "@/lib/data/seedTypes";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 
 // ─── Metric picker (segment-scoped, capped) ───────────────────────────
 
@@ -907,9 +908,13 @@ export function SegmentDrilldownModal({
                               )}
                             </div>
                             {/* Results share bar */}
-                            <div className="h-[5px] rounded-full bg-foreground/[0.05] overflow-hidden">
-                              <div className="h-full rounded-full bg-gradient-to-r from-primary/55 to-primary/55" style={{ width: `${barPct}%` }} />
-                            </div>
+                            <ProgressMeter
+                              value={barPct}
+                              total={100}
+                              label="Results share"
+                              size="sm"
+                              fillClassName="bg-primary/55"
+                            />
                             {/* Copy preview */}
                             {c.copy?.primary && (
                               <p className="text-label text-muted-foreground/75 leading-relaxed line-clamp-2 italic">

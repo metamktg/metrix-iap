@@ -85,6 +85,7 @@ import { resolveVariableLabel } from "@/lib/variable-registry";
 import { normalizeConfidence } from "@/lib/normalize";
 import { TYPE, HEADING } from "./typography";
 import type { AdAccount } from "@/lib/data/seedTypes";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 
 // ─── Section info icon ────────────────────────────────────────────────
 // Small ⓘ icon with a hover tooltip — used in SectionCard right slots
@@ -861,12 +862,13 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
       ) : (
         /* Progress bar — only shown when at least one step is done */
         (doneCount > 0 && (<div className="px-3 pt-2 pb-0">
-          <div className="h-0.5 rounded-full bg-border/30 overflow-hidden">
-            <div
-              className="h-full bg-status-success/50 rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform]"
-              style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }}
-            />
-          </div>
+          <ProgressMeter
+            value={doneCount}
+            total={steps.length}
+            label="Loop progress"
+            size="sm"
+            fillClassName="bg-status-success/50"
+          />
         </div>))
       )}
       {steps.map((step, i) => {

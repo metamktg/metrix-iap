@@ -19,6 +19,7 @@ import {
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
 import { fmtElapsed, pacePhrase } from "@/lib/generation-pace";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 
 export type GenerationKind = "strategy" | "briefs";
 
@@ -290,12 +291,13 @@ export function GenerationProgressBar({
           <span>{progressPercent}%</span>
         </span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
-        <div
-          className="h-full rounded-full bg-primary/70 transition-[width] duration-700 ease-out"
-          style={{ width: `${progressPercent}%` }}
-        />
-      </div>
+      <ProgressMeter
+        value={progressPercent}
+        total={100}
+        label={stageLabel}
+        size="md"
+        fillClassName="bg-primary/70"
+      />
       {showClock && typeof typicalSeconds === "number" && (
         <div className="text-caption text-muted-foreground/75" data-testid="generation-pace-note">
           {pacePhrase(elapsedSeconds, typicalSeconds)}

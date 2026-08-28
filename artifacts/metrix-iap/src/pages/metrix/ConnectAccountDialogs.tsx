@@ -89,6 +89,7 @@ import { guessedCreativeImports } from "./manualImportUtils";
 import type { ManualImportInput, ManualImportResult } from "@workspace/api-client-react";
 import { suggestAdNameMatch, type AdNameMatch } from "@/lib/adNameMatch";
 import { useDeconstruction, DECONSTRUCTION_STATUS_LABEL } from "@/components/creative/useDeconstruction";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 
 export function PrimaryBtn({
   onClick,
@@ -358,12 +359,7 @@ function UploadProgressBar({ pct, label }: { pct: number; label: string }) {
         </span>
         <span className="shrink-0 tabular-nums">{pct}%</span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
-        <div
-          className="h-full rounded-full bg-primary transition-[width] duration-150 ease-out"
-          style={{ width: `${Math.min(100, Math.max(pct > 0 ? 4 : 0, pct))}%` }}
-        />
-      </div>
+      <ProgressMeter value={pct} total={100} label={label} size="md" fillClassName="bg-primary" />
     </div>
   );
 }
@@ -1960,12 +1956,13 @@ function CreativeDeconstructSection({
       </div>
       {isRunning && progress && (
         <div className="px-0.5" data-testid="deconstruct-progress">
-          <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
-              style={{ width: `${Math.max(4, Math.round((progress.done / Math.max(1, progress.total)) * 100))}%` }}
-            />
-          </div>
+          <ProgressMeter
+            value={progress.done}
+            total={Math.max(1, progress.total)}
+            label="Deconstruction progress"
+            size="md"
+            fillClassName="bg-primary"
+          />
         </div>
       )}
       <div className={cn("space-y-1", creativeAssets.length > 6 && "max-h-48 overflow-y-auto pr-1")}>

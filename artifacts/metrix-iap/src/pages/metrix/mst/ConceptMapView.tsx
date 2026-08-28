@@ -24,6 +24,7 @@ import { SegmentGridModal } from "@/components/creative/SegmentGridModal";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { Network, Layers } from "lucide-react";
 import type { CellPerformanceRow, MessagePillar } from "@/lib/data/seedTypes";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 
 const SECTION = "MST · 06";
 
@@ -255,9 +256,14 @@ function ConceptGroupList({
             </div>
             <p className={cn(TYPE.title, "leading-tight")}>{g.name}</p>
 
-            <div className="mt-3 h-1.5 rounded-full bg-foreground/[0.06] overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "hsl(var(--chart-1) / 0.65)" }} />
-            </div>
+            <ProgressMeter
+              value={pct}
+              total={100}
+              label={`${g.name} spend share`}
+              size="md"
+              fillClassName="bg-chart-1/65"
+              className="mt-3"
+            />
             <div className={cn("flex items-center justify-between mt-1.5", TYPE.label, "text-muted-foreground/75 tabular-nums")}>
               <span>{fmtUSD(g.spend, 0)} spend</span>
               <span>{fmtNum(g.results)} results</span>

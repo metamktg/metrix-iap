@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import type { MSTMatrixColumn, MSTMatrixCell, ICPProfile, AdRecord, CellPerformanceRow } from "@/lib/data/seedTypes";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 
 const SECTION = "MST · 06";
 
@@ -249,9 +250,13 @@ function AvatarTile({
             <span>Spend share</span>
             <span className="tabular-nums">{spendPct.toFixed(0)}% of top</span>
           </div>
-          <div className="h-[3px] rounded-full overflow-hidden bg-border/30">
-            <div className={cn("h-full rounded-full", avatarAccent(accentIndex))} style={{ width: `${Math.min(spendPct, 100)}%` }} />
-          </div>
+          <ProgressMeter
+            value={spendPct}
+            total={100}
+            label="Spend share of top avatar"
+            size="sm"
+            fillClassName={avatarAccent(accentIndex)}
+          />
         </div>
       )}
 

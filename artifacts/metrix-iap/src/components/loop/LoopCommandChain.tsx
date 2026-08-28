@@ -58,6 +58,7 @@ import { computeStaleStages } from "./staleStageDetection";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, serializeReportModel, downloadReportExport, parseReportModel } from "@/lib/reportExport";
+import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import {
   BarChart3, Layers, FileText, Database, FileBarChart,
   CheckCircle2, XCircle, Lock, Loader2, X,
@@ -876,12 +877,13 @@ function CommandHub({
             </div>
           </div>
           {/* Deterministic progress bar */}
-          <div className="relative h-[4px] rounded-full overflow-hidden bg-status-warning/10">
-            <span
-              className="absolute inset-y-0 left-0 bg-status-warning/50 rounded-full transition-[width] duration-1000 ease-out"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
+          <ProgressMeter
+            value={progressPct}
+            total={100}
+            label="Analysis run progress"
+            size="sm"
+            fillClassName="bg-status-warning/50"
+          />
           <p className="text-body text-status-warning/40 leading-none">Views update automatically on completion</p>
         </div>
       );
@@ -1870,12 +1872,13 @@ export function LoopCommandChain({
                   </span>
                 </div>
               </div>
-              <div className="relative h-[3px] rounded-full overflow-hidden bg-status-warning/[0.08]">
-                <span
-                  className="absolute inset-y-0 left-0 bg-status-warning/50 rounded-full transition-[width] duration-1000 ease-out"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
+              <ProgressMeter
+                value={pct}
+                total={100}
+                label={`${stageLabel} progress`}
+                size="sm"
+                fillClassName="bg-status-warning/50"
+              />
             </div>
           );
         })()}

@@ -32,6 +32,14 @@ export interface ProgressMeterProps {
   colorIndex?: number;
   /** Overrides the fill entirely — for status-graded bars. */
   fill?: string;
+  /**
+   * Class-based fill override, for call sites whose identity color already
+   * exists as a Tailwind class (an avatar accent, a status tint, a hover
+   * brightening). Wins over `fill` and `colorIndex`. The TRACK is not
+   * overridable on purpose — one track everywhere is what makes two bars
+   * on one screen read as the same kind of measurement.
+   */
+  fillClassName?: string;
   /** "sm" inside a dense row, "md" as a section's own bar. */
   size?: "sm" | "md";
   /**
@@ -57,6 +65,7 @@ export function ProgressMeter({
   label,
   colorIndex = 0,
   fill,
+  fillClassName,
   size = "sm",
   segments,
   className = "",
@@ -82,13 +91,19 @@ export function ProgressMeter({
         {Array.from({ length: segments }, (_, i) => (
           <span
             key={i}
-            className="flex-1 rounded-full transition-[background-color] duration-300 ease-[cubic-bezier(0.2,0,0,1)]"
-            style={{
-              background:
-                i < on
-                  ? fill ?? seriesColor(colorIndex)
-                  : "hsl(var(--foreground) / 0.06)",
-            }}
+            className={`flex-1 rounded-full transition-[background-color] duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${
+              i < on && fillClassName ? fillClassName : ""
+            }`}
+            style={
+              i < on && fillClassName
+                ? undefined
+                : {
+                    background:
+                      i < on
+                        ? fill ?? seriesColor(colorIndex)
+                        : "hsl(var(--foreground) / 0.06)",
+                  }
+            }
           />
         ))}
       </div>
@@ -119,8 +134,12 @@ export function ProgressMeter({
     >
       {measurable && (
         <div
-          className="h-full rounded-full transition-[width] duration-300 ease-[cubic-bezier(0.2,0,0,1)]"
-          style={{ width: `${pct}%`, background: fill ?? seriesColor(colorIndex) }}
+          className={`h-full rounded-full transition-[width] duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${fillClassName ?? ""}`}
+          style={
+            fillClassName
+              ? { width: `${pct}%` }
+              : { width: `${pct}%`, background: fill ?? seriesColor(colorIndex) }
+          }
         />
       )}
     </div>
