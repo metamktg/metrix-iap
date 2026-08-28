@@ -256,10 +256,25 @@ signature). **Function-mismatch, deliberately not applied:** AudienceView's
 segment cards already lead with their quick layer and "Explore" escalates to
 the full dossier — an inline intermediate layer would add a step without
 adding information; same judgement holds for KpiDrilldownModal's tile-opened
-dossier. **Still open from this table:** `VariableTable` rows → inline quick
-layer (same shape as the concept table, needs its payload designed);
-`dialog-stack`, `quick-switcher`, `morphing-sidebar-controls`,
-`onboarding-checklist`, `inline-toast` on exports.
+dossier. **Wave 3-5 additions (same day):** `onboarding-checklist` → first-run setup
+is a visible, jumpable checklist (visited state, aria-current, ordinal
+ProgressMeter; the wizard's items-center overflow bug found and fixed by
+looking); `DisclosureStack` → AnalysisHistoryView run rows split in place,
+warned/failed runs + latest open by default so no signal folds away;
+`inline-toast`/`copy-confirm` family completed with `ActionConfirmButton`
+(brief JSON download confirms in place; ReportBuilder/History already had
+their own outcome states and were left alone); `quick-switcher`'s item
+arrival (staggered blur) on the AccountSwitcher rows.
+**`morphing-sidebar-controls` re-audited as substantially present:** the
+width already transitions AND drags (216↔56 with snap); the reference's
+remaining delta is a content cross-fade during the variant swap — polish
+that isn't worth shell-test churn, recorded here instead of half-done.
+**Still open from this table:** `VariableTable` rows → inline quick layer
+(BLOCKED on design: the table virtualizes past a threshold and inline
+expansion makes row heights dynamic — the virtualizer assumes fixed);
+`dialog-stack` on ConnectAccountDialogs (2,353 lines, upload-critical —
+wants its own review-sized PR with browser passes, not an autopilot
+drive-by).
 
 | Reference | Metrix surface | Why this one | Data it must surface |
 |---|---|---|---|
