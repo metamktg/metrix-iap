@@ -276,12 +276,34 @@ Each phase has an exit criterion that is a command, not a judgement.
 
 ### Phase 1 — the panel class (largest measured gap)
 
-39 panels, 26% on type roles, 8% with disclosure, 18% responsive. Work them in
-size order; the top ten are §2. For each: type roles, a breakpoint or a
-container query, disclosure where the surface is dense, and `lib/motion` for
-anything that moves.
+**Corrected count: 30 panels, not 39.** Nine of the files in that bucket were
+seven React context providers, the router and the design lab. A provider
+returns `<Ctx.Provider>{children}</Ctx.Provider>` — it has no heading to give
+a type role, no breakpoint to add, nothing to disclose. It can never satisfy
+the checks, so it permanently dragged the class average down, and the exit
+criterion written against that average was **unreachable**: nine of
+thirty-nine caps the class at 77%, below its own 90% gate.
 
-**Exit:** `check:ui-inventory --kind=panel` shows TYPE ≥ 90%, RESP ≥ 80%.
+A gate nobody can pass gets ignored, and then it stops protecting the thirty
+files that *can* pass. `check:ui-inventory` now excludes infrastructure and
+names what it excluded on every run.
+
+| | before | after |
+|---|---|---|
+| panels | 39 | **30** |
+| TYPE | 26% | **33%** |
+| RESP | 18% | **20%** |
+| A11Y | 54% | **70%** |
+
+The A11Y jump is the measure of how much the providers were distorting: 16
+points of that number was never about accessibility at all.
+
+Work them in size order; the top ten are §2. For each: type roles, a
+breakpoint or a container query, disclosure where the surface is dense, and
+`lib/motion` for anything that moves.
+
+**Exit:** `check:ui-inventory --kind=panel` shows TYPE ≥ 90%, RESP ≥ 80% —
+now reachable, because every file counted can reach it.
 
 ### Phase 2 — Tier A and Tier B field coverage · **DONE except one**
 

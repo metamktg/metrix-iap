@@ -72,6 +72,35 @@ const SIGNAL = {
 };
 
 /**
+ * Files that render JSX but are NOT surfaces a reader ever looks at.
+ *
+ * WHY THIS EXISTS, AND WHY IT IS NOT A CONVENIENCE
+ * The `panel` bucket held 39 files, of which NINE were seven context
+ * providers, the router (`App.tsx`) and the design lab. A provider returns
+ * `<Ctx.Provider>{children}</Ctx.Provider>`: it has no heading to give a type
+ * role, no breakpoint to add, nothing to disclose. It can never satisfy the
+ * checks, so it permanently drags the class average down — and the Phase 1
+ * exit criterion written against that average (`TYPE >= 90%`) was
+ * UNREACHABLE. Nine of thirty-nine caps the class at 77%.
+ *
+ * A gate nobody can ever pass gets ignored, and then it stops protecting the
+ * thirty files that CAN pass. So these are excluded from the inventory
+ * entirely rather than scored and forgiven: an exclusion you can read is
+ * honest, a number you have to mentally discount is not.
+ *
+ * `design-lab.tsx` is excluded on the same principle — it is the component
+ * gallery, deliberately not a product surface, and refacing it to hit a
+ * coverage number would be optimising the instrument.
+ */
+function isInfrastructure(rel: string): boolean {
+  const dir = rel.replace(/\\/g, "/");
+  if (dir === "App.tsx" || dir === "main.tsx" || dir === "design-lab.tsx") return true;
+  if (dir.startsWith("contexts/")) return true;
+  if (/(?:^|\/)[A-Za-z]+(?:Context|Provider)\.tsx$/.test(dir)) return true;
+  return false;
+}
+
+/**
  * Classify by directory first — it is the strongest signal and the one the
  * codebase actually organises by — then fall back to the filename.
  *
@@ -107,11 +136,14 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 const rows: Row[] = [];
+const excluded: string[] = [];
 for (const file of walk(SRC)) {
   const rel = path.relative(SRC, file);
   const src = fs.readFileSync(file, "utf8");
   // A file with no JSX is a helper, not a surface.
   if (!/return\s*\(?\s*</.test(src) && !/=>\s*\(?\s*</.test(src)) continue;
+  // Renders JSX, but nobody reads it — see isInfrastructure.
+  if (isInfrastructure(rel)) { excluded.push(rel); continue; }
   rows.push({
     file: rel,
     kind: classify(rel),
@@ -147,7 +179,13 @@ for (const r of rows) {
   if (r.a11y) c.a11y++;
 }
 
-console.log(`\nUI INVENTORY — ${rows.length} surfaces\n`);
+console.log(
+  `\nUI INVENTORY — ${rows.length} surfaces` +
+    (excluded.length > 0
+      ? `  (${excluded.length} infrastructure file(s) excluded: ${excluded.join(", ")})`
+      : "") +
+    "\n",
+);
 console.log("KIND        n    TYPE  MOTION  DISCL   VIZ  RESP  A11Y");
 for (const k of KINDS) {
   const c = counts.get(k)!;
