@@ -68,6 +68,8 @@
 //   <HypothesisCodeChipsRow> + a line-clamp-1 caption, drawer keeps prose.
 
 import { useState, useCallback, useId } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { SPRING_SNAPPY } from "@/lib/motion";
 import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useLocation, useSearch } from "wouter";
@@ -1403,6 +1405,10 @@ export function SegmentedToggle<T extends string>({
   /** Collapse to icon-only below the sm breakpoint, for tight header rows. */
   responsiveLabels?: boolean;
 }) {
+  const reduced = useReducedMotion();
+  // Per-instance, for the same reason TabRail's is: two toggles on one page
+  // sharing a layoutId animate their pills into each other across the page.
+  const pillId = `segmented-${useId()}`;
   return (
     <div
       className="flex items-center gap-0.5 rounded-lg border border-border/30 bg-foreground/[0.03] p-0.5"
@@ -1417,14 +1423,24 @@ export function SegmentedToggle<T extends string>({
             onClick={() => onChange(id)}
             aria-pressed={isActive}
             className={cn(
-              "pressable inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium transition-colors",
-              isActive
-                ? "bg-primary/20 text-interactive shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
-                : "text-muted-foreground/75 hover:text-foreground/80"
+              "pressable relative inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium transition-colors",
+              isActive ? "text-interactive" : "text-muted-foreground/75 hover:text-foreground/80"
             )}
           >
-            {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
-            <span className={responsiveLabels ? "hidden sm:inline" : undefined}>{label}</span>
+            {/* The pill TRAVELS between options rather than blinking out of one
+                and into another. In a two-to-four option switch the distance is
+                short enough that a jump reads as a flicker — the eye registers
+                that something changed without registering what. */}
+            {isActive && (
+              <motion.span
+                layoutId={pillId}
+                transition={reduced ? { duration: 0 } : SPRING_SNAPPY}
+                className="absolute inset-0 rounded-md bg-primary/20 shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
+                aria-hidden
+              />
+            )}
+            {Icon && <Icon className="relative w-3.5 h-3.5 shrink-0" />}
+            <span className={cn("relative", responsiveLabels && "hidden sm:inline")}>{label}</span>
           </button>
         );
       })}

@@ -37,6 +37,7 @@ import { ImportConfidenceReport } from "./ImportConfidenceReport";
 import { InfoTooltip, DetailReveal, DenseText } from "./shared";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { ActionSlider } from "@/components/widgets/ActionSlider";
+import { RunProgress } from "@/components/widgets/RunProgress";
 import { CsvWarningsPanel } from "@/components/analysis/CsvWarningsPanel";
 import {
   AlertDialog,
@@ -1460,27 +1461,19 @@ export function AnalysisControls({
       {/* Real per-stage progress bar — polls every 1 s while running */}
       {(isRunning || run?.status === "success") && (
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between gap-2 text-label text-muted-foreground/75">
-            <span className="truncate">
-              {isRunning
-                ? (run?.progress_stage || "Starting analysis…")
-                : "Analysis complete"}
-            </span>
-            <span className="tabular-nums shrink-0">
-              {run?.status === "success" ? 100 : (run?.progress_pct ?? 0)}%
-            </span>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-foreground/[0.06] overflow-hidden">
-            <div
-              className={cn(
-                "h-full rounded-full transition-[width] duration-700 ease-out",
-                run?.status === "success" ? "bg-status-success/70" : "bg-primary/70"
-              )}
-              style={{
-                width: `${run?.status === "success" ? 100 : (run?.progress_pct ?? 0)}%`,
-              }}
-            />
-          </div>
+          {/* Was a static bar with a static label. Between polls — 2.5s, and a
+              stage can hold for twenty seconds — neither moved, which is
+              indistinguishable from a job that has died. RunProgress sweeps
+              the filled part instead of inventing a creeping percentage, and
+              animates the stage name when the stage actually changes.
+              progress_pct of null now renders as "—" rather than 0%: no
+              number yet is a different claim from a measured zero. */}
+          <RunProgress
+            phase={run?.status === "success" ? "success" : run?.status === "error" ? "error" : "running"}
+            stage={run?.progress_stage}
+            pct={run?.progress_pct}
+            doneLabel="Analysis complete"
+          />
           {isRunning && (
             <div className="grid grid-cols-5 gap-0.5 pt-0.5">
               {[
