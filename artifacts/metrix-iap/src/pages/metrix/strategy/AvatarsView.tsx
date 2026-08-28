@@ -794,7 +794,7 @@ function CoverageMatrix({ rows, profiles }: { rows: { pillar: MessagePillar; cel
         >
           <span />
           {profiles.map((p) => (
-            <span key={p.profile_id} className={cn(TYPE.label, "text-center text-muted-foreground/75 pb-1")} title={p.profile_name}>
+            <span key={p.profile_id} className={cn(TYPE.caption, "text-center text-muted-foreground/75 pb-1")} title={p.profile_name}>
               {deriveLabel(p.profile_name, 18)}
             </span>
           ))}

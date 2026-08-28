@@ -16,7 +16,7 @@
 
 import { describe, it, expect } from "vitest";
 import seed from "../../test-fixtures/metrix_seed_bundle.json";
-import { VARIABLE_FAMILIES, stackValue, registryStatusFor, getVariablePrefix } from "../variable-registry";
+import { VARIABLE_FAMILIES, stackValue, registryStatusFor, getVariablePrefix, resolveVariableLabel } from "../variable-registry";
 import { familyLabel } from "@/pages/metrix/strategy/strategyShared";
 
 const registry = (seed as { variable_registry?: { prefix: string; family: string; status: string }[] })
@@ -156,5 +156,24 @@ describe("familyLabel agrees with the registry for both key forms", () => {
       expect(familyLabel(k), `"${k}" should be named as the registry names ${f!.prefix}`)
         .toBe(registryName.get(f!.prefix) ?? f!.label);
     }
+  });
+});
+
+describe("resolveVariableLabel fallback", () => {
+  it("labels an ICP code by its persona name, never spaced-out letters", () => {
+    // Before the camelSplit fix, "BOOK0" became "B O O K0" — a space before
+    // EVERY capital. ICP chips now show the persona name; book id + raw code
+    // stay in the title attr at the call site.
+    expect(resolveVariableLabel("ICP_BOOK0_MaleEfficiencyPocket")).toBe("Male Efficiency Pocket");
+    expect(resolveVariableLabel("ICP_BOOK0_TimePoorLearner")).toBe("Time Poor Learner");
+  });
+
+  it("keeps acronym runs intact in generic fallbacks", () => {
+    expect(resolveVariableLabel("HK_UGCStyle")).toBe("UGC Style");
+    expect(resolveVariableLabel("CN_NewThing")).toBe("New Thing");
+  });
+
+  it("classifies ICP as its own prefix, not unknown", () => {
+    expect(getVariablePrefix("ICP_BOOK0_MaleEfficiencyPocket")).toBe("ICP");
   });
 });

@@ -193,7 +193,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
           ] as const).map((item) => (
             <div key={item.label} className="rounded-lg border border-border/30 bg-foreground/[0.02] px-3 py-2.5 text-center">
               <div className="text-micro uppercase text-muted-foreground/75 mb-1">{item.label}</div>
-              <div className="text-lg font-bold text-foreground tabular-nums leading-none">{item.value}</div>
+              <div className="text-callout font-bold text-foreground tabular-nums leading-none">{item.value}</div>
             </div>
           ))}
         </div>
@@ -732,7 +732,7 @@ export function CreativeExpandDialog({
               <div className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-0.5")}>
                 Creative · {data.conceptCode}
               </div>
-              <p className="text-sm font-semibold text-foreground leading-tight">{data.title}</p>
+              <p className={cn(TYPE.title, "leading-tight")}>{data.title}</p>
               {data.visualSystem && (
                 <p className="text-caption text-muted-foreground/75 mt-0.5 leading-relaxed line-clamp-2">{data.visualSystem}</p>
               )}
