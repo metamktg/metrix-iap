@@ -366,7 +366,7 @@ export function RecommendationDeck({
               className="relative w-full max-w-md mx-auto h-[300px]"
               aria-label="Recommendation deck. Use arrow keys to decide."
             >
-              <SwipeDeck<DeckCard>
+              <SwipeDeck
                 items={pending}
                 keyOf={(c) => c.id}
                 renderCard={(c) => <RecommendationCardFace card={c} />}
