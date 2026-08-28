@@ -1,7 +1,45 @@
 # Metrix IAP — UI reface register
 
 **Status:** live working record. Supersedes ad-hoc reface notes in this session.
-**Last reconciled:** 2026-08-28, against the branch `claude/design-handoff-alignment-zvp08f`.
+**Last reconciled:** 2026-08-28, against `main` at `08ce77a4`, after PR #150.
+
+### Post-sync reconciliation — read before resuming the paused design session
+
+The Claude design session paused while a Replit-side change was still in flight,
+then its branch was merged and `main` advanced once more. The sync boundary has
+now been inspected against repository history and the current source.
+
+- PR #150 preserved the design-session typography work. Its changes to Analysis
+  Overview are presentational; it did not replace the date-window, KPI, daily
+  trend, analysis-summary, or Universal Data Module contracts.
+- `08ce77a4` is a compatibility repair, not a design rollback. It removes
+  TypeScript generic arguments written directly in JSX from `SwipeDeck` and
+  `SegmentedToggle`; those forms type-check but can fail the Vite/Babel JSX
+  transform. **Do not restore the generic JSX syntax.**
+- The shared seed adapter's structured MST `render_policy` normalization remains
+  present after the sync. **Do not move object-to-text normalization back into
+  individual views.**
+- No broad source merge is outstanding from this reconciliation. Current `main`
+  contains the relevant design commits and the post-merge JSX compatibility
+  fix. Resume from current `main`; do not replay the paused session's working
+  tree wholesale.
+
+Two separate follow-ups were found; neither is evidence that the design branch
+was lost:
+
+1. The analysis API selects `demographic_performance.impressions`, while the
+   connected live schema has reported that column missing. The canonical schema
+   already carries an idempotent `add column if not exists` migration. Treat this
+   as schema-application drift and repair/verify the schema independently; do
+   not rewrite the Analysis Overview UI to mask a 502.
+2. Browser warnings for duplicate keys `C2B` and `Feed` point to dimensional
+   rows being keyed too narrowly. `C2B` is valid across multiple result/creative
+   rows and `Feed` can be valid across platforms. Confirm the emitting route,
+   then normalize one-card-per-cell views by `cell_id` and key intentionally
+   multi-platform placement rows by placement plus platform. Do not globally
+   discard valid rows just to silence the warning.
+
+The reconciliation itself made no runtime-code, schema, data, or branch changes.
 
 Every claim in this file is produced by a command you can re-run. Where a
 number is an estimate rather than a measurement, it says so. Where a check is

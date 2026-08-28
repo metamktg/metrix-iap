@@ -46,7 +46,7 @@ export function ChangePasswordPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1.5">
           <BrandLogo className="w-10 h-10 mx-auto" />
-          <h1 className="text-lg font-semibold text-foreground">Choose a new password</h1>
+          <h1 className="text-h4 font-h4 font-bold text-foreground">Choose a new password</h1>
           <p className="text-body text-muted-foreground">
             You signed in with a temporary password{user ? ` as ${user.email}` : ""}. Set
             your own password to continue.

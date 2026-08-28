@@ -100,8 +100,8 @@ function NotFound() {
   return (
     <div className="flex-1 flex items-center justify-center py-24">
       <div className="text-center space-y-2">
-        <h2 className="text-base font-semibold text-foreground">Page not found</h2>
-        <p className="text-xs text-muted-foreground">This route does not exist.</p>
+        <h2 className="text-title font-h5 font-bold text-foreground">Page not found</h2>
+        <p className="text-caption text-muted-foreground">This route does not exist.</p>
       </div>
     </div>
   );

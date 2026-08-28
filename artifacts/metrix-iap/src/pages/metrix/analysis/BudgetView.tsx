@@ -23,7 +23,7 @@ import {
 } from "@/lib/data/metricsCatalog";
 import { Wallet, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { HEADING } from "../typography";
+import { HEADING, TYPE } from "../typography";
 import { DataModule } from "@/components/data-module/DataModule";
 import { RankedBars } from "@/components/charts/RankedBars";
 import type { DataView } from "@/lib/data-module/viewSupport";
@@ -379,7 +379,7 @@ export function BudgetView() {
                       aria-expanded={showPlacements}
                     >
                       <div className="text-left">
-                        <span className="text-sm font-bold text-foreground">Placement spend</span>
+                        <span className={TYPE.title}>Placement spend</span>
                         <span className="text-label text-muted-foreground/75 ml-2">
                           {a.v3_placement_signal.length + a.c4e_placement_signal.length} rows
                         </span>

@@ -163,7 +163,7 @@ export function formatHierarchyRef(ref: HierarchyRef): string {
 // Prefix-anchored with lookarounds (never \b — it fails between a digit
 // and "_"), allowing multi-segment codes like CN_ICP_Achiever.
 const VARIABLE_CODE_RE =
-  /(?<![A-Za-z0-9_])(?:HK|TN|FW|CN|PR|CTA|AW|ST|HP)_[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*(?![A-Za-z0-9_])/g;
+  /(?<![A-Za-z0-9_])(?:HK|TN|FW|CN|PR|CTA|AW|ST|HP|ICP)_[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*(?![A-Za-z0-9_])/g;
 
 /**
  * Extract prefixed variable codes from free prose, deduplicated in
@@ -181,6 +181,37 @@ export function extractVariableCodes(text: string | null | undefined): string[] 
     }
   }
   return out;
+}
+
+// ─── Enum humanization ────────────────────────────────────────────────
+
+/**
+ * Human form of a machine enum: "generated_medium" → "Generated · Medium",
+ * "needs_review" → "Needs review".
+ *
+ * WHY THIS EXISTS
+ * The brief list rendered `STATUS_LABEL[b.status] ?? b.status`. The map
+ * knew five statuses; the generation engine had started writing three new
+ * ones, and the fallback printed the raw value — so GENERATED_MEDIUM sat
+ * on screen in an uppercase chip, reading as leftover debug output. A
+ * lookup map goes stale the day upstream grows a value; the FALLBACK is
+ * what decides whether that failure is quiet or embarrassing.
+ *
+ * Mechanical only: split on underscores, capitalize the first segment.
+ * When the enum's leading segment is a recognised qualifier pattern
+ * ("generated_high") the tail reads as a grade, joined with a middot.
+ * Never invents copy — every output word is a segment of the input.
+ */
+export function humanizeEnum(value: string | null | undefined): string {
+  const raw = (value ?? "").trim();
+  if (!raw) return "";
+  const parts = raw.split(/_+/).filter(Boolean);
+  if (parts.length === 0) return raw;
+  const cap = (w: string) => (w ? w[0]!.toUpperCase() + w.slice(1).toLowerCase() : w);
+  if (parts.length === 2 && /^(high|medium|low|p\d+)$/i.test(parts[1]!)) {
+    return `${cap(parts[0]!)} · ${cap(parts[1]!)}`;
+  }
+  return cap(parts.join(" ").toLowerCase());
 }
 
 // ─── ICP names ────────────────────────────────────────────────────────

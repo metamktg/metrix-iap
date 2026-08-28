@@ -10,6 +10,7 @@
 // invented. Selection is driven by ?focus=<brief id> (deep links keep
 // working); without one, the first brief is selected like the canvas.
 
+import { humanizeEnum } from "@/lib/normalize";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -194,10 +195,15 @@ export function CreativeBriefBuilderView() {
                           {pillarOf(b.source_pillar)?.label ?? b.source_pillar}
                         </span>
                         <span className={cn(TYPE.label, "shrink-0 inline-flex border border-border/40 bg-foreground/[0.04] rounded-full px-2 py-0.5 text-foreground/70")}>
-                          {STATUS_LABEL[b.status] ?? b.status}
+                          {STATUS_LABEL[b.status] ?? humanizeEnum(b.status)}
                         </span>
                       </span>
-                      <span className={cn(TYPE.label, "flex gap-1.5 flex-wrap text-muted-foreground/75 mt-1.5")}>
+                      {/* VALUES, not labels — so no label role. TYPE.label uppercases
+                          whatever wears it, and here that was shouting the brief's
+                          voice ("WARM, ASPIRATIONAL…") and format back at the reader
+                          as if the data itself were written in caps. Caption role:
+                          reading floor, sentence case, exactly as the seed wrote it. */}
+                      <span className={cn(TYPE.caption, "flex gap-1.5 flex-wrap text-muted-foreground/75 mt-1.5")}>
                         <span>{b.asset_type}</span>
                         {fbString(fbSection(b, "brief_metadata"), "priority") && (
                           <>

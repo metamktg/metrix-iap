@@ -1385,7 +1385,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-base font-semibold text-foreground">Admin console</h1>
+            <h1 className="text-h4 font-h4 font-bold text-foreground">Admin console</h1>
             <EnvironmentPill />
           </div>
           <button

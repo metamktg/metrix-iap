@@ -407,7 +407,7 @@ function DrawerAdList({
         );
       })}
       {matchedAds.length > 8 && (
-        <button type="button" onClick={() => setShowAll((v) => !v)} className="pressable text-xs text-interactive underline-offset-2 hover:underline">
+        <button type="button" onClick={() => setShowAll((v) => !v)} className="pressable text-caption text-interactive underline-offset-2 hover:underline">
           {showAll ? "Show fewer" : `Show all ${matchedAds.length} ads`}
         </button>
       )}

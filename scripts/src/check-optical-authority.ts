@@ -76,6 +76,24 @@ const HEADING_TAG = /<h[1-6][\s>]/;
  */
 const MONO_CLASS = /\bfont-mono\b/;
 
+/**
+ * Stock Tailwind size classes, which are OFF THE RAMP.
+ *
+ * The ramp migration replaced every arbitrary `text-[14px]`-style class and
+ * the rulebook gate ratchets those — but `text-sm` is a STANDARD Tailwind
+ * class, so no instrument ever looked at it. Thirty of them survived, and
+ * they were not random: `text-sm font-bold` (14px) had become the app's
+ * accidental sub-card-title style — pillar names, concept names, playbook
+ * buckets, dialog titles — putting 14px titles over 12px uppercase labels.
+ * A 2px hierarchy is why a page full of correct data reads as "I cannot
+ * tell what I am looking at".
+ *
+ * Every size on screen must be a step somebody chose: micro/label/caption/
+ * body/title/callout/h1-h5/stat. Stock sizes are banned outright — there is
+ * no baseline to ratchet, because the correct count is zero.
+ */
+const STOCK_SIZE = /\btext-(?:xs|sm|base|lg|xl|2xl|3xl)\b/;
+
 const SUPPRESS = "authority-ok";
 
 interface Finding {
@@ -86,7 +104,8 @@ interface Finding {
     | "downgraded-title"
     | "tracking-tie"
     | "chrome-sized-heading"
-    | "mono-face";
+    | "mono-face"
+    | "stock-size";
   snippet: string;
 }
 
@@ -138,6 +157,9 @@ for (const root of ROOTS) {
       if (MONO_CLASS.test(line)) {
         findings.push({ ...at, kind: "mono-face" });
       }
+      if (STOCK_SIZE.test(line)) {
+        findings.push({ ...at, kind: "stock-size" });
+      }
     });
   }
 }
@@ -164,6 +186,12 @@ const EXPLAIN: Record<Finding["kind"], string> = {
     "        digits, which is what 305 of these were actually reaching for. If it\n" +
     "        is genuinely a code block, where character alignment is the content,\n" +
     "        mark the line `// authority-ok` and say so.",
+  "stock-size":
+    "A stock Tailwind size (text-sm/xs/base/lg/xl) — not a step on the ramp.\n" +
+    "        text-sm font-bold was the app's accidental 14px sub-card title,\n" +
+    "        2px above its own labels. Use the roles: TYPE.title for a card/item\n" +
+    "        title, text-caption for chrome, text-body for prose, text-callout\n" +
+    "        for a stat.",
   "tracking-tie":
     "This role defines its own letter-spacing. A tracking-[…] beside it is a tie\n" +
     "        resolved by generated-CSS order rather than by intent — and the app\n" +

@@ -136,7 +136,7 @@ function ReportPreviewPane({ model, audienceLabel }: { model: ReportModel; audie
       </div>
       <div className="px-5 py-5 bg-background">
         <div className={cn(TYPE.label, "font-semibold uppercase tracking-[0.14em] text-interactive/80 mb-1")}>{kicker}</div>
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        <h2 className={TYPE.title}>{title}</h2>
         <p className={cn(TYPE.body, "text-muted-foreground/75 mt-1.5 max-w-[70ch]")}>{model.brandLine}</p>
 
         {model.sections.map((s) => (
@@ -389,7 +389,7 @@ export function ReportBuilderView() {
                             <span className={cn(TYPE.body, "font-medium text-foreground flex items-center gap-1.5")}>
                               <a.Icon className="w-3.5 h-3.5 text-interactive/70" /> {a.label}
                             </span>
-                            <span className={cn(TYPE.label, "text-muted-foreground/75")}>{a.desc}</span>
+                            <span className={cn(TYPE.caption, "text-muted-foreground/75")}>{a.desc}</span>
                           </button>
                         ))}
                       </div>

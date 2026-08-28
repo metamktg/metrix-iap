@@ -12,22 +12,22 @@
 //      rather than handing it over.
 //
 //   2. A HEADER IS >= 3px ABOVE THE CONTENT IT LABELS.
-//        H1 32 -> H2 21 (11) -> H3 17 (4) -> body 14 (3)
-//      Below 12px the rule stops applying: 3px steps run out of readable
+//        H1 34 -> H2 22 (12) -> H3 18 (4) -> body 15 (3)
+//      Below 13px the rule stops applying: 3px steps run out of readable
 //      sizes almost at once (12 -> 9 -> 6). That band is CHROME — uppercase
 //      micro-labels and eyebrows that separate by case, weight, tracking
 //      and colour. Nothing carrying a sentence belongs there.
 //
 // The sizes, line-heights and tracking live in index.css @layer utilities:
-//   text-micro   10px  chrome floor, mono index labels
-//   text-label   11px  uppercase eyebrow; also data-table column headers
-//   text-caption 12px  NON-SENTENCE metadata only (counts, units, dates)
-//   text-body    14px  BODY FLOOR — every sentence, every paragraph
-//   text-title   17px  H3 card / list-item title
-//   text-callout 18px  dialog title
-//   text-cardtitle 21px  H2 SectionCard title
-//   text-display 24px · text-section 26px · text-stat 30px
-//   text-bignum  32px  H1 page title / hero stat
+//   text-micro   11px  chrome floor, index labels
+//   text-label   12px  uppercase eyebrow; also data-table column headers
+//   text-caption 13px  NON-SENTENCE metadata only (counts, units, dates)
+//   text-body    15px  BODY FLOOR — every sentence, every paragraph
+//   text-title   18px  H3 card / list-item title
+//   text-callout 19px  dialog title
+//   text-cardtitle 22px  H2 SectionCard title
+//   text-display 25px · text-section 27px · text-stat 32px
+//   text-bignum  34px  H1 page title / hero stat · text-h2 28px page-scale only
 //
 // ─── RULE 3: WEIGHT IS MONOTONIC WITH RANK ───────────────────────────
 //
@@ -127,13 +127,13 @@ export const TYPE = {
 // eyebrow labels and micro-indices stay <span>) — using <h4>/<h5>/<h6> on
 // those would be incorrect HTML semantics, not more "hierarchical".
 //
-//   H1  .mx-section-header__title  32px bold   <h1>  ModuleHeader's page title (one per route)
-//   H2  HEADING.h2                 21px bold   <h2>  SectionCard's title; a full-page empty/onboarding state's own heading
-//   H3  TYPE.title                 17px bold   <h3>  a titled sub-card or list item nested inside a SectionCard body
-//        ── body floor: 14px ── every sentence sits at or above this line
-//   H4  HEADING.h4                 11px semibold, uppercase  (not a heading tag) data-table column headers (<th>)
-//   H5  TYPE.label                 11px semibold, uppercase  (not a heading tag) eyebrow labels above a title/field group
-//   H6  TYPE.microLabel            10px mono, uppercase      (not a heading tag) micro-index strip labels ("Spend"/"Results")
+//   H1  .mx-section-header__title  34px bold   <h1>  ModuleHeader's page title (one per route)
+//   H2  HEADING.h2                 22px bold   <h2>  SectionCard's title; a full-page empty/onboarding state's own heading
+//   H3  TYPE.title                 18px bold   <h3>  a titled sub-card or list item nested inside a SectionCard body
+//        ── body floor: 15px ── every sentence sits at or above this line
+//   H4  HEADING.h4                 12px semibold, uppercase  (not a heading tag) data-table column headers (<th>)
+//   H5  TYPE.label                 12px semibold, uppercase  (not a heading tag) eyebrow labels above a title/field group
+//   H6  TYPE.microLabel            11px uppercase            (not a heading tag) micro-index strip labels ("Spend"/"Results")
 //
 // H4 and H5 share a size deliberately: both are chrome labels, and they are
 // never siblings — one heads a table column, the other an eyebrow above a
@@ -143,8 +143,16 @@ export const HEADING = {
   h1: "text-bignum font-h1 font-bold text-foreground leading-none text-balance",
   /** SectionCard's own title, and any full-page empty/onboarding state's
    *  heading that sits directly under a route's H1 (ModuleHeader) — the
-   *  first real content heading on the page besides the H1 itself. */
-  h2: "text-h2 font-h2 font-bold text-foreground leading-tight text-balance",
+   *  first real content heading on the page besides the H1 itself.
+   *
+   *  Size is text-cardtitle (22px), NOT text-h2 (28px). It briefly shipped
+   *  as text-h2 and every module header on a route rendered one step under
+   *  the page title itself — five or six 28px statements per screen, each
+   *  louder than the data it framed. A section header orients; the page
+   *  title (34px) states; the data leads. 22px keeps the full Outfit-bold
+   *  authority while sitting clearly under the H1 and clearly over card
+   *  titles (18px). text-h2 remains for genuine page-scale headings. */
+  h2: "text-cardtitle font-h2 font-bold text-foreground leading-tight text-balance",
   /** A card or panel title inside a section. */
   h3: "text-h3 font-h3 font-bold text-foreground leading-snug text-balance",
   /** A group header inside a card — above a cluster of rows or fields. */

@@ -30,7 +30,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
   return (
     <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2.5">
       <div className="text-micro uppercase text-muted-foreground/75">{label}</div>
-      <div className="text-base font-bold tabular-nums leading-tight mt-0.5 text-foreground">{value}</div>
+      <div className="text-callout font-bold tabular-nums leading-tight mt-0.5 text-foreground">{value}</div>
       {sub && <div className="text-caption text-muted-foreground/75 leading-snug mt-0.5">{sub}</div>}
     </div>
   );
