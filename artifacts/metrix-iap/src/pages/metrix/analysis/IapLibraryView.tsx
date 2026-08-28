@@ -1040,21 +1040,21 @@ export function IapLibraryView() {
                               </div>
                               <div className="flex items-center gap-3 tabular-nums">
                                 <div>
-                                  <div className="text-micro uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">Spend</div>
+                                  <div className={cn(TYPE.microLabel, "leading-none mb-0.5")}>Spend</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtUSD(f.spend, 0)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-micro uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">Results</div>
+                                  <div className={cn(TYPE.microLabel, "leading-none mb-0.5")}>Results</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtNum(f.results)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-micro uppercase tracking-widest text-muted-foreground/75 leading-none mb-0.5">CPA</div>
+                                  <div className={cn(TYPE.microLabel, "leading-none mb-0.5")}>CPA</div>
                                   <div className="text-caption font-semibold text-foreground/80">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
                                 </div>
                               </div>
                               {f.top && (
                                 <div className="mt-2 pt-2 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-micro uppercase tracking-widest text-muted-foreground/75">Best read</span>
+                                  <span className={cn(TYPE.microLabel)}>Best read</span>
                                   <VariableChip code={f.top.variableId} showCode={false} className="opacity-80 scale-95 border-border/30" />
                                   {f.top.cpa != null && (
                                     <span className="text-label tabular-nums text-muted-foreground/75">{fmtUSD(f.top.cpa)} CPA</span>
