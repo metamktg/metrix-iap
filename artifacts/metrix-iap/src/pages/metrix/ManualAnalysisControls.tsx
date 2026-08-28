@@ -36,6 +36,7 @@ import { guessedCreativeImports } from "./manualImportUtils";
 import { ImportConfidenceReport } from "./ImportConfidenceReport";
 import { InfoTooltip, DetailReveal, DenseText } from "./shared";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { ActionSlider } from "@/components/widgets/ActionSlider";
 import { CsvWarningsPanel } from "@/components/analysis/CsvWarningsPanel";
 import {
   AlertDialog,
@@ -1167,6 +1168,41 @@ export function AnalysisControls({
 
   const priorRuns = (runsData?.runs ?? []).filter((r) => r.status === "success");
 
+  // Would pressing this replace rows that already exist?
+  //
+  // Only a prior SUCCESSFUL run can have left rows behind — a failed or
+  // still-running one has nothing to supersede — so that is the test.
+  //
+  // What this deliberately does NOT do is claim to know the exact overlap.
+  // The run's window is anchored server-side to the latest date found in the
+  // data, not to wall-clock time, so the client cannot compute which dates
+  // the next run will cover without guessing. Guessing here would put a
+  // fabricated range in front of a destructive action, which is worse than
+  // saying less. So the sentence states the mechanism ("any dates this run
+  // covers") and then names the one thing that IS known and counted: what
+  // the last successful run actually covered.
+  // [0] is the most recent: listAnalysisRuns orders by started_at DESC.
+  // If that ordering ever changes this sentence starts naming the OLDEST run
+  // while calling it the last one, so it is worth stating rather than
+  // assuming.
+  const lastSuccess = priorRuns[0] ?? null;
+  const runReplacesData = priorRuns.length > 0;
+  const replaceConsequence = (() => {
+    if (!lastSuccess) return "";
+    const rows = lastSuccess.rows_ingested;
+    const scope =
+      lastSuccess.date_start && lastSuccess.date_end
+        ? `${lastSuccess.date_start} \u2192 ${lastSuccess.date_end}`
+        : null;
+    const covered =
+      scope && rows != null
+        ? `The last successful run covered ${scope} (${rows.toLocaleString()} rows).`
+        : scope
+          ? `The last successful run covered ${scope}.`
+          : "The last successful run did not record its window.";
+    return `Replaces existing rows for any dates this run covers. ${covered}`;
+  })();
+
   // Grouped so both the wizard (always inline) and the Command Center
   // (collapsed behind DetailReveal, see `detailsOpen`) render the exact
   // same date-range grid + pre-run warnings — no duplicated markup.
@@ -1341,16 +1377,40 @@ export function AnalysisControls({
         ) : (
           <span className="text-label text-muted-foreground/75">No analysis has been run yet.</span>
         )}
-        <RunAnalysisBtn
-          onClick={() => handleRun()}
-          disabled={
-            isRunning ||
-            startMutation.isPending ||
-            missingRequiredCsv ||
-            (hasRequiredMissing && !forceRunAcknowledged)
-          }
-          warning={hasRequiredMissing && forceRunAcknowledged}
-        >
+{runReplacesData ? (
+          // A RE-RUN is destructive by design: ingestion is an idempotent
+          // rebuild, so each rollup table is cleared for the run's window
+          // immediately before its insert. Re-running replaces the rows that
+          // were there. A plain button one click from that is the wrong
+          // affordance — so a re-run takes a deliberate gesture and states
+          // what it will replace, in counted, scoped terms.
+          //
+          // A FIRST run keeps the plain button. It replaces nothing, and a
+          // slider on an action with no consequence is theatre that devalues
+          // the ones that have one.
+          <ActionSlider
+            className="max-w-xs"
+            label="Re-run analysis"
+            tone="warning"
+            consequence={replaceConsequence}
+            busy={isRunning || startMutation.isPending}
+            disabled={
+              missingRequiredCsv || (hasRequiredMissing && !forceRunAcknowledged)
+            }
+            onConfirm={() => handleRun()}
+            data-testid="rerun-analysis-slider"
+          />
+        ) : (
+          <RunAnalysisBtn
+            onClick={() => handleRun()}
+            disabled={
+              isRunning ||
+              startMutation.isPending ||
+              missingRequiredCsv ||
+              (hasRequiredMissing && !forceRunAcknowledged)
+            }
+            warning={hasRequiredMissing && forceRunAcknowledged}
+          >
           {isRunning || startMutation.isPending ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Running…
@@ -1369,6 +1429,7 @@ export function AnalysisControls({
             </>
           )}
         </RunAnalysisBtn>
+        )}
       </div>
 
       <AlertDialog
