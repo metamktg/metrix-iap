@@ -3,6 +3,18 @@
 **Status:** live working record. Supersedes ad-hoc reface notes in this session.
 **Last reconciled:** 2026-08-28, against `main` at `08ce77a4`, after PR #150.
 
+### Backend capability added while Claude’s UI work is paused
+
+Meta Ad Summary imports now preserve exact Ad IDs plus exported `Image name` /
+`Video name` values. Metrix uses those asset names as the primary account-scoped
+creative identity: the first unambiguous filename match to a manually uploaded
+creative is persisted and reused across every ad ID carrying that asset name.
+Routine imports do not rescore confirmed mappings; the existing manual
+ad-mapping save is the audited correction path. Unresolved assets remain visible
+and never block performance ingestion. This is backend/data-contract work only:
+it does not restore, redesign, or make any claim about Claude’s missing Daily
+Trend visualization.
+
 ### Post-sync reconciliation — read before resuming the paused design session
 
 #### Instruction for Claude when resuming at 7:20 AM

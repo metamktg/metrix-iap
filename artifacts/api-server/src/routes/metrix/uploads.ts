@@ -28,6 +28,10 @@ import {
 } from "./shared";
 import { getCreativeFile, type CreativeFile } from "../../lib/creativeFileCache";
 import { resolveServedAsset, isInlineVideo } from "../../lib/assetContentType";
+import {
+  clearStickyCreativeAssetLinks,
+  correctCreativeAssetMappingsForAds,
+} from "../../lib/creativeAssetMappingService";
 // Staged-file bytes are served through lib/creativeFileCache, which owns
 // both the performance behaviour (TTL cache + in-flight coalescing) and the
 // tenancy rule that makes its key (account, import) rather than import
@@ -454,7 +458,7 @@ router.patch("/metrix/accounts/:accountId/manual-imports/:importId", requireAuth
   const importId = String(req.params["importId"]);
   const parsed = UpdateManualImportAdNamesBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: "ad_names must be an array of strings." });
+    res.status(400).json({ message: "ad_names and meta_ad_ids must be arrays of strings." });
     return;
   }
   const user = req.authUser!;
@@ -499,6 +503,13 @@ router.patch("/metrix/accounts/:accountId/manual-imports/:importId", requireAuth
       previousAdNames,
       parsed.data.ad_names,
     );
+    await correctCreativeAssetMappingsForAds({
+      accountId,
+      importId,
+      adNames: parsed.data.ad_names,
+      metaAdIds: parsed.data.meta_ad_ids,
+      correctedBy: user.email,
+    });
 
     res.json(
       UpdateManualImportAdNamesResponse.parse({
@@ -546,6 +557,7 @@ router.delete("/metrix/accounts/:accountId/manual-imports/:importId", requireAut
       return;
     }
     if (existing.data[0]!["kind"] === "creative_asset") {
+      await clearStickyCreativeAssetLinks(accountId, importId);
       const adNames: string[] = existing.data[0]!["ad_names"] ?? [];
       if (adNames.length > 0) {
         await syncCreativeAssetLinks(accountId, importId, "", adNames, []);

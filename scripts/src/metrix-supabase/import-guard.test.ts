@@ -382,6 +382,17 @@ describe("guard fires → caller exits(1) integration", () => {
 // a successful strategy run with no surviving output at all.
 
 describe("managedDeleteSql", () => {
+  it("keeps sticky creative identity tables outside destructive importer ownership", () => {
+    expect(ACCOUNT_SCOPED_TABLES).not.toContain("creative_asset_mappings");
+    expect(ACCOUNT_SCOPED_TABLES).not.toContain("ad_instances");
+
+    const here = dirname(fileURLToPath(import.meta.url));
+    const schema = readFileSync(join(here, "schema.sql"), "utf8");
+    const rlsBlock = schema.match(/importer_tables\s+text\[\]\s*:=\s*array\[([\s\S]*?)\]/i)?.[1] ?? "";
+    expect(rlsBlock).toContain("'creative_asset_mappings'");
+    expect(rlsBlock).toContain("'ad_instances'");
+  });
+
   it("narrows the delete to imported rows on every generated-output table", () => {
     for (const table of GENERATED_OUTPUT_TABLES) {
       expect(managedDeleteSql(table)).toBe(
