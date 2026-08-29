@@ -290,6 +290,38 @@ property deliberately, never `transform`, which would clobber Radix's
 translate centering. Browser-verified settled values via probe
 (0.965 / brightness 0.72). The file's hand-built dialog layering itself
 stays — the recede is what makes it read as depth.
+**Wave-7 closures (2026-08-29) — the mapping table is now fully
+dispositioned.** `list-stack` SHIPPED as the `ListStack` widget (a pile,
+not an accordion: overflow items stack behind a face card whose edge
+strips show the real depth — one hidden item shows one strip, two or
+more show two — and fan out in place with the staggered arrival;
+restack unmounts synchronously so "hidden" items are never findable in
+the DOM). Wired where piling is honest: TaskTray's My Tray keeps the
+first three items fully visible/actionable and piles the rest ("N more
+queued"), and History becomes a pile of settled items (face keeps the
+literal `History (N)` text node the tests match). ActionQueueView's
+PENDING list deliberately does NOT pile — every pending card is
+unprocessed signal, and signals never fold (the run-history rule); it
+got the honest deltas instead: the L2 drawer now arrives on
+`RevealPanel` (was a hard mount) and cards stagger in on tab entry.
+Departure on approve/dismiss stays instant by design — a delayed exit
+would leave a decided card lingering in the pending list.
+`layered-progressive-disclosure` on LoopCommandChain re-audited as
+substantially present: the stage rail is layer one and the per-stage
+CommandHub arrives via `RevealPanel` (the wave-1 "Command Hub arrival"
+note was this row — recorded against the component name so the table
+row no longer reads as open). `expand-details` re-audited as
+substantially present on both named surfaces: SignalCards carries
+per-card `DetailReveal` evidence plus the Summary/Detailed toggle, and
+FindingsView clamps with `DenseText`/`deriveLabel` behind folds.
+**Function-mismatch, deliberately not applied:**
+`collection-grid-disclosure` on CreativeLibraryView — CreativeCard's
+click-anywhere→expand-dialog contract is shared across five surfaces,
+the grid's rows ARE the members (one card per physical asset format),
+and an in-cell growth would shrink asset visuals on the one surface
+whose function is showing them; the dialog is the disclosure layer for
+assets. ConceptFamilyView remains the reference's true port on the
+concept side.
 
 | Reference | Metrix surface | Why this one | Data it must surface |
 |---|---|---|---|
@@ -429,6 +461,52 @@ collapses. Then `lib/motion` across the surfaces that animate by hand.
 
 **Exit:** `ui-inventory` MOTION ≥ 60% on panel/page; a browser pass at 390 /
 768 / 1024 / 1440 with the sidebar both states.
+
+**Instrument fixed, honest baseline set (2026-08-29):** the MOTION
+detector counted only direct `lib/motion`/`framer-motion` imports, so a
+page composing `RevealPanel`/`DisclosureStack`/`ListStack` — motion
+delivered through the one signature, which is the architecture the
+system wants — read as motion-absent (page sat at a false 3%). The
+detector now also counts composition of the motion-carrying widgets
+(approximation named in the check's header: widget names matched
+anywhere in source). Honest state after the fix alone: page 15%,
+panel 17% — the gap was real, not an artifact.
+
+**Motion half executed at the primitive (2026-08-29, wave 8).**
+`SectionCard`'s body was a hard mount (`{bodyVisible && …}`) — it now
+arrives and leaves on `RevealPanel`, which puts the one reveal
+signature on every collapsible module section of every page in a single
+wiring (the `cn()`-fix class of lever; `initial={false}` means a page
+that mounts open renders instantly — only the user's own
+expand/collapse animates). Browser-verified: collapse unmounts after
+the exit (content count 0), expand animates height (94px mid-flight →
+115px settled on Account Totals). Two hand-rolled floating surfaces
+that had missed the popover pass because they are not Radix also got
+their arrivals: `KpiMetricDropdown` (fade + settle from its anchor,
+DUR_FAST) and `DeepDivePanel` (the drawer settles in 32px from its own
+edge; drill/crumb level-swaps arrive keyed on the module id; close
+stays an instant unmount — the app's exit economy, and the
+Escape-close tests assert synchronous absence). Detector composition
+names extended to `SectionCard`, `LayeredDisclosure`,
+`FilterDisclosure` (all genuinely animated composites; the check's
+header names the presence-signal limit this creates — it cannot find a
+page that ALSO hand-rolls a duration; that residual gate is named
+there, not built). **Current honest numbers: page 63% — the ≥ 60% page
+exit is met. Panel 31% — the panel half of the exit criterion is
+REVISED, not chased:** the audited remainder is chart-hosting and
+progress panels (`BreakdownExplorer`, `GenerationControls`) whose
+motion honestly lives in recharts mark animation and CSS meter fills,
+plus small info panels whose conditionals are data-presence, not
+disclosures — forcing them to 60% would be decoration.
+
+**The four-width pass ran clean (2026-08-29) — Phase 5 is complete.**
+390 / 768 / 1024 / 1440, sidebar expanded AND collapsed, across the six
+spine views (account overview, performance, IAP library, strategy,
+creative library, action queue): 48/48 combinations pass — no view
+scrolls the page body horizontally, no element wider than the viewport.
+Re-runnable: `probe-four-widths.mjs` pattern (route-mocked seed
+fixture, `metrix_sidebar_collapsed` driven through localStorage,
+offenders listed by class and width when a combination fails).
 
 ### Phase 6 — the remaining ports
 

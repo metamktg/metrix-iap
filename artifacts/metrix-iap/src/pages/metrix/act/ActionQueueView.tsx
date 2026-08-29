@@ -5,7 +5,10 @@
 // full rationale and recommended_action.
 
 import { useState, useMemo, useCallback } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { TabRail } from "@/components/nav/TabRail";
+import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
+import { DUR_MED, EASE, motionOr, staggerDelay } from "@/lib/motion";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -238,12 +241,13 @@ function QueueCard({
         )}
       </button>
 
-      {/* L2 inline drawer */}
-      {expanded && !isDismissed && (
+      {/* L2 inline drawer — arrives with the one reveal signature instead
+          of hard-mounting. */}
+      <RevealPanel open={expanded && !isDismissed}>
         <div className="px-4 pb-4">
           <InlineDrawer card={card} onClose={() => setExpanded(false)} />
         </div>
-      )}
+      </RevealPanel>
 
       {/* Action controls */}
       {!isDismissed && !isApproved && (
@@ -337,6 +341,7 @@ function EmptyQueue({ reason }: { reason: "no-loop" | "all-done" }) {
 
 export function ActionQueueView() {
   const seed = useMetrixSeed();
+  const reduced = useReducedMotion();
   const adAccountId = useScopedAdAccountId();
   useDecisions(); // reactive to store changes
   const account = getAdAccount(seed, adAccountId);
@@ -412,12 +417,23 @@ export function ActionQueueView() {
           <EmptyQueue reason="all-done" />
         ) : (
           <div className="space-y-3">
-            {visibleCards.map((card) => (
-              <QueueCard
+            {/* Staggered arrival on tab entry (cards are disjoint across
+                tabs, so a tab switch remounts and replays it). Departure on
+                approve/dismiss stays instant by design: the card's landing
+                tab counts up in the same paint, and a delayed unmount would
+                leave a decided card lingering in the pending list. */}
+            {visibleCards.map((card, i) => (
+              <motion.div
                 key={card.id}
-                card={card}
-                adAccountId={adAccountId ?? ""}
-              />
+                initial={reduced ? false : { opacity: 0, y: -6, filter: "blur(4px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{
+                  ...motionOr(reduced, { duration: DUR_MED, ease: EASE }),
+                  delay: reduced ? 0 : staggerDelay(i, visibleCards.length),
+                }}
+              >
+                <QueueCard card={card} adAccountId={adAccountId ?? ""} />
+              </motion.div>
             ))}
           </div>
         )}

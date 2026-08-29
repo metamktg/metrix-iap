@@ -397,6 +397,45 @@ describe("TaskTray: My Tray section", () => {
     const section = getTraySection();
     expect(within(section).queryByText(/history \(/i)).toBeNull();
   });
+
+  // ── The list-stack pile: the first three open items stay visible and
+  // actionable; the rest stack behind a count-labelled face card. ──────
+
+  it("piles open items past the third behind a '+N more queued' face", () => {
+    for (let i = 1; i <= 5; i++) {
+      addToTray("acct1", makeItem({ id: `c${i}`, title: `Action ${i}` }));
+    }
+    renderTray();
+    const section = getTraySection();
+    expect(within(section).getByText("Action 1")).toBeTruthy();
+    expect(within(section).getByText("Action 3")).toBeTruthy();
+    expect(within(section).queryByText("Action 4")).toBeNull();
+    const face = within(section).getByText("2 more queued");
+    fireEvent.click(face);
+    expect(within(section).getByText("Action 4")).toBeTruthy();
+    expect(within(section).getByText("Action 5")).toBeTruthy();
+  });
+
+  it("fanned-out items past the pile stay fully actionable", () => {
+    for (let i = 1; i <= 4; i++) {
+      addToTray("acct1", makeItem({ id: `c${i}`, title: `Action ${i}` }));
+    }
+    renderTray();
+    const section = getTraySection();
+    fireEvent.click(within(section).getByText("1 more queued"));
+    fireEvent.click(within(section).getByRole("button", { name: /archive "action 4"/i }));
+    expect(getOpenTrayItems("acct1")).toHaveLength(3);
+  });
+
+  it("shows no pile face for three or fewer open items", () => {
+    for (let i = 1; i <= 3; i++) {
+      addToTray("acct1", makeItem({ id: `c${i}`, title: `Action ${i}` }));
+    }
+    renderTray();
+    const section = getTraySection();
+    expect(within(section).queryByText(/more queued/)).toBeNull();
+    expect(within(section).getByText("Action 3")).toBeTruthy();
+  });
 });
 
 describe("TaskTray: minimised strip (closed state)", () => {
