@@ -79,7 +79,11 @@ export function DataSourceBadge({ table, className, collapsible = false }: DataS
   const isCollapsible = collapsible || isProd;
 
   return (
-    <div className={cn("inline-flex items-center gap-1.5 flex-wrap", className)}>
+    // data-provenance marks this as a DELIBERATE engineering annotation, not
+    // reader-facing copy. Without it, sweeps that hunt for raw identifiers
+    // leaking into the interface cannot tell this badge's table names from a
+    // genuine leak, and every module header reads as 15 false positives.
+    <div data-provenance="data-source" className={cn("inline-flex items-center gap-1.5 flex-wrap", className)}>
       <Database className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
       {!collapsed && tables.map(t => (
         <span

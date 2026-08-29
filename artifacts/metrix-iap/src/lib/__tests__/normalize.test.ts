@@ -255,10 +255,22 @@ describe("normalizeConfidence", () => {
     expect(c.label).toBe("High");
   });
 
-  it("passes through unknown strings as their own label", () => {
-    const c = normalizeConfidence("validation required");
-    expect(c.level).toBe("unknown");
-    expect(c.label).toBe("validation required");
+  it("keeps an unknown value's own words, in reader casing", () => {
+    // REVISED 2026-08-29. The claim is unchanged — an unrecognized value is
+    // real and must never be discarded — but the label now reaches the reader
+    // sentence-cased instead of verbatim. The defect this fixes: the seed
+    // carries `validation_required` ("the reading is not yet established"),
+    // and it rendered inside confidence badges on the MST and Creative DNA
+    // surfaces in raw snake_case.
+    const spaced = normalizeConfidence("validation required");
+    expect(spaced.level).toBe("unknown");
+    expect(spaced.label).toBe("Validation required");
+
+    const raw = normalizeConfidence("validation_required");
+    expect(raw.level).toBe("unknown");
+    expect(raw.label).toBe("Validation required");
+    // The words survive; only the casing and the underscore are presentation.
+    expect(raw.label.toLowerCase().replace(/ /g, "_")).toBe("validation_required");
   });
 
   it("handles empty", () => {

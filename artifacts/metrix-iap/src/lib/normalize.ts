@@ -355,7 +355,15 @@ export function normalizeConfidence(value: string | null | undefined): Normalize
       ? "positive"
       : "neutral";
 
-  const label = level === "unknown" && raw ? raw : LEVEL_LABEL[level];
+  // An unrecognized value is still a real value — never discard it — but it
+  // must not reach the reader in engineering casing. `validation_required`
+  // ("the reading is not yet established") is a real confidence state the
+  // seed carries, and it rendered verbatim inside confidence badges on the
+  // MST and Creative DNA surfaces. Humanize the token; keep the words.
+  const label =
+    level === "unknown" && raw
+      ? raw.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())
+      : LEVEL_LABEL[level];
   return { level, qualifier, polarity, label };
 }
 
