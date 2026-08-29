@@ -24,6 +24,9 @@ let _globalVisible = getInitialVisible();
 
 export function DataSourceBadgeToggle() {
   const [on, setOn] = useState(_globalVisible);
+  // Nothing to toggle in production — the badges do not render there. A live
+  // control for an invisible feature is its own small lie.
+  const hidden = import.meta.env.PROD;
 
   const toggle = () => {
     _globalVisible = !on;
@@ -31,6 +34,8 @@ export function DataSourceBadgeToggle() {
     setOn(_globalVisible);
     window.dispatchEvent(new CustomEvent(EVENT_KEY, { detail: _globalVisible }));
   };
+
+  if (hidden) return null;
 
   return (
     <button
@@ -71,6 +76,20 @@ export function DataSourceBadge({ table, className, collapsible = false }: DataS
     window.addEventListener(EVENT_KEY, handler);
     return () => window.removeEventListener(EVENT_KEY, handler);
   }, []);
+
+  // PRODUCTION RENDERS NOTHING. These badges name real Postgres tables —
+  // 28 distinct ones across 30 surfaces, `user_sessions` and `app_config`
+  // among them. Shipping that to every signed-in browser publishes the
+  // schema: this deployment's own security model (see
+  // docs/security/METRIX_RLS_and_Service_Role_Security.md) is that PostgREST
+  // exposes `public` tables to the browser-embedded anon key, with RLS and
+  // revoked grants as what stops a read. Table names are exactly the
+  // reconnaissance needed to aim at that surface, and "collapsed by default"
+  // was never a control — the chip expands on click.
+  //
+  // It stays fully available in development, where knowing which table feeds
+  // a panel is useful and the reader is the person building it.
+  if (isProd) return null;
 
   // When global toggle is off, hide entirely
   if (!globalVisible) return null;
