@@ -22,6 +22,31 @@ the currently rendered Daily Trend module as proof that Claude's intended work
 is present. Do not replay the paused working tree wholesale: recover the
 specific intended changes after inspecting both sides of the sync.
 
+#### Theme direction confirmed while Claude is paused
+
+The last Claude commit/push changed the site to a light theme. Keep that visual
+direction available: the user likes it and described it as “really nice to
+see.” The supplied light-theme screenshots are the reference for this state.
+
+The light theme still needs a focused legibility pass, especially text contrast
+and typography. Improve those details without discarding the overall light
+theme direction.
+
+Add a clearly evident Dark/Light theme control inside the user's top-right
+profile dropdown. Requirements:
+
+- The site launches in dark theme by default.
+- Light theme is used only after the user explicitly switches to it.
+- Persist the user's explicit choice so later visits keep that selection.
+- The control must be immediately understandable and visibly show the current
+  theme; do not hide it behind an ambiguous icon-only action.
+- Apply the selected theme consistently to both authentication screens and the
+  signed-in application.
+
+Do not implement or reconcile this requirement from the Replit side while
+Claude's usage-paused session is active; Claude should incorporate it after
+first completing the pre-sync comparison and recovery described above.
+
 The Claude design session paused while a Replit-side change was still in flight,
 then its branch was merged and `main` advanced once more. The sync boundary has
 now been inspected against repository history and the current source.
