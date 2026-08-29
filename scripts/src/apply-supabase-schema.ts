@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { resolveSupabaseDbUrl } from "./lib/supabase-db-connection.js";
+import { clearScreenDown } from "node:readline";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_PATH = join(__dirname, "metrix-supabase/schema.sql");
@@ -69,3 +70,16 @@ try {
 } finally {
   await client.end();
 }
+\\
+
+
+git pull
+git pull
+
+
+
+/c
+clear
+ckear
+clearScreenDown3
+
