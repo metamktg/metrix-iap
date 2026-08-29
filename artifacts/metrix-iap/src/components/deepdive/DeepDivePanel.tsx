@@ -9,8 +9,10 @@
 // popovers). Colors come from DS tokens / --mx-* aliases exclusively.
 
 import { useEffect, useRef } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { DUR_FAST, DUR_MED, EASE, motionOr } from "@/lib/motion";
 import { TYPE } from "@/pages/metrix/typography";
 import { useDeepDive } from "@/contexts/DeepDiveContext";
 import { CrossLink } from "@/pages/metrix/shared";
@@ -237,6 +239,7 @@ function Block({ block, onDrill }: { block: DeepDiveBlock; onDrill: (row: DeepDi
 export function DeepDivePanel() {
   const { stack, push, pop, jumpTo, close } = useDeepDive();
   const panelRef = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
   const open = stack.length > 0;
   const current = stack[stack.length - 1];
 
@@ -263,12 +266,19 @@ export function DeepDivePanel() {
   };
 
   return (
-    <div
+    // The drawer settles in from its own edge (32px + fade), so its arrival
+    // says where it lives. Close stays an instant unmount — the exit economy
+    // everywhere else here (an element leaving is not information), and the
+    // Escape-close tests assert synchronous absence.
+    <motion.div
       ref={panelRef}
       tabIndex={-1}
       role="dialog"
       aria-label={`Deep dive · ${current.title}`}
       data-testid="deep-dive-panel"
+      initial={reduced ? false : { x: 32, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={motionOr(reduced, { duration: DUR_MED, ease: EASE })}
       className="fixed inset-y-0 right-0 z-50 w-full sm:w-[560px] max-w-[760px] flex flex-col bg-surface-deep border-l border-[var(--mx-edge-strong)] shadow-[0_0_60px_hsl(0 0% 0% / 0.5)] focus-visible:outline-none"
     >
       {/* ── Header: breadcrumbs + controls ─────────────────────────── */}
@@ -330,11 +340,20 @@ export function DeepDivePanel() {
       </div>
 
       {/* ── Blocks ─────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+      {/* Keyed on the module id: a drill or a crumb-jump swaps levels, and
+          the new level's content arrives with a short settle so descent is
+          legible. The header stays put — the trail is the fixed reference. */}
+      <motion.div
+        key={current.id}
+        initial={reduced ? false : { x: 12, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={motionOr(reduced, { duration: DUR_FAST, ease: EASE })}
+        className="flex-1 overflow-y-auto px-4 py-3 space-y-4"
+      >
         {current.blocks.map((b, i) => (
           <Block key={i} block={b} onDrill={onDrill} />
         ))}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

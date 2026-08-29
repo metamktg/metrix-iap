@@ -11,11 +11,13 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, ChevronDown, Info } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
 import { TYPE } from "@/pages/metrix/typography";
 import { metricById, type MetricDef } from "@/lib/data/metricsCatalog";
+import { DUR_FAST, EASE, motionOr } from "@/lib/motion";
 import { useKpiTileMetrics } from "@/hooks/useKpiTileMetrics";
 
 // ─── Metric dropdown (categorised, value-annotated) ───────────────────
@@ -31,6 +33,7 @@ interface KpiMetricDropdownProps {
 
 function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: KpiMetricDropdownProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   // Anchor to the trigger in VIEWPORT coordinates. The dropdown is rendered
@@ -99,10 +102,18 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
   // it was invisible everywhere. Rendering into document.body is what takes
   // it out of that clipping context; nothing else does.
   const menu = (
-    <div
+    // Arrives like every other floating layer in the app (Radix popovers get
+    // this from their data-state classes; this menu is hand-portalled, so it
+    // says so itself): a short fade + settle from the anchor. No exit — an
+    // outside-click dismissal unmounts instantly, which is the dropdown
+    // convention everywhere else here.
+    <motion.div
       ref={ref}
       data-testid="kpi-metric-dropdown"
-      style={{ position: "fixed", top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? "visible" : "hidden" }}
+      initial={reduced ? false : { opacity: 0, scale: 0.98, y: -4 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={motionOr(reduced, { duration: DUR_FAST, ease: EASE })}
+      style={{ position: "fixed", top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? "visible" : "hidden", transformOrigin: "top left" }}
       className="z-50 w-56 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm elevation-floating py-1 overflow-hidden"
     >
       <div className="px-2.5 py-1 text-micro uppercase text-muted-foreground/75">
@@ -119,7 +130,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
           {eventMetrics.map((m) => <Row key={m.id} m={m} />)}
         </>
       )}
-    </div>
+    </motion.div>
   );
 
   return createPortal(menu, document.body);

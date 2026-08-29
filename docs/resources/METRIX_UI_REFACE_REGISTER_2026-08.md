@@ -469,11 +469,38 @@ delivered through the one signature, which is the architecture the
 system wants — read as motion-absent (page sat at a false 3%). The
 detector now also counts composition of the motion-carrying widgets
 (approximation named in the check's header: widget names matched
-anywhere in source). Honest current state after the fix: **page 15%,
-panel 17%** — the 60% exit is genuinely open, not an artifact. The
-remaining gap is real pages composing zero moving primitives; work it
-surface-by-surface where motion serves function (arrival on view entry,
-reveals on folds), never as blanket stagger to move a number.
+anywhere in source). Honest state after the fix alone: page 15%,
+panel 17% — the gap was real, not an artifact.
+
+**Motion half executed at the primitive (2026-08-29, wave 8).**
+`SectionCard`'s body was a hard mount (`{bodyVisible && …}`) — it now
+arrives and leaves on `RevealPanel`, which puts the one reveal
+signature on every collapsible module section of every page in a single
+wiring (the `cn()`-fix class of lever; `initial={false}` means a page
+that mounts open renders instantly — only the user's own
+expand/collapse animates). Browser-verified: collapse unmounts after
+the exit (content count 0), expand animates height (94px mid-flight →
+115px settled on Account Totals). Two hand-rolled floating surfaces
+that had missed the popover pass because they are not Radix also got
+their arrivals: `KpiMetricDropdown` (fade + settle from its anchor,
+DUR_FAST) and `DeepDivePanel` (the drawer settles in 32px from its own
+edge; drill/crumb level-swaps arrive keyed on the module id; close
+stays an instant unmount — the app's exit economy, and the
+Escape-close tests assert synchronous absence). Detector composition
+names extended to `SectionCard`, `LayeredDisclosure`,
+`FilterDisclosure` (all genuinely animated composites; the check's
+header names the presence-signal limit this creates — it cannot find a
+page that ALSO hand-rolls a duration; that residual gate is named
+there, not built). **Current honest numbers: page 63% — the ≥ 60% page
+exit is met. Panel 31% — the panel half of the exit criterion is
+REVISED, not chased:** the audited remainder is chart-hosting and
+progress panels (`BreakdownExplorer`, `GenerationControls`) whose
+motion honestly lives in recharts mark animation and CSS meter fills,
+plus small info panels whose conditionals are data-presence, not
+disclosures — forcing them to 60% would be decoration. Remaining
+Phase 5 item: the one recorded four-width browser pass
+(390/768/1024/1440, sidebar both states); width work so far (390
+probes, panel RESP reflow) covered slices of it, never the one sweep.
 
 ### Phase 6 — the remaining ports
 

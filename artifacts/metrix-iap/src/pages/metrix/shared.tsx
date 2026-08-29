@@ -86,6 +86,7 @@ import { normalizeConfidence } from "@/lib/normalize";
 import { TYPE, HEADING } from "./typography";
 import type { AdAccount } from "@/lib/data/seedTypes";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
 
 // ─── Section info icon ────────────────────────────────────────────────
 // Small ⓘ icon with a hover tooltip — used in SectionCard right slots
@@ -1922,13 +1923,16 @@ export function SectionCard({
           {table && <DataSourceBadge table={table} collapsible />}
         </div>
       </div>
-      {bodyVisible && (
-        // The four border-*-[0px] classes that used to sit here generated
-        // four rules that each set a border to zero it never had.
+      {/* The body arrives and leaves with the one reveal signature.
+          RevealPanel's AnimatePresence has initial={false}, so a section
+          that mounts open (the default) renders instantly — only a user's
+          own expand/collapse animates. This one wiring is what puts the
+          motion system on every module section of every page. */}
+      <RevealPanel open={bodyVisible}>
         <div id={bodyId} className="relative p-3">
           {children}
         </div>
-      )}
+      </RevealPanel>
     </section>
   );
 }
