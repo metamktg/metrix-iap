@@ -64,6 +64,16 @@ step_claude_setup() {
     ok "claude-setup installed"
   fi
 
+  # `claude-setup init` is DESTRUCTIVE and not idempotent: it rewrites
+  # settings.json, resetting "hooks" to {} and dropping "enabledPlugins"
+  # entirely. Re-running it silently removes the task-observer SessionStart
+  # hook installed below and claude-mem's plugin registration. So run it only
+  # to initialize a config that does not exist yet.
+  if [ -s "$CLAUDE_DIR/settings.json" ]; then
+    ok "claude-setup: $CLAUDE_DIR/settings.json already exists -- skipping init (it would reset hooks/enabledPlugins)"
+    return 0
+  fi
+
   # --no-interactive is a GLOBAL option and must precede the subcommand.
   # `init --quick` alone still launches the wizard, which then dies with
   # "ExitPromptError: User force closed the prompt" under any non-TTY stdin.
@@ -138,6 +148,54 @@ step_task_observer() {
   else
     ok "task-observer session-start instruction already in $CLAUDE_MD"
   fi
+
+  # A CLAUDE.md line is only an instruction the model may or may not act on --
+  # the skill's own SKILL.md says "description-level matching alone is not
+  # enforceable" and points at a "Recommended Activation Setup" section that
+  # does not exist in the shipped package. The harness-executed SessionStart
+  # hook below is the deterministic trigger.
+  local HOOK_DIR="$CLAUDE_DIR/hooks"
+  local HOOK_SH="$HOOK_DIR/task-observer-session-start.sh"
+  mkdir -p "$HOOK_DIR"
+  cat > "$HOOK_SH" <<'HOOK_EOF'
+#!/usr/bin/env bash
+# SessionStart hook: run by the harness every session, regardless of whether the
+# model judges the task-observer description relevant. Whatever this prints as
+# hookSpecificOutput.additionalContext is injected into the model's context.
+cat <<'JSON'
+{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"Session-start directive: invoke the task-observer skill now, before any other substantive tool use, so skill-improvement observations are captured for this session."}}
+JSON
+HOOK_EOF
+  chmod +x "$HOOK_SH"
+
+  local SETTINGS="$CLAUDE_DIR/settings.json"
+  [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
+  # Merge, never overwrite: settings.json holds permissions and enabled plugins
+  # that must survive. node is already a hard requirement of this script.
+  node -e '
+    const fs = require("fs"), p = process.argv[1], cmd = process.argv[2];
+    let d = {};
+    try { d = JSON.parse(fs.readFileSync(p, "utf8") || "{}"); }
+    catch (e) { process.exit(3); }
+    d.hooks = d.hooks || {};
+    d.hooks.SessionStart = d.hooks.SessionStart || [];
+    const already = d.hooks.SessionStart.some(
+      e => (e.hooks || []).some(h => h.command === cmd));
+    if (!already) {
+      d.hooks.SessionStart.push({ hooks: [{
+        type: "command", command: cmd, timeout: 10,
+        statusMessage: "Starting task-observer" }] });
+      fs.writeFileSync(p, JSON.stringify(d, null, 2));
+    }
+    process.exit(already ? 2 : 0);
+  ' "$SETTINGS" "$HOOK_SH"
+  local rc=$?
+  case "$rc" in
+    0) ok "Registered task-observer SessionStart hook in $SETTINGS" ;;
+    2) ok "task-observer SessionStart hook already registered in $SETTINGS" ;;
+    3) warn "$SETTINGS is not valid JSON -- left untouched; the CLAUDE.md instruction still applies" ;;
+    *) warn "could not register the SessionStart hook -- the CLAUDE.md instruction still applies" ;;
+  esac
 }
 
 # ---------------------------------------------------------------------------
