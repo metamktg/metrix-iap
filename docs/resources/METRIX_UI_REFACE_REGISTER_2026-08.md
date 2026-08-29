@@ -290,6 +290,38 @@ property deliberately, never `transform`, which would clobber Radix's
 translate centering. Browser-verified settled values via probe
 (0.965 / brightness 0.72). The file's hand-built dialog layering itself
 stays — the recede is what makes it read as depth.
+**Wave-7 closures (2026-08-29) — the mapping table is now fully
+dispositioned.** `list-stack` SHIPPED as the `ListStack` widget (a pile,
+not an accordion: overflow items stack behind a face card whose edge
+strips show the real depth — one hidden item shows one strip, two or
+more show two — and fan out in place with the staggered arrival;
+restack unmounts synchronously so "hidden" items are never findable in
+the DOM). Wired where piling is honest: TaskTray's My Tray keeps the
+first three items fully visible/actionable and piles the rest ("N more
+queued"), and History becomes a pile of settled items (face keeps the
+literal `History (N)` text node the tests match). ActionQueueView's
+PENDING list deliberately does NOT pile — every pending card is
+unprocessed signal, and signals never fold (the run-history rule); it
+got the honest deltas instead: the L2 drawer now arrives on
+`RevealPanel` (was a hard mount) and cards stagger in on tab entry.
+Departure on approve/dismiss stays instant by design — a delayed exit
+would leave a decided card lingering in the pending list.
+`layered-progressive-disclosure` on LoopCommandChain re-audited as
+substantially present: the stage rail is layer one and the per-stage
+CommandHub arrives via `RevealPanel` (the wave-1 "Command Hub arrival"
+note was this row — recorded against the component name so the table
+row no longer reads as open). `expand-details` re-audited as
+substantially present on both named surfaces: SignalCards carries
+per-card `DetailReveal` evidence plus the Summary/Detailed toggle, and
+FindingsView clamps with `DenseText`/`deriveLabel` behind folds.
+**Function-mismatch, deliberately not applied:**
+`collection-grid-disclosure` on CreativeLibraryView — CreativeCard's
+click-anywhere→expand-dialog contract is shared across five surfaces,
+the grid's rows ARE the members (one card per physical asset format),
+and an in-cell growth would shrink asset visuals on the one surface
+whose function is showing them; the dialog is the disclosure layer for
+assets. ConceptFamilyView remains the reference's true port on the
+concept side.
 
 | Reference | Metrix surface | Why this one | Data it must surface |
 |---|---|---|---|

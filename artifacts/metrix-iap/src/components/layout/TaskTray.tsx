@@ -8,7 +8,7 @@ import { useLocation } from "wouter";
 import {
   X, ClipboardList, Sparkles, AlertCircle, FileText,
   ArrowRight, Zap, ChevronRight, Check, RotateCcw,
-  ChevronDown, ChevronUp, PlayCircle, Loader2,
+  PlayCircle, Loader2,
   CheckCircle2, XCircle, Upload, CalendarRange, UploadCloud,
   Archive,
 } from "lucide-react";
@@ -41,6 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@workspace/command-deck/components/ui/alert-dialog";
+import { ListStack } from "@/components/widgets/ListStack";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -605,7 +606,6 @@ export function TaskTray() {
   const { open, toggle, close } = useTaskTray();
   const { activeAdAccount, activeAdAccountId, selectedAccountType } = useAccount();
   const [, navigate] = useLocation();
-  const [showHistory, setShowHistory] = useState(false);
 
   // Persisted open width — restores the user's last resized size on reload
   // instead of always resetting to the 308px default.
@@ -803,27 +803,36 @@ export function TaskTray() {
               nudgeTo="/app/listen/recommendations"
             />
           ) : (
-            openItems.map((item) => (
-              <TrayTaskItem key={`${item.scopeId}::${item.id}`} item={item} />
-            ))
+            // The first three stay fully visible and actionable — the top of
+            // the queue IS "what do I do next". The rest pile behind a
+            // count-labelled face with the hidden cards' edges peeking out
+            // (list-stack), so a heavily-loaded tray stays a queue instead
+            // of a wall.
+            <ListStack
+              items={openItems}
+              visible={3}
+              itemKey={(item) => `${item.scopeId}::${item.id}`}
+              renderItem={(item) => <TrayTaskItem item={item} />}
+              faceLabel={(n) => `${n} more queued`}
+              className="space-y-1.5"
+              data-testid="tray-open-pile"
+            />
           )}
 
           {historyItems.length > 0 && (
             <div className="mt-1">
-              <button
-                onClick={() => setShowHistory((v) => !v)}
-                className="pressable flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/60 transition-colors px-0.5 py-0.5"
-              >
-                {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                History ({historyItems.length})
-              </button>
-              {showHistory && (
-                <div className="space-y-1.5 mt-1">
-                  {historyItems.map((item) => (
-                    <TrayTaskItem key={`${item.scopeId}::${item.id}`} item={item} />
-                  ))}
-                </div>
-              )}
+              {/* Settled items (done/archived) are the processed pile —
+                  exactly what the list-stack face is for. The face keeps the
+                  literal "History (N)" text as its single text node; fanning
+                  out and restacking toggle through it. */}
+              <ListStack
+                items={historyItems}
+                itemKey={(item) => `${item.scopeId}::${item.id}`}
+                renderItem={(item) => <TrayTaskItem item={item} />}
+                faceLabel={(n) => `History (${n})`}
+                className="space-y-1.5"
+                data-testid="tray-history-pile"
+              />
             </div>
           )}
           <TrayNavLink to="/app/listen/recommendations" label="Recommendations" icon={ClipboardList} />
