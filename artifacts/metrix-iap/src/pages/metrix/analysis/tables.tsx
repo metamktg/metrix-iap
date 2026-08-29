@@ -18,7 +18,7 @@ import { useMemo, useRef, useState } from "react";
 import { barScale, type BarScale } from "@/lib/bar-scale";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
-import { resolveVariableDescription } from "@/lib/variable-registry";
+import { resolveVariableDescription, variableFamilyLabel } from "@/lib/variable-registry";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -460,7 +460,7 @@ export function VariableTable({
           <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
           <div className="text-label text-muted-foreground/75 mt-0.5">{r.variable_id}</div>
         </Td>
-        <Td className="capitalize">{r.variable_family}</Td>
+        <Td>{variableFamilyLabel(r.variable_family)}</Td>
         <Td>{eventLabel(r["Result type"])}</Td>
         <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
         <Td right>{fmtNum(r.unique_ads)}</Td>
@@ -507,7 +507,7 @@ export function VariableTable({
               <div className="min-w-0 flex-1">
                 <div className={cn(TYPE.title, "leading-snug")}>{readableVariables(quickRow.variable_id)}</div>
                 <div className={cn(TYPE.caption, "mt-0.5")}>
-                  <span className="capitalize">{quickRow.variable_family}</span> · {quickRow.variable_id}
+                  <span>{variableFamilyLabel(quickRow.variable_family)}</span> · {quickRow.variable_id}
                 </div>
               </div>
               <button

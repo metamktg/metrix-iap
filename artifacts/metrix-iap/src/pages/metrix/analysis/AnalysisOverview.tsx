@@ -53,6 +53,7 @@ import type {
 } from "@/lib/data/seedTypes";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import type { SegmentId } from "@/lib/segment-analytics";
+import { variableFamilyLabel } from "@/lib/variable-registry";
 
 const SECTION = "Analysis · 03";
 
@@ -608,7 +609,7 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
           {sorted.map((r, i) => (
             <tr key={r.variable_id + i}>
               <td className="font-medium text-foreground/90 whitespace-nowrap">{readableVariables(r.variable_id)}</td>
-              <td className="text-muted-foreground/75 capitalize">{r.variable_family}</td>
+              <td className="text-muted-foreground/75">{variableFamilyLabel(r.variable_family)}</td>
               <td className="text-right tabular-nums text-foreground/85">{fmtUSD(r["Amount spent (USD)"], 0)}</td>
               <td className="text-right tabular-nums text-foreground/85">{fmtNum(r.Results)}</td>
               <td className="text-right tabular-nums text-foreground/85">{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</td>

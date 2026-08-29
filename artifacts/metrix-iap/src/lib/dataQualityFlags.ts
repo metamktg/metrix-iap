@@ -24,9 +24,31 @@ export function flagHeadline(f: DataQualityFlag): string {
   return f.kind === "attribution_window" ? "Attribution window" : f.kind.replace(/_/g, " ");
 }
 
+
+/**
+ * Removes a leading "<flag_id> (<severity>): " prefix from a flag note. Only
+ * strips a machine prefix — a snake_case token, optionally followed by a
+ * parenthesised single word, then a colon. Anything else is left untouched,
+ * because a sentence that happens to contain a colon is the analyst's.
+ */
+export function stripFlagIdPrefix(note: string): string {
+  const stripped = note.replace(/^[a-z][a-z0-9]*(?:_[a-z0-9]+)+\s*(?:\([^)]{1,20}\))?\s*:\s*/, "");
+  return stripped.trim() || note;
+}
+
 export function flagBody(f: DataQualityFlag): string {
-  const note = typeof f["note"] === "string" ? (f["note"] as string) : null;
-  if (note) return note;
+  // `detail` is the clean human sentence; `note` is a machine-composed string
+  // that prefixes the raw flag id and severity onto that same sentence
+  // ("zero_conversions (critical): Zero purchases and zero ..."). Rendering
+  // `note` printed the raw id a second time, directly under a headline
+  // already reading "zero conversions" and beside its own severity chip —
+  // three sayings of one thing, one of them in engineering casing. Prefer
+  // the clean sentence; fall back to `note` with that duplicated prefix
+  // stripped, never by rewriting the analyst's words after the colon.
+  const detail = typeof f["detail"] === "string" ? (f["detail"] as string).trim() : null;
+  if (detail) return detail;
+  const note = typeof f["note"] === "string" ? (f["note"] as string).trim() : null;
+  if (note) return stripFlagIdPrefix(note);
   const campaign = typeof f["campaign"] === "string" ? (f["campaign"] as string) : null;
   const spend = typeof f["spend"] === "number" ? (f["spend"] as number) : null;
   const parts = [campaign, spend != null ? `${fmtUSD(spend)} affected` : null].filter(Boolean);

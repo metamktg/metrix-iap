@@ -68,6 +68,32 @@ export const VARIABLE_FAMILIES: VariableFamily[] = [
 ];
 
 /**
+ * Reader-facing name for a `variable_family` value.
+ *
+ * WHY THIS EXISTS. The tables rendered the raw key with a CSS `capitalize`,
+ * which is enough for "hook" → "Hook" and nothing else. The analysis engine
+ * also emits `raw_token` — and that is NOT an error or an unclassified
+ * bucket: it means the row aggregates an ad-name TOKEN (a substring of
+ * `ad_name`) rather than a registry variable, which is why its impressions
+ * are 0 and its CTR is not computable. On every manual-import account, where
+ * nothing is mapped to the registry yet, EVERY variable row is one of these —
+ * so the whole Family column read "Raw_token", an engineering word for a real
+ * distinction the operator needs: this number came from the ad's name, not
+ * from a classified creative variable.
+ *
+ * Unknown families are humanized rather than dropped: a family the registry
+ * has never seen is still the truth about that row.
+ */
+export function variableFamilyLabel(family: string | null | undefined): string {
+  if (!family) return "Unassigned";
+  const key = family.trim().toLowerCase();
+  if (key === "raw_token") return "Ad-name token";
+  const known = VARIABLE_FAMILIES.find((f) => f.key === key || f.aliases.includes(key));
+  if (known) return known.label;
+  return key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+}
+
+/**
  * A family's value in a stack, looked up under its canonical key and every
  * alias. Returns null when the family is unset — never an empty string,
  * which a caller would otherwise render as a set-but-blank variable.
