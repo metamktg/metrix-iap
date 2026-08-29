@@ -462,6 +462,19 @@ collapses. Then `lib/motion` across the surfaces that animate by hand.
 **Exit:** `ui-inventory` MOTION ≥ 60% on panel/page; a browser pass at 390 /
 768 / 1024 / 1440 with the sidebar both states.
 
+**Instrument fixed, honest baseline set (2026-08-29):** the MOTION
+detector counted only direct `lib/motion`/`framer-motion` imports, so a
+page composing `RevealPanel`/`DisclosureStack`/`ListStack` — motion
+delivered through the one signature, which is the architecture the
+system wants — read as motion-absent (page sat at a false 3%). The
+detector now also counts composition of the motion-carrying widgets
+(approximation named in the check's header: widget names matched
+anywhere in source). Honest current state after the fix: **page 15%,
+panel 17%** — the 60% exit is genuinely open, not an artifact. The
+remaining gap is real pages composing zero moving primitives; work it
+surface-by-surface where motion serves function (arrival on view entry,
+reveals on folds), never as blanket stagger to move a number.
+
 ### Phase 6 — the remaining ports
 
 `collection-grid-disclosure`, `quick-switcher`, `list-stack`,

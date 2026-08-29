@@ -109,9 +109,9 @@ export function ListStack<T>({
                 an open pile has nothing underneath. */}
             {!open && (
               <div aria-hidden className="space-y-0">
-                <div className="mx-1.5 h-[5px] rounded-b-lg border-x border-b border-border/30 bg-foreground/[0.02]" />
+                <div className="mx-1.5 h-[6px] rounded-b-lg border-x border-b border-border/55 bg-foreground/[0.05]" />
                 {overflow.length >= 2 && (
-                  <div className="mx-3 h-[4px] rounded-b-lg border-x border-b border-border/20 bg-foreground/[0.012]" />
+                  <div className="mx-3 h-[5px] rounded-b-lg border-x border-b border-border/40 bg-foreground/[0.03]" />
                 )}
               </div>
             )}

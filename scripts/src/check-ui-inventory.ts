@@ -17,8 +17,18 @@
 //   TYPE       Uses the type roles (TYPE.*/HEADING.*) rather than raw
 //              Tailwind text sizes. Without this a surface is off the ramp
 //              and its headings have no defined rank.
-//   MOTION     Uses lib/motion. Hand-rolled durations are how no two moving
-//              things in the product move alike.
+//   MOTION     Moves with the system's motion vocabulary: imports lib/motion
+//              or framer-motion directly, OR composes one of the
+//              motion-carrying widgets (RevealPanel, DisclosureStack,
+//              ListStack, CopyConfirmButton/ActionConfirmButton, SwipeDeck,
+//              ActionSlider) — those animate with the one spring/signature
+//              internally, so a page built from them moves correctly without
+//              importing a duration itself. Counting only direct imports
+//              penalized exactly the architecture the system wants (motion
+//              by composition) and pushed pages toward hand-rolling.
+//              Approximation, named: the widget names are matched anywhere
+//              in the source, comments included — same class of regex signal
+//              as the rest of this file.
 //   DISCLOSE   Has a progressive-disclosure affordance. A dense surface with
 //              none of these puts everything on the first layer or hides it
 //              in a modal, and both read as heavy.
@@ -62,7 +72,8 @@ interface Row {
 
 const SIGNAL = {
   type: /\b(TYPE\.[a-zA-Z]+|HEADING\.h[1-6]|DIALOG\.title)\b/,
-  motion: /from "@\/lib\/motion"|framer-motion/,
+  motion:
+    /from "@\/lib\/motion"|framer-motion|\b(RevealPanel|DisclosureStack|ListStack|CopyConfirmButton|ActionConfirmButton|SwipeDeck|ActionSlider)\b/,
   disclose:
     /\b(DetailReveal|DisclosureStack|FilterDisclosure|useShowMore|ShowMoreButton|AccordionToggle|DenseText|ClampedProse|ExpandableText)\b/,
   // BreakdownExplorer is a composite that renders its charts internally —
