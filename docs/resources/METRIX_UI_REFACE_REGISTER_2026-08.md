@@ -269,12 +269,27 @@ arrival (staggered blur) on the AccountSwitcher rows.
 width already transitions AND drags (216↔56 with snap); the reference's
 remaining delta is a content cross-fade during the variant swap — polish
 that isn't worth shell-test churn, recorded here instead of half-done.
-**Still open from this table:** `VariableTable` rows → inline quick layer
-(BLOCKED on design: the table virtualizes past a threshold and inline
-expansion makes row heights dynamic — the virtualizer assumes fixed);
-`dialog-stack` on ConnectAccountDialogs (2,353 lines, upload-critical —
-wants its own review-sized PR with browser passes, not an autopilot
-drive-by).
+**Wave-6 closures (2026-08-29).** `VariableTable` rows → inline quick
+layer SHIPPED, redesigned around the virtualizer instead of against it:
+inline row growth is impossible (virtualized heights are fixed), so the
+quick layer pins directly under the table — row click opens it (sibling
+rows dim to 0.4, `aria-expanded` toggles), it shows the registry label,
+family · raw id, and the resolved description, and the old drill-down
+modal becomes the "Open full drill-down" escalation. Same function as
+the reference (stay in context, siblings recede), different geometry.
+Activates everywhere `VariableTable` gets `onRowClick` — IapLibraryView
+included, no per-site wiring. Three contract tests pin it.
+`dialog-stack` on ConnectAccountDialogs SHIPPED as the recede mechanic:
+shared `DialogContent` now carries an `mx-dialog-content` hook class and
+one `body:has([role="alertdialog"][data-state="open"])` rule in
+`index.css` recedes the underlying dialog (`scale: 0.965`,
+`brightness(0.72) saturate(0.9)`, 200ms) whenever an AlertDialog stacks
+on top — all three confirm-over-dialog sites covered with zero
+prop-drilling, and any future stack inherits it. Uses the CSS `scale`
+property deliberately, never `transform`, which would clobber Radix's
+translate centering. Browser-verified settled values via probe
+(0.965 / brightness 0.72). The file's hand-built dialog layering itself
+stays — the recede is what makes it read as depth.
 
 | Reference | Metrix surface | Why this one | Data it must surface |
 |---|---|---|---|
@@ -388,6 +403,16 @@ one row.
 
 **Exit:** the three modals are deleted; `check:ui-inventory --kind=popup` drops
 by three; drilldown specs pass against the inline control.
+
+**Revised in execution (2026-08-29):** the modals are demoted, not deleted.
+The concept table (AdPerformanceView) and `VariableTable` both got the
+in-context layer — but the drill-down payload (per-cell breakdowns, charts)
+is more than an inline row can honestly hold, so the modal survives as the
+*escalation* from the quick layer rather than the row's first click. First
+click stays in context; the modal is now a chosen second step. The original
+exit criterion would have forced the payload into a cramped inline row or
+dropped data — neither acceptable. `KpiDrilldownModal` recorded above as a
+function mismatch (its tiles already lead with a quick layer).
 
 ### Phase 4 — the two remaining walls
 

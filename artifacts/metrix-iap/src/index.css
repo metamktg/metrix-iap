@@ -259,6 +259,30 @@
     background: hsl(var(--background));
   }
 
+  /* Dialog stack — depth you can see (Watermelon dialog-stack, taken as
+     its mechanic). When an alertdialog (discard confirm, delete confirm)
+     opens over an open dialog, the dialog RECEDES: a small scale-back and
+     a brightness drop, so the stack reads as two layers at different
+     depths instead of two full-strength surfaces fighting for the same
+     plane. Three flows in ConnectAccountDialogs stack this way today;
+     the body:has() rule covers them and any future stack with no
+     per-site wiring.
+
+     `scale`/`filter` on purpose, never `transform` — DialogContent
+     centers itself with translate utilities, and a transform here would
+     clobber the centering. The rule keys on role="alertdialog" being
+     OPEN, so it can never fire from a popover or a lone dialog. */
+  .mx-dialog-content {
+    transition: scale 200ms cubic-bezier(0.2, 0, 0, 1), filter 200ms cubic-bezier(0.2, 0, 0, 1);
+  }
+  body:has([role="alertdialog"][data-state="open"]) .mx-dialog-content {
+    scale: 0.965;
+    filter: brightness(0.72) saturate(0.9);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mx-dialog-content { transition: none; }
+  }
+
   /* Sidebar — dark glass panel. The right edge is a Nocturne fading rule
      (long structural rules fade to transparent over the outer 56px instead
      of stopping hard at the corner), painted as a 1px background layer. */

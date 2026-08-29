@@ -17,6 +17,8 @@
 import { useMemo, useRef, useState } from "react";
 import { barScale, type BarScale } from "@/lib/bar-scale";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
+import { resolveVariableDescription } from "@/lib/variable-registry";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -415,6 +417,14 @@ export function VariableTable({
   /** When provided, rows become clickable and open the variable drill-down. */
   onRowClick?: (row: VariablePerformanceRow) => void;
 }) {
+  // inline-table-control, designed around the virtualizer: this table
+  // virtualizes past a threshold, and a row that grows in place gives the
+  // virtualizer dynamic heights it cannot do math on. So the quick layer
+  // renders as a pinned panel DIRECTLY UNDER the table instead — same
+  // function (stay in context, compare against the table; siblings dim
+  // while one is selected), row heights untouched. The full drill-down
+  // stays one press away as the escalation.
+  const [quickKey, setQuickKey] = useState<string | null>(null);
   const { sorted, sort, toggle, reset } = useColumnSort(rows, VARIABLE_COLUMNS);
   const scrollRef = useRef<HTMLDivElement>(null);
   const useVirtual = sorted.length > VIRTUAL_THRESHOLD;
@@ -423,16 +433,27 @@ export function VariableTable({
   const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
   const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA_result), true), [rows]);
 
+  const rowKey = (r: VariablePerformanceRow, i: number) => `${r.variable_id}|${r["Result type"]}|${i}`;
+  const quickRow = quickKey != null ? sorted.map((r, i) => ({ r, k: rowKey(r, i) })).find((x) => x.k === quickKey)?.r ?? null : null;
+
   const renderRow = (r: VariablePerformanceRow, i: number) => {
+    const k = rowKey(r, i);
+    const isQuick = quickKey === k;
     return (
       <tr
         key={r.variable_id + r["Result type"] + i}
-        className={cn(onRowClick && "cursor-pointer active:bg-foreground/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
-        onClick={onRowClick ? () => onRowClick(r) : undefined}
+        className={cn(
+          onRowClick && "cursor-pointer active:bg-foreground/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60",
+          "transition-opacity duration-300",
+          quickKey != null && !isQuick && "opacity-40",
+          isQuick && "bg-primary/[0.05]",
+        )}
+        onClick={onRowClick ? () => setQuickKey((prev) => (prev === k ? null : k)) : undefined}
         role={onRowClick ? "button" : undefined}
         tabIndex={onRowClick ? 0 : undefined}
-        onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(r); } } : undefined}
-        title={onRowClick ? "Open variable drill-down" : undefined}
+        aria-expanded={onRowClick ? isQuick : undefined}
+        onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setQuickKey((prev) => (prev === k ? null : k)); } } : undefined}
+        title={onRowClick ? "Show variable detail" : undefined}
         data-testid={onRowClick ? `row-variable-${r.variable_id}-${i}` : undefined}
       >
         <Td>
@@ -479,6 +500,42 @@ export function VariableTable({
           : <tbody>{sorted.map((r, i) => renderRow(r, i))}</tbody>
         }
       </TableShellInner>
+      <RevealPanel open={quickRow != null}>
+        {quickRow && (
+          <div className="rounded-lg border border-primary/25 bg-primary/[0.03] px-3.5 py-3 space-y-2" data-testid="variable-quick-layer">
+            <div className="flex items-start gap-2 flex-wrap">
+              <div className="min-w-0 flex-1">
+                <div className={cn(TYPE.title, "leading-snug")}>{readableVariables(quickRow.variable_id)}</div>
+                <div className={cn(TYPE.caption, "mt-0.5")}>
+                  <span className="capitalize">{quickRow.variable_family}</span> · {quickRow.variable_id}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQuickKey(null)}
+                aria-label="Close variable detail"
+                className={cn("pressable shrink-0", TYPE.caption, "h-7 px-2 rounded-md border border-border/40 text-muted-foreground/75 hover:text-foreground transition-colors")}
+              >
+                Close
+              </button>
+            </div>
+            {resolveVariableDescription(quickRow.variable_id) && (
+              <p className={cn(TYPE.body, "text-foreground/80 leading-relaxed")}>
+                {resolveVariableDescription(quickRow.variable_id)}
+              </p>
+            )}
+            {onRowClick && (
+              <button
+                type="button"
+                onClick={() => onRowClick(quickRow)}
+                className={cn("pressable", TYPE.caption, "inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-primary/30 bg-primary/10 font-medium text-interactive hover:bg-primary/20 transition-colors")}
+              >
+                Open full drill-down
+              </button>
+            )}
+          </div>
+        )}
+      </RevealPanel>
     </div>
   );
 }
