@@ -497,10 +497,16 @@ REVISED, not chased:** the audited remainder is chart-hosting and
 progress panels (`BreakdownExplorer`, `GenerationControls`) whose
 motion honestly lives in recharts mark animation and CSS meter fills,
 plus small info panels whose conditionals are data-presence, not
-disclosures — forcing them to 60% would be decoration. Remaining
-Phase 5 item: the one recorded four-width browser pass
-(390/768/1024/1440, sidebar both states); width work so far (390
-probes, panel RESP reflow) covered slices of it, never the one sweep.
+disclosures — forcing them to 60% would be decoration.
+
+**The four-width pass ran clean (2026-08-29) — Phase 5 is complete.**
+390 / 768 / 1024 / 1440, sidebar expanded AND collapsed, across the six
+spine views (account overview, performance, IAP library, strategy,
+creative library, action queue): 48/48 combinations pass — no view
+scrolls the page body horizontally, no element wider than the viewport.
+Re-runnable: `probe-four-widths.mjs` pattern (route-mocked seed
+fixture, `metrix_sidebar_collapsed` driven through localStorage,
+offenders listed by class and width when a combination fails).
 
 ### Phase 6 — the remaining ports
 
