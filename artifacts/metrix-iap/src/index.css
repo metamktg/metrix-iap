@@ -653,6 +653,15 @@
   .text-section { font-size: 1.6875rem; line-height: 1.2; letter-spacing: -0.016em; }  /* 27px */
   .text-stat { font-size: 2rem; line-height: 1.1; letter-spacing: -0.02em; }  /* 32px — hero stat */
   .text-bignum { font-size: 2.125rem; line-height: 1.05; letter-spacing: -0.022em; }  /* 34px — H1 / hero number */
+  /* bignum's fluid form for KPI tile values: the same 34px step from 640px
+     up, stepping to H3's 24px below it. At 390px a 2-col tile is ~160px
+     wide and a 34px "$8,000.84" CLIPS — "$8,000." reads as eight thousand,
+     which is a data-honesty failure, not a styling nit. Same face, weight
+     and tracking as bignum; only the size responds. */
+  .text-bignum-fluid { font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.012em; }
+  @media (width >= 640px) {
+    .text-bignum-fluid { font-size: 2.125rem; line-height: 1.05; letter-spacing: -0.022em; }
+  }
   .text-hero { font-size: 2.875rem; line-height: 1.0; letter-spacing: -0.025em; }  /* 46px */
   .text-cardtitle { font-size: 1.375rem; line-height: 1.3; letter-spacing: -0.01em; }  /* 22px — SectionCard title */
 

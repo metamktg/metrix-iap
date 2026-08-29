@@ -94,7 +94,8 @@ describe("OnboardingWizard", () => {
     expect(screen.getByText(/Welcome to Meta Marketing Agency/i)).toBeTruthy();
     expect(screen.getByText(/Manager Suite/i)).toBeTruthy();
     expect(screen.getByText(/Ad accounts/i)).toBeTruthy();
-    expect(screen.getByText(/Step 1 of 3/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Orientation/, current: "step" })).toBeTruthy();
+    expect(screen.getByText(/0\/3 visited/i)).toBeTruthy();
   });
 
   it("Next advances welcome → prepare, showing live CSV format panels", async () => {
@@ -106,7 +107,8 @@ describe("OnboardingWizard", () => {
     expect(screen.getByText(/What you'll need from Meta/i)).toBeTruthy();
     expect(screen.getByText(/Required columns — Demographics/i)).toBeTruthy();
     expect(screen.getByText(/Required columns — Placements/i)).toBeTruthy();
-    expect(screen.getByText(/Step 2 of 3/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Prepare exports/, current: "step" })).toBeTruthy();
+    expect(screen.getByText(/1\/3 visited/i)).toBeTruthy();
   });
 
   it("Back from prepare returns to welcome", async () => {
@@ -128,7 +130,7 @@ describe("OnboardingWizard", () => {
     await user.click(screen.getByRole("button", { name: /^Next$/i })); // prepare -> link
 
     expect(screen.getByText(/Link your first ad account/i)).toBeTruthy();
-    expect(screen.getByText(/Step 3 of 3/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Link account/, current: "step" })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: /Add Ad Account/i }));
 

@@ -138,6 +138,26 @@ that was confirmed to fail against the original defect.
 - **Optimization Loop build** (3–4.5 days, explicit-request-only): still not started, confirmed
   empty/pending by design. Do not build speculatively.
 
+## 6a. Decided — the objective label is a lens, never a wall *(owner decision, 2026-08-28)*
+
+Verbatim principle, from the owner, on multi-objective accounts: analysis applies **no manual
+emphasis** — "the data should speak for itself based on the specific campaign objectives
+defined", and that objective-based integrity flows downstream undistorted. The **strategy layer**
+is where algorithmic weighting lives: identify patterns, correlations and coincidences between
+variables (avatars, Concept IDs, angles) **across objectives**, discern why outcomes occur and
+how objectives interact, and curate direction from those signal relationships — without
+distorting the source data.
+
+Applied to code the same day: `AdPerformanceView`'s buyer-intent funnel dropped measured
+intent/conversion stages for any account not labelled purely ecommerce (hiding a lead-gen
+account's real purchases). Now a stage renders iff it carries measured data, whatever the label;
+objectives only pick which *absence* explanation prints when the lower funnel is genuinely
+unmeasured. Contract pinned by two tests in `ad-performance-canvas.test.tsx` ("keeps measured
+lower-funnel stages under ANY objective label"). Verified the only other objective-label branches
+(AccountSwitcher, AnalysisCommandCenter) are display-only, and EngagementFunnelView was already
+data-first. The strategy-layer weighting engine (cross-objective correlation) is **spec'd here,
+not yet built** — it belongs to the generation engine's prompt/weighting work, not the UI.
+
 ## 7. Already shipped — do not re-litigate
 
 B0 and BUG-02 → BUG-46 are resolved for their stated scope in `BUG_TRACKER.md`. Re-read a bug's

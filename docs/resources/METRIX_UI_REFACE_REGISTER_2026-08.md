@@ -243,6 +243,39 @@ chips beside the count it produced. `activeSummary` is a **required** prop.
 
 ### Mapped, not yet built — in priority order
 
+**Wave-1 status (2026-08-28, autonomous pass).** Shipped: `copy-confirm` →
+`CopyConfirmButton` (three hand-rolled sites unified); `RevealPanel` extracted
+as the composable reveal signature and wired into `ConceptFamilyView` (both
+disclosure levels — `collection-grid-disclosure` taken as mechanic; no member
+morph because the collapsed face shows counts, not previews), ManagerOverview's
+folds, and the Command Hub's arrival (arrival-only — no interior fold may hide
+an action); `inline-table-control` → the AdPerformanceView concept table
+(sibling rows dim at 0.4 while one is open — the reference's blur dropped, it
+makes 15px table text illegible — and the detail row arrives with the
+signature). **Function-mismatch, deliberately not applied:** AudienceView's
+segment cards already lead with their quick layer and "Explore" escalates to
+the full dossier — an inline intermediate layer would add a step without
+adding information; same judgement holds for KpiDrilldownModal's tile-opened
+dossier. **Wave 3-5 additions (same day):** `onboarding-checklist` → first-run setup
+is a visible, jumpable checklist (visited state, aria-current, ordinal
+ProgressMeter; the wizard's items-center overflow bug found and fixed by
+looking); `DisclosureStack` → AnalysisHistoryView run rows split in place,
+warned/failed runs + latest open by default so no signal folds away;
+`inline-toast`/`copy-confirm` family completed with `ActionConfirmButton`
+(brief JSON download confirms in place; ReportBuilder/History already had
+their own outcome states and were left alone); `quick-switcher`'s item
+arrival (staggered blur) on the AccountSwitcher rows.
+**`morphing-sidebar-controls` re-audited as substantially present:** the
+width already transitions AND drags (216↔56 with snap); the reference's
+remaining delta is a content cross-fade during the variant swap — polish
+that isn't worth shell-test churn, recorded here instead of half-done.
+**Still open from this table:** `VariableTable` rows → inline quick layer
+(BLOCKED on design: the table virtualizes past a threshold and inline
+expansion makes row heights dynamic — the virtualizer assumes fixed);
+`dialog-stack` on ConnectAccountDialogs (2,353 lines, upload-critical —
+wants its own review-sized PR with browser passes, not an autopilot
+drive-by).
+
 | Reference | Metrix surface | Why this one | Data it must surface |
 |---|---|---|---|
 | `inline-table-control` | `analysis/tables.tsx`, and the three drilldown **modals** | Row expands **in place** while the rest of the table dims — replaces `SegmentDrilldownModal`, `VariableDrilldownModal`, `KpiDrilldownModal`, all of which take you out of context to read one row | every column already in the row, plus the drilldown payload those modals fetch |

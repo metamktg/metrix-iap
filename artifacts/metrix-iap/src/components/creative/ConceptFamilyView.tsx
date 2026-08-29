@@ -5,6 +5,7 @@
 //
 // Data must already be metric- and date-filtered by the caller.
 
+import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Trophy } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -117,7 +118,7 @@ function AngleRow({
       </button>
 
       {/* Expanded cells grid */}
-      {showCells && (
+      <RevealPanel open={showCells}>
         <div className="border-t border-border/25 px-3 py-3 bg-foreground/[0.01]">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {rankedCells.map((row, idx) => (
@@ -151,7 +152,7 @@ function AngleRow({
             ))}
           </div>
         </div>
-      )}
+      </RevealPanel>
     </div>
   );
 }
@@ -225,8 +226,8 @@ function ConceptFamilyCard({
         </div>
       </button>
 
-      {/* Angle sub-list */}
-      {expanded && (
+      {/* Angle sub-list — arrives with the product's one reveal signature. */}
+      <RevealPanel open={expanded}>
         <div className="border-t border-border/25 px-4 py-3 space-y-2">
           {group.angles.map((angle) => (
             <AngleRow
@@ -243,7 +244,7 @@ function ConceptFamilyCard({
             />
           ))}
         </div>
-      )}
+      </RevealPanel>
     </div>
   );
 }

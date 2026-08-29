@@ -2,6 +2,8 @@
 // Sidebar account selector with initials avatars, live search, and
 // a clear visual distinction between the manager account and ad accounts.
 
+import { motion, useReducedMotion } from "framer-motion";
+import { DUR_FAST, EASE, motionOr, staggerDelay } from "@/lib/motion";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ChevronsUpDown, Check, Building2, Plus, Search, ArrowUpRight } from "lucide-react";
@@ -120,6 +122,7 @@ function SwitcherPanel({
   const isManager = selectedAccountType === "manager";
   const showSearch = adAccounts.length > 3;
 
+  const reduced = useReducedMotion();
   const filtered = search.trim()
     ? adAccounts.filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
     : adAccounts;
@@ -253,12 +256,15 @@ function SwitcherPanel({
             <p className="text-body text-muted-foreground/75">No accounts match "{search}"</p>
           </div>
         ) : (
-          filtered.map((a) => {
+          filtered.map((a, rowIdx) => {
             const isActive = !isManager && activeAdAccountId === a.id;
             const isUnconfigured = a.status === "unconfigured";
             return (
-              <button
+              <motion.button
                 key={a.id}
+                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 4, filter: "blur(2px)" }}
+                animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={motionOr(reduced, { duration: DUR_FAST, ease: EASE, delay: staggerDelay(rowIdx, filtered.length) })}
                 onClick={() => pick(() => selectAdAccount(a.id))}
                 className={cn(
                   "pressable-lg w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors relative group/row",
@@ -293,7 +299,7 @@ function SwitcherPanel({
                   )}
                 </div>
                 {isActive && <Check className="w-3.5 h-3.5 text-interactive shrink-0" />}
-              </button>
+              </motion.button>
             );
           })
         )}

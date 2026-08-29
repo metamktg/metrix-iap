@@ -60,6 +60,7 @@ import { getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, serializeReportModel, downloadReportExport, parseReportModel } from "@/lib/reportExport";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { TYPE } from "@/pages/metrix/typography";
+import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
 import {
   BarChart3, Layers, FileText, Database, FileBarChart,
   CheckCircle2, XCircle, Lock, Loader2, X,
@@ -307,7 +308,11 @@ function StageTile({
     : "text-muted-foreground/75";
 
   return (
-    <div className="flex items-center flex-1 min-w-0">
+    // min-w-max, not min-w-0: with min-w-0 the tiles COMPRESSED before the
+    // stepper's overflow-x-auto could engage — connector lines collapsed and
+    // the state circles overlapped their own labels at phone width. Content
+    // width is the floor; past it the strip scrolls, never crushes.
+    <div className="flex items-center flex-1 min-w-max">
       <button
         onClick={onClick}
         disabled={isLocked}
@@ -1936,7 +1941,11 @@ export function LoopCommandChain({
             back into the Analysis tile exposes "Re-run Analysis" (see
             Actions() above), so the click-to-open Command Hub interaction
             that used to live on the standalone "Re-run" tile is preserved. */}
-        <div className="flex items-center" data-testid="loop-stepper">
+        {/* overflow-x-auto: a CHAIN loses its meaning if it wraps — the
+            connector lines are the point — so at phone width the strip
+            scrolls within itself (the app-wide rule: wide content scrolls
+            in its own container, the page never scrolls sideways). */}
+        <div className="flex items-center overflow-x-auto" data-testid="loop-stepper">
           <StageTile
             stage="data"
             stageNumber={1}
@@ -2012,8 +2021,8 @@ export function LoopCommandChain({
         </div>
       </div>
 
-      {activeStage && (
-        <CommandHub
+      <RevealPanel open={activeStage != null}>
+        {activeStage && (<CommandHub
           stage={activeStage}
           onClose={() => setActiveStage(null)}
           currentPath={location}
@@ -2059,8 +2068,8 @@ export function LoopCommandChain({
           reportError={reportError}
           reportDone={reportDone}
           onGenerateReport={handleGenerateReport}
-        />
-      )}
+        />)}
+      </RevealPanel>
 
       <AlertDialog
         open={!!conversionExportConfirm}

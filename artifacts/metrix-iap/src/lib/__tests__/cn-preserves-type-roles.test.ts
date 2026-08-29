@@ -42,7 +42,7 @@ describe("cn preserves type-ramp size roles alongside colors", () => {
       "text-micro", "text-micro-num", "text-label", "text-caption", "text-body",
       "text-title", "text-cardtitle", "text-callout", "text-display", "text-section",
       "text-h2", "text-h3", "text-h4", "text-h5",
-      "text-stat", "text-bignum", "text-hero",
+      "text-stat", "text-bignum", "text-bignum-fluid", "text-hero",
     ];
     for (const role of roles) {
       expect(cn(role, "text-foreground"), `${role} must survive a following color`).toBe(

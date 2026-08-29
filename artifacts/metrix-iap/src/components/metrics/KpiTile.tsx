@@ -386,7 +386,7 @@ function KpiValue({ formatted, isRefetching }: { formatted: string; isRefetching
       data-testid="kpi-value-loading"
     />
   ) : (
-    <span className="text-bignum font-medium text-foreground metric-num leading-none tracking-[-0.02em]">
+    <span className="text-bignum-fluid font-medium text-foreground metric-num leading-none">
       {formatted}
     </span>
   );

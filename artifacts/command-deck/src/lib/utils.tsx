@@ -27,7 +27,7 @@ const twMerge = extendTailwindMerge({
             "micro", "micro-num", "label", "caption", "body",
             "title", "cardtitle", "callout", "display", "section",
             "h2", "h3", "h4", "h5",
-            "stat", "bignum", "hero",
+            "stat", "bignum", "bignum-fluid", "hero",
           ],
         },
       ],

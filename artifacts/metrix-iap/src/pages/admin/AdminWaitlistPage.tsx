@@ -7,6 +7,7 @@
 // temporary password and emails it; when email delivery is unavailable
 // the temp password is shown here with a copy button instead.
 
+import { CopyConfirmButton } from "@/components/widgets/CopyConfirmButton";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   useGetAdminSession,
@@ -87,21 +88,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function CopyButton({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      onClick={() => {
-        void navigator.clipboard.writeText(value);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      }}
-      className="pressable inline-flex items-center gap-1 text-label text-interactive hover:text-primary/80 transition-colors"
-      data-testid="button-copy-temp-password"
-    >
-      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-      {copied ? "Copied" : "Copy"}
-    </button>
-  );
+  return <CopyConfirmButton value={value} data-testid="button-copy-temp-password" />;
 }
 
 type ApproveOutcome = {

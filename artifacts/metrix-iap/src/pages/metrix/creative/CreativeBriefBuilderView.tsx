@@ -10,6 +10,7 @@
 // invented. Selection is driven by ?focus=<brief id> (deep links keep
 // working); without one, the first brief is selected like the canvas.
 
+import { ActionConfirmButton } from "@/components/widgets/CopyConfirmButton";
 import { humanizeEnum } from "@/lib/normalize";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -341,12 +342,13 @@ export function CreativeBriefBuilderView() {
 
                   {/* Handoff actions — real exports, no dead save buttons. */}
                   <div className="flex flex-wrap items-center gap-2 justify-end pt-1">
-                    <button
-                      onClick={() => downloadBriefJson(detail, acct.name)}
-                      className={cn("pressable", TYPE.body, "flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-border/50 font-medium text-foreground hover:bg-foreground/5 transition-colors")}
-                    >
-                      <Download className="w-3.5 h-3.5" /> Download brief (JSON)
-                    </button>
+                    <ActionConfirmButton
+                      onAction={() => downloadBriefJson(detail, acct.name)}
+                      icon={Download}
+                      label="Download brief (JSON)"
+                      confirmedLabel="Saved"
+                      className={TYPE.body}
+                    />
                     <a
                       href={mailtoForBrief(detail, pillarLabel)}
                       className={cn(TYPE.body, "flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-primary/15 border border-primary/30 font-medium text-interactive hover:bg-primary/25 transition-colors")}

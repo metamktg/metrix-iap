@@ -3,6 +3,7 @@
 // source status, and action buttons (Connect / Manual import).
 // Includes a crosslink to switch to the agency-level view.
 
+import { CopyConfirmButton } from "@/components/widgets/CopyConfirmButton";
 import { useState } from "react";
 import { CheckCircle2, Circle, Plug, FileUp, Copy, ArrowLeft, ExternalLink, Wifi } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -67,14 +68,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
               <span className="text-body text-foreground/85 truncate">
                 {account.meta_ad_account_id}
               </span>
-              <button
-                onClick={handleCopy}
-                className="pressable flex items-center gap-1 text-label text-muted-foreground/75 hover:text-foreground/80 transition-colors shrink-0"
-                title="Copy to clipboard"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                {copied && <span className="text-status-success text-label">Copied</span>}
-              </button>
+              <CopyConfirmButton value={account.meta_ad_account_id} className="shrink-0" />
             </div>
           ) : (
             <span className="text-body text-muted-foreground/75">—</span>
