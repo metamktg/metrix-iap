@@ -148,12 +148,34 @@ describe("navTree landing routes", () => {
     }
   });
 
-  it("Analysis has no Overview child (renamed Ad Performance); Strategy keeps a distinct Overview child", () => {
+  // REVISED 2026-08-29, deliberately. This previously asserted Analysis has
+  // NO Overview child, on the premise that Overview had been "renamed Ad
+  // Performance". That premise was about a LABEL: the child pointing at
+  // /app/analysis/performance used to be mislabeled "Overview" and was
+  // correctly renamed. It said nothing about /app/analysis/overview, which
+  // is a DIFFERENT route rendering a DIFFERENT component (AnalysisOverview:
+  // period selector, daily trend, variable performance, top placements —
+  // not AdPerformanceView).
+  //
+  // That route had no menu entry while being the first tab of the analysis
+  // tab rail and the target of five cross-links ("Review analysis" from
+  // Signals, Alerts, Recommendations, the loop chain, and the account
+  // overview). Following any of them landed the reader on a page they could
+  // not reach again on purpose or navigate back to — the dead end the owner
+  // hit and reported. The section landing stays the command center, which is
+  // where you RUN an analysis; Overview is where you READ one.
+  it("Analysis exposes both its command center (landing) and the Overview read view", () => {
     const analysis = navTree.find((s) => s.id === "analysis")!;
     const strategy = navTree.find((s) => s.id === "strategy")!;
     expect(sectionLandingRoute(analysis)).toBe("/app/analysis");
-    expect(analysis.children!.map((c) => c.label)).not.toContain("Overview");
-    expect(analysis.children!.map((c) => c.label)).toContain("Ad Performance");
+    const labels = analysis.children!.map((c) => c.label);
+    expect(labels).toContain("Overview");
+    expect(labels).toContain("Ad Performance");
+    // The two are distinct destinations, never the same route under two names.
+    const overview = analysis.children!.find((c) => c.label === "Overview")!;
+    const performance = analysis.children!.find((c) => c.label === "Ad Performance")!;
+    expect(overview.to).toBe("/app/analysis/overview");
+    expect(performance.to).toBe("/app/analysis/performance");
     expect(sectionLandingRoute(strategy)).toBe("/app/strategy");
     expect(strategy.children!.map((c) => c.label)).toContain("Overview");
   });
@@ -199,7 +221,8 @@ describe("Sidebar section headers (expanded mode)", () => {
       expect(isExpanded(childList)).toBe(true);
       expect(within(childList).getByText("IAP Library")).toBeTruthy();
       expect(within(childList).getByText("Ad Performance")).toBeTruthy();
-      expect(within(childList).queryByText("Overview")).toBeNull();
+      // Overview is a real child now — see the navTree test above for why.
+      expect(within(childList).getByText("Overview")).toBeTruthy();
 
       // A second single click (past the window) toggles it closed again.
       fireEvent.click(sectionHeaderButton(nav, "Analysis"));
@@ -343,7 +366,8 @@ describe("Sidebar collapsed icon rail", () => {
     expect(isExpanded(childList)).toBe(true);
     expect(within(childList).getByText("Ad Performance")).toBeTruthy();
     expect(within(childList).getByText("IAP Library")).toBeTruthy();
-    expect(within(childList).queryByText("Overview")).toBeNull();
+    // Overview is a real child now — see the navTree test above for why.
+    expect(within(childList).getByText("Overview")).toBeTruthy();
     // No click yet navigated away from the reopen action itself.
     expect(window.location.pathname).toBe("/");
   });

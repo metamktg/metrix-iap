@@ -615,7 +615,8 @@ export interface MSTMatrix {
 
 export interface MST {
   status: string;
-  render_policy: string;
+  /** Null when the account has no policy to state — see formatMstRenderPolicy. */
+  render_policy: string | null;
   local_book2_library?: MSTLibraryCell[];
   historical_matrix_4x4?: MSTMatrix;
   source_artifacts?: string[];

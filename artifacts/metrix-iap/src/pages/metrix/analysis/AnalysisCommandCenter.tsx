@@ -117,12 +117,22 @@ export function AnalysisCommandCenter() {
                     Pre-run readiness stats, not stale analysis-derived
                     numbers — every value here still reflects real state
                     even when no analysis has ever run for this account. */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="grid grid-cols-dashboard-3 gap-3 mb-2.5">
                   <MetricTile label="Staged imports" value={fmtNum(stagedImports.length)} variant="primary" />
                   <MetricTile label="Ads in scope" value={fmtNum(adsInScope)} />
                   <MetricTile label="Window" value={WINDOW_TILE_LABEL[runWindow]} />
-                  <MetricTile label="Objectives" value={objectivesMeta.label} />
                 </div>
+                {/* Objectives belong to THIS run — they decide which terminal
+                    metric it reads — so they stay on the run card. They are
+                    not a headline: as a fourth stat tile, a long text value
+                    ("Ecommerce + Lead Generation") rendered at stat size
+                    outranked the three real run parameters beside it and read
+                    as a standing classification of the account. Demoted to
+                    the quiet parameter line it is. */}
+                <p className="text-caption text-muted-foreground/75 mb-4" data-testid="run-objectives-line">
+                  <span className="text-micro-num uppercase tracking-widest text-muted-foreground/75">Objectives · </span>
+                  {objectivesMeta.label}
+                </p>
                 <AnalysisControls accountId={acct.id} onDateRangeChange={setRunWindow} detailsOpen={detailOn} />
               </SectionCard>
 

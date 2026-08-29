@@ -52,6 +52,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "check:interaction": "tsx ./src/check-interaction.ts",
+    "check:cohort-reach": "tsx ./src/check-cohort-reach.ts",
     "check:locator-ambiguity": "tsx ./src/check-locator-ambiguity.ts",
     "check:ad-performance-views": "tsx ./src/check-ad-performance-views.ts",
     "apply:ad-performance-views": "tsx ./src/apply-ad-performance-views.ts",

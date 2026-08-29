@@ -135,7 +135,13 @@ describe("AnalysisCommandCenter — header control cluster", () => {
 });
 
 describe("AnalysisCommandCenter — execution card is honest pre-run readiness", () => {
-  it("shows real staged-imports, ads-in-scope, window, and objectives tiles", async () => {
+  // Objectives moved OFF the tile row deliberately (owner decision,
+  // 2026-08-29): they belong to this run, so they stay on the card, but as a
+  // long text value at stat size they outranked the three real run
+  // parameters and read as a standing classification of the account. The
+  // claim under test is unchanged — the card states this account's real
+  // objectives — only where it states them moved.
+  it("shows real staged-imports, ads-in-scope and window tiles, and states the run's objectives", async () => {
     mockImports = [
       { id: "imp-1", filename: "demo.csv", kind: "performance_demo_csv", status: "staged" },
       { id: "imp-2", filename: "placement.csv", kind: "performance_placement_csv", status: "staged" },
@@ -143,7 +149,7 @@ describe("AnalysisCommandCenter — execution card is honest pre-run readiness",
     await act(async () => { renderCC(); });
     expect(screen.getByText("Staged imports")).toBeTruthy();
     expect(screen.getByText("Ads in scope")).toBeTruthy();
-    expect(screen.getByText("Objectives")).toBeTruthy();
+    expect(screen.getByTestId("run-objectives-line")).toBeTruthy();
     // DERIVED from the fixture, not hardcoded. This assertion once read
     // `expect(getByText("61"))` — Bookster's ad count on the day it was
     // written — and the next data refresh (62 ads, a second objective)
@@ -152,7 +158,9 @@ describe("AnalysisCommandCenter — execution card is honest pre-run readiness",
     // does and assert the match.
     const bookster = baseSeed.ad_accounts.find((a: { id: string }) => a.id === "bookster")!;
     expect(screen.getByText(String((bookster.ads ?? []).length))).toBeTruthy();
-    expect(screen.getByText(resolveObjectivesMeta(bookster.objectives).label)).toBeTruthy();
+    expect(screen.getByTestId("run-objectives-line").textContent).toContain(
+      resolveObjectivesMeta(bookster.objectives).label,
+    );
     // Default run window mirrors AnalysisControls' own default ("30d").
     expect(screen.getByText("30 days")).toBeTruthy();
   });

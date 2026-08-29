@@ -168,6 +168,14 @@ export const EVENT_LABEL: Record<string, string> = {
   "Website trials started": "Trials",
   "Website purchases": "Purchases",
   onb_initiate_checkout: "Checkouts",
+  // NOT an event. The analysis engine writes "unknown" when an export row
+  // carries no result_type at all — its own comment calls this "a real
+  // data-quality gap, not a normal value", and it counts the rows. Listed
+  // raw, it sat in the results table as a lowercase peer of Purchases and
+  // Leads, which reads as an event nobody bothered to name; on the largest
+  // account in the seed it holds 41% of spend. It must stay visible —
+  // hiding it would hide that spend — so it is named for what it is.
+  unknown: "Unclassified result type",
 };
 
 export function eventLabel(key: string): string {
@@ -529,14 +537,21 @@ export function CaveatNote({
   source,
   defaultExpanded = false,
 }: {
-  text: string;
+  text: string | null | undefined;
   source?: string;
   defaultExpanded?: boolean;
 }) {
   const THRESHOLD = 110;
-  const isLong = text.length > THRESHOLD;
+  // An empty caveat is not a caveat. Without this guard a blank string
+  // rendered the full amber warning surface — border, tint and icon — around
+  // no text at all, which reads as a warning the reader cannot act on or
+  // even read. Nothing to say means nothing rendered.
+  const body = (text ?? "").trim();
+  const isLong = body.length > THRESHOLD;
   const [expanded, setExpanded] = useState(defaultExpanded || !isLong);
-  const preview = isLong ? text.slice(0, THRESHOLD).trimEnd() + "…" : text;
+  const preview = isLong ? body.slice(0, THRESHOLD).trimEnd() + "…" : body;
+
+  if (!body) return null;
 
   return (
     <div className="rounded-lg border border-status-warning/15 bg-status-warning/[0.03] overflow-hidden">
@@ -556,7 +571,7 @@ export function CaveatNote({
             </span>
           )}
           <p className="text-body text-status-warning/90 leading-snug">
-            {expanded ? text : preview}
+            {expanded ? body : preview}
           </p>
         </div>
         {isLong && (

@@ -128,11 +128,18 @@ export function getOptimizationLoop(seed: MetrixSeed, adAccountId: string | null
  * but current source data may provide its format rules as a structured object.
  * Normalize at the data boundary so UI components never receive an object they
  * could try to render directly.
+ *
+ * "Nothing to say" is NULL, never "". Every consumer writes
+ * `render_policy ?? "<fallback sentence>"`, and `??` does not catch an empty
+ * string — so a blank policy (all six manual-import accounts carry `""`)
+ * silently defeated every fallback: four empty states rendered a bare title
+ * with no explanation beneath it, on exactly the accounts a real operator
+ * uses. Returning null is what makes those fallbacks work.
  */
-export function formatMstRenderPolicy(policy: unknown): string {
-  if (typeof policy === "string") return policy;
+export function formatMstRenderPolicy(policy: unknown): string | null {
+  if (typeof policy === "string") return policy.trim() || null;
   if (!policy || typeof policy !== "object" || Array.isArray(policy)) {
-    return "";
+    return null;
   }
 
   const fields = policy as Record<string, unknown>;
@@ -147,7 +154,7 @@ export function formatMstRenderPolicy(policy: unknown): string {
     fields.text_safe_zones_required_on_9x16 === true ? "Text safe zones required on 9:16" : null,
   ].filter((part): part is string => Boolean(part));
 
-  return parts.join(" · ") || "MST render policy is configured.";
+  return parts.join(" · ") || null;
 }
 
 export function getMST(seed: MetrixSeed, adAccountId: string | null): MST | null {

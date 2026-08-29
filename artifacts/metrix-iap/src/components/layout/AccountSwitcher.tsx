@@ -10,7 +10,6 @@ import { ChevronsUpDown, Check, Building2, Plus, Search, ArrowUpRight } from "lu
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useAccount } from "@/contexts/AccountContext";
 import { AddAccountDialog } from "@/pages/metrix/AddAccountDialog";
-import { resolveObjectivesMeta } from "@/lib/data/cohortMeta";
 
 // ─── Avatar ────────────────────────────────────────────────────────────
 
@@ -285,16 +284,18 @@ function SwitcherPanel({
                   )}>
                     {a.name}
                   </div>
-                  {isUnconfigured ? (
+                  {/* Only an actionable STATE earns the second line. A
+                      configured account is named and nothing else: the
+                      business-model cohort belongs to an analysis run, and
+                      how the data arrived (live vs manual) is not something
+                      the reader is choosing between here. Both were
+                      classification badges pretending to be identity. */}
+                  {isUnconfigured && (
                     <div className="flex items-center gap-1 mt-0.5">
                       <span className="text-caption text-status-warning/70 leading-tight">
                         Needs setup
                       </span>
                       <ArrowUpRight className="w-2.5 h-2.5 text-status-warning/50" />
-                    </div>
-                  ) : (
-                    <div className="text-caption text-muted-foreground/75 leading-tight mt-0.5">
-                      {resolveObjectivesMeta(a.objectives).label}
                     </div>
                   )}
                 </div>
@@ -399,9 +400,11 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
           <div className="text-caption font-semibold text-foreground/90 leading-tight truncate">
             {triggerLabel}
           </div>
-          <div className="text-caption text-muted-foreground/75 leading-tight mt-0.5">
-            {isManager ? "Agency Overview" : resolveObjectivesMeta(active?.objectives).label}
-          </div>
+          {isManager && (
+            <div className="text-caption text-muted-foreground/75 leading-tight mt-0.5">
+              Agency Overview
+            </div>
+          )}
         </div>
         <ChevronsUpDown
           className={cn(

@@ -176,3 +176,46 @@ data, and several entries carry corrections recorded *after* the original fix.
 3. **Phase 3 is unblocked.** What remains open is storage (S) and efficacy (F), neither of which
    gates the information-hierarchy pass. F-a is the one open item Phase 3 should *want*: real
    creative copy, already captured, currently reaching no screen.
+
+## §6b — The cohort is an analysis lens, and its reach is now bounded (owner decision, 2026-08-29)
+
+**The decision, verbatim:** "we need the system that curates the analysis views
+only per business model, that's the only pertinent[ce]. the cohort business
+model objective should not be on the interface. it is only pertinent to the
+analysis interface view and we need to plan a system so that is the limit of
+its reach." Followed by: "the objective is pertinent to specific and single
+analysis runs, and does not need to be a highlight throughout the platform.
+neither does the fact if it's manual imported or not. disregard the
+specification of it on the interface."
+
+**What that means in code.** The business-model cohort (ecommerce / lead_gen /
+service / app, and any label derived from an account's `objectives`) decides
+which terminal metric a run reads and which funnel stages an analysis view can
+honestly show. It is NOT a property of the account as an entity and NOT a way
+to describe an account to a reader. The same applies to how an account's data
+arrived (live connection vs manual upload): a provenance fact, not an identity.
+
+**Shipped:**
+
+- `AccountSwitcher` printed the cohort under every account name ("Ecommerce",
+  "Ecommerce + App", "Ecommerce + Lead Generation"), in the trigger and in
+  every dropdown row — telling every reader the whole product was scoped by
+  business model. Removed. A first replacement that showed the data source
+  ("Manual uploads") was ALSO removed on the owner's follow-up: the chrome does
+  not classify accounts at all. Only an actionable state earns the second line
+  ("Needs setup"), and the manager keeps its scope line ("Agency Overview").
+- The analysis run card demoted `Objectives` from a fourth stat tile — a long
+  text value at stat size, outranking the three real run parameters beside it —
+  to a quiet parameter line. It stays on the card because it is genuinely
+  run-scoped, which is exactly where the owner said it is pertinent.
+- **`check:cohort-reach`** (new gate, wired into `.replit`): fails if a cohort
+  read reaches any file outside a reasoned allowlist — the cohort module, the
+  analysis views, the settings surface where objectives are CONFIGURED, and the
+  export payload. Verified to fire by reintroducing a violation in `Topbar`.
+  A new exception must be added to that list WITH ITS REASON, so drift is on
+  the record instead of one import away.
+
+**Open for the owner:** Settings → General still renders the objectives
+selector, because that is where objectives are set and the analysis cannot run
+without them. It is allowlisted as configuration, not display. Say the word if
+even that should move.
