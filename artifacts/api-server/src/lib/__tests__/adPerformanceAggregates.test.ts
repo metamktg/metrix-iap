@@ -97,12 +97,20 @@ describe("the row path on its own", () => {
 });
 
 describe("falling back when the views are absent", () => {
+  const viewsAbsent = async (): Promise<[never[], never[], never[]]> => {
+    throw new Error("relation ad_performance_event_totals does not exist");
+  };
+
   it("uses the rows and says so, rather than failing the seed", async () => {
     // schema.sql is applied by the importer, not the API server, so a deploy
     // can reach production before the migration does. Without this the seed
     // would 500 on that ordering.
     const logs: string[] = [];
-    const agg = await loadAdPerformanceAggregates(async () => rows, (m) => logs.push(m));
+    const agg = await loadAdPerformanceAggregates(
+      async () => rows,
+      (m) => logs.push(m),
+      viewsAbsent,
+    );
     expect(agg.source).toBe("rows");
     expect(agg.eventTotals.get("a1")!.get("purchase")!.spend).toBe(150);
     expect(logs.join(" ")).toMatch(/not present|import:metrix/);
@@ -110,7 +118,7 @@ describe("falling back when the views are absent", () => {
 
   it("only fetches the rows when it has to", async () => {
     const fetchRows = vi.fn(async () => rows);
-    await loadAdPerformanceAggregates(fetchRows, () => {});
+    await loadAdPerformanceAggregates(fetchRows, () => {}, viewsAbsent);
     // One call: the fallback. Not two.
     expect(fetchRows).toHaveBeenCalledTimes(1);
   });

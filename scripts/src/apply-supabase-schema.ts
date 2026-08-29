@@ -70,16 +70,4 @@ try {
 } finally {
   await client.end();
 }
-\\
-
-
-git pull
-git pull
-
-
-
-/c
-clear
-ckear
-clearScreenDown3
 

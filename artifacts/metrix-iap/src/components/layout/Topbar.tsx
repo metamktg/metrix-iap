@@ -25,9 +25,19 @@ export function AccountMenu({
 }) {
   const [, navigate] = useLocation();
   const { logout } = useAuth();
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const ref = useRef<HTMLDivElement>(null);
-  const isLight = resolvedTheme === "light";
+  const isLight =
+    theme === "light" ||
+    (theme === undefined && document.documentElement.classList.contains("light"));
+
+  function toggleTheme() {
+    // The applied document class is the visual source of truth. Reading it at
+    // activation also handles the brief hydration window where next-themes has
+    // restored a saved light class but its React state is not available yet.
+    const lightIsApplied = document.documentElement.classList.contains("light");
+    setTheme(lightIsApplied ? "dark" : "light");
+  }
 
   useEffect(() => {
     function onPointerDown(e: PointerEvent) {
@@ -94,7 +104,7 @@ export function AccountMenu({
           aria-checked={isLight}
           aria-label={`Theme: ${isLight ? "Light" : "Dark"}. Switch to ${isLight ? "Dark" : "Light"} theme`}
           data-testid="button-theme-toggle"
-          onClick={() => setTheme(isLight ? "dark" : "light")}
+          onClick={toggleTheme}
           className="pressable-lg w-full min-h-11 flex items-center gap-2.5 px-3.5 py-2 text-left text-foreground/85 hover:text-foreground hover:bg-foreground/[0.05] transition-colors"
         >
           {isLight ? (

@@ -3,10 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountMenu } from "../Topbar";
 
 const setTheme = vi.fn();
-let resolvedTheme = "dark";
+let theme: string | undefined = "dark";
 
 vi.mock("next-themes", () => ({
-  useTheme: () => ({ resolvedTheme, setTheme }),
+  useTheme: () => ({ theme, setTheme }),
 }));
 
 vi.mock("wouter", () => ({
@@ -35,11 +35,15 @@ vi.mock("../TaskTray", () => ({
 }));
 
 beforeEach(() => {
-  resolvedTheme = "dark";
+  theme = "dark";
+  document.documentElement.className = "dark";
   setTheme.mockReset();
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  document.documentElement.className = "";
+});
 
 describe("Account menu theme control", () => {
   it("names the current dark state and switches to light", () => {
@@ -56,7 +60,8 @@ describe("Account menu theme control", () => {
   });
 
   it("names the current light state and switches back to dark", () => {
-    resolvedTheme = "light";
+    theme = "light";
+    document.documentElement.className = "light";
     render(<AccountMenu initials="BO" email="user@example.test" onClose={vi.fn()} />);
 
     const toggle = screen.getByTestId("button-theme-toggle");
@@ -65,6 +70,18 @@ describe("Account menu theme control", () => {
     expect(screen.getByText("Light")).toBeTruthy();
 
     fireEvent.click(toggle);
+    expect(setTheme).toHaveBeenCalledWith("dark");
+  });
+
+  it("switches an applied light theme to dark during theme-state hydration", () => {
+    theme = undefined;
+    document.documentElement.className = "light";
+    render(<AccountMenu initials="BO" email="user@example.test" onClose={vi.fn()} />);
+
+    const toggle = screen.getByTestId("button-theme-toggle");
+    expect(toggle.getAttribute("aria-label")).toContain("Theme: Light");
+    fireEvent.click(toggle);
+
     expect(setTheme).toHaveBeenCalledWith("dark");
   });
 });
