@@ -155,20 +155,21 @@ export function AdAccountOverview() {
 
   const core = account.iap.core_reanalysis_read ?? null;
 
-  // core_reanalysis_read is nullable at runtime for freshly-analyzed accounts
-  // whose seed hasn't fully populated the module yet — guard before rendering.
-  if (!core) {
-    return (
-      <div className="flex-1 flex flex-col">
-        <ModuleHeader section="Ad Account · 01" title={account.name} subtitle="Account overview" />
-        <PendingState
-          title="Analysis data loading"
-          message="Core analysis data is being assembled. Refresh in a moment."
-          action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
-        />
-      </div>
-    );
-  }
+  // core_reanalysis_read is ONE optional module of the analysis output, and it
+  // is absent for every account whose run did not produce it — which is most of
+  // them (7 of 9 in the current seed, including the largest by spend).
+  //
+  // This used to early-return the whole page as "Analysis data loading",
+  // so an account with a full campaign summary, a populated loop chain, an
+  // active MST and six figures of measured spend rendered as an empty
+  // waiting screen on the app's landing view, while Ad Performance showed
+  // its real numbers one click away. The message was also false: nothing was
+  // loading and refreshing changed nothing.
+  //
+  // A missing module now costs its OWN section and nothing else. Everything
+  // below reads campaign_summary, the loop chain and MST, none of which
+  // depend on `core`; the two derived control names resolve only when the
+  // module is actually present.
 
   // ── Derived summaries ───────────────────────────────────────────────
   const analysis = getAnalysisData(seed, adAccountId);
@@ -191,8 +192,8 @@ export function AdAccountOverview() {
     // theoretically contain regex-special characters.
     return text.split(id).join(name);
   };
-  const primaryControlName = resolveConceptName(core.primary_control);
-  const registrationControlName = core.registration_control ? resolveConceptName(core.registration_control) : null;
+  const primaryControlName = core ? resolveConceptName(core.primary_control) : null;
+  const registrationControlName = core?.registration_control ? resolveConceptName(core.registration_control) : null;
 
   const matrixCellCount = mst?.historical_matrix_4x4?.cells?.length ?? 0;
   // local_book2_library may contain multiple rows per cell_id (aspect
@@ -339,6 +340,21 @@ export function AdAccountOverview() {
 
           {/* Core controls */}
           <SectionCard title="Core controls" desc="Control creative per funnel stage" right={<SectionInfoIcon tip="The benchmark creatives that define performance expectations per funnel stage." />}>
+            {!core ? (
+              // The section states its own absence instead of the page
+              // pretending to load. No fabricated control, no invented
+              // benchmark — just what is true and where to go next.
+              <div className="rounded-xl border border-dashed border-border/40 px-4 py-5 text-center space-y-2" data-testid="core-controls-absent">
+                <p className="text-body text-foreground/75">
+                  This account&rsquo;s latest analysis run did not produce a core-control read.
+                </p>
+                <p className="text-caption text-muted-foreground/75">
+                  Control creatives are named by the analysis core module. Every other
+                  module on this page is live.
+                </p>
+                <CrossLink to="/app/analysis/overview" label="Review analysis" />
+              </div>
+            ) : (
             <div className="grid grid-cols-dashboard-2 gap-3">
               <div className="rounded-xl border border-status-success/20 bg-status-success/[0.03] p-4 hover:border-status-success/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
@@ -395,9 +411,12 @@ export function AdAccountOverview() {
                 </div>
               )}
             </div>
-            <div className="mt-3">
-              <CaveatNote text={core.data_caveat} />
-            </div>
+            )}
+            {core && (
+              <div className="mt-3">
+                <CaveatNote text={core.data_caveat} />
+              </div>
+            )}
           </SectionCard>
 
           {/* Optimization loop — swiper deck (task tray in right panel) */}

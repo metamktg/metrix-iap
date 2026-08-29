@@ -126,6 +126,16 @@ export const navTree: NavSection[] = [
     landing: "/app/analysis",
     children: [
       {
+        // The analysis tab rail leads with Overview and five cross-links
+        // point at it, but it had no menu entry — so following "Review
+        // analysis" landed the reader on a page they could not navigate
+        // back to or reach again on purpose. The menu now matches the rail.
+        id: "analysis-overview",
+        label: "Overview",
+        to: "/app/analysis/overview",
+        dataSource: "campaign_summary, v3_variable_performance",
+      },
+      {
         id: "analysis-performance",
         label: "Ad Performance",
         to: "/app/analysis/performance",

@@ -17,6 +17,25 @@ describe("formatMstRenderPolicy", () => {
 
   it("preserves the legacy text form and rejects unsupported values", () => {
     expect(formatMstRenderPolicy("Use mobile-first formats.")).toBe("Use mobile-first formats.");
-    expect(formatMstRenderPolicy(null)).toBe("");
+    // REVISED 2026-08-29: this asserted `toBe("")`, and the empty string was
+    // the defect. Consumers all write `render_policy ?? "<fallback>"`, and
+    // `??` does not catch "" — so on the six manual-import accounts (whose
+    // seed carries `render_policy: ""`) every fallback was silently defeated
+    // and four empty states rendered a bare title with no explanation. The
+    // intent of this case — an unsupported value must never reach the UI —
+    // is unchanged; "nothing to say" is now expressed as null so the
+    // fallbacks actually fire.
+    expect(formatMstRenderPolicy(null)).toBeNull();
+    expect(formatMstRenderPolicy(undefined)).toBeNull();
+    expect(formatMstRenderPolicy(123)).toBeNull();
+    expect(formatMstRenderPolicy([])).toBeNull();
+  });
+
+  it("treats a blank or whitespace-only policy as nothing to say", () => {
+    // The exact shape carried by every manual-import account in the seed.
+    expect(formatMstRenderPolicy("")).toBeNull();
+    expect(formatMstRenderPolicy("   ")).toBeNull();
+    // An object with no renderable fields is the same claim by another route.
+    expect(formatMstRenderPolicy({ unrelated: "value" })).toBeNull();
   });
 });

@@ -106,6 +106,10 @@ args = "locator-ambiguity"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
+args = "cohort-reach"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
 args = "command-deck-token-drift"
 
 [[workflows.workflow.tasks]]
@@ -343,6 +347,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run check:locator-ambiguity"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "cohort-reach"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:cohort-reach"
 
 [workflows.workflow.metadata]
 isValidation = true
