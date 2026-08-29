@@ -1,6 +1,6 @@
 /* Command Deck design system theme — imports Tailwind, plugins, and the
-   token theme (light `:root` + dark `.dark`). The Metrix IAP is always dark:
-   index.html sets class="dark" on <html>. */
+   token theme (light `:root` + dark `.dark`). ThemeProvider defaults new
+   visitors to dark and persists an explicit light-theme choice. */
 @import "@workspace/command-deck/styles.css";
 
 /* App-specific token → utility mappings the design system does not provide. */
@@ -186,8 +186,8 @@
   --shadow-2xl: 0 24px 48px -12px rgba(0,0,0,0.9);
 }
 
-/* No .dark override needed: the design system supplies the dark theme;
-   app-specific tokens above apply in both (app is always dark). */
+/* No .dark override needed: the design system supplies both themes and
+   app-specific tokens above derive from its active semantic values. */
 @layer base {
   /* macOS renders the default (subpixel) stack heavier than the design
      intends on a dark ground, where heavy text is exactly what makes a
@@ -250,6 +250,17 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary) / 0.38);
+  }
+}
+
+/* Light surfaces need the full design-system muted-text value. The cockpit's
+   dark treatment intentionally softens supporting copy with opacity, but
+   carrying that extra alpha onto the pale surface makes small labels look
+   washed out. This keeps the same Command Deck token while removing only the
+   dark-mode attenuation. */
+@layer utilities {
+  html:not(.dark) [class*="text-muted-foreground/"] {
+    color: hsl(var(--muted-foreground));
   }
 }
 

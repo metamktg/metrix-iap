@@ -43,9 +43,18 @@ profile dropdown. Requirements:
 - Apply the selected theme consistently to both authentication screens and the
   signed-in application.
 
-Do not implement or reconcile this requirement from the Replit side while
-Claude's usage-paused session is active; Claude should incorporate it after
-first completing the pre-sync comparison and recovery described above.
+**Implemented from the Replit side after the user explicitly said to proceed.**
+The app now defaults to dark, persists an explicit light selection under the
+theme preference, and exposes a labeled Theme control in the top-right account
+menu. The light-mode treatment also removes the extra dark-mode opacity from
+muted supporting copy so small labels retain the Command Deck token's intended
+contrast. Browser verification covered first launch, switching, reload
+persistence, the signed-out login screen, and reset-to-dark behavior.
+
+When Claude resumes, preserve this behavior while completing the pre-sync
+comparison and recovery above. Reconcile around it rather than replaying a
+paused working tree that removes the provider, the profile-menu control, or the
+light-mode legibility rule.
 
 The Claude design session paused while a Replit-side change was still in flight,
 then its branch was merged and `main` advanced once more. The sync boundary has
