@@ -1001,3 +1001,71 @@ Both were verified by reintroducing the exact defect and watching them fail.
 compiling — loud, and caught in a day. This one was silent for an unknown
 stretch because CSS has no syntax error to hit. That is why the guard scans
 every source extension, not just `.ts`.
+
+---
+
+## 7.7 A11Y was the fourth blind spot — and the real number is 100%
+
+After TYPE, MOTION and (partly) DISCL, the remaining question was whether
+A11Y 40% on pages was real. It is not.
+
+`check:ui-inventory`'s A11Y signal asks whether a FILE literally writes
+`aria-…` or `role=`. That is a weak proxy in **both** directions:
+
+- **Under-reports.** Radix supplies the role and labelling wiring on the
+  primitive, so a file rendering `<DialogContent>` is announced correctly
+  while scoring absent — fourteen files are in exactly that position.
+- **Over-reports.** A file carrying `aria-hidden` on a decorative span and
+  nothing else scores present.
+
+A static sweep for the real defect — an icon-only control with no label — is
+no better. JSX puts most button labels inside `{expressions}`; a regex that
+strips them flagged **25 controls, and every one sampled was a false
+positive** (`LoginPage`'s submit says "Sign in" behind a ternary; `KpiTile`
+wraps a `<KpiValue>`; `TaskTray` renders `{actionLabel}`; the
+`ConnectAccountDialogs` pair are `{children}` wrappers).
+
+### Only the rendered accessibility tree settles it
+
+`check:accessible-names` (new, `scripts/src/check-accessible-names.mjs`) walks
+the six spine views against the route-mocked seed fixture and resolves each
+visible interactive control by the precedence a screen reader uses:
+`aria-label` → `aria-labelledby` → text content → `title` →
+`<label>`/placeholder → nested `img[alt]`.
+
+| View | Controls | Named |
+|---|---|---|
+| Account overview | 98 | 100% |
+| Ad performance | 124 | 100% |
+| IAP library | 155 | 100% |
+| Strategy map | 79 | 100% |
+| Creative library | 81 | 100% |
+| Action queue | 58 | 100% |
+| **Total** | **595** | **100%** |
+
+It is an **operator check, not a `.replit` validation** — it needs a running
+dev server, same class as `check:seed-fixture-drift`.
+
+**Scope, stated honestly: this measures NAMES, not accessibility.** Contrast
+has its own three gates. Target size and hover-only affordances belong to
+`check:interaction`. Focus order, live regions and keyboard traps are measured
+nowhere yet, and remain genuinely unknown.
+
+### DISCL is NOT extended, deliberately
+
+24 files compose `SectionCard` — whose body is a real collapse on
+`RevealPanel` — while scoring DISCL absent. That is the same shape as the
+MOTION fix, and it was **rejected** rather than applied. `SectionCard`'s fold
+is *structural chrome*: a section header you can collapse, present on almost
+every page. Counting it would push DISCL to near-universal and destroy the
+signal's discriminating power. Disclosure asks whether **content detail** is
+layered — a page of foldable sections still puts everything on the first
+layer inside each section. Motion was different: the animation genuinely IS
+the app's one signature wherever it appears.
+
+Three of the six signals were undercounting composition; the fourth was a bad
+proxy replaced by a real measurement; the fifth is correct as written. RESP
+was checked too — the only app classes carrying breakpoints internally are
+`mx-dialog-content` (a transition, not a layout) and `text-bignum-fluid` (a
+fluid type step), neither of which is a reflow the detector should count on a
+file's behalf.
