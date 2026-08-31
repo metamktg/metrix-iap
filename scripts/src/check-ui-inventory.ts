@@ -14,9 +14,13 @@
 //
 // WHAT IT MEASURES, AND WHY EACH ONE
 //
-//   TYPE       Uses the type roles (TYPE.*/HEADING.*) rather than raw
-//              Tailwind text sizes. Without this a surface is off the ramp
-//              and its headings have no defined rank.
+//   TYPE       Uses the type roles rather than raw Tailwind text sizes —
+//              either spelling: the `TYPE.*`/`HEADING.*`/`DIALOG.title` TS
+//              constants, or the `.text-label`/`.text-caption`/`.text-body`
+//              /`.text-title`… utilities that declare the same steps in
+//              index.css. Without one a surface is off the ramp and its
+//              headings have no defined rank. A raw `text-[Npx]` is not a
+//              role and never counts.
 //   MOTION     Moves with the system's motion vocabulary: imports lib/motion
 //              or framer-motion directly, OR composes one of the
 //              motion-carrying widgets (RevealPanel, DisclosureStack,
@@ -75,7 +79,18 @@ interface Row {
 }
 
 const SIGNAL = {
-  type: /\b(TYPE\.[a-zA-Z]+|HEADING\.h[1-6]|DIALOG\.title)\b/,
+  // Two legitimate spellings of ONE ramp, and counting only the first was
+  // this check's third composition blind spot (after page- and popup-MOTION).
+  // `TYPE.*` / `HEADING.*` / `DIALOG.title` are the TS constants; the
+  // `.text-micro|label|caption|body|title|callout|display|h2..h5` utilities
+  // are the SAME steps declared in index.css (11/12/13/15/18/19/21/24/25px),
+  // and the CSS side is the more complete of the two. A file spelling the
+  // ramp in CSS is on the ramp. The shell class read TYPE 0% across seven
+  // surfaces purely because chrome spells it that way — 70 role uses across
+  // TaskTray/Sidebar/AccountSwitcher/Topbar, zero TYPE.* imports.
+  // What this still does NOT count, deliberately: a raw `text-[Npx]`, which
+  // is off-ramp by definition and is what check:disclosure-rulebook ratchets.
+  type: /\b(TYPE\.[a-zA-Z]+|HEADING\.h[1-6]|DIALOG\.title|text-(?:micro|micro-num|label|caption|body|title|cardtitle|callout|display|section|bignum|hero|h[2-5]))\b/,
   // SectionCard belongs in this list since its body went onto RevealPanel
   // (2026-08-29): every collapsible module section now animates with the
   // one signature, so a page built from SectionCards moves correctly with

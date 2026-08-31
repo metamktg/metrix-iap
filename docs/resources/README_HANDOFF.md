@@ -58,6 +58,11 @@ honesty pattern and the one-running-run-per-account+kind rule.
 **Exit:** a real (non-demo) account, after an analysis run, renders populated recommendation
 cards in Action Queue, sourced from its own data.
 
+**Read `CARRY_FORWARD_REGISTER.md` F-f before starting.** The destination tables
+(`intelligence_cards`, `bsil_suggestions`) already exist in the official schema and match the
+UI's card shape closely — but nothing in the product reads that schema, and no `clients` ↔
+`ad_accounts` bridge exists. That is an owner decision, and it changes R1's size.
+
 ### R2 · Surface the creative intelligence already being written
 
 Register item **F-a**, the register's own "single best value-per-effort" item.
