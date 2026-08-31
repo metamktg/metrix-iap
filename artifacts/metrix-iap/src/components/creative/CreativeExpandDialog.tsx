@@ -9,9 +9,10 @@ import { useState, useMemo } from "react";
 import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
+import { DenseText } from "@/pages/metrix/shared";
 import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle, TrendingDown } from "lucide-react";
 import { motion } from "framer-motion";
-import { Dialog, DialogContent } from "@workspace/command-deck/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { CreativeCardData } from "./CreativeCard";
 import { FunnelStepsChart, buildFunnelSteps } from "./FunnelStepsChart";
@@ -734,9 +735,29 @@ export function CreativeExpandDialog({
               <div className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-0.5")}>
                 Creative · {data.conceptCode}
               </div>
-              <p className={cn(TYPE.title, "leading-tight")}>{data.title}</p>
+              {/* This heading was a <p>, so DialogContent had no
+                  aria-labelledby target and a screen reader announced an
+                  unnamed dialog (Radix also warns for it). DialogTitle
+                  renders the h2 the heading already was semantically and
+                  wires the label; the visible text is unchanged. The
+                  visual-system line becomes the description, and when a
+                  creative has none an sr-only one stands in — so
+                  aria-describedby always points at a real element instead
+                  of being suppressed on some creatives and not others. */}
+              <DialogTitle className={cn(TYPE.title, "leading-tight")}>{data.title}</DialogTitle>
+              {/* The description is always present and always sr-only, so
+                  aria-describedby points at a stable element whether or not
+                  this creative has a visual system. The visible line is
+                  separate and readable: it was a raw line-clamp-2 with no
+                  way to reach the hidden remainder. */}
+              <DialogDescription className="sr-only">
+                {data.visualSystem ?? `Performance detail for creative ${data.conceptCode}.`}
+              </DialogDescription>
               {data.visualSystem && (
-                <p className="text-caption text-muted-foreground/75 mt-0.5 leading-relaxed line-clamp-2">{data.visualSystem}</p>
+                <DenseText
+                  text={data.visualSystem}
+                  className="text-caption text-muted-foreground/75 mt-0.5 leading-relaxed"
+                />
               )}
             </div>
 

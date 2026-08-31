@@ -706,16 +706,11 @@ recharts mark animation and CSS meter fills, plus small info panels whose
 conditionals are data-presence rather than disclosure. Forcing those to 60% is
 decoration. **Recorded as a judgement call, not a completed criterion.**
 
-**`ConnectAccountDialogs` (2350 lines) is half of Phase 4 and still open.** TYPE ✓
-and VIZ ✓; MOTION and DISCL absent. It is the single largest surface in the app
-and the first thing a new customer touches. Phase 4's exit criterion is
-therefore **not met** — `LoopCommandChain` (2105 lines) is done, this one is not.
+**`ConnectAccountDialogs` was half of Phase 4 and is now closed** (§7.4): TYPE ✓
+MOTION ✓ DISCL ✓ VIZ ✓. Phase 4's exit criterion is met on both walls.
 
-**Popup class is the weakest kind on the board**: TYPE 90% but MOTION 10%,
-DISCL 0%, A11Y 50% across 10 surfaces. `SegmentDrilldownModal` (1040),
-`CreativeExpandDialog` (786), `SegmentGridModal` (335),
-`CellCreativeUploadDialog` (333), `AddAccountDialog` (333) all read
-motion-absent and disclosure-absent.
+**Popup class read as the weakest kind on the board — most of it was the
+instrument.** Worked and re-measured on 2026-08-31; see §7.4.
 
 **Shell class reads TYPE 0%** across 7 surfaces. Partly honest — a layout shell
 has little to type — but `Sidebar` (719) and `Topbar` (325) are chrome the user
@@ -762,3 +757,91 @@ algorithmic weighting that finds patterns, correlations and coincidences between
 avatars, Concept IDs and angles ACROSS objectives, without distorting the source
 data. The analysis layer stays objective-faithful; the strategy layer does the
 weighting. Nothing in this phase touched it.
+
+
+---
+
+## 7.4 Popup pass (2026-08-31)
+
+Started from §7.2's "popup MOTION 10% / DISCL 0% / A11Y 50%". Two of those
+three numbers were this repo's own detector, not the dialogs.
+
+### The instrument was wrong first
+
+`check:ui-inventory`'s MOTION signal counted `lib/motion` / `framer-motion`
+imports plus a list of motion-carrying widget names. It did not count the four
+Radix content primitives — and every one of them animates its own arrival AND
+departure inside the shared primitive: `DialogContent` and
+`AlertDialogContent` fade-in-0 / zoom-in-95 over duration-200, `PopoverContent`
+adds a per-side slide, `SheetContent` slides from its edge (open 500ms / close
+300ms), and the dialog-stack recede on `.mx-dialog-content` is switched off
+under `prefers-reduced-motion`. A file rendering one of them is animated by
+composition exactly as a file built from `SectionCard`s is. **This is the same
+class of blind spot as the page-MOTION false 15% fixed in wave 8**, and the
+same correction: extend the composition list, name the approximation in the
+check's header, re-measure.
+
+Honest effect of the detector fix alone — no UI changed:
+
+| Kind | MOTION before | MOTION after |
+|---|---|---|
+| popup | 10% | 80% |
+| page | 63% | 67% |
+| panel | 31% | 38% |
+| shell | 29% | 43% |
+
+**A11Y 50% was largely the same story and was NOT chased.** Every button across
+the four unlabelled popups was checked programmatically for the icon-only /
+no-`aria-label` case: zero found — they all carry visible text, and Radix
+supplies `role="dialog"` and the labelling wiring on the primitive. Adding
+`aria-*` attributes to move that number would have been gaming the instrument.
+
+### One real accessibility defect the number pointed at
+
+`CreativeExpandDialog` (786 lines) rendered a `DialogContent` with **no
+`DialogTitle` at all** — no `aria-labelledby` target, so a screen reader
+announced an unnamed dialog, and Radix warns for it. Its visible heading was a
+`<p>`. That `<p>` is now the `DialogTitle` it already was semantically (Radix
+renders the `h2`), and the description is always present — the visual-system
+line when there is one, an `sr-only` stand-in when there is not — so
+`aria-describedby` points at a real element on every creative rather than on
+some. Visible text is unchanged.
+
+### Real disclosure work
+
+- **`CsvMappingPanel`** (`ConnectAccountDialogs`) was a hand-rolled
+  `{open && …}` hard mount. Now on `RevealPanel` — the same signature
+  `SectionCard` took in wave 8 — with one rotating chevron instead of a
+  Down/Right glyph swap.
+- **`CreativeDeconstructSection`** listed every staged creative in a
+  `max-h-48 overflow-y-auto` box: forty creatives through a 192px porthole.
+  Now split by function, which is the point — **`ListStack`'s own rule is that
+  unprocessed signal never folds**, so assets still awaiting classification
+  stay visible and actionable, and only the already-classified tail piles
+  behind a `N classified` face. A pile is for settled things.
+- **Two raw `line-clamp-2` sites became `DenseText`.** The
+  `SegmentDrilldownModal` one was clamping **ad primary copy** — most of every
+  creative's headline text hidden with no way to reach it. The clamp was right;
+  the unrecoverability was the defect.
+
+### Measured result
+
+| | TYPE | MOTION | DISCL | VIZ | RESP | A11Y |
+|---|---|---|---|---|---|---|
+| popup, before | 90% | 10% | 0% | 40% | 40% | 50% |
+| popup, after | 90% | 80% | 30% | 40% | 40% | 60% |
+
+The three largest popups — `ConnectAccountDialogs` (2384),
+`SegmentDrilldownModal` (1054), `CreativeExpandDialog` (807) — now carry TYPE +
+MOTION + DISCL + VIZ; `CreativeExpandDialog` carries all six.
+
+**The remaining DISCL absences are deliberate, not a backlog.**
+`KpiDrilldownModal` (544), `SegmentGridModal` (335) and
+`CellCreativeUploadDialog` (333) ARE the detail layer — the rulebook atop
+`shared.tsx` says drawers and modals keep full prose. Disclosure inside them
+would be decoration. Tabs are likewise not counted as disclosure and should not
+be: a tab bar shows every option and switches laterally; disclosure hides depth
+until asked.
+
+Verification: full workspace `typecheck` clean, 2162 app tests pass, all ten
+gates pass.
