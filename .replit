@@ -330,6 +330,17 @@ args = "pnpm --filter @workspace/scripts run check:token-colors"
 isValidation = true
 
 [[workflows.workflow]]
+name = "stray-shell-output"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:stray-shell-output"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
 name = "interaction"
 author = "agent"
 

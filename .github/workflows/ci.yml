@@ -121,6 +121,7 @@ jobs:
         run: |
           pnpm --filter @workspace/scripts run check:interaction
           pnpm --filter @workspace/scripts run check:token-colors
+          pnpm --filter @workspace/scripts run check:stray-shell-output
           pnpm --filter @workspace/scripts run check:type-scale
           pnpm --filter @workspace/scripts run check:chart-palette
 
