@@ -129,7 +129,7 @@ export function AccountMenu({
           >
             <span
               className={cn(
-                "absolute top-0.5 h-3.5 w-3.5 rounded-full bg-background border border-border/60 shadow-sm transition-transform",
+                "absolute top-0.5 h-3.5 w-3.5 rounded-full bg-background border border-border/60 elevation-raised transition-transform",
                 isLight ? "translate-x-[17px]" : "translate-x-0.5"
               )}
             />
