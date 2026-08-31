@@ -25,6 +25,21 @@ export const MANUAL_ONLY_CHECK_SCRIPTS: Record<string, string> = {
     "SUPABASE_DB_PASSWORD already lives. It exits 2 (not 0) when no credential " +
     "resolves, precisely so an unattended runner cannot mistake 'nothing was " +
     "checked' for 'the views are fine'.",
+  "check:accessible-names":
+    "renders the six spine views in a real browser and resolves every visible " +
+    "interactive control through the accessibility tree, so it needs a RUNNING " +
+    "dev server (PORT=5178 in artifacts/metrix-iap) — same constraint as " +
+    "check:seed-fixture-drift, and an unattended validation would fail on every " +
+    "run without one. It exists because the static A11Y signal is a weak proxy " +
+    "in both directions: Radix supplies role/labelling on the primitive, so a " +
+    "file rendering DialogContent scores absent while being announced correctly, " +
+    "and a lone aria-hidden scores present. A regex hunting the real defect is " +
+    "no better — JSX keeps most button labels inside {expressions}, and every " +
+    "one of the 25 controls such a scan flagged was a false positive. Only the " +
+    "rendered tree settles it. Baseline 2026-08-31: 595 controls, 0 unnamed. " +
+    "Scope is NAMES, not accessibility — contrast has its own three gates, " +
+    "target size belongs to check:interaction, and focus order, live regions " +
+    "and keyboard traps are measured nowhere yet.",
   "check:ui-inventory":
     "a REPORT, not a gate: it prints which of the app's surfaces carry type " +
     "roles, motion, disclosure, shared dataviz, a breakpoint and a11y wiring, " +
