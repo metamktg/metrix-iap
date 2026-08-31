@@ -924,3 +924,80 @@ two-spellings rule stated so the next session does not rediscover it.
 
 Verification: full workspace typecheck clean, ten gates pass, 2170 app tests
 pass (three consecutive full runs).
+
+---
+
+## 7.6 The live app had no dark palette (2026-08-31)
+
+Reported by the owner: "I cannot change the theme in the live app."
+
+### What was actually wrong
+
+Two lines of a pnpm run banner were committed **inside** the `.dark { … }`
+token block of `artifacts/command-deck/scripts/theme-template.css` — and
+therefore inside the `src/index.css` generated from it:
+
+```
+> @workspace/scripts@0.0.0 build:mx-ramps /home/user/metrix-iap/scripts
+> tsx ./src/build-mx-ramps.ts
+```
+
+A generator's stdout was piped into the file with the package manager's own
+banner attached. **`>` is a legal CSS child combinator**, so nothing errored
+anywhere: not the build, not a linter, not a test.
+
+Browsers recover per-declaration, so the dev server was correct — the toggle
+worked there, verified. The production CSS pipeline resynchronised at the next
+custom property and **dropped the ~40 declarations above the junk**:
+`--background`, `--foreground`, `--card`, `--border`, `--sidebar`, `--popover`,
+`--primary`, `--muted`. The built stylesheet contained no dark `--background`
+at all.
+
+So the shipped app had **one palette**. It rendered light while `<html>` said
+`dark`, and the toggle flipped a class nothing responded to.
+
+### Measured, before and after
+
+Production build, root path, real click on the toggle:
+
+| | `<html>` class | body background |
+|---|---|---|
+| before, at load | `dark` | `rgb(242,246,251)` ← light, wrong |
+| before, after click | `light` | `rgb(242,246,251)` ← no change |
+| after fix, at load | `dark` | `rgb(5,11,24)` |
+| after fix, after click | `light` | `rgb(242,246,251)` |
+
+The built CSS now carries both blocks in the right order — `:root`
+`--background: 213 52.9% 96.7%` at offset 234625, `.dark`
+`--background: 221 65.5% 5.7%` at 236907.
+
+### Fixed at the source, not the symptom
+
+`src/index.css` is GENERATED from `theme-template.css` by
+`command-deck/scripts/build-tokens.mjs`, which runs on `pretypecheck`.
+Cleaning only the generated file would have been undone on the next
+typecheck. Both were cleaned, and the generator re-run to prove the
+regenerated file agrees.
+
+### Two guards, both proven to fire
+
+- **`check:stray-shell-output`** (new; wired into `.replit` validations and the
+  CI gate block) scans every tracked source file for shell transcript at the
+  start of a line — npm/pnpm/yarn run banners, bare runner echoes, `$ pnpm`
+  prompts, `npm ERR!`/`WARN`. Markdown is skipped and mid-line prose is not
+  matched. **It found a second, independent copy of the same corruption in
+  `theme-template.css` on its first run** — the copy that would have
+  regenerated the bug straight back.
+- **`theme-palette-integrity.test.ts`** (22 tests) guards the effect rather
+  than the cause: both files must carry a top-level `.dark` block defining all
+  eight ground/text/chrome tokens, with a dark lightness, and no transcript
+  inside it. Any other way of losing the dark ground fails here too.
+
+Both were verified by reintroducing the exact defect and watching them fail.
+
+### This is the second one
+
+`apply-supabase-schema.ts` took raw keystrokes in PR #158 and stopped
+compiling — loud, and caught in a day. This one was silent for an unknown
+stretch because CSS has no syntax error to hit. That is why the guard scans
+every source extension, not just `.ts`.

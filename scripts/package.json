@@ -18,6 +18,7 @@
     "check:disclosure-rulebook": "tsx ./src/check-disclosure-rulebook.ts",
     "check:signal-weights-drift": "tsx ./src/check-signal-weights-drift.ts",
     "check:token-colors": "tsx ./src/check-token-colors.ts",
+    "check:stray-shell-output": "tsx ./src/check-stray-shell-output.ts",
     "check:type-scale": "tsx ./src/check-type-scale.ts",
     "check:optical-authority": "tsx ./src/check-optical-authority.ts",
     "check:ui-inventory": "tsx ./src/check-ui-inventory.ts",
