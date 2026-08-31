@@ -1,6 +1,6 @@
 # METRIX — Carry-Forward Register (E6)
 
-**Status: reconciled against live code on 2026-08-26.** The original register was written
+**Status: reconciled against live code on 2026-08-26; re-reconciled 2026-08-31 at the UI-reface phase close (added F-e).** The original register was written
 on 2026-08-25 from `BUG_TRACKER.md` and `METRIX_Data_Consistency_Audit_Phase1.md`, and
 travelled to this repo in the Phase 2/3 handoff zip. Between those two dates BUG-28 → BUG-46
 landed, which closed several register items outright. Every line below carries a verdict from
@@ -27,7 +27,7 @@ register's scope (security, scale, and defects), 11 shipped and 1 recorded as ar
 | Scalability & storage (S) | — | S1, S2, S3, S4, S5 |
 | Robustness / type-safety (R) | R1, R2, R3 | R4 (standing rule) |
 | Efficiency / duplicate logic (E) | E-a, E-b, E-c, E-d | — |
-| Efficacy (F) | F-c | F-a, F-b, F-d |
+| Efficacy (F) | F-c | F-a, F-b, F-d, F-e |
 | UI honesty (C) | C1, C2, C3, C4, C5, C7, C8, C9, C10, C11 | C6 |
 
 The honesty group — the one Phase 3 builds directly on top of — is closed except C6, which is
@@ -73,6 +73,7 @@ discards before the UI layer.
 | F-b | `[open]` | **`ad_performance.reach` / `clicks_all` are dropped from per-ad stats** (bottom-line event totals only), so no ad-level surface can show them. Same class as F-a. Source: Audit §5.2. |
 | F-c | `[shipped]` | `CreativeExpandDialog` ASSIGNED `maleCpa`/`maleCtr` from each row's own rate inside a loop over the bucket's rows, so the last row won and which ad that was depended on iteration order. The bucket now accumulates impressions and link clicks alongside spend and results, and derives both rates once — null on a zero denominator rather than asserting $0.00. |
 | F-d | `[open]` | **`ConceptFamilyView` re-derives concept CPA/CVR independently of `concept_performance`'s blends.** The rows[0] CTR defect shipped (BUG-13); the broader re-derivation is untouched. Consolidating onto one helper is what prevents the next rows[0]-class bug — `lib/placement-rollup.ts` is the shape to copy. Source: Audit §5.2. |
+| F-e | `[open — new 2026-08-31]` | **The optimize/act stage of the IAP loop has a complete UI and no producer.** `optimization_loop` and `recommendation_cards` are READ by six surfaces (`RecommendationsView`, `ListenCommandCenter`, `ManagerOverview`, `ActionQueueView`, `AdAccountOverview`, `MstCommandCenter`) plus `reportExport.ts` and the seed adapter. Grepping `artifacts/api-server/src` and `scripts/src` for any insert/upsert/update against either name returns **nothing**: the only writer in the repo is the static importer (`scripts/src/metrix-supabase/import.ts:498,1138,1821`), which writes the literal `"pending"` with a null payload, and `import.ts:1761`, which copies `recommendation_cards` straight out of the checked-in `metrix_seed_bundle.json`. `generationEngine.ts` exposes exactly three kinds — `strategy`, `briefs`, `deconstruct` (`generationEngine.ts:34`) — and no route generates an optimization loop. **Consequence:** every real account renders "No actions yet" in Action Queue and a null optimization loop forever; only the demo seed shows cards, and those are fixture data, not analysis. This is the largest functional hole between the current build and a platform release, and it is a missing-producer problem, not a UI one — the UI is already built and honest about the emptiness. |
 
 ## 5. UI honesty
 

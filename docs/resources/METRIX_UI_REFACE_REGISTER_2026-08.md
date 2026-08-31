@@ -1,7 +1,8 @@
 # Metrix IAP — UI reface register
 
 **Status:** live working record. Supersedes ad-hoc reface notes in this session.
-**Last reconciled:** 2026-08-28, against `main` at `08ce77a4`, after PR #150.
+**Last reconciled:** 2026-08-31, against `main` at `38cea8a6`, after PRs #154–#160.
+**Phase close:** see §7 — what shipped, what needs another look, what was missed.
 
 ### Backend capability added while Claude’s UI work is paused
 
@@ -646,3 +647,118 @@ the sidebar, the task tray, the loop chain — is where it will show first.
 `design-lab.html` and the app at 390 / 768 / 1440, sidebar collapsed and
 expanded, and look. Everything above is true about the code; whether it is
 *good* is a question the code cannot answer.
+
+
+---
+
+## 7. Phase close — reconciliation (2026-08-31)
+
+`main` at `38cea8a6`. PRs #154, #155, #156, #157, #158, #160 merged. Every number
+below came from a command run on this commit, not from memory.
+
+### 7.1 Shipped and verified
+
+**All ten gates pass on this commit** — the nine CI design gates
+(`disclosure-rulebook`, `text-primary-contrast`, `css-token-contrast`,
+`text-muted-contrast`, `locator-ambiguity`, `interaction`, `token-colors`,
+`type-scale`, `chart-palette`) plus `check:cohort-reach`, new this phase.
+
+**Motion is delivered at the primitive, not per-surface.** `SectionCard`'s body
+now arrives and leaves on `RevealPanel`, so every collapsible module section on
+every page inherits the one reveal signature from a single wiring. That is what
+moved page MOTION from a true 15% to **63%**, past the ≥ 60% exit.
+
+**The widget layer is effectively complete**: widget class reads TYPE 89% /
+MOTION 100% / A11Y 100% across 9 surfaces. `ListStack` closed the last
+undispositioned Watermelon row — a pile with count-honest edge strips, not
+another accordion.
+
+**Cohort is contained and the containment is enforced.** `check:cohort-reach`
+allows cohort language only in the cohortMeta module, the analysis views, the
+Settings configuration surface, and the JSON export payload. Proven to fire by
+reintroducing a violation in `Topbar`. Account switcher rows no longer label a
+cohort or an import source — per the owner decision that the objective is
+pertinent to a single analysis run, not to the platform chrome.
+
+**Four platform-wide defects found and fixed while refacing** (all pre-existing,
+all invisible on the demo account, all confirmed by `git log -L` to predate this
+design work):
+
+| Defect | Root cause | Fix |
+|---|---|---|
+| `AdAccountOverview` blank on 7 of 9 accounts | whole page early-returned on optional `core_reanalysis_read` | a missing module now costs only its own section |
+| every `render_policy` fallback defeated | `formatMstRenderPolicy` returned `""`, which `??` does not catch | returns `string \| null` at the source |
+| empty amber warning boxes | `CaveatNote` rendered its frame for blank text | `if (!body) return null` |
+| 28 Postgres table names published to production browsers | `DataSourceBadge` shipped in prod builds | `if (isProd) return null` in badge and toggle |
+
+**Backend merged.** The Replit creative-asset mapping work (filename
+normalisation, edit-distance + token-overlap scoring, refusal below 0.74
+confidence, sticky first-match persisted in `creative_asset_mappings` and
+propagated to `ads`/`ad_instances`/`ad_performance`) plus its three migrations
+are on `main`. CI's api-server suite passing is the proof the migrations apply.
+
+### 7.2 Needs another look
+
+**Panel MOTION sits at 31%, and that is a revision, not a miss** — but it is a
+revision an owner should agree with. The audited remainder is chart-hosting and
+progress panels (`BreakdownExplorer`, `GenerationControls`) whose motion lives in
+recharts mark animation and CSS meter fills, plus small info panels whose
+conditionals are data-presence rather than disclosure. Forcing those to 60% is
+decoration. **Recorded as a judgement call, not a completed criterion.**
+
+**`ConnectAccountDialogs` (2350 lines) is half of Phase 4 and still open.** TYPE ✓
+and VIZ ✓; MOTION and DISCL absent. It is the single largest surface in the app
+and the first thing a new customer touches. Phase 4's exit criterion is
+therefore **not met** — `LoopCommandChain` (2105 lines) is done, this one is not.
+
+**Popup class is the weakest kind on the board**: TYPE 90% but MOTION 10%,
+DISCL 0%, A11Y 50% across 10 surfaces. `SegmentDrilldownModal` (1040),
+`CreativeExpandDialog` (786), `SegmentGridModal` (335),
+`CellCreativeUploadDialog` (333), `AddAccountDialog` (333) all read
+motion-absent and disclosure-absent.
+
+**Shell class reads TYPE 0%** across 7 surfaces. Partly honest — a layout shell
+has little to type — but `Sidebar` (719) and `Topbar` (325) are chrome the user
+looks at constantly, and neither carries a type role.
+
+**Nothing here has been looked at in a browser at the type level.** The 15px body
+floor and lifted ramp are asserted structurally and never seen. This was the
+register's stated highest-value human action at the last reconciliation and it is
+still outstanding.
+
+### 7.3 Missed
+
+**The optimize/act stage of the IAP loop has a complete UI and no producer.**
+Recorded as **F-e** in `CARRY_FORWARD_REGISTER.md`. `optimization_loop` and
+`recommendation_cards` are read by six UI surfaces and written by nothing except
+the static importer, which writes `"pending"` with a null payload. Every real
+account renders "No actions yet" forever. This is the largest functional hole
+between the current build and a platform release, and no amount of UI work closes
+it.
+
+**22 declared fields are read nowhere** (`check:field-coverage`, 450 fields across
+54 interfaces, 382 read, 46 unattributable). The concentration tells the story:
+
+| Interface | Unread | What it means |
+|---|---|---|
+| `WorkspaceBilling` | 7 of 8 | there is no billing surface — required for a paid release |
+| `AppDefaults` | 5 of 6 | server-directed initial view / active account, ignored by the client |
+| `OptimizationLoop` | 2 of 6 | `manager_overview_visibility`, `dismiss_policy` — dead until F-e ships |
+| `CampaignWindow` | 2 of 7 | `campaign_name`, `os` |
+| `ManagerAccount` | 1 of 8 | `overview_mode` |
+| `AdAccount` | 1 of 14 | `facebook_page_dp_url` |
+| `WorkspaceInvoice` | 1 of 4 | `amount_usd` |
+
+**Phase 6 ports not started**: `collection-grid-disclosure`, `quick-switcher`,
+`morphing-sidebar-controls`, `inline-toast`, `onboarding-checklist`,
+`expand-details`. (`list-stack` and `copy-confirm` shipped.)
+
+**C6 placeholder vocabulary sweep**: ~158 `"—"` sites vs ~30 `"n/a"` sites.
+Breadth work, not a defect.
+
+**The strategy weighting engine was never started** and still awaits an explicit
+go. Spec at `CARRY_FORWARD_REGISTER` §6a. This is the owner's stated intent —
+algorithmic weighting that finds patterns, correlations and coincidences between
+avatars, Concept IDs and angles ACROSS objectives, without distorting the source
+data. The analysis layer stays objective-faithful; the strategy layer does the
+weighting. Nothing in this phase touched it.
