@@ -34,8 +34,62 @@ complete record and the zip is no longer needed.
 - **Open** — storage (S1–S5) and efficacy (F-a, F-b, F-d), plus the decisions in register §6.
   None of it gates Phase 3.
 
-**Phase 3 is unblocked.** The next session is the information-hierarchy pass against
-`METRIX_Phase3_Design_Brief_202608.md`.
+**Phase 3 shipped.** The information-hierarchy / UI-reface pass closed on 2026-08-31 at
+`main` `38cea8a6` (PRs #154–#160). Its reconciliation is
+`METRIX_UI_REFACE_REGISTER_2026-08.md` §7 — shipped / needs another look / missed. Read §7
+before starting anything below.
+
+---
+
+## Next phase — Release Readiness (R1–R5)
+
+Ordered by what actually blocks a paid release. Each item names its own exit test.
+
+### R1 · Build the optimize/act producer  *(the one true blocker)*
+
+Register item **F-e**. `optimization_loop` and `recommendation_cards` are read by six UI
+surfaces and written by nothing but the static importer, which writes `"pending"` + null.
+Every real account shows "No actions yet" forever. Add `optimize` as a fourth
+`GenerationKind` in `generationEngine.ts` (alongside `strategy` / `briefs` / `deconstruct`),
+build its evidence pack from real analysis rows, and expose
+`POST /api/metrix/accounts/:id/generate/optimize`. Follows the existing running/success/error
+honesty pattern and the one-running-run-per-account+kind rule.
+
+**Exit:** a real (non-demo) account, after an analysis run, renders populated recommendation
+cards in Action Queue, sourced from its own data.
+
+### R2 · Surface the creative intelligence already being written
+
+Register item **F-a**, the register's own "single best value-per-effort" item.
+`ad_creative_metadata` carries each ad's body text, headline, CTA type, link destination and
+link caption; `ad_performance.extra_metrics` carries the rest. Both are written on every run
+and read by nothing. Consumer: the Creative dialog's Overview tab. **F-b** (`reach`,
+`clicks_all` dropped from per-ad stats) rides along in the same read path.
+
+**Exit:** `check:field-coverage` shows these fields read; the Creative dialog shows real ad
+copy next to real performance.
+
+### R3 · Billing surface, or drop billing from the contract
+
+7 of 8 `WorkspaceBilling` fields and `WorkspaceInvoice.amount_usd` are declared and read
+nowhere. A paid platform needs the surface; an unpaid one should not carry the contract.
+**This is an owner decision, not an implementation guess.**
+
+### R4 · Strategy weighting engine
+
+Spec at `CARRY_FORWARD_REGISTER.md` §6a — the owner's stated intent. Analysis stays
+objective-faithful; the strategy layer applies algorithmic weighting to find patterns,
+correlations and coincidences between avatars, Concept IDs and angles **across** objectives,
+and curates direction from those relationships without distorting the source. **Awaiting an
+explicit go.**
+
+### R5 · Design remainder
+
+`ConnectAccountDialogs` (2350 lines — the largest surface and the first a new customer
+touches: MOTION and DISCL absent, Phase 4's exit therefore unmet); the popup class
+(MOTION 10% / DISCL 0% / A11Y 50% across 10 surfaces); shell TYPE 0%; Phase 6 ports; the
+C6 placeholder sweep. Lowest release risk of the five — none of it blocks a customer from
+getting value, and all of it is measured and re-runnable.
 
 ## Environment facts (no secrets here)
 
