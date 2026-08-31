@@ -40,7 +40,7 @@ import {
 } from "@/lib/data/segmentMetricsCatalog";
 import { useSegmentMetricSelection } from "@/hooks/useSegmentMetricSelection";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
-import { fmtUSD, fmtNum, fmtPct } from "@/pages/metrix/shared";
+import { fmtUSD, fmtNum, fmtPct, DenseText } from "@/pages/metrix/shared";
 import { TYPE, DIALOG } from "@/pages/metrix/typography";
 import type { AnalysisData } from "@/lib/data/seedTypes";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
@@ -917,10 +917,24 @@ export function SegmentDrilldownModal({
                             />
                             {/* Copy preview */}
                             {c.copy?.primary && (
-                              <p className="text-label text-muted-foreground/75 leading-relaxed line-clamp-2 italic">
-                                &ldquo;{c.copy.primary}&rdquo;
-                                {c.copy.cta && <span className="not-italic text-interactive/60 ml-1">&rarr; {c.copy.cta}</span>}
-                              </p>
+                              /* A raw line-clamp-2 on ad copy hid most of
+                                 every primary text with no way to read the
+                                 rest — the clamp is the point, the
+                                 unrecoverability was the defect. DenseText
+                                 keeps the two-line face and adds More/Less
+                                 only when the text actually overflows. */
+                              <DenseText
+                                text={c.copy.primary}
+                                className="text-label text-muted-foreground/75 leading-relaxed italic"
+                                render={(t) => (
+                                  <>
+                                    &ldquo;{t}&rdquo;
+                                    {c.copy?.cta && (
+                                      <span className="not-italic text-interactive/60 ml-1">&rarr; {c.copy.cta}</span>
+                                    )}
+                                  </>
+                                )}
+                              />
                             )}
                             {/* Variable chips */}
                             {c.variableCodes.length > 0 && (

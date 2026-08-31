@@ -90,6 +90,8 @@ import type { ManualImportInput, ManualImportResult } from "@workspace/api-clien
 import { suggestAdNameMatch, type AdNameMatch } from "@/lib/adNameMatch";
 import { useDeconstruction, DECONSTRUCTION_STATUS_LABEL } from "@/components/creative/useDeconstruction";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
+import { ListStack } from "@/components/widgets/ListStack";
 
 export function PrimaryBtn({
   onClick,
@@ -449,14 +451,20 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
           Column mapping{" "}
           <span className="font-normal text-muted-foreground/80">— {headerLabel}</span>
         </span>
-        {open ? (
-          <ChevronDown className={cn("w-3.5 h-3.5 shrink-0", chevronColor)} />
-        ) : (
-          <ChevronRight className={cn("w-3.5 h-3.5 shrink-0", chevronColor)} />
-        )}
+        <ChevronDown
+          className={cn(
+            "w-3.5 h-3.5 shrink-0 transition-transform duration-150",
+            chevronColor,
+            open && "rotate-180"
+          )}
+        />
       </button>
 
-      {open && (
+      {/* The body was a hard mount; it is the same collapsible-section shape
+          SectionCard has, so it takes the same signature. One rotating
+          chevron rather than a Down/Right swap: a swap is a cut between two
+          glyphs, and the rotation reads as the same control moving. */}
+      <RevealPanel open={open}>
         <div className="px-3 pb-3 space-y-1 border-t border-foreground/[0.04]">
           {resolved.length > 0 && (
             <div className="pt-2 space-y-1">
@@ -531,7 +539,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
             </div>
           )}
         </div>
-      )}
+      </RevealPanel>
     </div>
   );
 }
@@ -1934,41 +1942,12 @@ function CreativeDeconstructSection({
     return !d || d.status === "discarded" || d.status === "unsupported";
   });
 
-  return (
-    <div className="space-y-1.5" data-testid="deconstruct-section">
-      <div className="flex items-center justify-between px-0.5 gap-2">
-        <span className="text-label font-medium text-muted-foreground/85">
-          Deconstruct into IAP library
-        </span>
-        <button
-          onClick={() => void startBackfill()}
-          disabled={isRunning || pending.length === 0}
-          className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 text-label font-medium text-interactive hover:bg-primary/20 active:bg-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          data-testid="deconstruct-all"
-        >
-          {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-          {isRunning
-            ? progress
-              ? `Classifying ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`
-              : "Deconstructing…"
-            : `Deconstruct all${pending.length > 0 ? ` (${pending.length})` : ""}`}
-        </button>
-      </div>
-      {isRunning && progress && (
-        <div className="px-0.5" data-testid="deconstruct-progress">
-          <ProgressMeter
-            value={progress.done}
-            total={Math.max(1, progress.total)}
-            label="Deconstruction progress"
-            size="md"
-            fillClassName="bg-primary"
-          />
-        </div>
-      )}
-      <div className={cn("space-y-1", creativeAssets.length > 6 && "max-h-48 overflow-y-auto pr-1")}>
-        {creativeAssets.map((asset) => {
-          const d = byImportId.get(asset.id);
-          return (
+  const pendingIds = new Set(pending.map((a) => a.id));
+  const settled = creativeAssets.filter((a) => !pendingIds.has(a.id));
+
+  const renderAssetRow = (asset: { id: string; filename: string; ad_names: string[] }) => {
+    const d = byImportId.get(asset.id);
+    return (
             <div key={asset.id} className="flex items-center gap-2 px-2 py-1 rounded border border-border/30 bg-foreground/[0.015]">
               <span className="flex-1 min-w-0 truncate text-caption text-foreground/85">{asset.filename}</span>
               {d && d.status !== "discarded" ? (
@@ -2004,9 +1983,64 @@ function CreativeDeconstructSection({
                 </>
               )}
             </div>
-          );
-        })}
+    );
+  };
+
+  return (
+    <div className="space-y-1.5" data-testid="deconstruct-section">
+      <div className="flex items-center justify-between px-0.5 gap-2">
+        <span className="text-label font-medium text-muted-foreground/85">
+          Deconstruct into IAP library
+        </span>
+        <button
+          onClick={() => void startBackfill()}
+          disabled={isRunning || pending.length === 0}
+          className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 text-label font-medium text-interactive hover:bg-primary/20 active:bg-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          data-testid="deconstruct-all"
+        >
+          {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          {isRunning
+            ? progress
+              ? `Classifying ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`
+              : "Deconstructing…"
+            : `Deconstruct all${pending.length > 0 ? ` (${pending.length})` : ""}`}
+        </button>
       </div>
+      {isRunning && progress && (
+        <div className="px-0.5" data-testid="deconstruct-progress">
+          <ProgressMeter
+            value={progress.done}
+            total={Math.max(1, progress.total)}
+            label="Deconstruction progress"
+            size="md"
+            fillClassName="bg-primary"
+          />
+        </div>
+      )}
+      {/* Two groups, because they are two different things. A creative
+          still awaiting classification carries a button and needs eyes —
+          ListStack's own rule is that unprocessed signal never folds. An
+          already-classified one is settled: it is the tail of an ordered
+          list, which is exactly what a pile is for. Splitting them also
+          retires the max-h-48 scroll box, which turned forty creatives
+          into a 192px porthole. */}
+      {pending.length > 0 && (
+        <div
+          className={cn("space-y-1", pending.length > 6 && "max-h-48 overflow-y-auto pr-1")}
+          data-testid="deconstruct-pending"
+        >
+          {pending.map(renderAssetRow)}
+        </div>
+      )}
+      {settled.length > 0 && (
+        <ListStack
+          items={settled}
+          itemKey={(a) => a.id}
+          renderItem={(a) => renderAssetRow(a)}
+          faceLabel={(n) => `${n} classified`}
+          data-testid="deconstruct-settled"
+        />
+      )}
       <div className="px-0.5">
         <p className="text-label text-foreground/70 font-medium">Classification grades each creative against the IAP variable registry.</p>
         <p className="text-label text-muted-foreground/75 leading-relaxed mt-0.5">

@@ -26,6 +26,10 @@
 //              importing a duration itself. Counting only direct imports
 //              penalized exactly the architecture the system wants (motion
 //              by composition) and pushed pages toward hand-rolling.
+//              The four Radix content primitives (Dialog/AlertDialog/
+//              Popover/Sheet Content) count for the same reason: each
+//              animates its own arrival and departure inside the shared
+//              primitive, so a dialog is animated by composition too.
 //              Approximation, named: the widget names are matched anywhere
 //              in the source, comments included — same class of regex signal
 //              as the rest of this file.
@@ -81,8 +85,23 @@ const SIGNAL = {
   // duration. The truer residual gate would flag raw duration-* /
   // transition-duration values outside lib/motion; build that when the
   // hand-rolled count is worth hunting.
+  //
+  // The four Radix content primitives joined the list on 2026-08-31 for the
+  // same reason, after "popup MOTION 10%" turned out to be this detector's
+  // blind spot rather than a gap in the dialogs. Every one of them carries
+  // its own enter AND exit in the shared primitive — DialogContent and
+  // AlertDialogContent fade-in-0 / zoom-in-95 over duration-200,
+  // PopoverContent adds a per-side slide, SheetContent slides from its edge
+  // (open 500ms / close 300ms) — and the dialog-stack recede that rides on
+  // .mx-dialog-content is turned off under prefers-reduced-motion in
+  // index.css. A file that renders one of them is animated by composition,
+  // exactly as a file built from SectionCards is; counting only lib/motion
+  // imports asked those surfaces to hand-roll a second, competing signature.
+  // Same approximation as above: matched anywhere in source, comments
+  // included. Same residual blind spot too — presence, not absence of
+  // hand-rolled durations.
   motion:
-    /from "@\/lib\/motion"|framer-motion|\b(RevealPanel|DisclosureStack|ListStack|CopyConfirmButton|ActionConfirmButton|SwipeDeck|ActionSlider|SectionCard|LayeredDisclosure|FilterDisclosure)\b/,
+    /from "@\/lib\/motion"|framer-motion|\b(RevealPanel|DisclosureStack|ListStack|CopyConfirmButton|ActionConfirmButton|SwipeDeck|ActionSlider|SectionCard|LayeredDisclosure|FilterDisclosure|DialogContent|AlertDialogContent|PopoverContent|SheetContent)\b/,
   disclose:
     /\b(DetailReveal|DisclosureStack|FilterDisclosure|useShowMore|ShowMoreButton|AccordionToggle|DenseText|ClampedProse|ExpandableText|LayeredDisclosure|ListStack)\b/,
   // BreakdownExplorer is a composite that renders its charts internally —
