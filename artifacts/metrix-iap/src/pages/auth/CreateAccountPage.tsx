@@ -71,7 +71,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
           <div className="space-y-1.5">
             <label
               htmlFor="register-display-name"
-              className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/55"
+              className="block text-label font-semibold uppercase tracking-wider text-foreground/55"
             >
               Display name <span className="normal-case font-normal text-foreground/55">(optional)</span>
             </label>
@@ -82,7 +82,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="e.g. Jane Smith"
-              className="w-full h-10 px-3.5 rounded-lg text-[13px] text-foreground placeholder:text-foreground/55 focus:outline-none transition-colors"
+              className="w-full h-10 px-3.5 rounded-lg text-caption text-foreground placeholder:text-foreground/55 focus:outline-none transition-colors"
               style={{
                 background: "hsl(222 30% 11%)",
                 border: "1px solid hsl(222 20% 20%)",
@@ -97,7 +97,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
           <div className="space-y-1.5">
             <label
               htmlFor="register-email"
-              className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/55"
+              className="block text-label font-semibold uppercase tracking-wider text-foreground/55"
             >
               Email
             </label>
@@ -109,7 +109,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
-              className="w-full h-10 px-3.5 rounded-lg text-[13px] text-foreground placeholder:text-foreground/55 focus:outline-none transition-colors"
+              className="w-full h-10 px-3.5 rounded-lg text-caption text-foreground placeholder:text-foreground/55 focus:outline-none transition-colors"
               style={{
                 background: "hsl(222 30% 11%)",
                 border: "1px solid hsl(222 20% 20%)",
@@ -124,7 +124,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
           <div className="space-y-1.5">
             <label
               htmlFor="register-password"
-              className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/55"
+              className="block text-label font-semibold uppercase tracking-wider text-foreground/55"
             >
               Password
             </label>
@@ -137,7 +137,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 characters"
-              className="w-full h-10 px-3.5 rounded-lg text-[13px] text-foreground placeholder:text-foreground/55 focus:outline-none transition-colors"
+              className="w-full h-10 px-3.5 rounded-lg text-caption text-foreground placeholder:text-foreground/55 focus:outline-none transition-colors"
               style={{
                 background: "hsl(222 30% 11%)",
                 border: "1px solid hsl(222 20% 20%)",
@@ -147,7 +147,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
               data-testid="input-register-password"
             />
             {password.length > 0 && password.length < 8 && (
-              <p className="text-[11px] text-status-warning/70">
+              <p className="text-caption text-status-warning/70">
                 Password must be at least 8 characters.
               </p>
             )}
@@ -157,7 +157,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
           <div className="space-y-1.5">
             <label
               htmlFor="register-confirm"
-              className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/55"
+              className="block text-label font-semibold uppercase tracking-wider text-foreground/55"
             >
               Confirm password
             </label>
@@ -169,7 +169,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full h-10 px-3.5 rounded-lg text-[13px] text-foreground placeholder:text-foreground/55 focus:outline-none transition-colors"
+              className="w-full h-10 px-3.5 rounded-lg text-caption text-foreground placeholder:text-foreground/55 focus:outline-none transition-colors"
               style={{
                 background: "hsl(222 30% 11%)",
                 border: "1px solid hsl(222 20% 20%)",
@@ -179,7 +179,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
               data-testid="input-register-confirm"
             />
             {confirm.length > 0 && !passwordsMatch && (
-              <p className="text-[11px] text-status-warning/70">
+              <p className="text-caption text-status-warning/70">
                 Passwords don't match.
               </p>
             )}
@@ -187,7 +187,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
 
           {error && (
             <div
-              className="text-[12px] text-status-danger/90 bg-status-danger/5 border border-status-danger/10 rounded-lg px-3 py-2"
+              className="text-caption text-status-danger/90 bg-status-danger/5 border border-status-danger/10 rounded-lg px-3 py-2"
               data-testid="text-register-error"
             >
               {error}
@@ -197,7 +197,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
           <button
             type="submit"
             disabled={!canSubmit}
-            className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 transition-[color,background-color,border-color,box-shadow,opacity,transform] disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+            className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-caption font-semibold hover:bg-primary/90 transition-[color,background-color,border-color,box-shadow,opacity,transform] disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
             style={{ boxShadow: "0 0 16px hsl(222 100% 54% / 0.25)" }}
             data-testid="button-create-account-submit"
           >
@@ -213,7 +213,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
         <div className="text-center">
           <button
             onClick={onBack}
-            className="pressable inline-flex items-center gap-1 text-[11px] text-foreground/55 hover:text-foreground/70 transition-colors"
+            className="pressable inline-flex items-center gap-1 text-caption text-foreground/55 hover:text-foreground/70 transition-colors"
             data-testid="button-back-to-login"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to sign in

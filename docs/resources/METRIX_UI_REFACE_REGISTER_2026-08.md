@@ -712,9 +712,8 @@ MOTION ✓ DISCL ✓ VIZ ✓. Phase 4's exit criterion is met on both walls.
 **Popup class read as the weakest kind on the board — most of it was the
 instrument.** Worked and re-measured on 2026-08-31; see §7.4.
 
-**Shell class reads TYPE 0%** across 7 surfaces. Partly honest — a layout shell
-has little to type — but `Sidebar` (719) and `Topbar` (325) are chrome the user
-looks at constantly, and neither carries a type role.
+**Shell TYPE 0% was the instrument for a third time.** Corrected and re-measured
+on 2026-08-31; see §7.5.
 
 **Nothing here has been looked at in a browser at the type level.** The 15px body
 floor and lifted ramp are asserted structurally and never seen. This was the
@@ -845,3 +844,83 @@ until asked.
 
 Verification: full workspace `typecheck` clean, 2162 app tests pass, all ten
 gates pass.
+
+
+---
+
+## 7.5 Type pass (2026-08-31) — the third composition blind spot
+
+§7.2 reported shell TYPE 0% across seven surfaces. It was the detector again,
+and this one was distorting **every kind on the board**.
+
+### One ramp, two spellings; the check counted one
+
+`check:ui-inventory`'s TYPE signal matched only `TYPE.*` / `HEADING.h[1-6]` /
+`DIALOG.title` — the TS constants. But `typography.ts:98-114` shows what those
+constants ARE:
+
+```
+microLabel: "text-micro font-medium uppercase …"
+label:      "text-label font-medium uppercase …"
+caption:    "text-caption …"
+body:       "text-body font-body …"
+title:      "text-title font-h5 font-bold …"
+```
+
+They are presets over the CSS role classes declared in `index.css` — micro 11px,
+label 12px, caption 13px (the reading floor), body 15px, title/h5 18px, callout
+19px, h4 21px, h3 24px, display 25px. The CSS side is the more complete of the
+two. A file spelling the ramp in CSS **is on the ramp**; chrome spells it that
+way (70 role uses across TaskTray / Sidebar / AccountSwitcher / Topbar, zero
+`TYPE.*` imports).
+
+Effect of the detector fix alone — no UI changed:
+
+| Kind | TYPE before | TYPE after |
+|---|---|---|
+| shell | 0% | **100%** |
+| chart | 44% | 100% |
+| widget | 89% | 100% |
+| popup | 90% | 100% |
+| module | 33% | 100% |
+| nav | 0% | 100% |
+| panel | 76% | 97% |
+| page | 46% | **89%** |
+
+The app was substantially on the ramp the whole time. **Every TYPE figure in
+§7.1–§7.3 and in PR #161 was understated**, and the "126 surfaces have a type or
+responsive gap" claim carried in §6 at medium confidence was wrong on the type
+half for the same reason.
+
+### The genuine remainder, and what is NOT a defect
+
+Sweeping every `.tsx` for a file with no role in either spelling returns 21, of
+which 20 are legitimately typeless: contexts, `AppShell`, `ProgressMeter` (a
+bar), `MetrixThemeProvider`, `Overview.tsx` (16 lines), and the thin
+`Exports*View` wrappers that delegate all text to children.
+
+One was real: **`CreateAccountPage.tsx`** — a first-touch page carrying 13 raw
+`text-[Npx]` sizes and no role at all. Mapped 1:1 onto the ramp: the uppercase
+field labels to `text-label`, the inputs and submit button to `text-caption`
+(same 13px they already were), and the validation hints, error box and back link
+to `text-caption` as well — those were at 11-12px, **under the reading floor,
+which is where a sentence must never sit**.
+
+**The five shell `text-[Npx]` sites called out in §7.2 are not defects** and were
+left alone. Both already carry `disclosure-ok:` annotations giving the reason,
+and both reasons are correct: the `Sidebar` wordmark is `text-[16px]` "sized to
+the 20px mark beside it, not a type role", and `AccountSwitcher`'s 8/10/11/12px
+initials are "a GEOMETRIC ramp, not a type ramp — each size is bound to its
+circle diameter (20/28/32/36px)". Snapping those to the type scale would
+overflow the small disc and float the large one. Calling them defects in §7.2
+was wrong.
+
+### Doc correction
+
+`replit.md`'s type-density line still quoted the **pre-lift** ramp (9/10/11/12/
+14px). It has said the wrong numbers since the lift, in the file `CLAUDE.md`
+names as the operational source of truth. Corrected to the live ramp, with the
+two-spellings rule stated so the next session does not rediscover it.
+
+Verification: full workspace typecheck clean, ten gates pass, 2170 app tests
+pass (three consecutive full runs).
