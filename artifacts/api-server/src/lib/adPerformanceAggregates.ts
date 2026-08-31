@@ -167,13 +167,15 @@ let announced = false;
 export async function loadAdPerformanceAggregates(
   fetchRows: () => Promise<Row[]>,
   log?: (msg: string) => void,
-): Promise<AdPerformanceAggregates> {
-  try {
-    const [eventRows, adRows, summaryRows] = await Promise.all([
+  fetchViews: () => Promise<[Row[], Row[], Row[]]> = () =>
+    Promise.all([
       selectAllRows("ad_performance_event_totals"),
       selectAllRows("ad_performance_ad_totals"),
       selectAllRows("ad_performance_account_summary"),
-    ]);
+    ]),
+): Promise<AdPerformanceAggregates> {
+  try {
+    const [eventRows, adRows, summaryRows] = await fetchViews();
     if (!announced) {
       announced = true;
       log?.("ad_performance aggregates: reading the Postgres views");

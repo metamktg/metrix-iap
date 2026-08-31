@@ -268,6 +268,7 @@ export const UpdateManualImportAdNamesParams = zod.object({
 
 export const UpdateManualImportAdNamesBody = zod.object({
   "ad_names": zod.array(zod.string()),
+  "meta_ad_ids": zod.array(zod.string()).optional().describe('Optional Meta ad IDs that disambiguate an audited creative correction when reused ad names refer to different external ad objects. When supplied, asset aliases are resolved from these IDs instead of the legacy ad-name registry.'),
   "match_method": zod.enum(['id', 'fuzzy', 'guess']).nullish().describe('How ad_names was auto-suggested (id code, confident filename similarity, or low-confidence closest guess), if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this.')
 })
 

@@ -54,6 +54,25 @@ describe("buildAdPerformanceRows guards", () => {
     });
   });
 
+  it("preserves Meta ad and asset identity on normalized performance rows", () => {
+    const buckets = new Map([
+      [
+        "k1",
+        bucket({
+          metaAdId: "120253000000000001",
+          imageName: "launch-hero-final.png",
+          videoName: undefined,
+        }),
+      ],
+    ]) as unknown as AdBuckets;
+    const rows = buildAdPerformanceRows("acct", "run", buckets, new Map());
+    expect(rows[0]).toMatchObject({
+      meta_ad_id: "120253000000000001",
+      image_name: "launch-hero-final.png",
+      video_name: null,
+    });
+  });
+
   it("rejects a non-normalized date before any write", () => {
     const buckets = new Map([["k1", bucket({ date: "7/1/2026" })]]) as unknown as AdBuckets;
     expect(() => buildAdPerformanceRows("acct", "run", buckets, new Map())).toThrow(AnalysisError);
@@ -92,5 +111,65 @@ describe("mixed-format inputs merge after parse-time normalization", () => {
     const rows = buildAdPerformanceRows("acct", "run", adBuckets, new Map());
     expect(rows.length).toBe(1);
     expect(rows[0]!["date_start"]).toBe("2026-07-13");
+  });
+
+  it("carries Ad ID and Meta asset names from the summary into a placement bucket", () => {
+    const placement: IapCsvRow[] = [{
+      breakdowns: {
+        "Campaign name": "C1",
+        "Ad set name": "AS",
+        "Ad name": "Ad A",
+        "Ad ID": "120253000000000001",
+        Day: "2026-07-13",
+        Placement: "feed",
+        Platform: "facebook",
+      },
+      base: { impressions: 100, result_type: "Purchases" },
+      extra: {},
+    }];
+    const summary: IapCsvRow[] = [{
+      breakdowns: {
+        "Campaign name": "C1",
+        "Ad set name": "AS",
+        "Ad name": "Ad A",
+        "Ad ID": "120253000000000001",
+        Day: "2026-07-13",
+      },
+      base: { amount_spent: 5, results: 1, result_type: "Purchases" },
+      extra: {},
+      creativeMetadata: { "Image name": "launch-hero.png" },
+    }];
+    const { adBuckets, adCreativeMetadata } = mergeAdPerformanceBuckets([], placement, summary);
+    const rows = buildAdPerformanceRows("acct", "run", adBuckets, adCreativeMetadata);
+    expect(rows[0]).toMatchObject({
+      meta_ad_id: "120253000000000001",
+      image_name: "launch-hero.png",
+    });
+  });
+
+  it("keeps reused ad names separate when Meta ad IDs differ", () => {
+    const placement: IapCsvRow[] = [
+      {
+        breakdowns: {
+          "Campaign name": "C1", "Ad set name": "AS", "Ad name": "Reused Name",
+          "Ad ID": "1001", Day: "2026-07-13", Placement: "feed", Platform: "facebook",
+        },
+        base: { impressions: 100, result_type: "Purchases" },
+        extra: {},
+      },
+      {
+        breakdowns: {
+          "Campaign name": "C1", "Ad set name": "AS", "Ad name": "Reused Name",
+          "Ad ID": "1002", Day: "2026-07-13", Placement: "feed", Platform: "facebook",
+        },
+        base: { impressions: 200, result_type: "Purchases" },
+        extra: {},
+      },
+    ];
+    const { adBuckets } = mergeAdPerformanceBuckets([], placement, []);
+    const rows = buildAdPerformanceRows("acct", "run", adBuckets, new Map());
+    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => row.meta_ad_id).sort()).toEqual(["1001", "1002"]);
+    expect(rows.map((row) => row.impressions).sort((a, b) => a - b)).toEqual([100, 200]);
   });
 });

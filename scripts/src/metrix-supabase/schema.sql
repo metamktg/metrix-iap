@@ -110,8 +110,7 @@ create table if not exists ad_performance (
   cvr_link_pct numeric,
   cpm numeric,
   confidence text,
-  manual_analysis_run_id uuid references manual_analysis_runs(id) on delete cascade,
-  unique (account_id, ad_name, campaign_name, result_type, date_start, date_end)
+  manual_analysis_run_id uuid references manual_analysis_runs(id) on delete cascade
 );
 
 create table if not exists demographic_performance (
@@ -1067,6 +1066,73 @@ create table if not exists import_metric_reconciliation (
 create index if not exists import_metric_reconciliation_run_idx
   on import_metric_reconciliation (manual_analysis_run_id);
 
+-- Stable Meta creative identity. Ads Manager's Image name / Video name fields
+-- preserve the filename originally uploaded to Meta and remain stable when the
+-- same creative is reused by multiple ads. The first confident match to a
+-- manually uploaded creative is persisted here and reused without rescoring.
+create table if not exists creative_asset_mappings (
+  id uuid primary key default gen_random_uuid(),
+  account_id text not null references ad_accounts(id) on delete cascade,
+  media_type text not null check (media_type in ('image', 'video')),
+  meta_asset_name text not null check (length(trim(meta_asset_name)) > 0),
+  normalized_meta_asset_name text not null check (length(normalized_meta_asset_name) > 0),
+  manual_import_id uuid not null references manual_imports(id) on delete cascade,
+  match_method text not null check (match_method in ('filename_exact', 'filename_tolerant', 'manual')),
+  confidence numeric not null check (confidence >= 0 and confidence <= 1),
+  corrected_at timestamptz,
+  corrected_by text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (account_id, media_type, normalized_meta_asset_name)
+);
+
+create index if not exists creative_asset_mappings_import_idx
+  on creative_asset_mappings (manual_import_id);
+
+-- Preserve separate Meta ad objects even when they reuse the same creative or
+-- ad name. The legacy ads table remains the presentation registry; this table
+-- is the lossless external-object registry.
+create table if not exists ad_instances (
+  id uuid primary key default gen_random_uuid(),
+  account_id text not null references ad_accounts(id) on delete cascade,
+  meta_ad_id text not null check (length(trim(meta_ad_id)) > 0),
+  ad_name text not null,
+  image_name text,
+  video_name text,
+  creative_asset_mapping_id uuid references creative_asset_mappings(id) on delete set null,
+  first_seen_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now(),
+  unique (account_id, meta_ad_id)
+);
+
+create index if not exists ad_instances_mapping_idx
+  on ad_instances (account_id, creative_asset_mapping_id);
+
+alter table ads add column if not exists image_name text;
+alter table ads add column if not exists video_name text;
+alter table ads add column if not exists creative_asset_mapping_id uuid
+  references creative_asset_mappings(id) on delete set null;
+
+alter table ad_performance add column if not exists meta_ad_id text;
+alter table ad_performance add column if not exists image_name text;
+alter table ad_performance add column if not exists video_name text;
+alter table ad_performance add column if not exists creative_asset_mapping_id uuid
+  references creative_asset_mappings(id) on delete set null;
+
+create index if not exists ad_performance_meta_ad_idx
+  on ad_performance (account_id, meta_ad_id);
+create index if not exists ad_performance_asset_mapping_idx
+  on ad_performance (account_id, creative_asset_mapping_id);
+
+alter table ad_performance
+  drop constraint if exists ad_performance_account_id_ad_name_campaign_name_result_type_key;
+create unique index if not exists ad_performance_meta_identity_key
+  on ad_performance (account_id, meta_ad_id, campaign_name, result_type, date_start, date_end)
+  where meta_ad_id is not null;
+create unique index if not exists ad_performance_name_identity_fallback_key
+  on ad_performance (account_id, ad_name, campaign_name, result_type, date_start, date_end)
+  where meta_ad_id is null;
+
 -- ─────────────────────────────────────────────────────────────────────
 -- Row Level Security (platform integrity).
 --
@@ -1098,7 +1164,8 @@ declare
     'request_access', 'meta_oauth_pending', 'connected_ad_accounts', 'report_pulls',
     'report_rows', 'generation_runs', 'manual_imports', 'manual_analysis_runs',
     'cell_creative_overrides', 'manual_import_chunks',
-    'import_metric_reconciliation', 'creative_deconstructions'
+    'import_metric_reconciliation', 'creative_deconstructions',
+    'creative_asset_mappings', 'ad_instances'
   ];
 begin
   foreach t in array importer_tables loop

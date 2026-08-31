@@ -3,6 +3,18 @@
 **Status:** live working record. Supersedes ad-hoc reface notes in this session.
 **Last reconciled:** 2026-08-28, against `main` at `08ce77a4`, after PR #150.
 
+### Backend capability added while Claude’s UI work is paused
+
+Meta Ad Summary imports now preserve exact Ad IDs plus exported `Image name` /
+`Video name` values. Metrix uses those asset names as the primary account-scoped
+creative identity: the first unambiguous filename match to a manually uploaded
+creative is persisted and reused across every ad ID carrying that asset name.
+Routine imports do not rescore confirmed mappings; the existing manual
+ad-mapping save is the audited correction path. Unresolved assets remain visible
+and never block performance ingestion. This is backend/data-contract work only:
+it does not restore, redesign, or make any claim about Claude’s missing Daily
+Trend visualization.
+
 ### Post-sync reconciliation — read before resuming the paused design session
 
 #### Instruction for Claude when resuming at 7:20 AM
@@ -21,6 +33,40 @@ evidence. Preserve the parser-safe JSX compatibility repair, but do not treat
 the currently rendered Daily Trend module as proof that Claude's intended work
 is present. Do not replay the paused working tree wholesale: recover the
 specific intended changes after inspecting both sides of the sync.
+
+#### Theme direction confirmed while Claude is paused
+
+The last Claude commit/push changed the site to a light theme. Keep that visual
+direction available: the user likes it and described it as “really nice to
+see.” The supplied light-theme screenshots are the reference for this state.
+
+The light theme still needs a focused legibility pass, especially text contrast
+and typography. Improve those details without discarding the overall light
+theme direction.
+
+Add a clearly evident Dark/Light theme control inside the user's top-right
+profile dropdown. Requirements:
+
+- The site launches in dark theme by default.
+- Light theme is used only after the user explicitly switches to it.
+- Persist the user's explicit choice so later visits keep that selection.
+- The control must be immediately understandable and visibly show the current
+  theme; do not hide it behind an ambiguous icon-only action.
+- Apply the selected theme consistently to both authentication screens and the
+  signed-in application.
+
+**Implemented from the Replit side after the user explicitly said to proceed.**
+The app now defaults to dark, persists an explicit light selection under the
+theme preference, and exposes a labeled Theme control in the top-right account
+menu. The light-mode treatment also removes the extra dark-mode opacity from
+muted supporting copy so small labels retain the Command Deck token's intended
+contrast. Browser verification covered first launch, switching, reload
+persistence, the signed-out login screen, and reset-to-dark behavior.
+
+When Claude resumes, preserve this behavior while completing the pre-sync
+comparison and recovery above. Reconcile around it rather than replaying a
+paused working tree that removes the provider, the profile-menu control, or the
+light-mode legibility rule.
 
 The Claude design session paused while a Replit-side change was still in flight,
 then its branch was merged and `main` advanced once more. The sync boundary has

@@ -16,7 +16,6 @@ import { db, pool, usersTable, userSessionsTable } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import app from "../../app";
 import { createSession, SESSION_COOKIE } from "../../lib/sessions";
-import { getMetrixSeedFromSupabase } from "../../lib/metrixSeedAssembly";
 import { getSupabase } from "../../lib/supabase";
 import {
   DEMOGRAPHIC_BREAKDOWN_COLUMNS,
@@ -97,14 +96,24 @@ const stagedImportIds: string[] = [];
 let startedRunId: string | null = null;
 
 beforeAll(async () => {
-  const bundle = (await getMetrixSeedFromSupabase()) as {
-    ad_accounts?: Array<{ id?: string }>;
-  };
-  const firstAccountId = bundle.ad_accounts?.[0]?.id;
-  if (!firstAccountId) {
-    throw new Error("Metrix seed bundle has no ad_accounts — cannot run conversion-export gate test.");
-  }
-  adAccountId = firstAccountId;
+  // Never borrow a real account from the shared seed. The first account may be
+  // managed by Meta's import pipeline, and test uploads must not alter a real
+  // user's staged-import state.
+  adAccountId = `manual_conversion_gate_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const accountInsert = await getSupabase().from("ad_accounts").insert({
+    id: adAccountId,
+    name: `Conversion gate test ${Date.now()}`,
+    status: "unconfigured",
+    platform: "Meta Ads",
+    source_status: "manual_reports",
+    overview_state: {
+      title: "Analysis not run yet",
+      description: "Disposable account for the conversion-export gate test.",
+      primary_action: "Upload Reports",
+      secondary_action: "Connect Meta",
+    },
+  });
+  if (accountInsert.error) throw new Error(accountInsert.error.message);
 
   const [admin] = await db
     .insert(usersTable)
@@ -148,6 +157,22 @@ afterAll(async () => {
   }
   if (stagedImportIds.length > 0) {
     await supabase.from("manual_imports").delete().in("id", stagedImportIds);
+  }
+  if (adAccountId) {
+    // The successful run also derives account-scoped catalogue/signal rows
+    // that are not tagged with manual_analysis_run_id. Remove those before
+    // deleting the disposable account so the FK cannot strand test data.
+    for (const table of [
+      "demographic_signal",
+      "placement_signal",
+      "iap_runs",
+      "ads",
+    ]) {
+      const cleanup = await supabase.from(table).delete().eq("account_id", adAccountId);
+      if (cleanup.error) throw new Error(`Could not clean ${table}: ${cleanup.error.message}`);
+    }
+    const accountCleanup = await supabase.from("ad_accounts").delete().eq("id", adAccountId);
+    if (accountCleanup.error) throw new Error(`Could not clean ad_accounts: ${accountCleanup.error.message}`);
   }
   if (adminUserId !== undefined) {
     await db.delete(userSessionsTable).where(inArray(userSessionsTable.userId, [adminUserId]));
