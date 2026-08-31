@@ -14,4 +14,6 @@ want theme choice to be obvious rather than hidden in an icon-only action.
 **How to apply:** keep a clearly labeled Dark/Light control in the top-right
 profile menu, visibly show its current state, persist the explicit choice, and
 apply it to both authenticated and signed-out screens. Preserve Command Deck
-tokens and verify contrast separately in both themes.
+tokens and verify contrast separately in both themes. Before React mounts,
+normalize conflicting root classes and accept only stored `light` or `dark`;
+invalid legacy values and unavailable browser storage must fall back to dark.
