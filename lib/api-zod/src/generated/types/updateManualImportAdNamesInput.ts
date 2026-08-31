@@ -9,6 +9,8 @@ import type { UpdateManualImportAdNamesInputMatchMethod } from './updateManualIm
 
 export interface UpdateManualImportAdNamesInput {
   ad_names: string[];
+  /** Optional Meta ad IDs that disambiguate an audited creative correction when reused ad names refer to different external ad objects. When supplied, asset aliases are resolved from these IDs instead of the legacy ad-name registry. */
+  meta_ad_ids?: string[];
   /** How ad_names was auto-suggested (id code, confident filename similarity, or low-confidence closest guess), if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this. */
   match_method?: UpdateManualImportAdNamesInputMatchMethod;
 }

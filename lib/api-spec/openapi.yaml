@@ -4418,6 +4418,11 @@ components:
           type: array
           items:
             type: string
+        meta_ad_ids:
+          type: array
+          description: Optional Meta ad IDs that disambiguate an audited creative correction when reused ad names refer to different external ad objects. When supplied, asset aliases are resolved from these IDs instead of the legacy ad-name registry.
+          items:
+            type: string
         match_method:
           type: string
           description: How ad_names was auto-suggested (id code, confident filename similarity, or low-confidence closest guess), if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this.

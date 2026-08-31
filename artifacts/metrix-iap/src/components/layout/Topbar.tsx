@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useTheme } from "next-themes";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   ChevronRight, Bell, CheckCircle2, PanelRightOpen, PanelRightClose,
-  Settings, CreditCard, Users, LogOut, User,
+  Settings, CreditCard, Users, LogOut, User, Moon, Sun,
 } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +14,7 @@ import { buildBreadcrumbs } from "./breadcrumbs";
 
 // ─── Account menu dropdown ─────────────────────────────────────────────
 
-function AccountMenu({
+export function AccountMenu({
   initials,
   email,
   onClose,
@@ -24,7 +25,19 @@ function AccountMenu({
 }) {
   const [, navigate] = useLocation();
   const { logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const ref = useRef<HTMLDivElement>(null);
+  const isLight =
+    theme === "light" ||
+    (theme === undefined && document.documentElement.classList.contains("light"));
+
+  function toggleTheme() {
+    // The applied document class is the visual source of truth. Reading it at
+    // activation also handles the brief hydration window where next-themes has
+    // restored a saved light class but its React state is not available yet.
+    const lightIsApplied = document.documentElement.classList.contains("light");
+    setTheme(lightIsApplied ? "dark" : "light");
+  }
 
   useEffect(() => {
     function onPointerDown(e: PointerEvent) {
@@ -52,7 +65,7 @@ function AccountMenu({
       role="menu"
       aria-label="Account menu"
       className={cn(
-        "absolute right-0 top-full mt-1.5 w-52 z-50",
+        "absolute right-0 top-full mt-1.5 w-56 z-50",
         "bg-surface-sidebar border border-border/60 rounded-xl elevation-floating",
         "flex flex-col overflow-hidden"
       )}
@@ -81,6 +94,47 @@ function AccountMenu({
         <MenuItem icon={Users} label="Team & Access" onClick={() => go("/app/settings/team")} />
         <MenuItem icon={CreditCard} label="Billing" onClick={() => go("/app/settings/billing")} />
         <MenuItem icon={Settings} label="Settings" onClick={() => go("/app/settings")} />
+      </div>
+
+      {/* Explicit theme preference — text and current state stay visible. */}
+      <div className="border-t border-border/60 py-1.5">
+        <button
+          type="button"
+          role="menuitemcheckbox"
+          aria-checked={isLight}
+          aria-label={`Theme: ${isLight ? "Light" : "Dark"}. Switch to ${isLight ? "Dark" : "Light"} theme`}
+          data-testid="button-theme-toggle"
+          onClick={toggleTheme}
+          className="pressable-lg w-full min-h-11 flex items-center gap-2.5 px-3.5 py-2 text-left text-foreground/85 hover:text-foreground hover:bg-foreground/[0.05] transition-colors"
+        >
+          {isLight ? (
+            <Sun className="w-4 h-4 shrink-0 text-interactive" />
+          ) : (
+            <Moon className="w-4 h-4 shrink-0 text-interactive" />
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block text-body font-semibold leading-tight">Theme</span>
+            <span className="block text-caption text-muted-foreground mt-0.5">
+              {isLight ? "Light" : "Dark"}
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            className={cn(
+              "relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-colors",
+              isLight
+                ? "bg-primary border-primary"
+                : "bg-input border-border"
+            )}
+          >
+            <span
+              className={cn(
+                "absolute top-0.5 h-3.5 w-3.5 rounded-full bg-background border border-border/60 elevation-raised transition-transform",
+                isLight ? "translate-x-[17px]" : "translate-x-0.5"
+              )}
+            />
+          </span>
+        </button>
       </div>
 
       {/* Sign out */}

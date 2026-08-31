@@ -33,6 +33,7 @@ import { resolveAccountObjectives } from "./cohortConfig";
 import { computeObjectiveCoverage, OBJECTIVE_GROUP_FOR_KEY } from "./objectiveCoverage";
 import { convertXlsxToCsvText, looksLikeXlsxContent, readXlsxHeaderCells } from "./xlsxToCsv";
 import { extensionOf } from "./creativeAssetType";
+import { syncStickyCreativeAssetMappings } from "./creativeAssetMappingService";
 
 
 export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
@@ -795,6 +796,26 @@ type AggBucket = {
   extra: Record<string, number>;
 };
 
+type AdIdentityFields = {
+  metaAdId?: string;
+  imageName?: string;
+  videoName?: string;
+};
+
+function captureAdIdentity(bucket: AdIdentityFields, row: IapCsvRow): void {
+  if (!bucket.metaAdId && row.breakdowns["Ad ID"]) bucket.metaAdId = row.breakdowns["Ad ID"];
+  if (!bucket.imageName && row.creativeMetadata?.["Image name"]) {
+    bucket.imageName = row.creativeMetadata["Image name"];
+  }
+  if (!bucket.videoName && row.creativeMetadata?.["Video name"]) {
+    bucket.videoName = row.creativeMetadata["Video name"];
+  }
+}
+
+function rowAdIdentity(row: IapCsvRow): string {
+  return row.breakdowns["Ad ID"]?.trim() || row.breakdowns["Ad name"]!;
+}
+
 function emptyBucket(): AggBucket {
   return {
     spend: null,
@@ -933,7 +954,7 @@ export function mergeAdPerformanceBuckets(
     summaryMetadataOnly?: boolean;
   },
 ): {
-  adBuckets: Map<string, AggBucket & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>;
+  adBuckets: Map<string, AggBucket & AdIdentityFields & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>;
   adCreativeMetadata: Map<string, Record<string, string>>;
   unknownResultTypeRows: number;
 } {
@@ -945,18 +966,19 @@ export function mergeAdPerformanceBuckets(
   // the placement export has no financial data.
   const demoAdBuckets = new Map<
     string,
-    AggBucket & { campaign: string; adSet: string; adName: string; date: string }
+    AggBucket & AdIdentityFields & { campaign: string; adSet: string; adName: string; date: string }
   >();
   for (const row of scopedDemo) {
     const campaign = row.breakdowns["Campaign name"]!;
     const adSet = row.breakdowns["Ad set name"] ?? "";
     const adName = row.breakdowns["Ad name"]!;
     const date = row.breakdowns["Day"]!;
-    const key = [campaign, adName, date].join("\u0001");
+    const key = [campaign, rowAdIdentity(row), date].join("\u0001");
     if (!demoAdBuckets.has(key)) {
       demoAdBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, date });
     }
     accumulate(demoAdBuckets.get(key)!, row);
+    captureAdIdentity(demoAdBuckets.get(key)!, row);
   }
 
   // ── Ad-level aggregation from ad_summary export (full spend) ────────
@@ -966,7 +988,7 @@ export function mergeAdPerformanceBuckets(
   // the primary spend source for ad_performance rows.
   const summaryAdBuckets = new Map<
     string,
-    AggBucket & { campaign: string; adSet: string; adName: string; date: string }
+    AggBucket & AdIdentityFields & { campaign: string; adSet: string; adName: string; date: string }
   >();
   // Secondary index for blank-Campaign-name summary buckets only — see the
   // function-level comment above. Populated in lockstep with summaryAdBuckets
@@ -974,7 +996,7 @@ export function mergeAdPerformanceBuckets(
   // ever mutates the one object per ad/day, whichever map it's looked up from).
   const summaryAdBucketsByAdDate = new Map<
     string,
-    AggBucket & { campaign: string; adSet: string; adName: string; date: string }
+    AggBucket & AdIdentityFields & { campaign: string; adSet: string; adName: string; date: string }
   >();
   // Creative metadata: collect the most-recently-seen metadata per ad name.
   // Same ad can appear across multiple rows (different dates) — metadata should
@@ -988,23 +1010,25 @@ export function mergeAdPerformanceBuckets(
     // A whole-period aggregate export contributes creative metadata only —
     // its "dates" are the report window start, not real days (see opts doc).
     if (!opts?.summaryMetadataOnly) {
-      const key = [campaign, adName, date].join("\u0001");
+      const key = [campaign, rowAdIdentity(row), date].join("\u0001");
       if (!summaryAdBuckets.has(key)) {
         const bucket = { ...emptyBucket(), campaign, adSet, adName, date };
         summaryAdBuckets.set(key, bucket);
         if (campaign === "") {
-          summaryAdBucketsByAdDate.set([adName, date].join("\u0001"), bucket);
+          summaryAdBucketsByAdDate.set([rowAdIdentity(row), date].join("\u0001"), bucket);
         }
       }
       accumulate(summaryAdBuckets.get(key)!, row);
+      captureAdIdentity(summaryAdBuckets.get(key)!, row);
     }
     // Collect creative metadata (merge, keeping first non-empty value per column)
     if (row.creativeMetadata && Object.keys(row.creativeMetadata).length > 0) {
-      const existing = adCreativeMetadata.get(adName) ?? {};
+      const metadataKey = rowAdIdentity(row);
+      const existing = adCreativeMetadata.get(metadataKey) ?? {};
       for (const [col, val] of Object.entries(row.creativeMetadata)) {
         if (!existing[col] && val) existing[col] = val;
       }
-      adCreativeMetadata.set(adName, existing);
+      adCreativeMetadata.set(metadataKey, existing);
     }
   }
 
@@ -1012,32 +1036,34 @@ export function mergeAdPerformanceBuckets(
   // across its device/platform/placement dimensions to a per-ad/day row.
   // Spend/results/resultType are filled from the demo aggregation when
   // the placement export is an impression-only device-breakdown export.
-  const adBuckets = new Map<string, AggBucket & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>();
+  const adBuckets = new Map<string, AggBucket & AdIdentityFields & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>();
   for (const row of scopedPlacement) {
     const campaign = row.breakdowns["Campaign name"]!;
     const adSet = row.breakdowns["Ad set name"] ?? "";
     const adName = row.breakdowns["Ad name"]!;
     const date = row.breakdowns["Day"]!;
-    const key = [campaign, adName, date].join("\u0001");
+    const key = [campaign, rowAdIdentity(row), date].join("\u0001");
     if (!adBuckets.has(key)) {
       adBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, resultType: "", date });
     }
     accumulate(adBuckets.get(key)!, row);
+    captureAdIdentity(adBuckets.get(key)!, row);
   }
   // ad/date combos (regardless of campaign) already covered by the placement
   // export above — used below only for the blank-campaign summary fallback,
   // so a blank-Campaign-name ad_summary row for an ad/date already present
   // here is recognized as a supplement, not inserted as a second row.
   const placementAdDateKeys = new Set(
-    Array.from(adBuckets.values()).map((b) => [b.adName, b.date].join("\u0001")),
+    Array.from(adBuckets.values()).map((b) => [b.metaAdId || b.adName, b.date].join("\u0001")),
   );
   // Supplement from the ad_summary (preferred) then demo aggregation:
   // fill spend/results/resultType for any ad bucket the placement export
   // left financially empty. Priority: summary > demo > null.
   let unknownResultTypeRows = 0;
   for (const b of adBuckets.values()) {
-    const adKey = [b.campaign, b.adName, b.date].join("\u0001");
-    const adDateKey = [b.adName, b.date].join("\u0001");
+    const adIdentity = b.metaAdId || b.adName;
+    const adKey = [b.campaign, adIdentity, b.date].join("\u0001");
+    const adDateKey = [adIdentity, b.date].join("\u0001");
     // Exact [campaign, adName, date] match first; fall back to the
     // ad-date-only index for a blank-Campaign-name summary bucket that can
     // never carry the real campaign name to match adKey directly.
@@ -1050,6 +1076,9 @@ export function mergeAdPerformanceBuckets(
       if (!b.resultType) b.resultType = preferred.resultType ?? "";
       if (b.linkClicks === null) b.linkClicks = preferred.linkClicks;
       if (b.clicksAll === null) b.clicksAll = preferred.clicksAll;
+      if (!b.metaAdId) b.metaAdId = preferred.metaAdId;
+      if (!b.imageName) b.imageName = preferred.imageName;
+      if (!b.videoName) b.videoName = preferred.videoName;
     }
     // Use a stable fallback only when result type is genuinely absent from
     // all exports — avoids the misleading "Results" column-header literal.
@@ -1068,7 +1097,7 @@ export function mergeAdPerformanceBuckets(
   for (const [key, sum] of summaryAdBuckets) {
     const alreadyCovered =
       adBuckets.has(key) ||
-      (sum.campaign === "" && placementAdDateKeys.has([sum.adName, sum.date].join("\u0001")));
+      (sum.campaign === "" && placementAdDateKeys.has([sum.metaAdId || sum.adName, sum.date].join("\u0001")));
     if (!alreadyCovered) {
       if (!sum.resultType) unknownResultTypeRows += 1;
       adBuckets.set(key, { ...sum, resultType: sum.resultType ?? "unknown" });
@@ -1306,7 +1335,7 @@ export function computeDataCoverage(args: {
 export function buildAdPerformanceRows(
   accountId: string,
   runId: string,
-  adBuckets: Map<string, AggBucket & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>,
+  adBuckets: Map<string, AggBucket & AdIdentityFields & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>,
   adCreativeMetadata: Map<string, Record<string, string>>,
 ): Record<string, any>[] {
   const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -1319,7 +1348,7 @@ export function buildAdPerformanceRows(
         422,
       );
     }
-    const tuple = [b.adName, b.campaign, b.resultType, b.date].join("");
+    const tuple = [b.metaAdId || b.adName, b.campaign, b.resultType, b.date].join("");
     if (seenTuples.has(tuple)) {
       throw new AnalysisError(
         `Internal consistency check failed: two aggregated rows resolved to the same ad/day — ` +
@@ -1330,12 +1359,15 @@ export function buildAdPerformanceRows(
       );
     }
     seenTuples.add(tuple);
-    const creativeMeta = adCreativeMetadata.get(b.adName);
+    const creativeMeta = adCreativeMetadata.get(b.metaAdId || b.adName);
     return {
       account_id: accountId,
       campaign_name: b.campaign,
       ad_set_name: b.adSet || null,
       ad_name: b.adName,
+      meta_ad_id: b.metaAdId || null,
+      image_name: b.imageName || null,
+      video_name: b.videoName || null,
       result_type: b.resultType,
       date_start: b.date,
       date_end: b.date,
@@ -1450,6 +1482,16 @@ export async function syncAllCreativeLinksForAccount(
     for (const name of adNames) {
       if (!linked.has(name)) unlinkedNames.push(name);
     }
+  }
+
+  // Stable Meta asset-name mappings are primary. The ad-name loop above is
+  // retained as a compatibility fallback for historical manual mappings.
+  const sticky = await syncStickyCreativeAssetMappings(accountId);
+  totalLinked += sticky.linkedAdNames.filter((name) => !unlinkedNames.includes(name)).length;
+  totalMappings += sticky.mappedAliases;
+  const healed = new Set(sticky.linkedAdNames);
+  for (let i = unlinkedNames.length - 1; i >= 0; i -= 1) {
+    if (healed.has(unlinkedNames[i]!)) unlinkedNames.splice(i, 1);
   }
 
   return { linked: totalLinked, total: totalMappings, unlinked_names: unlinkedNames };
@@ -2307,25 +2349,47 @@ export async function startManualAnalysis(
       };
       const uniqueAdNames = Array.from(new Set(adRows.map((r) => r.ad_name)));
       if (uniqueAdNames.length > 0) {
-        const adRegistryRows = uniqueAdNames.map((adName) => ({
-          account_id: accountId,
-          ad_name: adName,
-          cell: extractCell(adName),
-          concept: extractConcept(adName),
-          book: extractBook(adName),
-        }));
-        // IMPORTANT: ignoreDuplicates: true is critical here — it preserves
-        // creative_asset_url and asset_filename on existing rows so any
-        // previously synced creative links survive a re-import or re-analysis.
-        // Never change this to ignoreDuplicates: false (or a merge-mode upsert
-        // without explicit column selection), as it would wipe those URLs and
-        // cause every library card to regress to the "No asset" placeholder.
-        // If you must update other columns on conflict, add them explicitly to
-        // an onConflictDoUpdate merge list and keep creative_asset_url OUT of it.
+        const adRegistryRows = uniqueAdNames.map((adName) => {
+          const source = adRows.find((row) => row.ad_name === adName)!;
+          return {
+            account_id: accountId,
+            ad_name: adName,
+            cell: extractCell(adName),
+            concept: extractConcept(adName),
+            book: extractBook(adName),
+            meta_ad_id: source.meta_ad_id,
+            image_name: source.image_name,
+            video_name: source.video_name,
+          };
+        });
+        // The row intentionally omits creative_asset_url / asset_filename, so
+        // updating newly observed external IDs and asset names cannot wipe a
+        // previously linked creative.
         const adsUpsert = await supabase
           .from("ads")
-          .upsert(adRegistryRows, { onConflict: "account_id,ad_name", ignoreDuplicates: true });
+          .upsert(adRegistryRows, { onConflict: "account_id,ad_name", ignoreDuplicates: false });
         if (adsUpsert.error) throw new Error(adsUpsert.error.message);
+
+        const adInstanceRows = [
+          ...new Map(
+            adRows
+              .filter((row) => Boolean(row.meta_ad_id))
+              .map((row) => [String(row.meta_ad_id), row]),
+          ).values(),
+        ].map((row) => ({
+            account_id: accountId,
+            meta_ad_id: row.meta_ad_id,
+            ad_name: row.ad_name,
+            image_name: row.image_name,
+            video_name: row.video_name,
+            last_seen_at: new Date().toISOString(),
+        }));
+        if (adInstanceRows.length > 0) {
+          const instancesUpsert = await supabase
+            .from("ad_instances")
+            .upsert(adInstanceRows, { onConflict: "account_id,meta_ad_id", ignoreDuplicates: false });
+          if (instancesUpsert.error) throw new Error(instancesUpsert.error.message);
+        }
 
         // Re-sync creative asset links — creatives uploaded BEFORE analysis
         // had no ads rows to link against at upload time. Now that the ads

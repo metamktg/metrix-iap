@@ -15,6 +15,8 @@
  * These are accepted in the ad_summary slot and stored in ad_creative_metadata.
  */
 export const CREATIVE_METADATA_COLUMNS: readonly string[] = [
+  "Image name",
+  "Video name",
   "Ad creative body text",
   "Ad creative headline",
   "Ad creative call to action type",
