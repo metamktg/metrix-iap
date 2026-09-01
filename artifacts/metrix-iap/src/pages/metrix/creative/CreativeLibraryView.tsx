@@ -39,6 +39,7 @@ import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 import { Library, Tags, LayoutGrid, ClipboardList, Check } from "lucide-react";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
+import { scopeToRun } from "@/lib/run-supersede";
 
 const SECTION = "Creative · 05";
 
@@ -394,7 +395,7 @@ export function CreativeLibraryView() {
                 onClose={() => setVariableCode(null)}
                 code={variableCode}
                 analysis={a}
-                variableRows={a.v3_variable_performance}
+                variableRows={scopeToRun(a.v3_variable_performance, a.latest_analysis_run_id ?? null)}
               />
             )}
           </div>

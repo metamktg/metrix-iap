@@ -638,3 +638,49 @@ describe("buildReportModel — segment comparison coverage gating", () => {
     expect(texts.some((t) => t.startsWith("Insufficient join coverage —"))).toBe(false);
   });
 });
+
+describe("the report does not list a variable once per analysis run", () => {
+  // variable_performance keeps one row per run by design, so an unscoped table
+  // printed every variable once per run into a client's report and summed the
+  // family totals with that multiple in them. The fixture's only multi-run
+  // account builds no report, so this uses a controlled seed instead of a
+  // fixture case that cannot exist.
+  function twoRunSeed(): MetrixSeed {
+    const base = makeSeed();
+    const account = base.ad_accounts[0] as Record<string, any>;
+    const row = (runId: string, spend: number) => ({
+      variable_family: "hook",
+      variable_id: "HK_Benefit",
+      "Result type": "checkout",
+      "Amount spent (USD)": spend,
+      Reach: 0,
+      Impressions: 1000,
+      Results: 10,
+      "Clicks (all)": 100,
+      "Link clicks": 80,
+      unique_ads: 2,
+      CPA_result: spend / 10,
+      CTR_link_pct: 8,
+      Result_per_link_click_pct: 12.5,
+      manual_analysis_run_id: runId,
+    });
+    account["iap"].analysis.v3_variable_performance = [row("run-1", 500), row("run-2", 900)];
+    account["iap"].analysis.latest_analysis_run_id = "run-2";
+    return base;
+  }
+
+  it("prints the variable once, with the latest run's spend", () => {
+    const model = buildReportModel(twoRunSeed(), "bookster", { sectionCount: 9 })!;
+    const section = model.sections.find((s) => s.title === "Variable Performance")!;
+    expect(section, "no Variable Performance section built").toBeTruthy();
+    const table = section.blocks.find((b) => b.kind === "table") as { rows: string[][] } | undefined;
+    expect(table, "no variable table built").toBeTruthy();
+
+    const ids = table!.rows.map((r) => r[0]);
+    expect(new Set(ids).size, `variable listed more than once: ${JSON.stringify(ids)}`).toBe(ids.length);
+    // The surviving row is run-2's, not the sum of both.
+    expect(table!.rows.some((r) => r.join(" ").includes("900"))).toBe(true);
+    expect(table!.rows.some((r) => r.join(" ").includes("1,400"))).toBe(false);
+  });
+});
+

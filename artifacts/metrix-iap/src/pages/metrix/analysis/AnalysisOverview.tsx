@@ -811,6 +811,18 @@ export function AnalysisOverview() {
             r.manual_analysis_run_id == null ||
             runSelection.selectedRunIds.includes(r.manual_analysis_run_id),
         );
+        // Variable rows carry a run id too — the assembler projects it
+        // alongside the payload precisely so they can be scoped. The card's
+        // caption used to say "account-wide (variable rows carry no run
+        // linkage)", which stopped being true when that projection landed, so
+        // the table summed every variable once per run while telling the
+        // reader it could not be scoped at all.
+        const scopedVariableRows = (a.v3_variable_performance ?? []).filter(
+          (r) =>
+            runSelection.allTime ||
+            r.manual_analysis_run_id == null ||
+            runSelection.selectedRunIds.includes(r.manual_analysis_run_id),
+        );
         const cellRows = filterByRun(a.performance_by_cell);
         const runScoped = !runSelection.allTime;
 
@@ -1157,15 +1169,15 @@ export function AnalysisOverview() {
                   )}
 
                   {/* ── Variable table + Placement bars ───────────── */}
-                  {(a.v3_variable_performance.length > 0 || allPlacements.length > 0) && (
+                  {(scopedVariableRows.length > 0 || allPlacements.length > 0) && (
                     <div className="grid grid-cols-2 gap-3">
-                      {a.v3_variable_performance.length > 0 && (
+                      {scopedVariableRows.length > 0 && (
                         <SectionCard
                           title="Variable performance"
-                          desc={`Hook · Tone · Framework · Concept — top 8 · click column to sort${runScoped ? " · account-wide (variable rows carry no run linkage)" : ""}`}
+                          desc={`Hook · Tone · Framework · Concept — top 8 · click column to sort${runScoped ? " · scoped to the selected run(s)" : ""}`}
                           right={<><SectionInfoIcon tip="Shows how each creative variable family (hook, tone, framework, concept) performs on spend and CPA across the top results." /><CrossLink to="/app/analysis/library" label="Full →" /></>}
                         >
-                          <CompactVariableTable rows={a.v3_variable_performance} />
+                          <CompactVariableTable rows={scopedVariableRows} />
                         </SectionCard>
                       )}
                       {allPlacements.length > 0 && (

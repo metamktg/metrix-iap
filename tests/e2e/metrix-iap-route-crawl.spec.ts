@@ -183,6 +183,9 @@ const ACCOUNTS = [
   },
 ];
 
+/** Below this, <main> is judged to have rendered nothing of its own. */
+const MIN_CONTENT_CHARS = 40;
+
 interface RouteReport {
   account: string;
   route: string;
@@ -235,14 +238,30 @@ async function visit(page: Page, route: string, account: string): Promise<RouteR
       .first()
       .waitFor({ state: "visible", timeout: 30_000 })
       .catch(() => {});
-    // Route chunks are lazy. Waiting a fixed beat reads the spinner as an
-    // empty page under load, so wait for the route-level loading state to
-    // clear first and only then give charts a moment to lay out.
+    // Wait for CONTENT, not for a clock.
+    //
+    // This used to wait for the route-level spinner to detach and then a fixed
+    // 1200 ms. With three tabs against one dev server that is not enough for a
+    // chart-heavy route, and the crawl reported "empty" for pages that render
+    // perfectly — different pages on different runs, which is the signature of
+    // a timing bug in the harness rather than a defect in the app. A detector
+    // that cries wolf trains you to ignore it.
+    //
+    // So poll until <main> actually has text, and only call a page empty when
+    // it is still empty at the deadline. A genuinely blank page fails exactly
+    // as before; a slow one no longer does.
     await page
       .getByTestId("route-loading")
       .waitFor({ state: "detached", timeout: 30_000 })
       .catch(() => {});
-    await page.waitForTimeout(1200);
+    const contentDeadline = Date.now() + 20_000;
+    for (;;) {
+      const len = ((await page.locator("main").first().textContent().catch(() => "")) ?? "").trim().length;
+      if (len >= MIN_CONTENT_CHARS || Date.now() > contentDeadline) break;
+      await page.waitForTimeout(250);
+    }
+    // A last beat for charts that lay out after their container has text.
+    await page.waitForTimeout(400);
     await Promise.all(pending);
 
     const main = page.locator("main").first();
@@ -313,7 +332,7 @@ async function main() {
       if (report.consoleErrors.length) problems.push(`${report.consoleErrors.length} console`);
       if (report.showedSeedError) problems.push("seed error screen");
       if (report.showedNotFound) problems.push("404");
-      if (report.bodyTextLength < 40) problems.push(`empty (${report.bodyTextLength} chars)`);
+      if (report.bodyTextLength < MIN_CONTENT_CHARS) problems.push(`empty (${report.bodyTextLength} chars)`);
 
       if (problems.length === 0) {
         console.log(`  ✓  ${report.account} ${report.route}`);

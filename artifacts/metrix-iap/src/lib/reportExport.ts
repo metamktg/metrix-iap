@@ -22,6 +22,7 @@ import {
   segmentLabel,
   type SegmentId,
 } from "@/lib/segment-analytics";
+import { scopeToRun } from "@/lib/run-supersede";
 
 export type BrandingMode = "internal" | "client";
 export type ExportFormat = "pdf" | "google_doc" | "html";
@@ -282,9 +283,17 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
     if (!analysis?.v3_variable_performance?.length) return [];
     const blocks: ReportBlock[] = [];
 
+    // Scoped before anything sums it: variable_performance keeps one row per
+    // analysis run, so an unscoped table listed every variable once per run
+    // and the family totals carried that multiple into a client's report.
+    const variablePerf = scopeToRun(
+      analysis.v3_variable_performance,
+      analysis.latest_analysis_run_id ?? null,
+    );
+
     // CPA by variable family — aggregate spend and results per family, then derive CPA.
     const familyMap = new Map<string, { spend: number; results: number }>();
-    for (const r of analysis.v3_variable_performance) {
+    for (const r of variablePerf) {
       const entry = familyMap.get(r.variable_family) ?? { spend: 0, results: 0 };
       entry.spend += r["Amount spent (USD)"] ?? 0;
       entry.results += r.Results ?? 0;
@@ -302,7 +311,7 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
       blocks.push({ kind: "chart", chartType: "bar", title: "CPA by variable family", unit: "usd", data: familyCpa });
     }
 
-    blocks.push(variableRows(analysis.v3_variable_performance));
+    blocks.push(variableRows(variablePerf));
     return blocks;
   }
 
