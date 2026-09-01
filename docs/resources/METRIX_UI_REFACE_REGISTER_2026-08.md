@@ -1229,3 +1229,89 @@ ICP_BOOK0_C2_TimePoorLearner`, `BENCHMARK Beat C2B CPA of $9.13…`.
 
 Full workspace typecheck clean · twelve gates pass · 2,170 app tests · 119
 scripts tests · brief detail rendered and read in a browser.
+
+---
+
+## §10 — Strategy map: reading order, and prose that was never formatted
+
+Reported against the live deployment, with screenshots: strategy content
+still behind hover pop-ups.
+
+### What the screenshots actually showed
+
+The live app was running pre-§7.4 code. The screenshots contain a section
+label `"Descriptor"` and a `DetailReveal` on the pillar line; neither string
+exists in the tree — `d268ed56` deleted both and it is on `main`. A Replit
+Pull + Republish closes that half of the report. **When a UI report arrives
+with screenshots, check the deployed SHA before changing code**; two of the
+three findings here were only visible because the deploy was behind.
+
+### Two defects the §7.4 pass genuinely missed
+
+**The sidebar descriptor.** `PillarListCard` rendered `plain_descriptor` as
+`TYPE.label` — 12px UPPERCASE — hand-cut with `.slice(0, 80)`, inside a
+`line-clamp-2`. Uppercase destroys the word shapes long-form reading depends
+on; the slice cuts mid-word on top of a clamp that already handles overflow;
+and the whole thing duplicated the descriptor the centre column renders in
+full at body size, four inches to the right. Removed.
+
+**Position, not just disclosure.** §7.4 got the descriptor and "why it
+matters" out of a popover but left them at the BOTTOM of the centre column,
+under every source-cell card and a collapsed execution panel. The sentence
+explaining what you were looking at was reached by scrolling past everything
+it explained. The column now reads **statement → evidence → execution**, and
+the pillar name carries title rank instead of a 13px caption clamped to one
+line under an eyebrow that named the evidence rather than the thing.
+
+Browser-measured: name 18px/700 at y=195 · descriptor 15px at y=309 · "why it
+matters" at y=374 · "Source cells" at y=420.
+
+### A third defect, found while verifying: `$undefined` on screen
+
+`concept_registry[code].descriptor` holds a generated performance sentence,
+not a name. `ConceptChip` rendered `"C1 produced $12.2632 CPA on $515.0538
+spend (42 results)."` as an inline chip where "Social Proof" belongs — and
+three of the 33 concepts carry the literal `$undefined`, because CPA is
+spend/results and those concepts have zero results. **44 such strings across
+the seed.** The sentences come from the imported source data package and are
+corrected at render, not by rewriting the client's artifact:
+
+- `usableName()` — a name field's value if it is a name, else `null`.
+- `normalizeMetricsInProse()` — `$undefined`/`$null`/`$NaN` → `n/a`; money to
+  separators and ≤ 2 decimals.
+
+Applied at `TokenizedConceptText`, the choke point for stored analysis prose
+(28 call sites).
+
+**The first `usableName` was wrong and the data caught it.** It tested length
+(≤ 48). Across all 33 concepts that rejected two genuine names — "Time-poor
+learner product demo / 1,000 books proof" (50) and "Aspirational authority /
+learn like people you admire" (53) — while the longest legitimate descriptor
+was 45. Three characters of headroom is a coincidence, not a rule. The test
+is now terminal punctuation: 26 kept, 7 rejected, zero false positives.
+
+### Gate: `check:payload-legibility` → four rules
+
+The gate saw neither sidebar defect. `.slice(0, 80)` is `deriveLabel` written
+by hand and went straight through; nothing checked what *face* payload was
+set in. Rules are now truncated · hidden · **sliced** · **uppercased**, and
+scanning is comment-aware (a state machine, not a per-line `//` test — the
+rulebook comments in these files are multi-line JSX comments whose
+continuation lines start with ordinary words, and one of them names a payload
+field under a `line-clamp-1` className).
+
+Proven by running it against real historical code: 2 findings on `main`'s
+version, 3 on the pre-§7.4 version, clean on the fix.
+
+Fields 11 → 13 (`test_variant`, `success_criteria`). The brief view's fields
+are deliberately excluded: it reads them through `fbString(copy, "…")` into
+camelCase locals, so name matching would give near-zero coverage. The header
+says so.
+
+### Verification
+
+Typecheck clean · twelve gates · 2,187 app tests (17 new) · 119 scripts tests
+· ten routes swept in a browser for malformed currency: 0, with the detector
+proven by re-running it with the fixes stashed. Honest limit: the demo
+fixture exercises one of the 44 strings on those routes; coverage of all 33
+concepts rests on the unit tests and the data scan, not on rendering each one.
