@@ -99,7 +99,7 @@ function PreviewBlock({ block }: { block: ReportBlock }) {
     <div className="mb-2.5">
       <p className={cn(TYPE.label, "text-muted-foreground/75 mb-1.5")}>{block.title}</p>
       {block.caption && (
-        <p className={cn(TYPE.microLabel, "text-muted-foreground/60 mb-1.5")}>{block.caption}</p>
+        <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-1.5")}>{block.caption}</p>
       )}
       <div className="flex flex-col gap-1.5">
         {block.data.map((d) => (
