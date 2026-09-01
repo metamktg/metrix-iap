@@ -127,12 +127,16 @@ function DonutShare({ rows }: { rows: BreakdownRow[] }) {
     <div className="flex items-center gap-5 flex-wrap">
       <ChartContainer config={CHART_CONFIG} className="aspect-square w-[180px] shrink-0">
         <PieChart>
+          {/* Radii relative, for the reason spelled out in SharePieChart: a
+              pixel radius demands a fixed box and silently draws outside any
+              box smaller than it. This one happens to fit its 180px square
+              today; it would clip the moment that square shrinks. */}
           <Pie
             data={data}
             dataKey="value"
             nameKey="name"
-            innerRadius={52}
-            outerRadius={82}
+            innerRadius="58%"
+            outerRadius="88%"
             paddingAngle={2}
             stroke="hsl(var(--surface-deep))"
             strokeWidth={2}

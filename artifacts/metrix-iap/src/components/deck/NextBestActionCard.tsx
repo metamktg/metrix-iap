@@ -38,12 +38,15 @@ function HeroBadge({ text, cls }: { text: string; cls: string }) {
 }
 
 export interface NextBestActionCardProps {
+  /** loop_status note for the stage that would fill this card, when the
+   *  seed carries one. Real and account-specific; beats generic copy. */
+  stageNote?: string | null;
   /** Ad-account (or manager) id the decisions are scoped under. */
   scopeId: string;
   cards: DeckCard[];
 }
 
-export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) {
+export function NextBestActionCard({ scopeId, cards, stageNote }: NextBestActionCardProps) {
   // Subscribing re-renders on every decision, so the hero always shows the
   // top-ranked card that is still pending.
   useDecisions();
@@ -85,9 +88,15 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
             Next best action
           </span>
         </div>
+        {/* When there are no cards at all, the account's own loop_status note
+            says WHY — "blocked on creative_scan", "requires the Creative Scan
+            / Test Engine stage plus raw Meta exports with real ad_id" — and
+            that is worth more than the generic sentence that stood here. The
+            generic line remains the fallback for an account whose seed
+            carries no note. */}
         <p className={cn(TYPE.body, "text-muted-foreground/75 leading-relaxed")}>
           {cards.length === 0
-            ? "No recommendations have been generated for this account yet."
+            ? stageNote ?? "No recommendations have been generated for this account yet."
             : "All recommendations have been reviewed — nothing pending right now."}
         </p>
       </div>

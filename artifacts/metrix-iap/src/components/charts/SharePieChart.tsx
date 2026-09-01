@@ -102,14 +102,23 @@ export function SharePieChart({
       <div className="w-full flex-1 min-h-0">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
+          {/* Radii are RELATIVE, not pixels. They were innerRadius={60}
+              outerRadius={90} — absolute px, so the donut always demanded a
+              180x180 box no matter what box it was given. On the Analysis
+              Overview card that box measures 170x105, and all three sectors
+              were drawn outside it: one starting 38px above the top edge,
+              another running 33px below the bottom. The ring rendered as a
+              set of clipped arcs. Percentages resolve against the smaller of
+              width and height, so the donut now fits whatever it is placed
+              in — this card and the 220px default alike. */}
           <Pie
             data={slices}
             dataKey="value"
             nameKey="name"
             cx="50%"
             cy="50%"
-            innerRadius={60}
-            outerRadius={90}
+            innerRadius="58%"
+            outerRadius="88%"
             paddingAngle={2}
             stroke="none"
           >

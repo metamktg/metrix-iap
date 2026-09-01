@@ -175,56 +175,87 @@ function ChartTooltipCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Spend trendline ─────────────────────────────────────────────────
+// ─── Spend + results trend: SMALL MULTIPLES, not a dual axis ─────────
+//
+// This was one AreaChart with two y-axes — spend on the left in $k, results
+// on the right as a count — and two filled areas laid over each other.
+//
+// That is the single worst chart mistake there is, and this codebase
+// already forbids it: chartTokens.ts opens with "ONE axis. Two measures of
+// different scale are two charts, or one chart indexed to a common base —
+// never a second y-scale."
+//
+// The reason the rule exists is not tidiness. With two independent scales,
+// where the results line sits relative to the spend area is decided by the
+// two axis maxima, not by the data. Move either axis and the lines cross
+// somewhere else. So the read an agency actually takes from this chart —
+// "results are running ahead of spend here, behind it there" — was an
+// artifact of axis choice, and could be inverted without changing a single
+// number.
+//
+// Small multiples say the same things without the artifact: two panels,
+// one measure each, a shared time axis, and a shared brush. Nothing is
+// lost — both series are still there, still zoomable together, still
+// tooltipped together via syncId — and no crossing point is implied
+// between quantities that have no common scale.
+//
+// The results series also moves off `--metrix-success`. Status colours are
+// reserved (chartTokens again: "Status colours ... are reserved and never
+// appear here"); a count of results is a series, not a verdict.
 
-// Dual-axis trendline: spend (left, blue fill) + results (right, success line).
-// Separate Y-axes because the scales differ by orders of magnitude.
-function SpendTrendChart({ data }: { data: MonthBucket[] }) {
-  const [brushRange, setBrushRange] = useState<{ startIndex: number; endIndex: number }>({
-    startIndex: 0,
-    endIndex: Math.max(0, data.length - 1),
-  });
-  if (data.length < 2) return null;
+const TREND_SYNC = "aov-trend";
+
+function TrendPanel({
+  data,
+  dataKey,
+  title,
+  color,
+  gradientId,
+  tickFormatter,
+  formatValue,
+  height,
+  showAxis,
+  brush,
+}: {
+  data: MonthBucket[];
+  dataKey: "spend" | "results";
+  title: string;
+  color: string;
+  gradientId: string;
+  tickFormatter: (v: number) => string;
+  formatValue: (v: number) => string;
+  height: number;
+  showAxis: boolean;
+  brush?: React.ReactNode;
+}) {
   return (
-    <div style={{ height: 254 }} aria-label="Monthly spend and results trendline">
+    <div style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 4, right: 44, bottom: 0, left: 4 }}>
+        <AreaChart
+          data={data}
+          syncId={TREND_SYNC}
+          margin={{ top: 4, right: 8, bottom: showAxis ? 0 : 2, left: 4 }}
+        >
           <defs>
-            <linearGradient id="aov-spend-gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor="hsl(var(--primary))" stopOpacity={0.28} />
-              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
-            </linearGradient>
-            <linearGradient id="aov-results-gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor="hsl(var(--metrix-success))" stopOpacity={0.18} />
-              <stop offset="95%" stopColor="hsl(var(--metrix-success))" stopOpacity={0.01} />
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color} stopOpacity={0.26} />
+              <stop offset="95%" stopColor={color} stopOpacity={0.02} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--foreground) / 0.10)" vertical={false} />
           <XAxis
             dataKey="month"
-            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={showAxis ? { fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" } : false}
             tickLine={false}
             axisLine={false}
+            height={showAxis ? 18 : 1}
           />
-          {/* Left axis — spend in $k */}
           <YAxis
-            yAxisId="spend"
-            orientation="left"
-            tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+            tickFormatter={tickFormatter}
             tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
             width={44}
-          />
-          {/* Right axis — results count */}
-          <YAxis
-            yAxisId="results"
-            orientation="right"
-            tickFormatter={(v: number) => fmtNum(v)}
-            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
-            tickLine={false}
-            axisLine={false}
-            width={40}
           />
           <Tooltip
             cursor={{ stroke: "hsl(var(--foreground) / 0.08)", strokeWidth: 1 }}
@@ -234,51 +265,68 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
               return (
                 <ChartTooltipCard>
                   <div className="font-semibold text-foreground mb-1">{label}</div>
-                  <div className="space-y-0.5">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "hsl(var(--primary))" }} />
-                        <span className="text-muted-foreground">Spend</span>
-                      </div>
-                      <span className=" tabular-nums text-foreground">{fmtUSD(d.spend, 0)}</span>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                      <span className="text-muted-foreground">{title}</span>
                     </div>
-                    {d.results > 0 && (
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "hsl(var(--metrix-success))" }} />
-                          <span className="text-muted-foreground">Results</span>
-                        </div>
-                        <span className=" tabular-nums text-foreground">{fmtNum(d.results)}</span>
-                      </div>
-                    )}
+                    <span className="tabular-nums text-foreground">{formatValue(d[dataKey])}</span>
                   </div>
                 </ChartTooltipCard>
               );
             }}
           />
           <Area
-            yAxisId="spend"
             type="monotone"
-            dataKey="spend"
-            name="Spend"
-            stroke="hsl(var(--primary))"
+            dataKey={dataKey}
+            name={title}
+            stroke={color}
             strokeWidth={1.5}
-            fill="url(#aov-spend-gradient)"
+            fill={`url(#${gradientId})`}
             dot={false}
-            activeDot={{ r: 3, strokeWidth: 0, fill: "hsl(var(--primary))" }}
+            activeDot={{ r: 3, strokeWidth: 0, fill: color }}
           />
-          <Area
-            yAxisId="results"
-            type="monotone"
-            dataKey="results"
-            name="Results"
-            stroke="hsl(var(--metrix-success))"
-            strokeWidth={1.5}
-            strokeDasharray="4 2"
-            fill="url(#aov-results-gradient)"
-            dot={false}
-            activeDot={{ r: 3, strokeWidth: 0, fill: "hsl(var(--metrix-success))" }}
-          />
+          {brush}
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function SpendTrendChart({ data }: { data: MonthBucket[] }) {
+  const [brushRange, setBrushRange] = useState<{ startIndex: number; endIndex: number }>({
+    startIndex: 0,
+    endIndex: Math.max(0, data.length - 1),
+  });
+  if (data.length < 2) return null;
+  // Each panel names its own measure, so with one series apiece neither
+  // needs a legend box.
+  return (
+    <div aria-label="Monthly spend and results, as two panels on a shared time axis">
+      <div className={cn(TYPE.microLabel, "text-muted-foreground/75 pl-1")}>Spend</div>
+      <TrendPanel
+        data={data}
+        dataKey="spend"
+        title="Spend"
+        color="var(--color-chart-1)"
+        gradientId="aov-spend-gradient"
+        tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+        formatValue={(v: number) => fmtUSD(v, 0)}
+        height={96}
+        showAxis={false}
+      />
+      <div className={cn(TYPE.microLabel, "text-muted-foreground/75 pl-1 mt-1")}>Results</div>
+      <TrendPanel
+        data={data}
+        dataKey="results"
+        title="Results"
+        color="var(--color-chart-2)"
+        gradientId="aov-results-gradient"
+        tickFormatter={(v: number) => fmtNum(v)}
+        formatValue={(v: number) => fmtNum(v)}
+        height={122}
+        showAxis
+        brush={
           <Brush
             dataKey="month"
             height={24}
@@ -294,8 +342,8 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
               }
             }}
           />
-        </AreaChart>
-      </ResponsiveContainer>
+        }
+      />
     </div>
   );
 }

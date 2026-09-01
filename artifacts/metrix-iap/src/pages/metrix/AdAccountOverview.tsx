@@ -238,7 +238,11 @@ export function AdAccountOverview() {
 
           {/* Next best action — Nocturne hero for the top pending
               recommendation; renders nothing when none are pending. */}
-          <NextBestActionCard scopeId={account.id} cards={deckCards} />
+          <NextBestActionCard
+            scopeId={account.id}
+            cards={deckCards}
+            stageNote={account.iap?.loop_status?.find((st) => st.stage === "optimization_loop")?.note ?? null}
+          />
 
           {/* Account Totals — fixed 4-tile Nocturne hero row, each tile
               independently metric-selectable via its own dropdown. */}
