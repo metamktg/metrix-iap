@@ -971,7 +971,12 @@ const deconstructionSeedShape = (r: Row): Row => ({
 // `action` and `evidence_ref` are the existing `recommended_action` and
 // `source_path` under the contract's names — the same values, not new ones —
 // and both original keys stay for callers already reading them.
-const cardShape = (c: Row) => ({
+/**
+ * The shape every signal card is emitted in. Exported so the offline
+ * fixture guard can compare it against the checked-in bundle without a
+ * live server — see __tests__/seedFixtureShape.test.ts.
+ */
+export const cardShape = (c: Row) => ({
   id: c["card_id"],
   account_id: c["account_id"],
   scope: c["scope"],
