@@ -14,6 +14,7 @@ import {
   StaleFocusNotice, DetailReveal, deriveLabel,
   PILL_ACTIVE, PILL_INACTIVE, SectionCard, SectionInfoIcon,
   useShowMore, ShowMoreButton,
+  DenseText,
 } from "../shared";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import {
@@ -109,7 +110,10 @@ function HypothesisCardList({
             {h.risk && (
               <div className="flex items-start gap-1.5 mt-2.5 pt-2.5 border-t border-border/20">
                 <AlertTriangle className="w-3.5 h-3.5 text-status-warning/70 shrink-0 mt-0.5" />
-                <p className="text-caption text-status-warning/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
+                {/* payload-ok: inside a <button> card. A stated risk was cut TWICE —
+                      deriveLabel(90) inside line-clamp-1 — so it could not be
+                      read at all. Two lines, cut once. */}
+                  <p className="text-caption text-status-warning/80 leading-relaxed line-clamp-2">{h.risk}</p>
               </div>
             )}
           </button>
@@ -285,15 +289,28 @@ export function HypothesisQueueView() {
                           </div>
                           <p className={cn(TYPE.title, "leading-tight")}>{p.label}</p>
                           <div className="mt-1">
-                            <DetailReveal
-                              label={deriveLabel(p.plain_descriptor, 72)}
-                              labelClassName="text-body text-interactive/80 italic"
-                              eyebrow={p.label}
-                              sections={[
-                                { label: "Descriptor", text: p.plain_descriptor },
-                                { label: "Why it matters", text: p.why_it_matters },
-                              ]}
-                            />
+                            {/* Descriptor and "why it matters" are the two
+                                sentences that explain the pillar. Both were
+                                behind one click; both are on the page now. */}
+                            <div className="space-y-1.5">
+                              <DenseText
+                                text={p.plain_descriptor}
+                                className="text-body text-interactive/80 italic leading-relaxed"
+                                clampClass="line-clamp-4"
+                              />
+                              {p.why_it_matters && (
+                                <div>
+                                  <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 mb-0.5">
+                                    Why it matters
+                                  </div>
+                                  <DenseText
+                                    text={p.why_it_matters}
+                                    className="text-caption text-foreground/85 leading-relaxed"
+                                    clampClass="line-clamp-4"
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <div className="mt-3">
                             <VariableStackChips stack={p.variable_stack} />

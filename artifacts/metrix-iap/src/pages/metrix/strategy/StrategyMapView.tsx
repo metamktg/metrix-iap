@@ -12,7 +12,7 @@ import { resolveInlineVariableCodes } from "@/lib/variable-registry";
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
   CrossLink, fmtUSD, fmtNum, FlowCrumb, useFromParam, LoopAction,
-  DetailReveal, deriveLabel, InfoTooltip, useShowMore, ShowMoreButton,
+  DenseText, InfoTooltip, useShowMore, ShowMoreButton,
   SectionInfoIcon,
 } from "../shared";
 import {
@@ -337,8 +337,13 @@ function NextActionsPanel({
                 {/* Chips-only row inside button context, no nested reveal */}
                 <div>
                   <HypothesisCodeChipsRow label={h.label} />
-                  <p className={cn(TYPE.label, "text-muted-foreground/75 mt-1 line-clamp-1")} title={h.label}>
-                    {deriveLabel(h.label, 55)}
+                  {/* Card face inside a <button>, so no DenseText control
+                      here — the full hypothesis lives one click away. It was
+                      cut TWICE though (deriveLabel to 55 chars inside a
+                      one-line clamp), so the clamp alone now does the work
+                      and roughly twice as much of the sentence survives. */}
+                  <p className={cn(TYPE.caption, "text-muted-foreground/85 mt-1 line-clamp-2")} title={h.label}>
+                    {h.label}
                   </p>
                 </div>
                 <div className="flex items-center justify-between gap-2 mt-auto pt-1">
@@ -668,20 +673,30 @@ export function StrategyMapView() {
                       {/* Descriptor detail */}
                       {selected.plain_descriptor && (
                         <div className="pt-1">
-                          <DetailReveal
-                            label={deriveLabel(selected.plain_descriptor, 80)}
-                            labelClassName={TYPE.caption}
-                            eyebrow={selected.label}
-                            sections={[
-                              { label: "Descriptor", text: selected.plain_descriptor },
-                              {
-                                label: "Why it matters",
-                                text: selected.why_it_matters
-                                  ? resolveInlineVariableCodes(selected.why_it_matters)
-                                  : undefined,
-                              },
-                            ]}
-                          />
+                          {/* This is a detail panel — the place a reader has
+                              already navigated to in order to read. Putting
+                              the descriptor AND "why it matters" behind a
+                              further click made the panel a door to a door.
+                              Both are payload and both are on the page now. */}
+                          <div className="space-y-2">
+                            <DenseText
+                              text={selected.plain_descriptor}
+                              className={cn(TYPE.body, "text-foreground/90 leading-relaxed")}
+                              clampClass="line-clamp-5"
+                            />
+                            {selected.why_it_matters && (
+                              <div className="rounded-lg border border-border/25 bg-foreground/[0.02] p-2.5">
+                                <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 mb-1">
+                                  Why it matters
+                                </div>
+                                <DenseText
+                                  text={resolveInlineVariableCodes(selected.why_it_matters)}
+                                  className={cn(TYPE.caption, "text-foreground/85 leading-relaxed")}
+                                  clampClass="line-clamp-5"
+                                />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

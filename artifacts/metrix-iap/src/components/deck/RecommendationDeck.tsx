@@ -211,11 +211,17 @@ function RecommendationCardFace({ card }: { card: DeckCard }) {
           hierarchy between them. TYPE.title is the role for a card title. */}
       <p className={cn(TYPE.title, "line-clamp-2")}>{card.title}</p>
 
-      <p className="text-body text-muted-foreground/75 leading-snug line-clamp-2">{deriveLabel(card.rationale, 110)}</p>
+      {/* payload-ok: swipe-card face inside a <button> — a DenseText control
+          is invalid HTML here and the full card is one tap away. Cut ONCE by
+          the clamp now; deriveLabel(110) on top of it was removing words the
+          clamp would have shown anyway. */}
+      <p className="text-body text-muted-foreground/75 leading-snug line-clamp-3">{card.rationale}</p>
 
       <div className="mt-auto pt-2 border-t border-border/20">
         <p className={cn(TYPE.microLabel, "tracking-widest mb-1")}>Recommended</p>
-        <p className="text-caption text-foreground/75 leading-snug line-clamp-1">{deriveLabel(card.recommendedAction, 90)}</p>
+        {/* payload-ok: same button-card constraint. Two lines — the
+            recommended action is the reason the card exists. */}
+        <p className="text-caption text-foreground/75 leading-snug line-clamp-2">{card.recommendedAction}</p>
       </div>
     </div>
   );
@@ -505,7 +511,10 @@ function DismissedLog({ items, onRestore }: { items: DeckCard[]; onRestore: (id:
         <div key={s.id} className="flex items-start gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.01] opacity-70">
           <div className="flex-1 min-w-0">
             <p className="text-body font-medium text-foreground/60 leading-tight">{s.title}</p>
-            <p className="text-label text-muted-foreground/75 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.rationale, 90)}</p>
+            {/* payload-ok: dismissed-items archive — here the rationale is an
+                identifier for "which one was this", not the deliverable. Chrome
+                by function, but still cut once rather than twice. */}
+            <p className="text-label text-muted-foreground/75 mt-0.5 leading-tight line-clamp-2">{s.rationale}</p>
           </div>
           <button onClick={() => onRestore(s.id)} className="pressable h-6 px-2 rounded text-label font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
             <RotateCcw className="w-3.5 h-3.5" />

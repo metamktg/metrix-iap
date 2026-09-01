@@ -21,7 +21,7 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
   fmtUSD, fmtPct, fmtNum,
-  DetailReveal, deriveLabel, useFocusParam, useStaleFocus, StaleFocusNotice,
+  DenseText, deriveLabel, useFocusParam, useStaleFocus, StaleFocusNotice,
   SegmentGenderIcon,
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
@@ -178,11 +178,11 @@ function IcpFact({ label, value, Icon }: {
         <Icon className="w-3.5 h-3.5 text-muted-foreground/75" />
         <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">{label}</span>
       </div>
-      {value.length > 72 ? (
-        <DetailReveal label={deriveLabel(value, 64)} labelClassName={TYPE.body} eyebrow={label} sections={[{ text: value }]} />
-      ) : (
-        <p className={TYPE.body}>{value}</p>
-      )}
+      {/* A 72-character threshold used to decide whether an ICP field was
+          readable or needed a click. Length is not a proxy for importance.
+          DenseText clamps at four lines and only shows a control when the
+          text genuinely overflows. */}
+      <DenseText text={value} className={cn(TYPE.body, "leading-relaxed")} clampClass="line-clamp-4" />
     </div>
   );
 }
@@ -271,11 +271,10 @@ function ProfileDetailFold({
               </div>
               <div className="space-y-2.5">
                 {messageResonance && (
-                  <DetailReveal
-                    label={deriveLabel(messageResonance, 72)}
-                    labelClassName={TYPE.body}
-                    eyebrow="Message resonance"
-                    sections={[{ text: messageResonance }]}
+                  <DenseText
+                    text={messageResonance}
+                    className={cn(TYPE.body, "leading-relaxed")}
+                    clampClass="line-clamp-4"
                   />
                 )}
                 {dna && dna.length > 0 && (
@@ -301,7 +300,15 @@ function ProfileDetailFold({
                           {h.risk && (
                             <div className="flex items-start gap-1.5 pt-1.5 border-t border-border/15">
                               <AlertTriangle className="w-3.5 h-3.5 text-status-warning/70 shrink-0 mt-0.5" />
-                              <p className="text-caption text-status-warning/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
+                              {/* Was deriveLabel(90) INSIDE a line-clamp-1 —
+                                  cut twice, so a risk warning could not be
+                                  read at all. A stated risk is the whole
+                                  point of stating it. */}
+                              <DenseText
+                                text={h.risk}
+                                className="text-caption text-status-warning/80 leading-relaxed"
+                                clampClass="line-clamp-3"
+                              />
                             </div>
                           )}
                         </div>
@@ -411,11 +418,11 @@ function IcpProfileCard({
 
       {profile.psychographic_profile && (
         <div className="mt-2.5">
-          <DetailReveal
-            label={`"${deriveLabel(profile.psychographic_profile, 90)}"`}
-            labelClassName="text-body italic font-display text-muted-foreground/75 leading-relaxed"
-            eyebrow="Psychographic read"
-            sections={[{ text: profile.psychographic_profile }]}
+          <DenseText
+            text={profile.psychographic_profile}
+            className="text-body italic font-display text-muted-foreground/75 leading-relaxed"
+            clampClass="line-clamp-4"
+            render={(t) => <>&ldquo;{t}&rdquo;</>}
           />
         </div>
       )}
@@ -479,11 +486,10 @@ function IcpProfileCard({
         {profile.strategic_recommendation && (
           <div className="rounded-lg border border-primary/20 bg-primary/[0.05] p-3">
             <div className="text-label font-semibold uppercase tracking-widest text-interactive/80 mb-0.5">Recommendation</div>
-            <DetailReveal
-              label={deriveLabel(profile.strategic_recommendation, 72)}
-              labelClassName={TYPE.body}
-              eyebrow="Recommendation"
-              sections={[{ text: profile.strategic_recommendation }]}
+            <DenseText
+              text={profile.strategic_recommendation}
+              className={cn(TYPE.body, "leading-relaxed")}
+              clampClass="line-clamp-5"
             />
           </div>
         )}

@@ -1,14 +1,35 @@
 // ─── Shared building blocks for seed-hydrated Metrix pages ────────────
 //
 // Verbosity rulebook — platform-wide content consolidation:
-// • FIRST-LAYER RULE: no full sentences on the primary dashboard layer.
-//   Cards/lists show concise, high-impact labels only; sentence prose moves
-//   behind <DetailReveal> — a click/tap/keyboard popover with an always-
-//   visible info affordance. Derive labels mechanically with deriveLabel()
-//   (first clause, word-boundary cut) — never invent new copy.
+//
+// ★ CHROME vs PAYLOAD — read this before applying any rule below. ★
+//   CHROME is the furniture that helps a reader navigate: tile captions,
+//   table cells, chips, breadcrumbs, card faces, eyebrows, provenance
+//   ("where did this number come from"). Chrome is terse. Truncate it,
+//   clamp it, put its detail behind a reveal.
+//   PAYLOAD is the thing the customer is paying for: a message pillar, a
+//   hypothesis and what it isolates, an ICP's psychographic read, a
+//   strategic recommendation, a stated risk, "why it matters", a budget
+//   reallocation instruction, brief direction. Payload is LEGIBLE. It
+//   stays on the page, in full, with no interaction required to read it.
+//   Clamp it with <DenseText> if length demands — that keeps the words
+//   present and expandable in place, and shows no control at all when the
+//   text already fits.
+//   The rules below are about chrome. Applying them to payload hides the
+//   product, which is exactly what happened to the Strategy pages: a
+//   message pillar was cut to 72 characters and a stated risk was
+//   deriveLabel'd to 90 chars INSIDE a one-line clamp. Enforced by
+//   scripts/check-payload-legibility.ts.
+//
+// • FIRST-LAYER RULE (chrome): no full sentences on the primary dashboard
+//   layer. Cards/lists show concise, high-impact labels only; sentence
+//   prose moves behind <DetailReveal> — a click/tap/keyboard popover with
+//   an always-visible info affordance. Derive labels mechanically with
+//   deriveLabel() (first clause, word-boundary cut) — never invent copy.
 // • Inside <button> cards whose full text lives in a drawer/modal: clamp with
-//   CSS `line-clamp-N` (nested buttons are invalid HTML, so no DetailReveal
-//   or roll-downs there) and let the drawer carry the prose.
+//   CSS `line-clamp-N` (nested buttons are invalid HTML, so no DetailReveal,
+//   DenseText or roll-downs there) and let the drawer carry the prose. Clamp
+//   ONCE — a deriveLabel() inside a line-clamp cuts the same text twice.
 // • Second-layer surfaces (drawers, modals, expanded detail sections) keep
 //   full prose; use <DenseText> there if clamping is still needed —
 //   <ExpandableText>/<ClampedProse> are legacy aliases over it.
@@ -18,13 +39,17 @@
 // • Drawers (InfoDrawer/DrawerField) and modals may show full-length prose.
 //
 // Typography roles — import { TYPE } from "./typography":
-// • TYPE.microLabel 9px mono uppercase micro index/eyebrow labels (below
+// • TYPE.microLabel 11px uppercase micro index/eyebrow labels (below
 //   TYPE.label — e.g. "Spend"/"Results" strip labels, run-scope captions)
-// • TYPE.label   10px uppercase eyebrow/section labels
-// • TYPE.title   14px BOLD card/list titles — bold is the one enforced
+// • TYPE.label   12px uppercase eyebrow/section labels
+// • TYPE.caption 13px secondary/meta prose — THE READING FLOOR
+// • TYPE.body    15px primary prose in cards/tiles; every sentence lands
+//   here or above
+// • TYPE.title   18px BOLD card/list titles — bold is the one enforced
 //   title weight platform-wide (matches SectionCard's own <h3>)
-// • TYPE.body    12px primary prose in cards/tiles
-// • TYPE.caption 11px secondary/meta prose
+//   (These were 9/10/11/12/14px before the ramp lift; the constants are
+//   presets over the .text-* role classes declared in index.css, which are
+//   equally canonical — chrome spells it that way.)
 // Standard tile anatomy: eyebrow label → title → clamped body → chip rows →
 // footer/meta. No half-pixel sizes (10.5/11.5/12.5px) in card bodies, and no
 // raw text-[Npx] classes — every size composes from TYPE (enforced by
