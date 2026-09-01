@@ -3,8 +3,8 @@
 // expandable into the avatar × placement grid. This import carries real
 // MARGINALS — avatar segments (age × gender rows per creative cell) and
 // placement performance (account level) — but no joint avatar × placement
-// grain. Marginals render real numbers; intersections render an explicit
-// "no joint grain" state. Never fabricated.
+// grain, so there is no intersection to render at all. Both marginals show
+// real numbers, side by side, and nothing is estimated between them.
 
 import { useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
@@ -12,6 +12,7 @@ import { Info } from "lucide-react";
 import type { AnalysisData, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { MetricDef } from "@/lib/data/metricsCatalog";
 import { DIALOG } from "@/pages/metrix/typography";
+import { platformLabel } from "@/pages/metrix/shared";
 
 function usd(n: number | null | undefined, digits = 2): string {
   if (n == null) return "—";
@@ -220,10 +221,10 @@ export function SegmentGridModal({
           <div className="text-label text-muted-foreground/75 uppercase tracking-widest">{kicker}</div>
           <DialogTitle className={DIALOG.title}>{title} — avatar × placement</DialogTitle>
           <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
-            Avatar rows and placement columns are real marginals from this import, broken out by{" "}
-            <span className="text-foreground/80 font-medium">{metricLabel}</span>. Meta's export does not break
-            results down jointly by demographic and placement, so intersections stay explicitly empty rather than
-            estimated.{unavailableOnPlacements ? " The placement export doesn't carry this metric, so those cells show as unavailable rather than estimated." : ""}
+            Two real marginals from this import, both by{" "}
+            <span className="text-foreground/80 font-medium">{metricLabel}</span>: avatar segments, and placements at
+            account level. Meta's export carries no joint demographic × placement breakdown, so there is no
+            intersection to show — and none is estimated.{unavailableOnPlacements ? " The placement export doesn't carry this metric, so those figures show as unavailable rather than estimated." : ""}
           </DialogDescription>
         </DialogHeader>
 
@@ -235,71 +236,84 @@ export function SegmentGridModal({
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border border-border/40 overflow-hidden">
-            <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
-              <table className="w-full min-w-[500px] border-collapse">
-                <thead className="sticky top-0 bg-surface-table z-10">
-                  <tr className="border-b border-border/40">
-                    <th className="text-left text-micro uppercase text-muted-foreground/75 font-semibold px-2.5 py-2">
-                      Avatar segment
-                    </th>
-                    {placements.map(({ row: p }) => (
-                      <th key={p.Placement + p.Platform} className="text-center text-micro uppercase text-muted-foreground/75 font-semibold px-2 py-2 min-w-[76px]">
-                        <div className="normal-case">{p.Placement}</div>
-                        <div className="text-caption text-muted-foreground/75 capitalize">{p.Platform}</div>
+          <div className="space-y-3">
+            {/* Two marginals, not a cross-tab.
+                The interior of an avatar × placement grid is a literal "—" in
+                every cell — not a lookup that came back empty, but a dash the
+                component writes, because Meta's export carries no joint
+                demographic × placement grain at all. Drawing the grid spent
+                most of the modal on dashes and implied the cells might fill
+                in; the footnote went further and said they would "populate
+                automatically", which no code path could deliver. What the
+                import really has is two marginals, so the modal shows two. */}
+            <div className="rounded-xl border border-border/40 overflow-hidden">
+              <div className="overflow-x-auto max-h-[260px] overflow-y-auto">
+                <table className="w-full border-collapse">
+                  <thead className="sticky top-0 bg-surface-table z-10">
+                    <tr className="border-b border-border/40">
+                      <th className="text-left text-micro uppercase text-muted-foreground/75 font-semibold px-2.5 py-2">
+                        Avatar segment
                       </th>
-                    ))}
-                    <th className="text-right text-micro uppercase text-interactive/70 font-semibold px-2.5 py-2">
-                      Blended
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {avatars.map((seg) => {
-                    const blended = metricValueForSegment(seg.totals, metric ?? { id: "cpa_blended", isResultEvent: false });
-                    return (
-                      <tr key={seg.key} className="border-b border-border/20">
-                        <td className="px-2.5 py-2">
-                          <div className="text-caption font-medium text-foreground">{seg.age}</div>
-                          <div className="text-caption text-muted-foreground/75 capitalize">{seg.gender}</div>
-                        </td>
-                        {placements.map(({ row: p }) => (
-                          <td
-                            key={p.Placement + p.Platform}
-                            className="px-2 py-2 text-center text-label text-muted-foreground/75"
-                            title="No joint avatar × placement grain in this import"
-                          >
-                            —
+                      <th className="text-right text-micro uppercase text-interactive/70 font-semibold px-2.5 py-2">
+                        {metricLabel}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {avatars.map((seg) => {
+                      const blended = metricValueForSegment(seg.totals, metric ?? { id: "cpa_blended", isResultEvent: false });
+                      return (
+                        <tr key={seg.key} className="border-b border-border/20 last:border-b-0">
+                          <td className="px-2.5 py-2">
+                            <div className="text-caption font-medium text-foreground">{seg.age}</div>
+                            <div className="text-caption text-muted-foreground/75">{seg.gender}</div>
                           </td>
-                        ))}
-                        <td className="px-2.5 py-2 text-right tabular-nums">
-                          <div className="text-caption font-semibold text-foreground">
-                            {blended.display} <span className="text-caption font-normal text-muted-foreground/75">{metricLabel}</span>
-                          </div>
-                          <div className="text-caption text-muted-foreground/75">{usd(seg.totals.spend, 0)} · {num(seg.totals.results)} res</div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {/* Placement marginal row (account level) */}
-                  <tr className="border-t border-border/40 bg-foreground/[0.015]">
-                    <td className="px-2.5 py-2">
-                      <div className="text-label uppercase tracking-wide text-interactive/70">All avatars</div>
-                      <div className="text-caption text-muted-foreground/75">placement marginals · account level</div>
-                    </td>
+                          <td className="px-2.5 py-2 text-right tabular-nums">
+                            <div className="text-caption font-semibold text-foreground">{blended.display}</div>
+                            <div className="text-caption text-muted-foreground/75">
+                              {usd(seg.totals.spend, 0)} · {num(seg.totals.results)} res
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/40 overflow-hidden">
+              <div className="overflow-x-auto max-h-[260px] overflow-y-auto">
+                <table className="w-full border-collapse">
+                  <thead className="sticky top-0 bg-surface-table z-10">
+                    <tr className="border-b border-border/40">
+                      <th className="text-left text-micro uppercase text-muted-foreground/75 font-semibold px-2.5 py-2">
+                        Placement · account level
+                      </th>
+                      <th className="text-right text-micro uppercase text-interactive/70 font-semibold px-2.5 py-2">
+                        {metricLabel}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {placements.map(({ row: p, totals }) => {
                       const v = metricValueForSegment(totals, metric ?? { id: "cpa_blended", isResultEvent: false });
                       return (
-                        <td key={p.Placement + p.Platform} className="px-2 py-2 text-center tabular-nums">
-                          <div className="text-label font-semibold text-foreground/90">{v.display}</div>
-                          <div className="text-caption text-muted-foreground/75">{usd(p["Amount spent (USD)"], 0)}</div>
-                        </td>
+                        <tr key={p.Placement + p.Platform} className="border-b border-border/20 last:border-b-0">
+                          <td className="px-2.5 py-2">
+                            <div className="text-caption font-medium text-foreground">{p.Placement}</div>
+                            <div className="text-caption text-muted-foreground/75">{platformLabel(p.Platform)}</div>
+                          </td>
+                          <td className="px-2.5 py-2 text-right tabular-nums">
+                            <div className="text-caption font-semibold text-foreground">{v.display}</div>
+                            <div className="text-caption text-muted-foreground/75">{usd(p["Amount spent (USD)"], 0)}</div>
+                          </td>
+                        </tr>
                       );
                     })}
-                    <td className="px-2.5 py-2" />
-                  </tr>
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -307,9 +321,9 @@ export function SegmentGridModal({
         <div className="flex items-start gap-2 text-label text-muted-foreground/75 leading-relaxed">
           <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <span>
-            Avatar rows: demographic audience signal{cellIds ? ` scoped to ${cellIds.join(", ")}` : " for the whole account"}.
-            Placement columns: account-level placement signal. Joint cells populate automatically
-            when an export with combined demographic × placement breakdowns is imported.
+            Avatars: demographic audience signal{cellIds ? ` scoped to ${cellIds.join(", ")}` : " for the whole account"}.
+            Placements: account-level placement signal. The two are separate marginals of the same spend, so
+            reading one against the other is directional — they do not multiply out.
           </span>
         </div>
       </DialogContent>

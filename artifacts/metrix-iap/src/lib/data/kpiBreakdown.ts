@@ -14,7 +14,7 @@
 //     conversion_tracking_signal) never mix with delivery-basis metrics:
 //     only link_clicks (the one shared field) is offered there.
 
-import { fmtUSD, fmtNum, fmtPct, eventLabel } from "@/pages/metrix/shared";
+import { fmtUSD, fmtNum, fmtPct, eventLabel, platformLabel, deviceLabel } from "@/pages/metrix/shared";
 import { scopeToRun } from "@/lib/run-supersede";
 import type {
   AdAccount, AnalysisData, CellPerformanceRow, PlacementRow, DeviceDeliveryRow,
@@ -239,10 +239,19 @@ const VARIABLE_FAMILY_LABELS: Record<string, string> = {
   copy: "Copy variables",
   funnel_stage: "Funnel-stage variables",
   awareness: "Awareness variables",
+  // Not a registry family. The parser emits this for tokens lifted straight
+  // out of an ad name when nothing else matched, so the picker offered
+  // "raw_token variables" — an internal family id read aloud in a menu.
+  raw_token: "Ad-name token",
 };
 
 function familyLabel(family: string): string {
-  return VARIABLE_FAMILY_LABELS[family.toLowerCase()] ?? `${family} variables`;
+  const known = VARIABLE_FAMILY_LABELS[family.toLowerCase()];
+  if (known) return known;
+  // A family the map has not met is still an id; interpolating it raw is how
+  // "raw_token variables" reached the picker in the first place.
+  const humanised = family.replace(/[_-]+/g, " ").trim().replace(/^\w/, (c) => c.toUpperCase());
+  return `${humanised} variables`;
 }
 
 /** Dimensions actually backed by rows in this account's analysis data. */
@@ -288,6 +297,12 @@ export function listBreakdownDimensions(a: AnalysisData | null | undefined): Bre
  * Tracking-basis + grain rules for a dimension × metric pair.
  * Returns null when supported, else an honest reason string.
  */
+/**
+ * Metrics that cannot exist for an ad-name token, however the import went.
+ * CTR and CPM are included because both divide by impressions.
+ */
+const TOKEN_UNMEASURABLE = new Set(["impressions", "reach", "clicks_all", "ctr_all", "link_ctr", "cpm"]);
+
 export function dimensionMetricRestriction(dimensionId: string, metricId: string): string | null {
   if (dimensionId.startsWith("conv:")) {
     // Conversion-attributed rows carry no spend/impressions by design —
@@ -301,6 +316,19 @@ export function dimensionMetricRestriction(dimensionId: string, metricId: string
   }
   if ((dimensionId === "placement" || dimensionId === "platform" || dimensionId === "device") && (metricId === "reach" || metricId === "clicks_all" || metricId === "ctr_all")) {
     return "Placement/device rows don't carry reach or clicks (all) in this import.";
+  }
+  if (dimensionId === "var:raw_token" && TOKEN_UNMEASURABLE.has(metricId)) {
+    // Structural, not a gap in one import. An ad-name token is a substring
+    // shared by many ads, so it has no impression count of its own:
+    // analysisEngine's variablePerformancePayload writes Reach, Impressions
+    // and Clicks (all) as literal 0 "so numeric consumers don't receive
+    // undefined", and sets CTR_link_pct to null for the same reason.
+    //
+    // Those zeros then rendered as a measurement. The Impressions breakdown
+    // for this dimension was a column of "0" against tokens that had really
+    // spent thousands — which reads as "these tokens got no impressions"
+    // rather than "impressions are not attributable to a token at all".
+    return "An ad-name token is a substring shared across many ads, so it has no impressions, reach or clicks of its own — only spend, link clicks and results are attributable at this level.";
   }
   return null;
 }
@@ -374,14 +402,18 @@ export function buildAccountBreakdown(
   if (dimensionId === "placement" || dimensionId === "platform") {
     const rows: PlacementRow[] = [...(a.v3_placement_signal ?? []), ...(a.c4e_placement_signal ?? [])];
     const keyOf = (r: PlacementRow) => (dimensionId === "placement" ? r.Placement : r.Platform);
-    return groupRows(rows, keyOf, keyOf, (r) => ({
+    // Key stays the raw value (it is what filtering joins on); only the
+    // displayed label is humanised.
+    const labelOf = (r: PlacementRow) =>
+      dimensionId === "placement" ? r.Placement : platformLabel(r.Platform);
+    return groupRows(rows, keyOf, labelOf, (r) => ({
       spend: r["Amount spent (USD)"], impressions: r.Impressions,
       linkClicks: r["Link clicks"], results: r.Results,
     }), metricId);
   }
   if (dimensionId === "device") {
     const rows: DeviceDeliveryRow[] = a.device_delivery_signal ?? [];
-    return groupRows(rows, (r) => r.device, (r) => r.device, (r) => ({
+    return groupRows(rows, (r) => r.device, (r) => deviceLabel(r.device), (r) => ({
       spend: r.spend, impressions: r.impressions, linkClicks: r.link_clicks, results: r.results,
     }), metricId);
   }
@@ -389,10 +421,10 @@ export function buildAccountBreakdown(
     const conv = a.conversion_tracking_signal;
     if (!conv) return [];
     if (dimensionId === "conv:device") {
-      return groupRows(conv.devices, (r) => r.device, (r) => r.device, (r) => ({ linkClicks: r.link_clicks }), metricId);
+      return groupRows(conv.devices, (r) => r.device, (r) => deviceLabel(r.device), (r) => ({ linkClicks: r.link_clicks }), metricId);
     }
     if (dimensionId === "conv:platform") {
-      return groupRows(conv.platforms, (r) => r.platform, (r) => r.platform, (r) => ({ linkClicks: r.link_clicks }), metricId);
+      return groupRows(conv.platforms, (r) => r.platform, (r) => platformLabel(r.platform), (r) => ({ linkClicks: r.link_clicks }), metricId);
     }
     return groupRows(conv.placements, (r) => r.placement, (r) => r.placement, (r) => ({ linkClicks: r.link_clicks }), metricId);
   }

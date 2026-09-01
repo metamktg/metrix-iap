@@ -158,7 +158,11 @@ export function InfoTooltip({ content }: { content: string }) {
             <Info className="w-3.5 h-3.5" />
           </button>
         </TooltipTrigger>
-        <TooltipContent className="max-w-[280px] text-left leading-relaxed text-caption whitespace-normal">
+        {/* Width was capped, height was not. A tooltip given a long body grew
+            until it blanketed the card behind it — the disclosure rulebook puts
+            full prose behind DetailReveal (a click popover, already capped at
+            60vh) precisely so a hover surface never has to carry it. */}
+        <TooltipContent className="max-w-[280px] max-h-[min(40vh,320px)] overflow-y-auto text-left leading-relaxed text-caption whitespace-normal">
           {content}
         </TooltipContent>
       </Tooltip>
@@ -209,7 +213,64 @@ export const EVENT_LABEL: Record<string, string> = {
 };
 
 export function eventLabel(key: string): string {
-  return EVENT_LABEL[key] ?? key;
+  if (!key) return key;
+  const mapped = EVENT_LABEL[key];
+  if (mapped) return mapped;
+  // Result types come from client exports and custom `onb_*` events, so an
+  // unmapped snake_case key is ordinary rather than exceptional. Rendering it
+  // raw is the same defect as the "raw_token variables" one: the value is
+  // right, the wording leaks an identifier. The namespace prefix is dropped
+  // the way the mapped `onb_` siblings already drop it.
+  if (!key.includes("_")) return key;
+  const parts = key.split("_").filter(Boolean);
+  const words = parts.length > 2 && /^[a-z]+$/.test(parts[0]!) ? parts.slice(1) : parts;
+  const text = words.join(" ").trim();
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : key;
+}
+
+// ─── Delivery dimension terminology ───────────────────────────────────
+// Meta reports platform and device as lowercase snake_case tokens
+// (audience_network, android_smartphone). Three surfaces leaned on CSS
+// `capitalize`, which turns audience_network into "Audience_network", and the
+// KPI drill-down's platform and device breakdowns rendered the token verbatim
+// — the same class as the "raw_token variables" leak. PlacementsView had
+// grown its own private deviceLabel, so the app disagreed with itself about
+// what a device is called. One map, used everywhere.
+
+const PLATFORM_LABEL: Record<string, string> = {
+  facebook: "Facebook",
+  instagram: "Instagram",
+  messenger: "Messenger",
+  threads: "Threads",
+  audience_network: "Audience Network",
+  unknown: "Unknown",
+};
+
+const DEVICE_LABEL: Record<string, string> = {
+  iphone: "iPhone",
+  ipad: "iPad",
+  ipod: "iPod",
+  android_smartphone: "Android smartphone",
+  android_tablet: "Android tablet",
+  desktop: "Desktop",
+  other: "Other",
+  unknown: "Unknown",
+};
+
+/** Sentence-case a snake_case token: android_tablet → "Android tablet". */
+function humanizeToken(token: string): string {
+  const text = token.replace(/[_-]+/g, " ").trim();
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : token;
+}
+
+export function platformLabel(key: string): string {
+  if (!key) return key;
+  return PLATFORM_LABEL[key.toLowerCase()] ?? humanizeToken(key);
+}
+
+export function deviceLabel(key: string): string {
+  if (!key) return key;
+  return DEVICE_LABEL[key.toLowerCase()] ?? humanizeToken(key);
 }
 
 // ─── Account result terminology ───────────────────────────────────────

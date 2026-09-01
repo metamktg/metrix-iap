@@ -1019,13 +1019,22 @@ export function SegmentDrilldownModal({
                 </div>
               )}
 
-              <div className="flex items-start gap-2 text-label text-muted-foreground/75 leading-relaxed">
-                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                <span>
-                  Concepts and variables join this segment's demographic rows to their creative cells and variable
-                  stacks. Hover a variable for its underlying code and per-segment performance.
-                </span>
-              </div>
+              {/* Only explain the join when the join actually happened. This
+                  sentence rendered unconditionally, so an import whose
+                  demographic export is account-level showed the honest "concept
+                  and variable attribution can't be computed" notice and then,
+                  directly beneath it, an instruction to hover variables that
+                  are not on the screen. Two notices contradicting each other
+                  reads as a bug in the data, not a limit of the export. */}
+              {data.attribution.available && (
+                <div className="flex items-start gap-2 text-label text-muted-foreground/75 leading-relaxed">
+                  <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <span>
+                    Concepts and variables join this segment's demographic rows to their creative cells and variable
+                    stacks. Hover a variable for its underlying code and per-segment performance.
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

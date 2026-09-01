@@ -28,7 +28,7 @@ import {
 } from "./kpiBreakdown";
 import { cardFromCell, cardFromMatrixCell } from "../creative-assembly";
 import type { CardAssemblyOpts } from "../creative-assembly";
-import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
+import { fmtUSD, fmtNum, eventLabel } from "@/pages/metrix/shared";
 import { pillarTier, pillarHasDetails } from "@/pages/metrix/strategy/strategyShared";
 
 // ─── Module shape ─────────────────────────────────────────────────────
@@ -261,7 +261,9 @@ export function buildCellDeepDiveModule(input: CellDeepDiveInput): DeepDiveModul
           metricId: "results",
           label: "Results",
           value: fmtNum(totals.results),
-          note: perf.length > 1 ? `${perf.length} result types` : perf[0]?.["Result type"],
+          note: perf.length > 1
+            ? `${perf.length} result types`
+            : perf[0] ? eventLabel(perf[0]["Result type"]) : undefined,
         },
         {
           metricId: "cpa",

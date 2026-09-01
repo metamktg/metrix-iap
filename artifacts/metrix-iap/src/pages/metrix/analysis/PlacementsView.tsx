@@ -14,6 +14,7 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CaveatNote, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   SkeletonTileRow, DatePresetBar, type ViewPreset, SectionInfoIcon,
+  deviceLabel,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -73,11 +74,6 @@ function rollupDevices(rows: DeviceDeliveryRow[]): DeviceRollup[] {
   return [...byDevice.entries()]
     .map(([device, s]) => ({ device, ...s, cpa: s.results > 0 ? s.spend / s.results : null }))
     .sort((a, b) => b.spend - a.spend);
-}
-
-function deviceLabel(device: string): string {
-  const s = device.replace(/_/g, " ");
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function DeviceDeliveryCard({ rows }: { rows: DeviceDeliveryRow[] }) {

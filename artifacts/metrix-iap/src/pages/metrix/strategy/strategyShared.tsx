@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS, resolveInlineVariableCodes } from "@/lib/variable-registry";
+import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS, resolveInlineVariableCodes, resolveVariableDescription } from "@/lib/variable-registry";
 import { ConfidenceBadge, DenseText, useShowMore, ShowMoreButton } from "../shared";
 import {
   parseHierarchyRef, formatHierarchyRef, fmtMetric, extractVariableCodes, compactIcpName,
@@ -79,9 +79,18 @@ export function VariableChip({ code, showCode = false, className }: { code: stri
           {!showCode && <span className="sr-only">{` (${code})`}</span>}
         </span>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[220px] space-y-0.5 text-left">
+      <TooltipContent side="top" className="max-w-[240px] space-y-0.5 text-left">
         <p className=" text-label text-muted-foreground">{code}</p>
         <p className="text-label leading-relaxed text-foreground/90">{resolveVariableLabel(code)}</p>
+        {/* variable-registry.ts carries an authored one-line description for 31
+            of these codes and nothing rendered any of them. The chip tooltip is
+            where an operator asks "what does this variable mean", so it is the
+            place they belong. */}
+        {resolveVariableDescription(code) && (
+          <p className="text-label leading-relaxed text-muted-foreground/85">
+            {resolveVariableDescription(code)}
+          </p>
+        )}
       </TooltipContent>
     </Tooltip>
     </TooltipProvider>

@@ -9,7 +9,7 @@ import { useState, useMemo } from "react";
 import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
-import { DenseText } from "@/pages/metrix/shared";
+import { DenseText, platformLabel } from "@/pages/metrix/shared";
 import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle, TrendingDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
@@ -581,7 +581,7 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
               <div className="flex items-center justify-between text-label">
                 <div className="min-w-0">
                   <span className="font-medium text-foreground/80">{b.Placement}</span>
-                  <span className={cn(TYPE.caption, "ml-1.5 text-muted-foreground/75 capitalize")}>{b.Platform}</span>
+                  <span className={cn(TYPE.caption, "ml-1.5 text-muted-foreground/75")}>{platformLabel(b.Platform)}</span>
                 </div>
                 <span className="tabular-nums text-muted-foreground/75 shrink-0 ml-2">
                   {metric === "spend" ? usd(b["Amount spent (USD)"]) : cpa != null ? usd(cpa) : "—"}
