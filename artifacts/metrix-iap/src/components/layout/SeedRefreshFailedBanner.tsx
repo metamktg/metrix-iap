@@ -26,7 +26,7 @@ export function SeedRefreshFailedBanner() {
     >
       <AlertTriangle className="w-3 h-3 text-amber-400/70 shrink-0" />
       <span className="text-label font-medium text-amber-400/75">Showing the last data that loaded</span>
-      <span className="text-[9px] text-amber-400/45 leading-none hidden sm:block">
+      <span className="text-caption text-amber-400/60 leading-none hidden sm:block">
         Refresh failed, so anything changed since then is not reflected here
       </span>
 
