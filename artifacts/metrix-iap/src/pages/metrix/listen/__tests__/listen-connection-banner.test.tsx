@@ -296,15 +296,28 @@ describe("RecommendationsView — disconnected", () => {
     expect(screen.getAllByText(/^recommendations$/i).length).toBeGreaterThan(0);
   });
 
-  it("renders the High impact metric tile", () => {
+  // These two used to assert the "High impact" and "Auto-applied" metric
+  // tiles. Those tiles now render only when there are recommendations to
+  // count: the fixture has none (optimization_loop is null for every
+  // account), and a row reading 0 / 0 / — / 0 claims this account was
+  // measured and came back empty, directly above a panel saying the stage
+  // never ran. The two statements contradict each other and the tiles are
+  // the false one.
+  //
+  // What this file actually protects is connection-INDEPENDENCE — that the
+  // view renders its content whether or not Meta is connected, rather than
+  // hiding behind the old gate. The tiles were the instrument, not the
+  // subject, so the same protection is asserted here against the content
+  // the view really renders when empty.
+  it("renders its content when Meta is disconnected — the stage state, with the real reason", () => {
     render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
-    // Multiple "High impact" labels may exist — at least one must be present.
-    expect(screen.getAllByText(/^high impact$/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/^no recommendations$/i)).toBeTruthy();
+    expect(screen.getByText("loop_status → optimization_loop")).toBeTruthy();
   });
 
-  it("renders the Auto-applied metric tile", () => {
+  it("does not present an unrun stage as a measured zero", () => {
     render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
-    expect(screen.getByText(/auto-applied/i)).toBeTruthy();
+    expect(screen.queryByText(/auto-applied/i)).toBeNull();
   });
 
   it("shows ConnectionNudgeBanner when Meta is disconnected", () => {

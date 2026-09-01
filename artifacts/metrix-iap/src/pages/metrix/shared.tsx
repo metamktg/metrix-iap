@@ -109,7 +109,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck
 import { resolveVariableLabel } from "@/lib/variable-registry";
 import { normalizeConfidence } from "@/lib/normalize";
 import { TYPE, HEADING } from "./typography";
-import type { AdAccount } from "@/lib/data/seedTypes";
+// NOTE: seedTypes exports `LoopStageStatus` (a per-stage record read from
+// the seed) and this file exports its own `LoopStageStatus` further down (a
+// "locked"|"none"|"running"|"success"|"error" run-state union for the loop
+// chain). Same name, two unrelated concepts. Importing it unaliased broke
+// seven files, so the seed record comes in as SeedLoopStage here.
+import type { AdAccount, LoopStageStatus as SeedLoopStage } from "@/lib/data/seedTypes";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
 
@@ -1063,6 +1068,96 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
           {message}
         </p>
       )}
+      {action && <div className="pt-1">{action}</div>}
+    </div>
+  );
+}
+
+// ─── Stage-not-run state ──────────────────────────────────────────────
+//
+// A surface fed by an IAP loop stage that has not produced anything must
+// not describe itself as a measured zero, and must not instruct an action
+// that cannot produce the missing output.
+//
+// The Action Queue did both. Its empty state read "No actions yet — Run
+// analysis to generate optimization recommendations for this account."
+// `metrixSeedAssembly.ts` sets `optimization_loop: null` as a hardcoded
+// literal for every account and nothing anywhere writes it, so that
+// instruction could never be satisfied by anyone. A user runs analysis,
+// comes back, and is told to run analysis. That is worse than an empty
+// page: it spends the reader's time and teaches them the product lies.
+//
+// The seed already carries the truth, per account, in `loop_status` —
+// assembled under a comment that literally says "honest pending states":
+//
+//   optimization_loop | pending | "Not yet run — golden-formula output
+//     requires the Creative Scan / Test Engine stage plus raw Meta exports
+//     with real ad_id."
+//   optimization_loop | pending | "Not yet run — blocked on creative_scan
+//     (which is blocked on tracking fix + budget delivery)."
+//
+// Two different accounts, two different real blockers, both more useful
+// than any sentence written at the call site. So this reads the note
+// rather than inventing one, and distinguishes three states the generic
+// copy collapsed into one:
+//
+//   pending + note   the stage is registered and blocked, here is why
+//   pending, no note the stage is registered and has not run
+//   no row at all    the stage was never registered for this account —
+//                    true of every manual-upload account in the seed, and
+//                    a different fact from "pending"
+//
+// `AnalysisDnaView` established this pattern for the golden-formula line;
+// this is the same read, made shareable so the next surface does not
+// hand-roll a third variant.
+
+export function useLoopStage(
+  account: { iap?: { loop_status?: SeedLoopStage[] } | null } | null | undefined,
+  stage: string,
+): SeedLoopStage | null {
+  return account?.iap?.loop_status?.find((s) => s.stage === stage) ?? null;
+}
+
+export function StageNotRunState({
+  title,
+  stageLabel,
+  stage,
+  account,
+  icon: Icon = Clock,
+  action,
+}: {
+  /** Heading. Says what is absent, never "no results". */
+  title: string;
+  /** Human name of the stage, for the fallback sentences. */
+  stageLabel: string;
+  /** loop_status stage key, e.g. "optimization_loop". */
+  stage: string;
+  account: { iap?: { loop_status?: SeedLoopStage[] } | null } | null | undefined;
+  icon?: React.ComponentType<{ className?: string }>;
+  /** Somewhere real to go — never a control that re-runs the wrong stage. */
+  action?: React.ReactNode;
+}) {
+  const entry = useLoopStage(account, stage);
+  const message = entry?.note
+    ? entry.note
+    : entry
+      ? `The ${stageLabel} stage is registered for this account and has not run yet.`
+      : `The ${stageLabel} stage has not run for this account.`;
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/40 py-16 text-center px-6">
+      <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
+        <Icon className="w-4 h-4 text-muted-foreground/75" />
+      </div>
+      <h3 className="text-h4 font-h4 font-bold text-foreground/85 text-balance">{title}</h3>
+      {/* The stage's own note, verbatim. It is the most specific true thing
+          available and it is already account-scoped; a sentence written here
+          would be a generic guess standing in front of it. */}
+      <p className="text-body font-body text-muted-foreground max-w-[46ch] leading-relaxed text-pretty">
+        {message}
+      </p>
+      <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>
+        loop_status → {stage}
+      </p>
       {action && <div className="pt-1">{action}</div>}
     </div>
   );

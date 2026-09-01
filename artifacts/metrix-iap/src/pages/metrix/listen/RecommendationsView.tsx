@@ -8,9 +8,10 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getOptimizationLoop, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
-  ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CaveatNote,
-  LoopAction, CrossLink, ConnectionNudgeBanner,
+  ModuleHeader, ModuleScopeGate, StageNotRunState, MetricTile, CaveatNote,
+  CrossLink, ConnectionNudgeBanner,
 } from "../shared";
+import { Lightbulb } from "lucide-react";
 import { useGetMetaConnection } from "@workspace/api-client-react";
 import { SegmentGridModal } from "@/components/creative/SegmentGridModal";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
@@ -72,12 +73,20 @@ export function RecommendationsView() {
             />
             <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />
             <>
-            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-              <MetricTile label="Recommendations" value={String(cards.length)} />
-              <MetricTile label="High impact" value={String(highCount)} />
-              <MetricTile label="Scopes" value={String(scopes.length)} sub={scopes.join(" · ") || "—"} />
-              <MetricTile label="Auto-applied" value="0" sub="manual implementation only" />
-            </div>
+            {/* Tiles only when there is something to count. A row reading
+                0 / 0 / — / 0 states that this account was measured and has
+                no recommendations; the truth is that the optimization loop
+                has never run for any account, so there was nothing to
+                measure. A measured zero and an absent stage are different
+                claims and the reader cannot tell them apart from a tile. */}
+            {cards.length > 0 && (
+              <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
+                <MetricTile label="Recommendations" value={String(cards.length)} />
+                <MetricTile label="High impact" value={String(highCount)} />
+                <MetricTile label="Scopes" value={String(scopes.length)} sub={scopes.join(" · ") || "—"} />
+                <MetricTile label="Auto-applied" value="0" sub="manual implementation only" />
+              </div>
+            )}
 
             <div className="px-6 py-5 max-w-3xl space-y-4">
               {loop?.action_policy && <CaveatNote text={loop.action_policy} />}
@@ -89,10 +98,23 @@ export function RecommendationsView() {
                   onSegments={analysis ? (card) => setSegmentCardId(card.id) : undefined}
                 />
               ) : (
-                <PendingState
+                /* Was a PendingState with a generic "once generated" line and
+                   a Review Analysis button. The button pointed at the wrong
+                   stage — analysis does not produce these cards — and the
+                   sentence was a guess standing in front of the account's own
+                   loop_status note, which names the real blocker. */
+                <StageNotRunState
                   title="No recommendations"
-                  message="Optimization-loop recommendations will appear here once generated."
-                  action={<LoopAction to="/app/analysis/overview" label="Review Analysis" icon="analysis" variant="secondary" />}
+                  stageLabel="Optimization Loop"
+                  stage="optimization_loop"
+                  account={acct}
+                  icon={Lightbulb}
+                  action={
+                    <div className="flex items-center gap-4 flex-wrap justify-center">
+                      <CrossLink to="/app/strategy/hypotheses" label="Queue a test" />
+                      <CrossLink to="/app/creative" label="Draft a brief" />
+                    </div>
+                  }
                 />
               )}
             </div>
