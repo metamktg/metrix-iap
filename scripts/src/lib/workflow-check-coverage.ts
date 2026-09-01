@@ -25,6 +25,18 @@ export const MANUAL_ONLY_CHECK_SCRIPTS: Record<string, string> = {
     "SUPABASE_DB_PASSWORD already lives. It exits 2 (not 0) when no credential " +
     "resolves, precisely so an unattended runner cannot mistake 'nothing was " +
     "checked' for 'the views are fine'.",
+  "check:unexplained-dashes":
+    "measures every VISIBLE em-dash in the rendered DOM and fails on any that " +
+    "carries no title, aria-label or info affordance a reader could resolve. " +
+    "Needs a RUNNING dev server, same constraint as check:accessible-names and " +
+    "check:chart-geometry. A source scan cannot replace it: the dash comes out " +
+    "of shared formatters (fmtUSD, fmtRate, fmtMetric all render it for null), " +
+    "so grepping the literal finds the formatters, not the surfaces — and what " +
+    "matters is what the reader sees. Baseline 2026-09-01: 684 visible dashes " +
+    "across 16 routes x 2 accounts, 0 unexplained. The 59 it originally found " +
+    "sat in five components, each rendering a formatter result straight out. " +
+    "Exits 2 (not 0) when the server is unreachable so 'nothing was checked' " +
+    "cannot read as 'every dash is explained'.",
   "check:chart-geometry":
     "measures every recharts mark against its own SVG surface in a REAL " +
     "browser, so it needs a RUNNING dev server (PORT=5178 in " +

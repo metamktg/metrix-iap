@@ -16,6 +16,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
 import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { segmentMetricReason } from "@/lib/data/segmentMetricsCatalog";
 import { getAdAccount, getMST, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
@@ -73,10 +74,27 @@ const SORT_LABEL: Record<SortKey, string> = {
 // A profile with no matched avatars (or no cell rows in the selected
 // scope) carries no honest cell-level attribution, so it keeps its
 // precomputed all-time figure rather than fabricating a scoped number.
+/**
+ * The REASON a metric is null is returned beside the null, from the same
+ * expression that produced it.
+ *
+ * Writing the reason at the render site instead is how a dash and its
+ * explanation drift: the condition here is `results > 0`, and a card three
+ * hundred lines away saying "not enough spend" would be confidently wrong
+ * and nobody would notice. Deriving both from one place makes that
+ * impossible rather than merely discouraged — the same argument the C3
+ * pass made for reading `segmentMetricsCatalog`'s own strings.
+ */
 function computeProfilePerf(
   cellIds: string[],
   rows: CellPerformanceRow[],
-): { spend: number; cpa: number | null; cvr_link_pct: number | null } | null {
+): {
+  spend: number;
+  cpa: number | null;
+  cvr_link_pct: number | null;
+  cpaReason?: string;
+  cvrReason?: string;
+} | null {
   if (cellIds.length === 0) return null;
   const idSet = new Set(cellIds);
   const matched = rows.filter((r) => idSet.has(r.cell_id));
@@ -84,10 +102,17 @@ function computeProfilePerf(
   const spend = matched.reduce((s, r) => s + r["Amount spent (USD)"], 0);
   const results = matched.reduce((s, r) => s + r.Results, 0);
   const linkClicks = matched.reduce((s, r) => s + r["Link clicks"], 0);
+  const cellNoun = `${cellIds.length} creative cell${cellIds.length === 1 ? "" : "s"}`;
   return {
     spend,
     cpa: results > 0 ? spend / results : null,
     cvr_link_pct: linkClicks > 0 ? (results / linkClicks) * 100 : null,
+    ...(results > 0
+      ? {}
+      : { cpaReason: `this profile's ${cellNoun} recorded no results in scope, so cost per result has no denominator` }),
+    ...(linkClicks > 0
+      ? {}
+      : { cvrReason: `this profile's ${cellNoun} recorded no link clicks in scope, so a link conversion rate has no denominator` }),
   };
 }
 
@@ -115,6 +140,9 @@ interface ScopedProfilePerf {
   scoped: boolean;
   confidenceRecomputed: boolean;
   allTimeFallback: boolean;
+  /** Carried beside the nulls from computeProfilePerf, never re-derived. */
+  cpaReason?: string;
+  cvrReason?: string;
 }
 
 // ─── Sort / search bar ─────────────────────────────────────────────────
@@ -455,9 +483,12 @@ function IcpProfileCard({
             <StatGrid
               cols={3}
               cells={[
-                { label: "Spend", value: perf.spend != null ? fmtUSD(perf.spend, 0) : "—" },
-                { label: "CPA", value: perf.cpa != null ? fmtUSD(perf.cpa) : "—", valueClassName: cpaColor(perf.cpa ?? null) },
-                { label: "Link CVR", value: perf.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—", valueClassName: cvrColor(perf.cvr_link_pct ?? null) },
+                { label: "Spend", value: perf.spend != null ? fmtUSD(perf.spend, 0) : "—",
+                  unavailableReason: "no performance rows matched this profile's creative cells in the current scope" },
+                { label: "CPA", value: perf.cpa != null ? fmtUSD(perf.cpa) : "—", valueClassName: cpaColor(perf.cpa ?? null),
+                  unavailableReason: perf.cpaReason },
+                { label: "Link CVR", value: perf.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—", valueClassName: cvrColor(perf.cvr_link_pct ?? null),
+                  unavailableReason: perf.cvrReason },
               ]}
             />
             {perf.cpa != null && avgCpa != null && avgCpa > 0 && (
@@ -585,8 +616,12 @@ function AudienceSegmentTile({
           cols={3}
           cells={[
             { label: "Spend", value: fmtUSD(totals.spend!, 0) },
-            { label: "CPA", value: derived.cpa != null ? fmtUSD(derived.cpa) : "—" },
-            { label: "Link CVR", value: derived.cvr != null ? fmtPct(derived.cvr) : "—" },
+            // The catalog owns these strings — the same ones the drill-down
+            // modal and the Audience stat rows show for the same segment.
+            { label: "CPA", value: derived.cpa != null ? fmtUSD(derived.cpa) : "—",
+              unavailableReason: segmentMetricReason(totals, derived, "cpa") },
+            { label: "Link CVR", value: derived.cvr != null ? fmtPct(derived.cvr) : "—",
+              unavailableReason: segmentMetricReason(totals, derived, "cvr") },
           ]}
         />
       ) : (
@@ -913,13 +948,34 @@ export function AvatarsView() {
   const perfForProfile = useCallback(
     (profile: ICPProfile): ScopedProfilePerf => {
       const allTime = profile.performance_data ?? null;
+      // On the all-time path the figures are PRECOMPUTED in the seed, so
+      // there is no condition here to read a reason off — only the fact that
+      // the source carries no value. That is worth saying (it tells the
+      // reader this is a data gap, not a failed calculation) and it is all
+      // that can honestly be said; inventing "not enough spend" would be a
+      // guess about a number this code never computed.
+      const sourceGap = (metric: string) =>
+        `the precomputed all-time figures for this profile carry no ${metric}`;
       if (runSelection.allTime) {
-        return { ...allTime, scoped: false, confidenceRecomputed: false, allTimeFallback: false };
+        return {
+          ...allTime,
+          scoped: false, confidenceRecomputed: false, allTimeFallback: false,
+          ...(allTime?.cpa == null ? { cpaReason: sourceGap("cost per result") } : {}),
+          ...(allTime?.cvr_link_pct == null ? { cvrReason: sourceGap("link conversion rate") } : {}),
+        };
       }
       const cellIds = avatarsForProfile(profile.profile_id).flatMap((col) => cellIdsByColumn.get(col.id) ?? []);
       const computed = computeProfilePerf(cellIds, cellRows);
       if (!computed) {
-        return { ...allTime, scoped: false, confidenceRecomputed: false, allTimeFallback: true };
+        // allTimeFallback is already surfaced as its own caveat line on the
+        // card ("no matched avatars in this scope"), so the per-stat reason
+        // stays the source-gap fact rather than repeating it.
+        return {
+          ...allTime,
+          scoped: false, confidenceRecomputed: false, allTimeFallback: true,
+          ...(allTime?.cpa == null ? { cpaReason: sourceGap("cost per result") } : {}),
+          ...(allTime?.cvr_link_pct == null ? { cvrReason: sourceGap("link conversion rate") } : {}),
+        };
       }
       // The scoped spend/cpa/cvr above are real, but the all-time
       // confidence grade wasn't computed from them. When the scoped slice

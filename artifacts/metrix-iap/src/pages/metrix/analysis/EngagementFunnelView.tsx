@@ -889,7 +889,22 @@ export function EngagementFunnelView() {
                       </div>
                       <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4">
                         <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">Reach CTR</div>
-                        <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.reachCtr, 2)}</div>
+                        {/* The line below is the FORMULA, not a reason. When
+                            the rate is absent the reader needs the missing
+                            input named — reachCtr is null exactly when reach
+                            is zero or absent (line ~685), which is a real
+                            fact about this account's data, not a rounding. */}
+                        <div
+                          className={cn(
+                            "text-display font-bold text-foreground",
+                            summaryTiles.reachCtr == null && "border-b border-dotted border-muted-foreground/40 cursor-help",
+                          )}
+                          {...(summaryTiles.reachCtr == null
+                            ? { title: "Reach CTR: this account's rows carry no unique reach, so link clicks have nothing to divide by. Reach is a Meta breakdown that manual CSV exports often omit." }
+                            : {})}
+                        >
+                          {fmtRate(summaryTiles.reachCtr, 2)}
+                        </div>
                         <div className="text-label text-muted-foreground/75 mt-1">Link clicks ÷ unique reach</div>
                       </div>
                     </div>

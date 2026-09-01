@@ -56,7 +56,7 @@ import {
   type SegmentId, type SegmentRawTotals,
   type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
-import { buildSegmentMetricCatalog } from "@/lib/data/segmentMetricsCatalog";
+import { buildSegmentMetricCatalog, segmentMetricReason } from "@/lib/data/segmentMetricsCatalog";
 import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
 import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
 import {
@@ -474,14 +474,9 @@ function ShareOfSpendCard({
 // shows — so a change to why a metric is unavailable lands everywhere at
 // once instead of drifting between surfaces.
 
-function segmentStatReason(
-  totals: SegmentRawTotals,
-  derived: SegmentDerivedMetrics,
-  metricId: string,
-): string | undefined {
-  const m = buildSegmentMetricCatalog(totals, derived).find((x) => x.id === metricId);
-  return m?.availability === "unavailable" ? m.unavailableReason : undefined;
-}
+// Moved to lib/data/segmentMetricsCatalog.ts so AvatarsView reads the same
+// strings rather than carrying a second copy of this rule.
+const segmentStatReason = segmentMetricReason;
 
 /** An index compares this group against the account blend; say which half is missing. */
 function indexReason(label: string, accountValue: number | null, groupValue: number | null): string | undefined {

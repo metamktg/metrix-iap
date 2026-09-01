@@ -484,13 +484,38 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
           </div>
           <CombinationChips combination={c.combination} />
           <div className="mt-auto pt-2 border-t border-border/20 flex items-center gap-4">
+            {/* fmtMetric renders "—" for a null, and a formatter cannot know
+                WHY a value is missing — only the call site can. These two
+                came from the strategy layer's variable_combinations, so a
+                null here means the combination was recorded without a
+                measured read, not that a calculation failed. */}
             <div>
               <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>CPA</div>
-              <div className="text-body font-bold text-foreground tabular-nums">{fmtMetric("usd_unit", c.cpa)}</div>
+              <div
+                className={cn(
+                  "text-body font-bold text-foreground tabular-nums",
+                  c.cpa == null && "border-b border-dotted border-muted-foreground/40 cursor-help",
+                )}
+                {...(c.cpa == null
+                  ? { title: "CPA: this variable combination was recorded without a measured cost per result — it has not been run with enough results behind it to carry one." }
+                  : {})}
+              >
+                {fmtMetric("usd_unit", c.cpa)}
+              </div>
             </div>
             <div>
               <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>CVR</div>
-              <div className="text-body font-bold text-foreground tabular-nums">{fmtMetric("pct", c.cvr_pct)}</div>
+              <div
+                className={cn(
+                  "text-body font-bold text-foreground tabular-nums",
+                  c.cvr_pct == null && "border-b border-dotted border-muted-foreground/40 cursor-help",
+                )}
+                {...(c.cvr_pct == null
+                  ? { title: "CVR: this variable combination was recorded without a measured conversion rate — it has not been run with enough link clicks behind it to carry one." }
+                  : {})}
+              >
+                {fmtMetric("pct", c.cvr_pct)}
+              </div>
             </div>
             {c.confidence && (
               <div className="ml-auto">
@@ -617,6 +642,18 @@ export interface StatCell {
   label: string;
   value: string;
   valueClassName?: string;
+  /**
+   * Why this stat has no value. Ignored when a real value is present.
+   *
+   * Measured across sixteen routes on two accounts, the app renders 684
+   * visible em-dashes and 625 of them already carry a title or an info
+   * affordance the reader can resolve. StatGrid was one of the handful of
+   * places producing the other 59: "CPA —", "LINK CVR —", "COST / RESULT —"
+   * with nothing anywhere to say whether the metric cannot be computed for
+   * this row or the page simply failed to compute it. Those are very
+   * different facts and a bare dash tells the reader neither.
+   */
+  unavailableReason?: string;
 }
 
 export function StatGrid({ cells, cols }: { cells: StatCell[]; cols?: number }) {
@@ -626,14 +663,30 @@ export function StatGrid({ cells, cols }: { cells: StatCell[]; cols?: number }) 
       className="grid gap-px rounded-lg border border-border/35 bg-border/25 overflow-hidden"
       style={{ gridTemplateColumns: `repeat(${cols ?? cells.length}, minmax(0, 1fr))` }}
     >
-      {cells.map((c, i) => (
-        <div key={i} className="bg-card px-2 py-1.5 text-center min-w-0">
-          <div className={cn(TYPE.microLabel, "text-muted-foreground/75 truncate")}>{c.label}</div>
-          <div className={cn("text-body font-semibold tabular-nums mt-0.5 truncate", c.valueClassName ?? "text-foreground/90")}>
-            {c.value}
+      {cells.map((c, i) => {
+        // Same affordance KpiStat uses (rankSort.tsx): a dotted underline and
+        // a `title`, deliberately NOT a tooltip or a DetailReveal. StatGrid
+        // also renders inside button-cards, where the rulebook forbids a
+        // nested interactive element, and one mechanism that is correct in
+        // both places beats two that disagree.
+        const absent = c.value === "—" || c.value === "n/a";
+        const reason = absent ? c.unavailableReason : undefined;
+        return (
+          <div key={i} className="bg-card px-2 py-1.5 text-center min-w-0">
+            <div className={cn(TYPE.microLabel, "text-muted-foreground/75 truncate")}>{c.label}</div>
+            <div
+              className={cn(
+                "text-body font-semibold tabular-nums mt-0.5 truncate",
+                c.valueClassName ?? "text-foreground/90",
+                reason && "border-b border-dotted border-muted-foreground/40 cursor-help",
+              )}
+              {...(reason ? { title: `${c.label}: ${reason}`, "data-unavailable-reason": reason } : {})}
+            >
+              {c.value}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
