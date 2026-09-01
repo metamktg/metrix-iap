@@ -29,7 +29,7 @@ import { startRunHeartbeat, lastSignOfLife, reclaimedRunMessage } from "./runHea
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow, type IapCsvParseResult } from "./iapCsvParser";
 import type { IapCsvClass } from "./iapCsvSpec";
 import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel, optionalMetricSlugsForGroups, IAP_CSV_CLASS_SPECS, type ObjectiveColumnGroup } from "./iapCsvSpec";
-import { resolveAccountObjectives } from "./cohortConfig";
+import { inferObjectives } from "./cohortConfig";
 import { computeObjectiveCoverage, OBJECTIVE_GROUP_FOR_KEY } from "./objectiveCoverage";
 import { convertXlsxToCsvText, looksLikeXlsxContent, readXlsxHeaderCells } from "./xlsxToCsv";
 import { extensionOf } from "./creativeAssetType";
@@ -158,7 +158,7 @@ export type ManualAnalysisRun = {
   creatives_unlinked_names: string[] | null;
   /** Warnings produced during tolerant CSV parsing (auto-resolved aliases, missing columns, etc.). Null when parsing was clean. */
   csv_warnings: string[] | null;
-  /** Configured objectives whose column groups were present and assessed this run. Null on legacy/pre-objectives runs. */
+  /** Derived objectives whose column groups were present and assessed this run. Null on legacy/pre-objectives runs. */
   objectives_assessed: string[] | null;
   /** Non-blocking objective coverage flags: configured-but-absent skips and present-but-unconfigured suggestions. Null when none. */
   objective_flags: string[] | null;
@@ -1869,16 +1869,44 @@ export async function startManualAnalysis(
       // phase — the parsed rows arrays above are all ingestion needs.
       clearImportCaches();
 
-      // ── Apply objective coverage to ingestion ──────────────────────────
-      // Only the account's CONFIGURED objectives (Settings → General) get
-      // assessed: optional-metric columns belonging to an unconfigured
-      // objective are dropped here, BEFORE any aggregation or persistence,
-      // so they can never flow into analysis tables, reports, or exports.
-      // Their presence still produces a non-blocking enable-suggestion flag
-      // via computeObjectiveCoverage (groups were recorded at parse time).
-      const configuredObjectives = resolveAccountObjectives(account);
+      // ── Derive the objectives, then apply their coverage to ingestion ──
+      // OWNER DECISION (2026-09-01): the objective is DERIVED FROM THE DATA,
+      // not declared by an operator. Meta already states it per ad in the
+      // "Result type" column, which the demographic export reliably carries
+      // and the parser lands in base.result_type. Every row class is folded
+      // in so an ad appearing in only one export still gets its vote;
+      // inferObjectives collapses them to one vote per ad.
+      //
+      // Only the DERIVED objectives get assessed: optional-metric columns
+      // belonging to an objective this account does not run are dropped
+      // here, BEFORE any aggregation or persistence, so they can never flow
+      // into analysis tables, reports, or exports. Their presence still
+      // produces a non-blocking flag via computeObjectiveCoverage (groups
+      // were recorded at parse time).
+      const objectiveInference = inferObjectives(
+        [demoRows, placementRows, summaryRows, conversionDeviceRows].flatMap((rows) =>
+          rows.map((r) => ({
+            adKey: r.breakdowns["Ad ID"]?.trim() || r.breakdowns["Ad name"]?.trim() || "",
+            resultType: typeof r.base["result_type"] === "string" ? r.base["result_type"] : null,
+          })),
+        ),
+      );
+      const derivedObjectives = objectiveInference.objectives;
+      logger.info(
+        {
+          accountId,
+          runId,
+          objectives: derivedObjectives,
+          classifiedAds: objectiveInference.classifiedAds,
+          unclassifiedAds: objectiveInference.unclassifiedAds,
+          unclassifiedResultTypes: objectiveInference.unclassifiedResultTypes.slice(0, 12),
+        },
+        derivedObjectives.length === 0
+          ? "Objective undetermined from data — no ad carried a result type naming a business outcome"
+          : "Derived account objectives from ad result types",
+      );
       const allowedOptionalSlugs = optionalMetricSlugsForGroups(
-        configuredObjectives.map((k) => OBJECTIVE_GROUP_FOR_KEY[k]),
+        derivedObjectives.map((k) => OBJECTIVE_GROUP_FOR_KEY[k]),
       );
       for (const rows of [demoRows, placementRows, summaryRows, conversionDeviceRows]) {
         for (const row of rows) {
@@ -2644,6 +2672,12 @@ export async function startManualAnalysis(
         .from("ad_accounts")
         .update({
           status: "configured",
+          // The objective is derived per run, so it is written by the run
+          // rather than configured. `cohort` is the legacy scalar column,
+          // kept in step with the set's first member for pre-migration
+          // readers. An undetermined result writes [] / null honestly.
+          objectives: derivedObjectives,
+          cohort: derivedObjectives[0] ?? null,
           overview_state: {
             title: "Analysis complete",
             description: `Manual analysis processed ${totalRows} row(s) from ${imports!.length} file(s), covering ${dateStart} to ${dateEnd} (${dateRange === "all" ? "all uploaded dates" : dateRange} window). Re-run analysis after uploading new reports.`,
@@ -2657,7 +2691,7 @@ export async function startManualAnalysis(
       // present-but-unconfigured groups produce an enable-suggestion flag
       // (never auto-enabled — their columns were already dropped from
       // ingestion above). Unmatched optional columns stay ignored.
-      const coverage = computeObjectiveCoverage(configuredObjectives, objectiveGroupsPresent);
+      const coverage = computeObjectiveCoverage(derivedObjectives, objectiveGroupsPresent);
 
       await finishRun(runId, "success", {
         dateStart,

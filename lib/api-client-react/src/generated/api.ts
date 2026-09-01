@@ -103,8 +103,6 @@ import type {
   SelectMetaAdAccountResult,
   SetAccountNameInput,
   SetAccountNameResult,
-  SetAccountObjectivesInput,
-  SetAccountObjectivesResult,
   StageStatusResult,
   StartAnalysisInput,
   StartDeconstructBackfillResult,
@@ -2162,78 +2160,6 @@ export function useGetAccountStageStatus<TData = Awaited<ReturnType<typeof getAc
 
 
 
-
-export const getSetAccountObjectivesUrl = (accountId: string,) => {
-
-
-
-
-  return `/api/metrix/accounts/${accountId}/objectives`
-}
-
-/**
- * Replaces the account's objectives set (one or more of ecommerce/lead_gen/service/app) as part of account setup (Settings → General only). The analysis run consults this set to decide which optional CSV column groups it assesses; downstream terminal-metric reads (Budget, Ad Performance, Exports) reason over it instead of assuming ROAS/purchase. Each account's objectives are independent — no shared agency-level state. Requires access to the account.
- * @summary Set the account's configured objectives
- */
-export const setAccountObjectives = async (accountId: string,
-    setAccountObjectivesInput: SetAccountObjectivesInput, options?: RequestInit): Promise<SetAccountObjectivesResult> => {
-
-  return customFetch<SetAccountObjectivesResult>(getSetAccountObjectivesUrl(accountId),
-  {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(setAccountObjectivesInput)
-  }
-);}
-
-
-
-
-export const getSetAccountObjectivesMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAccountObjectives>>, TError,{accountId: string;data: BodyType<SetAccountObjectivesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof setAccountObjectives>>, TError,{accountId: string;data: BodyType<SetAccountObjectivesInput>}, TContext> => {
-
-const mutationKey = ['setAccountObjectives'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setAccountObjectives>>, {accountId: string;data: BodyType<SetAccountObjectivesInput>}> = (props) => {
-          const {accountId,data} = props ?? {};
-
-          return  setAccountObjectives(accountId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type SetAccountObjectivesMutationResult = NonNullable<Awaited<ReturnType<typeof setAccountObjectives>>>
-    export type SetAccountObjectivesMutationBody = BodyType<SetAccountObjectivesInput>
-    export type SetAccountObjectivesMutationError = ErrorType<ApiError>
-
-    /**
- * @summary Set the account's configured objectives
- */
-export const useSetAccountObjectives = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAccountObjectives>>, TError,{accountId: string;data: BodyType<SetAccountObjectivesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof setAccountObjectives>>,
-        TError,
-        {accountId: string;data: BodyType<SetAccountObjectivesInput>},
-        TContext
-      > => {
-      return useMutation(getSetAccountObjectivesMutationOptions(options));
-    }
 
 export const getSetAccountDisplayNameUrl = (accountId: string,) => {
 

@@ -1,10 +1,10 @@
-// ─── Objective options (account config) ─────────────────────────────────
-// Framed as the conversion objective(s) asked at account setup: "what are
-// you running ads towards?" — sales, leads, apps, or local business. An
-// account can run towards MORE than one at once (multi-select in Settings →
-// General). Backing ids (ecommerce/lead_gen/service/app) stay stable since
-// they're wired through the API, seed, and cohortMeta.ts; only the
-// user-facing label/description reflects the objective framing.
+// ─── Objective labels (display only) ────────────────────────────────────
+// The objective is DERIVED from each ad's Meta result type by the analysis
+// run (owner decision 2026-09-01) — it is never asked, and there is no
+// control that sets it. These entries only give a derived key its label,
+// icon, and terminal metric for read-only display. An account can be
+// derived to MORE than one at once. Backing ids stay stable since they are
+// wired through the seed and cohortMeta.ts.
 import { Store, Target, MapPin, Smartphone } from "lucide-react";
 import type { ObjectiveKey } from "@/lib/data/seedTypes";
 

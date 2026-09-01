@@ -232,8 +232,8 @@ export function detectObjectiveColumnGroups(optionalMetricsPresent: readonly str
 /**
  * Slugified optional-metric column names belonging to the given objective
  * column groups. Used by the analysis run to keep only the optional metrics
- * that belong to the account's CONFIGURED objectives — columns for
- * unconfigured objectives are dropped before aggregation (they only produce
+ * that belong to the account's DERIVED objectives — columns for
+ * objectives the account does not run are dropped before aggregation (they only produce
  * a non-blocking enable-suggestion flag, never persisted analysis data).
  */
 export function optionalMetricSlugsForGroups(groups: Iterable<ObjectiveColumnGroup>): Set<string> {

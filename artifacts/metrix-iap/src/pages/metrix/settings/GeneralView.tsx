@@ -17,7 +17,6 @@ import {
   useGetNotificationPrefs,
   useUpdateNotificationPrefs,
   getGetNotificationPrefsQueryKey,
-  useSetAccountObjectives,
   useSetAccountDisplayName,
   getGetMetrixSeedQueryKey,
   ApiError,
@@ -124,85 +123,51 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
 }
 
 /**
- * Account config only. This decides which terminal metric(s) this account
- * reports in Budget, Ad Performance, and Exports, and which optional CSV
- * column groups the analysis run assesses. It is answered as part of
- * account setup (the "what are you running ads towards?" question) and
- * changed here deliberately — never presented as a flexible, inline toggle
- * inside Analysis or any other workflow. Multi-select: an account can run
- * towards several objectives at once; each account's set is independent.
+ * READ-ONLY. The objective is DERIVED FROM THE DATA by the analysis run
+ * (owner decision 2026-09-01), never declared by an operator: Meta already
+ * states it per ad in "Result type", so the run reads it rather than asking.
+ * This section reports what the last run concluded and the evidence behind
+ * it — it is not a control, and there is deliberately no way to override it.
+ * An account whose ads carry no outcome-naming result type reads as
+ * undetermined here, never as a guessed default.
  */
-function ObjectivesSection({ accountId, currentObjectives }: { accountId: string; currentObjectives: string[] | undefined }) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const selected = currentObjectives ?? [];
-  const mutation = useSetAccountObjectives({
-    mutation: {
-      onSuccess: () => {
-        void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
-      },
-      onError: (err: unknown) => {
-        toast({
-          variant: "destructive",
-          title: "Couldn't update objectives",
-          description: err instanceof ApiError ? err.message : "Please try again.",
-        });
-      },
-    },
-  });
-
-  const toggle = (id: string) => {
-    const next = selected.includes(id) ? selected.filter((o) => o !== id) : [...selected, id];
-    if (next.length === 0) {
-      toast({
-        title: "At least one objective is required",
-        description: "Pick a different objective before removing this one.",
-      });
-      return;
-    }
-    mutation.mutate({ accountId, data: { objectives: next as ("ecommerce" | "lead_gen" | "service" | "app")[] } });
-  };
+function ObjectivesSection({ currentObjectives }: { currentObjectives: string[] | undefined }) {
+  const derived = currentObjectives ?? [];
+  const known = OBJECTIVE_OPTIONS.filter((c) => derived.includes(c.id));
 
   return (
     <SectionCard
       title="Objectives"
-      desc="What are you running ads towards? Pick every objective this account runs — analysis assesses each one whose data is present, and they decide the terminal metrics reported in Budget, Ad Performance, and Exports."
+      desc="Determined from your data · Read from each ad's Meta result type by the analysis run · Decides which terminal metrics are reported and which optional columns are assessed"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        {OBJECTIVE_OPTIONS.map((c) => {
-          const active = selected.includes(c.id);
-          const pendingThis = mutation.isPending && (
-            (mutation.variables?.data.objectives ?? []).includes(c.id) !== active
-          );
-          return (
-            <button
+      {known.length === 0 ? (
+        <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-3">
+          <div className="text-body font-medium text-foreground">Not yet determined</div>
+          <div className="text-caption text-muted-foreground/80 mt-1">
+            No ad in this account carries a Meta result type that names a business outcome, so no
+            objective has been inferred. Reporting stays on generic cost per result rather than
+            assuming one. Running analysis on data that includes a Result type column resolves this.
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {known.map((c) => (
+            <div
               key={c.id}
-              onClick={() => toggle(c.id)}
-              disabled={mutation.isPending}
-              aria-pressed={active}
-              className={cn(
-                "pressable-lg flex items-center gap-2.5 p-3 rounded-lg border transition-colors text-left disabled:opacity-60",
-                active
-                  ? "border-primary/45 bg-primary/[0.06]"
-                  : "border-border/40 bg-foreground/[0.02] hover:border-primary/40 hover:bg-primary/[0.04]"
-              )}
+              className="flex items-center gap-2.5 p-3 rounded-lg border border-primary/45 bg-primary/[0.06] text-left"
             >
-              {pendingThis ? (
-                <Loader2 className="w-4 h-4 text-interactive shrink-0 animate-spin" />
-              ) : (
-                <c.Icon className="w-4 h-4 text-interactive shrink-0" />
-              )}
+              <c.Icon className="w-4 h-4 text-interactive shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <div className="text-body font-medium text-foreground">{c.label}</div>
-                  {active && <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />}
+                  <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
                 </div>
                 <div className="text-label text-muted-foreground/75 mt-0.5">{c.desc}</div>
               </div>
-            </button>
-          );
-        })}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </SectionCard>
   );
 }
@@ -457,7 +422,7 @@ export function GeneralView() {
         </SectionCard>
 
         <AccountNameSection accountId={account.id} currentName={String(account.name ?? account.id)} />
-        {configured && <ObjectivesSection accountId={account.id} currentObjectives={account.objectives} />}
+        {configured && <ObjectivesSection currentObjectives={account.objectives} />}
 
         {configured && (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-foreground/[0.02] p-4">

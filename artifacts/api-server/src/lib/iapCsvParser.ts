@@ -94,7 +94,7 @@ export type IapCsvParseResult = {
    * Which objective column groups (ecommerce / service_or_lead_gen / app)
    * had at least one column present in this file's header. Presence-based
    * detection used by the analysis run to compare against the account's
-   * configured objectives — never to auto-enable anything.
+   * derived objectives — never to auto-enable anything.
    */
   objectiveColumnGroupsPresent: ObjectiveColumnGroup[];
   /**

@@ -10,7 +10,7 @@ import type { AdAccount } from "./data/seedTypes";
 export interface ExportEnvelope<T> {
   exported_at: string;
   account: { id: string; name: string };
-  /** The account's configured objectives set (empty when none configured — never a guessed default). */
+  /** The account's derived objectives set (empty when undetermined from data — never a guessed default). */
   objectives: NonNullable<AdAccount["objectives"]>;
   note: string;
 }

@@ -41,8 +41,8 @@ const ALLOWED: { prefix: string; why: string }[] = [
   { prefix: "lib/data/cohortMeta.ts", why: "the cohort module itself" },
   { prefix: "lib/mst-analysis.ts", why: "MST analysis reads terminal direction — analysis logic" },
   { prefix: "pages/metrix/analysis/", why: "the analysis interface views — the permitted reach" },
-  { prefix: "pages/metrix/settings/cohortOptions.ts", why: "the objectives configuration options" },
-  { prefix: "pages/metrix/settings/GeneralView.tsx", why: "where an operator SETS objectives" },
+  { prefix: "pages/metrix/settings/cohortOptions.ts", why: "objective labels for read-only display" },
+  { prefix: "pages/metrix/settings/GeneralView.tsx", why: "reports back the DERIVED objectives, read-only" },
   { prefix: "lib/jsonExport.ts", why: "export payload — data, not interface" },
 ];
 
