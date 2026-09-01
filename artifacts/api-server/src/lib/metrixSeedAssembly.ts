@@ -232,7 +232,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       name: account["name"] ?? accountId,
       status: account["status"] ?? "unconfigured",
       platform: account["platform"] ?? "Meta Ads",
-      // Configured objectives (Settings → General); legacy single-cohort
+      // Objectives DERIVED by the analysis run; legacy single-cohort
       // rows resolve to their one objective — never a silent default.
       objectives: resolveAccountObjectives(account),
       ...(account["overview_state"] ? { overview_state: account["overview_state"] } : {}),
@@ -762,7 +762,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     name: account["name"] ?? accountId,
     status: account["status"] ?? "configured",
     platform: account["platform"] ?? "Meta Ads",
-    // Configured objectives (Settings → General); legacy single-cohort
+    // Objectives DERIVED by the analysis run; legacy single-cohort
     // rows resolve to their one objective — never a silent default.
     objectives: resolveAccountObjectives(account),
     facebook_page_dp_url: account["facebook_page_dp_url"] ?? null,

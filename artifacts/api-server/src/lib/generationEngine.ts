@@ -215,7 +215,7 @@ async function accountExists(accountId: string): Promise<Row | null> {
 function objectivesContextBlock(objectives: CohortDefinition[]): string {
   if (objectives.length === 0) {
     return (
-      "BUSINESS MODEL CONTEXT: this account's objectives have not been configured yet. " +
+      "BUSINESS MODEL CONTEXT: this account's objectives could not be determined from its data yet. " +
       "Do NOT assume ecommerce/purchase/ROAS language — write in terms of \"cost per result\" " +
       "generically until the account's real terminal metric is known."
     );

@@ -79,6 +79,14 @@ session picking up phase work:
 - **Variable codes come from the registry.** `CN_`, `FW_`, `TN_`, `HK_`, `ST_`, `AW_`, `HP_`,
   `PR_`, `CTA_` are defined in `docs/iap/VARIABLES_REGISTRY.md`. Do not introduce new codes without
   going through its Code Addition Protocol.
+- **The objective is derived from data, and it is only an analysis lens.** Owner decision
+  (2026-09-01): it is NOT a property of an account, NOT something a user is asked, and NOT a
+  toggle. The analysis run reads it from each ad's Meta `Result type` via `inferObjectives()`
+  in `artifacts/api-server/src/lib/cohortConfig.ts` and writes it to the account. There is no
+  control that sets it and no override. Its reach is bounded by `check:cohort-reach` — it may
+  decide which terminal metric a run reports and which optional column groups it assesses, and
+  nothing else. Do not treat it as a core concept or use it to describe an account to a reader.
 - **Watch for ecommerce hardcoding.** The known systemic defect is ROAS/CPA/purchase-funnel
   assumptions baked in as if every client sells physical products. New code and docs should read
-  the terminal metric from cohort configuration rather than assuming ROAS.
+  the terminal metric from the derived objective rather than assuming ROAS — and when nothing
+  was derived, say "cost per result", never fall back to purchases.

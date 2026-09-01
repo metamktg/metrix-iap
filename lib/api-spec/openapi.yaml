@@ -1187,53 +1187,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-  /metrix/accounts/{accountId}/objectives:
-    parameters:
-      - name: accountId
-        in: path
-        required: true
-        description: Ad account identifier.
-        schema:
-          type: string
-          minLength: 1
-    patch:
-      operationId: setAccountObjectives
-      tags: [metrix]
-      summary: Set the account's configured objectives
-      description: Replaces the account's objectives set (one or more of ecommerce/lead_gen/service/app) as part of account setup (Settings → General only). The analysis run consults this set to decide which optional CSV column groups it assesses; downstream terminal-metric reads (Budget, Ad Performance, Exports) reason over it instead of assuming ROAS/purchase. Each account's objectives are independent — no shared agency-level state. Requires access to the account.
-      security:
-        - cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SetAccountObjectivesInput"
-      responses:
-        "200":
-          description: Objectives set
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SetAccountObjectivesResult"
-        "400":
-          description: Invalid objectives value (empty list or unknown key)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-        "401":
-          description: Not logged in
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-        "403":
-          description: No access to this account
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/name:
     parameters:
       - name: accountId
@@ -4575,13 +4528,13 @@ components:
           items:
             type: string
           nullable: true
-          description: Configured objectives (Settings → General) whose required CSV column groups were present in this run's uploads and were therefore assessed. Null on legacy runs recorded before objective-aware analysis.
+          description: Objectives DERIVED from this run's ad result types whose required CSV column groups were present and were therefore assessed. Null on legacy runs recorded before objective-aware analysis.
         objective_flags:
           type: array
           items:
             type: string
           nullable: true
-          description: Non-blocking objective coverage notices — configured objectives skipped this run because their columns were absent (never fabricated), and detected column groups whose objective is not configured (a suggestion; never auto-enabled). Null when coverage matched exactly.
+          description: Non-blocking objective coverage notices — derived objectives skipped this run because their columns were absent (never fabricated), and detected column groups whose objective was not derived from the data. Null when coverage matched exactly.
         progress_pct:
           type: integer
           description: Live progress percentage (0–100) while the run is executing. Updated at each pipeline stage. 0 when idle or just started; 100 on success.
@@ -5335,31 +5288,6 @@ components:
       required:
         - account_id
         - name
-    SetAccountObjectivesInput:
-      type: object
-      properties:
-        objectives:
-          type: array
-          description: Full replacement set of the account's objectives. At least one; duplicates rejected by the server.
-          minItems: 1
-          items:
-            type: string
-            enum: [ecommerce, lead_gen, service, app]
-      required:
-        - objectives
-    SetAccountObjectivesResult:
-      type: object
-      properties:
-        account_id:
-          type: string
-        objectives:
-          type: array
-          items:
-            type: string
-            enum: [ecommerce, lead_gen, service, app]
-      required:
-        - account_id
-        - objectives
     SessionSummary:
       type: object
       properties:

@@ -412,8 +412,8 @@ export const ListAnalysisRunsResponse = zod.object({
   "creatives_total": zod.number().nullish().describe('Total number of staged creative asset ad-name mappings attempted.'),
   "creatives_unlinked_names": zod.array(zod.string()).nullish().describe('Ad names from staged creative assets that could not be matched to any ads row.'),
   "csv_warnings": zod.array(zod.string()).nullish().describe('Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues.'),
-  "objectives_assessed": zod.array(zod.string()).nullish().describe('Configured objectives (Settings → General) whose required CSV column groups were present in this run\'s uploads and were therefore assessed. Null on legacy runs recorded before objective-aware analysis.'),
-  "objective_flags": zod.array(zod.string()).nullish().describe('Non-blocking objective coverage notices — configured objectives skipped this run because their columns were absent (never fabricated), and detected column groups whose objective is not configured (a suggestion; never auto-enabled). Null when coverage matched exactly.'),
+  "objectives_assessed": zod.array(zod.string()).nullish().describe('Objectives DERIVED from this run\'s ad result types whose required CSV column groups were present and were therefore assessed. Null on legacy runs recorded before objective-aware analysis.'),
+  "objective_flags": zod.array(zod.string()).nullish().describe('Non-blocking objective coverage notices — derived objectives skipped this run because their columns were absent (never fabricated), and detected column groups whose objective was not derived from the data. Null when coverage matched exactly.'),
   "progress_pct": zod.number().optional().describe('Live progress percentage (0–100) while the run is executing. Updated at each pipeline stage. 0 when idle or just started; 100 on success.'),
   "progress_stage": zod.string().optional().describe('Human-readable label for the current pipeline stage (e.g. \"Parsing demographics export\"). Empty string when idle or complete.'),
   "reconciliation": zod.array(zod.object({
@@ -558,8 +558,8 @@ export const GetLatestAnalysisRunResponse = zod.object({
   "creatives_total": zod.number().nullish().describe('Total number of staged creative asset ad-name mappings attempted.'),
   "creatives_unlinked_names": zod.array(zod.string()).nullish().describe('Ad names from staged creative assets that could not be matched to any ads row.'),
   "csv_warnings": zod.array(zod.string()).nullish().describe('Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues.'),
-  "objectives_assessed": zod.array(zod.string()).nullish().describe('Configured objectives (Settings → General) whose required CSV column groups were present in this run\'s uploads and were therefore assessed. Null on legacy runs recorded before objective-aware analysis.'),
-  "objective_flags": zod.array(zod.string()).nullish().describe('Non-blocking objective coverage notices — configured objectives skipped this run because their columns were absent (never fabricated), and detected column groups whose objective is not configured (a suggestion; never auto-enabled). Null when coverage matched exactly.'),
+  "objectives_assessed": zod.array(zod.string()).nullish().describe('Objectives DERIVED from this run\'s ad result types whose required CSV column groups were present and were therefore assessed. Null on legacy runs recorded before objective-aware analysis.'),
+  "objective_flags": zod.array(zod.string()).nullish().describe('Non-blocking objective coverage notices — derived objectives skipped this run because their columns were absent (never fabricated), and detected column groups whose objective was not derived from the data. Null when coverage matched exactly.'),
   "progress_pct": zod.number().optional().describe('Live progress percentage (0–100) while the run is executing. Updated at each pipeline stage. 0 when idle or just started; 100 on success.'),
   "progress_stage": zod.string().optional().describe('Human-readable label for the current pipeline stage (e.g. \"Parsing demographics export\"). Empty string when idle or complete.'),
   "reconciliation": zod.array(zod.object({
@@ -1020,30 +1020,6 @@ export const GetAccountStageStatusResponse = zod.object({
   "mst": zod.object({
   "unlocked": zod.boolean()
 })
-})
-
-
-/**
- * Replaces the account's objectives set (one or more of ecommerce/lead_gen/service/app) as part of account setup (Settings → General only). The analysis run consults this set to decide which optional CSV column groups it assesses; downstream terminal-metric reads (Budget, Ad Performance, Exports) reason over it instead of assuming ROAS/purchase. Each account's objectives are independent — no shared agency-level state. Requires access to the account.
- * @summary Set the account's configured objectives
- */
-
-
-
-export const SetAccountObjectivesParams = zod.object({
-  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
-})
-
-
-
-
-export const SetAccountObjectivesBody = zod.object({
-  "objectives": zod.array(zod.enum(['ecommerce', 'lead_gen', 'service', 'app'])).min(1).describe('Full replacement set of the account\'s objectives. At least one; duplicates rejected by the server.')
-})
-
-export const SetAccountObjectivesResponse = zod.object({
-  "account_id": zod.string(),
-  "objectives": zod.array(zod.enum(['ecommerce', 'lead_gen', 'service', 'app']))
 })
 
 

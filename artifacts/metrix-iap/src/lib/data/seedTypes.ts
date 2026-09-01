@@ -704,7 +704,7 @@ export interface AdAccount {
   /** Numeric Meta ad account id (no "act_" prefix) for Ads Manager deep links. Null until a raw Meta export supplies it. */
   meta_ad_account_id?: string | null;
   /**
-   * Configured objectives set (one-or-more), set only during account setup
+   * Derived objectives set (one-or-more), written by the analysis run
    * (Settings → General). Empty/absent until configured — analysis still
    * runs; unconfigured objectives are surfaced as non-blocking flags.
    */
