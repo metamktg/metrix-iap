@@ -1069,3 +1069,90 @@ was checked too — the only app classes carrying breakpoints internally are
 `mx-dialog-content` (a transition, not a layout) and `text-bignum-fluid` (a
 fluid type step), neither of which is a reflow the detector should count on a
 file's behalf.
+
+---
+
+## 8. Chrome vs payload — the strategy pages were hiding the product (2026-09-01)
+
+Owner report: the Strategy pages put critical strategy behind hover pop-ups,
+and the real value Metrix produces reads as hidden. Correct — and the cause was
+a rule of ours applied to the wrong material.
+
+### The rule, and where it was wrong
+
+`shared.tsx` said: **"no full sentences on the primary dashboard layer."** Right
+for CHROME — tile captions, table cells, chips, card faces, eyebrows,
+provenance. Wrong for PAYLOAD: the strategic output a customer pays to read.
+Applied to payload it hid the deliverable.
+
+Measured in the source before this pass:
+
+| Site | What was hidden |
+|---|---|
+| `strategyShared.tsx:390` | a **message pillar** cut to 72 chars, remainder behind a click |
+| `strategyShared` `HypothesisLabel` | the hypothesis rendered as code chips **instead of** the sentence |
+| `AvatarsView.tsx` | psychographic read, message resonance, strategic recommendation |
+| `AvatarsView` / `HypothesisQueueView` | a stated **risk** `deriveLabel`'d to 90 chars *inside* a `line-clamp-1` — cut twice, unreadable |
+| `StrategyMapView.tsx:672` | pillar descriptor **and "why it matters"** behind a further click, inside a detail panel the reader had already opened |
+| `StrategyOverview` / `MstDirectionView` | budget reallocation instructions |
+
+### The rule now
+
+The rulebook leads with **CHROME vs PAYLOAD**. Chrome is terse — truncate,
+clamp, reveal. Payload is legible — it stays on the page, clamped by
+`DenseText` when long, which keeps the words present, expands in place, and
+renders no control at all when the text already fits.
+
+### Enforced
+
+`check:payload-legibility` (new `.replit` validation + CI gate) fails when any
+of 11 payload-bearing fields — `why_it_matters`, `strategic_recommendation`,
+`psychographic_profile`, `budget_reallocation_note`, `message_resonance`,
+`plain_descriptor`, `expected_impact`, `human_direction`, `data_insight`,
+`rationale`, `risk` — is passed to `deriveLabel()` or used as a
+`<DetailReveal label>`. `// payload-ok: <reason>` suppresses it for the genuine
+button-card case, where an interactive control is invalid HTML.
+
+**The gate found 8 sites the manual pass missed** — across `RecommendationDeck`,
+`AlertsView`, `MstDirectionView`, `HypothesisQueueView` and `StrategyOverview`,
+more than half the total. Scope is named in the check header: it matches field
+NAMES, so it cannot see payload passed through a differently-named variable,
+and it judges truncation and hiding, not whether presentation is good.
+
+### Measured in a browser, route-mocked demo fixture
+
+| Page | Visible chars | Sentences ≥10 words |
+|---|---|---|
+| Strategy map | 969 → **1,333** | **0 → 2** |
+| Avatars | 5,726 → 5,845 | 12 → 12 |
+| Hypotheses | 1,421 → 1,449 | 6 → 6 |
+
+Strategy map is the real signal — **zero** readable sentences before, because
+its hypotheses were chips-only. Stated honestly: the demo fixture's strings are
+short, so a 72-char cut removed little on the other two and their counts barely
+move. The structural change is identical on all three; the gain scales with
+prose length, and real accounts carry far longer generated prose than the
+fixture.
+
+### A pre-existing flake, found and fixed on the way
+
+The full suite had one intermittent failure — unnamed on 2026-08-31 because the
+output was truncated. It is `TaskTray.test.tsx:411`, and it reproduces on a
+**clean tree**, so it was never this work's.
+
+Root cause is a real product defect, not a test artifact. `trayStore.ts` sorted
+open items by `addedAt` — `Date.now()`, millisecond resolution, **no tiebreak**.
+Items added in one tick share a timestamp, every comparison returns 0, and a
+stable sort hands back insertion order — so the tray only *looked* oldest-first.
+The moment the clock ticked mid-batch the order flipped and the top of the queue
+changed. A user adding several items quickly got an arbitrary order.
+
+Fixed by making both orderings explicit: a monotonic `addSeq` breaks the
+timestamp tie (rehydrated past any persisted value on load), and
+`getOpenTrayItems` sorts oldest-first on purpose — a tray is a work queue, and
+`ListStack` piles the tail.
+
+### Verification
+
+Full workspace typecheck clean · twelve gates pass · 2,170 app tests across two
+consecutive full runs · 119 scripts tests.

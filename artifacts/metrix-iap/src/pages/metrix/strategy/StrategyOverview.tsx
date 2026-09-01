@@ -15,6 +15,7 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtNum, LoopAction,
   DetailReveal, deriveLabel, InfoTooltip, SkeletonBlock, SectionInfoIcon,
+  DenseText,
 } from "../shared";
 import {
   useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote,
@@ -304,11 +305,11 @@ function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<ty
               <div className={cn(TYPE.label, "mb-1 text-muted-foreground/75")}>
                 Budget reallocation
               </div>
-              <DetailReveal
-                label={deriveLabel(playbook.budget_reallocation_note, 72)}
-                labelClassName={TYPE.body}
-                eyebrow="Budget reallocation"
-                sections={[{ text: playbook.budget_reallocation_note }]}
+              {/* A budget instruction is an action being asked for. */}
+              <DenseText
+                text={playbook.budget_reallocation_note}
+                className={cn(TYPE.body, "text-foreground/90 leading-relaxed")}
+                clampClass="line-clamp-4"
               />
             </div>
           )}
@@ -565,11 +566,14 @@ export function StrategyOverview() {
 
                         {/* ── Body ── */}
                         <div className="px-4 py-3 flex flex-col gap-2.5 flex-1">
-                          {/* Descriptor */}
+                          {/* Descriptor. Cut twice before: deriveLabel(130)
+                              inside a two-line clamp. */}
                           {p.plain_descriptor && (
-                            <p className="text-caption text-muted-foreground/75 leading-relaxed line-clamp-2">
-                              {deriveLabel(p.plain_descriptor, 130)}
-                            </p>
+                            <DenseText
+                              text={p.plain_descriptor}
+                              className="text-caption text-muted-foreground/75 leading-relaxed"
+                              clampClass="line-clamp-3"
+                            />
                           )}
 
                           {/* Variable stack — most actionable signal, rendered prominently */}

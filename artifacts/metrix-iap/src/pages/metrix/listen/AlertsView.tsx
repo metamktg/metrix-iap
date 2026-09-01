@@ -102,7 +102,8 @@ export function AlertsView() {
                               <ConfidenceBadge value={s.confidence} />
                             </div>
                             <p className="text-title font-bold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
-                            <p className="text-body text-muted-foreground/75 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
+                            {/* payload-ok: inside a <button> row that opens the full signal. */}
+                              <p className="text-body text-muted-foreground/75 mt-1 leading-snug line-clamp-2"><span>{s.rationale}</span></p>
                           </button>
                         ))}
                       </div>

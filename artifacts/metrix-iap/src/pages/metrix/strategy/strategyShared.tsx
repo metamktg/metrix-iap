@@ -7,7 +7,7 @@ import { useState } from "react";
 import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS, resolveInlineVariableCodes } from "@/lib/variable-registry";
-import { ConfidenceBadge, DetailReveal, deriveLabel, useShowMore, ShowMoreButton } from "../shared";
+import { ConfidenceBadge, DenseText, useShowMore, ShowMoreButton } from "../shared";
 import {
   parseHierarchyRef, formatHierarchyRef, fmtMetric, extractVariableCodes, compactIcpName,
   type HierarchyRef,
@@ -201,9 +201,11 @@ export function IcpChips({ ids, profiles, maxVisible = 4 }: { ids: string[] | un
 
 // ─── Hierarchy reference items ────────────────────────────────────────
 // Free-text refs into the Book → Concept → Row/Cell hierarchy ("BOOK0
-// Concept C2 (esp. Row B)") normalize to compact mono chips; the
-// annotation and full raw string stay reachable behind DetailReveal.
-// Strings that don't lead with a ref fall back to plain deriveLabel.
+// Concept C2 (esp. Row B)") normalize to compact mono chips. The chips
+// are PROVENANCE — where the finding came from — so they compress. The
+// annotation after them is CONTENT and stays on the page, clamped by
+// DenseText rather than hidden. The full raw string sits in the title
+// attribute for anyone who wants the unnormalized original.
 
 function RefChips({ refs }: { refs: HierarchyRef[] }) {
   return (
@@ -222,21 +224,22 @@ function RefChips({ refs }: { refs: HierarchyRef[] }) {
 
 /**
  * One normalized list item that may lead with hierarchy refs.
- * Parsed: chips + (annotation behind DetailReveal). Unparseable: the
- * existing deriveLabel/DetailReveal fallback — nothing is ever lost.
+ * Parsed: chips + the annotation, both visible. Unparseable: the text
+ * itself, clamped. Nothing needs a click to be read.
  */
 export function NormalizedRefItem({ text, eyebrow }: { text: string; eyebrow: string }) {
   const parsed = parseHierarchyRef(text);
+  // A hierarchy ref splits cleanly into provenance and content: the
+  // BOOK/Concept/Row chips say WHERE the finding came from, the annotation
+  // says WHAT it is. Only the first is chrome. Previously an item with an
+  // annotation rendered as chips alone and the annotation needed a click.
   if (!parsed) {
-    return text.length > 40 ? (
-      <DetailReveal
-        label={deriveLabel(text, 40)}
-        labelClassName="text-caption text-foreground/85 leading-snug"
-        eyebrow={eyebrow}
-        sections={[{ text }]}
+    return (
+      <DenseText
+        text={text}
+        className="text-caption text-foreground/85 leading-snug"
+        clampClass="line-clamp-3"
       />
-    ) : (
-      <span className="text-caption text-foreground/85 leading-snug">{text}</span>
     );
   }
   if (!parsed.annotation) {
@@ -247,21 +250,24 @@ export function NormalizedRefItem({ text, eyebrow }: { text: string; eyebrow: st
     );
   }
   return (
-    <DetailReveal
-      label={<RefChips refs={parsed.refs} />}
-      labelClassName="leading-none"
-      eyebrow={eyebrow}
-      sections={[{ text: parsed.raw }]}
-    />
+    <div className="space-y-1 min-w-0" title={parsed.raw}>
+      <RefChips refs={parsed.refs} />
+      <DenseText
+        text={parsed.annotation}
+        className="text-caption text-foreground/85 leading-snug"
+        clampClass="line-clamp-3"
+      />
+    </div>
   );
 }
 
 // ─── Hypothesis labels ────────────────────────────────────────────────
 // Hypothesis sentences are import/LLM-authored prose with NO stable
-// grammar — never parsed into actions. The first layer shows the
-// variable codes the sentence mentions as chips (mechanical regex
-// extraction); the full sentence + isolated-variable prose stay behind
-// DetailReveal. Sentences without codes fall back to deriveLabel.
+// grammar — never parsed into actions, only displayed. Codes mentioned
+// in the sentence are lifted out as chips by mechanical regex extraction
+// (`extractVariableCodes`) to give the row a scannable index, and the
+// sentence itself stays on the page beneath them. The chips are an
+// index INTO the prose, never a replacement FOR it.
 
 /** Non-interactive chip row for codes extracted from one sentence. */
 function HypothesisCodeChips({ codes, maxVisible = 4 }: { codes: string[]; maxVisible?: number }) {
@@ -280,33 +286,39 @@ function HypothesisCodeChips({ codes, maxVisible = 4 }: { codes: string[]; maxVi
 }
 
 /**
- * First-layer rendering of one hypothesis: code chips when the sentence
- * mentions variable codes, deriveLabel otherwise — full prose always
- * behind the reveal. Not for use inside <button> cards.
+ * First-layer rendering of one hypothesis: the code chips (when the
+ * sentence carries codes), the sentence itself, and the isolated
+ * variable — all visible, no interaction required. DenseText clamps a
+ * long sentence to three lines with an in-place More/Less.
+ * Not for use inside <button> cards — DenseText renders a control; the
+ * chips-only `HypothesisCodeChipsRow` is the button-safe variant.
  */
 export function HypothesisLabel({ label, isolated }: { label: string; isolated?: string | null }) {
   const codes = extractVariableCodes(label);
-  const sections = [
-    { label: "Hypothesis", text: label },
-    { label: "Isolates", text: isolated ? resolveInlineVariableCodes(isolated) : undefined },
-  ];
-  if (codes.length === 0) {
-    return (
-      <DetailReveal
-        label={deriveLabel(label, 90)}
-        eyebrow="Hypothesis"
-        labelClassName="text-body text-foreground/90 leading-snug"
-        sections={sections}
-      />
-    );
-  }
+  const isolates = isolated ? resolveInlineVariableCodes(isolated) : null;
+  // Codes and prose used to be EXCLUSIVE: a sentence mentioning variable
+  // codes rendered as chips only, and one without was cut at 90 chars —
+  // either way the hypothesis itself needed a click. They are not
+  // alternatives. The chips are the scannable index; the sentence is the
+  // test being proposed, and "Isolates" names the single variable under
+  // test. All three are first-layer now.
   return (
-    <DetailReveal
-      label={<HypothesisCodeChips codes={codes} />}
-      eyebrow="Hypothesis"
-      labelClassName="leading-none"
-      sections={sections}
-    />
+    <div className="space-y-1 min-w-0">
+      {codes.length > 0 && <HypothesisCodeChips codes={codes} />}
+      <DenseText
+        text={label}
+        className={cn(TYPE.body, "text-foreground/90 leading-snug")}
+        clampClass="line-clamp-3"
+      />
+      {isolates && (
+        <p className="text-caption text-muted-foreground/85 leading-snug">
+          <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
+            Isolates
+          </span>{" "}
+          {isolates}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -387,11 +399,17 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
             <Icon className="w-3.5 h-3.5 text-muted-foreground/75" />
             <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">{label}</span>
           </div>
-          <DetailReveal
-            label={deriveLabel(pillar[key] as string, 72)}
-            labelClassName={TYPE.body}
-            eyebrow={label}
-            sections={[{ text: pillar[key] as string }]}
+          {/* A message pillar IS the deliverable. It was deriveLabel'd to
+              72 chars with the remainder behind a click — the chrome rule
+              ("no sentences on the first layer") applied to payload, which
+              hid the product. DenseText keeps the density discipline (a
+              4-line clamp) while leaving the words on the page: it measures
+              real overflow, so a pillar that fits shows no control at all
+              and most read end-to-end with zero interaction. */}
+          <DenseText
+            text={pillar[key] as string}
+            className={cn(TYPE.body, "text-foreground/90 leading-relaxed")}
+            clampClass="line-clamp-4"
           />
         </div>
       ))}
@@ -532,11 +550,12 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
       {playbook.budget_reallocation_note && (
         <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
           <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 mb-1">Budget reallocation</div>
-          <DetailReveal
-            label={deriveLabel(playbook.budget_reallocation_note, 72)}
-            labelClassName={TYPE.body}
-            eyebrow="Budget reallocation"
-            sections={[{ text: playbook.budget_reallocation_note }]}
+          {/* A budget reallocation instruction is an action the reader is
+              being asked to take. It does not belong behind a click. */}
+          <DenseText
+            text={playbook.budget_reallocation_note}
+            className={cn(TYPE.body, "text-foreground/90 leading-relaxed")}
+            clampClass="line-clamp-4"
           />
         </div>
       )}

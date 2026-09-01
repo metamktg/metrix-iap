@@ -15,6 +15,7 @@ import { getAdAccount, getStrategyData, getAnalysisData } from "@/lib/data/metri
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CrossLink, CaveatNote,
   SegmentedToggle, DetailReveal, deriveLabel, fmtUSD,
+  DenseText,
 } from "../shared";
 import { TYPE } from "../typography";
 import { NormalizedRefItem } from "../strategy/strategyShared";
@@ -170,11 +171,10 @@ export function MstDirectionView() {
               {typeof playbook.budget_reallocation_note === "string" && playbook.budget_reallocation_note && (
                 <div className="rounded-lg border border-border/30 bg-foreground/[0.015] p-3">
                   <div className={cn(TYPE.label, "mb-1 text-muted-foreground/75")}>Budget reallocation</div>
-                  <DetailReveal
-                    label={deriveLabel(playbook.budget_reallocation_note, 100)}
-                    labelClassName={TYPE.body}
-                    eyebrow="Budget reallocation"
-                    sections={[{ text: playbook.budget_reallocation_note }]}
+                  <DenseText
+                    text={playbook.budget_reallocation_note}
+                    className={cn(TYPE.body, "text-foreground/90 leading-relaxed")}
+                    clampClass="line-clamp-4"
                   />
                 </div>
               )}
