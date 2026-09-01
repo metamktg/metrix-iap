@@ -148,11 +148,31 @@ export function MstDirectionView() {
                         <div className="flex items-center gap-5 mb-2.5">
                           <div>
                             <div className={TYPE.microLabel}>Cost / result</div>
-                            <div className={cn(TYPE.body, "font-semibold tabular-nums")}>{fmtUSD(row.cpa)}</div>
+                            <div
+                              className={cn(
+                                TYPE.body, "font-semibold tabular-nums",
+                                row.cpa == null && "border-b border-dotted border-muted-foreground/40 cursor-help",
+                              )}
+                              {...(row.cpa == null
+                                ? { title: "Cost / result: this playbook row carries no cost per result — the bucket was assigned from the variable stack, not from a measured CPA." }
+                                : {})}
+                            >
+                              {fmtUSD(row.cpa)}
+                            </div>
                           </div>
                           <div>
                             <div className={TYPE.microLabel}>Confidence</div>
-                            <div className={cn(TYPE.body, "font-semibold capitalize")}>{row.confidence?.replace(/_/g, " ") ?? "—"}</div>
+                            <div
+                              className={cn(
+                                TYPE.body, "font-semibold capitalize",
+                                !row.confidence && "border-b border-dotted border-muted-foreground/40 cursor-help",
+                              )}
+                              {...(!row.confidence
+                                ? { title: "Confidence: the scaling playbook graded no confidence for this row — a grade needs enough spend and results behind the recommendation." }
+                                : {})}
+                            >
+                              {row.confidence?.replace(/_/g, " ") ?? "—"}
+                            </div>
                           </div>
                         </div>
                         <NormalizedRefItem text={rationale} eyebrow={BUCKET_LABEL[bucket]} />

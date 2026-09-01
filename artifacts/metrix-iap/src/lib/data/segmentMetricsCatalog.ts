@@ -148,3 +148,23 @@ export function buildSegmentMetricCatalog(
 export function segmentMetricById(catalog: SegmentMetricDef[], id: string): SegmentMetricDef | null {
   return catalog.find((m) => m.id === id) ?? null;
 }
+
+/**
+ * Why a segment metric has no value, in the catalog's own words.
+ *
+ * This lived as a private helper inside AudienceView. AvatarsView needed the
+ * identical read for its segment tiles, and copying four lines would have
+ * recreated exactly the defect this repo already paid to remove once: two
+ * copies of one rule, drifting apart until a dash and its explanation
+ * disagree. It belongs beside the catalog that owns the strings, so a change
+ * to WHY a metric is unavailable lands on every surface at once.
+ */
+export function segmentMetricReason(
+  totals: SegmentRawTotals,
+  derived: SegmentDerivedMetrics,
+  metricId: string,
+): string | undefined {
+  const m = buildSegmentMetricCatalog(totals, derived).find((x) => x.id === metricId);
+  return m?.availability === "unavailable" ? m.unavailableReason : undefined;
+}
+

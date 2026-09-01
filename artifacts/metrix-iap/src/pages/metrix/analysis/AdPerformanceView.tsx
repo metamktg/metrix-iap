@@ -315,6 +315,8 @@ const TIER_FILTERS: { id: string; label: string }[] = [
 
 interface TierRow extends ConceptRollupRow {
   lift: number | null;
+  /** Why `lift` is null, carried from the branch that produced it. */
+  liftReason?: string;
   /** Which lift definition `lift` carries for THIS table — one definition
    *  per render, never mixed per row. */
   liftKind: "cpa_vs_baseline" | "cvr_vs_book_avg";
@@ -355,19 +357,32 @@ function computeTierRows(rollup: ConceptRollupRow[], playbook: ScalingPlaybook |
     return arr.reduce((n, v) => n + v, 0) / arr.length;
   };
   return rollup.map((r) => {
+    // The reason a lift is null comes out of the branch that produced the
+    // null, so the dash and its explanation cannot drift apart. Two
+    // definitions, two different ways to be missing.
     let lift: number | null;
+    let liftReason: string | undefined;
     if (hasEngineLift) {
       lift = engineLift(r);
+      if (lift == null) {
+        liftReason = "the analysis engine reported no CPA lift against the book baseline for this concept";
+      }
     } else {
       const avg = avgCvr(r.book);
       lift = avg != null && avg > 0 && r.cvr_link_pct != null
         ? ((r.cvr_link_pct - avg) / avg) * 100
         : null;
+      if (lift == null) {
+        liftReason = r.cvr_link_pct == null
+          ? `this concept has no link conversion rate, so there is nothing to compare against the ${r.book} average`
+          : `the ${r.book} average link conversion rate could not be measured, so a comparison against it would be meaningless`;
+      }
     }
     const match = bucketEntryForConcept(r.book, r.concept, playbook);
     return {
       ...r,
       lift,
+      liftReason,
       liftKind: hasEngineLift ? "cpa_vs_baseline" as const : "cvr_vs_book_avg" as const,
       bucket: match?.bucket ?? null,
       bucketEntry: match?.entry ?? null,
@@ -579,9 +594,23 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
                     <td className="text-right tabular-nums text-foreground/80">{r.cpa != null ? fmtUSD(r.cpa) : zero ? `no ${resultNoun}` : "n/a"}</td>
                     <td className="text-right tabular-nums text-muted-foreground/75">{r.cvr_link_pct != null ? fmtPct(r.cvr_link_pct) : "n/a"}</td>
                     <td className={cn("text-right tabular-nums", r.lift == null ? "text-muted-foreground/75" : r.lift >= 0 ? "text-status-success" : "text-status-danger")}>
-                      {r.lift == null ? "—" : `${r.lift >= 0 ? "+" : ""}${fmtPct(r.lift)}`}
+                      {r.lift == null ? (
+                        <span
+                          className={r.liftReason ? "border-b border-dotted border-muted-foreground/40 cursor-help" : undefined}
+                          {...(r.liftReason ? { title: `Lift: ${r.liftReason}` } : {})}
+                        >
+                          —
+                        </span>
+                      ) : `${r.lift >= 0 ? "+" : ""}${fmtPct(r.lift)}`}
                     </td>
-                    <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : <span className={cn(TYPE.label, "text-muted-foreground/75")}>—</span>}</td>
+                    <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : (
+                      <span
+                        className={cn(TYPE.label, "text-muted-foreground/75 border-b border-dotted border-muted-foreground/40 cursor-help")}
+                        title="Confidence: the analysis engine graded no confidence for this concept — it needs enough spend and results to grade one."
+                      >
+                        —
+                      </span>
+                    )}</td>
                     <td className="text-right">
                       {r.bucket ? (
                         <span className={cn(TYPE.label, "inline-flex border rounded-full px-2 py-0.5 font-semibold normal-case", BUCKET_TAG_CLS[r.bucket])}>
