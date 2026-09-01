@@ -477,7 +477,21 @@ history and must always be kept.
 `performance_by_cell` and `placement_signal` are **not** run-keyed — folding those
 is a different and safe operation.
 
-### 6.4 "No defect found" is not "no defect"
+### 6.4 Do not edit source while a browser sweep is running
+
+The e2e specs boot **Vite dev servers with HMR**. Editing any file under
+`artifacts/metrix-iap/src` while a sweep is in flight pushes a hot update into
+the running crawl.
+
+This happened while producing this document: a one-line probe was appended to
+`Topbar.tsx` to prove `check:cohort-reach` fires, and the route-crawl's dev
+server logged `hmr update /src/components/layout/Topbar.tsx` mid-run. The crawl
+walks 69 routes × 3 account shapes, so an invalidation part-way through makes the
+result untrustworthy **whether it passes or fails**. It was re-run in isolation.
+
+Either finish the sweep first, or make the edit in a separate worktree.
+
+### 6.5 "No defect found" is not "no defect"
 
 Where this document says something was verified, it names the command. Where a
 figure is an estimate or a judgement, it says so. A summary line that is not
