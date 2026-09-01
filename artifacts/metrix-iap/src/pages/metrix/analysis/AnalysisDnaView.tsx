@@ -28,6 +28,7 @@ import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
+import { scopeToRun } from "@/lib/run-supersede";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, SectionCard, CrossLink,
   fmtUSD, fmtNum, useShowMore, ShowMoreButton, SectionInfoIcon,
@@ -186,7 +187,17 @@ export function AnalysisDnaView() {
   const strategy = getStrategyData(seed, adAccountId);
   const [variableCode, setVariableCode] = useState<string | null>(null);
 
-  const variableRows = analysis?.v3_variable_performance ?? [];
+  // Scoped before anything groups it. variable_performance keeps one row per
+  // analysis run by design (schema.sql widened its unique key to include
+  // manual_analysis_run_id so re-runs accumulate rather than destroy history),
+  // so the raw array holds the same variable once per run. This page read it
+  // unscoped: after four runs the token STAT appeared four times — duplicate
+  // React keys, and $60,704 of spend for a token that spent $26,869.
+  // kpiBreakdown was fixed for this; the DNA view has its own read and was not.
+  const variableRows = scopeToRun(
+    analysis?.v3_variable_performance ?? [],
+    analysis?.latest_analysis_run_id ?? null,
+  );
   const combinations = strategy?.variable_combinations ?? [];
   const optimizationLoop = account?.iap?.loop_status?.find(
     (s) => s.stage === "optimization_loop"
