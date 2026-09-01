@@ -346,6 +346,10 @@ export function HypothesisQueueView() {
                       item={{
                         id: detail.id,
                         kind: "hypothesis",
+                        // payload-ok: tray item. A tray entry is a bookmark in a
+                        // work queue — the title and sub are there to answer "which
+                        // one was this", and the card links straight back to the full
+                        // hypothesis. Chrome by function, and cut once, not twice.
                         title: deriveLabel(detail.label, 90),
                         sub: detail.test_variant ? deriveLabel(detail.test_variant, 90) : undefined,
                         href: `/app/strategy/hypotheses?focus=${detail.id}`,

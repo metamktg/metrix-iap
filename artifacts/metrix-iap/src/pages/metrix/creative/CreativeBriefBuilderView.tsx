@@ -70,18 +70,70 @@ function downloadBriefJson(brief: DraftBrief, accountName: string) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * The emailed brief must be the brief on screen. It used to carry the
+ * direction and the variable descriptors only — a writer receiving it got
+ * neither the copy architecture nor what the test isolates, both of which
+ * the engine had already written. Sections are omitted when empty rather
+ * than emitted as blank headings.
+ */
 function mailtoForBrief(brief: DraftBrief, pillarLabel: string): string {
   const subject = `Creative brief — ${pillarLabel} (${brief.asset_type})`;
+  const sec = (k: string) => {
+    const v = brief.full_brief?.[k];
+    return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  };
+  const str = (o: Record<string, unknown> | null, k: string) => {
+    const v = o?.[k];
+    return typeof v === "string" && v.length > 0 ? v : null;
+  };
+  const foundation = sec("strategic_foundation");
+  const copy = sec("copy_architecture");
+  const testing = sec("testing_framework");
+  const specs = sec("creative_specifications");
+
+  const part = (heading: string, ...lines: (string | null)[]) => {
+    const kept = lines.filter((l): l is string => Boolean(l));
+    return kept.length > 0 ? ["", `${heading}:`, ...kept] : [];
+  };
+
   const body = [
     `Brief: ${brief.id}`,
     `Asset type: ${brief.asset_type}`,
     `Pillar: ${pillarLabel}`,
-    "",
-    "Direction:",
-    brief.human_direction,
-    "",
-    "Creative direction:",
-    ...brief.plain_variable_descriptors.map((d) => `- ${d}`),
+    ...part("Direction", brief.human_direction),
+    // NOT data_insight — human_direction above already IS it (the seed
+    // adapter maps one onto the other), so emitting both mails the same
+    // sentence twice.
+    ...part(
+      "Evidence",
+      str(foundation, "target_icp") && `Target: ${str(foundation, "target_icp")}${
+        str(foundation, "avatar_basis") === "exploratory" ? " (exploratory — no historical avatar data)" : ""
+      }`,
+      str(foundation, "performance_benchmark") && `Benchmark: ${str(foundation, "performance_benchmark")}`,
+    ),
+    ...part(
+      "Copy architecture",
+      str(copy, "hook") && `Hook: ${str(copy, "hook")}`,
+      str(copy, "problem_agitation_or_value_setup") && `Setup: ${str(copy, "problem_agitation_or_value_setup")}`,
+      str(copy, "product_solution") && `Solution: ${str(copy, "product_solution")}`,
+      str(copy, "proof") && `Proof: ${str(copy, "proof")}`,
+      str(copy, "cta") && `CTA: ${str(copy, "cta")}`,
+    ),
+    ...part(
+      "Testing framework",
+      str(testing, "hypothesis") && `Hypothesis: ${str(testing, "hypothesis")}`,
+      str(testing, "isolated_variable") && `Isolates: ${str(testing, "isolated_variable")}`,
+      str(testing, "control_reference") && `Against control: ${str(testing, "control_reference")}`,
+      str(testing, "success_criteria") && `Success criteria: ${str(testing, "success_criteria")}`,
+    ),
+    ...part(
+      "Production",
+      str(specs, "dimensions") && `Dimensions: ${str(specs, "dimensions")}`,
+      str(specs, "placement") && `Placement: ${str(specs, "placement")}`,
+      str(specs, "production_requirements"),
+    ),
+    ...part("Creative direction", ...brief.plain_variable_descriptors.map((d) => `- ${d}`)),
   ].join("\n");
   return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
@@ -155,7 +207,44 @@ export function CreativeBriefBuilderView() {
         const successCriteria = fbString(testing, "success_criteria");
         const hypothesisId = fbString(testing, "hypothesis");
         const avoidList = (visual?.["avoid_list"] as unknown[] | undefined)?.filter((x): x is string => typeof x === "string") ?? [];
-        const hasProductionDetail = visual != null || stack != null || successCriteria != null || checklist.length > 0;
+
+        // ── Fields the engine writes on every brief that reached no screen ──
+        // Audited 2026-09-01: the generator persists 34 fields per brief and
+        // this page named 8. The copy architecture is the sharpest case — a
+        // brief promises a writer the problem setup, the product solution and
+        // the proof, and only the hook and CTA were rendered.
+        const problemSetup = fbString(copy, "problem_agitation_or_value_setup");
+        const productSolution = fbString(copy, "product_solution");
+        const proof = fbString(copy, "proof");
+        const hasCopyBody = problemSetup != null || productSolution != null || proof != null;
+
+        // NOTE: strategic_foundation.data_insight is NOT read here — the seed
+        // adapter already maps it onto DraftBrief.human_direction, which the
+        // "Why this brief exists" panel renders. Reading it again would print
+        // the same sentence twice.
+        const targetIcp = fbString(foundation, "target_icp");
+        const avatarBasis = fbString(foundation, "avatar_basis");
+        const generatedAt = fbString(meta, "generated_at");
+        const generatedBy = fbString(meta, "model");
+        const conceptCode = fbString(foundation, "concept_code");
+        const designSystem = fbString(foundation, "design_system");
+        const ctaType = fbString(foundation, "cta_type");
+        const perfBenchmark = fbString(foundation, "performance_benchmark");
+
+        const isolatedVariable = fbString(testing, "isolated_variable");
+        const controlReference = fbString(testing, "control_reference");
+        const learningObjective = fbString(testing, "learning_objective");
+        const matrixPosition = fbString(testing, "matrix_position");
+        const hasTestingDetail =
+          isolatedVariable != null || controlReference != null || learningObjective != null;
+
+        const productionReqs = fbString(specs, "production_requirements");
+        const placement = fbString(specs, "placement");
+        const creativeName = fbString(specs, "creative_name");
+
+        const hasProductionDetail =
+          visual != null || stack != null || successCriteria != null || checklist.length > 0 ||
+          hasTestingDetail || productionReqs != null || placement != null;
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -228,8 +317,22 @@ export function CreativeBriefBuilderView() {
               <div className="space-y-4 min-w-0" data-testid="brief-detail">
                 <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-5 space-y-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className={cn(TYPE.label, "font-semibold uppercase tracking-[0.14em] text-interactive/75")}>
-                      {detail.id}{detail.book ? ` · ${detail.book}` : ""}
+                    <span className="min-w-0">
+                      <span className={cn(TYPE.label, "block font-semibold uppercase tracking-[0.14em] text-interactive/75")}>
+                        {detail.id}{detail.book ? ` · ${detail.book}` : ""}
+                      </span>
+                      {/* Provenance: when this brief was written and by what.
+                          Both are on every generated brief and reached no
+                          screen — a reader deciding whether to trust a brief
+                          should not have to open the JSON to see its age. */}
+                      {(generatedAt || generatedBy) && (
+                        <span className={cn(TYPE.caption, "block text-muted-foreground/75 mt-0.5")}>
+                          {[
+                            generatedAt ? `Generated ${new Date(generatedAt).toLocaleDateString()}` : null,
+                            generatedBy,
+                          ].filter(Boolean).join(" · ")}
+                        </span>
+                      )}
                     </span>
                     <span className="flex items-center gap-2">
                       {detail.confidence && <ConfidenceBadge value={detail.confidence} />}
@@ -252,6 +355,39 @@ export function CreativeBriefBuilderView() {
                     <p className={cn(TYPE.body, "text-foreground/85 leading-relaxed")}>
                       <TokenizedConceptText text={detail.human_direction} />
                     </p>
+                    {/* NOT data_insight — the seed adapter already maps
+                        strategic_foundation.data_insight onto human_direction
+                        above, so rendering it here would print the same
+                        sentence twice. What IS unrendered is the benchmark it
+                        was measured against, and who the brief is aimed at. */}
+                    {(perfBenchmark || targetIcp) && (
+                      <div className="mt-2.5 pt-2.5 border-t border-border/25 space-y-1">
+                        {targetIcp && (
+                          <p className={cn(TYPE.caption, "text-muted-foreground/85 leading-relaxed")}>
+                            <span className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/75 mr-1.5")}>
+                              Target
+                            </span>{" "}
+                            {targetIcp}
+                            {/* Honesty label from the generator: an exploratory
+                                matrix column is a data-less hypothesis and must
+                                never read as a real avatar link. */}
+                            {avatarBasis === "exploratory" && (
+                              <span className={cn(TYPE.label, "ml-1.5 text-status-warning/85 border border-status-warning/25 bg-status-warning/[0.06] rounded px-1.5 py-0.5")}>
+                                exploratory — no historical avatar data
+                              </span>
+                            )}
+                          </p>
+                        )}
+                        {perfBenchmark && (
+                          <p className={cn(TYPE.caption, "text-muted-foreground/85 leading-relaxed")}>
+                            <span className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/75 mr-1.5")}>
+                              Benchmark
+                            </span>{" "}
+                            {perfBenchmark}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </FieldPanel>
 
                   {hook && (
@@ -267,11 +403,55 @@ export function CreativeBriefBuilderView() {
                     </FieldPanel>
                   )}
 
+                  {/* The rest of the copy architecture. A brief that shows a
+                      hook and a CTA and withholds the setup, the solution and
+                      the proof is not a brief a writer can execute. Rendered
+                      in narrative order — the order the ad is read in. */}
+                  {hasCopyBody && (
+                    <FieldPanel label="Copy architecture">
+                      <div className="space-y-3">
+                        {problemSetup && (
+                          <div>
+                            <div className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/75 mb-0.5")}>
+                              Problem / value setup
+                            </div>
+                            <p className={cn(TYPE.body, "text-foreground/85 leading-relaxed")}>{problemSetup}</p>
+                          </div>
+                        )}
+                        {productSolution && (
+                          <div>
+                            <div className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/75 mb-0.5")}>
+                              Product solution
+                            </div>
+                            <p className={cn(TYPE.body, "text-foreground/85 leading-relaxed")}>{productSolution}</p>
+                          </div>
+                        )}
+                        {proof && (
+                          <div>
+                            <div className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/75 mb-0.5")}>
+                              Proof
+                            </div>
+                            <p className={cn(TYPE.body, "text-foreground/85 leading-relaxed")}>{proof}</p>
+                          </div>
+                        )}
+                      </div>
+                    </FieldPanel>
+                  )}
+
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <SpecCell label="Format" value={fbString(specs, "format") ?? detail.asset_type} caption={fbString(specs, "dimensions")} />
                     {priority && <SpecCell label="Priority" value={priority} />}
                     {detail.mode && <SpecCell label="Mode" value={detail.mode} />}
                     {detail.voice && <SpecCell label="Voice" value={detail.voice} />}
+                    {/* Written on every brief, previously unshown. Concept code
+                        is the creative's identity; placement and CTA type are
+                        production-defining, not trivia. */}
+                    {conceptCode && <SpecCell label="Concept" value={conceptCode} />}
+                    {matrixPosition && <SpecCell label="Matrix cell" value={matrixPosition} />}
+                    {placement && <SpecCell label="Placement" value={placement} />}
+                    {ctaType && <SpecCell label="CTA type" value={ctaType} />}
+                    {designSystem && <SpecCell label="Design system" value={designSystem} />}
+                    {creativeName && <SpecCell label="Creative name" value={creativeName} />}
                   </div>
 
                   {detail.plain_variable_descriptors.length > 0 && (
@@ -321,6 +501,47 @@ export function CreativeBriefBuilderView() {
                                   <span className={cn(TYPE.label, "shrink-0 text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5")}>{hypothesisId}</span>
                                 )}
                               </div>
+                            </FieldPanel>
+                          )}
+
+                          {/* What this brief actually tests. Without the
+                              isolated variable and its control, a "test" is
+                              just another ad — these three fields are what
+                              make the brief part of a matrix. */}
+                          {hasTestingDetail && (
+                            <FieldPanel label="Testing framework">
+                              <div className="space-y-2">
+                                {isolatedVariable && (
+                                  <p className={cn(TYPE.body, "text-foreground/80 leading-relaxed")}>
+                                    <span className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/75 mr-1.5")}>
+                                      Isolates
+                                    </span>{" "}
+                                    {isolatedVariable}
+                                  </p>
+                                )}
+                                {controlReference && (
+                                  <p className={cn(TYPE.body, "text-foreground/80 leading-relaxed")}>
+                                    <span className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/75 mr-1.5")}>
+                                      Against control
+                                    </span>{" "}
+                                    {controlReference}
+                                  </p>
+                                )}
+                                {learningObjective && (
+                                  <p className={cn(TYPE.body, "text-foreground/80 leading-relaxed")}>
+                                    <span className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/75 mr-1.5")}>
+                                      Learning objective
+                                    </span>{" "}
+                                    {learningObjective}
+                                  </p>
+                                )}
+                              </div>
+                            </FieldPanel>
+                          )}
+
+                          {productionReqs && (
+                            <FieldPanel label="Production requirements">
+                              <p className={cn(TYPE.body, "text-foreground/80 leading-relaxed")}>{productionReqs}</p>
                             </FieldPanel>
                           )}
                           {checklist.length > 0 && (

@@ -8,6 +8,7 @@
 import { useLocation } from "wouter";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@workspace/command-deck/components/ui/tooltip";
 import { useConceptRegistry, useConceptDescriptor } from "@/lib/concept-registry-context";
+import { normalizeMetricsInProse, usableName } from "@/lib/normalize";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
 
@@ -20,7 +21,13 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
   const [, navigate] = useLocation();
   const { highlightConcept } = useConceptRegistry();
   const entry = useConceptDescriptor(code);
-  const descriptor = entry?.descriptor ?? code;
+  // A chip label is a NAME. The Bookster package fills `descriptor` with the
+  // same generated performance sentence it puts in `what`, so this chip was
+  // rendering "C1 produced $12.2632 CPA on $515.0538 spend (42 results)."
+  // inline where "Social Proof" belongs — and for three concepts that
+  // sentence contains the literal `$undefined`. When the field is prose, the
+  // code is the honest label; the sentence is still one hover away below.
+  const descriptor = usableName(entry?.descriptor) ?? code;
 
   const openInLibrary = () => {
     const focusCell = entry?.source_cells?.[0] ?? code;
@@ -74,7 +81,10 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
           // A sentence, so it sits on the body floor — it was text-label
           // (12px), three points under the floor every sentence must clear.
           <p className={cn(TYPE.body, "leading-relaxed text-foreground/90")}>
-            {entry.what.length > 120 ? entry.what.slice(0, 120) + "…" : entry.what}
+            {(() => {
+              const what = normalizeMetricsInProse(entry.what);
+              return what.length > 120 ? what.slice(0, 120) + "…" : what;
+            })()}
           </p>
         )}
         <p className={cn(TYPE.caption, "text-muted-foreground/75 italic")}>Click to open in Library</p>
@@ -96,7 +106,14 @@ interface TokenizedConceptTextProps {
 
 export function TokenizedConceptText({ text, className }: TokenizedConceptTextProps) {
   const { registry } = useConceptRegistry();
-  const tokens = tokenizeConceptCodes(text, registry);
+  // This component exists to render STORED analysis prose — 28 call sites
+  // across Listen, Creative, Strategy and the recommendation deck. That
+  // makes it the one place worth correcting the numbers the upstream
+  // composer left unformatted, rather than hunting each site and missing
+  // some. Tokenization runs on the corrected string, so chip offsets stay
+  // consistent; the transform only touches `$` literals and never a
+  // concept code.
+  const tokens = tokenizeConceptCodes(normalizeMetricsInProse(text), registry);
 
   return (
     <span className={className}>

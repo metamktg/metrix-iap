@@ -33,12 +33,18 @@ import {
   compactIcpName,
   fmtDelta,
   humanizeEnum,
+  normalizeMetricsInProse,
+  isUsableName,
+  usableName,
 } from "../normalize";
 
 // ─── 1. Export-set equality ───────────────────────────────────────────
 // Fails loudly if a name is added or removed without updating this list.
 
 const RUNTIME_EXPORTS: Array<keyof typeof normalize> = [
+  "normalizeMetricsInProse",
+  "isUsableName",
+  "usableName",
   "splitTitle",
   "fmtDelta",
   "humanizeEnum",
@@ -421,5 +427,90 @@ describe("extractVariableCodes — ICP ids", () => {
     );
     expect(codes).toContain("ICP_BOOK0_C2_TimePoorLearner");
     expect(codes).toContain("HK_PROBLEM");
+  });
+});
+
+describe("normalizeMetricsInProse", () => {
+  it("rounds four-decimal money to the app's standard two", () => {
+    expect(normalizeMetricsInProse("C1 produced $12.2632 CPA on $515.0538 spend (42 results)."))
+      .toBe("C1 produced $12.26 CPA on $515.05 spend (42 results).");
+  });
+
+  it("replaces a failed interpolation with n/a rather than printing $undefined", () => {
+    expect(normalizeMetricsInProse("C3 produced $undefined CPA on $286.84 spend (0 results)."))
+      .toBe("C3 produced n/a CPA on $286.84 spend (0 results).");
+  });
+
+  it("covers the other two failed-interpolation spellings", () => {
+    expect(normalizeMetricsInProse("$null CPA")).toBe("n/a CPA");
+    expect(normalizeMetricsInProse("$NaN CPA")).toBe("n/a CPA");
+  });
+
+  it("adds thousands separators", () => {
+    expect(normalizeMetricsInProse("spent $2332.11 total")).toBe("spent $2,332.11 total");
+    expect(normalizeMetricsInProse("spent $1651690 total")).toBe("spent $1,651,690 total");
+  });
+
+  it("leaves whole-dollar amounts without inventing cents", () => {
+    expect(normalizeMetricsInProse("a $500 budget")).toBe("a $500 budget");
+  });
+
+  it("leaves already-formatted money untouched", () => {
+    expect(normalizeMetricsInProse("$7.09 CPA, $2,332 spend")).toBe("$7.09 CPA, $2,332 spend");
+  });
+
+  it("does not touch percentages, counts or bare numbers", () => {
+    expect(normalizeMetricsInProse("15.0612% CVR across 329 results"))
+      .toBe("15.0612% CVR across 329 results");
+  });
+
+  it("is a no-op on empty input", () => {
+    expect(normalizeMetricsInProse(null)).toBe("");
+    expect(normalizeMetricsInProse(undefined)).toBe("");
+    expect(normalizeMetricsInProse("   ")).toBe("");
+  });
+});
+
+describe("usableName / isUsableName", () => {
+  it("accepts every real concept name in the seed, including the long ones", () => {
+    // The two at the end are the cases a 48-char limit wrongly rejected.
+    for (const n of [
+      "Social Proof", "Product Demo", "Before-After-Bridge", "15-Minute Time Efficiency",
+      "Read less / keep more retention mechanism",
+      "Time-poor learner product demo / 1,000 books proof",
+      "Aspirational authority / learn like people you admire",
+    ]) {
+      expect(isUsableName(n)).toBe(true);
+      expect(usableName(n)).toBe(n);
+    }
+  });
+
+  it("rejects a generated performance sentence in a name field", () => {
+    const s = "C1 produced $12.2632 CPA on $515.0538 spend (42 results).";
+    expect(isUsableName(s)).toBe(false);
+    expect(usableName(s)).toBeNull();
+  });
+
+  it("rejects on the terminal period regardless of length", () => {
+    expect(isUsableName("Short.")).toBe(false);
+    expect(isUsableName("Why?")).toBe(false);
+    expect(isUsableName("Now!")).toBe(false);
+  });
+
+  it("keeps length as a backstop only, far above any real name", () => {
+    // 60 characters, no terminal punctuation — a name, and it stays one.
+    expect(isUsableName("A rather long but entirely legitimate creative concept name")).toBe(true);
+    expect(isUsableName("x".repeat(121))).toBe(false);
+  });
+
+  it("keeps a name carrying an internal abbreviation", () => {
+    expect(isUsableName("Acme Inc. Gift Range")).toBe(true);
+    expect(isUsableName("Story vs. Stat Hook")).toBe(true);
+  });
+
+  it("rejects empty and blank", () => {
+    expect(usableName("")).toBeNull();
+    expect(usableName(null)).toBeNull();
+    expect(usableName("   ")).toBeNull();
   });
 });

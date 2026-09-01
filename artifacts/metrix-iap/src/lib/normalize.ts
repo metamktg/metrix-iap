@@ -427,3 +427,109 @@ export function fmtDayRange(
   if (s && e) return `${s} – ${e}`;
   return s || e;
 }
+
+// ─── Stored analysis prose ────────────────────────────────────────────
+//
+// Some analysis text arrives already composed as a sentence, from the
+// imported source data package rather than from anything this app formats.
+// The composer upstream built those sentences with a template literal and
+// no number formatting, so the product renders things like:
+//
+//   "C1 produced $12.2632 CPA on $515.0538 spend (42 results)."
+//   "C3 produced $undefined CPA on $286.84 spend (0 results)."
+//
+// Four decimal places on money is the difference between a data product
+// and a debug view, and `$undefined` is a JavaScript value that escaped
+// into a customer-facing string — 3 of the 33 concepts in the Bookster
+// package carry it, because CPA is spend/results and those concepts have
+// zero results.
+//
+// The source package is the client's imported analysis artifact and is not
+// ours to rewrite, so both are corrected at render. Neither transform
+// invents a value: rounding to the app's standard money precision is what
+// fmtMetric already does with the same numbers elsewhere on the same
+// screen, and `n/a` is what every other surface shows for a metric that
+// does not exist.
+
+/** `$undefined`, `$null`, `$NaN` — a failed interpolation, not a number. */
+const NON_VALUE = /\$(?:undefined|null|NaN)\b/g;
+/** A currency literal: `$` then digits, optional thousands, optional decimals. */
+const MONEY = /\$(\d[\d,]*)(?:\.(\d+))?/g;
+
+/**
+ * Make numbers inside an already-composed analysis sentence readable:
+ * failed interpolations become `n/a`, money gets thousands separators and
+ * at most two decimal places.
+ *
+ * Deliberately does NOT drop cents the way fmtMetric's `usd_total` does.
+ * A bare `$515.0538` in prose carries no signal about whether it is a unit
+ * cost or a total, and guessing would be the kind of silent reinterpretation
+ * this codebase avoids. Two decimals is money rendered as money; that is
+ * the whole claim.
+ */
+export function normalizeMetricsInProse(text: string | null | undefined): string {
+  const t = (text ?? "").trim();
+  if (!t) return "";
+  return t
+    .replace(NON_VALUE, "n/a")
+    .replace(MONEY, (_m, whole: string, frac: string | undefined) => {
+      const n = Number(whole.replace(/,/g, "") + (frac ? `.${frac}` : ""));
+      if (!Number.isFinite(n)) return _m;
+      return `$${n.toLocaleString("en-US", { minimumFractionDigits: frac ? 2 : 0, maximumFractionDigits: 2 })}`;
+    });
+}
+
+/**
+ * Is this string usable as a NAME — a concept descriptor, a creative concept
+ * name — or is it prose that landed in a name field?
+ *
+ * The Bookster package fills `concept_registry[code].descriptor` and
+ * `performance_by_cell[].book2_concept_name` with the same generated
+ * performance sentence it puts in `what`. Rendered as a name, that sentence
+ * became the label of an inline chip and the title line of a source-cell
+ * card — a full sentence, with `$undefined` in it, where "Social Proof"
+ * belongs. The card already shows that sentence's spend and results as its
+ * own evidence strip, so the sentence added nothing except the malformed
+ * numbers.
+ *
+ * THE TEST IS TERMINAL PUNCTUATION, NOT LENGTH. Length was the first rule
+ * here and it was wrong: measured against all 33 concepts in the Bookster
+ * registry, a 48-character limit rejected two genuine names — "Time-poor
+ * learner product demo / 1,000 books proof" (50) and "Aspirational
+ * authority / learn like people you admire" (53) — while the longest
+ * legitimate descriptor that passed was 45. Three characters of headroom
+ * between a real name and a false positive is not a rule, it is a
+ * coincidence, and shipping it would have replaced two real concept names
+ * with bare codes.
+ *
+ * A sentence ends; a name does not. All seven generated sentences in that
+ * registry terminate with a period and not one of the twenty-six real
+ * descriptors does. Length survives only as a backstop against runaway
+ * prose that happens to carry no terminal punctuation, set far above any
+ * plausible name rather than just above the longest one observed.
+ */
+/**
+ * Backstop only. Well clear of the longest real name in the data (53), so
+ * it never decides a borderline case — terminal punctuation does that.
+ */
+const NAME_MAX_CHARS = 120;
+
+export function isUsableName(value: string | null | undefined): boolean {
+  const t = (value ?? "").trim();
+  if (!t) return false;
+  // A terminal period ends a sentence. An abbreviation inside a name
+  // ("Inc.", "vs.") does not sit at the end, so anchoring is what keeps
+  // this from rejecting legitimate names.
+  if (/[.!?]$/.test(t)) return false;
+  if (t.length > NAME_MAX_CHARS) return false;
+  return true;
+}
+
+/**
+ * A name field's value if it really is a name, else null — so the caller
+ * falls back to the identifier it already has rather than printing prose
+ * where a label belongs.
+ */
+export function usableName(value: string | null | undefined): string | null {
+  return isUsableName(value) ? (value ?? "").trim() : null;
+}
