@@ -737,18 +737,48 @@ it.
 |---|---|---|
 | `WorkspaceBilling` | 7 of 8 | there is no billing surface — required for a paid release |
 | `AppDefaults` | 5 of 6 | server-directed initial view / active account, ignored by the client |
-| `OptimizationLoop` | 2 of 6 | `manager_overview_visibility`, `dismiss_policy` — dead until F-e ships |
+| `OptimizationLoop` | 2 of 6 | `manager_overview_visibility`, `dismiss_policy` — the SERVER now emits these (the surface reads real `signal_cards` rows rather than a hardcoded null), so the gap is client-side only: no surface reads either field yet |
 | `CampaignWindow` | 2 of 7 | `campaign_name`, `os` |
 | `ManagerAccount` | 1 of 8 | `overview_mode` |
 | `AdAccount` | 1 of 14 | `facebook_page_dp_url` |
 | `WorkspaceInvoice` | 1 of 4 | `amount_usd` |
 
-**Phase 6 ports not started**: `collection-grid-disclosure`, `quick-switcher`,
-`morphing-sidebar-controls`, `inline-toast`, `onboarding-checklist`,
-`expand-details`. (`list-stack` and `copy-confirm` shipped.)
+**Phase 6 ports: ~~not started~~ CLOSED — this line was stale and it misled a
+reader.** It was written before the wave-1 through wave-8 notes in §7.3 and was
+never reconciled against them, so the document's own "what's open" list
+contradicted its own audit notes further up the page. Someone reading the
+summary — which is what a summary is for — came away believing six widget ports
+were outstanding when all six were dispositioned. Re-verified against the CODE,
+not against either part of this document, 2026-09-01:
 
-**C6 placeholder vocabulary sweep**: ~158 `"—"` sites vs ~30 `"n/a"` sites.
-Breadth work, not a defect.
+| row | where it lives now |
+|---|---|
+| `collection-grid-disclosure` | `RevealPanel`, 5+ surfaces. Deliberately NOT on `CreativeLibraryView` — reason in §7.3 |
+| `quick-switcher` | `AccountSwitcher.tsx:262` — staggered blur item arrival |
+| `morphing-sidebar-controls` | `Sidebar` — `transition-[width]` + drag, 216↔56 with snap |
+| `inline-toast` | `ActionConfirmButton` (`components/widgets/CopyConfirmButton.tsx`) |
+| `onboarding-checklist` | `OnboardingWizard.tsx` — visited state, `aria-current`, ordinal meter |
+| `expand-details` | `SignalDeck` + `FindingsView` — `DetailReveal` / `DenseText` |
+
+The lesson is about this document, not about the widgets: **a summary section
+that is not regenerated is worse than no summary**, because it carries the
+authority of a status line while being wrong. Any figure here that is not
+produced by a re-runnable command should say when it was last verified and
+against what.
+
+**C6 placeholder vocabulary sweep**: **167** `"—"` sites vs **27** `"n/a"`
+sites (counted 2026-09-01; the previous "~158 / ~30" was an estimate and had
+drifted in both directions). Re-runnable:
+
+```
+grep -rho '"—"'  artifacts/metrix-iap/src/{pages,components} --include=*.tsx | wc -l
+grep -rhoi '"n/a"' artifacts/metrix-iap/src/{pages,components} --include=*.tsx | wc -l
+```
+
+Still breadth work, not a defect — but note the two are not interchangeable and
+the split is not arbitrary: `"—"` means *no value applies here*, `"n/a"` means
+*a value would apply but was not measured*. Any sweep has to decide per site,
+which is why this has never been a find-and-replace.
 
 **The strategy weighting engine was never started** and still awaits an explicit
 go. Spec at `CARRY_FORWARD_REGISTER` §6a. This is the owner's stated intent —
@@ -1315,3 +1345,97 @@ Typecheck clean · twelve gates · 2,187 app tests (17 new) · 119 scripts tests
 proven by re-running it with the fixes stashed. Honest limit: the demo
 fixture exercises one of the 44 strings on those routes; coverage of all 33
 concepts rests on the unit tests and the data scan, not on rendering each one.
+
+---
+
+## §11 — Empty-state honesty, the optimize pipe, and the chart sweep
+
+### The Action Queue instructed an impossible action
+
+> No actions yet — Run analysis to generate optimization recommendations for
+> this account.
+
+`metrixSeedAssembly` set `optimization_loop: null` as a hardcoded literal and
+nothing wrote it, so that instruction could not be satisfied by anyone. A user
+runs analysis, comes back, and is told to run analysis. The same promise
+appeared a second time in the descriptive line above the tabs.
+
+The truth was already in the seed. `loop_status` is assembled under a comment
+reading "honest pending states" and carries a real per-account blocker —
+bookster's names the Creative Scan / Test Engine dependency, ecas's names the
+tracking fix, and manual accounts carry no row at all, which is a third fact
+again. `StageNotRunState` reads that note and distinguishes all three.
+`AnalysisDnaView` had already done this for its golden-formula line; this makes
+it shared rather than a fourth hand-rolled variant.
+
+`RecommendationsView`'s tiles rendered `0 / 0 / — / 0` for a stage that never
+ran, directly above a panel saying the stage never ran. **A measured zero and an
+absent stage are different claims.** The tiles now render only when there is
+something to count.
+
+### The schema was never the blocker
+
+The follow-up question was the right one: honesty is not enough if the module
+can never be filled. It turned out the schema had existed the whole time, in
+both halves —
+
+- `signal_cards` (importer schema) carries the full recommendation-card shape
+  and already fed two surfaces, `listen` and `manager_overview`, through the
+  same `cardShape`.
+- `learning_registry` (official 22-table schema) carries `learning_summary`,
+  `variable_weight_deltas` and an approval-gated `approval_event_id`.
+
+What was missing was one line: a constant where a read belonged.
+`optimization_loop` is now the third surface off `signal_cards`. **No new
+tables, no new columns.** It remains a PIPE, not a producer — with no rows the
+value is still null and the surfaces still show the stage's own blocker.
+
+### Chart sweep — five defects across nine chart files
+
+| defect | where | why it mattered |
+|---|---|---|
+| Donut drawn outside its box | `SharePieChart` | `innerRadius={60} outerRadius={90}` are PIXELS, demanding 180×180; the box is 170×105 and **all three sectors** drew outside it |
+| Same, latent | `BreakdownExplorer` | fits its 180px square today; would clip the moment it shrank |
+| **Dual axis** | `AnalysisOverview` trend | the crossing point was set by the axis maxima, not the data — the story could be inverted without changing a number. `chartTokens.ts` already forbade it in writing |
+| Gap not drawn | `AudienceView` share bars | the card is *titled* "gap in points" and the gap was the only quantity in text; every bar used 2–28% of its track |
+| **Status colour as a series** | funnel `ZONE_COLOR` | Intent was `status-warning` and Conversion `status-success`, so **every account** read as "intent is a problem" regardless of its numbers |
+
+`DumbbellRows` replaces the share bars: one shared axis, so the segment between
+the two dots IS the gap. C1's gap went from a 9.8% difference between two rows
+to a 27.9%-wide mark — 2.9× the visual weight, as one mark instead of a mental
+subtraction. Ends differ in shape as well as hue, because at 8px on a dark
+ground two categorical slots read as "blue" and "blue".
+
+`PlacementsView` was checked and left alone — it normalizes to the max, which is
+already correct. A fix removing "three hues for one measure" had previously
+landed in `EngagementFunnelView` but not in `AdPerformanceView`, which consumes
+the same export; that is now closed.
+
+### New gate: `check:chart-geometry`
+
+**jsdom has no layout engine.** Every `getBoundingClientRect` is 0×0 and no CSS
+variable resolves, so a chart can be clipped in half in production with the
+whole suite green — and a static scan cannot see it either, because the defect
+only exists once a box has a measured size. The donut was found by a person
+looking at the screen, because nothing else could find it.
+
+The gate renders 8 routes in a real browser and measures every recharts mark
+against its own SVG surface. Proven by restoring the bug:
+
+```
+Analysis Overview           surface 170x105  outside by right 5, bottom 38
+Analysis Overview · ecas    surface 170x127  outside by top 26, left 5,
+                                             right 5, bottom 26
+```
+
+The second route had not been checked by hand — the sparse account clipped on
+all four sides. Tolerance is 2px (a stroke is centred on its path). Exits 2, not
+0, when the dev server is unreachable, so "nothing was checked" cannot read as
+"the charts are fine". Manual-only, same running-server constraint as
+`check:accessible-names`.
+
+### Verification
+
+Typecheck clean · 2,204 app tests · 40 assembly tests · 119 scripts tests ·
+twelve CI gates · `check:chart-geometry` clean and proven to fail on the real
+bug · every chart claim measured in a browser before and after.
