@@ -190,7 +190,9 @@ describe("KpiDrilldownModal — account scope", () => {
     renderModal({ ...accountProps, metricId: "link_clicks" });
     fireEvent.change(screen.getByLabelText("Breakdown"), { target: { value: "conv:device" } });
     fireEvent.click(screen.getByLabelText("Table view"));
-    expect(screen.getByTestId("kpi-drilldown-table").textContent).toContain("mobile");
+    // The row is labelled through deviceLabel now, so the table shows the
+    // display name rather than Meta's raw token.
+    expect(screen.getByTestId("kpi-drilldown-table").textContent).toContain("Mobile");
   });
 
   it("chart view renders ranked bars without NaN", () => {

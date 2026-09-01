@@ -24,6 +24,7 @@ import {
   fmtUSD, fmtPct, fmtNum,
   DenseText, deriveLabel, useFocusParam, useStaleFocus, StaleFocusNotice,
   SegmentGenderIcon,
+  platformLabel,
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
 import {
@@ -243,7 +244,7 @@ function PlacementsList({ rows }: { rows: PlacementRow[] }) {
           <div key={r.Placement + r.Platform + i} className="flex items-center justify-between gap-2 rounded-lg border border-border/25 bg-card/30 px-3 py-2">
             <div className="min-w-0">
               <p className={cn(TYPE.title, "font-medium truncate")}>{r.Placement}</p>
-              <span className={cn(TYPE.label, "text-muted-foreground/75 capitalize")}>{r.Platform}</span>
+              <span className={cn(TYPE.label, "text-muted-foreground/75")}>{platformLabel(r.Platform)}</span>
             </div>
             <div className="flex items-center gap-3 shrink-0 tabular-nums">
               <div className="text-right">

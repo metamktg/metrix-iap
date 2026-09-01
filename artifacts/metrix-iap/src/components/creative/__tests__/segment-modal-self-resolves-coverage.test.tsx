@@ -56,6 +56,7 @@ vi.mock("@workspace/api-client-react", () => ({
 }));
 
 import { SegmentDrilldownModal } from "../SegmentDrilldownModal";
+import { ACCOUNT_LEVEL_CELL_ID } from "@/lib/segment-analytics";
 
 /**
  * A segment that is unambiguously "ok" on the per-segment heuristics
@@ -181,3 +182,44 @@ describe("SegmentDrilldownModal — self-resolved demographic coverage", () => {
     expect(el.textContent).toContain("Demographic data covers only 5%");
   });
 });
+
+describe("the modal does not explain a join it just said it could not make", () => {
+  // `analysis` above carries no performance_by_cell, so attribution is
+  // unavailable — the same state a client import with an account-level
+  // demographic export lands in. The modal showed the honest "concept and
+  // variable attribution can't be honestly computed" notice AND, directly
+  // beneath it, "Hover a variable for its underlying code and per-segment
+  // performance" — an instruction about variables that are not on the screen.
+  // Two notices contradicting each other reads as broken data rather than a
+  // limit of the export, which is the opposite of what the notice is for.
+
+  // An account-level demographic export: every row carries the ACCOUNT
+  // sentinel cell id rather than a real creative cell, so there is nothing to
+  // join a concept or variable to.
+  const accountGrainAnalysis = {
+    demographic_registration_signal: [healthyRow({ cell_id: ACCOUNT_LEVEL_CELL_ID })],
+    performance_by_cell: [],
+    placement_performance: [],
+  } as unknown as AnalysisData;
+
+  it("is in the unavailable state this test is about", async () => {
+    open({ analysis: accountGrainAnalysis });
+    const note = await screen.findByTestId("note-attribution-unavailable");
+    expect(note.textContent).toMatch(/account-level only/i);
+  });
+
+  it("drops the hover-a-variable explainer when there are no variables", async () => {
+    open({ analysis: accountGrainAnalysis });
+    await screen.findByTestId("note-attribution-unavailable");
+    expect(screen.queryByText(/Hover a variable for its underlying code/i)).toBeNull();
+  });
+
+  it("still explains the join on an import that can actually make it", async () => {
+    // The sentence is useful where it is true — this pins that the gate did
+    // not simply delete it.
+    open();
+    await screen.findByText(/Top concepts for this segment/i);
+    expect(screen.getByText(/Hover a variable for its underlying code/i)).toBeTruthy();
+  });
+});
+

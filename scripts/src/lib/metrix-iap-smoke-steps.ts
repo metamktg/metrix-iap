@@ -44,6 +44,11 @@ export const IAP_SMOKE_STEPS: SmokeStep[] = [
   },
   { label: "Manual import flow e2e", script: "smoke:metrix-iap-manual-import" },
   {
+    label: "Data-service failure injection e2e",
+    script: "smoke:metrix-iap-failure-injection",
+  },
+  { label: "Every-route crawl e2e", script: "smoke:metrix-iap-route-crawl" },
+  {
     // Walks every authenticated route in a real browser looking for a
     // <button> inside a <button> (or a link inside a button). check:interaction
     // scans for the same thing statically and cannot see the real instances,

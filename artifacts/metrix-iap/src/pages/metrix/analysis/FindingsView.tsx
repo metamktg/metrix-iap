@@ -29,6 +29,7 @@ import {
 } from "../shared";
 import { TYPE } from "../typography";
 import { AlertTriangle, TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { scopeToRun } from "@/lib/run-supersede";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -370,7 +371,7 @@ export function FindingsView() {
     // work was persisted, serialized, and rendered nowhere.
     const raw: ConceptScore[] = (intel?.concept_scores?.length ?? 0) > 0
       ? intel!.concept_scores!
-      : (analysis?.concept_rollup ?? []).map((r) => ({
+      : scopeToRun(analysis?.concept_rollup ?? [], analysis?.latest_analysis_run_id ?? null).map((r) => ({
           book: r.book,
           concept_code: r.concept,
           mapped_in_library: r.mapped_in_library,

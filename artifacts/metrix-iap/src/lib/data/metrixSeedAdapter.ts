@@ -7,6 +7,7 @@
 
 import type {
   MetrixSeed,
+  AppDefaults,
   ManagerAccount,
   AdAccount,
   AdRecord,
@@ -25,12 +26,15 @@ import type {
 
 // ─── App defaults ─────────────────────────────────────────────────────
 
-export function getAppDefaults(seed: MetrixSeed) {
-  return seed.app_defaults;
+export function getAppDefaults(seed: MetrixSeed): AppDefaults | null {
+  return seed.app_defaults ?? null;
 }
 
 export function getForbiddenTerms(seed: MetrixSeed): string[] {
-  return seed.app_defaults.forbidden_ui_terms;
+  // `app_defaults` is null whenever its `app_config` row is missing, so this
+  // has to answer "no terms configured" rather than throw. An empty list is
+  // the honest answer: nothing has declared a term forbidden.
+  return seed.app_defaults?.forbidden_ui_terms ?? [];
 }
 
 // ─── Manager ──────────────────────────────────────────────────────────

@@ -848,7 +848,12 @@ export interface MetrixSeed {
   schema_version: string;
   generated_at: string;
   integrity_note: string;
-  app_defaults: AppDefaults;
+  /**
+   * Null when the `app_defaults` row is absent from `app_config` — the seed
+   * assembler emits `config.get("app_defaults") ?? null`, so a Supabase
+   * project the importer has not fully run against sends null here.
+   */
+  app_defaults: AppDefaults | null;
   manager_account: ManagerAccount;
   ad_accounts: AdAccount[];
   workspace_settings?: WorkspaceSettings;

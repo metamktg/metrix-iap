@@ -9,7 +9,7 @@ import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Trophy } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { fmtUSD, fmtNum, fmtPct } from "@/pages/metrix/shared";
+import { fmtUSD, fmtNum, fmtPct, eventLabel } from "@/pages/metrix/shared";
 import type { ConceptFamilyGroup, AngleGroup, BlendedKPI } from "@/lib/concept-grouping";
 import { rankCellsByPrimaryKpi, type CellRankKpi } from "@/lib/concept-grouping";
 import { CreativeCard } from "./CreativeCard";
@@ -84,7 +84,7 @@ function AngleRow({
       results,
       cpa: results > 0 ? spend / results : null,
       ctrPct: impressions > 0 ? (linkClicks / impressions) * 100 : null,
-      resultLabel: rows.length === 1 ? rows[0]!["Result type"] : `${rows.length} events`,
+      resultLabel: rows.length === 1 ? eventLabel(rows[0]!["Result type"]) : `${rows.length} events`,
     };
   }
 
