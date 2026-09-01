@@ -703,8 +703,16 @@ function BuyerIntentFunnelCard({
                 <span className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/75 w-28 shrink-0")}>
                   {stage.label}
                 </span>
+                {/* ONE measure down ONE funnel, so ONE hue. These bars used
+                    to take c.bar, painting four stages of the same count in
+                    four different colours — the exact defect the funnel
+                    waterfall in EngagementFunnelView was rewritten to remove
+                    ("THREE HUES FOR ONE MEASURE"). That fix landed in the one
+                    view and this consumer of the shared export kept the old
+                    behaviour. The zone still reads, from the panel tint and
+                    the stage label; it just stops arguing with the bar. */}
                 <div className="flex-1 h-4 bg-foreground/[0.04] rounded overflow-hidden">
-                  <div className={cn("h-full rounded transition-[color,background-color,border-color,box-shadow,opacity,transform]", c.bar)} style={{ width: `${barW}%` }} />
+                  <div className="h-full rounded bg-chart-1/70 transition-[color,background-color,border-color,box-shadow,opacity,transform]" style={{ width: `${barW}%` }} />
                 </div>
                 <span className={cn(TYPE.body, "font-semibold text-foreground tabular-nums w-20 text-right shrink-0")}>
                   {fmtNum(stage.value!)}
