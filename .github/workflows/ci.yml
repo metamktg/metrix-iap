@@ -121,6 +121,11 @@ jobs:
       - name: Design system gates
         # These four ship with this branch and were wired into .replit only, so
         # on the merge path — the one that matters — they protected nothing.
+        # check:cohort-reach was in exactly that state until 2026-09-01: it is
+        # the gate enforcing that the objective stays an analysis lens (owner
+        # decision, now that the objective is DERIVED and has no control), and
+        # it ran locally only — so a violation could merge unchallenged. Same
+        # class of hole as the four above, same fix.
         # All four are pure static reads of committed files. Placed after the
         # typecheck step because check:chart-palette reads command-deck's
         # index.css, which is committed but regenerated from tokens.json by
@@ -133,6 +138,7 @@ jobs:
           pnpm --filter @workspace/scripts run check:payload-legibility
           pnpm --filter @workspace/scripts run check:type-scale
           pnpm --filter @workspace/scripts run check:chart-palette
+          pnpm --filter @workspace/scripts run check:cohort-reach
 
       - name: API codegen drift
         run: pnpm --filter @workspace/scripts run check:api-codegen-drift
