@@ -88,8 +88,9 @@ export function resolveCohort(cohort: string | null | undefined): CohortDefiniti
 // remains the internal vocabulary (ecommerce/lead_gen/service/app); the
 // objectives set simply allows an account to run towards more than one at
 // once (e.g. a retailer doing both purchase and lead-capture campaigns).
-// Configured only in Settings → General; the analysis run consults this
-// set to decide which optional CSV column groups it assesses.
+// WRITTEN BY THE ANALYSIS RUN, which derives it from ad result types (see
+// inferObjectives below) — never configured by an operator. The readers
+// here just parse the stored value back out.
 
 /**
  * Parse/validate an arbitrary stored value (jsonb array, string[], etc.)
@@ -108,11 +109,11 @@ export function normalizeObjectives(raw: unknown): CohortKey[] {
 }
 
 /**
- * Resolve an ad_accounts row to its configured objectives. Reads the new
- * `objectives` set first; falls back to the legacy scalar `cohort` column
- * for rows written before the migration, so pre-existing single-cohort
- * accounts keep working with no re-configuration. Returns [] (never a
- * silent ecommerce default) when nothing is configured.
+ * Resolve an ad_accounts row to its stored objectives — the set the last
+ * analysis run DERIVED from the data. Reads the `objectives` set first;
+ * falls back to the legacy scalar `cohort` column for rows written before
+ * the migration. Returns [] (never a silent ecommerce default) when the
+ * account has not been analysed yet or nothing could be determined.
  */
 export function resolveAccountObjectives(row: Record<string, unknown> | null | undefined): CohortKey[] {
   if (!row) return [];
