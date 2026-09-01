@@ -20,7 +20,7 @@ import {
   HypothesisLabel, HypothesisStatusBadge, HypothesisCodeChipsRow,
   VariableCombinationsGrid, playbookHasContent, ScalingPlaybookLanes,
 } from "./strategyShared";
-import { splitTitle } from "@/lib/normalize";
+import { splitTitle, usableName } from "@/lib/normalize";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useResizableColumn, type ResizableColumn } from "@/hooks/useResizableColumn";
@@ -147,13 +147,16 @@ function PillarListCard({
           >
             {t.main}
           </p>
-          {/* Descriptor snippet — visible only when selected */}
-          {selected && pillar.plain_descriptor && (
-            <p className={cn(TYPE.label, "text-muted-foreground/75 leading-snug mt-1 line-clamp-2")}>
-              {pillar.plain_descriptor.slice(0, 80)}
-              {pillar.plain_descriptor.length > 80 ? "…" : ""}
-            </p>
-          )}
+          {/* No descriptor snippet here. It used to render for the SELECTED
+              pillar only — as TYPE.label, which is 12px UPPERCASE, hand-cut
+              at 80 characters, inside a line-clamp-2. Three problems in one
+              line: uppercase destroys the word shapes that long-form reading
+              depends on, the character slice cuts mid-word on top of a clamp
+              that already handles overflow, and the whole thing duplicated
+              the descriptor the centre column now renders in full at body
+              size, four inches to the right. A worse copy of what is already
+              on screen is not disclosure. The sidebar's job is navigation:
+              index, name, cell count. */}
         </div>
       </div>
 
@@ -501,6 +504,7 @@ export function StrategyMapView() {
         const selected =
           pillars.find((p) => p.id === selectedPillarId) ?? pillars[0];
         const selectedIdx = pillars.findIndex((p) => p.id === selected.id);
+        const selectedTitle = splitTitle(selected.label);
 
         const pillarIds = new Set(pillars.map((p) => p.id));
         const hypothesesFor = (pillarId: string) =>
@@ -517,7 +521,14 @@ export function StrategyMapView() {
           return {
             spend: rows.reduce((n, r) => n + r["Amount spent (USD)"], 0),
             results: rows.reduce((n, r) => n + r.Results, 0),
-            conceptName: rows[0]?.book2_concept_name,
+            // `book2_concept_name` carries the same generated sentence as the
+            // concept descriptor. Rendered as this card's primary line it put
+            // "C2 produced $7.0885 CPA on $2332.11 spend (329 results)." above
+            // the cell code — a sentence whose entire content is the spend and
+            // results the card already shows in its own evidence strip, with
+            // worse number formatting. When it is not a name, the cell code
+            // leads and nothing is lost.
+            conceptName: usableName(rows[0]?.book2_concept_name) ?? undefined,
           };
         };
 
@@ -585,11 +596,22 @@ export function StrategyMapView() {
                           />
                           <div className="min-w-0">
                             <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-0.5")}>
-                              Source cells
+                              Message pillar
                             </p>
-                            <span className={cn(TYPE.caption, "font-semibold text-foreground/80 leading-snug line-clamp-1")}>
-                              {splitTitle(selected.label).main}
-                            </span>
+                            {/* This is the subject of the whole column, so it
+                                carries title rank. It used to be a 13px caption
+                                clamped to ONE line under a "Source cells"
+                                eyebrow — the header named the evidence rather
+                                than the thing, and a compound pillar name was
+                                cut before its qualifier ever appeared. */}
+                            <h2 className={cn(TYPE.title, "line-clamp-2")} title={selected.label}>
+                              {selectedTitle.main}
+                            </h2>
+                            {selectedTitle.qualifier && (
+                              <p className={cn(TYPE.caption, "text-muted-foreground/85 leading-snug mt-0.5")}>
+                                {selectedTitle.qualifier}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -616,8 +638,45 @@ export function StrategyMapView() {
                       )}
                     </div>
 
-                    {/* Source cell cards */}
+                    {/* ── The pillar's statement ──────────────────────
+                        Reading order is what this column is for: WHAT the
+                        pillar says, then the evidence it rests on, then how
+                        to execute it. This block used to sit at the BOTTOM,
+                        under every source cell card and a collapsed
+                        execution panel — so the sentence explaining what you
+                        were looking at was reached by scrolling past all of
+                        it. Disclosure was only half the problem; position
+                        was the other half. */}
+                    {(selected.plain_descriptor || selected.why_it_matters) && (
+                      <div className="px-4 pt-3 pb-1 space-y-2">
+                        {selected.plain_descriptor && (
+                          <DenseText
+                            text={selected.plain_descriptor}
+                            className={cn(TYPE.body, "text-foreground/90 leading-relaxed")}
+                            clampClass="line-clamp-5"
+                          />
+                        )}
+                        {selected.why_it_matters && (
+                          <div className="rounded-lg border border-border/25 bg-foreground/[0.02] p-2.5">
+                            <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 mb-1">
+                              Why it matters
+                            </div>
+                            <DenseText
+                              text={resolveInlineVariableCodes(selected.why_it_matters)}
+                              className={cn(TYPE.caption, "text-foreground/85 leading-relaxed")}
+                              clampClass="line-clamp-5"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Source cell cards — the evidence under the statement */}
                     <div className="p-3 space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Source cells</p>
+                        <SectionInfoIcon tip="The creative cells this pillar was derived from. Spend and results are the measured evidence behind it." />
+                      </div>
                       {selected.source_cells.length === 0 ? (
                         <div className="py-8 text-center">
                           <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
@@ -670,35 +729,6 @@ export function StrategyMapView() {
                         </div>
                       )}
 
-                      {/* Descriptor detail */}
-                      {selected.plain_descriptor && (
-                        <div className="pt-1">
-                          {/* This is a detail panel — the place a reader has
-                              already navigated to in order to read. Putting
-                              the descriptor AND "why it matters" behind a
-                              further click made the panel a door to a door.
-                              Both are payload and both are on the page now. */}
-                          <div className="space-y-2">
-                            <DenseText
-                              text={selected.plain_descriptor}
-                              className={cn(TYPE.body, "text-foreground/90 leading-relaxed")}
-                              clampClass="line-clamp-5"
-                            />
-                            {selected.why_it_matters && (
-                              <div className="rounded-lg border border-border/25 bg-foreground/[0.02] p-2.5">
-                                <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 mb-1">
-                                  Why it matters
-                                </div>
-                                <DenseText
-                                  text={resolveInlineVariableCodes(selected.why_it_matters)}
-                                  className={cn(TYPE.caption, "text-foreground/85 leading-relaxed")}
-                                  clampClass="line-clamp-5"
-                                />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
 

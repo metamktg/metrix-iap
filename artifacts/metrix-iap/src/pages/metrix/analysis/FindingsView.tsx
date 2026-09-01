@@ -9,6 +9,7 @@
 // failure_patterns) with fallback to optimization_loop recommendation_cards.
 
 import { useMemo } from "react";
+import { normalizeMetricsInProse } from "@/lib/normalize";
 import { fmtDayRange } from "@/lib/normalize";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -204,8 +205,10 @@ function ConceptCard({ score }: { score: ConceptScore }) {
   const tb = tierBadge(score.performance_tier);
   const lift = liftIcon(score.performance_lift_vs_baseline);
   const liftLbl = liftLabel(score.performance_lift_vs_baseline);
-  const whatText = score.what ?? "";
-  const soWhatText = score.so_what ?? "";
+  // Rendered directly rather than through TokenizedConceptText, so the
+  // upstream number formatting is corrected here explicitly.
+  const whatText = normalizeMetricsInProse(score.what);
+  const soWhatText = normalizeMetricsInProse(score.so_what);
 
   return (
     <div
