@@ -188,6 +188,20 @@ discards those markers. Confirm what is in a local commit before deciding: on
 2026-09-01 the marker was verified to change zero files, which is what made the
 merge safe to do blind.
 
+**The workspace will always read "N commits to sync" after a publish, and that
+is normal.** Replit writes an empty marker commit on every publish, so the panel
+shows the workspace ahead of origin even when the code is identical. Before
+treating it as a divergence, check whether it is content:
+
+```
+# from the workspace: is there any actual file difference?
+git diff --stat origin/main     # empty output = bookkeeping only, nothing to reconcile
+```
+
+Pushing those markers to `main` is optional — it clears the indicator and matches
+what `main`'s history already contains, at the cost of a no-op CI run. Leaving
+them is equally safe; the next pull just merges around them.
+
 ### 2.7 A publish status of `success` is not evidence
 
 Two things must both be true, and neither is the status field:
@@ -556,10 +570,10 @@ when all six were closed.
 
 | | |
 |---|---|
-| `main` | `882fc708` — CI #357 green |
+| `main` | `882fc708` — CI #357 green. The closeout commits described in §4.1/§4.3 land on top of this. |
 | Working branch | `claude/metrix-iap-phase-2-1n4gi2` (merged via PR #172) |
 | Open PRs | none |
 | Live | https://app.metrix.ad — `index-DnnumY9p.js`, verified a build of `882fc708` |
-| Replit workspace | `506b0f47` (main + preserved deployment markers), clean |
+| Replit workspace | tree **identical to `main`**; ahead only by empty `"Published your App"` markers + the merge that brought main in. Verified 2026-09-01: diff against `origin/main` is empty, 0 changed files. |
 | `archive/phase2-pre-rebase` | safe to delete — holds nothing unique (§3.6) |
 
