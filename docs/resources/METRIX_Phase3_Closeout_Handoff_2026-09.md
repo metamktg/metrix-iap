@@ -139,11 +139,12 @@ as of this commit:
 typecheck · disclosure-rulebook · unused-exports · text-primary-contrast
 css-token-contrast · locator-ambiguity · interaction · token-colors
 stray-shell-output · payload-legibility · type-scale · chart-palette
-api-codegen-drift · scripts tests · api-server pure unit list · api-server smoke
+cohort-reach · api-codegen-drift · scripts tests · api-server pure unit list · api-server smoke
 metrix-iap vitest · metrix-iap build · marketing build · marketing e2e
 ```
 
-`check:cohort-reach` is in `.replit` only — run it too when touching objective code.
+`check:cohort-reach` joined this list on 2026-09-01 (§4.1). It was `.replit`-only
+before that, which meant it protected nothing on the merge path.
 
 ### 2.4 The api-server CI test list is append-only, and it is easy to miss
 
@@ -347,7 +348,13 @@ is carried over from an earlier session.
 ### 4.1 Gates
 
 All CI gates pass. CI run **#357** on the merge commit `882fc708`: `success`,
-21/21 steps. `check:cohort-reach` (not in CI, `.replit` only) also passes.
+21/21 steps.
+
+`check:cohort-reach` was `.replit`-only until 2026-09-01 — the gate enforcing the
+objective's containment never ran on the merge path, so a violation could have
+merged unchallenged. It is now in CI's design-gate block. Proven to still fire:
+reintroducing a cohort read in `Topbar.tsx` fails it at that line, and it passes
+again once restored.
 
 ### 4.2 Test suites
 
@@ -358,7 +365,34 @@ All CI gates pass. CI run **#357** on the merge commit `882fc708`: `success`,
 | scripts unit tests | **7 files, 119 tests, 0 failures** |
 | api-server boot smoke | `GET /api/healthz` → 200 |
 
-### 4.3 Deployment
+### 4.3 Full e2e sweep — 18/18 pass, 0 failures
+
+Run on `882fc708` with `REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE` set (§2.1).
+Without that variable **none** of these can run at all in this environment.
+
+| Spec | Result | Spec | Result |
+|---|---|---|---|
+| forgot-password | 4/4 | metrix-iap-manual-import | 4/4 |
+| login-page-layout | 10/10 | metrix-iap-review-queue | pass |
+| marketing-e2e | 3/3 | metrix-iap-route-crawl | **210/210 visits clean** |
+| metrix-iap-ad-account-overview | 4/4 | metrix-iap-section-info-icons | 8/8 |
+| metrix-iap-avatars-tooltips | 5/5 | metrix-iap-section-info-tooltips | 6/6 |
+| metrix-iap-dom-validity | pass | metrix-iap-shared-layout | pass |
+| metrix-iap-engagement-funnel | 10/10 | metrix-iap-slider-persistence | 2/2 |
+| metrix-iap-failure-injection | 6/6 | register-session-persistence | 2/2 |
+| metrix-iap-funnel-filter | 5/5 | | |
+
+`metrix-iap-route-crawl` is the broad one: **70 routes × 3 account shapes = 210
+visits**, each asserting no uncaught exception, no console error, and that the
+page rendered its own content rather than the seed-error screen, a route-level
+404, or nothing. The three account shapes are a configured account, an
+iap-is-null account, and the mixed unconfigured-with-data account.
+
+Its number above is from an **isolated re-run** — the sweep's own crawl was
+contaminated by a concurrent source edit (§6.4) and was discarded rather than
+reported.
+
+### 4.4 Deployment
 
 | Check | Result |
 |---|---|
@@ -389,7 +423,8 @@ pnpm run typecheck
 
 ### 5.2 Before any push
 
-Run the **CI** set (§2.3), not the `.replit` set:
+Run the **CI** set (§2.3), not the `.replit` set. `cohort-reach` is in both as of
+2026-09-01; everything else in this loop is CI's:
 
 ```sh
 pnpm run typecheck
