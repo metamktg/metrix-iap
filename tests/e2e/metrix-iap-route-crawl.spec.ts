@@ -163,23 +163,23 @@ async function mockApis(ctx: BrowserContext): Promise<void> {
  *
  * One route set against one fully configured account only ever proves the app
  * works when everything is present. This codebase's central promise is the
- * opposite case — "honest pending state", never fabricated data — and nothing
- * walked the pages with an account that has no analysis at all. A page that
- * assumes `iap` exists crashes there and nowhere else.
+ * opposite case — "honest pending state", never fabricated data — so the pages
+ * are walked against the thinnest account the fixture has as well.
  *
- * The fixture holds three distinct shapes and all three are worth walking:
- * everything present, nothing present, and the mixed state where an account
- * reads as unconfigured yet still carries a full iap object.
+ * Worth knowing when reading this list: the current fixture has NO account
+ * with `iap: null` and none marked unconfigured — every account is configured
+ * and carries a full iap object. So the brand-new-account path is exercised at
+ * the data layer by seed-contract-fuzz.test.ts, which synthesises it, and not
+ * here. The thinnest real shape available is an import whose analysis ran but
+ * produced no creative cells, which is the account the audience-signal and
+ * token-breakdown defects were found on.
  */
 const ACCOUNTS = [
-  { id: "bookster", why: "configured, multi-event" },
+  { id: "bookster", why: "configured, 12 creative cells, multi-event" },
+  { id: "ecas", why: "configured, 31 creative cells, single-event ecommerce" },
   {
     id: "manual_9JGXU_AQJjxJ",
-    why: "iap is null — exactly what POST /accounts creates before any analysis",
-  },
-  {
-    id: "skov_pet",
-    why: "unconfigured, yet carrying a full iap object — the mixed state",
+    why: "analysis ran but produced no creative cells — account-level grain only",
   },
 ];
 
