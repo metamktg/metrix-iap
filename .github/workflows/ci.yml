@@ -90,6 +90,14 @@ jobs:
         # artifacts/metrix-iap/src/pages/metrix/typography.ts), not a baseline bump.
         run: pnpm --filter @workspace/scripts run check:disclosure-rulebook
 
+      - name: Unused-export ratchet
+        # Ratchet, not a cleanup order. Everything orphaned today is recorded in
+        # scripts/src/unused-exports.baseline.json; this only fails when a change
+        # ADDS an export nothing outside its own file uses, or that only its tests
+        # use. The second category is the one that hides: a fully unit-tested
+        # module no page imports reads as load-bearing until someone checks.
+        run: pnpm --filter @workspace/scripts run check:unused-exports
+
       - name: Text contrast checks
         run: |
           pnpm --filter @workspace/scripts run check:text-primary-contrast

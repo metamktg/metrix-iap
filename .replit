@@ -78,6 +78,10 @@ args = "disclosure-rulebook"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
+args = "unused-exports"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
 args = "signal-weights-drift"
 
 [[workflows.workflow.tasks]]
@@ -270,6 +274,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run check:disclosure-rulebook"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "unused-exports"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:unused-exports"
 
 [workflows.workflow.metadata]
 isValidation = true
