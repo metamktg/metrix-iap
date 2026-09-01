@@ -24,7 +24,7 @@
 // from audience-clusters.ts, so the same honesty rules apply to both.
 
 import { useMemo, useState, useCallback } from "react";
-import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { DumbbellRows } from "@/components/charts/DumbbellRows";
 import { VERDICT, divergingFill } from "@/components/charts/chartTokens";
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
@@ -445,47 +445,20 @@ function ShareOfSpendCard({
       {totalSpend <= 0 ? (
         <GroupingEmptyState hint={emptyHint} fallback="No spend to allocate." />
       ) : (
-        <div className="space-y-2.5" data-testid="share-of-spend-rows">
-          {rows.map(({ g, spendShare, resultShare, gap }) => (
-            <div key={g.id} className="rounded-lg px-2 py-1.5 -mx-2">
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className={cn(TYPE.caption, "font-medium text-foreground/85 inline-flex items-center gap-1.5 min-w-0")}>
-                  <span className="shrink-0 text-muted-foreground/75">{g.id}</span>
-                  <span className="truncate">{g.label}</span>
-                </span>
-                <span className={cn(
-                  TYPE.label,
-                  "tabular-nums shrink-0",
-                  gap >= 3 ? "text-status-success" : gap <= -3 ? "text-status-warning" : "text-muted-foreground/75",
-                )}>
-                  {gap > 0 ? "+" : ""}{gap}pts
-                </span>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/75 normal-case")}>Spend</span>
-                  <ProgressMeter value={spendShare} total={100} label="Spend share" className="flex-1" colorIndex={0} />
-                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/75")}>
-                    {spendShare.toFixed(0)}%
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/75 normal-case")}>{totalResults > 0 ? "Results" : "Results —"}</span>
-                  <ProgressMeter
-                    value={totalResults > 0 ? resultShare : null}
-                    total={100}
-                    label="Result share"
-                    className="flex-1"
-                    colorIndex={1}
-                  />
-                  <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/75")}>
-                    {totalResults > 0 ? `${resultShare.toFixed(0)}%` : "n/a"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <DumbbellRows
+          data-testid="share-of-spend-rows"
+          aLabel="Share of spend"
+          bLabel={`Share of ${resultPlural.toLowerCase()}`}
+          unmeasuredNote="n/a"
+          rows={rows.map(({ g, spendShare, resultShare }) => ({
+            id: g.id,
+            code: g.id,
+            label: g.label,
+            a: spendShare,
+            b: resultShare,
+            measured: totalResults > 0,
+          }))}
+        />
       )}
     </SectionCard>
   );

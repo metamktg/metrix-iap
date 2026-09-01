@@ -630,6 +630,44 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     .filter((c) => c["surface"] === "listen" && c["account_id"] === accountId)
     .map(cardShape);
 
+  // ── Optimization-loop cards (account-scoped) ─────────────────────────
+  //
+  // `optimization_loop` used to be a hardcoded `null` here, which meant the
+  // Action Queue, the Recommendations deck and the Next Best Action card
+  // could not be populated by any means — there was no pipe, only a
+  // literal. The SCHEMA for these cards has existed the whole time:
+  // `signal_cards` already carries surface / scope / title / rationale /
+  // impact / confidence / recommended_action / manager_card_descriptor plus
+  // the structured headline block, and this same table already feeds the
+  // `listen` and `manager_overview` surfaces through the same cardShape.
+  // Adding `optimization_loop` as the third surface opens the module to
+  // real data with no new schema.
+  //
+  // This is a PIPE, not a producer. Nothing here generates a
+  // recommendation: when the stage has written no rows the value stays
+  // null, exactly as before, and the UI keeps showing the stage's own
+  // loop_status blocker. What changes is that the day rows exist, they
+  // reach the screen.
+  const optimizationCards = t.signalCards
+    .filter((c) => c["surface"] === "optimization_loop" && c["account_id"] === accountId)
+    .map(cardShape);
+
+  // Policies are prose about how the loop behaves; they are not derivable
+  // from a card, so they come from the document module when one exists and
+  // are omitted rather than invented when it does not.
+  const optimizationDoc = (modules.get("optimization_loop") ?? null) as Row | null;
+  const optimizationLoop =
+    optimizationCards.length === 0 && !optimizationDoc
+      ? null
+      : {
+          visibility: String(optimizationDoc?.["visibility"] ?? "account"),
+          manager_overview_visibility: Boolean(optimizationDoc?.["manager_overview_visibility"] ?? false),
+          action_policy: String(optimizationDoc?.["action_policy"] ?? ""),
+          dismiss_policy: String(optimizationDoc?.["dismiss_policy"] ?? ""),
+          ...(optimizationDoc?.["source_policy"] ? { source_policy: String(optimizationDoc["source_policy"]) } : {}),
+          recommendation_cards: optimizationCards,
+        };
+
   // ── Loop stage status (honest pending states) ───────────────────────
   const stageOrder = [
     "bundle_prep",
@@ -841,8 +879,10 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       strategy,
       brief_builder: briefBuilder,
       report_builder: modules.get("report_builder") ?? null,
-      // Optimization Loop stage has not run — no golden formula exists yet.
-      optimization_loop: null,
+      // Null while the stage has produced nothing — which is still the case
+      // for every account today. It is now a READ rather than a literal, so
+      // the surfaces downstream fill the moment rows exist.
+      optimization_loop: optimizationLoop,
       intelligence: {
         summary: analysisCoreSummary,
         concept_scores: conceptIntelligence.map((r) => ({

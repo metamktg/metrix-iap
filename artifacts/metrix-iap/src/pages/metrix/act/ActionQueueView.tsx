@@ -19,7 +19,7 @@ import {
   setDecision,
 } from "@/lib/data/decisionStore";
 import { addToTray, removeFromTray } from "@/lib/data/trayStore";
-import { ConfidenceBadge, DenseText, ModuleHeader, UnconfiguredState } from "@/pages/metrix/shared";
+import { ConfidenceBadge, CrossLink, DenseText, ModuleHeader, StageNotRunState, UnconfiguredState } from "@/pages/metrix/shared";
 import { impactRank } from "@/components/deck/RecommendationDeck";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
 import {
@@ -308,34 +308,27 @@ const SECTION = "Act";
 
 // ─── Empty state ──────────────────────────────────────────────────────
 
-function EmptyQueue({ reason }: { reason: "no-loop" | "all-done" }) {
+function AllCaughtUp() {
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border/40 py-16 text-center px-6">
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
-        {reason === "all-done" ? (
-          <CheckCircle2 className="w-5 h-5 text-status-success/60" />
-        ) : (
-          <Zap className="w-5 h-5 text-muted-foreground/75" />
-        )}
+        <CheckCircle2 className="w-5 h-5 text-status-success/60" />
       </div>
-      {reason === "all-done" ? (
-        <>
-          <p className="text-title font-bold text-foreground/60">All caught up</p>
-          <p className="text-body text-muted-foreground/75 max-w-[280px]">
-            All recommendations have been reviewed. Approved items are in your Task Tray.
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="text-title font-bold text-foreground/60">No actions yet</p>
-          <p className="text-body text-muted-foreground/75 max-w-[280px]">
-            Run analysis to generate optimization recommendations for this account.
-          </p>
-        </>
-      )}
+      <p className="text-title font-bold text-foreground/60">All caught up</p>
+      <p className="text-body text-muted-foreground/75 max-w-[280px]">
+        All recommendations have been reviewed. Approved items are in your Task Tray.
+      </p>
     </div>
   );
 }
+
+// The other branch used to read "No actions yet — Run analysis to generate
+// optimization recommendations for this account." That instruction could
+// never be satisfied: optimization_loop is a hardcoded null in seed assembly
+// and nothing writes it, so the user was being sent to run analysis, told
+// again to run analysis, indefinitely. StageNotRunState reads the stage's
+// own loop_status note instead, which is real, account-specific and names
+// the actual blocker.
 
 // ─── Main export ──────────────────────────────────────────────────────
 
@@ -399,11 +392,17 @@ export function ActionQueueView() {
       <div className="px-6 py-6 space-y-5 max-w-[860px] w-full mx-auto">
 
         {/* ── Descriptive line ────────────────────────────────────────── */}
-        <p className="text-title text-muted-foreground/75 max-w-[520px] leading-relaxed">
-          {allCards.length > 0
-            ? `${allCards.length} recommendation${allCards.length !== 1 ? "s" : ""} from the optimization loop, sorted by impact. Add items to your Task Tray to implement later.`
-            : "Optimization loop recommendations appear here after analysis runs."}
-        </p>
+        {/* The empty half of this line said recommendations "appear here
+            after analysis runs" — the same false promise as the empty
+            state, in a second place. When there is nothing, the state below
+            carries the real reason; the whole element is dropped rather
+            than left as an empty <p> holding a line of vertical space. */}
+        {allCards.length > 0 && (
+          <p className="text-title text-muted-foreground/75 max-w-[520px] leading-relaxed">
+            {allCards.length} recommendation{allCards.length !== 1 ? "s" : ""} from the
+            optimization loop, sorted by impact. Add items to your Task Tray to implement later.
+          </p>
+        )}
 
         {/* ── Tabs ────────────────────────────────────────────────────── */}
         {allCards.length > 0 && (
@@ -412,9 +411,21 @@ export function ActionQueueView() {
 
         {/* ── Card list ───────────────────────────────────────────────── */}
         {allCards.length === 0 ? (
-          <EmptyQueue reason="no-loop" />
+          <StageNotRunState
+            title="No actions yet"
+            stageLabel="Optimization Loop"
+            stage="optimization_loop"
+            account={account}
+            icon={Zap}
+            action={
+              <div className="flex items-center gap-4 flex-wrap justify-center">
+                <CrossLink to="/app/strategy/hypotheses" label="Queue a test" />
+                <CrossLink to="/app/creative" label="Draft a brief" />
+              </div>
+            }
+          />
         ) : visibleCards.length === 0 ? (
-          <EmptyQueue reason="all-done" />
+          <AllCaughtUp />
         ) : (
           <div className="space-y-3">
             {/* Staggered arrival on tab entry (cards are disjoint across

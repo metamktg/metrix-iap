@@ -954,3 +954,68 @@ describe("derived axes are not shadowable by payload keys", () => {
     expect(dq["note"]).toBe("x");             // the rest of the payload survives
   });
 });
+
+// ─── optimization_loop: a read, not a literal ─────────────────────────
+//
+// This was `optimization_loop: null` hardcoded, so the Action Queue, the
+// Recommendations deck and the Next Best Action card could not be filled by
+// any means — there was no pipe, only a literal. The schema for the cards
+// already existed: `signal_cards` carries the full card shape and already
+// feeds the `listen` and `manager_overview` surfaces. These pin that the
+// third surface is now wired, WITHOUT anything being fabricated when the
+// stage has produced nothing.
+
+describe("optimization_loop surface", () => {
+  const acct = "opt_acct";
+  const card = (over: Row = {}): Row => ({
+    card_id: "O1", account_id: acct, surface: "optimization_loop", scope: "ad_set",
+    title: "Shift budget to C3", rationale: "C3 returns 9pts above its spend share",
+    impact: "high", confidence: "high", recommended_action: "Move 20% of C1 budget to C3",
+    ...over,
+  });
+  const build = (cards: Row[]): Row => {
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(acct)]);
+    t.signalCards = cards;
+    return buildAccountObject({ id: acct, name: "Opt", status: "configured" }, t);
+  };
+
+  it("stays null when the stage has produced nothing — no empty shell", () => {
+    expect(build([])["iap"]["optimization_loop"]).toBeNull();
+  });
+
+  it("is still null when other surfaces have cards but this one does not", () => {
+    expect(build([card({ surface: "listen" })])["iap"]["optimization_loop"]).toBeNull();
+  });
+
+  it("carries the cards through once rows exist", () => {
+    const loop = build([card()])["iap"]["optimization_loop"] as Row;
+    expect(loop).not.toBeNull();
+    const cards = loop["recommendation_cards"] as Row[];
+    expect(cards).toHaveLength(1);
+    expect(cards[0]!["id"]).toBe("O1");
+    expect(cards[0]!["title"]).toBe("Shift budget to C3");
+    expect(cards[0]!["recommended_action"]).toBe("Move 20% of C1 budget to C3");
+  });
+
+  it("normalizes status on these cards the same way as every other surface", () => {
+    const loop = build([card()])["iap"]["optimization_loop"] as Row;
+    const c = (loop["recommendation_cards"] as Row[])[0]!;
+    expect(c["priority"]).toBeDefined();
+    expect(c["confidence_level"]).toBe("high");
+  });
+
+  it("does not leak another account's cards", () => {
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(acct)]);
+    t.signalCards = [card({ account_id: "someone_else" })];
+    expect(buildAccountObject({ id: acct, name: "Opt", status: "configured" }, t)["iap"]["optimization_loop"]).toBeNull();
+  });
+
+  it("omits policy prose rather than inventing it when no document module exists", () => {
+    const loop = build([card()])["iap"]["optimization_loop"] as Row;
+    expect(loop["action_policy"]).toBe("");
+    expect(loop["dismiss_policy"]).toBe("");
+    expect(loop["source_policy"]).toBeUndefined();
+  });
+});

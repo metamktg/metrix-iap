@@ -25,6 +25,22 @@ export const MANUAL_ONLY_CHECK_SCRIPTS: Record<string, string> = {
     "SUPABASE_DB_PASSWORD already lives. It exits 2 (not 0) when no credential " +
     "resolves, precisely so an unattended runner cannot mistake 'nothing was " +
     "checked' for 'the views are fine'.",
+  "check:chart-geometry":
+    "measures every recharts mark against its own SVG surface in a REAL " +
+    "browser, so it needs a RUNNING dev server (PORT=5178 in " +
+    "artifacts/metrix-iap) — same constraint as check:accessible-names and " +
+    "check:seed-fixture-drift. It cannot be a static or jsdom check: jsdom " +
+    "has no layout engine, so every getBoundingClientRect is 0x0 and no CSS " +
+    "variable resolves, which is precisely how a clipped chart shipped past a " +
+    "green suite. SharePieChart had innerRadius={60} outerRadius={90} — " +
+    "absolute PIXELS, demanding a 180x180 box regardless of the box given. On " +
+    "Analysis Overview that box is 170x105 and ALL THREE sectors were drawn " +
+    "outside it, one starting 38px above the top edge. It was caught by a " +
+    "person looking at the screen, because nothing else could catch it. " +
+    "Tolerance is 2px, since a stroke is centred on its path and a 2px line " +
+    "at the edge legitimately spills 1px. Exits 2 (not 0) when the dev server " +
+    "is unreachable, so 'nothing was checked' can never read as 'the charts " +
+    "are fine'.",
   "check:accessible-names":
     "renders the six spine views in a real browser and resolves every visible " +
     "interactive control through the accessibility tree, so it needs a RUNNING " +

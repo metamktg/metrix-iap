@@ -110,11 +110,27 @@ export const ZONE_LABEL: Record<FunnelStage["zone"], string> = {
   conversion: "Conversion",
 };
 
+// A ZONE IS A POSITION IN A SEQUENCE, NOT A VERDICT.
+//
+// Two of these four used to wear reserved status colours: `intent` was
+// status-warning throughout, and `conversion` mixed a chart slot for its
+// bar with status-success for its text, tint and border. So a reader
+// scanning the buyer-intent funnel saw amber at Intent and green at
+// Conversion and took the obvious meaning — intent is a problem, conversion
+// is healthy — when those are just the names of two stages. Every account
+// got the same "warning", forever, regardless of its numbers.
+//
+// It also made `conversion` disagree with itself: a chart-3 bar under
+// status-success text, two palettes on one stage.
+//
+// Four zones, four categorical slots, assigned in funnel order. Status
+// colours stay reserved for actual verdicts — which this view still uses,
+// correctly, on the ratio warnings further down.
 export const ZONE_COLOR: Record<FunnelStage["zone"], { bar: string; text: string; bg: string; border: string }> = {
-  awareness:  { bar: "bg-chart-1/70",   text: "text-interactive",   bg: "bg-chart-1/[0.06]",   border: "border-primary/25" },
-  engagement: { bar: "bg-primary/70", text: "text-interactive", bg: "bg-primary/[0.06]", border: "border-primary/25" },
-  intent:     { bar: "bg-status-warning/70",  text: "text-status-warning",  bg: "bg-status-warning/[0.06]",  border: "border-status-warning/25" },
-  conversion: { bar: "bg-chart-3/70",text: "text-status-success",bg: "bg-status-success/[0.06]",border: "border-status-success/25" },
+  awareness:  { bar: "bg-chart-1/70", text: "text-chart-1", bg: "bg-chart-1/[0.06]", border: "border-chart-1/25" },
+  engagement: { bar: "bg-chart-2/70", text: "text-chart-2", bg: "bg-chart-2/[0.06]", border: "border-chart-2/25" },
+  intent:     { bar: "bg-chart-3/70", text: "text-chart-3", bg: "bg-chart-3/[0.06]", border: "border-chart-3/25" },
+  conversion: { bar: "bg-chart-4/70", text: "text-chart-4", bg: "bg-chart-4/[0.06]", border: "border-chart-4/25" },
 };
 
 /** Exported so callers outside this view (e.g. AdPerformanceView's compact
