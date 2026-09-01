@@ -6,14 +6,27 @@
 // silent fallbacks and no direct seed JSON imports on the client.
 // ═══════════════════════════════════════════════════════════════════════
 
-import React, { createContext, useContext } from "react";
-import { useGetMetrixSeed } from "@workspace/api-client-react";
+import React, { createContext, useContext, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { ApiError, getAuthMeQueryKey, useGetMetrixSeed } from "@workspace/api-client-react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { MetrixBootLoader } from "@/components/brand/MetrixBootLoader";
 import type { MetrixSeed } from "@/lib/data/seedTypes";
 
 const MetrixDataContext = createContext<MetrixSeed | null>(null);
-const MetrixLoadingContext = createContext<{ isRefetching: boolean }>({ isRefetching: false });
+interface MetrixFreshness {
+  /** A refresh is in flight. */
+  isRefetching: boolean;
+  /** The last refresh failed, so what is on screen is the previous bundle. */
+  refreshFailed: boolean;
+  retry: () => void;
+}
+
+const MetrixLoadingContext = createContext<MetrixFreshness>({
+  isRefetching: false,
+  refreshFailed: false,
+  retry: () => {},
+});
 
 function FullScreen({ children }: { children: React.ReactNode }) {
   return (
@@ -24,13 +37,43 @@ function FullScreen({ children }: { children: React.ReactNode }) {
 }
 
 export function MetrixDataProvider({ children }: { children: React.ReactNode }) {
-  const { data, isLoading, isError, refetch, isRefetching } = useGetMetrixSeed();
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, error, refetch, isRefetching } = useGetMetrixSeed();
+
+  // A 401 here is not a data problem, it is a gone session — and 401 is the
+  // seed route's ONLY documented auth failure. It happens without a reload:
+  // changing a password revokes every other session, so a second tab's next
+  // seed refresh comes back 401 while the page still looks signed in. Neither
+  // of this provider's two states is right for that (an error screen blaming
+  // the API server, or a staleness strip the user can retry forever), so nudge
+  // the auth query instead: it re-asks who the user is, gets null, and AuthGate
+  // renders the login page — the one screen that can actually resolve it.
+  const sessionExpired = error instanceof ApiError && error.status === 401;
+  useEffect(() => {
+    if (!sessionExpired) return;
+    void queryClient.invalidateQueries({ queryKey: getAuthMeQueryKey() });
+  }, [sessionExpired, queryClient]);
+
+  const freshness = useMemo<MetrixFreshness>(
+    () => ({ isRefetching, refreshFailed: isError, retry: () => void refetch() }),
+    [isRefetching, isError, refetch],
+  );
 
   if (isLoading) {
     return <MetrixBootLoader />;
   }
 
-  if (isError || !data) {
+  // Only take over the screen when there is no bundle to render at all.
+  //
+  // This used to be `isError || !data`, which also fired when a REFRESH failed
+  // — and React Query keeps the last successful bundle in that case (proved in
+  // MetrixDataContext.test.tsx). Every one of the mutation handlers invalidates
+  // this query, so one blip while a creative upload or an analysis run settled
+  // replaced a fully loaded dashboard with a full-screen error and threw away
+  // scroll position, open drawers, and in-progress form state for data the app
+  // still had. A stale bundle is worth more than a blank screen — provided the
+  // staleness is said out loud, which SeedRefreshFailedBanner does.
+  if (!data) {
     return (
       <FullScreen>
         <AlertTriangle className="w-6 h-6 text-status-warning/80 mx-auto" />
@@ -52,7 +95,7 @@ export function MetrixDataProvider({ children }: { children: React.ReactNode }) 
 
   const seed = data as unknown as MetrixSeed;
   return (
-    <MetrixLoadingContext.Provider value={{ isRefetching }}>
+    <MetrixLoadingContext.Provider value={freshness}>
       <MetrixDataContext.Provider value={seed}>{children}</MetrixDataContext.Provider>
     </MetrixLoadingContext.Provider>
   );
@@ -67,4 +110,12 @@ export function useMetrixSeed(): MetrixSeed {
 /** Returns true while the seed is being re-fetched in the background. */
 export function useMetrixIsRefetching(): boolean {
   return useContext(MetrixLoadingContext).isRefetching;
+}
+
+/**
+ * Whether the bundle on screen is the last-good one because a refresh failed,
+ * plus the retry that would replace it.
+ */
+export function useMetrixFreshness(): MetrixFreshness {
+  return useContext(MetrixLoadingContext);
 }

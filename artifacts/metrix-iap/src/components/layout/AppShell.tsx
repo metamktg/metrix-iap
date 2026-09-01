@@ -5,6 +5,7 @@ import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { TaskTray } from "./TaskTray";
 import { GlobalRunningBanner } from "./GlobalRunningBanner";
+import { SeedRefreshFailedBanner } from "./SeedRefreshFailedBanner";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
 import { DeepDivePanel } from "@/components/deepdive/DeepDivePanel";
 import { useIsCompactShell } from "@/lib/useMediaQuery";
@@ -124,6 +125,7 @@ export function AppShell({ children }: AppShellProps) {
             <Topbar />
           </div>
         </div>
+        <SeedRefreshFailedBanner />
         <GlobalRunningBanner />
 
         <main className="flex-1 overflow-hidden flex">

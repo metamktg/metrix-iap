@@ -18,6 +18,8 @@ vi.mock("@/contexts/MetrixDataContext", async () => {
   return {
     useMetrixSeed: () => seed,
     useMetrixIsRefetching: () => false,
+    // AppShell mounts SeedRefreshFailedBanner, which reads this.
+    useMetrixFreshness: () => ({ isRefetching: false, refreshFailed: false, retry: () => {} }),
     MetrixDataProvider: ({ children }: { children: React.ReactNode }) =>
       children,
   };
