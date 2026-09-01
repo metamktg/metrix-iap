@@ -299,6 +299,90 @@ describe("buildReportModel — fixture seed structural checks", () => {
   });
 });
 
+describe("chart blocks rank the entity they claim to rank", () => {
+  // The fixture is what exposed this: bookster's performance_by_cell carries
+  // one row per (cell, result type) — C2B, C2E, C2F and C4E each appear three
+  // times — and v3_placement_signal carries "Feed" once per platform. Charting
+  // rows directly gave the same cell several bars, each holding a fraction of
+  // its spend, and React dropped children because the labels were the keys.
+
+  function chartsIn(sectionTitle: string) {
+    const model = buildReportModel(fixtureSeed, "bookster", { sectionCount: 9 })!;
+    const section = model.sections.find((s) => s.title === sectionTitle)!;
+    expect(section, `fixture no longer produces a "${sectionTitle}" section`).toBeTruthy();
+    return section.blocks.filter((b) => b.kind === "chart") as Extract<
+      (typeof section.blocks)[number],
+      { kind: "chart" }
+    >[];
+  }
+
+  it("the fixture still carries the duplicate rows this guards against", () => {
+    // Without this the tests below would pass on data that cannot reproduce
+    // the defect, and would keep passing after a refresh that removed it.
+    const account = fixtureSeed.ad_accounts.find((a) => a.id === "bookster")!;
+    const cells = account.iap!.analysis!.performance_by_cell;
+    const ids = cells.map((r) => r.cell_id);
+    expect(new Set(ids).size, "fixture no longer has repeated cell_ids").toBeLessThan(ids.length);
+    const placements = account.iap!.analysis!.v3_placement_signal.map((r) => r.Placement);
+    expect(new Set(placements).size, "fixture no longer has repeated placements").toBeLessThan(
+      placements.length,
+    );
+  });
+
+  it("gives each creative cell exactly one bar", () => {
+    const chart = chartsIn("Creative Cell Performance").find((c) =>
+      c.title.includes("Top creative cells"),
+    )!;
+    expect(chart, "the cell spend chart is gone").toBeTruthy();
+    const labels = chart.data.map((d) => d.label);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it("a cell's bar is the sum of every result type it was measured against", () => {
+    const account = fixtureSeed.ad_accounts.find((a) => a.id === "bookster")!;
+    const expected = account
+      .iap!.analysis!.performance_by_cell.filter((r) => r.cell_id === "C2B")
+      .reduce((sum, r) => sum + r["Amount spent (USD)"], 0);
+    const chart = chartsIn("Creative Cell Performance").find((c) =>
+      c.title.includes("Top creative cells"),
+    )!;
+    const bar = chart.data.find((d) => d.label === "C2B")!;
+    expect(bar, "C2B dropped out of the top cells").toBeTruthy();
+    expect(bar.value).toBeCloseTo(expected, 6);
+  });
+
+  it("says the cell figures are a multi-event sum rather than letting them read as exact", () => {
+    const chart = chartsIn("Creative Cell Performance").find((c) =>
+      c.title.includes("Top creative cells"),
+    )!;
+    expect(chart.caption ?? "").toMatch(/result types/i);
+    expect(chart.caption ?? "").toMatch(/upper bound/i);
+  });
+
+  it("gives each placement one bar, summed across platforms", () => {
+    const account = fixtureSeed.ad_accounts.find((a) => a.id === "bookster")!;
+    const expected = account
+      .iap!.analysis!.v3_placement_signal.filter((r) => r.Placement === "Feed")
+      .reduce((sum, r) => sum + r["Amount spent (USD)"], 0);
+    const chart = chartsIn("Placement Signals").find((c) => c.title.includes("Spend by placement"))!;
+    expect(chart, "the placement spend chart is gone").toBeTruthy();
+    const labels = chart.data.map((d) => d.label);
+    expect(new Set(labels).size).toBe(labels.length);
+    const feed = chart.data.find((d) => d.label === "Feed")!;
+    expect(feed, "Feed dropped out of the top placements").toBeTruthy();
+    expect(feed.value).toBeCloseTo(expected, 6);
+    expect(chart.caption ?? "").toMatch(/platforms/i);
+  });
+
+  it("carries the caveat into the rendered HTML, not just the model", () => {
+    // The caveat matters most in the artifact a client receives.
+    const model = buildReportModel(fixtureSeed, "bookster", { sectionCount: 9 })!;
+    const html = renderReportHtml(model);
+    expect(html).toContain("chart-caveat");
+    expect(html).toMatch(/upper bound/i);
+  });
+});
+
 describe("serializeReportModel / parseReportModel", () => {
   it("round-trips a built model exactly, reviving generatedAt as a Date", () => {
     const model = buildReportModel(makeSeed(), "bookster", "internal", {

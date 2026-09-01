@@ -48,6 +48,13 @@ interface ChartBlock {
   /** Value formatting for axis/labels. */
   unit: "usd" | "num" | "pct";
   data: { label: string; value: number }[];
+  /**
+   * Says what had to be summed to produce the bars, when rows were merged.
+   * A chart that silently combines rows is the dishonest kind of blending
+   * this codebase avoids everywhere else, so the merge is stated wherever
+   * the chart is rendered — preview, HTML, and PDF alike.
+   */
+  caption?: string;
 }
 export type ReportBlock = TextBlock | StatsBlock | TableBlock | ChartBlock;
 
@@ -242,14 +249,30 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
 
   if (t.includes("cell performance") || t.includes("creative cell")) {
     if (!analysis?.performance_by_cell?.length) return [];
-    const topSpend = [...analysis.performance_by_cell]
-      .sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"])
-      .slice(0, 6)
-      .map((r) => ({ label: r.cell_id, value: r["Amount spent (USD)"] }))
-      .filter((d) => d.value > 0);
+    // One row per (cell, result type): the same cell is measured against every
+    // event it was attributed to, so it must be folded to one bar per cell.
+    const topSpend = sumByLabel(
+      analysis.performance_by_cell.map((r) => ({ label: r.cell_id, value: r["Amount spent (USD)"] })),
+    )
+      .filter((d) => d.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+    const resultTypes = new Set(analysis.performance_by_cell.map((r) => r["Result type"]));
     const blocks: ReportBlock[] = [];
     if (topSpend.length > 1) {
-      blocks.push({ kind: "chart", chartType: "bar", title: "Top creative cells by spend", unit: "usd", data: topSpend });
+      blocks.push({
+        kind: "chart",
+        chartType: "bar",
+        title: "Top creative cells by spend",
+        unit: "usd",
+        data: topSpend,
+        // Same caveat the account-level tiles carry: Meta's per-event
+        // attribution windows can overlap, so a multi-event sum is an
+        // upper bound rather than an exact figure.
+        ...(resultTypes.size > 1
+          ? { caption: `Spend summed across ${resultTypes.size} result types — attribution windows can overlap, so treat this as an upper bound` }
+          : {}),
+      });
     }
     blocks.push(cellRows(analysis.performance_by_cell));
     return blocks;
@@ -323,13 +346,28 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
     const placementSource = analysis?.v3_placement_signal?.length
       ? analysis.v3_placement_signal
       : analysis?.c4e_placement_signal ?? [];
-    const spendByPlacement = [...placementSource]
-      .sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"])
-      .slice(0, 6)
-      .map((r) => ({ label: r.Placement, value: r["Amount spent (USD)"] }))
-      .filter((d) => d.value > 0);
+    // One row per (platform, placement) — "Feed" exists on both Facebook and
+    // Instagram — so a placement ranking folds the platforms together. Unlike
+    // the per-event case this sum is exact: platforms are disjoint delivery.
+    const placementSpend = sumByLabel(
+      placementSource.map((r) => ({ label: r.Placement, value: r["Amount spent (USD)"] })),
+    );
+    const spendByPlacement = placementSpend
+      .filter((d) => d.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+    const platforms = new Set(placementSource.map((r) => r.Platform));
     if (spendByPlacement.length > 1) {
-      blocks.push({ kind: "chart", chartType: "bar", title: "Spend by placement", unit: "usd", data: spendByPlacement });
+      blocks.push({
+        kind: "chart",
+        chartType: "bar",
+        title: "Spend by placement",
+        unit: "usd",
+        data: spendByPlacement,
+        ...(platforms.size > 1 && placementSpend.length < placementSource.length
+          ? { caption: `Summed across ${platforms.size} platforms` }
+          : {}),
+      });
     }
     if (analysis?.v3_placement_signal?.length) blocks.push(placementRows(analysis.v3_placement_signal, "V3 placement signal"));
     if (analysis?.c4e_placement_signal?.length) blocks.push(placementRows(analysis.c4e_placement_signal, "C4E placement signal"));
@@ -568,6 +606,28 @@ function windowMetaText(model: ReportModel): string {
     : ` · Window ${model.windowLabel}`;
 }
 
+/**
+ * Sum values that share a label, preserving first-seen order.
+ *
+ * A source table with one row per (entity, something-else) — per result type
+ * for creative cells, per platform for placements — produced one BAR PER ROW,
+ * so "Top creative cells by spend" showed C2B three times, each carrying a
+ * third of its spend, and two of six slots went to the same cell. React also
+ * dropped children, because the duplicated labels were the keys.
+ *
+ * Neither source is run-keyed, so this folds result types and platforms and
+ * never runs: schema.sql adds manual_analysis_run_id to concept_performance
+ * and variable_performance only, while library_cell_performance stays
+ * unique(account_id, cell_id, result_type) and placement_signal stays
+ * unique(account_id, signal_scope, row_index). See lib/run-supersede.ts for
+ * the tables where an unscoped sum WOULD double-count.
+ */
+function sumByLabel(rows: { label: string; value: number }[]): { label: string; value: number }[] {
+  const totals = new Map<string, number>();
+  for (const row of rows) totals.set(row.label, (totals.get(row.label) ?? 0) + (row.value ?? 0));
+  return [...totals].map(([label, value]) => ({ label, value }));
+}
+
 // ─── HTML rendering ───────────────────────────────────────────────────
 
 function esc(s: string): string {
@@ -593,8 +653,12 @@ function renderChartHtml(block: ChartBlock, accent: string): string {
       <text x="${labelW + w + 6}" y="${y + rowH / 2 + 4}" class="c-value">${esc(fmtChartValue(d.value, block.unit))}</text>`;
     })
     .join("");
+  const caveat = block.caption
+    ? `<p class="chart-caveat">${esc(block.caption)}</p>`
+    : "";
   return `<figure class="chart">
     <figcaption>${esc(block.title)}</figcaption>
+    ${caveat}
     <svg viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="${esc(block.title)}" preserveAspectRatio="xMinYMin meet" style="max-width:${width}px">
       <style>
         .c-label { font-family: Arial, Helvetica, sans-serif; font-size: 11px; fill: #374151; }
@@ -673,6 +737,7 @@ export function renderReportHtml(model: ReportModel): string {
   .footer { border-top: 1px solid #e5e7eb; margin-top: 36px; padding-top: 14px; font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #9ca3af; }
   figure.chart { margin: 0 0 16px; padding: 0; }
   figure.chart figcaption { font-family: Arial, Helvetica, sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; margin-bottom: 6px; }
+  figure.chart .chart-caveat { font-family: Arial, Helvetica, sans-serif; font-size: 9.5px; color: #6b7280; margin: -2px 0 6px; }
 </style>
 </head>
 <body>
@@ -786,6 +851,15 @@ async function downloadPdf(model: ReportModel, filename: string): Promise<void> 
         doc.setTextColor(107, 114, 128);
         doc.text(block.title.toUpperCase(), margin, y);
         y += 12;
+        if (block.caption) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7);
+          doc.setTextColor(107, 114, 128);
+          const caveatLines = doc.splitTextToSize(block.caption, maxWidth);
+          ensureRoom(caveatLines.length * 9 + 4);
+          doc.text(caveatLines, margin, y);
+          y += caveatLines.length * 9 + 4;
+        }
         for (const d of block.data) {
           const w = Math.max(1.5, (d.value / max) * barMaxW);
           doc.setFont("helvetica", "normal");

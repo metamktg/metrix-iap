@@ -98,6 +98,9 @@ function PreviewBlock({ block }: { block: ReportBlock }) {
   return (
     <div className="mb-2.5">
       <p className={cn(TYPE.label, "text-muted-foreground/75 mb-1.5")}>{block.title}</p>
+      {block.caption && (
+        <p className={cn(TYPE.microLabel, "text-muted-foreground/60 mb-1.5")}>{block.caption}</p>
+      )}
       <div className="flex flex-col gap-1.5">
         {block.data.map((d) => (
           <div key={d.label} className="grid grid-cols-[minmax(100px,150px)_1fr_minmax(64px,90px)] items-center gap-2.5">
