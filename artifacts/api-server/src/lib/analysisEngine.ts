@@ -41,6 +41,8 @@ import { computeObjectiveCoverage, OBJECTIVE_GROUP_FOR_KEY } from "./objectiveCo
 import { convertXlsxToCsvText, looksLikeXlsxContent, readXlsxHeaderCells } from "./xlsxToCsv";
 import { extensionOf } from "./creativeAssetType";
 import { syncStickyCreativeAssetMappings } from "./creativeAssetMappingService";
+import { fetchByteaCell } from "./supabaseBinary";
+import { autoMapUnmappedCreatives } from "./creativeAutoMap";
 
 
 export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
@@ -674,21 +676,31 @@ function decodeStagedContentBuffer(hexOrRaw: string): Buffer {
 }
 
 /**
- * Loads a staged manual_imports row's raw bytes. Small files store their
- * content inline in manual_imports.content; large files (chunked upload —
- * see the /manual-imports/uploads routes) store NULL content and their
- * bytes as ordered rows in manual_import_chunks, fetched here one chunk at
- * a time so no single PostgREST response ever has to carry the whole file.
+ * Loads a staged manual_imports row's raw bytes, one file per call.
+ *
+ * Small files store their content inline in manual_imports.content; large
+ * files (chunked upload — see the /manual-imports/uploads routes) store NULL
+ * content and their bytes as ordered rows in manual_import_chunks. Either way
+ * the bytes travel as PostgREST binary output (supabaseBinary.ts) — never as
+ * a hex string inside a JSON document, which is what took the database down
+ * on the first fresh-account run (see that module's header).
+ *
+ * `imp.content` handling:
+ *   • a string — legacy inline hex already in hand; decoded, no request;
+ *   • null — the caller knows the row is chunked (the upload-complete route);
+ *   • undefined — not selected; resolved here from the row's own metadata.
+ * Callers should stop selecting `content` at all and pass `{ id }`.
  */
 export async function loadImportContentBuffer(imp: {
   id?: unknown;
   content?: unknown;
+  size_bytes?: unknown;
 }): Promise<Buffer> {
-  if (imp.content !== null && imp.content !== undefined) {
-    return decodeStagedContentBuffer(String(imp.content));
+  if (typeof imp.content === "string") {
+    return decodeStagedContentBuffer(imp.content);
   }
   const importId = String(imp.id ?? "");
-  if (!importId) throw new Error("Import row has neither inline content nor an id to load chunks by.");
+  if (!importId) throw new Error("Import row has neither inline content nor an id to load bytes by.");
   const supabase = getSupabase();
   const { data: index, error: idxErr } = await supabase
     .from("manual_import_chunks")
@@ -697,21 +709,41 @@ export async function loadImportContentBuffer(imp: {
     .order("chunk_index", { ascending: true });
   if (idxErr) throw new Error(idxErr.message);
   const indices = (index ?? []).map((r) => Number(r["chunk_index"]));
+
   if (indices.length === 0) {
-    throw new Error(`Import ${importId} has no inline content and no stored chunks.`);
+    if (imp.content === null) {
+      throw new Error(`Import ${importId} has no inline content and no stored chunks.`);
+    }
+    // Inline row. Read its size first so a short or empty binary response is
+    // caught as the error it is, instead of parsing an empty file.
+    const expected =
+      typeof imp.size_bytes === "number"
+        ? imp.size_bytes
+        : await (async () => {
+            const meta = await supabase.from("manual_imports").select("size_bytes").eq("id", importId).limit(1);
+            if (meta.error) throw new Error(meta.error.message);
+            if (!meta.data || meta.data.length === 0) throw new Error(`Import ${importId} does not exist.`);
+            const n = meta.data[0]?.["size_bytes"];
+            return typeof n === "number" ? n : null;
+          })();
+    const bytes = await fetchByteaCell("manual_imports", "content", { id: `eq.${importId}` });
+    if (bytes === null) throw new Error(`Import ${importId} does not exist.`);
+    if (expected !== null && bytes.length !== expected) {
+      throw new Error(
+        `Import ${importId} read ${bytes.length} bytes but the row records ${expected} — refusing to parse a partial file.`,
+      );
+    }
+    return bytes;
   }
+
   const parts: Buffer[] = [];
   for (const i of indices) {
-    const { data: rows, error } = await supabase
-      .from("manual_import_chunks")
-      .select("content")
-      .eq("import_id", importId)
-      .eq("chunk_index", i)
-      .limit(1);
-    if (error) throw new Error(error.message);
-    const content = rows?.[0]?.["content"];
-    if (content === null || content === undefined) throw new Error(`Import ${importId} chunk ${i} is empty.`);
-    parts.push(decodeStagedContentBuffer(String(content)));
+    const chunk = await fetchByteaCell("manual_import_chunks", "content", {
+      import_id: `eq.${importId}`,
+      chunk_index: `eq.${i}`,
+    });
+    if (chunk === null || chunk.length === 0) throw new Error(`Import ${importId} chunk ${i} is empty.`);
+    parts.push(chunk);
   }
   return Buffer.concat(parts);
 }
@@ -1454,6 +1486,15 @@ export async function syncAllCreativeLinksForAccount(
   accountId: string,
 ): Promise<CreativeLinkageSummary> {
   const supabase = getSupabase();
+  // Files uploaded before this run had no registry to match against; now
+  // there is one. Mapping is the server's job (creativeAutoMap.ts), not
+  // the upload dialog's — non-fatal, a file with no credible match simply
+  // stays unmapped and visible.
+  try {
+    await autoMapUnmappedCreatives(accountId);
+  } catch (err) {
+    logger.warn({ accountId, err }, "syncAllCreativeLinksForAccount: auto-map step failed; continuing with existing mappings");
+  }
   const { data: creativeImports, error } = await supabase
     .from("manual_imports")
     .select("id, filename, ad_names")
@@ -1581,9 +1622,12 @@ export async function startManualAnalysis(
   // their rows together, double-counting spend/impressions/results for any
   // date that appears in more than one file (virtually certain for "all" and
   // for any overlapping weekly/monthly re-export).
+  // Metadata only. The bytes of each file are read one at a time, on
+  // demand, through loadImportContentBuffer — selecting `content` for every
+  // staged file in one query is what wedged the database on 2026-09-02.
   const { data: imports, error: importsErr } = await supabase
     .from("manual_imports")
-    .select("id, filename, content, kind")
+    .select("id, filename, kind, size_bytes")
     .eq("account_id", accountId)
     .eq("status", "staged")
     .in("kind", ["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv", "performance_conversion_device_csv"]);

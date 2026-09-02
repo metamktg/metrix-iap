@@ -24,7 +24,8 @@ import {
   BASE_METRICS,
   DERIVED_OR_IRRELEVANT_METRICS,
   OPTIONAL_METRICS,
-  CORE_BASE_METRICS,
+  coreBaseMetricsFor,
+  expectedBaseMetricsFor,
   DELIVERY_PRIMITIVES,
   BLOCKING_DELIVERY_PRIMITIVES,
   CREATIVE_METADATA_COLUMNS,
@@ -411,6 +412,12 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   // never expected: absence is not recorded, warned about, or inferred against.
   // (Warning-noise policy + fold state are declared above the breakdown
   // cascade — both cascades share them.)
+  // Which base metrics this CLASS is expected to carry. Every base metric is
+  // still accepted when present; only the expected ones are reported when
+  // absent (see expectedBaseMetricsFor — the Ad Summary ledger is not
+  // judged by the pivots' engagement/video columns).
+  const expectedBaseMetrics = expectedBaseMetricsFor(csvClass);
+  const coreBaseMetrics = coreBaseMetricsFor(csvClass);
   const acceptedBaseColumns: readonly string[] = [...BASE_METRICS, ...DERIVED_OR_IRRELEVANT_METRICS];
   for (const col of acceptedBaseColumns) {
     if (col === "Amount spent ({ACCOUNT_CURRENCY})") {
@@ -464,9 +471,10 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
         tier: matchTier(match),
         isRequired: false,
       });
-    } else if (BASE_METRICS.includes(col)) {
+    } else if (expectedBaseMetrics.includes(col)) {
       // Only genuinely-expected base metrics count as missing; derived or
-      // irrelevant columns (cost-per-X ratios, rankings) are simply skipped.
+      // irrelevant columns (cost-per-X ratios, rankings), and base metrics
+      // this class has no use for, are simply skipped.
       missingBaseMetrics.push(col);
     }
   }
@@ -639,14 +647,14 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   }
 
   // Final missing columns (base metrics still unresolvable)
-  const stillMissingBaseMetrics = stillMissingAfterInference.filter((c) => BASE_METRICS.includes(c));
+  const stillMissingBaseMetrics = stillMissingAfterInference.filter((c) => expectedBaseMetrics.includes(c));
   for (const col of stillMissingBaseMetrics) {
     missingColumns.push(col);
   }
 
   if (missingBaseMetrics.length > 0) {
-    const coreImpact = stillMissingBaseMetrics.filter((c) => CORE_BASE_METRICS.has(c));
-    const minorImpact = stillMissingBaseMetrics.filter((c) => !CORE_BASE_METRICS.has(c));
+    const coreImpact = stillMissingBaseMetrics.filter((c) => coreBaseMetrics.has(c));
+    const minorImpact = stillMissingBaseMetrics.filter((c) => !coreBaseMetrics.has(c));
     if (coreImpact.length > 0) {
       warnings.push(
         `⚠ Reduced confidence: core metric columns are missing and will be null — ` +

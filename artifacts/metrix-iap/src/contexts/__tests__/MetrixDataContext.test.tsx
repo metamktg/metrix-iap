@@ -11,7 +11,7 @@
 
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider, QueryObserver } from "@tanstack/react-query";
 
 const seedState = {
@@ -31,9 +31,9 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
   return { ...actual, useGetMetrixSeed: () => seedState };
 });
 
-import { ApiError, getAuthMeQueryKey } from "@workspace/api-client-react";
+import { ApiError, getAuthMeQueryKey, getGetMetrixSeedQueryKey } from "@workspace/api-client-react";
 
-import { MetrixDataProvider, useMetrixFreshness } from "../MetrixDataContext";
+import { MetrixDataProvider, useMetrixFreshness, SEED_SLOW_AFTER_MS } from "../MetrixDataContext";
 import { SeedRefreshFailedBanner } from "@/components/layout/SeedRefreshFailedBanner";
 
 const BUNDLE = { app_defaults: null, ad_accounts: [] };
@@ -199,5 +199,46 @@ describe("the premise the fix rests on", () => {
 
     expect(result.isError, "a failed refetch should surface as an error").toBe(true);
     expect(result.data, "…while still holding the last good bundle").toEqual(BUNDLE);
+  });
+});
+
+// ── A seed that never answers is said out loud ──────────────────────────────
+// The splash used to cycle its callouts forever while the seed hung — a wedged
+// database behind it (2026-09-02) was indistinguishable from a slow network.
+// Past SEED_SLOW_AFTER_MS it says how long it has waited and offers a retry
+// that cancels the hung request before asking again.
+
+describe("a first load that takes too long", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("stays a plain splash before the deadline and says so after it", () => {
+    seedState.isLoading = true;
+    renderProvider();
+    expect(screen.queryByTestId("boot-loader-slow")).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(SEED_SLOW_AFTER_MS + 1_500);
+    });
+    const notice = screen.getByTestId("boot-loader-slow");
+    expect(notice.textContent).toMatch(/Still waiting on the data service after \d+s/);
+  });
+
+  it("retries by cancelling the hung request first, then refetching", async () => {
+    seedState.isLoading = true;
+    const cancel = vi.spyOn(queryClient, "cancelQueries").mockResolvedValue(undefined);
+    renderProvider();
+    act(() => {
+      vi.advanceTimersByTime(SEED_SLOW_AFTER_MS + 1_500);
+    });
+    fireEvent.click(screen.getByRole("button", { name: /try again/i }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(cancel).toHaveBeenCalledWith({ queryKey: getGetMetrixSeedQueryKey() });
+    expect(seedState.refetch).toHaveBeenCalled();
   });
 });

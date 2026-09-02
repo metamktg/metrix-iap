@@ -16,6 +16,7 @@ import {
   MetricTile, fmtNum, OverviewHeaderControls, type ViewPreset,
 } from "../shared";
 import { AnalysisControls, type AnalysisDateRange } from "../ManualAnalysisControls";
+import { CreativeNextStepNudge } from "@/components/creative/CreativeNextStepNudge";
 import {
   useListAnalysisRuns, getListAnalysisRunsQueryKey,
   useListManualImports, getListManualImportsQueryKey,
@@ -54,7 +55,16 @@ export function AnalysisCommandCenter() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const status = useStageStatus(account?.id ?? null);
-  const { data: runsData } = useListAnalysisRuns(account?.id ?? "", { query: { enabled: !!account?.id, queryKey: getListAnalysisRunsQueryKey(account?.id ?? "") } });
+  // Polls while a run is in flight so the Run history card and the stage
+  // strip move with the run instead of waiting for it to settle — the
+  // global staleTime is Infinity, so without this they never re-read.
+  const { data: runsData } = useListAnalysisRuns(account?.id ?? "", {
+    query: {
+      enabled: !!account?.id,
+      queryKey: getListAnalysisRunsQueryKey(account?.id ?? ""),
+      refetchInterval: (q) => ((q.state.data?.runs ?? []).some((r) => r.status === "running") ? 3000 : false),
+    },
+  });
   const { data: importsData } = useListManualImports(account?.id ?? "", { query: { enabled: !!account?.id, queryKey: getListManualImportsQueryKey(account?.id ?? "") } });
   const runs = runsData?.runs ?? [];
   const runCount = runs.filter((r) => r.status === "success").length;
@@ -104,6 +114,7 @@ export function AnalysisCommandCenter() {
               }
             />
             <StageLoopHub stages={buildLoopStages(status)} current="analysis" />
+            <CreativeNextStepNudge accountId={acct.id} />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
               <SectionCard

@@ -2248,7 +2248,10 @@ export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; cur
         // future three-way split while deriving "done" from real status
         // instead of screen position.
         const done = !isCurrent && s.status === "success";
-        const flagged = !isCurrent && (s.status === "running" || s.status === "error");
+        // A run in flight is flagged on the stage you are standing on too:
+        // the Analysis node used to suppress its own pulse, so the one page
+        // a run is started from was the one page that never showed it.
+        const flagged = s.status === "running" || (!isCurrent && s.status === "error");
         return (
           <div key={s.id} className="flex items-center flex-1 min-w-[104px]">
             <button

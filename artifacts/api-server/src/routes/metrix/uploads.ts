@@ -44,15 +44,16 @@ async function fetchAndCacheCreativeFile(
     const supabase = getSupabase();
     const result = await supabase
       .from("manual_imports")
-      .select("id, content_type, content, filename")
+      .select("id, content_type, filename, size_bytes")
       .eq("id", importId)
       .eq("account_id", accountId)
       .limit(1);
     if (result.error) throw new Error(result.error.message);
     if (!result.data || result.data.length === 0) throw Object.assign(new Error("not_found"), { code: "not_found" });
     const row = result.data[0]!;
-    // Chunk-aware: large chunked imports store NULL inline content and their
-    // bytes in manual_import_chunks — loadImportContentBuffer handles both.
+    // Metadata here, bytes via loadImportContentBuffer: inline rows and
+    // chunked rows alike arrive as PostgREST binary output, never as hex
+    // inside JSON (see supabaseBinary.ts).
     const buf = await loadImportContentBuffer(row);
     const contentType = (row["content_type"] as string | null) ?? "application/octet-stream";
     return { buf, contentType, filename: (row["filename"] as string | null) ?? null };

@@ -45,7 +45,23 @@ function shuffle<T>(list: readonly T[]): T[] {
   return out;
 }
 
-export function MetrixBootLoader() {
+/**
+ * What the splash says when the seed has not answered for a long time.
+ *
+ * The boot loader used to have no notion of "too long": a seed request that
+ * hung — the 2026-09-02 fresh-account run wedged the database and every
+ * request behind it — left the callouts cycling forever, which a reader
+ * cannot tell apart from a slow network. Past `slowAfterMs` the loader says
+ * so and offers a retry that cancels the hung request and asks again.
+ */
+export interface BootLoaderSlowState {
+  /** Seconds the request has been outstanding — a measurement, shown as one. */
+  elapsedSeconds: number;
+  onRetry: () => void;
+  retrying?: boolean;
+}
+
+export function MetrixBootLoader({ slow }: { slow?: BootLoaderSlowState | null } = {}) {
   const reducedMotion = useReducedMotion();
   // Shuffled once per mount so lines play in a fresh random order each load,
   // with no repeats until the whole list has cycled.
@@ -110,6 +126,27 @@ export function MetrixBootLoader() {
         <div className="mx-boot-track" aria-hidden="true">
           <span className="mx-boot-fill" />
         </div>
+
+        {slow && (
+          <div
+            role="alert"
+            data-testid="boot-loader-slow"
+            className="w-full text-center space-y-2 pt-2"
+          >
+            <p className="text-caption text-foreground/85 leading-relaxed">
+              Still waiting on the data service after {slow.elapsedSeconds}s. It may be busy finishing an analysis run —
+              your data is safe.
+            </p>
+            <button
+              type="button"
+              onClick={slow.onRetry}
+              disabled={slow.retrying}
+              className="pressable inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-primary/40 bg-primary/10 text-interactive text-caption font-semibold hover:bg-primary/20 transition-colors disabled:opacity-50"
+            >
+              {slow.retrying ? "Retrying…" : "Try again"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

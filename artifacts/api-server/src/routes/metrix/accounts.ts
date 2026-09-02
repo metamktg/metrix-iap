@@ -21,6 +21,7 @@ import {
   validatePerformanceCsvUpload,
   findStagedByteDuplicate,
 } from "./shared";
+import { autoMapUnmappedCreatives } from "../../lib/creativeAutoMap";
 
 const router: IRouter = Router();
 
@@ -210,6 +211,21 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
     let linkResult: CreativeLinkResult | null = null;
     if (parsed.data.kind === "creative_asset" && (parsed.data.ad_names?.length ?? 0) > 0) {
       linkResult = await syncCreativeAssetLinks(accountId, importId, parsed.data.filename, [], parsed.data.ad_names!);
+    } else if (parsed.data.kind === "creative_asset") {
+      // No mapping supplied: match on the server against the ads this
+      // account already knows (creativeAutoMap.ts). Before the first
+      // analysis run there is nothing to match against, and that is fine —
+      // the run's link step revisits every unmapped file with the registry
+      // it just wrote. Never fatal to the upload itself.
+      try {
+        const auto = await autoMapUnmappedCreatives(accountId);
+        const stagedRow = await supabase.from("manual_imports").select("ad_names").eq("id", importId).limit(1);
+        const names = ((stagedRow.data?.[0]?.["ad_names"] as string[] | null) ?? []);
+        linkResult = names.length > 0 ? { matched: names, unmatched: [] } : { matched: [], unmatched: [] };
+        req.log.info({ accountId, importId, considered: auto.considered, mapped: auto.mapped }, "Creative staged; server auto-map ran");
+      } catch (err) {
+        req.log.warn({ err, accountId, importId }, "Creative staged; server auto-map failed (file stays unmapped)");
+      }
     }
 
     req.log.info(
