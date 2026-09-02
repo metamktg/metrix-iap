@@ -509,3 +509,12 @@ no login credential, so the owner presses Run analysis; then
 totals, residuals and coverage. Expected from the validated structures: the Ad Summary has no Ad ID
 column, so the control is name-keyed and only registry-unique names reconcile per ad; the twice-
 staged pivots exercise overlap superseding, not double counting.
+
+**Workspace preview crash after the ship (2026-09-02, ~15:00 ET).** The "Metrix IAP" workflow
+died loading `vite.config.ts` with `spawn …/@esbuild/linux-x64/bin/esbuild EAGAIN`: the container
+could not fork esbuild's helper at that moment. Not a code or dependency change (PR #181 touched no
+lockfile; `node_modules/.modules.yaml` predates the merge and needed no install) and not a sync
+problem (`git diff --stat origin/main HEAD` empty). A plain workflow restart brought Vite up
+(ready in 2.8 s, HTTP 200); no stale processes were found to kill. If it recurs, look at the
+process table before assuming the build broke — the published app was serving the new bundle
+throughout.
