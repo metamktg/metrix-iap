@@ -201,7 +201,7 @@ export function MstDirectionView() {
 
               <div className="flex items-center gap-4 flex-wrap">
                 <CrossLink to="/app/strategy/map" label="Full playbook in Strategy Map" />
-                <CrossLink to="/app/mst/matrix" label="See it applied on Sprints" />
+                <CrossLink to="/app/mst/sprints" label="See it applied on Sprints" />
                 <CrossLink to="/app/strategy/hypotheses" label="Open Hypothesis Queue" />
               </div>
             </div>

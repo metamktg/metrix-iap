@@ -21,6 +21,13 @@
 //     staged before a run can start — the two exports are required, not
 //     optional alternatives.
 
+import {
+  confidenceScore,
+  creativeInputFromMetadata,
+  evidenceGrade,
+  hasCopy,
+  volumeConfidence,
+} from "./creativeComponents";
 import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { selectAllRows } from "./paginatedSelect";
@@ -2180,19 +2187,29 @@ export async function startManualAnalysis(
         const m = adName.match(/BOOK\d+/i);
         return m ? m[0]!.toUpperCase() : null;
       };
-      const conceptMap = new Map<string, { book: string | null; concept: string; spend: number; results: number; linkClicks: number }>();
+      // spendWithCopy: the share of the concept's spend that ran on ads
+      // whose creative components (headline, primary text, description,
+      // CTA) the export carried. It feeds evidence_grade and
+      // confidence_score below — the "presence of granular breakdown data"
+      // the confidence adjustment reads. Copy known for 0% of spend is
+      // recorded as 0, never as a fabricated full coverage.
+      const conceptMap = new Map<string, { book: string | null; concept: string; spend: number; results: number; linkClicks: number; spendWithCopy: number }>();
       for (const row of adRows) {
         const concept = extractConcept(String(row.ad_name ?? ""));
         if (!concept) continue;
         const book = extractBook(String(row.ad_name ?? ""));
         const cKey = [book ?? "", concept].join("\u0001");
         if (!conceptMap.has(cKey)) {
-          conceptMap.set(cKey, { book, concept, spend: 0, results: 0, linkClicks: 0 });
+          conceptMap.set(cKey, { book, concept, spend: 0, results: 0, linkClicks: 0, spendWithCopy: 0 });
         }
         const c = conceptMap.get(cKey)!;
-        c.spend += Number(row.spend ?? 0);
+        const rowSpend = Number(row.spend ?? 0);
+        c.spend += rowSpend;
         c.results += Number(row.results ?? 0);
         c.linkClicks += Number(row.link_clicks ?? 0);
+        if (hasCopy(creativeInputFromMetadata(String(row.ad_name ?? ""), row.meta_ad_id ?? null, row.ad_creative_metadata))) {
+          c.spendWithCopy += rowSpend;
+        }
       }
       if (conceptMap.size > 0) {
         // ── Stage 2 Analysis Core: pre-compute intelligence fields ──────────
@@ -2275,11 +2292,13 @@ export async function startManualAnalysis(
           //   medium:               spend ≥ $100 AND results ≥ 5
           //   low:                  any spend with at least 1 result
           //   validation_required:  no results yet
-          let confidenceLevel: string;
-          if (c.spend >= 500 && c.results >= 30) confidenceLevel = "high";
-          else if (c.spend >= 100 && c.results >= 5) confidenceLevel = "medium";
-          else if (c.spend > 0 && c.results >= 1) confidenceLevel = "low";
-          else confidenceLevel = "validation_required";
+          // The tier lives in creativeComponents.volumeConfidence so the
+          // component weighting grades on the same thresholds.
+          const confidenceLevel = volumeConfidence(c.spend, c.results);
+          // Evidence: how much of this concept's spend the engine can explain
+          // at the copy level. The tier is not relabelled by it (sample size
+          // is sample size); the numeric score and the grade carry it.
+          const creativeCoverage = c.spend > 0 ? c.spendWithCopy / c.spend : 0;
 
           return {
             account_id: accountId,
@@ -2299,6 +2318,9 @@ export async function startManualAnalysis(
               liftVsBaseline !== null ? liftVsBaseline.toFixed(4) : null,
             performance_tier: performanceTier,
             confidence_level: confidenceLevel,
+            creative_coverage_pct: Math.round(creativeCoverage * 10000) / 100,
+            evidence_grade: evidenceGrade(creativeCoverage),
+            confidence_score: confidenceScore(confidenceLevel, creativeCoverage),
           };
         });
         await insertChunked("concept_performance", conceptRows);

@@ -144,9 +144,18 @@ export function cardFromLibraryCell(
       perf?.book2_concept_name ??
       opts.fallbackTitle ??
       cellId,
-    primaryText: lib?.primary_message ?? null,
-    secondaryText: lib?.secondary_message ?? null,
-    cta: lib?.cta ?? null,
+    // Copy: the scanned library's message when the creative was scanned,
+    // else the ad's own components as the export carried them (headline,
+    // primary text, CTA). copySource says which, so the dialog can name it.
+    primaryText: lib?.primary_message ?? ad?.creative?.primary_text ?? null,
+    secondaryText: lib?.secondary_message ?? ad?.creative?.headline ?? null,
+    cta: lib?.cta ?? ad?.creative?.cta_type ?? null,
+    copySource: lib?.primary_message || lib?.secondary_message || lib?.cta
+      ? "library"
+      : ad?.creative ? ad.creative.source : null,
+    description: ad?.creative?.description ?? null,
+    linkDestination: ad?.creative?.link_destination ?? null,
+    mediaName: ad?.creative?.image_name ?? ad?.creative?.video_name ?? null,
     // Null when the file is not servable, so the card shows its honest
     // "no asset" state instead of an <img> that will fail to load.
     assetUrl: ad && ad.asset_servable !== false ? (ad.creative_asset_url ?? null) : null,

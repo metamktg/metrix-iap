@@ -26,6 +26,7 @@ vi.mock("@/contexts/MetrixDataContext", async () => {
 });
 
 import { renderAt, seedAccountSession, NOT_FOUND_TEXT } from "./harness";
+import { LEGACY_REDIRECTS } from "../legacyRoutes";
 
 // ─── Source scanning ───────────────────────────────────────────────────
 
@@ -125,6 +126,20 @@ describe("every hardcoded in-page navigation target resolves", () => {
       const { container } = await renderAt(to);
       expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
       expect(container.textContent?.trim().length).toBeGreaterThan(0);
+    });
+  }
+});
+
+// A legacy alias resolves — through a <Redirect> — which is exactly why
+// the check above never caught it. The redirect drops the query string, so
+// a loop link carrying `?from=strategy&fromCell=…` through
+// `/app/briefs/builder` arrived at the Brief Builder with no origin and no
+// "← Back" crumb. Old paths are for bookmarks; code links to live routes.
+describe("no in-page navigation target is a legacy alias", () => {
+  const legacy = new Set(LEGACY_REDIRECTS.map(([from]) => from));
+  for (const { to, sources } of targets) {
+    it(`${to} (used in ${sources.join(", ")}) is a live route, not a redirect`, () => {
+      expect(legacy.has(to)).toBe(false);
     });
   }
 });

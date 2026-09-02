@@ -48,7 +48,7 @@ export function CreativeScanView() {
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Creative Scan" accountName={acct.name} />
               <PendingState title="No scanned creatives" message={mst?.render_policy ?? "The creative scan populates once the local library is mapped."} icon={Library}
-                action={<CrossLink to="/app/mst/matrix" label="Open MST Matrix" />}
+                action={<CrossLink to="/app/mst/sprints" label="Open MST Matrix" />}
               />
             </div>
           );

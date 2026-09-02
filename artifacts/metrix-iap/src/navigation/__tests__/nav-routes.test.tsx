@@ -22,6 +22,7 @@ vi.mock("@/contexts/MetrixDataContext", async () => {
 
 import { navTree } from "../navTree";
 import { PRE_LOGIN_ROUTE_PATHS } from "../preLoginRoutes";
+import { LEGACY_REDIRECTS } from "../legacyRoutes";
 import {
   renderAt,
   renderAuthGateAt,
@@ -43,28 +44,10 @@ const navPaths: { label: string; to: string }[] = navTree.flatMap((section) => [
   })),
 ]);
 
-// Legacy IA paths and the routes they must redirect to.
-const legacyRedirects: [string, string][] = [
-  // /app/analysis/overview now renders AnalysisOverview directly (not a redirect).
-  ["/app/analysis/concept-map", "/app/mst/cross-map"],
-  ["/app/mst/concept-map", "/app/mst/cross-map"],
-  ["/app/mst/crossmap", "/app/mst/cross-map"],
-  ["/app/mst/matrix", "/app/mst/sprints"],
-  ["/app/strategy/brief-builder", "/app/creative/builder"],
-  ["/app/briefs/builder", "/app/creative/builder"],
-  ["/app/briefs/history", "/app/creative"],
-  ["/app/briefs", "/app/creative"],
-  ["/app/report-builder", "/app/reports/builder"],
-  ["/app/reports/new", "/app/reports/builder"],
-  ["/app/reports/settings", "/app/reports/configuration"],
-  ["/app/reports/exports", "/app/exports/reports"],
-  ["/app/agent", "/app/action/agent"],
-  ["/app/action", "/app/action/agent"],
-  ["/app/settings", "/app/settings/general"],
-  ["/app/settings/account", "/app/settings/general"],
-  ["/app/settings/team", "/app/settings/users"],
-  ["/app/settings/notifications", "/app/settings/general"],
-];
+// Legacy IA paths and the routes they must redirect to — the same table
+// App.tsx generates its <Redirect>s from, so a row cannot be wired and
+// untested, or tested and unwired.
+const legacyRedirects = LEGACY_REDIRECTS;
 
 beforeEach(() => {
   cleanup();
@@ -86,6 +69,11 @@ describe("every navTree path resolves to a real page", () => {
 });
 
 describe("legacy redirects land on their new targets", () => {
+  it("the table is non-empty and every target is a live route, not another alias", () => {
+    expect(legacyRedirects.length).toBeGreaterThanOrEqual(10);
+    const aliases = new Set(legacyRedirects.map(([from]) => from));
+    for (const [, target] of legacyRedirects) expect(aliases.has(target)).toBe(false);
+  });
   for (const [from, target] of legacyRedirects) {
     it(`${from} → ${target}`, async () => {
       const { container, location } = await renderAt(from);

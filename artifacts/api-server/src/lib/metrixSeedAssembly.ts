@@ -13,6 +13,13 @@
 // Nothing is fabricated; gap tables (data_quality, variable_registry) are
 // passed through so the client can surface them.
 
+import {
+  creativeInputFromMetadata,
+  mergeCreativeInputs,
+  weightCreativeComponents,
+  type AdCreativeInput,
+  type AdMetricInput,
+} from "./creativeComponents";
 import { getSupabase } from "./supabase";
 import { normalizeStatus } from "./statusSemantics";
 import {
@@ -475,6 +482,13 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       performance_lift_vs_baseline: r["performance_lift_vs_baseline"] ?? null,
       performance_tier: r["performance_tier"] ?? null,
       confidence_level: r["confidence_level"] ?? null,
+      // Creative evidence (2026-09-02). Null on rows computed before the
+      // columns existed — a reader shows "not graded", never "no evidence".
+      creative_coverage_pct: r["creative_coverage_pct"] === null || r["creative_coverage_pct"] === undefined
+        ? null : Number(r["creative_coverage_pct"]),
+      evidence_grade: r["evidence_grade"] ?? null,
+      confidence_score: r["confidence_score"] === null || r["confidence_score"] === undefined
+        ? null : Number(r["confidence_score"]),
     })),
   };
 
@@ -757,6 +771,36 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     `${coreRead?.["data_caveat"] ?? ""}`
   ).trim();
 
+  // ── Creative components (register item F-a, owner brief 2026-09-02) ──
+  // The export's copy columns, captured on every run into
+  // ad_performance.ad_creative_metadata, become one source-tagged input per
+  // ad. Today the only producer is the performance export; uploaded assets
+  // and a Meta API read will feed the same merge with higher precedence
+  // (creativeComponents.SOURCE_PRECEDENCE), so the shape below does not
+  // change when they arrive. Whole-account rows, matching perAdStats.
+  const exportCreativeInputs: AdCreativeInput[] = [];
+  const creativeMetricInputs: AdMetricInput[] = [];
+  for (const r of adPerformance) {
+    const name = String(r["ad_name"] ?? "");
+    if (!name) continue;
+    const metaAdId = r["meta_ad_id"] ? String(r["meta_ad_id"]) : null;
+    creativeMetricInputs.push({
+      ad_name: name,
+      meta_ad_id: metaAdId,
+      spend: Number(r["spend"] ?? 0),
+      results: Number(r["results"] ?? 0),
+      impressions: Number(r["impressions"] ?? 0),
+      link_clicks: Number(r["link_clicks"] ?? 0),
+      result_type: r["result_type"] ? String(r["result_type"]) : null,
+    });
+    const input = creativeInputFromMetadata(name, metaAdId, r["ad_creative_metadata"] as Record<string, unknown> | null);
+    if (input) exportCreativeInputs.push(input);
+  }
+  const mergedCreativeInputs = mergeCreativeInputs(exportCreativeInputs);
+  const creativeInputByAdName = new Map<string, AdCreativeInput>();
+  for (const input of mergedCreativeInputs.values()) creativeInputByAdName.set(input.ad_name, input);
+  const creativeComponents = weightCreativeComponents(mergedCreativeInputs.values(), creativeMetricInputs);
+
   return {
     id: accountId,
     name: account["name"] ?? accountId,
@@ -832,6 +876,20 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
           asset_filename: override ? override.filename : (r["asset_filename"] ?? null),
           asset_servable: override ? true : r["asset_servable"] === true,
           performance: perAdStats.get(String(r["ad_name"] ?? "")) ?? null,
+          creative: (() => {
+            const c = creativeInputByAdName.get(String(r["ad_name"] ?? ""));
+            if (!c) return null;
+            return {
+              headline: c.headline ?? null,
+              primary_text: c.primary_text ?? null,
+              description: c.description ?? null,
+              cta_type: c.cta_type ?? null,
+              link_destination: c.link_destination ?? null,
+              image_name: c.image_name ?? null,
+              video_name: c.video_name ?? null,
+              source: c.source,
+            };
+          })(),
         };
       });
       // For cells with an override but no matching ad row (library-only cells),
@@ -853,6 +911,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
         }));
       return [...baseAds, ...syntheticAds];
     })(),
+    creative_components: creativeComponents.coverage.ads_total > 0 ? creativeComponents : null,
     iap: {
       metadata,
       core_reanalysis_read: coreRead,

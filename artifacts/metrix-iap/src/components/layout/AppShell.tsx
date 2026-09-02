@@ -8,6 +8,8 @@ import { GlobalRunningBanner } from "./GlobalRunningBanner";
 import { SeedRefreshFailedBanner } from "./SeedRefreshFailedBanner";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
 import { DeepDivePanel } from "@/components/deepdive/DeepDivePanel";
+import { CommandPalette } from "@/components/nav/CommandPalette";
+import { NavHistoryTracker } from "@/navigation/navHistory";
 import { useIsCompactShell } from "@/lib/useMediaQuery";
 
 interface AppShellProps {
@@ -139,6 +141,11 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Deep-dive slide-over — renders null until a module is pushed. */}
       <DeepDivePanel />
+
+      {/* Session navigation record (feeds Back and the palette's Recent)
+          and the ⌘K palette itself. Both render nothing until used. */}
+      <NavHistoryTracker />
+      <CommandPalette />
     </div>
   );
 }

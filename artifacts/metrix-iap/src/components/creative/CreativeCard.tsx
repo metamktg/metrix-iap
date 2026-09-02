@@ -39,6 +39,13 @@ export interface CreativeCardData {
   conceptCode: string;
   title: string;
   primaryText?: string | null;
+  /** Where the copy came from: the scanned library, or a creative-input source (export / upload / Meta API). */
+  copySource?: "library" | "performance_export" | "uploaded_asset" | "meta_api" | null;
+  /** Link description (caption) and destination as the export carried them. */
+  description?: string | null;
+  linkDestination?: string | null;
+  /** The image or video file name Meta recorded for the ad. */
+  mediaName?: string | null;
   secondaryText?: string | null;
   cta?: string | null;
   /** Real asset URL when ads.creative_asset_url has been backfilled; null → placeholder. */

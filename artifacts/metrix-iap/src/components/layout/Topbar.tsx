@@ -3,14 +3,17 @@ import { Link, useLocation } from "wouter";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
-  ChevronRight, Bell, CheckCircle2, PanelRightOpen, PanelRightClose,
-  Settings, CreditCard, Users, LogOut, User, Moon, Sun,
+  ArrowLeft, ChevronRight, Bell, CheckCircle2, PanelRightOpen, PanelRightClose, Search,
+  Settings, CreditCard, Users, LogOut, User, Moon, Sun, ShieldCheck,
 } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
 import { useTaskTrayCount } from "./TaskTray";
-import { buildBreadcrumbs } from "./breadcrumbs";
+import { buildBreadcrumbs, pageLabel } from "./breadcrumbs";
+import { useBackTarget } from "@/navigation/navHistory";
+import { useNavBadges } from "@/navigation/useNavBadges";
+import { openCommandPalette, paletteShortcutLabel } from "@/components/nav/CommandPalette";
 
 // ─── Account menu dropdown ─────────────────────────────────────────────
 
@@ -87,13 +90,15 @@ export function AccountMenu({
         </div>
       </div>
 
-      {/* Settings links */}
+      {/* Settings links — canonical routes only. Three of these went
+          through legacy redirects, and "Account" and "Settings" both
+          landed on the same page under two names. */}
       <div className="py-1.5">
-        <MenuItem icon={User} label="Account" onClick={() => go("/app/settings/account")} />
+        <MenuItem icon={User} label="Account" onClick={() => go("/app/settings/general")} />
+        <MenuItem icon={ShieldCheck} label="Security" onClick={() => go("/app/settings/security")} />
         <MenuItem icon={Settings} label="Integrations" onClick={() => go("/app/settings/integrations")} />
-        <MenuItem icon={Users} label="Team & Access" onClick={() => go("/app/settings/team")} />
+        <MenuItem icon={Users} label="Team & Access" onClick={() => go("/app/settings/users")} />
         <MenuItem icon={CreditCard} label="Billing" onClick={() => go("/app/settings/billing")} />
-        <MenuItem icon={Settings} label="Settings" onClick={() => go("/app/settings")} />
       </div>
 
       {/* Explicit theme preference — text and current state stay visible. */}
@@ -191,10 +196,16 @@ export function Topbar() {
   const { open, toggle } = useTaskTray();
   const trayCount = useTaskTrayCount();
   const [menuOpen, setMenuOpen] = useState(false);
+  const back = useBackTarget();
+  const badges = useNavBadges();
 
   const isManager = selectedAccountType === "manager";
   const leadLabel = isManager ? manager.name : activeAdAccount?.name ?? manager.name;
   const crumbs = buildBreadcrumbs(location, isManager);
+  // The Back control names where it goes — "Back to IAP Library" — so a
+  // reader on a deep link knows whether it walks their own history or the
+  // structural parent, before pressing it.
+  const backLabel = back ? pageLabel(back.to, isManager) ?? "previous page" : null;
 
   const unconfigured = !isManager && activeAdAccount?.status === "unconfigured";
   const initials = leadLabel.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
@@ -207,6 +218,27 @@ export function Topbar() {
 
   return (
     <header className="h-[var(--topbar-h)] flex items-center gap-2 px-3 shrink-0 mx-topbar">
+      {/* Back — one control, every non-landing route. It walks the in-app
+          history when there is one, and the section's command center when
+          there is not (a deep link has no history), so it is never a dead
+          control and never leaves the app. */}
+      {!isLandingRoute && back && (
+        <button
+          type="button"
+          onClick={back.go}
+          aria-label={`Back to ${backLabel}`}
+          title={`Back to ${backLabel}`}
+          data-testid="topbar-back"
+          data-back-to={back.to}
+          className="pressable shrink-0 h-8 px-2 -ml-1 inline-flex items-center gap-1 rounded-md text-caption font-medium
+                     text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+          <span className="hidden sm:inline">Back</span>
+        </button>
+      )}
+
       {/* Breadcrumb */}
       {!isLandingRoute && (
         <nav aria-label="Breadcrumb" className="flex items-center gap-0 flex-1 min-w-0">
@@ -236,6 +268,26 @@ export function Topbar() {
         </nav>
       )}
       {isLandingRoute && <div className="flex-1 min-w-0" />}
+
+      {/* Go to… — the command palette. Every page and account by name. */}
+      <button
+        type="button"
+        onClick={openCommandPalette}
+        aria-label="Go to a page or account"
+        aria-keyshortcuts="Control+K Meta+K"
+        title={`Go to a page or account (${paletteShortcutLabel()})`}
+        data-testid="topbar-search"
+        className="pressable shrink-0 h-7 px-2 rounded-md border border-border/40 inline-flex items-center gap-1.5 text-caption
+                   text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+      >
+        <Search className="w-3.5 h-3.5" aria-hidden="true" />
+        <span className="hidden md:inline">Go to</span>
+        <kbd className="hidden md:inline text-micro font-semibold text-muted-foreground/75 border border-border/40 rounded px-1 leading-4">
+          {paletteShortcutLabel()}
+        </kbd>
+      </button>
+
+      <div className="w-px h-4 bg-border/50 shrink-0" />
 
       {/* Status */}
       {isManager ? (
@@ -286,12 +338,24 @@ export function Topbar() {
 
       {/* Right actions */}
       <div className="flex items-center gap-1 shrink-0">
-        <button
-          aria-label="Notifications"
-          className="relative w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+        {/* The bell used to do nothing at all — a button with no handler.
+            It now opens Listen · Alerts and carries the live signal count. */}
+        <Link
+          href="/app/listen/alerts"
+          aria-label={badges.signals ? `Alerts (${badges.signals} signals)` : "Alerts"}
+          title="Listen · Alerts"
+          className="pressable relative w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
         >
-          <Bell className="w-3.5 h-3.5" />
-        </button>
+          <Bell className="w-3.5 h-3.5" aria-hidden="true" />
+          {badges.signals != null && badges.signals > 0 && (
+            <span
+              aria-hidden="true"
+              className="absolute -top-0.5 -right-0.5 min-w-3.5 h-3.5 px-0.5 rounded-full bg-status-warning text-micro-num font-bold text-background flex items-center justify-center leading-none tabular-nums"
+            >
+              {badges.signals > 9 ? "9+" : badges.signals}
+            </span>
+          )}
+        </Link>
 
         {/* Avatar → account menu */}
         <div className="relative">
