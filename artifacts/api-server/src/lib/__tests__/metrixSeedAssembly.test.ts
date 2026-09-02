@@ -40,6 +40,12 @@ const emptyTables = (): AccountTables => ({
   cellCreativeOverrides: new Map(),
   creativeDeconstructions: new Map(),
   generationRuns: new Map(),
+  adBreakdowns: new Map(),
+  reconciliationLedger: new Map(),
+  variableSegments: new Map(),
+  variableEvidence: new Map(),
+  creativeAssets: new Map(),
+  adInstances: new Map(),
   accountModules: [],
   signalCards: [],
 });

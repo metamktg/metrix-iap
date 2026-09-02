@@ -43,6 +43,20 @@ import { extensionOf } from "./creativeAssetType";
 import { syncStickyCreativeAssetMappings } from "./creativeAssetMappingService";
 import { loadImportBytes } from "./supabaseBinary";
 import { autoMapUnmappedCreatives } from "./creativeAutoMap";
+import { detectReportGrain } from "./reportGrain";
+import {
+  buildLedger,
+  buildObservations,
+  buildTruth,
+  identityKey,
+  type LedgerRow,
+  type Observation,
+  type ReconciliationSummary,
+  type ReportInput,
+} from "./reconciliation";
+import { extractConfiguredAssets, extractDeliveredAssets } from "./creativeAssets";
+import { buildVariableEvidence, buildVariableSegmentPerformance, type AdTotals, type DeconstructionInput } from "./variableEvidence";
+import type { AdIdentity } from "./reportGrain";
 
 
 export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
@@ -557,6 +571,7 @@ async function finishRun(
     objectivesAssessed?: string[];
     objectiveFlags?: string[];
     coverage?: AnalysisDataCoverage;
+    reconciliationSummary?: ReconciliationSummary;
   },
 ): Promise<void> {
   const supabase = getSupabase();
@@ -582,6 +597,7 @@ async function finishRun(
         ? JSON.stringify(fields.objectiveFlags)
         : null,
       coverage: fields.coverage ?? null,
+      ...(fields.reconciliationSummary ? { reconciliation_summary: fields.reconciliationSummary } : {}),
       finished_at: new Date().toISOString(),
     })
     .eq("id", runId);
@@ -655,6 +671,11 @@ async function deleteRunOutputs(runId: string): Promise<void> {
     "placement_performance",
     "platform_performance",
     "device_performance",
+    // Reconciliation layer (run-scoped; creative_assets are upserts, not run rows).
+    "ad_breakdown_performance",
+    "reconciliation_ledger",
+    "variable_evidence",
+    "variable_segment_performance",
   ]) {
     const { error } = await supabase.from(table).delete().eq("manual_analysis_run_id", runId);
     if (error) throw new Error(error.message);
@@ -1292,7 +1313,7 @@ export function computeDataCoverage(args: {
       note =
         `Demographic rows carry $${spend.toLocaleString("en-US")} of spend (${spendCoverage}% of the $${baselineSpend.toLocaleString("en-US")} daily-attributable total) ` +
         `across ${ads.size} of ${baselineAds.size} ads. Demographic breakdowns, segment rankings, and signal classification describe only this slice. ` +
-        `Likely causes: the export was scoped to a subset of ads/campaigns, and iOS privacy limits demographic attribution. ` +
+        `Metrix records the gap and does not guess Meta's cause; the usual ones are the export's grain (a Text or other asset breakdown omits delivery Meta cannot attribute to an asset) and a subset scope. ` +
         `Remedy: re-export Demographics from Meta Ads Reporting as CSV, covering all ads for the full window.`;
     } else if (belowThreshold) {
       note =
@@ -1600,10 +1621,11 @@ export async function startManualAnalysis(
     .select("id, filename, kind, size_bytes")
     .eq("account_id", accountId)
     .eq("status", "staged")
-    .in("kind", ["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv", "performance_conversion_device_csv"]);
+    .in("kind", ["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv", "performance_conversion_device_csv", "performance_asset_csv"]);
   if (importsErr) throw new Error(importsErr.message);
 
   const demoImports = (imports ?? []).filter((i) => i["kind"] === "performance_demo_csv");
+  const assetImports = (imports ?? []).filter((i) => i["kind"] === "performance_asset_csv");
   const placementImports = (imports ?? []).filter((i) => i["kind"] === "performance_placement_csv");
   const summaryImports = (imports ?? []).filter((i) => i["kind"] === "performance_ad_summary_csv");
   const conversionDeviceImports = (imports ?? []).filter((i) => i["kind"] === "performance_conversion_device_csv");
@@ -1803,6 +1825,18 @@ export async function startManualAnalysis(
     try {
       await updateProgress(runId, 5, "Parsing demographics export");
       const allCsvWarnings: string[] = [];
+      // Every parsed file, with its detected grain, for the reconciliation
+      // layer (spec §3–§8). The same parse result the class loops consume,
+      // so the grain the run reconciles against is the grain that was staged.
+      const reportInputs: ReportInput[] = [];
+      const recordReport = (imp: { id?: unknown }, result: IapCsvParseResult, cls: IapCsvClass): void => {
+        reportInputs.push({
+          import_id: String(imp["id"]),
+          grain: detectReportGrain(result, cls),
+          rows: result.rows,
+          totals_row: result.totalsRow,
+        });
+      };
       // Objective column groups seen across ALL staged files this run —
       // compared against the account's configured objectives (Settings →
       // General) to decide what gets assessed vs flagged. Never blocks.
@@ -1812,6 +1846,7 @@ export async function startManualAnalysis(
       for (const imp of demoImports) {
         try {
           const { result, xlsxWarnings } = await parseImportForClass(imp, "demographic");
+          recordReport(imp, result, "demographic");
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Demographics "${imp["filename"]}"] ${w}`);
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           appendRowsCrossFileDeduped(demoRows, result.rows, demoRowsSeen, { filename: String(imp["filename"]), label: "Demographics", warnings: allCsvWarnings });
@@ -1829,6 +1864,7 @@ export async function startManualAnalysis(
       for (const imp of placementImports) {
         try {
           const { result, xlsxWarnings } = await parseImportForClass(imp, "device_placement");
+          recordReport(imp, result, "device_placement");
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Placements "${imp["filename"]}"] ${w}`);
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           appendRowsCrossFileDeduped(placementRows, result.rows, placementRowsSeen, { filename: String(imp["filename"]), label: "Placements", warnings: allCsvWarnings });
@@ -1851,6 +1887,7 @@ export async function startManualAnalysis(
       for (const imp of summaryImports) {
         try {
           const { result, xlsxWarnings } = await parseImportForClass(imp, "ad_summary");
+          recordReport(imp, result, "ad_summary");
           for (const w of xlsxWarnings) allCsvWarnings.push(`[Ad Summary "${imp["filename"]}"] ${w}`);
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           appendRowsCrossFileDeduped(summaryRows, result.rows, summaryRowsSeen, { filename: String(imp["filename"]), label: "Ad Summary", warnings: allCsvWarnings });
@@ -1860,6 +1897,30 @@ export async function startManualAnalysis(
         } catch (err) {
           const detail = err instanceof IapCsvFormatError ? err.message : String(err);
           throw new AnalysisError(`Ad Summary file "${imp["filename"]}": ${detail}`, 422);
+        }
+      }
+
+      // Optional: asset-breakdown pivots (a report "by asset" — Text,
+      // Headline, Image name …). They feed the reconciliation layer only:
+      // delivered asset evidence, asset margins and joint cells (spec §10).
+      if (assetImports.length > 0) {
+        await updateProgress(runId, 40, "Parsing asset breakdown export");
+      }
+      const assetRows: IapCsvRow[] = [];
+      const assetRowsSeen = new Set<string>();
+      for (const imp of assetImports) {
+        try {
+          const { result, xlsxWarnings } = await parseImportForClass(imp, "asset");
+          recordReport(imp, result, "asset");
+          for (const w of xlsxWarnings) allCsvWarnings.push(`[Asset breakdown "${imp["filename"]}"] ${w}`);
+          for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
+          appendRowsCrossFileDeduped(assetRows, result.rows, assetRowsSeen, { filename: String(imp["filename"]), label: "Asset breakdown", warnings: allCsvWarnings });
+          for (const w of result.warnings) {
+            allCsvWarnings.push(`[Asset breakdown "${imp["filename"]}"] ${w}`);
+          }
+        } catch (err) {
+          const detail = err instanceof IapCsvFormatError ? err.message : String(err);
+          throw new AnalysisError(`Asset breakdown file "${imp["filename"]}": ${detail}`, 422);
         }
       }
 
@@ -1905,7 +1966,7 @@ export async function startManualAnalysis(
       // produces a non-blocking flag via computeObjectiveCoverage (groups
       // were recorded at parse time).
       const objectiveInference = inferObjectives(
-        [demoRows, placementRows, summaryRows, conversionDeviceRows].flatMap((rows) =>
+        [demoRows, placementRows, summaryRows, conversionDeviceRows, assetRows].flatMap((rows) =>
           rows.map((r) => ({
             adKey: r.breakdowns["Ad ID"]?.trim() || r.breakdowns["Ad name"]?.trim() || "",
             resultType: typeof r.base["result_type"] === "string" ? r.base["result_type"] : null,
@@ -1929,7 +1990,7 @@ export async function startManualAnalysis(
       const allowedOptionalSlugs = optionalMetricSlugsForGroups(
         derivedObjectives.map((k) => OBJECTIVE_GROUP_FOR_KEY[k]),
       );
-      for (const rows of [demoRows, placementRows, summaryRows, conversionDeviceRows]) {
+      for (const rows of [demoRows, placementRows, summaryRows, conversionDeviceRows, assetRows]) {
         for (const row of rows) {
           for (const key of Object.keys(row.extra)) {
             if (!allowedOptionalSlugs.has(key)) delete row.extra[key];
@@ -1943,6 +2004,7 @@ export async function startManualAnalysis(
         ...placementRows.map((r) => r.breakdowns["Day"]!),
         ...summaryRows.map((r) => r.breakdowns["Day"]!),
         ...conversionDeviceRows.map((r) => r.breakdowns["Day"]!),
+        ...assetRows.map((r) => r.breakdowns["Day"]!),
       ];
       const maxDate = allDates.reduce((max, d) => (d > max ? d : max), allDates[0]!);
 
@@ -2466,6 +2528,238 @@ export async function startManualAnalysis(
         }
       }
 
+      // ── Reconciliation-first evidence layer ───────────────────────────
+      // docs/specs/iap-multi-report-reconciliation.md. Every staged report is
+      // reduced to ad × segment × period observations, the strongest
+      // compatible control becomes truth per ad / per account, and the ledger
+      // records a signed residual per additive metric. Ad identity is Account
+      // ID + Ad ID; a name-keyed row joins Ad-ID data only through a
+      // registry-proven unique name. Residuals never become rows.
+      await updateProgress(runId, 86, "Reconciling reports against the control source");
+      const { data: instanceRows, error: instancesErr } = await supabase
+        .from("ad_instances")
+        .select("meta_ad_id, ad_name")
+        .eq("account_id", accountId);
+      if (instancesErr) throw new Error(instancesErr.message);
+      const instancesByName = new Map<string, string[]>();
+      for (const r of instanceRows ?? []) {
+        const name = String(r["ad_name"] ?? "");
+        const id = String(r["meta_ad_id"] ?? "");
+        if (!name || !id) continue;
+        const list = instancesByName.get(name) ?? [];
+        if (!list.includes(id)) list.push(id);
+        instancesByName.set(name, list);
+      }
+      const reconReports: ReportInput[] = reportInputs
+        .map((r) => ({ ...r, rows: r.rows.filter((row) => withinRange(row.breakdowns["Day"]!, dateRange, maxDate)) }))
+        .filter((r) => r.rows.length > 0);
+      const observed = buildObservations(reconReports, { instancesByName });
+      const truth = buildTruth(reconReports, { instancesByName });
+      const ledger = buildLedger({ observations: observed.observations, truth, reports: reconReports, instancesByName });
+      allCsvWarnings.push(...observed.warnings, ...ledger.summary.notes);
+      logger.info(
+        {
+          accountId,
+          runId,
+          truthSource: truth.source,
+          truthIdentity: truth.identity_kind,
+          breakdowns: ledger.summary.breakdowns.map((b) => ({
+            report_class: b.report_class,
+            spend: b.by_metric.find((m) => m.metric === "amount_spent") ?? null,
+            ads: { total: b.ads_total, reconciled: b.ads_reconciled, partial: b.ads_partial, unreconciled: b.ads_unreconciled, missing: b.ads_missing_from_breakdown },
+          })),
+        },
+        "Reconciliation ledger built",
+      );
+
+      const configuredAssets = extractConfiguredAssets(reconReports, instancesByName);
+      const deliveredAssets = extractDeliveredAssets(reconReports, instancesByName);
+
+      // Deconstructed variables reach ads through their mapped names.
+      const { data: deconstructionRows, error: deconstructionErr } = await supabase
+        .from("creative_deconstructions")
+        .select("id, manual_import_id, filename, ad_names, status, variables")
+        .eq("account_id", accountId);
+      if (deconstructionErr) throw new Error(deconstructionErr.message);
+      const deconstructions: DeconstructionInput[] = (deconstructionRows ?? []).map((r) => ({
+        id: String(r["id"]),
+        manual_import_id: String(r["manual_import_id"]),
+        filename: String(r["filename"] ?? ""),
+        status: String(r["status"] ?? ""),
+        ad_names: Array.isArray(r["ad_names"]) ? (r["ad_names"] as unknown[]).map(String) : [],
+        variables: Array.isArray(r["variables"])
+          ? (r["variables"] as { family?: unknown; code?: unknown; confidence?: unknown }[])
+              .filter((v) => typeof v.family === "string" && typeof v.code === "string")
+              .map((v) => ({ family: String(v.family), code: String(v.code), confidence: typeof v.confidence === "number" ? v.confidence : null }))
+          : [],
+      }));
+
+      // Ad-level totals per identity (from this run's own ad rows) with the
+      // demographic breakdown's per-ad spend coverage, plus ad-name tokens.
+      const demoCoverageByAd = new Map<string, number | null>();
+      for (const row of ledger.rows) {
+        if (row.scope === "ad" && row.report_class === "demographic" && row.metric === "amount_spent") {
+          demoCoverageByAd.set(`${row.ad_identity_kind}:${row.ad_identity}`, row.coverage_pct);
+        }
+      }
+      const adTotals = new Map<string, AdTotals>();
+      const adNameTokens: { identity: AdIdentity; tokens: { family: string; id: string }[] }[] = [];
+      for (const row of adRows) {
+        const identity: AdIdentity = row.meta_ad_id
+          ? { kind: "ad_id", key: String(row.meta_ad_id), ad_name: row.ad_name, meta_ad_id: String(row.meta_ad_id) }
+          : { kind: "ad_name", key: row.ad_name, ad_name: row.ad_name, meta_ad_id: null };
+        const k = identityKey(identity);
+        const cur = adTotals.get(k) ?? {
+          identity,
+          metrics: {},
+          result_type: String(row.result_type ?? ""),
+          coverage_pct: demoCoverageByAd.get(k) ?? null,
+        };
+        const add = (slug: string, v: unknown): void => {
+          if (typeof v === "number" && Number.isFinite(v)) cur.metrics[slug] = (cur.metrics[slug] ?? 0) + v;
+        };
+        add("amount_spent", row.spend);
+        add("impressions", row.impressions);
+        add("clicks_all", row.clicks_all);
+        add("link_clicks", row.link_clicks);
+        add("results", row.results);
+        for (const [slug, v] of Object.entries(row.extra_metrics ?? {})) add(slug, v);
+        if (!adTotals.has(k)) {
+          adTotals.set(k, cur);
+          const tokens = String(row.ad_name ?? "")
+            .split("_")
+            .map((t) => t.trim().toUpperCase())
+            .filter((t) => t.length > 0 && !isSkippedAdToken(t))
+            .map((t) => ({ family: "raw_token", id: t }));
+          if (tokens.length > 0) adNameTokens.push({ identity, tokens });
+        }
+      }
+      const evidence = buildVariableEvidence({ deconstructions, instancesByName, adNameTokens, deliveredAssets });
+      const variableSegments = buildVariableSegmentPerformance({ evidence, observations: ledger.observations, adTotals });
+
+      await updateProgress(runId, 88, "Writing reconciliation ledger and evidence");
+      const breakdownRows = ledger.observations.map((o: Observation) => ({
+        account_id: accountId,
+        manual_analysis_run_id: runId,
+        breakdown: o.breakdown,
+        ad_identity_kind: o.identity.kind,
+        ad_identity: o.identity.key,
+        meta_ad_id: o.identity.meta_ad_id,
+        ad_name: o.identity.ad_name || null,
+        segment: o.segment,
+        segment_key: o.segment_key,
+        result_type: o.result_type,
+        date_start: dateStart,
+        date_end: dateEnd,
+        spend: o.metrics["amount_spent"] ?? null,
+        impressions: o.metrics["impressions"] ?? null,
+        reach: o.reach,
+        reach_basis: o.reach_basis,
+        clicks_all: o.metrics["clicks_all"] ?? null,
+        link_clicks: o.metrics["link_clicks"] ?? null,
+        results: o.metrics["results"] ?? null,
+        metrics: o.metrics,
+        row_count: o.row_count,
+        source_import_ids: o.source_import_ids,
+        evidence_state: o.evidence_state,
+        coverage_pct: o.coverage_pct,
+      }));
+      await insertChunked("ad_breakdown_performance", breakdownRows);
+      const ledgerRows = ledger.rows.map((r: LedgerRow) => ({
+        account_id: accountId,
+        manual_analysis_run_id: runId,
+        scope: r.scope,
+        ad_identity_kind: r.ad_identity_kind,
+        ad_identity: r.ad_identity,
+        ad_name: r.ad_name,
+        meta_ad_id: r.meta_ad_id,
+        report_class: r.report_class,
+        metric: r.metric,
+        grain: r.grain,
+        truth_source: r.truth_source,
+        truth_value: r.truth_value,
+        observed_value: r.observed_value,
+        coverage_pct: r.coverage_pct,
+        residual: r.residual,
+        direct_share: r.direct_share,
+        modelled_share: r.modelled_share,
+        evidence_state: r.evidence_state,
+        compatibility_failures: r.compatibility_failures,
+        truth_import_ids: r.truth_import_ids,
+        observed_import_ids: r.observed_import_ids,
+      }));
+      await insertChunked("reconciliation_ledger", ledgerRows);
+      const assetRowsOut = [...configuredAssets, ...deliveredAssets].map((a) => ({
+        account_id: accountId,
+        ad_identity_kind: a.ad_identity_kind,
+        ad_identity: a.ad_identity,
+        meta_ad_id: a.meta_ad_id,
+        ad_name: a.ad_name,
+        asset_type: a.asset_type,
+        raw_value: a.raw_value,
+        normalized_value: a.normalized_value,
+        content_hash: a.content_hash,
+        provenance: a.provenance,
+        source_column: a.source_column,
+        source_import_id: a.source_import_id,
+        date_start: a.date_start,
+        date_end: a.date_end,
+        last_seen_run_id: runId,
+        last_seen_at: new Date().toISOString(),
+      }));
+      for (let i = 0; i < assetRowsOut.length; i += CHUNK) {
+        const up = await supabase
+          .from("creative_assets")
+          .upsert(assetRowsOut.slice(i, i + CHUNK), { onConflict: "account_id,ad_identity_kind,ad_identity,asset_type,provenance,content_hash", ignoreDuplicates: false });
+        if (up.error) throw new Error(up.error.message);
+      }
+      await insertChunked(
+        "variable_evidence",
+        evidence.map((e) => ({
+          account_id: accountId,
+          manual_analysis_run_id: runId,
+          variable_family: e.variable_family,
+          variable_id: e.variable_id,
+          source_kind: e.source_kind,
+          source_ref: e.source_ref,
+          asset_key: e.asset_key,
+          ad_identity_kind: e.ad_identity_kind,
+          ad_identity: e.ad_identity,
+          meta_ad_id: e.meta_ad_id,
+          ad_name: e.ad_name,
+          relationship: e.relationship,
+          confidence: e.confidence,
+        })),
+      );
+      await insertChunked(
+        "variable_segment_performance",
+        variableSegments.map((v) => ({
+          account_id: accountId,
+          manual_analysis_run_id: runId,
+          variable_family: v.variable_family,
+          variable_id: v.variable_id,
+          breakdown: v.breakdown,
+          segment: v.segment,
+          segment_key: v.segment_key,
+          result_type: v.result_type,
+          contributing_ad_ids: v.contributing_ad_ids,
+          contributing_asset_keys: v.contributing_asset_keys,
+          direct_totals: v.direct_totals,
+          contextual_totals: v.contextual_totals,
+          observed_coverage_pct: v.observed_coverage_pct,
+          modelled_share: v.modelled_share,
+          result_volume: v.result_volume,
+          cost_per_result: v.cost_per_result,
+          raw_rate: v.raw_rate,
+          adjusted_rate: v.adjusted_rate,
+          interaction_index: v.interaction_index,
+          contributing_ads: v.contributing_ads,
+          evidence_state: v.evidence_state,
+          confidence: v.confidence,
+        })),
+      );
+      const reconciliationSummary: ReconciliationSummary = ledger.summary;
+
       await updateProgress(runId, 90, "Writing demographic & placement data");
       const demographicRows = Array.from(demoBuckets.values()).map((b) => ({
         account_id: accountId,
@@ -2738,6 +3032,7 @@ export async function startManualAnalysis(
         objectivesAssessed: coverage.assessed,
         objectiveFlags: coverage.flags.length > 0 ? coverage.flags : undefined,
         coverage: dataCoverage,
+        reconciliationSummary,
       });
       try {
         await markImportsProcessed(imports!.map((i) => String(i["id"])), runId);

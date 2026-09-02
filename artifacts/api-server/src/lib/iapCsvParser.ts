@@ -185,6 +185,14 @@ export type IapCsvParseResult = {
   headerConflicts: DuplicateHeaderConflict[];
   /** ISO-4217 code read from the resolved spend header ("Amount spent (CAD)" → "CAD"); null when the header carries none. */
   currency: string | null;
+  /**
+   * Meta's own grand-totals row (Day blank), base metrics by slug, when the
+   * file carried exactly one. It is an ACCOUNT-grain control source of its
+   * own (spec §7: below an Ad Summary, above nothing) — the reconciliation
+   * layer reads additive metrics from it and ignores the rest. Null when
+   * absent or when several subtotal rows made it ambiguous.
+   */
+  totalsRow: Record<string, number | string | null> | null;
 };
 
 /** Measured fill for one canonical column across every parsed row. */
@@ -1144,6 +1152,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     headerNotes,
     headerConflicts,
     currency: currencyCode,
+    totalsRow: totalsRows.length === 1 ? totalsRows[0]!.base : null,
   };
 }
 
