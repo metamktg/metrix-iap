@@ -297,8 +297,8 @@ Verified against the live Supabase project by read-only SQL, not from a checkout
 | `concept_performance` evidence columns | present after migration `concept_performance_creative_evidence_columns`; **one** run-keyed row graded by backfill with the engine's exact formula (the only ungraded row with a run id); the 28 importer-era rows (no run id) stay "not graded" by design |
 
 Still owner-only from a cloud checkout (no secrets here): `check:seed-fixture-drift`,
-`refresh:seed-fixture`, running analysis on Bookster / Fresh Import, deleting
-`archive/phase2-pre-rebase`, and the Auth leaked-password toggle.
+`refresh:seed-fixture`, running analysis on Bookster / Fresh Import, and the Auth
+leaked-password toggle. (`archive/phase2-pre-rebase` was deleted at the ship, §12.)
 
 **Schema ↔ live database drift check (2026-09-02).** Every table (43) and column (500) that
 `schema.sql` declares exists on the live project, and every column the live project carries on
@@ -306,3 +306,17 @@ those tables is declared in `schema.sql` (nine of them via `alter table if exist
 which a first parse missed and a second confirmed). No drift in either direction. Method: the
 declared set parsed from `schema.sql`, compared against `information_schema.columns` through the
 Supabase connector. PR #174 opened for the branch; its CI is the merge-path verification.
+
+## 12. Ship record (2026-09-02)
+
+| Step | Result |
+|---|---|
+| PR #174 | CI run 362 green; merged as a merge commit → `main` `5cdaaa5` |
+| CI on `main` | run 363 on `5cdaaa5` (push event; in progress at the time of the publish, result recorded in the handoff when known) |
+| `archive/phase2-pre-rebase` | deleted on origin (`git ls-remote --heads` returns nothing). The cloud git proxy refuses branch deletes; the workspace did it |
+| Replit workspace | fetched and **merged** `origin/main` (never a reset); `legacyRoutes.ts` confirmed present in the workspace afterwards |
+| Publish | deployment `329ef7e0` from the merged workspace; verified from outside by entry-bundle hash against a local production build of `5cdaaa5`, plus the `Copy components` content marker in the live `CreativeLibraryView` chunk, whose md5 matched the local build (`verify-deployed-build.sh`; a `success` status alone is not evidence). Publish status: `success` at 10:57Z |
+| Manual-import validation | `METRIX_Manual_Import_Validation_Runbook_2026-09.md` — fresh account, new user, nothing touches Bookster |
+
+Owner-only, still: approve the tester (users live in Replit Postgres), the Auth
+leaked-password toggle, and `check:seed-fixture-drift` / `refresh:seed-fixture`.
