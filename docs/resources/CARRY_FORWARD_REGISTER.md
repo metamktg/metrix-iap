@@ -486,3 +486,26 @@ bands (`reconciliation.ts` `confidenceLevel`, spec §20); the shipped tier was l
 it feeds shipped surfaces and tests. Owner call: migrate the concept tier to the canonical bands
 (a data migration re-grading existing rows) or amend the blueprint to the shipped one.
 
+**Ship record (2026-09-02 18:53–19:03Z).** PR #181 merged as `d0e0de0` (CI run 382 green on
+`e26bb0d`; run 381 had failed on a hook the 66 seed-context test mocks did not define — fixed by
+reading through `useMetrixSeed` and mocking it in the two tests that had not). Additive DDL applied
+first as Supabase migration `reconciliation_evidence_layer` and verified by catalog query (both
+`manual_imports` columns, `reconciliation_summary`, the five evidence tables with RLS on and zero
+anon/authenticated grants, the kind check admitting `performance_asset_csv`). Replit workspace
+merged `origin/main` as `5ffb472` (`git diff --stat origin/main HEAD` empty; the two commits beyond
+main are the workspace's own earlier merge and "Published your App"). Deployment
+`329ef7e0-2399-4f97-aed0-e2bfa4373002` → success; live entry bundle `index-B9p9BO2o.js` equals the
+local `smoke:metrix-iap-build` output, `CreativeCard-BLa4YjUi.js` md5 `6bc1f80a…` identical live and
+local, `/api/healthz` 200.
+
+**Still open after the ship:** the live cross-check needs a run on the validated account
+(`manual_AHXANj6Vjozp`) made by the new build — its latest successful run (`ce0d8f6d`, 15:41Z,
+window 2026-08-01 → 08-30) predates the layer and carries no `reconciliation_summary`. The staged
+files (Ad Summary Jul 1–Sep 2, demographic and placement 30-day pivots, each staged twice) have
+`report_grain` null because they were staged before the column existed; the run classifies them
+itself (`detectReportGrain` at `recordReport`), so no re-staging is needed. The cloud session holds
+no login credential, so the owner presses Run analysis; then
+`check:reconciliation-ledger -- manual_AHXANj6Vjozp` (or the equivalent SQL) reports the exact
+totals, residuals and coverage. Expected from the validated structures: the Ad Summary has no Ad ID
+column, so the control is name-keyed and only registry-unique names reconcile per ad; the twice-
+staged pivots exercise overlap superseding, not double counting.
