@@ -19,10 +19,30 @@ export function getSupabase(): SupabaseClient {
     );
   }
 
-  const url = /^https?:\/\//.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+  const url = normalizeSupabaseUrl(rawUrl);
 
   client = createClient(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   return client;
+}
+
+function normalizeSupabaseUrl(rawUrl: string): string {
+  return (/^https?:\/\//.test(rawUrl) ? rawUrl : `https://${rawUrl}`).replace(/\/+$/, "");
+}
+
+/**
+ * The REST endpoint and service-role key for the rare request supabase-js
+ * cannot express — today, only PostgREST's binary output (see
+ * supabaseBinary.ts). Same env, same normalisation, same failure message.
+ */
+export function getSupabaseRest(): { url: string; serviceRoleKey: string } {
+  const rawUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"];
+  const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  if (!rawUrl || !serviceRoleKey) {
+    throw new Error(
+      "Supabase is not configured: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.",
+    );
+  }
+  return { url: normalizeSupabaseUrl(rawUrl), serviceRoleKey };
 }

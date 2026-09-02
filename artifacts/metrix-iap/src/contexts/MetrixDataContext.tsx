@@ -6,14 +6,17 @@
 // silent fallbacks and no direct seed JSON imports on the client.
 // ═══════════════════════════════════════════════════════════════════════
 
-import React, { createContext, useContext, useEffect, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ApiError, getAuthMeQueryKey, useGetMetrixSeed } from "@workspace/api-client-react";
+import { ApiError, getAuthMeQueryKey, getGetMetrixSeedQueryKey, useGetMetrixSeed } from "@workspace/api-client-react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { MetrixBootLoader } from "@/components/brand/MetrixBootLoader";
 import type { MetrixSeed } from "@/lib/data/seedTypes";
 
 const MetrixDataContext = createContext<MetrixSeed | null>(null);
+
+/** After this long on the first load, the splash says the data service has not answered. */
+export const SEED_SLOW_AFTER_MS = 20_000;
 interface MetrixFreshness {
   /** A refresh is in flight. */
   isRefetching: boolean;
@@ -54,13 +57,52 @@ export function MetrixDataProvider({ children }: { children: React.ReactNode }) 
     void queryClient.invalidateQueries({ queryKey: getAuthMeQueryKey() });
   }, [sessionExpired, queryClient]);
 
+  // How long the FIRST load has been outstanding. Past SEED_SLOW_AFTER_MS the
+  // splash stops pretending and says the data service has not answered — a
+  // hung seed (a wedged database behind it) is otherwise indistinguishable
+  // from a slow network, and the splash used to cycle its callouts forever.
+  const [slowSeconds, setSlowSeconds] = useState<number | null>(null);
+  const [retryingSlow, setRetryingSlow] = useState(false);
+  useEffect(() => {
+    if (!isLoading) {
+      setSlowSeconds(null);
+      return;
+    }
+    const startedAt = Date.now();
+    const tick = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed >= SEED_SLOW_AFTER_MS) setSlowSeconds(Math.round(elapsed / 1000));
+    }, 1000);
+    return () => window.clearInterval(tick);
+  }, [isLoading]);
+
   const freshness = useMemo<MetrixFreshness>(
     () => ({ isRefetching, refreshFailed: isError, retry: () => void refetch() }),
     [isRefetching, isError, refetch],
   );
 
   if (isLoading) {
-    return <MetrixBootLoader />;
+    return (
+      <MetrixBootLoader
+        slow={
+          slowSeconds !== null
+            ? {
+                elapsedSeconds: slowSeconds,
+                retrying: retryingSlow,
+                onRetry: () => {
+                  // Cancel the hung request first: a plain refetch would
+                  // dedupe onto the one that is not answering.
+                  setRetryingSlow(true);
+                  void queryClient
+                    .cancelQueries({ queryKey: getGetMetrixSeedQueryKey() })
+                    .then(() => refetch())
+                    .finally(() => setRetryingSlow(false));
+                },
+              }
+            : null
+        }
+      />
+    );
   }
 
   // Only take over the screen when there is no bundle to render at all.

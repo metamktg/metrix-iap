@@ -45,17 +45,34 @@ function save(next: string[]) {
   for (const l of listeners) l();
 }
 
-export function dismissCreativeNudge(accountId: string): void {
-  const cur = load();
-  if (cur.includes(accountId)) return;
-  save([...cur, accountId]);
+/**
+ * Which suggestion is being dismissed. "source" is the original nudge
+ * (upload creatives / connect Meta); "next_step" is the post-run suggestion
+ * to deconstruct the uploaded creatives and re-run analysis. Stored as
+ * `<kind>:<accountId>` — the bare account id remains the "source" key so
+ * dismissals recorded before kinds existed still hold.
+ */
+export type CreativeNudgeKind = "source" | "next_step";
+
+function keyFor(accountId: string, kind: CreativeNudgeKind): string {
+  return kind === "source" ? accountId : `${kind}:${accountId}`;
 }
 
-export function useCreativeNudgeDismissed(accountId: string | null | undefined): boolean {
+export function dismissCreativeNudge(accountId: string, kind: CreativeNudgeKind = "source"): void {
+  const cur = load();
+  const key = keyFor(accountId, kind);
+  if (cur.includes(key)) return;
+  save([...cur, key]);
+}
+
+export function useCreativeNudgeDismissed(
+  accountId: string | null | undefined,
+  kind: CreativeNudgeKind = "source",
+): boolean {
   const ids = useSyncExternalStore(
     (l) => { listeners.add(l); return () => listeners.delete(l); },
     load,
     load,
   );
-  return accountId ? ids.includes(accountId) : false;
+  return accountId ? ids.includes(keyFor(accountId, kind)) : false;
 }

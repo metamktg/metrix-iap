@@ -18,6 +18,7 @@ import {
   useListManualImports,
   type CreativeDeconstruction,
   useUpdateManualImportAdNames,
+  useSyncCreativeLinks,
   useDeleteManualImport,
   getGetMetrixSeedQueryKey,
   getListManualImportsQueryKey,
@@ -87,7 +88,6 @@ import {
 } from "./ManualAnalysisControls";
 import { guessedCreativeImports } from "./manualImportUtils";
 import type { ManualImportInput, ManualImportResult } from "@workspace/api-client-react";
-import { suggestAdNameMatch, type AdNameMatch } from "@/lib/adNameMatch";
 import { useDeconstruction, DECONSTRUCTION_STATUS_LABEL } from "@/components/creative/useDeconstruction";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
@@ -1272,7 +1272,6 @@ function CreativeUploadSection({
   const [queueIndex, setQueueIndex] = useState(0);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [currentPct, setCurrentPct] = useState(0);
-  const [justStagedIds, setJustStagedIds] = useState<Set<string>>(new Set());
   // Per-row delete tracking: a shared mutation's isPending would spin/disable
   // EVERY row's delete button while one delete runs.
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -1284,7 +1283,7 @@ function CreativeUploadSection({
   // feel frozen. Cap updates to ~4/s, always letting 0 and 100 through.
   const lastPctUpdateRef = useRef(0);
   const deleteMutation = useDeleteManualImport();
-  const updateMutation = useUpdateManualImportAdNames();
+  const syncLinksMutation = useSyncCreativeLinks();
 
   const throttledSetPct = (pct: number) => {
     const now = Date.now();
@@ -1311,39 +1310,21 @@ function CreativeUploadSection({
     }
   };
 
-  // Re-runs filename matching for every still-unmapped file in one click.
-  // Only files that actually produce a suggestion are updated; the rest
-  // stay unmapped (and highlighted) rather than being force-mapped to noise.
+  // Asks the SERVER to match every still-unmapped file against the account's
+  // ad registry (the same matcher that runs at staging and after each
+  // analysis run). Files with no credible match stay unmapped and visible
+  // rather than being force-mapped to noise.
   const handleAutoMapAll = async () => {
     setAutoMapping(true);
-    let matched = 0;
-    let unmatchedCount = 0;
-    const failures: string[] = [];
     try {
-      for (const asset of unmappedAssets) {
-        const match = suggestAdNameMatch(asset.filename, matchCandidates);
-        if (!match) {
-          unmatchedCount++;
-          continue;
-        }
-        try {
-          await updateMutation.mutateAsync({
-            accountId,
-            importId: asset.id,
-            data: { ad_names: [match.name], match_method: match.method },
-          });
-          matched++;
-        } catch (err) {
-          failures.push(`${asset.filename}: ${err instanceof Error ? err.message : "Auto-map failed."}`);
-        }
-      }
-      if (matched > 0) onChanged();
-      setErrors(failures);
-      setLinkNotices(
-        unmatchedCount > 0
-          ? [`${unmatchedCount} file${unmatchedCount > 1 ? "s" : ""} had no close ad-name match — map ${unmatchedCount > 1 ? "them" : "it"} manually below.`]
-          : []
-      );
+      await syncLinksMutation.mutateAsync({ accountId });
+      onChanged();
+      setErrors([]);
+      setLinkNotices([
+        "Matched on the server. Any file still unmapped had no close ad-name match yet — it will be re-checked after the next analysis run, or map it below.",
+      ]);
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : "Auto-map failed."]);
     } finally {
       setAutoMapping(false);
     }
@@ -1375,7 +1356,8 @@ function CreativeUploadSection({
 
       try {
         const content_base64 = await fileToBase64(file);
-        const match = suggestAdNameMatch(file.name, matchCandidates);
+        // No mapping is sent: the server matches the filename against the
+        // ads it knows at staging, and again after every analysis run.
         const staged = await stageManualImportWithProgress(
           accountId,
           {
@@ -1383,27 +1365,21 @@ function CreativeUploadSection({
             filename: file.name,
             content_type: file.type || undefined,
             content_base64,
-            ad_names: match ? [match.name] : [],
-            match_method: match?.method,
+            ad_names: [],
           },
           throttledSetPct
         );
         newlyStaged.push(staged.import_id);
-        const unmatched = staged.link_result?.unmatched ?? [];
-        if (unmatched.length > 0) {
-          notices.push(
-            `${file.name}: staged, but ad name${unmatched.length > 1 ? "s" : ""} “${unmatched.join(", ")}” didn't match a live ad yet — remap below or it will link once analysis runs.`,
-          );
+        const matched = staged.link_result?.matched ?? [];
+        if (matched.length === 0 && matchCandidates.size === 0) {
+          notices.push(`${file.name}: staged. It will be matched to an ad automatically after the first analysis run.`);
         }
       } catch (err) {
         failures.push(`${file.name}: ${err instanceof Error ? err.message : "Upload failed."}`);
       }
     }
 
-    if (newlyStaged.length > 0) {
-      setJustStagedIds((prev) => new Set([...prev, ...newlyStaged]));
-      onChanged();
-    }
+    if (newlyStaged.length > 0) onChanged();
     setErrors(failures);
     setLinkNotices(notices);
     setQueueTotal(0);
@@ -1422,7 +1398,7 @@ function CreativeUploadSection({
             Stage individual ad creative files (images/videos) so they render immediately.
           </p>
           <p className="text-label text-muted-foreground/75 leading-relaxed mt-0.5">
-            Map each file to the ad name(s) it represents — filenames matching an ad name are pre-mapped.
+            Files are matched to ad names on the server — at upload when the account already has analysis, and again after every run. Correct any match below.
           </p>
         </div>
       </div>
@@ -1495,7 +1471,11 @@ function CreativeUploadSection({
               {mappedCount} of {creativeAssets.length} mapped
             </span>
             {mappedCount < creativeAssets.length && (
-              <span className="text-label text-status-warning/90">Pick an ad name for each highlighted file below</span>
+              <span className="text-label text-muted-foreground/85">
+                {matchCandidates.size > 0
+                  ? "Unmapped files had no close ad-name match — pick one below or leave them for the next run"
+                  : "Unmapped files will be matched after the first analysis run"}
+              </span>
             )}
             {unmappedAssets.length > 0 && matchCandidates.size > 0 && (
               <button
@@ -1522,7 +1502,6 @@ function CreativeUploadSection({
                     asset={asset}
                     knownAdNames={knownAdNames}
                     availableAdNames={availableAdNames}
-                    autoFocusPicker={justStagedIds.has(asset.id)}
                     onSaved={onChanged}
                   />
                 </div>
@@ -2116,98 +2095,31 @@ export function CreativeLibraryDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
-  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
-  const [discarding, setDiscarding] = useState(false);
-  const [discardError, setDiscardError] = useState<string | null>(null);
 
   const availableAdNames = useMemo(
     () => Array.from(new Set((account.ads ?? []).map((a) => a.ad_name))).sort(),
     [account.ads]
   );
 
-  const { data: importsData } = useListManualImports(account.id);
-  const unmappedCreatives = (importsData?.imports ?? []).filter(
-    (i) => i.kind === "creative_asset" && i.ad_names.length === 0
-  );
-  const deleteMutation = useDeleteManualImport();
-
   const doClose = () => {
     onOpenChange(false);
     queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
   };
 
-  // All close paths (X button, click-outside, onDone) go through here so the
-  // guard fires consistently whenever unmapped creatives exist.
+  // Closing is always allowed. This dialog used to refuse to close while any
+  // creative was unmapped and offer to DELETE those files instead — a reader
+  // who had just uploaded twenty creatives for an account with no analysis
+  // yet (so nothing to map against) was told the only way out was to
+  // discard them. Mapping is the server's job now (creativeAutoMap.ts):
+  // files stay staged, the next analysis run maps them, and the editor
+  // remains available for corrections.
   const handleOpenChange = (o: boolean) => {
-    if (!o && unmappedCreatives.length > 0) {
-      setShowDiscardConfirm(true);
-      return;
-    }
     if (!o) doClose();
     else onOpenChange(true);
   };
 
-  const handleConfirmDiscard = async () => {
-    setDiscarding(true);
-    setDiscardError(null);
-    const failed: string[] = [];
-    try {
-      for (const asset of unmappedCreatives) {
-        try {
-          await deleteMutation.mutateAsync({ accountId: account.id, importId: asset.id });
-        } catch {
-          failed.push(asset.filename);
-        }
-      }
-    } finally {
-      setDiscarding(false);
-      // Refresh so the list reflects whichever deletes succeeded (avoids
-      // stale unmapped rows re-appearing on the next open or retry).
-      void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(account.id) });
-    }
-    if (failed.length > 0) {
-      // Stay open so the user can retry or map the remaining files.
-      setDiscardError(
-        `Could not delete ${failed.length === 1 ? `"${failed[0]}"` : `${failed.length} files`}. Try again or map ${failed.length === 1 ? "it" : "them"} manually.`
-      );
-      return;
-    }
-    setShowDiscardConfirm(false);
-    doClose();
-  };
-
   return (
     <>
-      <AlertDialog open={showDiscardConfirm} onOpenChange={(o) => { if (!o && !discarding) setShowDiscardConfirm(false); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Discard unmapped files?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {unmappedCreatives.length === 1
-                ? "1 creative file has no ad mapping yet."
-                : `${unmappedCreatives.length} creative files have no ad mapping yet.`}{" "}
-              Closing now will permanently delete{" "}
-              {unmappedCreatives.length === 1 ? "it" : "them"} — this cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {discardError && (
-            <p className="px-1 text-caption text-destructive">{discardError}</p>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={discarding} onClick={() => { setShowDiscardConfirm(false); setDiscardError(null); }}>
-              Keep editing
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={discarding}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => void handleConfirmDiscard()}
-            >
-              {discarding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-              Discard {unmappedCreatives.length === 1 ? "file" : "files"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
           className="flex flex-col max-w-md max-h-[90vh] p-0 gap-0"
@@ -2253,9 +2165,6 @@ export function ManualImportDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
-  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
-  const [discarding, setDiscarding] = useState(false);
-  const [discardError, setDiscardError] = useState<string | null>(null);
 
   // Same real-ads registry the Creative Library dialog uses — keeps
   // dropdown mapping / auto-matching behavior identical across both
@@ -2265,89 +2174,25 @@ export function ManualImportDialog({
     [account.ads]
   );
 
-  const { data: importsData } = useListManualImports(account.id);
-  const unmappedCreatives = (importsData?.imports ?? []).filter(
-    (i) => i.kind === "creative_asset" && i.ad_names.length === 0
-  );
-  const deleteMutation = useDeleteManualImport();
-
   const doClose = () => {
     onOpenChange(false);
     queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
   };
 
-  // All close paths (X button, click-outside, onDone) go through here so the
-  // guard fires consistently whenever unmapped creatives exist.
+  // Closing is always allowed. This dialog used to refuse to close while any
+  // creative was unmapped and offer to DELETE those files instead — a reader
+  // who had just uploaded twenty creatives for an account with no analysis
+  // yet (so nothing to map against) was told the only way out was to
+  // discard them. Mapping is the server's job now (creativeAutoMap.ts):
+  // files stay staged, the next analysis run maps them, and the editor
+  // remains available for corrections.
   const handleOpenChange = (o: boolean) => {
-    if (!o && unmappedCreatives.length > 0) {
-      setShowDiscardConfirm(true);
-      return;
-    }
     if (!o) doClose();
     else onOpenChange(true);
   };
 
-  const handleConfirmDiscard = async () => {
-    setDiscarding(true);
-    setDiscardError(null);
-    const failed: string[] = [];
-    try {
-      for (const asset of unmappedCreatives) {
-        try {
-          await deleteMutation.mutateAsync({ accountId: account.id, importId: asset.id });
-        } catch {
-          failed.push(asset.filename);
-        }
-      }
-    } finally {
-      setDiscarding(false);
-      // Refresh so the list reflects whichever deletes succeeded (avoids
-      // stale unmapped rows re-appearing on the next open or retry).
-      void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(account.id) });
-    }
-    if (failed.length > 0) {
-      // Stay open so the user can retry or map the remaining files.
-      setDiscardError(
-        `Could not delete ${failed.length === 1 ? `"${failed[0]}"` : `${failed.length} files`}. Try again or map ${failed.length === 1 ? "it" : "them"} manually.`
-      );
-      return;
-    }
-    setShowDiscardConfirm(false);
-    doClose();
-  };
-
   return (
     <>
-      <AlertDialog open={showDiscardConfirm} onOpenChange={(o) => { if (!o && !discarding) setShowDiscardConfirm(false); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Discard unmapped files?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {unmappedCreatives.length === 1
-                ? "1 creative file has no ad mapping yet."
-                : `${unmappedCreatives.length} creative files have no ad mapping yet.`}{" "}
-              Closing now will permanently delete{" "}
-              {unmappedCreatives.length === 1 ? "it" : "them"} — this cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {discardError && (
-            <p className="px-1 text-caption text-destructive">{discardError}</p>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={discarding} onClick={() => { setShowDiscardConfirm(false); setDiscardError(null); }}>
-              Keep editing
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={discarding}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => void handleConfirmDiscard()}
-            >
-              {discarding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-              Discard {unmappedCreatives.length === 1 ? "file" : "files"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
           className="flex flex-col max-w-md max-h-[90vh] p-0 gap-0"

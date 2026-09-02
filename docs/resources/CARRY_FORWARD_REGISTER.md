@@ -320,3 +320,43 @@ Supabase connector. PR #174 opened for the branch; its CI is the merge-path veri
 
 Owner-only, still: approve the tester (users live in Replit Postgres), the Auth
 leaked-password toggle, and `check:seed-fixture-drift` / `refresh:seed-fixture`.
+
+## 13. First fresh-account validation run — findings and fixes (2026-09-02, 11:26–12:15Z)
+
+The tester's run went through the new-account manual upload end to end. Four findings, and
+one incident the logs explain.
+
+### 13.1 The incident: the database wedged during the run
+
+Reconstructed from the Supabase unified logs (edge, PostgREST, Postgres):
+
+| Time (UTC) | What the logs show |
+|---|---|
+| 11:26–11:47 | ~20 creative assets staged, every request 200/201 |
+| ~11:47 | Analysis run started; its first read was `manual_imports?select=id,filename,content,kind` for **every staged performance file at once** |
+| 09:49 (earlier, AAFE) | The same shape of read for ONE file: a 13 s query — PostgREST hex-encodes the bytea (2×), `json_agg`s it in one backend, and Node parses the doubled string |
+| 11:44 | Last Postgres log line: a checkpoint that took 36 s to write 360 buffers — the disk was starved |
+| 11:48 → | Every REST request 522/525 ("Warp server error: Thread killed by timeout manager"), including the seed's 30 table reads and the run's own file read at 11:57 |
+| 11:58 → 12:15+ | No Postgres, PgBouncer or PostgREST log line at all; direct SQL through the connector times out on `select 1` |
+
+**Diagnosis.** Reading four staged files' full bytes through PostgREST as hex-in-JSON in one
+query exhausted the instance; it never recovered on its own. The seed could not load, so
+every reload sat on the boot splash — the "platform stalls in the loading interface when
+reloaded during a run" report is this incident seen from the browser. **The database needs a
+restart from the Supabase dashboard (owner).** No data is at risk: the run had committed
+nothing yet (it failed on its first read) and the staged rows were written before 11:48.
+
+### 13.2 Fixes shipped on `claude/pre-release-reconciliation-ux-cznjbz`
+
+| # | Finding | Fix |
+|---|---|---|
+| 1a | Bulk bytea reads through PostgREST JSON | `supabaseBinary.ts`: one bytea cell per request as `Accept: application/octet-stream` (raw bytes, no hex, no `json_agg`). `loadImportContentBuffer` reads one file at a time, inline or chunked, and checks the byte count against the row's `size_bytes`. The run and the `/file` route select metadata only — **no code path selects `content` for more than one row.** |
+| 1b | Boot splash had no deadline | `MetrixDataProvider` measures the first load; past 20 s the splash says the data service has not answered and offers a retry that cancels the hung request first (`MetrixBootLoader` `slow` state, tested). |
+| 2 | Ad Summary export warned about columns it does not need | Metric expectations are per class (`expectedBaseMetricsFor` / `coreBaseMetricsFor` in `iapCsvSpec.ts`): the summary is a ledger, judged on Amount spent · Impressions · Reach · Results · Result type. Engagement/video columns are accepted when present and never reported missing, never enter `mapping_summary` as "missing", and no longer cut the confidence grade. The Required-format panel groups them as optional. Pivots keep the full base list. BUG-27 had only restyled this list. |
+| 3 | Run analysis click showed nothing | The POST does not answer until every staged file has been validated, and the run row exists only after that. `AnalysisControls` now renders the progress bar from the click ("Validating staged files before the run starts"), scrolls it into view, and hands over to the server's own progress when the row appears. The stage strip pulses on the current node too; the run list and stage status poll while a run is in flight. |
+| 4a | Creative upload dialog blocked and deleted | Both dialogs (`ManualImportDialog`, `CreativeLibraryDialog`) close freely; the "discard unmapped files" guard that offered to DELETE creatives is gone. Filename → ad-name matching moved to the server (`creativeAutoMap.ts`, `adNameMatch.ts` copied byte-for-byte with a drift test): at staging against known ads, after every successful run against the registry it just wrote, and on "sync creative links". The client sends no mapping; the editor stays for corrections. |
+| 4b | No suggestion to deconstruct and re-analyze | `CreativeNextStepNudge` on the Analysis and Creative command centers: "Deconstruct N creatives" (runs the manual backfill) when staged creatives are not deconstructed; "Re-run analysis with the full IAP variable library" when the newest deconstruction postdates the last successful run. Dismissible per account per browser. Runs stay manual. |
+
+Not changed, on record: the run's pre-flight still parses every staged file before the
+row exists. The optimistic progress covers the wait; moving the row earlier would mean the
+conversion-export confirmation (a 409 before any run) has to become a run-time state.
