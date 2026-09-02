@@ -283,4 +283,19 @@ Four asks, all landed on `claude/pre-release-reconciliation-ux-cznjbz`:
 3. **Non-intrusive, persistent suggestion** — `CreativeSourceNudge` on the Creative command center and Library; per-account per-browser dismissal; self-hides once a servable creative or a deconstruction exists.
 4. **Data continuity** — one input shape for all creative sources with per-field precedence (uploaded asset > Meta API > export); the Meta API producer is a future module of that shape, not a rewrite. Copy reaches the Creative dialog through `cardFromLibraryCell`'s fallback, so a card built from an export-only ad shows its real copy, named by source.
 
-Schema: three additive `alter table … add column if not exists` lines on `concept_performance` in `schema.sql`. Apply with the importer's schema step (or `migrate` per the runbook) before the next analysis run; until then the columns are absent and every reader treats them as "not graded".
+Schema: three additive `alter table … add column if not exists` lines on `concept_performance` in `schema.sql`. **Applied to the live project on 2026-09-02** as Supabase migration `concept_performance_creative_evidence_columns` (verified: all three columns present, nullable). Runs from this point write them; rows from earlier runs stay "not graded" unless backfilled (§11).
+
+## 11. Live-environment reconciliation (2026-09-02, from the cloud session)
+
+Verified against the live Supabase project by read-only SQL, not from a checkout:
+
+| Check | Result |
+|---|---|
+| `check:ad-performance-views` (closeout §3.6 owner task) | **PASS** — all three `ad_performance_*` views carry `security_invoker=on`; `anon` and `authenticated` hold no SELECT |
+| RLS on `ad_performance`, `concept_performance`, `manual_analysis_runs` | enabled, zero policies — deny-by-default as `schema.sql`'s RLS block intends; service role bypasses |
+| Security advisors | 42 × `rls_enabled_no_policy` INFO (deliberate, per closeout §3.4); 4 × SECURITY DEFINER helpers callable by `authenticated` WARN (deferred by decision — **do not revoke EXECUTE**, the six run-scoped policies depend on them; plan A5); leaked-password protection off WARN (Auth dashboard toggle, not SQL — owner) |
+| `concept_performance` evidence columns | present after migration `concept_performance_creative_evidence_columns`; **one** run-keyed row graded by backfill with the engine's exact formula (the only ungraded row with a run id); the 28 importer-era rows (no run id) stay "not graded" by design |
+
+Still owner-only from a cloud checkout (no secrets here): `check:seed-fixture-drift`,
+`refresh:seed-fixture`, running analysis on Bookster / Fresh Import, deleting
+`archive/phase2-pre-rebase`, and the Auth leaked-password toggle.
