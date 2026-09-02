@@ -24,7 +24,9 @@ import { cn } from "@workspace/command-deck/lib/utils";
 import { HEADING } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext, getOptimizationLoop } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext, getOptimizationLoop, getCreativeComponents } from "@/lib/data/metrixSeedAdapter";
+import { CreativeComponentsPanel } from "@/components/creative/CreativeComponentsPanel";
+import { CreativeSourceNudge } from "@/components/creative/CreativeSourceNudge";
 import { ModuleHeader, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, CrossLink, InfoTooltip, SectionCard } from "../shared";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { CreativeExpandDialog } from "@/components/creative/CreativeExpandDialog";
@@ -37,7 +39,7 @@ import { fmtMetric } from "@/lib/normalize";
 import { demographicEmptyReasonFor, placementsEmptyReasonFor, funnelEmptyReasonFor } from "@/lib/creative-empty-reasons";
 import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
-import { Library, Tags, LayoutGrid, ClipboardList, Check } from "lucide-react";
+import { Library, Tags, LayoutGrid, ClipboardList, Check, AlignLeft } from "lucide-react";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
 import { scopeToRun } from "@/lib/run-supersede";
 
@@ -83,16 +85,63 @@ export function CreativeLibraryView() {
         const a = getAnalysisData(seed, adAccountId);
         const cardCtx = { perfRows: a?.performance_by_cell, mst, ...getCreativeLinkContext(seed, adAccountId) };
 
-        if (!mst || mst.status !== "active" || !mst.local_book2_library?.length) {
+        // Source precedence (owner decision 2026-09-02): when the scanned
+        // creative library is absent, the copy-level components the export
+        // already carries stand in, named as such. The page is blank only
+        // when neither exists.
+        const components = getCreativeComponents(seed, adAccountId);
+        const hasComponents = Boolean(components && components.coverage.ads_with_copy > 0);
+        const hasLibrary = Boolean(mst && mst.status === "active" && mst.local_book2_library?.length);
+        const rollupScoped = scopeToRun(a?.concept_rollup ?? [], a?.latest_analysis_run_id ?? null);
+        const componentCount = components
+          ? Object.values(components.families).reduce((n, rows) => n + rows.length, 0)
+          : 0;
+        const componentsTab = {
+          id: "components",
+          label: "Copy components",
+          count: componentCount,
+          Icon: AlignLeft,
+          disabledReason: hasComponents ? undefined : "The performance export carried no copy columns for this account",
+        };
+
+        if (!hasLibrary && !hasComponents) {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Library" accountName={acct.name} />
+              <CreativeSourceNudge account={acct} />
               <PendingState title="No scanned creatives" message={mst?.render_policy ?? "The creative scan populates once the local library is mapped."} icon={Library} />
             </div>
           );
         }
 
-        const library = mst.local_book2_library;
+        if (!hasLibrary || !mst) {
+          const noLibrary = "Scan creatives to populate this — the copy components below come from the performance export";
+          return (
+            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+              <ModuleHeader
+                section={SECTION}
+                title="Library"
+                accountName={acct.name}
+                subtitle="Copy-level components from the performance export · scan creatives for the visual library."
+                table="ad_performance.ad_creative_metadata"
+              />
+              <CreativeSourceNudge account={acct} />
+              <ModuleTabs
+                tabs={[
+                  { id: "library", label: "Concept library", count: 0, Icon: Library, disabledReason: noLibrary },
+                  { id: "variables", label: "Variable library", count: 0, Icon: Tags, disabledReason: noLibrary },
+                  { id: "cross", label: "Cross-map", count: 0, Icon: LayoutGrid, disabledReason: noLibrary },
+                  componentsTab,
+                ]}
+                active="components"
+                onChange={() => {}}
+              />
+              <CreativeComponentsPanel components={components!} rollup={rollupScoped} />
+            </div>
+          );
+        }
+
+        const library = mst.local_book2_library!;
 
         // ── Next moves: optimization-loop recommendation cards scoped to
         // creative actions, sourced from the same categorization RecommendationDeck
@@ -150,6 +199,7 @@ export function CreativeLibraryView() {
               subtitle="The scanned creative asset register and the variable library it produces."
               table="local_book2_library"
             />
+            <CreativeSourceNudge account={acct} />
             <div className="px-6 pt-5">
               <SectionCard
                 title="Next moves"
@@ -215,10 +265,14 @@ export function CreativeLibraryView() {
                 { id: "library", label: "Concept library", count: library.length, Icon: Library },
                 { id: "variables", label: "Variable library", count: distinctVarCount, Icon: Tags },
                 { id: "cross", label: "Cross-map", count: crossConcepts.length, Icon: LayoutGrid },
+                componentsTab,
               ]}
               active={tab}
               onChange={setTab}
             />
+            {tab === "components" && components && (
+              <CreativeComponentsPanel components={components} rollup={rollupScoped} />
+            )}
             <div className="px-6 py-5 space-y-4">
               <CaveatNote text={mst.render_policy} />
 

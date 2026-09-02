@@ -1019,3 +1019,48 @@ describe("optimization_loop surface", () => {
     expect(loop["source_policy"]).toBeUndefined();
   });
 });
+
+describe("creative components seed exposure (F-a)", () => {
+  it("weights the export's copy columns and attaches each ad's copy to the registry", () => {
+    const t = emptyTables();
+    const meta = (h: string, b: string) => ({ "Ad creative headline": h, "Ad creative body text": b, "Ad creative call to action type": "SHOP_NOW" });
+    t.adPerformance = new Map([[
+      "acct_a",
+      [
+        { account_id: "acct_a", ad_name: "A1", spend: 300, results: 30, impressions: 1000, link_clicks: 50, result_type: "purchase", ad_creative_metadata: meta("Fast", "Body 1") },
+        { account_id: "acct_a", ad_name: "A2", spend: 100, results: 2, impressions: 500, link_clicks: 10, result_type: "purchase", ad_creative_metadata: meta("Slow", "Body 2") },
+        { account_id: "acct_a", ad_name: "A3", spend: 100, results: 5, impressions: 500, link_clicks: 10, result_type: "purchase", ad_creative_metadata: null },
+      ] as Row[],
+    ]]);
+    t.adsRegistry = new Map([["acct_a", [{ ad_name: "A1" }, { ad_name: "A3" }] as Row[]]]);
+    t.conceptPerformance = new Map([["acct_a", [
+      { book: "BOOK1", concept: "C1", spend: 400, results: 32, confidence_level: "medium", creative_coverage_pct: 80, evidence_grade: "full", confidence_score: 0.7 },
+      { book: "BOOK1", concept: "C2", spend: 100, results: 5, confidence_level: "medium" },
+    ] as Row[]]]);
+
+    const acct = buildAccountObject({ id: "acct_a", name: "A" }, t) as Row;
+    const cc = acct["creative_components"];
+    expect(cc).toBeTruthy();
+    expect(cc.coverage.ads_total).toBe(3);
+    expect(cc.coverage.ads_with_copy).toBe(2);
+    expect(cc.coverage.coverage).toBeCloseTo(400 / 500, 4);
+    expect(cc.coverage.sources).toEqual(["performance_export"]);
+    expect(cc.families.headline[0].value).toBe("Fast");
+    expect(cc.families.headline[0].weight).toBe(1);
+    expect(cc.families.cta_type[0].ads).toBe(2);
+
+    const ads = acct["ads"] as Row[];
+    expect(ads.find((a) => a["ad_name"] === "A1")?.["creative"]).toMatchObject({ headline: "Fast", primary_text: "Body 1", cta_type: "SHOP_NOW", source: "performance_export" });
+    expect(ads.find((a) => a["ad_name"] === "A3")?.["creative"]).toBeNull();
+
+    const rollup = acct["iap"]["analysis"]["concept_rollup"] as Row[];
+    expect(rollup[0]).toMatchObject({ creative_coverage_pct: 80, evidence_grade: "full", confidence_score: 0.7 });
+    // A row computed before the columns existed is not graded — never "none".
+    expect(rollup[1]).toMatchObject({ creative_coverage_pct: null, evidence_grade: null, confidence_score: null });
+  });
+
+  it("emits null creative_components on an account with no ad rows", () => {
+    const acct = buildAccountObject({ id: "acct_a", name: "A" }, emptyTables()) as Row;
+    expect(acct["creative_components"] ?? null).toBeNull();
+  });
+});

@@ -201,15 +201,28 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
         </div>
       )}
 
-      {(data.primaryText || data.secondaryText || data.cta) && (
+      {(data.primaryText || data.secondaryText || data.cta || data.description) && (
         <div className="space-y-2">
-          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Copy</p>
+          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>
+            Copy
+            {data.copySource && data.copySource !== "library" && (
+              <span className="ml-1 normal-case tracking-normal font-normal">
+                · from {data.copySource === "performance_export" ? "the performance export" : data.copySource === "meta_api" ? "the Meta API" : "the uploaded creative"}
+              </span>
+            )}
+          </p>
           {data.primaryText && <p className="text-body text-foreground/85 leading-relaxed">{data.primaryText}</p>}
           {data.secondaryText && <p className="text-caption text-muted-foreground/75 leading-relaxed">{data.secondaryText}</p>}
+          {data.description && <p className="text-caption text-muted-foreground/75 leading-relaxed">{data.description}</p>}
           {data.cta && (
             <span className="inline-flex text-label font-semibold text-interactive border border-primary/25 bg-primary/10 px-2 py-1 rounded">
               CTA · {data.cta}
             </span>
+          )}
+          {(data.linkDestination || data.mediaName) && (
+            <p className="text-label text-muted-foreground/75 truncate" title={[data.linkDestination, data.mediaName].filter(Boolean).join(" · ")}>
+              {[data.linkDestination, data.mediaName].filter(Boolean).join(" · ")}
+            </p>
           )}
         </div>
       )}

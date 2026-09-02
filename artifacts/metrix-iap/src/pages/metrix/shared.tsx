@@ -1337,7 +1337,7 @@ export function ModuleTabs<T extends string>({
   onChange,
   label = "Section",
 }: {
-  tabs: { id: T; label: string; count?: number; Icon?: React.ComponentType<{ className?: string }> }[];
+  tabs: { id: T; label: string; count?: number; Icon?: React.ComponentType<{ className?: string }>; disabledReason?: string }[];
   active: T;
   onChange: (id: T) => void;
   label?: string;

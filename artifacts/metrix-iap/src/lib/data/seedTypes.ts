@@ -224,6 +224,12 @@ export interface ConceptRollupRow {
   performance_lift_vs_baseline?: string | number | null;
   performance_tier?: string | null;
   confidence_level?: string | null;
+  /** Share (0–100) of the concept's spend on ads whose copy the export carried; null before the column existed. */
+  creative_coverage_pct?: number | null;
+  /** full ≥ 80% coverage · partial > 0 · none — null before the column existed (not graded, never "no evidence"). */
+  evidence_grade?: "full" | "partial" | "none" | string | null;
+  /** confidence_level's score scaled by creative coverage (0..1, 70% floor); null before the column existed. */
+  confidence_score?: number | null;
 }
 
 export interface AnalysisData {
@@ -648,6 +654,68 @@ export interface AdRecord {
     link_clicks: number;
     result_type: string | null;
   } | null;
+  /**
+   * The ad's creative components, resolved across sources by precedence
+   * (uploaded asset > Meta API > performance export) and tagged with the
+   * source that supplied them. Null when no source carried any copy.
+   */
+  creative?: AdCreativeCopy | null;
+}
+
+// ─── Creative components (copy-level intelligence) ────────────────────
+
+export type CreativeInputSource = "performance_export" | "uploaded_asset" | "meta_api";
+export type CreativeComponentFamily = "headline" | "primary_text" | "description" | "cta_type";
+
+export interface AdCreativeCopy {
+  headline: string | null;
+  primary_text: string | null;
+  description: string | null;
+  cta_type: string | null;
+  link_destination: string | null;
+  image_name: string | null;
+  video_name: string | null;
+  source: CreativeInputSource;
+}
+
+/** One distinct component value, weighted against the ads that carried it. */
+export interface CreativeComponentWeight {
+  family: CreativeComponentFamily;
+  value: string;
+  ads: number;
+  ad_names: string[];
+  spend: number;
+  results: number;
+  impressions: number;
+  link_clicks: number;
+  cost_per_result: number | null;
+  ctr_link_pct: number | null;
+  spend_share: number;
+  result_share: number;
+  /** Covered-set cost per result ÷ this value's; 1 = baseline; null without results. */
+  efficiency_index: number | null;
+  /** result_share × efficiency_index normalised to the family's best, 0..1. */
+  weight: number;
+  rank: number;
+  confidence: "high" | "medium" | "low" | "validation_required";
+  result_types: string[];
+}
+
+export interface CreativeCoverage {
+  ads_total: number;
+  ads_with_copy: number;
+  spend_total: number;
+  spend_with_copy: number;
+  /** Spend-weighted share of the account whose copy is known, 0..1. */
+  coverage: number;
+  by_family: Record<CreativeComponentFamily, number>;
+  sources: CreativeInputSource[];
+}
+
+export interface CreativeComponents {
+  baseline: { spend: number; results: number; cost_per_result: number | null };
+  families: Record<CreativeComponentFamily, CreativeComponentWeight[]>;
+  coverage: CreativeCoverage;
 }
 
 // ─── Ad account ───────────────────────────────────────────────────────
@@ -717,6 +785,8 @@ export interface AdAccount {
   listen?: { signal_cards: SignalCard[] };
   /** Creative deconstruction classifications (uploaded creatives → IAP library). */
   creative_deconstructions?: CreativeDeconstruction[];
+  /** Copy-level components weighted against performance; null until the account has ad rows. */
+  creative_components?: CreativeComponents | null;
 }
 
 // ─── Creative deconstruction (uploaded creatives → IAP library) ───────
