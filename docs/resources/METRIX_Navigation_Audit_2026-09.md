@@ -190,4 +190,18 @@ rename in `navTree` and the tab bar would have disagreed with the sidebar.
 See the closing commit on the branch; every figure below is from a command run
 on this tree.
 
-VERIFICATION_TABLE
+| Check | Result |
+|---|---|
+| `pnpm run typecheck` | clean |
+| 13 CI design gates (`disclosure-rulebook` … `cohort-reach`) + `unused-exports` | all pass; two `navHistory.ts` test seams recorded in the export baseline, reason in the commit |
+| `check:api-codegen-drift` | pass |
+| Metrix IAP vitest | **182 files, 2337 tests, 0 failures** (one pre-existing test pinned the legacy tray route; updated) |
+| scripts unit tests | 7 files, 119 tests |
+| `smoke:metrix-iap-build` | `BUILD OK` and the login render check |
+| `smoke:metrix-iap-route-crawl` | 153 visits clean, 0 problems on the first run (before the spec read the table); the re-run with the table is recorded in the closing commit |
+
+The crawl reads its route list out of `navTree.ts`, `App.tsx` and, from this pass,
+`legacyRoutes.ts` — the first run after the table move walked 153 visits and
+printed PASS, having silently lost the 19 redirects (57 visits). A passing check
+that covers less than it did is the failure mode the reface register's §7.3 warns
+about; the spec now reads the table.
