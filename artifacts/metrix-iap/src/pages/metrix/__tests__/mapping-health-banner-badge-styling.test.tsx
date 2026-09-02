@@ -68,6 +68,12 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
   };
 });
 
+// AnalysisControls reads the seed (the run's reconciliation ledger) through
+// the seed context, mocked here the way every other seed-consumer test does.
+vi.mock("@/contexts/MetrixDataContext", () => ({
+  useMetrixSeed: () => ({ ad_accounts: [], manager: null }),
+  useMetrixIsRefetching: () => false,
+}));
 vi.mock("@workspace/command-deck/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));

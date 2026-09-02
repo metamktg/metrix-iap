@@ -41,7 +41,7 @@ import { RunProgress } from "@/components/widgets/RunProgress";
 import { fmtDuration } from "@/lib/runEta";
 import { CsvWarningsPanel } from "@/components/analysis/CsvWarningsPanel";
 import { ReconciliationPanel } from "@/components/evidence/ReconciliationPanel";
-import { useMetrixSeedOptional } from "@/contexts/MetrixDataContext";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   AlertDialog,
@@ -1013,8 +1013,8 @@ export function AnalysisControls({
   const queryClient = useQueryClient();
   // The latest run's reconciliation ledger (seed, scoped to the account) —
   // rendered as the Reconciliation panel once a run has settled.
-  const seed = useMetrixSeedOptional();
-  const reconciliation = seed ? getAnalysisData(seed, accountId)?.reconciliation ?? null : null;
+  const seed = useMetrixSeed();
+  const reconciliation = getAnalysisData(seed, accountId)?.reconciliation ?? null;
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
   const { data: runsData } = useListAnalysisRuns(accountId);
