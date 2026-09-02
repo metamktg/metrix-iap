@@ -5,7 +5,14 @@
 // a partial source with the smallest tag that still reads, never a banner.
 // The sentences live behind DetailReveal (signalExplainerSections), so no
 // surface carries a paragraph of caveats on its first layer.
+//
+// Accessibility contract (tests/e2e/metrix-iap-avatars-tooltips.spec.ts):
+// the tag is a plain, NON-focusable <span> — static text, not a control —
+// that carries its rationale as always-present sr-only text and shows the
+// same rationale in a hover tooltip. It renders inside <button> rows, so it
+// must never contain an interactive element.
 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
 import type { DetailSection } from "@/pages/metrix/shared";
@@ -15,25 +22,38 @@ const HIGH_MEANING =
   "Clears the documented high confidence band on its own volume (more than 100 results or $1,000 of spend) with no thin-read flags. Read it with confidence.";
 const OK_MEANING = "An ordinary, usable read: inside the documented medium band with no thin-read flags.";
 
+function TaggedSpan({ rationale, className, testId, state, children }: { rationale: string; className?: string; testId: string; state: string; children: React.ReactNode }) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span data-testid={testId} data-state={state} className={cn("inline-flex items-center gap-1 rounded-full border px-1.5 py-px whitespace-nowrap select-none cursor-default", TYPE.microLabel, className)}>
+            {children}
+            <span className="sr-only">{` — ${rationale}`}</span>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[260px]">
+          <p className="text-caption leading-relaxed">{rationale}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 /** The tag itself. Renders nothing for an ordinary read — silence is the default state. */
 export function SignalTag({ signal, className, testId }: { signal: SegmentSignal; className?: string; testId?: string }) {
   if (signal.state === "ok") return null;
   const high = signal.state === "high";
   return (
-    <span
-      data-testid={testId ?? "signal-tag"}
-      data-state={signal.state}
-      title={high ? HIGH_MEANING : signal.reasons.join(" ")}
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-1.5 py-px whitespace-nowrap select-none",
-        TYPE.microLabel,
-        high ? "border-status-success/30 bg-status-success/10 text-status-success" : "border-border/50 bg-transparent text-muted-foreground/75",
-        className,
-      )}
+    <TaggedSpan
+      testId={testId ?? "signal-tag"}
+      state={signal.state}
+      rationale={high ? HIGH_MEANING : signal.reasons.join(" ")}
+      className={cn(high ? "border-status-success/30 bg-status-success/10 text-status-success" : "border-border/50 bg-transparent text-muted-foreground/75", className)}
     >
       <span className={cn("w-1 h-1 rounded-full", high ? "bg-current" : "bg-status-warning/80")} aria-hidden />
       {high ? "High signal" : "Low signal"}
-    </span>
+    </TaggedSpan>
   );
 }
 
@@ -41,18 +61,14 @@ export function SignalTag({ signal, className, testId }: { signal: SegmentSignal
 export function CoverageTag({ coverage, className, testId }: { coverage: SegmentSignalCoverage | null | undefined; className?: string; testId?: string }) {
   if (!coverage?.partial) return null;
   return (
-    <span
-      data-testid={testId ?? "coverage-tag"}
-      data-state="partial"
-      title={coverage.note ?? "The demographic export covers part of this account's spend; segment reads describe that slice."}
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full border border-border/50 px-1.5 py-px whitespace-nowrap select-none text-muted-foreground/75 tabular-nums",
-        TYPE.microLabel,
-        className,
-      )}
+    <TaggedSpan
+      testId={testId ?? "coverage-tag"}
+      state="partial"
+      rationale={coverage.note ?? "The demographic export covers part of this account's spend; segment reads describe that slice."}
+      className={cn("border-border/50 text-muted-foreground/75 tabular-nums", className)}
     >
       {coverage.pct != null ? `${coverage.pct}% coverage` : "Partial coverage"}
-    </span>
+    </TaggedSpan>
   );
 }
 

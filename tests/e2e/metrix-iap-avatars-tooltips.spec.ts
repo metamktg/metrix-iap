@@ -4,9 +4,11 @@
 // MstCommandCenter.tsx's top-of-file note).
 //
 // Covers:
-//   1. Audience segment "low signal / signal ✓" badge — hover shows the
-//      rationale tooltip, sr-only rationale text is present in the DOM, and
-//      the badge is a plain <span> (no nested-interactive violation).
+//   1. Audience segment signal tag ("Low signal" / "High signal"; an
+//      ordinary read renders no tag at all — owner direction 2026-09-02) —
+//      hover shows the rationale tooltip, sr-only rationale text is present
+//      in the DOM, and the tag is a plain <span> (no nested-interactive
+//      violation).
 //   2. ICP card "Profile detail" toggle reveals placements; the
 //      "Account placements" label inside carries a hover-tooltip disclosure
 //      (this data is account-wide, not scoped to the individual profile)
@@ -239,7 +241,7 @@ async function main() {
         try {
           const badge = page
             .locator("span")
-            .filter({ hasText: /^(low signal|signal ✓)/ })
+            .filter({ hasText: /^(Low signal|High signal)/ })
             .first();
           await badge.waitFor({ state: "visible", timeout: 10_000 });
 
@@ -269,9 +271,9 @@ async function main() {
 
           // Hover tooltip: text depends on signal state.
           const badgeText = (await badge.textContent()) ?? "";
-          const expected = badgeText.includes("low signal")
+          const expected = badgeText.includes("Low signal")
             ? "" // low-signal reasons are data-dependent; fall through below
-            : "Sufficient spend and impressions for a reliable read.";
+            : "Clears the documented high confidence band";
           if (expected) {
             await hoverAndExpect(page, badge, expected, "signal badge");
           } else {
@@ -536,7 +538,7 @@ async function main() {
         try {
           const badge = page
             .locator("span")
-            .filter({ hasText: /^(low signal|signal ✓)/ })
+            .filter({ hasText: /^(Low signal|High signal)/ })
             .first();
           await badge.waitFor({ state: "visible", timeout: 10_000 });
           const tabindex = await badge.evaluate((el) =>
