@@ -58,6 +58,11 @@ evening: PR #181 merged as `d0e0de0`, DDL applied as migration `reconciliation_e
 published and verified (register §14 ship record). The first run on the new build, and the live
 ledger cross-check that follows it, are the owner's next step.
 
+**Signal, not warnings (2026-09-02, evening).** Register §14, last entries. Coverage is context
+beside the classification, never a gate; the variable drill-down joins through the evidence layer;
+the IAP Library's `KpiTileRow` is the one metric-header pattern (Avatars segment cards and DNA family
+cards are the open candidates). Shipped as PR #182 and verified live.
+
 **Shipped to app.metrix.ad (2026-09-02).** PR #174 (navigation overhaul, creative components,
 Phase 4 plan) merged to `main` at `5cdaaa5`, the workspace merged `main`, and the publish was
 verified by bundle hash and content marker (register §12). Validation of the shipped build is

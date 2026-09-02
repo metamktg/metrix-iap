@@ -569,3 +569,13 @@ impressions). Already on it: Audience, the Creative dialog Overview, Analysis Ov
 candidates that still carry a fixed stat trio: Avatars segment cards (Spend · CPA · Link CVR) and the
 DNA family cards (Spend · Results · CPA); the segment drill-down has its own picker and should align
 to the same primitive.
+
+**Shipped to app.metrix.ad (2026-09-02, ~18:45 ET).** PR #182 (signal tags instead of coverage
+warnings; variable drill-down through the evidence layer; one configurable metric-header pattern;
+sweep fixes) merged by the owner on CI run 387 (green on `d460a0f`). The CI round before it failed on
+`smoke:metrix-iap-avatars-tooltips`, which pins the segment badge's accessibility contract (plain
+non-focusable span, sr-only rationale, hover tooltip) — the tag now honours that contract and the spec
+reads the new labels. Workspace merged main (`153daf4`, empty diff), deployment `329ef7e0` succeeded,
+live entry bundle `index-BEARo3NI.js` equals the local build of the same tree, the `CreativeCard`
+chunk md5 matches, healthz 200. The one live check still waiting on the owner: an analysis run on
+`manual_AHXANj6Vjozp` on this build, then `check:reconciliation-ledger`.
