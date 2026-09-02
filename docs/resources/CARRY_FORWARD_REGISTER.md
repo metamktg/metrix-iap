@@ -373,3 +373,22 @@ conversion-export confirmation (a 409 before any run) has to become a run-time s
 
 The tester can now re-run the analysis on the same account with its staged files. The first
 read is one file at a time as binary, so the run cannot repeat §13.1.
+
+### 13.4 Follow-up: the binary read was refused (2026-09-02, 13:30Z)
+
+The tester's first re-run on the fixed build failed on its first read with "Import … does not
+exist". The edge logs show why: every `Accept: application/octet-stream` read of
+`manual_imports?select=content` returned **406** — PostgREST on this project (12+) does not
+serve raw bytes for a table column, and a function returning plain `bytea` is refused the same
+way (PGRST107 "None of these media types are available"). The reader had mapped 406 to "no
+row". Three runs errored honestly; the staged files were untouched.
+
+**Fix.** PostgREST 12's documented mechanism: a domain named after the media type
+(`create domain "application/octet-stream" as bytea`) and functions that RETURN it —
+`manual_import_content(uuid)` and `manual_import_chunk_content(uuid, integer)`, invoker
+security, executable by the service role only. Applied live as migrations
+`manual_import_bytea_readers` + `manual_import_bytea_readers_octet_domain`, mirrored in
+`schema.sql`; the anon probe now gets "permission denied" (401), not 406. `supabaseBinary.ts`
+calls those RPCs; if binary output is ever refused again it falls back to the one thing that
+was always safe — ONE row's `content` as JSON, one file at a time — and logs that it did. Unit
+tests pin both paths and that a non-406 failure is raised, never read as "missing".

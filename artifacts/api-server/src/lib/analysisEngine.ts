@@ -41,7 +41,7 @@ import { computeObjectiveCoverage, OBJECTIVE_GROUP_FOR_KEY } from "./objectiveCo
 import { convertXlsxToCsvText, looksLikeXlsxContent, readXlsxHeaderCells } from "./xlsxToCsv";
 import { extensionOf } from "./creativeAssetType";
 import { syncStickyCreativeAssetMappings } from "./creativeAssetMappingService";
-import { fetchByteaCell } from "./supabaseBinary";
+import { fetchImportContent, fetchImportChunk } from "./supabaseBinary";
 import { autoMapUnmappedCreatives } from "./creativeAutoMap";
 
 
@@ -726,7 +726,7 @@ export async function loadImportContentBuffer(imp: {
             const n = meta.data[0]?.["size_bytes"];
             return typeof n === "number" ? n : null;
           })();
-    const bytes = await fetchByteaCell("manual_imports", "content", { id: `eq.${importId}` });
+    const bytes = await fetchImportContent(importId);
     if (bytes === null) throw new Error(`Import ${importId} does not exist.`);
     if (expected !== null && bytes.length !== expected) {
       throw new Error(
@@ -738,10 +738,7 @@ export async function loadImportContentBuffer(imp: {
 
   const parts: Buffer[] = [];
   for (const i of indices) {
-    const chunk = await fetchByteaCell("manual_import_chunks", "content", {
-      import_id: `eq.${importId}`,
-      chunk_index: `eq.${i}`,
-    });
+    const chunk = await fetchImportChunk(importId, i);
     if (chunk === null || chunk.length === 0) throw new Error(`Import ${importId} chunk ${i} is empty.`);
     parts.push(chunk);
   }
