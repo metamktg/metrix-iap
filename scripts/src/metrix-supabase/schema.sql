@@ -800,6 +800,50 @@ create table if not exists manual_import_chunks (
 alter table manual_import_chunks enable row level security;
 revoke all on manual_import_chunks from anon, authenticated;
 
+-- Raw-bytes readers for staged uploads — one cell per call, served by
+-- PostgREST as binary output (Accept: application/octet-stream). PostgREST
+-- 12+ serves raw bytes ONLY for a function whose return type is a domain
+-- named after the media type; a table column or a plain bytea return gets
+-- 406 (PGRST107) — both confirmed on the live project. The API server's
+-- lib/supabaseBinary.ts calls these and nothing else reads `content`.
+-- Invoker security; execute limited to the service role. Applied live as
+-- migrations manual_import_bytea_readers + …_octet_domain (2026-09-02).
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'application/octet-stream') then
+    create domain "application/octet-stream" as bytea;
+  end if;
+end $$;
+
+drop function if exists public.manual_import_content(uuid);
+drop function if exists public.manual_import_chunk_content(uuid, integer);
+
+create function public.manual_import_content(p_import_id uuid)
+returns "application/octet-stream"
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select content from public.manual_imports where id = p_import_id
+$$;
+
+create function public.manual_import_chunk_content(p_import_id uuid, p_chunk_index integer)
+returns "application/octet-stream"
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select content from public.manual_import_chunks
+  where import_id = p_import_id and chunk_index = p_chunk_index
+$$;
+
+revoke all on function public.manual_import_content(uuid) from public, anon, authenticated;
+revoke all on function public.manual_import_chunk_content(uuid, integer) from public, anon, authenticated;
+grant execute on function public.manual_import_content(uuid) to service_role, postgres;
+grant execute on function public.manual_import_chunk_content(uuid, integer) to service_role, postgres;
+
 -- Persists the CSV column-mapping report produced at upload time so the
 -- CsvMappingPanel can be re-hydrated from the GET /manual-imports response
 -- on any subsequent visit (dialog re-open, page refresh) without requiring
