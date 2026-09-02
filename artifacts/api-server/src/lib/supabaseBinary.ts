@@ -104,3 +104,47 @@ export async function fetchImportChunk(importId: string, chunkIndex: number): Pr
   logger.warn({ importId, chunkIndex }, "PostgREST refused binary output for manual_import_chunk_content; falling back to a single-row JSON read");
   return selectSingleBytea("manual_import_chunks", "content", { import_id: importId, chunk_index: chunkIndex });
 }
+
+/**
+ * Every byte of one staged import, inline or chunked, one request per cell.
+ * Reads the row's own metadata first so a short or empty binary response is
+ * caught as the error it is. Callers pass `{ id }` and never `content`.
+ */
+export async function loadImportBytes(importId: string, knownSizeBytes?: number | null): Promise<Buffer> {
+  if (!importId) throw new Error("loadImportBytes: an import id is required.");
+  const supabase = getSupabase();
+  const { data: index, error: idxErr } = await supabase
+    .from("manual_import_chunks")
+    .select("chunk_index")
+    .eq("import_id", importId)
+    .order("chunk_index", { ascending: true });
+  if (idxErr) throw new Error(idxErr.message);
+  const indices = (index ?? []).map((r) => Number((r as Record<string, unknown>)["chunk_index"]));
+
+  if (indices.length === 0) {
+    let expected: number | null = typeof knownSizeBytes === "number" ? knownSizeBytes : null;
+    if (expected === null) {
+      const meta = await supabase.from("manual_imports").select("size_bytes").eq("id", importId).limit(1);
+      if (meta.error) throw new Error(meta.error.message);
+      if (!meta.data || meta.data.length === 0) throw new Error(`Import ${importId} does not exist.`);
+      const n = (meta.data[0] as Record<string, unknown>)["size_bytes"];
+      expected = typeof n === "number" ? n : null;
+    }
+    const bytes = await fetchImportContent(importId);
+    if (bytes === null) throw new Error(`Import ${importId} does not exist.`);
+    if (expected !== null && bytes.length !== expected) {
+      throw new Error(
+        `Import ${importId} read ${bytes.length} bytes but the row records ${expected} — refusing to use a partial file.`,
+      );
+    }
+    return bytes;
+  }
+
+  const parts: Buffer[] = [];
+  for (const i of indices) {
+    const chunk = await fetchImportChunk(importId, i);
+    if (chunk === null || chunk.length === 0) throw new Error(`Import ${importId} chunk ${i} is empty.`);
+    parts.push(chunk);
+  }
+  return Buffer.concat(parts);
+}

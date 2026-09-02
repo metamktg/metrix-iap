@@ -36,16 +36,23 @@ export function normalizeForMatch(value: string): string {
 const ID_CODE_PATTERNS: readonly RegExp[] = [
   /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
   /(?<![a-z0-9])[a-z]{1,4}[-_]?\d{3,8}(?![a-z0-9])/gi,
+  // Matrix cell / concept-variation codes: C1A, C2B, c3a — letter(s), a
+  // digit or two, letter(s). These are the identifiers the IAP naming
+  // convention puts in BOTH the ad name ("C2B", "C1A SKOV2") and the file
+  // name ("SKOV_C2B.png"), and they are the only thing that separates two
+  // files that otherwise look alike. Aspect tokens ("9x16", "1080x1350")
+  // do not match: they end in digits.
+  /(?<![a-z0-9])[a-z]{1,2}\d{1,2}[a-z]{1,2}(?![a-z0-9])/gi,
 ];
 
-/** Extracts normalized ID/creative code tokens from a filename or ad name (lowercased, separators stripped). Codes shorter than 4 chars after stripping are ignored — too common to be a reliable identifier. */
+/** Extracts normalized ID/creative code tokens from a filename or ad name (lowercased, separators stripped). Codes shorter than 3 chars after stripping are ignored — too common to be a reliable identifier; a cell code (C2B) is exactly 3. */
 export function extractIdCodes(value: string): string[] {
   const base = value.replace(/\.[^/.]+$/, "").toLowerCase();
   const codes = new Set<string>();
   for (const pattern of ID_CODE_PATTERNS) {
     for (const match of base.matchAll(pattern)) {
       const normalized = match[0].replace(/[-_]/g, "");
-      if (normalized.length >= 4) codes.add(normalized);
+      if (normalized.length >= 3) codes.add(normalized);
     }
   }
   return Array.from(codes);
@@ -129,7 +136,14 @@ export function suggestAdNameMatch(filename: string, candidates: Iterable<string
   const normalizedFile = normalizeForMatch(filename);
   if (!normalizedFile) return null;
 
+  // Identifier pass. A code the filename carries decides the match when
+  // exactly one candidate carries it. When SEVERAL candidates carry it
+  // ("C1A SKOV2" and "C1A SKOV2 T2"), the code is still the strongest
+  // signal there is: the similarity pass below is restricted to those
+  // owners, so the file can never drift to an ad with a different code.
+  // A file whose codes match NO candidate is judged on similarity alone.
   const fileCodes = extractIdCodes(filename);
+  let pool = candidateList;
   if (fileCodes.length > 0) {
     const ownersByCode = new Map<string, Set<string>>();
     for (const candidate of candidateList) {
@@ -138,16 +152,19 @@ export function suggestAdNameMatch(filename: string, candidates: Iterable<string
         ownersByCode.get(code)!.add(candidate);
       }
     }
+    const restricted = new Set<string>();
     for (const code of fileCodes) {
       const owners = ownersByCode.get(code);
       if (owners && owners.size === 1) {
         return { name: [...owners][0]!, method: "id" };
       }
+      if (owners) for (const o of owners) restricted.add(o);
     }
+    if (restricted.size > 0) pool = [...restricted];
   }
 
   let best: { name: string; score: number } | null = null;
-  for (const candidate of candidateList) {
+  for (const candidate of pool) {
     const normalizedCandidate = normalizeForMatch(candidate);
     if (!normalizedCandidate) continue;
     if (normalizedCandidate === normalizedFile) return { name: candidate, method: "fuzzy" };

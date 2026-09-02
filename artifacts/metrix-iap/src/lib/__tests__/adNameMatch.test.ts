@@ -117,3 +117,38 @@ describe("suggestAdNameMatch minimum containment signal", () => {
     expect(match === null || match.method === "guess").toBe(true);
   });
 });
+
+// ── Cell codes are identifiers ──────────────────────────────────────────────
+// The IAP naming convention puts the concept/variation code in both the ad
+// name and the file name. On the first fresh-account run, "SKOV_C2B.png"
+// had to land on the ad "C2B" and nowhere else, and two files that differ
+// only by that code had to land on two different ads.
+
+describe("suggestAdNameMatch — cell codes (C1A, C2B) decide the match", () => {
+  const ADS = ["C1A SKOV2", "C2A SKOV2", "C2B", "C3B", "New Sales Ad"];
+
+  it("routes a file to the one ad carrying its cell code, over a more similar-looking name", () => {
+    expect(suggestAdNameMatch("SKOV_C2B.png", ADS)).toEqual({ name: "C2B", method: "id" });
+    expect(suggestAdNameMatch("skov-c3b_9x16.mp4", ADS)).toEqual({ name: "C3B", method: "id" });
+  });
+
+  it("sends two files that differ only by code to two different ads", () => {
+    expect(suggestAdNameMatch("SKOV_C2A_9x16.png", ADS)?.name).toBe("C2A SKOV2");
+    expect(suggestAdNameMatch("SKOV_C2B_9x16.png", ADS)?.name).toBe("C2B");
+  });
+
+  it("keeps the similarity pass inside the code's owners when several ads share it", () => {
+    const withVariant = ["C1A SKOV2", "C1A SKOV2 T2", "C2B"];
+    expect(suggestAdNameMatch("SKOV_C1A_T2.png", withVariant)?.name).toBe("C1A SKOV2 T2");
+    expect(suggestAdNameMatch("SKOV_C1A.png", withVariant)?.name).toBe("C1A SKOV2");
+  });
+
+  it("does not read an aspect token as a code", () => {
+    expect(suggestAdNameMatch("hero_9x16.png", ["9x16 test", "Hero ad"])?.name).toBe("Hero ad");
+  });
+
+  it("returns at most a guess for a file that shares no real signal", () => {
+    const r = suggestAdNameMatch("ChatGPT Image Jul 13, 2026, 04_13_34 PM.png", ["18118246642761770 - Jun 16, 2026", "C2B"]);
+    expect(r === null || r.method === "guess").toBe(true);
+  });
+});
