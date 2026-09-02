@@ -360,3 +360,16 @@ nothing yet (it failed on its first read) and the staged rows were written befor
 Not changed, on record: the run's pre-flight still parses every staged file before the
 row exists. The optimistic progress covers the wait; moving the row earlier would mean the
 conversion-export confirmation (a 409 before any run) has to become a run-time state.
+
+### 13.3 Shipped (2026-09-02, 12:45–12:57Z)
+
+| Step | Result |
+|---|---|
+| Database | restarted by the owner; answered `select 1` again at 12:48Z; no run row stuck in `running` (none was ever created — the run failed before `startRun`) |
+| Tester's account | all staged rows intact after the restart: 3 performance CSVs (~13 MB) and 23 creatives (~54 MB), creatives unmapped as expected before a first run |
+| PR #176 | CI run 367 green; merged as a merge commit → `main` `2a7ff45` |
+| Replit workspace | fetched and merged `origin/main`; `creativeAutoMap.ts` confirmed present afterwards |
+| Publish | deployment `329ef7e0`, status `success`; verified from outside — live entry bundle `index-Dk4ETgw9.js` matches the local production build of `2a7ff45`, md5-identical, and carries the "Validating staged files before the run starts" marker; `/api/healthz` ok |
+
+The tester can now re-run the analysis on the same account with its staged files. The first
+read is one file at a time as binary, so the run cannot repeat §13.1.
