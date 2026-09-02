@@ -1,288 +1,235 @@
-# METRIX IAP — Phase 4: Release. What done looks like, and the plan to get there
+# METRIX IAP — Phase 4: Release. Revised plan (v2, 2026-09-02)
 
-**Cut 2026-09-02** on `claude/pre-release-reconciliation-ux-cznjbz`, after the
-navigation audit. Billing is out of scope by the owner's instruction and is not
-mentioned again. Every claim about the current state below was checked against
-the tree at this commit; where a figure is an estimate it says so.
+**Supersedes v1 of the same day.** v1 was audited line by line against what the
+owner actually tasked and what the registers already record, and reassessed from
+three disciplines. Everything below is in one of two tiers:
 
-Read `README_HANDOFF.md` (R1–R5), `CARRY_FORWARD_REGISTER.md` §8 and
-`METRIX_Navigation_Audit_2026-09.md` first. This document does not restate them;
-it turns them into a release plan.
+- **Tier 1 — tasked or on record.** In the owner's brief, or already recorded as
+  a decision or open item in `CARRY_FORWARD_REGISTER.md`, `README_HANDOFF.md` or the
+  reface register. This is the roadmap.
+- **Tier 2 — proposed, awaiting approval.** Raised by the assessment, not by the
+  brief. Nothing in this tier is built unless the owner says so.
+
+Billing is excluded by instruction.
+
+**Clarification acknowledged.** "Map" in the visualisation suite means non-geographic
+relationship structures only: **cross-maps** (concept × avatar, avatar × placement),
+**cluster maps** (segments grouped by cost and conversion), and **positioning maps**
+(ICP and concept positioning on the IAP's own axes). Never a geographic map. The
+app already carries the vocabulary — `HeatMatrix` renders four grids (cross map,
+avatar × concept, age × gender, ICP positioning) and `audience-clusters.ts` computes
+k-means clusters on CPA × CVR — so the work is completing and unifying it.
 
 ---
 
-## 0. What "done" looks like — the exit criteria
+## 1. Audit of v1 — what was removed, corrected, or reclassified
 
-A release is done when every line below is true and each is proven by the
-command or test named beside it. Nothing here is a feeling.
-
-| # | Done means | Proven by |
+| v1 item | Verdict | Reason |
 |---|---|---|
-| D1 | A new account goes from **connect** to **first populated dashboard** with no step after "Connect" (live) or after dropping the two exports (manual). | e2e `onboarding-zero-touch` spec: connect → pull → analysis → outputs, asserting no additional click |
-| D2 | Every IAP stage has a **producer**: analysis, strategy, briefs, deconstruct **and optimize**. No real account shows "No actions yet" after a run. | `check:loop-producers` (new): every `optimization_loop` / `recommendation_cards` reader has a writer; integration test on AAFE |
-| D3 | Every field the seed carries is **read on a screen or removed from the contract**. | `check:field-coverage` = 0 unread outside a reasoned allowlist, in CI |
-| D4 | **Nothing fabricated, nothing hidden.** No persisted zero stands in for unknown; every dash has a reason; a measured zero is 0. | S5 closed with backfill; `check:unexplained-dashes` in CI; C6 count 0 |
-| D5 | Every module has a **view switcher** (at least two of chart / table / matrix / funnel) whose state survives reload and a copied link. | `view-switcher` contract test per module; e2e URL round-trip |
-| D6 | Every command center opens on an **intelligence lead**: top finding, terminal metric, confidence, next action — sourced from that account's own rows. | `check:cohort-reach` unchanged; snapshot test per command center against the AAFE fixture |
-| D7 | The seed loads in **under 300 ms p95 for the index** and each account's detail on demand; no page waits on another account's data. | `lib/seedBudget` p95 in CI perf step; A12 closed |
-| D8 | **Security posture measured, not asserted.** Tenancy helpers not callable over PostgREST; all views `security_invoker`; RLS array generated from the schema. | `check:ad-performance-views` and a new `check:tenancy-helpers` run in CI with a read-only credential |
-| D9 | **Both themes, every route, no regressions.** Light and dark screenshots of all 70 routes × 3 account shapes reviewed once by a human and pinned. | Playwright visual baseline; `smoke:metrix-iap-route-crawl` 210/210 |
-| D10 | The **docs agree with the code**: the blueprint's cohort section rewritten to the 2026-09-01 decision; every register item closed or carried with a reason. | `README_HANDOFF.md` "where things stand" regenerated at cut |
+| Geographic map / choropleth, "geography as an ingestion decision" | **Removed** | Misread the brief. Map = cross / cluster / positioning. |
+| "No module offers a chart/table switch" (state §1) | **Corrected — false** | `components/data-module/{DataModule,ViewSwitcher,BreakdownControl}` and `lib/data-module/viewSupport.ts` exist (Phase 3 §02, the Universal Data Module: trend · compare · breakdown · funnel · map · table, each offered only when the data shape can back it). Adopted by **one** page (`BudgetView`). The work is adoption, not invention. |
+| Saved views per module | **Tier 2** | Configurable views were tasked; a persisted saved-views list was not. |
+| Server-sent "seed changed" events (B5) | **Tier 2** | Not tasked. The 5-minute cache with explicit invalidation is on record as the design. |
+| Daily scheduled live pulls (B1) | **Needs confirmation** | The brief says no additional user steps to seed data; `replit.md` says ingestion never triggers a loop run and the loop is execute-on-command. Whether "no steps" includes unattended pulls is the owner's call — question 1. |
+| Per-account "run after new data" policy (B2) | **Needs confirmation** | Same conflict, on the loop itself — question 1. |
+| Seed re-architecture (A4 / A12) | **Needs confirmation** | Recorded as the target shape, explicitly *not* attempted, "belongs in a scoped session" — question 3. |
+| Optimize producer (A1 / F-e) | **Needs confirmation** | Handoff R1 calls it the one true blocker; register §6 says "explicit-request-only, do not build speculatively". The brief's "fully operable, full IAP output surfaced" covers it, but the register asks for the words — question 2. |
+| "Under 300 ms p95" seed budget | **Removed** | A number nobody set. Replaced by the recorded `seedBudget` thresholds (5 MB log, 12 MB escalate). |
+| Treemap, small multiples | **Tier 2** | "Other visualisations" was tasked open-endedly; these two were my picks, not the owner's. |
+| Visual-regression screenshot baseline | **Tier 2** | Supports the recorded browser review, but is a new instrument. |
+| Folding the Findings page into a lead block | **Tier 2** | Already listed as open in the navigation audit §3; not decided. |
+| Rewriting the blueprint's cohort section (D10) | **Needs confirmation** | Closeout §3.7: the blueprint is canonical, changing it is an owner call — question 4. |
+| New gates `run-scope`, `loop-producers`, `tenancy-helpers`; one generated check list for CI and `.replit` | **Kept, Tier 1** | The CI/`.replit` divergence is a recorded trap (closeout §2.3) and the cumulative-table defect is recorded four times; the brief asks for integrity that is measured. These are instruments for recorded problems, not new features. |
+| Everything else in v1 (A2, A3, A5, A6 fixtures, C1 catalog, C2 switcher, C3 lead, C4, C5, D) | **Kept, Tier 1** | Each traces to the brief or to a register/handoff line, cited inline below. |
 
 ---
 
-## 1. Where the tree actually is (the facts the plan stands on)
+## 2. Expert reassessment — three lenses, and what each changed
 
-- **Ingestion.** Two paths. Manual: two exact Meta pivot CSVs plus creatives, staged
-  then run by hand (`ManualAnalysisControls`). Live: Meta OAuth (`ads_read`), report
-  pulls for two report classes (`metaGraph.ts:REPORT_CLASSES`), started by the user.
-  **There is no scheduler anywhere in `api-server`** — no cron, no interval — so
-  nothing arrives without a click.
-- **The loop.** `generationEngine.ts:34` exposes `strategy | briefs | deconstruct`.
-  The optimize / act stage is read by six surfaces and written by nothing (**F-e**).
-  Analysis is execute-on-command by rule (`replit.md`).
-- **The seed.** One document, every account the user may see, 5-minute cache,
-  61 components read it (**A12**). Fine at 11 accounts; the ceiling is logged, not
-  removed.
-- **Visualisation.** Nine chart components (`components/charts`: trend, ranked bars,
-  metric bars, share pie, funnel, heat matrix, dumbbell rows, variable stack,
-  metric table) on one token file, guarded by `chart-palette` in CI and
-  `chart-geometry` **not** in CI. Configurability today is the overview metric-tile
-  picker and the segment drill-downs; no module offers a chart/table switch.
-- **Honesty debt.** S5 persists zeros for unknown Reach/Impressions/Clicks; S3/S4
-  columns nobody trusts; C6 at 171 / 28; `reconciliation` declared and never written
-  (C9). 450 declared fields, 22 unread outside billing.
-- **Security.** RLS enforced and tested. Deferred by decision: four SECURITY DEFINER
-  tenancy helpers callable over PostgREST (one resolves any run id); leaked-password
-  protection off; the RLS enforcement array is maintained by hand (R4).
-- **Verification.** 13 design gates + drift check in CI; 182 vitest files; 18 e2e
-  specs runnable locally, **not** in CI; four gates (`chart-geometry`,
-  `unexplained-dashes`, `field-coverage`, `ui-inventory`) run nowhere automatically.
-- **Navigation.** Closed 2026-09-02 (audit). One tree, Back, palette, no legacy links.
+### 2.1 Product strategy
 
----
+**What makes this category-defining is the loop closing, not the chart count.** Every
+comparable tool stops at analysis. The IAP's defensible claim is Listen → Analysis →
+Strategy → Creative → MST → Act, with each output traceable to the rows that produced
+it. Today the act stage renders and nothing fills it. Until it does, the interface is a
+beautiful report. **Verdict:** the producer stays first in sequence (subject to
+question 2), and every visualisation in C1 is chosen for what it lets a reader *decide*,
+not for variety.
 
-## 2. The plan — four workstreams, one sequence
+**The value proposition is a decision, surfaced.** "Highlight the most informative
+data throughout" (brief, message 1) is met by leading every command center with the
+account's top finding, its terminal metric on the derived objective, the confidence
+grade and the single next action — all from rows, never prose. **Verdict:** C3 stays,
+and it is the design that lets the strategy weighting engine (R4, awaiting a go) slot
+in later without a UI change.
 
-Each item names its exit. Items marked **[owner]** need a decision before build;
-they are listed again in §4 so nothing is silently picked.
+**Cut what does not move a decision.** v1's treemaps and small multiples were
+variety. The positioning map is not: the IAP method already classifies every concept
+into `scale_now | optimize | validate | explore | avoid` (`lib/data/scalingBuckets.ts`),
+and a positioning map is that classification drawn on its two axes. **Verdict:** the
+catalog is cross-map, cluster map, positioning map, funnel breakdown, and the existing
+trend / compare / breakdown / table — nothing else without approval.
 
-### Workstream A — Pipeline integrity (backend → frontend)
+### 2.2 Data engineering
 
-**A1 · The optimize producer (F-e).** The one true blocker. Add `optimize` as the
-fourth `GenerationKind`; evidence pack from real `ad_performance`,
-`concept_rollup` (run-scoped), `v3_variable_performance` (run-scoped),
-`placement_signal`; output rows in the official schema's *shape* — confidence
-`HIGH|MODERATE|LOW|INSUFFICIENT`, severity, campaign/ad_set-only budget scope —
-written to the importer schema so it ships (F-f recommendation on record). Same
-running/success/error pattern, one running run per account+kind.
-*Exit:* AAFE shows populated Action Queue cards from its own rows; the six readers
-render real data; D2 passes.
+**Automation multiplies runs, and two open items become load-bearing the moment it
+does.** `concept_rollup` and `v3_variable_performance` are cumulative per run; an
+unattended run per day per account writes a row set per day. (a) **S1 retention**
+(staged files were 363 MB of a 437 MB database; the reclaim exists, the sweep is
+manual) must run on a schedule *before* pulls do. (b) **Run scoping** must be a
+gate, not a convention: the unscoped-sum defect has shipped four times and surfaced
+only through a React key warning. **Verdict:** if question 1 is "yes", the retention
+sweep and `check:run-scope` are prerequisites in the same sprint, not follow-ups.
 
-**A2 · Surface the creative intelligence already written (F-a, F-b).**
-`ad_creative_metadata` (body, headline, CTA, destination, caption) and
-`extra_metrics`, `reach`, `clicks_all` into the seed's per-ad stats and the
-Creative dialog's Overview tab. Cheapest value on the register.
-*Exit:* `check:field-coverage` shows the fields read; the dialog shows copy beside
-performance.
+**The seed document is the ceiling, and automation lowers it.** A12 is honest that
+one document per user holding every account's nested analysis is fine at 11 accounts.
+Unattended runs invalidate that document more often, and `coalescedCache` (A5) only
+prevents the stampede, not the rebuild. **Verdict:** the seed split is the right
+architecture and the wrong time to do it *speculatively*; it is a scoped session
+(question 3), and if deferred, `seedBudget`'s thresholds are the tripwire.
 
-**A3 · Honesty debt, closed for good.** S5: three fields nullable end to end
-(`variable-drilldown`, `reportExport`, `dataExport`, `kpiBreakdown`,
-`VariableDrilldownModal`) **and** a one-shot backfill that nulls the stored zeros
-**[owner: normalise vs caveat]**. S3/S4: persisted rates either canonical or dropped
-**[owner]**. C9: write `reconciliation` from `computeDataCoverage` so the block
-`AnalysisHistoryView` already renders lights up. C6: finish the 171 / 28 sweep
-with `check:unexplained-dashes` promoted to CI at 0.
-*Exit:* D4.
+**Honesty invariants must survive automation.** A user-triggered run that fails is
+seen; an unattended one is not. The three failure states already separated in
+`MetrixDataContext` (stale / failed / dead session) and the `[Re-run] Replaced N…`
+warnings are the right primitives; the requirement is that an unattended failure
+lands in the task tray and on the account overview as a *state*, never as an
+unchanged dashboard. **Verdict:** added as an exit criterion under D1.
 
-**A4 · Seed re-architecture (A12).** Thin index at boot (ids, names, status,
-`campaign_summary` totals — what the switcher and rollups need); per-account
-detail on demand through the endpoints that already exist
-(`analysis-summary/:preset`, `analysis-data-windows`, `analysis-runs`). Migrate
-the 61 readers behind one `useAccountDetail(id)` hook so the shape change lands
-once. Keep the "one snapshot makes never-fabricate enforceable" property by
-versioning the detail with the run id it came from.
-*Exit:* D7; `seedBudget` p95 in CI.
+**Security work is a policy migration, not a patch.** The four SECURITY DEFINER
+helpers are referenced inside six run-scoped RLS policies; revoking EXECUTE breaks
+tenant reads outright (closeout §3.4). **Verdict:** A5 is sequenced last, behind the
+test pass, with `check:tenancy-helpers` written *first* so the change is proven
+rather than believed.
 
-**A5 · Security, measured.** Relocate the four tenancy helpers to a schema PostgREST
-does not expose and repoint the six run-scoped policies (a test pass, never a
-pre-deploy patch — the closeout's warning). Turn on leaked-password protection.
-Generate the RLS enforcement array from `schema.sql` so a new table cannot be
-forgotten (R4 retired). Run `check:ad-performance-views` and a new
-`check:tenancy-helpers` in CI against a read-only credential stored as a CI
-secret **[owner: provide the credential]**.
-*Exit:* D8.
+### 2.3 UI / UX
 
-**A6 · Run-scoping made structural.** The cumulative-table defect surfaced four
-times and only because React warned about keys. Add `check:run-scope`: any read
-of `concept_rollup` / `v3_variable_performance` not passing through
-`scopeToRun` or a `runSelection` fails. Add a **lead_gen** and a **service** account
-to the seed fixture so the non-ecommerce paths are exercised by fixture-backed
-suites, not only unit tests.
-*Exit:* the gate fires on a reintroduced unscoped read; the fixture carries three
-cohorts.
+**One module, not one chart per page.** The Universal Data Module already exists and
+is used once. Every bespoke chart wrapper on the other analysis and strategy pages is
+a second implementation of a question `viewSupport.ts` already answers. **Verdict:**
+C2 is adoption of `DataModule` on every AnalysisData / StrategyData / MST surface,
+view state in the URL by the `?tab=` convention that already exists, and the table
+view as the floor under every chart (every chart has a table twin with the same
+rows — this is also the accessibility floor).
 
-### Workstream B — Data flow automation (zero user steps to a seeded interface)
+**Maps need stable axes or they lie.** A cluster map re-laid-out on each run reads as
+movement that never happened. **Verdict:** cluster and positioning maps pin their
+axes to the IAP's own definitions (cost per result × result volume; the scaling
+bucket boundaries), encode spend as size and confidence as fill, and never animate
+position between runs.
 
-**B1 · Scheduled live pulls.** A daily pull per connected account
-(`runHeartbeat` pattern, one running pull per account, partial rows deleted on
-failure as today), with a visible "last pulled · next pull" on the account
-overview. Manual "Pull now" stays.
-*Exit:* an account connected on day 0 has day-1 data without a visit.
+**Density is the product; disclosure is the craft.** The rulebook atop `shared.tsx`
+holds: first layer labels and marks, prose behind `DetailReveal`, no half-pixel
+sizes, and every dash explained (C6). **Verdict:** every new visualisation ships with
+its `DetailReveal` evidence and passes the existing gates before it is called done.
 
-**B2 · Arrival triggers the loop — by policy, not by accident.** The rule that the
-loop is execute-on-command stands as the *default*. Add a per-account run policy
-**[owner: default on or off]**: `manual` (today) or `after new data`, under which a
-completed pull or a completed manual staging queues an analysis run, then — if
-analysis validates — strategy, briefs and optimize in sequence, each keeping its
-own running/success/error row and its own gate (`buildLoopStages`). The user sees
-one chain in the task tray, never five buttons.
-*Exit:* D1 for the live path; a stale stage never silently re-runs.
-
-**B3 · One-command loop for the manual path.** "Run the loop" on the Analysis
-command center runs the same chain from a chosen window. The window defaults to
-the latest data (already the rule) and the dialog no longer asks anything the
-data already answers.
-*Exit:* D1 for the manual path; the onboarding checklist checks itself off.
-
-**B4 · Manual staging that needs no review step.** Drop both exports (and
-creatives) in one gesture; class detection by header (already
-`iapCsvSpec`-driven); duplicate and window checks run on arrival with the
-`upload_warnings` already persisted (C11); the explicit "Review" confirmation
-becomes a summary the user can *correct* rather than a gate they must *pass*.
-The corrections that matter (creative name mapping below 0.74 confidence) stay
-explicit — that is a judgement, not a step.
-*Exit:* two files in, staged and validated, zero further clicks to a run.
-
-**B5 · Live freshness without reload.** Replace the 5-minute TTL as the *only*
-bound on out-of-band writes with a server-sent "seed changed" event (the
-`invalidateMetrixSeedCache()` call sites already know when). The client refetches
-the thin index and the affected account's detail (A4).
-*Exit:* a run finishing in one tab appears in another within a second.
-
-### Workstream C — Visual and UI excellence
-
-**C1 · The visualisation system, completed.** Extend `components/charts` on the
-same token file, each mark with a stated question it answers, each gated by
-`chart-palette` and `chart-geometry` (promoted to CI):
-
-- **Funnel breakdowns** per stage with the objective-derived terminal metric
-  (never a purchase default), side-by-side across avatars and placements.
-- **Cluster / scatter** for avatar × concept × spend (CPA vs volume, size = spend,
-  colour = confidence) — the "clusters" the brief asks for, over the rows Audience
-  already computes.
-- **Treemap** for spend share by concept / placement / platform, replacing pie
-  where there are more than five slices (pie stays for two-to-five).
-- **Small multiples** for trend by segment; **dumbbell** for period comparison
-  (`compareRange` already exists in `DateRangeContext`).
-- **Maps:** the exports carry **no geography** (Meta pivot classes here are
-  demographic and device/placement). "Map" in this product means the Strategy
-  Map and the MST cross-map heat matrix; a geographic map would be fabricated. If
-  a country/region breakdown is added to the ingestion contract later
-  **[owner]**, a choropleth joins the catalog; not before.
-
-*Exit:* every module has at least one chart from the catalog answering its lead
-question; `chart-geometry` in CI at 0 defects.
-
-**C2 · Configurable views.** A `ViewSwitcher` primitive (chart / table / matrix /
-funnel where each applies) on every data module; state in the URL by the existing
-`?tab=` convention so a copied link reproduces the view; persisted per browser
-like the metric tiles; a "saved views" list per module (name + URL state) for the
-agency's recurring reads. Table view everywhere is the accessibility floor: every
-chart has a table twin with the same rows.
-*Exit:* D5.
-
-**C3 · The value proposition, first on every screen.** An **Intelligence lead**
-block at the top of each command center and each analysis view: the top finding
-(from `intelligence` / signal cards), the terminal metric and its period delta
-(`campaign_summary`), the confidence grade, and the single next action (from A1's
-cards). All from that account's rows, all through the run-scoped adapters, none
-of it prose that could be stale. The Findings page folds into this block and
-leaves the hidden route.
-*Exit:* D6; "Cost per result" language everywhere the objective is undetermined.
-
-**C4 · Brand, aesthetic, motion — finished, then looked at.** The register records
-that the lifted type ramp and the light/dark palettes have **never been reviewed in
-a browser at the type level**. Do that review once, on the visual baseline from
-D9, and fix what it shows. Close the Panel MOTION revision either way
-**[owner: agree the 31% is a revision, or fund the remainder]**. Design the four
-states every module can be in (empty, loading, error, stale) as one family, not per
-page. Split `ConnectAccountDialogs` (2,383 lines) into the stack it already is so
-the first screen a customer touches can be reasoned about.
-*Exit:* D9 baseline accepted; no raw pixel sizes; every state rendered from the
-shared family.
-
-**C5 · Accessibility and responsive floor.** `check:interaction` NOTE tier (24–40px
-controls) reviewed by surface; the compact shell (drawer below 1024px) walked on
-a phone for every module's lead task; reduced-motion honoured by every new
-chart. *Exit:* zero AA failures; the phone walk documented with screenshots.
-
-### Workstream D — Verification and release engineering
-
-- Promote `chart-geometry`, `unexplained-dashes`, `field-coverage` (at an
-  allowlisted 0) and the new `run-scope`, `loop-producers`, `tenancy-helpers`
-  gates into `ci.yml`. **`.replit` and CI run one list**, generated from one file,
-  so the "passes locally, fails on merge" trap closes for good.
-- e2e in CI: the 18 specs nightly, the route crawl on every PR, the browser
-  installed as its own step (the version mismatch is documented; CI already
-  handles it).
-- Visual regression: Playwright screenshots, 70 routes × 3 shapes × 2 themes,
-  baseline reviewed once (C4), then pinned.
-- `check:seed-fixture-drift` in CI with `DEMO_ACCOUNT_PASSWORD` as a secret
-  **[owner]** — the silent-stale-fixture failure mode is the one nothing catches
-  today.
-- Release routine: merge → CI green → workspace **merges** `origin/main` →
-  publish → `verify-deployed-build.sh` **plus** a content marker, scripted as one
-  command so it cannot be half-done.
+**Look at it.** The register records that the lifted type ramp and the light/dark
+palettes have never been reviewed in a browser at the type level, and calls that the
+highest-value human action outstanding. **Verdict:** C4 is that review, done once on
+the finished surfaces, and the four module states (empty · loading · error · stale)
+designed as one family so a reader learns them once.
 
 ---
 
-## 3. Sequence — four sprints, each with a demonstrable exit
+## 3. Exit criteria (Tier 1)
 
-| Sprint | Ships | Exit demonstrated on AAFE |
-|---|---|---|
-| **1 · Producer and truth** | A1 optimize producer · A2 creative intelligence · A3 S5/C9 · D gates into CI | Action Queue populated from real rows; Creative dialog shows copy; no persisted zeros; CI runs the full gate list |
-| **2 · Automation** | B1 scheduled pulls · B2 run policy · B3 one-command loop · B4 arrival staging | Connect on day 0, populated on day 1 with no visit; two files in, loop out |
-| **3 · Views and value** | C1 catalog · C2 view switcher · C3 intelligence lead · A6 fixtures and run-scope gate | Every module: lead block + switchable view + URL round-trip; lead_gen fixture green |
-| **4 · Architecture, security, polish** | A4 seed index/detail · B5 live freshness · A5 security · C4 browser review + states · C5 floor · D9 visual baseline · D10 docs | p95 index < 300 ms; helpers unreachable over PostgREST; baseline accepted; blueprint rewritten |
-
-Sprint 1 is first because nothing in sprints 2–4 has value on an account whose
-act stage is empty. Sprint 4 is last because the seed re-architecture touches 61
-components and should land on a UI that has stopped moving.
-
----
-
-## 4. Owner decisions — flag, don't silently pick
-
-1. **Run policy default** (B2): is "after new data" the default for connected
-   accounts, or opt-in per account? The loop rule says execute-on-command; the
-   brief says zero steps. Recommendation: **opt-in per account, on by default for
-   live connections, off for manual** — a manual upload is already a command.
-2. **S5 stored zeros** (A3): normalise existing `variable_performance` payloads to
-   null, or leave with a documented caveat. Recommendation: normalise, once,
-   logged.
-3. **S4 persisted rates** (A3): canonical or dropped. Recommendation: dropped;
-   readers already derive.
-4. **Panel MOTION 31%** (C4): agree it is a revision. Recommendation: agree.
-5. **Geography** (C1): add a region breakdown to the ingestion contract, or keep
-   "map" meaning strategy/cross-map. Recommendation: keep, until a client asks.
-6. **Credentials for CI** (A5, D): a read-only DB credential and the demo password
-   as CI secrets. Without them two of the ten exits stay owner-run.
-7. **F-f identity bridge**: build the optimize producer in the importer schema now
-   (recommended), migrate to the official 22-table schema when a `clients` ↔
-   `ad_accounts` bridge exists.
-8. **Findings' home** (C3): fold into the intelligence lead (recommended) or keep
-   as a page.
+| # | Done means | Proven by | Source |
+|---|---|---|---|
+| D1 | After the ingestion event the owner chooses (question 1), data and the IAP outputs it enables appear with **no further user step**, and an unattended failure is visible as a state, never as a stale dashboard. | e2e `zero-touch` spec on both paths; failure-injection spec extended | brief §2 |
+| D2 | Every loop stage has a producer, optimize included; no real account shows "No actions yet" after a run. | `check:loop-producers`; integration test on AAFE | handoff R1 (question 2) |
+| D3 | Every declared seed field is read on a screen or removed from the contract (billing excluded). | `check:field-coverage` at 0 unread outside an allowlist, in CI | reface §7.3 |
+| D4 | No persisted zero stands in for unknown; every dash has a reason; a measured zero is 0. | S5 closed; `check:unexplained-dashes` in CI; C6 at 0 | register S5, C6, C7 |
+| D5 | Every analysis, strategy and MST module renders through the Universal Data Module; each offers every view its data shape can back and no view it cannot; the chosen view survives reload and a copied link. | per-module contract test; e2e URL round-trip | brief §1; Phase 3 §02 |
+| D6 | Every command center opens on the account's top finding, terminal metric on the derived objective, confidence and next action, from its own run-scoped rows. | snapshot per command center on the AAFE fixture; `check:cohort-reach` unchanged | brief §1 (UVP) |
+| D7 | Cross-map, cluster map, positioning map and funnel breakdown exist as views in the catalog, each with a table twin, each passing `chart-palette` and `chart-geometry`. | `chart-geometry` promoted to CI at 0 | brief §1 (clarified) |
+| D8 | Tenancy helpers unreachable over PostgREST; all aggregate views `security_invoker`; RLS enforcement array generated from the schema; leaked-password protection on. | `check:tenancy-helpers`, `check:ad-performance-views` in CI with a read-only credential | brief §3; closeout §3.4 |
+| D9 | CI and `.replit` run one generated check list; the e2e suite runs on the merge path. | `ci.yml` and `.replit` both consume `scripts/src/validation-list.ts` | closeout §2.3 |
+| D10 | The type ramp and both palettes reviewed once in a browser on every route; findings fixed. | review record in the reface register with screenshots | reface §7.2 |
 
 ---
 
-## 5. What this plan deliberately does not do
+## 4. Roadmap (Tier 1)
 
-- It does not add a "Metrix Agent" surface or the `contextual-ai-bar`; the
-  register's reason stands (a control for a feature that does not exist).
-- It does not build the strategy weighting engine (R4 in the handoff). Its spec is
-  `CARRY_FORWARD_REGISTER.md` §6a and it still awaits an explicit go; sprint 3's
-  intelligence lead is designed so the engine's output slots in without a UI change.
-- It does not touch billing.
-- It does not rewrite `analysisEngine.ts` (3,544 lines). Every change there is
-  additive and behind a test that fails against the original.
+### Sprint 1 — Producer and truth
+- **A1 · Optimize producer** (F-e, handoff R1; *subject to question 2*). Fourth
+  `GenerationKind`; evidence pack from run-scoped rows; output in the official schema's
+  shape (confidence grades, severity, campaign/ad-set-only budget scope) written to the
+  importer schema (F-f recommendation on record). Exit: D2.
+- **A2 · Creative intelligence surfaced** (F-a, F-b; handoff R2). Body, headline, CTA,
+  destination, caption; reach and all-clicks into per-ad stats and the Creative
+  dialog. Exit: `check:field-coverage` shows them read.
+- **A3 · Honesty debt** (S5, S3/S4, C9, C6). Exit: D4. Owner decisions on S5 backfill
+  and S4 canonical-or-dropped are already flagged in register §6; recommendations:
+  normalise once, logged; drop.
+- **D · Gates onto the merge path.** `chart-geometry`, `unexplained-dashes`,
+  `field-coverage`, `run-scope` (new), `loop-producers` (new) into one generated list
+  for CI and `.replit`. Exit: D9.
+
+### Sprint 2 — Views and value
+- **C1 · The map catalog, completed.** Cross-map (concept × avatar, avatar ×
+  placement) on `HeatMatrix`; cluster map over `audience-clusters.ts` output with
+  pinned axes; positioning map drawing `scalingBuckets` on its two axes; funnel
+  breakdown per segment on the derived terminal metric. Each with a table twin and
+  `DetailReveal` evidence. Exit: D7.
+- **C2 · Universal Data Module everywhere.** Adopt `DataModule` on every
+  AnalysisData / StrategyData / MST surface; view state in the URL. Exit: D5.
+- **C3 · Intelligence lead** on every command center and analysis view, from
+  run-scoped adapters. Exit: D6.
+- **A6 · Fixtures.** A lead-gen and a service account in the seed fixture (closeout
+  §3.7 blind spot). Exit: fixture-backed suites exercise all three cohorts.
+
+### Sprint 3 — Zero-step seeding (shape set by question 1)
+- **B3 · One-command loop** on the Analysis command center: analysis → strategy →
+  briefs → optimize in sequence, one chain in the tray, each stage keeping its own
+  status row and gate (`buildLoopStages`). Exit: D1 on the manual path.
+- **B4 · Staging without a review gate.** Both exports and creatives in one gesture;
+  validation on arrival with persisted warnings; the confirmation becomes a
+  correctable summary. Creative-name mapping under 0.74 stays explicit. Exit: two
+  files in, staged and validated, zero further clicks.
+- **B1 · Scheduled live pulls** and **B2 · run-after-new-data policy** — *only if
+  question 1 is yes*, and then with the **S1 retention sweep scheduled** and
+  `check:run-scope` live as prerequisites in the same sprint.
+
+### Sprint 4 — Security, review, close
+- **A5 · Security migration** (closeout §3.4). `check:tenancy-helpers` written first;
+  helpers relocated to an unexposed schema; six policies repointed; RLS array
+  generated; leaked-password protection on; both checks in CI with a read-only
+  credential the owner provides. Exit: D8.
+- **C4 · Browser review and states** (reface §7.2). The one type-level review; the
+  four module states as a family; `ConnectAccountDialogs` split into the stack it is
+  (handoff R5). Exit: D10.
+- **C5 · Accessibility and responsive floor.** 24–40 px control tier reviewed by
+  surface; compact shell walked on a phone per module. Exit: zero AA failures.
+- **A4 · Seed split** — *only if question 3 is yes*; otherwise `seedBudget` remains the
+  tripwire.
+- **Docs close.** Register items closed or carried with reasons; handoff regenerated;
+  blueprint cohort section rewritten *only if question 4 is yes*.
+
+---
+
+## 5. Tier 2 — proposed, awaiting approval
+
+Each of these came from the assessment, not the brief. None is built without a yes.
+
+1. **Saved views per module** (name + URL state), for the agency's recurring reads.
+2. **Live freshness without reload** — a server-sent "seed changed" event from the
+   existing invalidation sites.
+3. **Visual-regression baseline** — 70 routes × 3 shapes × 2 themes, pinned after C4.
+4. **Fold the Findings page** into the C3 lead block and retire its hidden route.
+5. **Treemap for spend share past five slices; small multiples for trend by segment.**
+6. **Collapsed-rail icon navigates** to the command center instead of reopening the
+   rail (navigation audit §3).
+
+---
+
+## 6. Questions for the owner
+
+1. **Zero-step seeding vs execute-on-command.** Does "no additional user steps" mean
+   (a) unattended daily Meta pulls, and (b) the loop running automatically after new
+   data lands (overriding the recorded rule that ingestion never triggers a run)?
+   Options: both; pulls only; neither (one-command chain after a user-chosen event).
+2. **Optimize producer.** Explicit go to build it, in the importer schema with the
+   official schema's shape?
+3. **Seed split (A12).** In this phase as sprint 4's scoped session, or deferred?
+4. **Blueprint.** May the canonical blueprint's cohort section be rewritten to the
+   2026-09-01 derived-objective decision?
+5. **Tier 2.** Which of the six proposals, if any, are approved?
