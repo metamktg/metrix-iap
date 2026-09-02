@@ -142,7 +142,7 @@ export function ReconciliationPanel({ reconciliation, defaultOpen = false, class
                           total={100}
                           label={`${r.ad_name ?? r.ad_identity} coverage`}
                           size="sm"
-                          fillClassName={r.coverage_pct !== null && r.coverage_pct >= 99 ? "bg-status-success/60" : "bg-status-warning/60"}
+                          fillClassName={r.coverage_pct !== null && r.coverage_pct >= 99 ? "bg-status-success/60" : "bg-primary/50"}
                         />
                         <div className={cn(TYPE.microLabel, "text-muted-foreground/75 normal-case tracking-normal tabular-nums")}>{r.coverage_pct === null ? "—" : `${r.coverage_pct}%`}</div>
                       </td>

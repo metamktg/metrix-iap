@@ -111,8 +111,8 @@ function open(props: Record<string, unknown> = {}) {
   );
 }
 
-/** react-query resolves the summary asynchronously; wait for the banner. */
-const banner = () => screen.findByTestId("banner-low-signal");
+/** react-query resolves the summary asynchronously; wait for the coverage tag. */
+const banner = () => screen.findByTestId("coverage-tag");
 
 beforeEach(() => {
   SUMMARY = null;
@@ -120,7 +120,7 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("SegmentDrilldownModal — self-resolved demographic coverage", () => {
-  it("warns about thin coverage even though no call site passed it in", async () => {
+  it("tags partial coverage even though no call site passed it in", async () => {
     SUMMARY = {
       data_coverage: {
         classes: [
@@ -135,8 +135,9 @@ describe("SegmentDrilldownModal — self-resolved demographic coverage", () => {
     };
     open(); // no demoCoverage prop — the three unfixed call sites' shape
     const el = await banner();
-    expect(el.textContent).toContain("Demographic data covers only 2.4%");
-    expect(el.textContent).toContain("Only 3 of 128 ads appear in the demographic export.");
+    expect(el.textContent).toContain("2.4% coverage");
+    // The measured note is the tag's title, not first-layer prose.
+    expect(el.getAttribute("title")).toContain("Only 3 of 128 ads appear in the demographic export.");
   });
 
   it("stays quiet when the run's measured coverage is above threshold", async () => {
@@ -151,14 +152,14 @@ describe("SegmentDrilldownModal — self-resolved demographic coverage", () => {
     // Let the query settle, then assert the banner never appeared: a
     // healthy segment over healthy coverage must read unqualified.
     await new Promise((r) => setTimeout(r, 0));
-    expect(screen.queryByTestId("banner-low-signal")).toBeNull();
+    expect(screen.queryByTestId("coverage-tag")).toBeNull();
   });
 
   it("falls back to the heuristics alone when the run never measured coverage", async () => {
     SUMMARY = { data_coverage: null }; // legacy run / importer account
     open();
     await new Promise((r) => setTimeout(r, 0));
-    expect(screen.queryByTestId("banner-low-signal")).toBeNull();
+    expect(screen.queryByTestId("coverage-tag")).toBeNull();
   });
 
   it("still lets a better-scoped explicit prop win (AudienceView's date-preset summary)", async () => {
@@ -179,7 +180,7 @@ describe("SegmentDrilldownModal — self-resolved demographic coverage", () => {
       },
     });
     const el = await banner();
-    expect(el.textContent).toContain("Demographic data covers only 5%");
+    expect(el.textContent).toContain("5% coverage");
   });
 });
 

@@ -23,6 +23,11 @@
 
 const NOTICE_PATTERNS: RegExp[] = [
   /^\s*(\[[^\]]+\]\s*)?Note:/,
+  // Measured coverage is context for the reader, not a decision (owner
+  // direction 2026-09-02): the surfaces carry it as a tag, the run panel
+  // files it with the notices. A failed reconciliation check (over-count)
+  // is a different line and stays attention.
+  /^\s*\[Coverage\]/,
   /no action needed/,
   /matched automatically/,
   /\(via slug match\)/,

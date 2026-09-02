@@ -15,6 +15,7 @@ import { useLocation } from "wouter";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
 import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
+import { SignalTag } from "@/components/evidence/SignalTag";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { segmentMetricReason } from "@/lib/data/segmentMetricsCatalog";
 import { getAdAccount, getMST, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
@@ -585,31 +586,7 @@ function AudienceSegmentTile({
             <p className={cn(TYPE.title, "leading-snug truncate")}>{segmentLabel(seg)}</p>
           </div>
         </div>
-        <TooltipProvider delayDuration={150}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span
-                className={cn(
-                  "shrink-0 rounded border px-1.5 py-0.5 cursor-default",
-                  TYPE.label,
-                  signal.state === "insufficient_coverage"
-                    ? "border-border/60 bg-foreground/[0.04] text-muted-foreground/75"
-                    : signal.low
-                    ? "border-status-warning/30 bg-status-warning/[0.08] text-status-warning"
-                    : "border-status-success/30 bg-status-success/[0.08] text-status-success",
-                )}
-              >
-                {signal.state === "insufficient_coverage" ? "insufficient join coverage" : signal.low ? "low signal" : "signal ✓"}
-                <span className="sr-only">{` — ${signal.low ? signal.reasons.join(" ") : "Sufficient spend and impressions for a reliable read."}`}</span>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-[240px]">
-              <p className="text-caption leading-relaxed">
-                {signal.low ? signal.reasons.join(" ") : "Sufficient spend and impressions for a reliable read."}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <SignalTag signal={signal} className="shrink-0" />
       </div>
 
       {hasSpend ? (

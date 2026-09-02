@@ -168,7 +168,17 @@ export function deriveSegmentMetrics(t: SegmentRawTotals): SegmentDerivedMetrics
   };
 }
 
-// ─── Low-signal assessment ────────────────────────────────────────────
+// ─── Signal assessment ────────────────────────────────────────────────
+//
+// Owner direction (2026-09-02): coverage is CONTEXT, never a wall. A
+// segment's own rows are observed evidence whatever share of the account
+// the demographic export covers; what partial coverage changes is how
+// complete a ranking ACROSS segments can be. So a segment is classified on
+// its own volume against the documented confidence bands, and the source's
+// measured coverage travels beside the classification for a surface to show
+// once, quietly, with the explanation behind a reveal. The interface
+// emphasises HIGH signal, stays silent on an ordinary read, and marks a thin
+// read with a small tag — never a banner.
 
 /** Below this many impressions a segment reads as noise, not signal. */
 export const LOW_SIGNAL_IMPRESSIONS = 1000;
@@ -176,26 +186,62 @@ export const LOW_SIGNAL_IMPRESSIONS = 1000;
 export const LOW_SIGNAL_SPEND_SHARE = 0.02;
 
 /**
- * Signal classification is three-state, not two:
- *  - "ok"  — enough impressions/spend for a stable read.
- *  - "low" — measured, but thin (few impressions or a tiny spend share).
- *  - "insufficient_coverage" — the DEMOGRAPHIC SOURCE ITSELF covers too
- *    little of the account's spend for ANY segment classification to be
- *    trustworthy (the run's measured join coverage is below the server's
- *    threshold). A "signal ✓" computed from 1% of spend is fabricated
- *    confidence — this state exists so no surface can render one.
- * `low` is kept as a derived boolean (true for both non-ok states) so
- * existing styling call sites stay correct.
+ * The documented confidence_level bands
+ * (docs/prompts/IAP_DATA_BUNDLE_PREP_v2.0.md "confidence_level"; blueprint
+ * §8.3): high > 100 conversions or > $1,000 spend; medium 10–100 or
+ * $100–1,000; validation_required below that but promising (read as at
+ * least one conversion); insufficient below the floor (< $50 spend or < 10
+ * impressions). Mirrors the server's `confidenceLevel` in reconciliation.ts
+ * — spec §20 carries the mapping.
  */
-export type SignalState = "ok" | "low" | "insufficient_coverage";
+export type ConfidenceBand = "high" | "medium" | "validation_required" | "insufficient";
+
+export function confidenceBand(
+  spend: number | null | undefined,
+  conversions: number | null | undefined,
+  impressions: number | null | undefined = null,
+): ConfidenceBand {
+  const s = spend ?? 0;
+  const c = conversions ?? 0;
+  if (c > 100 || s > 1000) return "high";
+  if (c >= 10 || s >= 100) return "medium";
+  const belowFloor = s < 50 || (impressions != null && impressions < 10);
+  if (belowFloor && c < 1) return "insufficient";
+  return "validation_required";
+}
+
+/**
+ *  - "high" — clears the documented high band on its own volume: the read
+ *    the interface emphasises.
+ *  - "ok"   — an ordinary, usable read; nothing is rendered for it.
+ *  - "low"  — thin: under the medium band, or few impressions, or a tiny
+ *    share of scoped spend. A small tag, with the reasons behind it.
+ * `low` is kept as a derived boolean so existing styling call sites stay
+ * correct.
+ */
+export type SignalState = "high" | "ok" | "low";
+
+export interface SegmentSignalCoverage {
+  /** The demographic source's measured share of account spend (null = unmeasured). */
+  pct: number | null;
+  /** True when the run measured it below its threshold. */
+  partial: boolean;
+  /** The run's own measured note (cause + how to widen it). */
+  note: string | null;
+}
 
 export interface SegmentSignal {
   state: SignalState;
   low: boolean;
+  /** The documented band the segment's own volume falls in. */
+  band: ConfidenceBand;
+  /** Short reasons for a low read; empty otherwise. */
   reasons: string[];
+  /** Carried as context for the surface to show once — never a gate. */
+  coverage: SegmentSignalCoverage | null;
 }
 
-/** Subset of the analysis summary's data_coverage the client needs for signal gating. */
+/** Subset of the analysis summary's data_coverage the client needs. */
 export interface DemographicCoverageInput {
   spend_coverage_pct: number | null;
   below_threshold: boolean;
@@ -205,8 +251,7 @@ export interface DemographicCoverageInput {
 /**
  * Picks the demographic class's coverage entry out of an analysis summary's
  * data_coverage (null when coverage was never measured — legacy runs,
- * importer accounts — in which case signal gating falls back to the
- * per-segment heuristics alone).
+ * importer accounts).
  */
 export function demographicCoverageOf(
   dataCoverage: { classes?: { report_class?: string; spend_coverage_pct?: number | null; below_threshold?: boolean; note?: string | null }[] } | null | undefined,
@@ -225,26 +270,18 @@ export function assessSegmentSignal(
   scopedTotals: SegmentRawTotals,
   demoCoverage?: DemographicCoverageInput | null,
 ): SegmentSignal {
-  if (demoCoverage?.below_threshold) {
-    const pct = demoCoverage.spend_coverage_pct;
-    return {
-      state: "insufficient_coverage",
-      low: true,
-      reasons: [
-        `Demographic data covers ${pct != null ? `only ${pct}%` : "too little"} of this account's spend — not enough attributable spend to classify any segment as signal. ` +
-          (demoCoverage.note ?? "Re-export the Demographics report from Meta covering all ads for this window."),
-      ],
-    };
-  }
+  const coverage: SegmentSignalCoverage | null = demoCoverage
+    ? { pct: demoCoverage.spend_coverage_pct, partial: demoCoverage.below_threshold, note: demoCoverage.note }
+    : null;
   const reasons: string[] = [];
   // The impressions heuristic only applies when the scoped source carries
   // impressions at all: demographic rows served through the preset-window
   // API have no impressions column (the adapter zero-fills them), and
   // flagging every segment "Only 0 impressions" from that zero-fill is a
-  // fabricated warning, not a real read.
+  // fabricated reason, not a real read.
   const sourceHasImpressions = scopedTotals.impressions != null && scopedTotals.impressions > 0;
   if (sourceHasImpressions && totals.impressions != null && totals.impressions < LOW_SIGNAL_IMPRESSIONS) {
-    reasons.push(`Only ${Math.round(totals.impressions).toLocaleString("en-US")} impressions — below the ${LOW_SIGNAL_IMPRESSIONS.toLocaleString("en-US")} needed for a stable read.`);
+    reasons.push(`${Math.round(totals.impressions).toLocaleString("en-US")} impressions — under the ${LOW_SIGNAL_IMPRESSIONS.toLocaleString("en-US")} for a stable read.`);
   }
   if (
     totals.spend != null &&
@@ -252,9 +289,13 @@ export function assessSegmentSignal(
     scopedTotals.spend > 0 &&
     totals.spend / scopedTotals.spend < LOW_SIGNAL_SPEND_SHARE
   ) {
-    reasons.push(`Only ${((totals.spend / scopedTotals.spend) * 100).toFixed(1)}% of scoped spend landed on this segment.`);
+    reasons.push(`${((totals.spend / scopedTotals.spend) * 100).toFixed(1)}% of scoped spend landed here.`);
   }
-  return { state: reasons.length > 0 ? "low" : "ok", low: reasons.length > 0, reasons };
+  const band = confidenceBand(totals.spend, totals.results, sourceHasImpressions ? totals.impressions : null);
+  if (band === "insufficient") reasons.push("Under the documented floor ($50 spend or 10 impressions).");
+  else if (band === "validation_required") reasons.push("Under the documented medium band (10 results or $100 spend).");
+  const state: SignalState = reasons.length > 0 ? "low" : band === "high" ? "high" : "ok";
+  return { state, low: state === "low", band, reasons, coverage };
 }
 
 // ─── Attribution join (segment → cells → variables) ───────────────────
