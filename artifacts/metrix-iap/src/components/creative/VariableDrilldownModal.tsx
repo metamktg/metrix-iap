@@ -1,41 +1,59 @@
 // ─── Variable drill-down modal ────────────────────────────────────────
 // Opened from DNA family cards, "best read" chips, and variable table
 // rows. Shows, for one creative variable: header KPIs from the import's
-// own variable-level rows, the top ads (creative cells) carrying it,
-// per-segment performance computed from cell-grain demographic rows
-// scoped to carrier cells (tappable → segment drill-down), and the copy
-// variants that ran with it. Placement data is account-level in every
-// import and is deliberately excluded — it can't be attributed to one
-// variable.
+// own variable-level rows, the top ads carrying it (creative cells when
+// the run joined cells, otherwise the ads the evidence layer links by Ad
+// ID and name), per-segment performance from the most specific real
+// source (cell grain, the run's variable × segment rows, or the carrier
+// ads' ad-grain demographic rows — tappable → segment drill-down), the
+// carrier ads' placement rows, and the copy variants that ran with it.
+// The relationship is shown, never upgraded: ad-name tokens and
+// deconstructed variables are contextual evidence on the ad.
 
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
-import { ChevronRight, Info, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { ChevronRight, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
-import { getMST, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
-import { cardFromCell } from "@/lib/creative-assembly";
+import { getAdAccount, getMST, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
+import { cardFromAd, cardFromCell } from "@/lib/creative-assembly";
 import { CreativeCard } from "@/components/creative/CreativeCard";
-import { DIALOG } from "@/pages/metrix/typography";
+import { DIALOG, TYPE } from "@/pages/metrix/typography";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
-import { computeVariableDrilldown } from "@/lib/variable-drilldown";
-import { segmentLabel, type SegmentId } from "@/lib/segment-analytics";
+import { computeVariableDrilldown, type VariableSegmentRollup } from "@/lib/variable-drilldown";
+import { segmentLabel, type SegmentId, type SegmentSignal } from "@/lib/segment-analytics";
 import { familyLabel } from "@/pages/metrix/strategy/strategyShared";
-import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel } from "@/pages/metrix/shared";
+import { readableVariables, fmtUSD, eventLabel } from "@/pages/metrix/shared";
 import type { AnalysisData, VariablePerformanceRow } from "@/lib/data/seedTypes";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { KpiTileRow } from "@/components/metrics/KpiTile";
+import { buildVariableMetricCatalog } from "@/lib/data/metricsCatalog";
+import { EvidenceChip, EvidenceExplainer } from "@/components/evidence/EvidenceChip";
+import { SignalTag } from "@/components/evidence/SignalTag";
+import { PlacementDrill } from "@/components/evidence/PlacementDrill";
 
-function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2.5">
-      <div className="text-micro uppercase text-muted-foreground/75">{label}</div>
-      <div className="text-callout font-bold tabular-nums leading-tight mt-0.5 text-foreground">{value}</div>
-      {sub && <div className="text-caption text-muted-foreground/75 leading-snug mt-0.5">{sub}</div>}
-    </div>
-  );
+/** A segment row's documented band as a signal: high is emphasised, an ordinary read is silent. */
+function bandSignal(row: VariableSegmentRollup): SegmentSignal {
+  const state = row.band === "high" ? "high" : row.band === "medium" ? "ok" : "low";
+  return {
+    state,
+    low: state === "low",
+    band: row.band,
+    reasons: state === "low" ? [row.band === "insufficient" ? "Under the documented floor ($50 spend or 10 impressions)." : "Under the documented medium band (10 results or $100 spend)."] : [],
+    coverage: null,
+  };
 }
+
+/** What a variable is judged on first: what it cost, what it returned, per result, across how many ads. */
+const VARIABLE_TILE_DEFAULTS = ["spend", "results", "cpa", "unique_ads"];
+
+const SEGMENT_SOURCE_LABEL = {
+  cells: "scoped to this variable's cells",
+  variable_rows: "the run's variable × segment rows",
+  ad_breakdowns: "the carrier ads' own demographic rows",
+} as const;
 
 export function VariableDrilldownModal({
   open,
@@ -62,11 +80,24 @@ export function VariableDrilldownModal({
   const adAccountId = useScopedAdAccountId();
   const [, navigate] = useLocation();
   const mst = getMST(seed, adAccountId);
+  const account = getAdAccount(seed, adAccountId);
   const [segment, setSegment] = useState<SegmentId | null>(null);
 
   const data = useMemo(
-    () => (code ? computeVariableDrilldown(code, { analysis, mst, variableRows, selectedResultTypes }) : null),
-    [code, analysis, mst, variableRows, selectedResultTypes]
+    () =>
+      code
+        ? computeVariableDrilldown(code, {
+            analysis,
+            mst,
+            variableRows,
+            selectedResultTypes,
+            ads: account?.ads ?? null,
+            variableEvidence: account?.variable_evidence ?? null,
+            breakdownRows: analysis.ad_breakdowns ?? null,
+            segmentRows: analysis.variable_segment_performance ?? null,
+          })
+        : null,
+    [code, analysis, mst, variableRows, selectedResultTypes, account],
   );
 
   const cardCtx = useMemo(
@@ -74,10 +105,15 @@ export function VariableDrilldownModal({
     [analysis, mst, seed, adAccountId]
   );
 
+  const catalog = useMemo(() => (data?.totals ? buildVariableMetricCatalog({ ...data.totals, resultTypes: data.totals.resultTypes.map(eventLabel) }) : []), [data]);
+
   if (!code || !data) return null;
 
   const topCells = data.rankedCells.slice(0, 3);
+  const topAds = topCells.length === 0 ? data.carrierAds.slice(0, 3) : [];
+  const carrierCount = data.rankedCells.length > 0 ? data.rankedCells.length : data.carrierAds.length;
   const maxSegSpend = Math.max(...data.segments.rows.map((s) => s.totals.spend ?? 0), 0);
+  const contextual = data.attribution !== "direct_asset";
 
   return (
     <>
@@ -99,35 +135,25 @@ export function VariableDrilldownModal({
             <DialogTitle className={cn(DIALOG.title, "flex items-center gap-2 flex-wrap")} data-testid="title-variable-drilldown">
               {readableVariables(code)}
               <span className="text-caption font-normal text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded">{code}</span>
+              {data.evidenceState && <EvidenceChip state={data.evidenceState} testId="variable-evidence-chip" />}
             </DialogTitle>
             <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
-              Numbers come from this import's own variable-level rows and the creative cells that actually carried this
-              variable — nothing estimated.
+              Header totals are the import's own variable-level rows. Ads and segments join through the ads that carry this
+              variable, Ad ID first — nothing estimated.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* ── Header KPIs ── */}
-            {data.totals ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-                <Kpi label="Spend" value={fmtUSD(data.totals.spend, 0)} />
-                <Kpi
-                  label="Results"
-                  value={fmtNum(data.totals.results)}
-                  sub={data.totals.resultTypes.map(eventLabel).join(" + ")}
-                />
-                <Kpi label="CPA" value={data.totals.cpa != null ? fmtUSD(data.totals.cpa) : "—"} />
-                <Kpi label="Link CTR" value={data.totals.ctrPct != null ? fmtPct(data.totals.ctrPct) : "—"} />
-                <Kpi label="Unique ads" value={fmtNum(data.totals.uniqueAds)} />
+            {/* ── Header KPIs: the platform's configurable tile row over this variable's own totals ── */}
+            {catalog.length > 0 ? (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2" data-testid="variable-kpi-tiles">
+                <KpiTileRow viewKey="variable-drilldown" catalog={catalog} tileCount={4} primaryFirst={false} defaults={VARIABLE_TILE_DEFAULTS} />
               </div>
             ) : (
-              <div className="flex items-start gap-2 text-caption text-muted-foreground/75 leading-relaxed rounded-lg border border-border/40 bg-foreground/[0.02] p-3">
-                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                <span>
-                  No variable-level performance row for this code in the current metric selection — the sections below
-                  still show which creatives carried it.
-                </span>
-              </div>
+              <p className={cn(TYPE.caption, "text-muted-foreground/75 leading-relaxed")}>
+                No variable-level performance row for this code in the current metric selection — the sections below still
+                show which creatives carried it.
+              </p>
             )}
 
             {/* ── Top ads carrying this variable ── */}
@@ -153,14 +179,32 @@ export function VariableDrilldownModal({
                     />
                   ))}
                 </div>
+              ) : topAds.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" data-testid="variable-carrier-ads">
+                  {topAds.map((a) => (
+                    <CreativeCard
+                      key={a.adIds[0] ?? a.adName}
+                      data={{
+                        ...cardFromAd(a.ad, { fallbackCode: code, metaAdAccountId: cardCtx.metaAdAccountId }),
+                        stats: {
+                          spend: a.spend,
+                          results: a.results,
+                          cpa: a.cpa,
+                          ctrPct: a.ctrPct,
+                          resultLabel: a.resultType ? eventLabel(a.resultType) : "results",
+                        },
+                      }}
+                    />
+                  ))}
+                </div>
               ) : (
-                <p className="text-caption text-muted-foreground/75">
-                  No creative cell in this import carries this variable.
+                <p className={cn(TYPE.caption, "text-muted-foreground/75")} data-testid="variable-no-carriers">
+                  {data.segments.unavailableReason ?? "No ad in this run carries this variable."}
                 </p>
               )}
-              {data.rankedCells.length > 3 && (
-                <p className="text-body text-muted-foreground/75">
-                  Top 3 of {data.rankedCells.length} carrier cells, ranked by results.
+              {carrierCount > 3 && (
+                <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
+                  Top 3 of {carrierCount} carrier {topCells.length > 0 ? "cells" : "ads"}, ranked by results.
                 </p>
               )}
             </div>
@@ -168,11 +212,12 @@ export function VariableDrilldownModal({
             {/* ── Segment performance ── */}
             <div className="space-y-1.5">
               <p className="text-label uppercase tracking-widest text-muted-foreground/75">
-                Segment performance — scoped to this variable's cells
+                Segment performance{data.segments.source ? ` — ${SEGMENT_SOURCE_LABEL[data.segments.source]}` : ""}
               </p>
               {data.segments.available ? (
-                <div className="rounded-xl border border-border/40 overflow-hidden divide-y divide-border/20">
-                  {data.segments.rows.map(({ segment: seg, totals, derived }) => {
+                <div className="rounded-xl border border-border/40 overflow-hidden divide-y divide-border/20" data-testid="variable-segments">
+                  {data.segments.rows.map((row) => {
+                    const { segment: seg, totals, derived } = row;
                     const share = maxSegSpend > 0 && totals.spend != null ? totals.spend / maxSegSpend : 0;
                     return (
                       <button
@@ -182,7 +227,7 @@ export function VariableDrilldownModal({
                         data-testid={`row-variable-segment-${seg.age}-${seg.gender}`}
                         title="Click to open segment drill-down"
                       >
-                        <span className="text-caption font-medium text-foreground/85 w-32 shrink-0 capitalize">
+                        <span className="text-caption font-medium text-foreground/85 w-32 shrink-0 capitalize truncate">
                           {segmentLabel(seg)}
                         </span>
                         <ProgressMeter
@@ -199,16 +244,30 @@ export function VariableDrilldownModal({
                         <span className="text-label tabular-nums text-foreground/80 w-20 text-right shrink-0">
                           {derived.cpa != null ? `${fmtUSD(derived.cpa)} CPA` : "— CPA"}
                         </span>
+                        <span className="w-[86px] shrink-0 hidden sm:flex justify-end">
+                          <SignalTag signal={bandSignal(row)} testId="variable-segment-signal" />
+                        </span>
                         <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 group-hover:text-primary/80 group-hover:translate-x-0.5 transition-[color,background-color,border-color,box-shadow,opacity,transform] shrink-0" />
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <div className="flex items-start gap-2 text-caption text-muted-foreground/75 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.01] p-3">
-                  <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                  <span>{data.segments.unavailableReason}</span>
-                </div>
+                <p className={cn(TYPE.caption, "text-muted-foreground/75 leading-relaxed")} data-testid="variable-segments-unavailable">
+                  {data.segments.unavailableReason}
+                </p>
+              )}
+            </div>
+
+            {/* ── Placements for the carrier ads ── */}
+            <div className="space-y-1.5">
+              <p className="text-label uppercase tracking-widest text-muted-foreground/75">Placements — the carrier ads' own rows</p>
+              {data.placementRows.length > 0 ? (
+                <PlacementDrill rows={data.placementRows} resultLabel={data.totals?.resultTypes[0] ? eventLabel(data.totals.resultTypes[0]) : "results"} />
+              ) : (
+                <p className={cn(TYPE.caption, "text-muted-foreground/75")} data-testid="variable-placements-unavailable">
+                  No placement rows join to this variable's ads in this run.
+                </p>
               )}
             </div>
 
@@ -238,10 +297,7 @@ export function VariableDrilldownModal({
               </div>
             )}
 
-            <p className={cn("text-body text-muted-foreground/75 leading-relaxed")}>
-              Placement data is account-level in this import and can't be attributed to a single variable, so it's not
-              shown here.
-            </p>
+            {data.evidenceState && <EvidenceExplainer state={data.evidenceState} contextual={contextual} testId="variable-evidence-explainer" />}
 
             {/* ── Next step CTA ── */}
             <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/25">
@@ -261,7 +317,7 @@ export function VariableDrilldownModal({
         </DialogContent>
       </Dialog>
 
-      {/* Nested segment drill-down, scoped to this variable's carrier cells */}
+      {/* Nested segment drill-down, scoped to this variable's carrier cells when it has them */}
       <SegmentDrilldownModal
         open={segment != null}
         onClose={() => setSegment(null)}

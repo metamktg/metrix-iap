@@ -193,3 +193,29 @@ export function cardFromMatrixCell(cell: MSTMatrixCell, opts: CardAssemblyOpts):
     tags: base.tags.length ? base.tags : Object.values(cell.variable_stack).filter(Boolean),
   };
 }
+
+/**
+ * A card for an ad that has no cell code — the evidence layer joins ads by
+ * Ad ID, and a raw-token variable's carriers are ads, not cells. Copy comes
+ * from the ad's resolved creative (source-tagged); the asset only when the
+ * importer confirmed it is servable.
+ */
+export function cardFromAd(ad: AdRecord, opts: { fallbackCode: string; metaAdAccountId?: string | null }): CreativeCardData {
+  const c = ad.creative ?? null;
+  return {
+    conceptCode: ad.cell ?? opts.fallbackCode,
+    title: ad.ad_name,
+    primaryText: c?.primary_text ?? null,
+    secondaryText: c?.headline ?? null,
+    description: c?.description ?? null,
+    cta: c?.cta_type ?? null,
+    linkDestination: c?.link_destination ?? null,
+    mediaName: c?.image_name ?? c?.video_name ?? null,
+    copySource: c?.source ?? null,
+    assetUrl: ad.creative_asset_url && ad.asset_servable !== false ? ad.creative_asset_url : null,
+    assetFilename: ad.asset_filename ?? null,
+    tags: [],
+    metaAdId: ad.meta_ad_id ?? null,
+    adAccountId: opts.metaAdAccountId ?? null,
+  };
+}

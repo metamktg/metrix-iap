@@ -518,3 +518,54 @@ problem (`git diff --stat origin/main HEAD` empty). A plain workflow restart bro
 (ready in 2.8 s, HTTP 200); no stale processes were found to kill. If it recurs, look at the
 process table before assuming the build broke — the published app was serving the new bundle
 throughout.
+
+**`[shipped]` Coverage is context, never a wall (owner direction 2026-09-02, ~15:30 ET).** The tester's
+first look at the published build met a "Low signal. Demographic data covers only 59.3% …" banner in
+the segment drill-down and an amber coverage box on Audience and Avatars — prose on the first layer,
+which the disclosure rulebook forbids, and a gate that downgraded EVERY segment to
+"insufficient join coverage" whatever its own volume. The owner's rule: Metrix surfaces objective
+truths from subjective media; the signal is the product. Emphasise HIGH signal, say nothing about an
+ordinary read, mark a thin read or a partial source with the smallest tag that still reads, and keep
+the sentences behind a reveal. Implemented as `assessSegmentSignal` → `high | ok | low` on the
+segment's OWN volume against the documented bands (`confidenceBand`, the client mirror of
+`confidenceLevel`, spec §20) with the source's measured coverage carried BESIDE the classification
+(`SegmentSignal.coverage`); `SignalTag` / `CoverageTag` (`components/evidence/SignalTag.tsx`);
+`DataCoverageBanner` is now one caption line with the measured note behind "Why"; the run panel files
+`[Coverage]` lines with the notices; the server note is one neutral sentence plus how to widen it;
+the export names coverage once and states a high read. The former `insufficient_coverage` state is
+gone — a strong segment stays high under partial coverage, and the coverage figure is on the surface
+for the reader. What partial coverage still changes is what it always changed: the completeness of a
+ranking ACROSS segments, which is what the tag and the reveal say.
+
+**`[shipped]` Variable drill-down joins through the evidence layer (same look).** "C3A SKOV2" showed
+$1,350 across 30 unique ads and, beneath it, "No creative cell in this import carries this variable":
+manual runs never write `performance_by_cell`, so the cell-only join found nothing. The drill-down
+now takes carrier ADS from `variable_evidence` (Ad ID first, name second; the server's own raw-token
+rule as the fallback for a run older than the layer), reads segments from the most specific real
+source (cell grain → the run's variable × segment rows → the carrier ads' ad-grain demographic rows),
+shows the carrier ads' placement rows through `PlacementDrill` instead of the "account-level" sentence,
+and carries the relationship on the header as an evidence chip — ad-name tokens and deconstructed
+variables are `ad_context`, never upgraded. When a stale run has no evidence to join, the empty state
+says exactly that and names the remedy (re-run analysis).
+
+**`[shipped]` Sweep of the touched surfaces (2026-09-02, later).** Page-level screenshots of Audience,
+the segment drill-down, Avatars, the IAP Library variable drill-down and the Creative dialog, served
+from the checked-in seed fixture with synthetic ad-grain evidence (scratch harness, not committed).
+Fixed from what they showed: the Audience coverage tile was an amber strip (chip + three amber
+meters) — now one compact neutral row, with `evidenceTone` reserving colour for reconciled/direct
+(success) and over-count/incompatible (danger) and treating partial as quiet context; the Creative
+dialog's fifth tab clipped to "Evi…" beside the media pane — the rail is labels-only now; the
+Creative Library's dialog said "No demographic data for this cell" for a cell whose rows the empty-
+state derivation could see, because that call site never passed them — the dialog now reads the
+account's cell rows itself (`useCreativeEvidence.cellDemographic`); the variable drill-down's segment
+rows lost their label to the signal tag — the tag sits by the CPA column. Pre-existing and left
+alone: the amber "V3 checkout results were not populated by age/gender…" notice on the IAP Library.
+
+**`[shipped]` One metric-header pattern (owner direction, same session).** The IAP Library's
+catalog-driven, per-view-persisted `KpiTileRow` is the pattern for every variable / metric header.
+Applied to the variable drill-down (`buildVariableMetricCatalog` over the import's own variable
+totals — impression-based entries hide themselves at token grain, where the engine writes no
+impressions). Already on it: Audience, the Creative dialog Overview, Analysis Overview. `[open]`
+candidates that still carry a fixed stat trio: Avatars segment cards (Spend · CPA · Link CVR) and the
+DNA family cards (Spend · Results · CPA); the segment drill-down has its own picker and should align
+to the same primitive.
