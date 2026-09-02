@@ -312,7 +312,7 @@ Supabase connector. PR #174 opened for the branch; its CI is the merge-path veri
 | Step | Result |
 |---|---|
 | PR #174 | CI run 362 green; merged as a merge commit → `main` `5cdaaa5` |
-| CI on `main` | run 363 on `5cdaaa5` (push event; in progress at the time of the publish, result recorded in the handoff when known) |
+| CI on `main` | run 363 on `5cdaaa5` (push event) — **success**, concluded 10:59Z |
 | `archive/phase2-pre-rebase` | deleted on origin (`git ls-remote --heads` returns nothing). The cloud git proxy refuses branch deletes; the workspace did it |
 | Replit workspace | fetched and **merged** `origin/main` (never a reset); `legacyRoutes.ts` confirmed present in the workspace afterwards |
 | Publish | deployment `329ef7e0` from the merged workspace; verified from outside by entry-bundle hash against a local production build of `5cdaaa5`, plus the `Copy components` content marker in the live `CreativeLibraryView` chunk, whose md5 matched the local build (`verify-deployed-build.sh`; a `success` status alone is not evidence). Publish status: `success` at 10:57Z |
