@@ -1,6 +1,6 @@
 # METRIX — Carry-Forward Register (E6)
 
-**Status: reconciled against live code on 2026-08-26; re-reconciled 2026-08-31 at the UI-reface phase close (added F-e).** The original register was written
+**Status: reconciled against live code on 2026-08-26; re-reconciled 2026-08-31 at the UI-reface phase close (added F-e); re-verified 2026-09-02 at the release-readiness pass (§8).** The original register was written
 on 2026-08-25 from `BUG_TRACKER.md` and `METRIX_Data_Consistency_Audit_Phase1.md`, and
 travelled to this repo in the Phase 2/3 handoff zip. Between those two dates BUG-28 → BUG-46
 landed, which closed several register items outright. Every line below carries a verdict from
@@ -221,3 +221,31 @@ arrived (live connection vs manual upload): a provenance fact, not an identity.
 selector, because that is where objectives are set and the analysis cannot run
 without them. It is allowlisted as configuration, not display. Say the word if
 even that should move.
+
+---
+
+## 8. Release-readiness re-verification (2026-09-02)
+
+Every open item above was re-read against the tree at this date, by the command
+named beside it. Nothing changed verdict; the counts that drift are restated.
+
+| Item | Verdict today | How verified |
+|---|---|---|
+| S1–S4 | `[open]`, unchanged | no writer/reader added since 2026-08-26 (`grep` of `analysisEngine.ts`, `metrixSeedAssembly.ts`) |
+| S5 | `[open — upgraded]`, unchanged | `analysisEngine.ts:1425-1427` still writes `Reach: 0, Impressions: 0, "Clicks (all)": 0` |
+| F-a / F-b | `[open]`, unchanged | `ad_creative_metadata` / `extra_metrics` referenced only by `iapCsvSpec.ts` and `analysisEngine.ts` (writers) — still no reader |
+| F-d | `[open]`, unchanged | — |
+| F-e | `[open]`, unchanged | `generationEngine.ts:34` still `"strategy" \| "briefs" \| "deconstruct"`; only `metrixSeedAssembly.ts` touches `optimization_loop` / `recommendation_cards` server-side, and it reads |
+| F-f | `[decision]`, unchanged | — |
+| C6 | `[open]` — **171** `"—"` / **28** `"n/a"` (was 167 / 27 on 2026-09-01) | the two `grep` lines in the reface register §7.3 |
+| A12 | `[open — architecture]`, unchanged | — |
+| Field coverage | 450 fields / 54 interfaces; `WorkspaceBilling` 7 of 8, `AppDefaults` 5 of 6, `CreativeDeconstruction` 3 of 15, `OptimizationLoop` 2 of 6 unread | `check:field-coverage` |
+
+**What this pass did change** is navigation, recorded in
+`METRIX_Navigation_Audit_2026-09.md` — nine findings, all shipped with tests.
+One of them touches an item here: the **Action Queue** (`/app/act/queue`) is
+now a visible section of the sidebar rather than an orphan route, which makes
+**F-e**'s emptiness visible to every reader instead of only to the one who found
+the overview button. That is the intended effect: an honest empty state in the
+navigation is the loudest possible reminder that the producer is the release
+blocker.

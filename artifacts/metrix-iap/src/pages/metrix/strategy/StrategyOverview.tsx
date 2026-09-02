@@ -694,7 +694,7 @@ export function StrategyOverview() {
               </SectionCard>
 
               <div className="flex items-center gap-3 pt-1">
-                <LoopAction to="/app/briefs/builder" label="Draft briefs from this strategy" icon="brief" />
+                <LoopAction to="/app/creative/builder" label="Draft briefs from this strategy" icon="brief" />
               </div>
             </div>
           </div>

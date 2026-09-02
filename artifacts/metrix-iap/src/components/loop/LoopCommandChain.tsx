@@ -76,7 +76,7 @@ type Stage = "data" | "analysis" | "strategy" | "briefs" | "report";
 
 const STAGE_ROUTES: Record<Stage, { label: string; path: string; desc: string }[]> = {
   data: [
-    { label: "Account Setup",  path: "/app/settings/account",      desc: "Uploads · source" },
+    { label: "Account Setup",  path: "/app/settings/general",      desc: "Uploads · source" },
     { label: "Integrations",   path: "/app/settings/integrations",  desc: "Meta OAuth" },
   ],
   analysis: [
@@ -93,11 +93,11 @@ const STAGE_ROUTES: Record<Stage, { label: string; path: string; desc: string }[
     { label: "Hypotheses",    path: "/app/strategy/hypotheses", desc: "Test queue" },
   ],
   briefs: [
-    { label: "Builder", path: "/app/briefs/builder", desc: "Draft & export" },
-    { label: "History", path: "/app/briefs/history", desc: "Past generations" },
+    { label: "Builder", path: "/app/creative/builder", desc: "Draft & export" },
+    { label: "History", path: "/app/creative", desc: "Past generations" },
   ],
   report: [
-    { label: "New Report",    path: "/app/reports/new",     desc: "Generate a report" },
+    { label: "New Report",    path: "/app/reports/builder",     desc: "Generate a report" },
     { label: "Report History", path: "/app/reports/history", desc: "Past generations" },
   ],
 };
@@ -969,7 +969,7 @@ function CommandHub({
           )}
           <div className="flex flex-wrap gap-1.5">
             <button
-              onClick={() => goTo("/app/settings/account")}
+              onClick={() => goTo("/app/settings/general")}
               className={cn(
                 "pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
                 stagedImportCount > 0 ? "mx-secondary-btn" : "mx-primary-btn",
@@ -1184,7 +1184,7 @@ function CommandHub({
               View History
             </button>
             <button
-              onClick={() => goTo("/app/reports/new")}
+              onClick={() => goTo("/app/reports/builder")}
               className="pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
             >
               <RefreshCw className="w-3.5 h-3.5" /> New Report
@@ -1350,7 +1350,7 @@ function CommandHub({
         </button>
         {briefsComplete && (
           <button
-            onClick={() => goTo("/app/briefs/history")}
+            onClick={() => goTo("/app/creative")}
             className="pressable inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
           >
             View Archive

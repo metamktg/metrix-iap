@@ -834,8 +834,8 @@ export function StrategyMapView() {
                   <CrossLink to="/app/strategy/hypotheses" label="Open the hypothesis queue" />
                   <LoopAction
                     to={fp.fromCell
-                      ? `/app/briefs/builder?from=strategy&fromCell=${fp.fromCell}`
-                      : "/app/briefs/builder"}
+                      ? `/app/creative/builder?from=strategy&fromCell=${fp.fromCell}`
+                      : "/app/creative/builder"}
                     label="Draft briefs from pillars"
                     icon="brief"
                     variant="secondary"
