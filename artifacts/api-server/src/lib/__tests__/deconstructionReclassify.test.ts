@@ -177,6 +177,17 @@ vi.mock("../generationEngine", () => ({
 }));
 
 vi.mock("../metrixSeedAssembly", () => ({ invalidateMetrixSeedCache: vi.fn() }));
+// The engine reads each import's bytes one at a time through the byte
+// loader (never the row's `content` column). Serve them from the in-memory
+// rows so the fixtures keep their inline hex.
+vi.mock("../supabaseBinary", () => ({
+  loadImportBytes: async (importId: string) => {
+    const row = (db["manual_imports"] ?? []).find((r) => String(r["id"]) === String(importId));
+    if (!row) throw new Error(`Import ${importId} does not exist.`);
+    const hex = String(row["content"] ?? "");
+    return Buffer.from(hex.startsWith("\\x") ? hex.slice(2) : hex, "hex");
+  },
+}));
 
 // ── video keyframe mock: extraction controlled per-test ───────────────
 let keyframeImpl: (bytes: Buffer, filename: string) => Promise<Array<{ label: string; timestamp: number; jpeg: Buffer }>> =
