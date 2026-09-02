@@ -249,3 +249,27 @@ now a visible section of the sidebar rather than an orphan route, which makes
 the overview button. That is the intended effect: an honest empty state in the
 navigation is the loudest possible reminder that the producer is the release
 blocker.
+
+---
+
+## 9. Decisions recorded at the Phase 4 planning pass (2026-09-02)
+
+Owner answers to the four questions in `METRIX_Phase4_Release_Plan_2026-09.md` §0,
+and two decisions taken under the owner's delegation:
+
+- **F-e / optimize producer: explicit go.** Register §6's "explicit-request-only"
+  condition is met. Build in the importer schema with the official schema's shape
+  (F-f recommendation), grounded in a dated Meta-practice reference the producer
+  must cite.
+- **"No additional user steps" = source precedence, not automation.** Runs stay
+  manual (`replit.md` rule unchanged). Where an optional input is absent, the most
+  applicable stored source stands in, named on the module. F-a's unread
+  `ad_creative_metadata` becomes the first fallback for creative intelligence.
+- **A12 seed split: deferred.** Triggers, each observable today: `seedBudget` logs
+  5 MB; account count > 30; any per-account nested blob > 500 KB.
+- **Blueprint cohort section: rewrite approved** under delegation — a canonical
+  document contradicting the code is an integrity defect. Scope limited to the
+  §3.7-flagged sections, citing the 2026-09-01 decision.
+- **Approved additions:** saved views per module; visual-regression baseline;
+  Findings folded into the command-center lead. **Declined:** live freshness
+  without reload; treemap / small multiples; collapsed-rail icon navigation.

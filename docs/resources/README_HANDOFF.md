@@ -49,9 +49,12 @@ register's §8 re-verifies every open item above against the same tree.
 
 ## Next phase — Release Readiness (R1–R5)
 
+**Planned as Phase 4** in `METRIX_Phase4_Release_Plan_2026-09.md` (v3, owner-answered): four
+sprints, ten exit criteria, and the owner's decisions recorded in the register's §9.
+
 Ordered by what actually blocks a paid release. Each item names its own exit test.
 
-### R1 · Build the optimize/act producer  *(the one true blocker)*
+### R1 · Build the optimize/act producer  *(the one true blocker — explicit go recorded 2026-09-02, register §9)*
 
 Register item **F-e**. `optimization_loop` and `recommendation_cards` are read by six UI
 surfaces and written by nothing but the static importer, which writes `"pending"` + null.
