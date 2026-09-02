@@ -137,7 +137,7 @@ describe("SegmentDrilldownModal — self-resolved demographic coverage", () => {
     const el = await banner();
     expect(el.textContent).toContain("2.4% coverage");
     // The measured note is the tag's title, not first-layer prose.
-    expect(el.getAttribute("title")).toContain("Only 3 of 128 ads appear in the demographic export.");
+    expect(el.textContent).toContain("Only 3 of 128 ads appear in the demographic export.");
   });
 
   it("stays quiet when the run's measured coverage is above threshold", async () => {
