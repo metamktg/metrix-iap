@@ -278,13 +278,13 @@ describe("TaskTray: empty-state nudge links navigate to the correct routes", () 
     expect(mockNavigate).toHaveBeenCalledWith("/app/strategy/hypotheses");
   });
 
-  it("Briefs Pending nudge navigates to /app/briefs/builder", () => {
+  it("Briefs Pending nudge navigates to /app/creative/builder (the live route, not the legacy alias)", () => {
     renderTray();
     const heading = screen.getAllByText("Briefs Pending").find((el) => el.tagName === "SPAN")!;
     const section = heading.closest(".px-4") as HTMLElement;
     const nudge = within(section).getByRole("button", { name: /open brief builder/i });
     fireEvent.click(nudge);
-    expect(mockNavigate).toHaveBeenCalledWith("/app/briefs/builder");
+    expect(mockNavigate).toHaveBeenCalledWith("/app/creative/builder");
   });
 
   it("Top Signals nudge navigates to /app/listen/signal", () => {

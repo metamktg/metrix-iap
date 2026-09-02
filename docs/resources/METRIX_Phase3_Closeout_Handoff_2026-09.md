@@ -333,7 +333,7 @@ they are blocked on credentials or on a decision.
 | Task | Why it needs you |
 |---|---|
 | `check:seed-fixture-drift` | needs a running API server **and** `DEMO_ACCOUNT_PASSWORD`. A stale fixture lets IAP tests pass against a snapshot that no longer matches the seed — the failure mode is silent. |
-| `check:ad-performance-views` | needs a live DB credential. Asserts the three aggregate views carry `security_invoker = on`. Without it a superuser-created view reads the base table with the OWNER's privileges and hands every account's rows to anyone who can select it — one word of DDL, invisible to an "do the views exist?" check. |
+| `check:ad-performance-views` | **Verified PASS on 2026-09-02** via the Supabase connector (register §11). Needs a live DB credential. Asserts the three aggregate views carry `security_invoker = on`. Without it a superuser-created view reads the base table with the OWNER's privileges and hands every account's rows to anyone who can select it — one word of DDL, invisible to an "do the views exist?" check. |
 | Run analysis on Bookster / Fresh Import | the only way to see the derived objective replace the stale stored one (§1). |
 | Delete `archive/phase2-pre-rebase` | safe — verified it holds nothing unique. Both files recovered from it (`verify-deployed-build.sh`, `seedFixtureShape.test.ts`) are on `main`. Branch deletion is destructive and outward-facing, so it was left to you. |
 | Agree or reject the Panel MOTION revision (§3.3) | it is an exit criterion currently unmet by decision, not by accident. |

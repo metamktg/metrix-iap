@@ -1,6 +1,6 @@
 # METRIX — Carry-Forward Register (E6)
 
-**Status: reconciled against live code on 2026-08-26; re-reconciled 2026-08-31 at the UI-reface phase close (added F-e).** The original register was written
+**Status: reconciled against live code on 2026-08-26; re-reconciled 2026-08-31 at the UI-reface phase close (added F-e); re-verified 2026-09-02 at the release-readiness pass (§8).** The original register was written
 on 2026-08-25 from `BUG_TRACKER.md` and `METRIX_Data_Consistency_Audit_Phase1.md`, and
 travelled to this repo in the Phase 2/3 handoff zip. Between those two dates BUG-28 → BUG-46
 landed, which closed several register items outright. Every line below carries a verdict from
@@ -69,7 +69,7 @@ discards before the UI layer.
 
 | # | Verdict | Item |
 |---|---|---|
-| F-a | `[open]` | **`ad_performance.extra_metrics` and `ad_creative_metadata` are written and read by nothing.** Confirmed: written at `analysisEngine.ts:1347-1348` (and five more sites for the breakdown tables), and the only other mentions in the entire repo are the `schema.sql` column definitions. `ad_creative_metadata` carries the ad's **body text, headline, CTA type, link destination and link caption** (`CREATIVE_METADATA_COLUMNS`, `iapCsvSpec.ts:17`). This is already-paid-for creative intelligence sitting unused, and it is the single best value-per-effort item on this register for the Phase 3 brief's "make the intelligence feel deeper" mandate — the Creative dialog's Overview tab is the obvious consumer. Source: Audit §5.2, re-confirmed 2026-08-26. |
+| F-a | `[shipped — copy half, 2026-09-02]` | **`ad_creative_metadata` now read:** `creativeComponents.ts` weights every headline / primary text / description / CTA against the ads that carried it; the seed exposes `creative_components` and `ads[].creative`; the Creative Library has a Copy components tab and the Creative dialog shows the ad's copy with its source. `extra_metrics` and the per-ad `reach` / `clicks_all` (F-b) remain unread. Original finding: **`ad_performance.extra_metrics` and `ad_creative_metadata` are written and read by nothing.** Confirmed: written at `analysisEngine.ts:1347-1348` (and five more sites for the breakdown tables), and the only other mentions in the entire repo are the `schema.sql` column definitions. `ad_creative_metadata` carries the ad's **body text, headline, CTA type, link destination and link caption** (`CREATIVE_METADATA_COLUMNS`, `iapCsvSpec.ts:17`). This is already-paid-for creative intelligence sitting unused, and it is the single best value-per-effort item on this register for the Phase 3 brief's "make the intelligence feel deeper" mandate — the Creative dialog's Overview tab is the obvious consumer. Source: Audit §5.2, re-confirmed 2026-08-26. |
 | F-b | `[open]` | **`ad_performance.reach` / `clicks_all` are dropped from per-ad stats** (bottom-line event totals only), so no ad-level surface can show them. Same class as F-a. Source: Audit §5.2. |
 | F-c | `[shipped]` | `CreativeExpandDialog` ASSIGNED `maleCpa`/`maleCtr` from each row's own rate inside a loop over the bucket's rows, so the last row won and which ad that was depended on iteration order. The bucket now accumulates impressions and link clicks alongside spend and results, and derives both rates once — null on a zero denominator rather than asserting $0.00. |
 | F-d | `[open]` | **`ConceptFamilyView` re-derives concept CPA/CVR independently of `concept_performance`'s blends.** The rows[0] CTR defect shipped (BUG-13); the broader re-derivation is untouched. Consolidating onto one helper is what prevents the next rows[0]-class bug — `lib/placement-rollup.ts` is the shape to copy. Source: Audit §5.2. |
@@ -221,3 +221,88 @@ arrived (live connection vs manual upload): a provenance fact, not an identity.
 selector, because that is where objectives are set and the analysis cannot run
 without them. It is allowlisted as configuration, not display. Say the word if
 even that should move.
+
+---
+
+## 8. Release-readiness re-verification (2026-09-02)
+
+Every open item above was re-read against the tree at this date, by the command
+named beside it. Nothing changed verdict; the counts that drift are restated.
+
+| Item | Verdict today | How verified |
+|---|---|---|
+| S1–S4 | `[open]`, unchanged | no writer/reader added since 2026-08-26 (`grep` of `analysisEngine.ts`, `metrixSeedAssembly.ts`) |
+| S5 | `[open — upgraded]`, unchanged | `analysisEngine.ts:1425-1427` still writes `Reach: 0, Impressions: 0, "Clicks (all)": 0` |
+| F-a / F-b | `[open]`, unchanged | `ad_creative_metadata` / `extra_metrics` referenced only by `iapCsvSpec.ts` and `analysisEngine.ts` (writers) — still no reader |
+| F-d | `[open]`, unchanged | — |
+| F-e | `[open]`, unchanged | `generationEngine.ts:34` still `"strategy" \| "briefs" \| "deconstruct"`; only `metrixSeedAssembly.ts` touches `optimization_loop` / `recommendation_cards` server-side, and it reads |
+| F-f | `[decision]`, unchanged | — |
+| C6 | `[open]` — **171** `"—"` / **28** `"n/a"` (was 167 / 27 on 2026-09-01) | the two `grep` lines in the reface register §7.3 |
+| A12 | `[open — architecture]`, unchanged | — |
+| Field coverage | 450 fields / 54 interfaces; `WorkspaceBilling` 7 of 8, `AppDefaults` 5 of 6, `CreativeDeconstruction` 3 of 15, `OptimizationLoop` 2 of 6 unread | `check:field-coverage` |
+
+**What this pass did change** is navigation, recorded in
+`METRIX_Navigation_Audit_2026-09.md` — nine findings, all shipped with tests.
+One of them touches an item here: the **Action Queue** (`/app/act/queue`) is
+now a visible section of the sidebar rather than an orphan route, which makes
+**F-e**'s emptiness visible to every reader instead of only to the one who found
+the overview button. That is the intended effect: an honest empty state in the
+navigation is the loudest possible reminder that the producer is the release
+blocker.
+
+---
+
+## 9. Decisions recorded at the Phase 4 planning pass (2026-09-02)
+
+Owner answers to the four questions in `METRIX_Phase4_Release_Plan_2026-09.md` §0,
+and two decisions taken under the owner's delegation:
+
+- **F-e / optimize producer: explicit go.** Register §6's "explicit-request-only"
+  condition is met. Build in the importer schema with the official schema's shape
+  (F-f recommendation), grounded in a dated Meta-practice reference the producer
+  must cite.
+- **"No additional user steps" = source precedence, not automation.** Runs stay
+  manual (`replit.md` rule unchanged). Where an optional input is absent, the most
+  applicable stored source stands in, named on the module. F-a's unread
+  `ad_creative_metadata` becomes the first fallback for creative intelligence.
+- **A12 seed split: deferred.** Triggers, each observable today: `seedBudget` logs
+  5 MB; account count > 30; any per-account nested blob > 500 KB.
+- **Blueprint cohort section: rewrite approved** under delegation — a canonical
+  document contradicting the code is an integrity defect. Scope limited to the
+  §3.7-flagged sections, citing the 2026-09-01 decision.
+- **Approved additions:** saved views per module; visual-regression baseline;
+  Findings folded into the command-center lead. **Declined:** live freshness
+  without reload; treemap / small multiples; collapsed-rail icon navigation.
+
+## 10. Owner brief 2026-09-02 — creative components, shipped
+
+Four asks, all landed on `claude/pre-release-reconciliation-ux-cznjbz`:
+
+1. **Weighting algorithm** — `creativeComponents.ts` (pure, 15 unit tests, in the CI pure list). Weight = result share × efficiency index, normalised to the family's best. Baseline is the covered set's own cost per result.
+2. **Confidence-based analysis** — `concept_performance.creative_coverage_pct` / `evidence_grade` / `confidence_score` written by the engine; the volume tier (`confidence_level`) is shared with the weighting through `volumeConfidence` so the two cannot drift. Decision on record: the tier is not relabelled by evidence; the numeric score is.
+3. **Non-intrusive, persistent suggestion** — `CreativeSourceNudge` on the Creative command center and Library; per-account per-browser dismissal; self-hides once a servable creative or a deconstruction exists.
+4. **Data continuity** — one input shape for all creative sources with per-field precedence (uploaded asset > Meta API > export); the Meta API producer is a future module of that shape, not a rewrite. Copy reaches the Creative dialog through `cardFromLibraryCell`'s fallback, so a card built from an export-only ad shows its real copy, named by source.
+
+Schema: three additive `alter table … add column if not exists` lines on `concept_performance` in `schema.sql`. **Applied to the live project on 2026-09-02** as Supabase migration `concept_performance_creative_evidence_columns` (verified: all three columns present, nullable). Runs from this point write them; rows from earlier runs stay "not graded" unless backfilled (§11).
+
+## 11. Live-environment reconciliation (2026-09-02, from the cloud session)
+
+Verified against the live Supabase project by read-only SQL, not from a checkout:
+
+| Check | Result |
+|---|---|
+| `check:ad-performance-views` (closeout §3.6 owner task) | **PASS** — all three `ad_performance_*` views carry `security_invoker=on`; `anon` and `authenticated` hold no SELECT |
+| RLS on `ad_performance`, `concept_performance`, `manual_analysis_runs` | enabled, zero policies — deny-by-default as `schema.sql`'s RLS block intends; service role bypasses |
+| Security advisors | 42 × `rls_enabled_no_policy` INFO (deliberate, per closeout §3.4); 4 × SECURITY DEFINER helpers callable by `authenticated` WARN (deferred by decision — **do not revoke EXECUTE**, the six run-scoped policies depend on them; plan A5); leaked-password protection off WARN (Auth dashboard toggle, not SQL — owner) |
+| `concept_performance` evidence columns | present after migration `concept_performance_creative_evidence_columns`; **one** run-keyed row graded by backfill with the engine's exact formula (the only ungraded row with a run id); the 28 importer-era rows (no run id) stay "not graded" by design |
+
+Still owner-only from a cloud checkout (no secrets here): `check:seed-fixture-drift`,
+`refresh:seed-fixture`, running analysis on Bookster / Fresh Import, deleting
+`archive/phase2-pre-rebase`, and the Auth leaked-password toggle.
+
+**Schema ↔ live database drift check (2026-09-02).** Every table (43) and column (500) that
+`schema.sql` declares exists on the live project, and every column the live project carries on
+those tables is declared in `schema.sql` (nine of them via `alter table if exists … add column`,
+which a first parse missed and a second confirmed). No drift in either direction. Method: the
+declared set parsed from `schema.sql`, compared against `information_schema.columns` through the
+Supabase connector. PR #174 opened for the branch; its CI is the merge-path verification.

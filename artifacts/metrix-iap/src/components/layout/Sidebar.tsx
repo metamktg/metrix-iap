@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { useState, useRef, useCallback, useEffect, useId } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   ChevronDown,
@@ -17,7 +17,7 @@ import {
   Zap,
   Settings2,
 } from "lucide-react";
-import { navTree, sectionLandingRoute } from "@/navigation/navTree";
+import { navTree, sectionLandingRoute, visibleChildren } from "@/navigation/navTree";
 import { useNavBadges } from "@/navigation/useNavBadges";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDragResize } from "@/hooks/useDragResize";
@@ -125,33 +125,6 @@ function navigate(href: string, e: React.MouseEvent) {
 function navigateTo(href: string) {
   window.history.pushState({}, "", href);
   window.dispatchEvent(new PopStateEvent("popstate"));
-}
-
-// ─── Single-click vs double-click dispatch ─────────────────────────────
-// Nav click model (Metrix v1 design handoff): a single click on an
-// expandable section toggles its children open/closed (accordion); a
-// double click within ~220ms instead navigates straight to that section's
-// Command Center. The first click's toggle is deferred behind the window
-// so a fast second click can still cancel it and navigate instead.
-const DOUBLE_CLICK_MS = 220;
-
-function useSingleOrDoubleClick(onSingle: () => void, onDouble: () => void) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-  }, []);
-  return useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-      onDouble();
-      return;
-    }
-    timerRef.current = setTimeout(() => {
-      timerRef.current = null;
-      onSingle();
-    }, DOUBLE_CLICK_MS);
-  }, [onSingle, onDouble]);
 }
 
 // ─── Child row (used in both expanded sidebar and hover flyout) ─────────
@@ -274,76 +247,110 @@ function CollapsedItem({
 
 // ─── Expandable section (expanded mode) ────────────────────────────────
 // open / onToggle are controlled by the parent Sidebar (accordion mode).
+//
+// Two controls, side by side, and each does one thing:
+//
+//   · the label is a LINK to the section's command center;
+//   · the chevron is a BUTTON that opens or closes the child list.
+//
+// It used to be one button that toggled on a single click and navigated on
+// a double click, with the first click held back for 220ms in case a second
+// arrived. That is why the menu felt clunky: every section click landed a
+// fifth of a second late, the navigation gesture existed only in a title
+// tooltip (invisible on touch, where double-tap is zoom), and a reader who
+// wanted the command center had no visible way to ask for it. A link and a
+// disclosure are the two things a sidebar section is; they now look like it.
 
 function ExpandableSection({
   section,
   badgeCounts,
   open,
   onToggle,
+  onOpen,
 }: {
   section: NavSection;
   badgeCounts: Record<string, number | null>;
   open: boolean;
   onToggle: () => void;
+  onOpen: () => void;
 }) {
   const [location] = useLocation();
   const sectionActive = isSectionActive(section, location);
-  const landing = sectionLandingRoute(section);
-  const landingActive = landing != null && isChildActive(landing, location);
+  const landing = sectionLandingRoute(section) ?? "#";
+  const landingActive = isChildActive(landing, location);
   const controlsId = useId();
-  const children = section.children ?? [];
-
-  // Single click toggles the accordion; double click (within 220ms)
-  // navigates to the section's Command Center instead.
-  const handleClick = useSingleOrDoubleClick(
-    onToggle,
-    () => {
-      if (landing) navigateTo(landing);
-    },
-  );
+  const children = visibleChildren(section);
+  const sectionBadge = section.badgeKey ? badgeCounts[section.badgeKey] ?? null : null;
 
   return (
     <li>
-      {/* One row: single click toggles the child list, double click navigates
-          to the section's Command Center (Metrix v1 design handoff). */}
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={controlsId}
-        aria-current={landingActive ? "page" : undefined}
-        onClick={handleClick}
-        title={landing ? `Click to expand · double-click to open ${section.label}` : undefined}
+      <div
         className={cn(
-          "pressable-lg w-full flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-lg text-body transition-[color,background-color,border-color,box-shadow,opacity,transform] select-none",
+          "flex items-stretch rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] select-none",
           landingActive
             ? "mx-nav-active font-medium"
             : sectionActive
               ? "text-foreground bg-primary/[0.09] font-medium"
-              : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10"
+              : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10",
+          section.placeholder && "opacity-60",
         )}
       >
-        <NavIcon
-          name={section.icon}
-          className={cn(
-            "w-4 h-4 shrink-0",
-            landingActive ? "text-foreground" : sectionActive ? "text-interactive" : "text-muted-foreground/75"
+        <a
+          href={landing}
+          onClick={(e) => {
+            navigate(landing, e);
+            onOpen();
+          }}
+          aria-current={landingActive ? "page" : undefined}
+          title={`Open ${section.label}`}
+          className="pressable-lg flex-1 min-w-0 flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-l-lg text-body
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        >
+          <NavIcon
+            name={section.icon}
+            className={cn(
+              "w-4 h-4 shrink-0",
+              landingActive ? "text-foreground" : sectionActive ? "text-interactive" : "text-muted-foreground/75"
+            )}
+          />
+          <span className="flex-1 text-left truncate">{section.label}</span>
+          {section.placeholder && (
+            <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
+              Soon
+            </span>
           )}
-        />
-        <span className="flex-1 text-left truncate">{section.label}</span>
-        <ChevronDown
-          aria-hidden="true"
-          className={cn(
-            "w-3 h-3 shrink-0 transition-transform duration-200",
-            open && "rotate-180",
-            landingActive ? "text-foreground/70" : "text-muted-foreground/75"
+          {section.badgeKey && !section.placeholder && (
+            <NavBadge count={sectionBadge} badgeKey={section.badgeKey} />
           )}
-        />
-      </button>
+        </a>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={controlsId}
+          aria-label={`${open ? "Collapse" : "Expand"} ${section.label} pages`}
+          onClick={onToggle}
+          className="pressable shrink-0 w-9 h-9 flex items-center justify-center rounded-r-lg
+                     hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        >
+          <ChevronDown
+            aria-hidden="true"
+            className={cn(
+              "w-3.5 h-3.5 shrink-0 transition-transform duration-200",
+              open && "rotate-180",
+              landingActive ? "text-foreground/70" : "text-muted-foreground/75"
+            )}
+          />
+        </button>
+      </div>
 
       {/* Animated child list — grid 0fr→1fr trick animates height:auto cleanly */}
       <div
         id={controlsId}
         aria-hidden={!open}
+        // A closed list must be out of the tab order as well as out of
+        // sight: inert takes its links out of Tab, aria-hidden alone
+        // would not (the same fix AppShell's drawer needed).
+        inert={!open}
         style={{
           display: "grid",
           gridTemplateRows: open ? "1fr" : "0fr",
@@ -603,6 +610,7 @@ export function Sidebar() {
                   badgeCounts={badgeCounts}
                   open={openSectionId === section.id}
                   onToggle={() => handleSectionToggle(section.id)}
+                  onOpen={() => setOpenSectionId(section.id)}
                 />
               ) : (
                 <LeafSection

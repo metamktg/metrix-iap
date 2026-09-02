@@ -101,6 +101,7 @@ import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { useListManualImports } from "@workspace/api-client-react";
+import { navTree, visibleChildren } from "@/navigation/navTree";
 import { Plug, FileUp, Clock, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Venus, Mars, AlignLeft, Download } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
@@ -442,30 +443,17 @@ function spaNav(href: string, e: React.MouseEvent) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
-const SECTION_TABS: Record<"analysis" | "strategy", { label: string; to: string }[]> = {
-  analysis: [
-    { label: "Overview",        to: "/app/analysis/overview" },
-    { label: "Ad Performance",  to: "/app/analysis/performance" },
-    { label: "IAP Library",     to: "/app/analysis/library" },
-    { label: "Creative DNA",    to: "/app/analysis/dna" },
-    { label: "Audience",        to: "/app/analysis/audience" },
-    { label: "Placements",      to: "/app/analysis/placements" },
-    { label: "Budget",          to: "/app/analysis/budget" },
-    { label: "History",         to: "/app/analysis/history" },
-  ],
-  strategy: [
-    { label: "Overview",             to: "/app/strategy/overview" },
-    { label: "Strategy Map",         to: "/app/strategy/map" },
-    { label: "Avatars / ICP / PMF",  to: "/app/strategy/avatars" },
-    { label: "Communications",       to: "/app/strategy/communications" },
-    { label: "Hypothesis Queue",     to: "/app/strategy/hypotheses" },
-    { label: "History",              to: "/app/strategy/history" },
-  ],
-};
+// The tabs ARE the section's menu rows. They used to be a second hand-typed
+// list of the same eight routes, one rename away from the sidebar saying
+// "Creative DNA" while the tab bar said something else.
+function sectionTabs(section: "analysis" | "strategy"): { label: string; to: string }[] {
+  const node = navTree.find((s) => s.id === section);
+  return node ? visibleChildren(node).map((c) => ({ label: c.label, to: c.to })) : [];
+}
 
 export function SectionTabBar({ section }: { section: "analysis" | "strategy" }) {
   const [location] = useLocation();
-  const tabs = SECTION_TABS[section];
+  const tabs = sectionTabs(section);
   return (
     <div className="flex items-center gap-0.5 px-4 border-b border-border/40 overflow-x-auto shrink-0 bg-foreground/[0.008]">
       {tabs.map((tab) => {
@@ -977,8 +965,8 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
             All stages finished. Ready for the next re-run cycle.
           </p>
           <a
-            href="/app/settings/account"
-            onClick={(e) => { e.preventDefault(); navigate("/app/settings/account"); }}
+            href="/app/settings/general"
+            onClick={(e) => { e.preventDefault(); navigate("/app/settings/general"); }}
             className="inline-flex items-center gap-1 text-label font-semibold text-interactive/80 hover:text-interactive transition-colors"
           >
             Start re-run <ArrowRight className="w-3 h-3" />
@@ -1069,14 +1057,14 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
     ? [
         { label: "Name the account", done: true },
         { label: "Upload performance CSVs", done: csvsDone, onClick: () => setImportOpen(true) },
-        { label: "Map creative assets", done: creativesMapped, route: "/app/settings/account" },
-        { label: "Run analysis", done: false, route: "/app/settings/account" },
+        { label: "Map creative assets", done: creativesMapped, route: "/app/settings/general" },
+        { label: "Run analysis", done: false, route: "/app/settings/general" },
       ]
     : [
         { label: "Connect data source", done: false, onClick: () => setConnectOpen(true) },
-        { label: "Run analysis", done: false, route: "/app/settings/account" },
+        { label: "Run analysis", done: false, route: "/app/settings/general" },
         { label: "Generate strategy", done: false, route: "/app/strategy/overview" },
-        { label: "Generate briefs", done: false, route: "/app/briefs/builder" },
+        { label: "Generate briefs", done: false, route: "/app/creative/builder" },
       ];
 
   return (
@@ -1349,7 +1337,7 @@ export function ModuleTabs<T extends string>({
   onChange,
   label = "Section",
 }: {
-  tabs: { id: T; label: string; count?: number; Icon?: React.ComponentType<{ className?: string }> }[];
+  tabs: { id: T; label: string; count?: number; Icon?: React.ComponentType<{ className?: string }>; disabledReason?: string }[];
   active: T;
   onChange: (id: T) => void;
   label?: string;
@@ -1523,14 +1511,20 @@ function backUrl(fp: FromParams): string | null {
     return fp.fromCell ? `/app/analysis/library?focus=${fp.fromCell}` : "/app/analysis/library";
   }
   if (fp.from === "strategy") {
-    return fp.fromHyp ? `/app/strategy/hypotheses?focus=${fp.fromHyp}` : "/app/strategy/map";
+    if (fp.fromHyp) return `/app/strategy/hypotheses?focus=${fp.fromHyp}`;
+    // The chain unwinds one hop at a time. A brief reached from a strategy
+    // page that was itself reached from an analysis cell goes back to that
+    // strategy page WITH its analysis origin intact, so the next Back still
+    // lands on the cell. Dropping the cell here is how a reader ended up on
+    // a bare Strategy Map with no way back to the row that started it.
+    return fp.fromCell ? `/app/strategy/map?from=analysis&fromCell=${fp.fromCell}` : "/app/strategy/map";
   }
   return null;
 }
 
 function backLabel(fp: FromParams): string {
   if (fp.from === "analysis") return fp.fromCell ? `Back to cell ${fp.fromCell}` : "Back to Analysis";
-  if (fp.from === "strategy") return fp.fromHyp ? "Back to Hypothesis" : "Back to Strategy";
+  if (fp.from === "strategy") return fp.fromHyp ? "Back to Hypothesis" : "Back to Strategy Map";
   return "Back";
 }
 
@@ -1566,7 +1560,7 @@ export function FlowCrumb({ from, fromCell, fromHyp }: FromParams) {
 
   const origin =
     from === "analysis" ? (fromCell ? `Analysis · ${fromCell}` : "Analysis · IAP Library")
-    : from === "strategy" ? (fromHyp ? `Strategy · ${fromHyp}` : "Strategy Map")
+    : from === "strategy" ? (fromHyp ? `Strategy · ${fromHyp}` : fromCell ? `Strategy Map · ${fromCell}` : "Strategy Map")
     : null;
 
   if (!origin) return null;

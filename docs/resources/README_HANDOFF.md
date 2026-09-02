@@ -39,13 +39,22 @@ complete record and the zip is no longer needed.
 `METRIX_UI_REFACE_REGISTER_2026-08.md` §7 — shipped / needs another look / missed. Read §7
 before starting anything below.
 
+**Navigation audit shipped (2026-09-02).** `METRIX_Navigation_Audit_2026-09.md` — the
+user-journey pass the release brief asked for: the sidebar's deferred-click model, fourteen
+in-app links routed through context-dropping redirects, three orphan pages, no Back, no
+palette. Nine findings, all shipped with tests; the open remainder is in its §3. The
+register's §8 re-verifies every open item above against the same tree.
+
 ---
 
 ## Next phase — Release Readiness (R1–R5)
 
+**Planned as Phase 4** in `METRIX_Phase4_Release_Plan_2026-09.md` (v3, owner-answered): four
+sprints, ten exit criteria, and the owner's decisions recorded in the register's §9.
+
 Ordered by what actually blocks a paid release. Each item names its own exit test.
 
-### R1 · Build the optimize/act producer  *(the one true blocker)*
+### R1 · Build the optimize/act producer  *(the one true blocker — explicit go recorded 2026-09-02, register §9)*
 
 Register item **F-e**. `optimization_loop` and `recommendation_cards` are read by six UI
 surfaces and written by nothing but the static importer, which writes `"pending"` + null.
@@ -90,10 +99,11 @@ explicit go.**
 
 ### R5 · Design remainder
 
-`ConnectAccountDialogs` (2350 lines — the largest surface and the first a new customer
-touches: MOTION and DISCL absent, Phase 4's exit therefore unmet); the popup class
-(MOTION 10% / DISCL 0% / A11Y 50% across 10 surfaces); shell TYPE 0%; Phase 6 ports; the
-C6 placeholder sweep. Lowest release risk of the five — none of it blocks a customer from
+`ConnectAccountDialogs` and the popup class closed in the reface register §7.4; shell TYPE
+was the instrument (§7.5); Phase 6 ports are all dispositioned (§7.3). What remains: the
+Panel MOTION revision (needs an owner's agreement), the C6 placeholder sweep (171 / 28 on
+2026-09-02), and the navigation audit's §3 (collapsed-rail icon behaviour, Findings'
+place in the menu). Lowest release risk of the five — none of it blocks a customer from
 getting value, and all of it is measured and re-runnable.
 
 ## Environment facts (no secrets here)

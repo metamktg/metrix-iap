@@ -10,7 +10,7 @@
 import { describe, it, expect } from "vitest";
 
 import { buildBreadcrumbs } from "@/components/layout/breadcrumbs";
-import { navTree } from "../navTree";
+import { navTree, sectionLandingRoute } from "../navTree";
 
 function labels(location: string, isManager = false): string[] {
   return buildBreadcrumbs(location, isManager).map((c) => c.label);
@@ -99,6 +99,8 @@ describe("section landing pages show only the section label (Overview as parent 
       expect(labels(section.landing!)).toEqual([section.label]);
     });
 
+    // "//sub-detail" is not a path; the root landing is covered above.
+    if (section.landing === "/") continue;
     it(`${section.landing}/sub-detail also collapses to section label`, () => {
       expect(labels(`${section.landing}/sub-detail`)).toEqual([section.label]);
     });
@@ -129,12 +131,23 @@ describe("child pages show section + child labels", () => {
 });
 
 describe("crumb link targets", () => {
-  it("section crumbs on child pages link to the section's first child route", () => {
+  // The section crumb and the sidebar section link open the SAME page —
+  // the command center. It used to link to the first child, so "Analysis"
+  // in the trail and "Analysis" in the sidebar went to two different pages.
+  it("section crumbs on child pages link to the section's command center (landing route)", () => {
     for (const section of navTree) {
       for (const child of section.children ?? []) {
         const crumbs = buildBreadcrumbs(child.to, false);
-        expect(crumbs[0]?.to).toBe(section.children![0]!.to);
+        expect(crumbs[0]?.to).toBe(sectionLandingRoute(section));
       }
+    }
+  });
+
+  it("hidden children (no menu row) still resolve to their section", () => {
+    const hidden = navTree.flatMap((s) => (s.children ?? []).filter((c) => c.hidden).map((c) => ({ s, c })));
+    expect(hidden.length).toBeGreaterThanOrEqual(1);
+    for (const { s, c } of hidden) {
+      expect(labels(c.to)).toEqual([s.label, c.label]);
     }
   });
 

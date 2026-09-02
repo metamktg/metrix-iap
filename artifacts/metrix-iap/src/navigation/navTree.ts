@@ -15,7 +15,7 @@
 //   6  MST         → Cross-Map / Sprints / Performance / Direction
 //   7  Reports     → Report Builder / Configuration / History
 //   8  Exports     → Analysis / Strategy JSON / Reports / Brief   (open to all during beta; advanced-tier gating is a post-beta consideration, not enforced today)
-//   9  Action      → Agent   (Coming Soon)
+//   9  Action      → Action Queue / Agent (Coming Soon)
 //   10 Settings    → General / Users & Permissions / Security / Integrations / Billing
 
 export type NavBadgeKey =
@@ -44,6 +44,14 @@ export type NavChild = {
   badgeKey?: NavBadgeKey;
   dataSource?: string;
   placeholder?: boolean;
+  /**
+   * Belongs to the section for breadcrumbs, the active-state highlight and
+   * the Back target, but renders no menu row. For pages reached only from
+   * inside another page (the full funnel breakdown from Ad Performance).
+   * Without this, such a page had NO section: the breadcrumb trail was
+   * empty, the sidebar lit nothing, and the only way out was the browser.
+   */
+  hidden?: boolean;
 };
 
 export type NavSection = {
@@ -70,6 +78,54 @@ export type NavSection = {
 export function sectionLandingRoute(section: NavSection): string | null {
   if (section.landing) return section.landing;
   return section.children?.[0]?.to ?? null;
+}
+
+/** The children a menu renders — hidden entries stay out of every list. */
+export function visibleChildren(section: NavSection): NavChild[] {
+  return (section.children ?? []).filter((c) => !c.hidden);
+}
+
+function under(location: string, base: string): boolean {
+  return location === base || location.startsWith(base + "/");
+}
+
+export type NavMatch = {
+  section: NavSection;
+  /** The most specific child under the location, if any. */
+  child: NavChild | null;
+  /** True when the location IS the section's landing (command-center) page. */
+  atLanding: boolean;
+};
+
+/**
+ * Where in the tree a location sits. One resolver for breadcrumbs, the
+ * Back target, the sidebar highlight and the command palette, so they
+ * cannot disagree about which section a page belongs to.
+ *
+ * Longest matching child wins, so a child at `/app/briefs` can never shadow
+ * a sibling at `/app/briefs/builder` via the prefix check.
+ */
+export function resolveNavLocation(location: string): NavMatch | null {
+  for (const section of navTree) {
+    if ((section.matchPaths ?? []).some((p) => under(location, p))) {
+      return { section, child: null, atLanding: true };
+    }
+    if (!section.children?.length && section.to && under(location, section.to)) {
+      return { section, child: null, atLanding: true };
+    }
+    let best: NavChild | null = null;
+    for (const child of section.children ?? []) {
+      if (under(location, child.to) && (!best || child.to.length > best.to.length)) best = child;
+    }
+    // A landing that is itself a child (Settings → General) resolves as
+    // that child: the trail reads "Settings · General", not "Settings".
+    if (best) return { section, child: best, atLanding: false };
+    const landing = section.landing;
+    if (landing && landing !== "/" && under(location, landing)) {
+      return { section, child: null, atLanding: location === landing };
+    }
+  }
+  return null;
 }
 
 export const navTree: NavSection[] = [
@@ -176,6 +232,24 @@ export const navTree: NavSection[] = [
         label: "History",
         to: "/app/analysis/history",
         dataSource: "manual_analysis_runs",
+      },
+      {
+        // Reached from Ad Performance's "Open full funnel breakdown". Not a
+        // menu row — it is a drill-down of that page, not a peer of it.
+        id: "analysis-funnel",
+        label: "Engagement Funnel",
+        to: "/app/analysis/funnel",
+        dataSource: "performance_by_cell",
+        hidden: true,
+      },
+      {
+        // AI verdict panel. Kept off the menu until its producer runs for
+        // real accounts, but it is an Analysis page and must say so.
+        id: "analysis-findings",
+        label: "Findings",
+        to: "/app/analyze/findings",
+        dataSource: "intelligence, recommendation_cards",
+        hidden: true,
       },
     ],
   },
@@ -354,13 +428,24 @@ export const navTree: NavSection[] = [
     ],
   },
   {
+    // The act stage of the loop. The queue is a real page (it renders the
+    // scoped recommendation_cards, honestly empty until the optimize
+    // producer lands — register item F-e); before this it was reachable
+    // only from one Overview button and belonged to no section, so a
+    // reader who followed that button had no crumb, no highlight and no
+    // way back except the browser.
     id: "action",
     number: "09",
     label: "Action",
     icon: "Zap",
-    landing: "/app/action/agent",
-    placeholder: true,
+    landing: "/app/act/queue",
     children: [
+      {
+        id: "action-queue",
+        label: "Action Queue",
+        to: "/app/act/queue",
+        dataSource: "recommendation_cards, optimization_loop",
+      },
       {
         id: "action-agent",
         label: "Agent",

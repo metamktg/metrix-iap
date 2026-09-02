@@ -1,51 +1,40 @@
-import { navTree, type NavChild } from "@/navigation/navTree";
+import { resolveNavLocation, sectionLandingRoute } from "@/navigation/navTree";
 
 export type BreadcrumbEntry = { label: string; to?: string };
 
+function overviewLabel(isManager: boolean): string {
+  return isManager ? "Agency Overview" : "Account Overview";
+}
+
+/**
+ * The trail for a location: [section, page]. The section crumb links to
+ * the section's command center (its landing route), which is the page the
+ * sidebar header also opens — one parent, wherever a reader clicks it. It
+ * used to link to the section's FIRST CHILD instead, so "Analysis" in the
+ * trail and "Analysis" in the sidebar went to two different pages.
+ */
 export function buildBreadcrumbs(location: string, isManager: boolean): BreadcrumbEntry[] {
-  const crumbs: BreadcrumbEntry[] = [];
-
   if (location === "/" || location === "") {
-    crumbs.push({ label: isManager ? "Agency Overview" : "Account Overview" });
-    return crumbs;
+    return [{ label: overviewLabel(isManager) }];
   }
-
-  for (const section of navTree) {
-    const matchesExtra = (section.matchPaths ?? []).some(
-      (p) => location === p || location.startsWith(p + "/")
-    );
-    if (matchesExtra) {
-      crumbs.push({ label: isManager ? "Agency Overview" : "Account Overview" });
-      return crumbs;
-    }
-    if (!section.children?.length && section.to) {
-      if (location === section.to || location.startsWith(section.to + "/")) {
-        crumbs.push({ label: section.label, to: section.to });
-        return crumbs;
-      }
-    }
-    // Find the most specific (longest-path) child that matches the location.
-    // This prevents a short-path child like "/app/briefs" from shadowing
-    // deeper siblings like "/app/briefs/builder" via the startsWith check.
-    let bestChild: NavChild | null = null;
-    for (const child of section.children ?? []) {
-      if (location === child.to || location.startsWith(child.to + "/")) {
-        if (!bestChild || child.to.length > bestChild.to.length) {
-          bestChild = child;
-        }
-      }
-    }
-    if (bestChild) {
-      crumbs.push({ label: section.label, to: section.children![0]!.to });
-      crumbs.push({ label: bestChild.label, to: bestChild.to });
-      return crumbs;
-    }
-    // Fallback: unknown sub-paths under a section hub collapse to the section label.
-    if (section.landing && (location === section.landing || location.startsWith(section.landing + "/"))) {
-      crumbs.push({ label: section.label, to: section.landing });
-      return crumbs;
-    }
+  const match = resolveNavLocation(location);
+  if (!match) return [];
+  const { section, child, atLanding } = match;
+  if (section.matchPaths?.length && atLanding && !child) {
+    return [{ label: overviewLabel(isManager) }];
   }
+  const landing = sectionLandingRoute(section) ?? section.to;
+  const sectionCrumb: BreadcrumbEntry = { label: section.label, to: landing ?? undefined };
+  if (!child || atLanding) return [sectionCrumb];
+  return [sectionCrumb, { label: child.label, to: child.to }];
+}
 
-  return crumbs;
+/**
+ * The label a reader would recognise for a location — the page name, or the
+ * section name on a command center. Used by the Back control and the
+ * command palette's recent-pages list.
+ */
+export function pageLabel(location: string, isManager: boolean): string | null {
+  const crumbs = buildBreadcrumbs(location, isManager);
+  return crumbs.at(-1)?.label ?? null;
 }

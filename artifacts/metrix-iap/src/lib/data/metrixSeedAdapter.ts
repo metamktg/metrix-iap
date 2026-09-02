@@ -22,6 +22,7 @@ import type {
   CampaignSummary,
   ReportHistoryEntry,
   WorkspaceSettings,
+  CreativeComponents,
 } from "./seedTypes";
 
 // ─── App defaults ─────────────────────────────────────────────────────
@@ -82,6 +83,10 @@ export function getAds(seed: MetrixSeed, adAccountId: string | null | undefined)
  * `metaAdAccountId` is the numeric Meta account id (null until backfilled)
  * — NOT the internal account id, which cannot form a valid deep link.
  */
+export function getCreativeComponents(seed: MetrixSeed, adAccountId: string | null | undefined): CreativeComponents | null {
+  return getAdAccount(seed, adAccountId)?.creative_components ?? null;
+}
+
 export function getCreativeLinkContext(
   seed: MetrixSeed,
   adAccountId: string | null | undefined

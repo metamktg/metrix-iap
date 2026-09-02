@@ -110,7 +110,7 @@ export function CrossmapResultsView({
             <div className="flex-1 flex flex-col">
               {renderHeader && <ModuleHeader section={SECTION} title="Crossmap Results" accountName={acct.name} />}
               <PendingState title="No crossmap yet" message={mst?.render_policy ?? "Crossmap results appear once the matrix and performance data both exist."} icon={GitMerge}
-                action={<CrossLink to="/app/mst/matrix" label="Open MST Matrix" />}
+                action={<CrossLink to="/app/mst/sprints" label="Open MST Matrix" />}
               />
             </div>
           );
@@ -274,7 +274,7 @@ export function CrossmapResultsView({
               </TableShell>
 
               <div className="flex items-center justify-end gap-4">
-                <CrossLink to="/app/mst/matrix" label="Open the matrix" />
+                <CrossLink to="/app/mst/sprints" label="Open the matrix" />
                 <CrossLink to="/app/analysis/library" label="Full IAP library" />
               </div>
             </div>

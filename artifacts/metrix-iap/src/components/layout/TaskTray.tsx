@@ -855,7 +855,7 @@ export function TaskTray() {
                 label={hyp.label}
                 sub={hyp.status}
                 accent="hypothesis"
-                onAction={() => navigate(`/app/briefs/builder?fromHyp=${encodeURIComponent(hyp.id)}&from=strategy`)}
+                onAction={() => navigate(`/app/creative/builder?fromHyp=${encodeURIComponent(hyp.id)}&from=strategy`)}
                 actionLabel="Create Brief"
               />
             ))
@@ -871,7 +871,7 @@ export function TaskTray() {
             <EmptySlot
               message="No briefs waiting for review"
               nudgeLabel="Open Brief Builder"
-              nudgeTo="/app/briefs/builder"
+              nudgeTo="/app/creative/builder"
             />
           ) : (
             pendingDrafts.slice(0, 2).map((brief) => (
@@ -880,12 +880,12 @@ export function TaskTray() {
                 label={brief.human_direction}
                 sub={`${brief.asset_type} · ${brief.status}`}
                 accent="brief"
-                onAction={() => navigate("/app/briefs/builder")}
+                onAction={() => navigate("/app/creative/builder")}
                 actionLabel="Review"
               />
             ))
           )}
-          <TrayNavLink to="/app/briefs/builder" label="Brief Builder" icon={FileText} />
+          <TrayNavLink to="/app/creative/builder" label="Brief Builder" icon={FileText} />
         </TraySection>
 
         <Divider />
@@ -918,8 +918,8 @@ export function TaskTray() {
           <div className="space-y-px">
             <TrayNavLink to="/app/analysis/library" label="IAP Library" icon={Zap} />
             <TrayNavLink to="/app/strategy/map" label="Strategy Map" icon={Zap} />
-            <TrayNavLink to="/app/mst/matrix" label="MST Matrix" icon={Zap} />
-            <TrayNavLink to="/app/reports/new" label="New Report" icon={Zap} />
+            <TrayNavLink to="/app/mst/sprints" label="MST Matrix" icon={Zap} />
+            <TrayNavLink to="/app/reports/builder" label="New Report" icon={Zap} />
           </div>
         </TraySection>
       </div>

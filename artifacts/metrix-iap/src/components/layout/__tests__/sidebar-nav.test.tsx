@@ -1,12 +1,12 @@
 // ─── Sidebar navigation + inline account picker regression tests ──────
-// Covers: navTree data integrity, expanded-mode single-click-toggles /
-// double-click-navigates accordion behavior, collapsed-mode icon rail
+// Covers: navTree data integrity, expanded-mode section link + chevron
+// disclosure (accordion), collapsed-mode icon rail
 // (click reopens the full rail on that section — no hover flyout, per the
 // Metrix v1 design handoff), and the inline ad account picker.
 
 import { withUnconfiguredAccount } from "@/test-fixtures/unconfigured";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup, fireEvent, screen, within, act } from "@testing-library/react";
+import { render, cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
@@ -80,36 +80,22 @@ function isExpanded(listEl: HTMLElement): boolean {
  * A section header's label text can collide with a child label elsewhere
  * in the tree. Section headers render outside any <ul>; child rows always
  * render inside their section's <ul aria-label="... pages">. Scope to the
- * header specifically rather than the first text match. Expanded-mode
- * section headers are a single <button> (single click toggles, double
- * click navigates — see useSingleOrDoubleClick in Sidebar.tsx).
+ * header specifically rather than the first text match. An expanded-mode
+ * section header is a LINK to the command center beside a chevron BUTTON
+ * that toggles the child list — two controls, one job each.
  */
-function sectionHeaderButton(container: HTMLElement, label: string): HTMLElement {
+function sectionHeaderLink(container: HTMLElement, label: string): HTMLElement {
   const matches = within(container).getAllByText(label);
   const header = matches.find((el) => !el.closest("ul"));
   if (!header) throw new Error(`No section header found for "${label}"`);
-  return header.closest("button")!;
+  return header.closest("a")!;
 }
 
-/** Advance past the single/double-click dispatch window (220ms) using fake timers. */
-function advancePastClickWindow() {
-  act(() => {
-    vi.advanceTimersByTime(230);
-  });
-}
-
-/**
- * Simulate a real double click for useSingleOrDoubleClick's purposes: two
- * `click` events close together. fireEvent.doubleClick only dispatches a
- * native `dblclick` event (no `click`s), which the component never listens
- * for, so it can't be used to exercise this custom click-counting logic.
- */
-function rapidDoubleClick(element: Element) {
-  fireEvent.click(element);
-  act(() => {
-    vi.advanceTimersByTime(50);
-  });
-  fireEvent.click(element);
+function sectionToggle(container: HTMLElement, label: string): HTMLElement {
+  return (
+    within(container).queryByLabelText(`Expand ${label} pages`) ??
+    within(container).getByLabelText(`Collapse ${label} pages`)
+  );
 }
 
 /** Open a Radix dropdown trigger (needs pointerdown in jsdom). */
@@ -204,105 +190,90 @@ describe("Sidebar section headers (expanded mode)", () => {
     expect(screen.getByLabelText("Collapse sidebar")).toBeTruthy();
   });
 
-  it("a single click toggles the section open without navigating (Metrix v1 design handoff)", () => {
-    vi.useFakeTimers();
-    try {
-      renderExpanded();
-      const nav = screen.getByLabelText("Main workspace navigation");
+  it("clicking a section label navigates to its command center and opens its pages", () => {
+    renderExpanded();
+    const nav = screen.getByLabelText("Main workspace navigation");
+    expect(isExpanded(within(nav).getByLabelText("Analysis pages"))).toBe(false);
 
-      // Analysis children hidden initially (not on an analysis route)
-      expect(isExpanded(within(nav).getByLabelText("Analysis pages"))).toBe(false);
+    fireEvent.click(sectionHeaderLink(nav, "Analysis"));
 
-      fireEvent.click(sectionHeaderButton(nav, "Analysis"));
-      advancePastClickWindow();
+    expect(window.location.pathname).toBe("/app/analysis");
+    const childList = within(nav).getByLabelText("Analysis pages");
+    expect(isExpanded(childList)).toBe(true);
+    expect(within(childList).getByText("IAP Library")).toBeTruthy();
+    expect(within(childList).getByText("Ad Performance")).toBeTruthy();
+    expect(within(childList).getByText("Overview")).toBeTruthy();
+  });
 
-      expect(window.location.pathname).toBe("/");
-      const childList = within(nav).getByLabelText("Analysis pages");
-      expect(isExpanded(childList)).toBe(true);
-      expect(within(childList).getByText("IAP Library")).toBeTruthy();
-      expect(within(childList).getByText("Ad Performance")).toBeTruthy();
-      // Overview is a real child now — see the navTree test above for why.
-      expect(within(childList).getByText("Overview")).toBeTruthy();
-
-      // A second single click (past the window) toggles it closed again.
-      fireEvent.click(sectionHeaderButton(nav, "Analysis"));
-      advancePastClickWindow();
-      expect(isExpanded(within(nav).getByLabelText("Analysis pages"))).toBe(false);
-    } finally {
-      vi.useRealTimers();
+  it("the section label is a real link with the command center as its href", () => {
+    renderExpanded();
+    const nav = screen.getByLabelText("Main workspace navigation");
+    for (const section of navTree.filter((s) => s.children?.length)) {
+      expect(sectionHeaderLink(nav, section.label).getAttribute("href")).toBe(sectionLandingRoute(section));
     }
   });
 
-  it("a double click navigates to the section's command center", () => {
-    vi.useFakeTimers();
-    try {
-      renderExpanded();
-      const nav = screen.getByLabelText("Main workspace navigation");
+  it("the chevron toggles the child list without navigating", () => {
+    renderExpanded();
+    const nav = screen.getByLabelText("Main workspace navigation");
+    expect(isExpanded(within(nav).getByLabelText("Analysis pages"))).toBe(false);
 
-      rapidDoubleClick(sectionHeaderButton(nav, "Analysis"));
-      advancePastClickWindow();
+    fireEvent.click(sectionToggle(nav, "Analysis"));
+    expect(window.location.pathname).toBe("/");
+    expect(isExpanded(within(nav).getByLabelText("Analysis pages"))).toBe(true);
 
-      expect(window.location.pathname).toBe("/app/analysis");
-      // The location-change effect auto-opens the now-active section.
-      const childList = within(nav).getByLabelText("Analysis pages");
-      expect(isExpanded(childList)).toBe(true);
-    } finally {
-      vi.useRealTimers();
-    }
+    fireEvent.click(sectionToggle(nav, "Analysis"));
+    expect(isExpanded(within(nav).getByLabelText("Analysis pages"))).toBe(false);
   });
 
-  it("double-clicking Listen navigates to its command center (TL;DR), not a child", () => {
-    vi.useFakeTimers();
-    try {
-      renderExpanded();
-      const nav = screen.getByLabelText("Main workspace navigation");
-      rapidDoubleClick(sectionHeaderButton(nav, "Listen"));
-      advancePastClickWindow();
-      expect(window.location.pathname).toBe("/app/listen");
-      const childList = within(nav).getByLabelText("Listen pages");
-      expect(isExpanded(childList)).toBe(true);
-      expect(within(childList).getByText("Signal")).toBeTruthy();
-    } finally {
-      vi.useRealTimers();
-    }
+  it("clicking Listen's label navigates to its command center (TL;DR), not a child", () => {
+    renderExpanded();
+    const nav = screen.getByLabelText("Main workspace navigation");
+    fireEvent.click(sectionHeaderLink(nav, "Listen"));
+    expect(window.location.pathname).toBe("/app/listen");
+    const childList = within(nav).getByLabelText("Listen pages");
+    expect(isExpanded(childList)).toBe(true);
+    expect(within(childList).getByText("Signal")).toBeTruthy();
   });
 
-  it("the header button's aria-expanded reflects open/closed state", () => {
-    vi.useFakeTimers();
-    try {
-      renderExpanded();
-      const nav = screen.getByLabelText("Main workspace navigation");
-      const toggle = sectionHeaderButton(nav, "Strategy");
+  it("the chevron's aria-expanded reflects open/closed state, and a closed list is inert", () => {
+    renderExpanded();
+    const nav = screen.getByLabelText("Main workspace navigation");
 
-      fireEvent.click(toggle);
-      advancePastClickWindow();
-      expect(window.location.pathname).toBe("/");
-      expect(isExpanded(within(nav).getByLabelText("Strategy pages"))).toBe(true);
-      expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(sectionToggle(nav, "Strategy"));
+    const list = within(nav).getByLabelText("Strategy pages");
+    expect(isExpanded(list)).toBe(true);
+    expect(sectionToggle(nav, "Strategy").getAttribute("aria-expanded")).toBe("true");
+    expect(list.parentElement!.hasAttribute("inert")).toBe(false);
 
-      fireEvent.click(toggle);
-      advancePastClickWindow();
-      expect(isExpanded(within(nav).getByLabelText("Strategy pages"))).toBe(false);
-      expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    } finally {
-      vi.useRealTimers();
-    }
+    fireEvent.click(sectionToggle(nav, "Strategy"));
+    expect(isExpanded(list)).toBe(false);
+    expect(sectionToggle(nav, "Strategy").getAttribute("aria-expanded")).toBe("false");
+    // Out of the tab order as well as out of sight.
+    expect(list.parentElement!.hasAttribute("inert")).toBe(true);
   });
 
-  it("header button carries aria-current when its command center is active", () => {
+  it("hidden nav children (funnel, findings) render no menu row", () => {
+    renderExpanded();
+    const nav = screen.getByLabelText("Main workspace navigation");
+    fireEvent.click(sectionToggle(nav, "Analysis"));
+    const childList = within(nav).getByLabelText("Analysis pages");
+    expect(within(childList).queryByText("Engagement Funnel")).toBeNull();
+    expect(within(childList).queryByText("Findings")).toBeNull();
+  });
+
+  it("section link carries aria-current when its command center is active", () => {
     window.history.replaceState({}, "", "/app/analysis");
     renderExpanded();
     const nav = screen.getByLabelText("Main workspace navigation");
-    const header = sectionHeaderButton(nav, "Analysis");
-    expect(header.getAttribute("aria-current")).toBe("page");
+    expect(sectionHeaderLink(nav, "Analysis").getAttribute("aria-current")).toBe("page");
   });
 
-  it("header button also carries aria-current from a child route (prefix match)", () => {
+  it("section link also carries aria-current from a child route (prefix match)", () => {
     window.history.replaceState({}, "", "/app/analysis/performance");
     renderExpanded();
     const nav = screen.getByLabelText("Main workspace navigation");
-    const header = sectionHeaderButton(nav, "Analysis");
-    expect(header.getAttribute("aria-current")).toBe("page");
+    expect(sectionHeaderLink(nav, "Analysis").getAttribute("aria-current")).toBe("page");
   });
 });
 
@@ -373,27 +344,17 @@ describe("Sidebar collapsed icon rail", () => {
   });
 
   it("reopening the rail on a different section closes the previously-open one (accordion)", () => {
-    vi.useFakeTimers();
-    try {
-      renderCollapsed();
-      const nav = screen.getByLabelText("Main workspace navigation");
-      // Collapsed-rail icon clicks reopen the rail synchronously (no
-      // single/double-click dispatch there — only expanded-mode headers).
-      fireEvent.click(within(nav).getByLabelText("Analysis"));
+    renderCollapsed();
+    const nav = screen.getByLabelText("Main workspace navigation");
+    fireEvent.click(within(nav).getByLabelText("Analysis"));
 
-      const expandedNav = screen.getByLabelText("Main workspace navigation");
-      // Listen's header is now an expanded-mode row: single click toggles
-      // it via the deferred single/double-click window.
-      fireEvent.click(sectionHeaderButton(expandedNav, "Listen"));
-      advancePastClickWindow();
+    const expandedNav = screen.getByLabelText("Main workspace navigation");
+    fireEvent.click(sectionToggle(expandedNav, "Listen"));
 
-      const listenList = within(expandedNav).getByLabelText("Listen pages");
-      const analysisList = within(expandedNav).getByLabelText("Analysis pages");
-      expect(isExpanded(listenList)).toBe(true);
-      expect(isExpanded(analysisList)).toBe(false);
-    } finally {
-      vi.useRealTimers();
-    }
+    const listenList = within(expandedNav).getByLabelText("Listen pages");
+    const analysisList = within(expandedNav).getByLabelText("Analysis pages");
+    expect(isExpanded(listenList)).toBe(true);
+    expect(isExpanded(analysisList)).toBe(false);
   });
 
   it("child links, once the rail is reopened, navigate on click", () => {
@@ -424,13 +385,14 @@ describe("Sidebar collapsed icon rail", () => {
     expect(screen.getByLabelText("Analysis").getAttribute("aria-current")).toBe("page");
   });
 
-  it("reopening the rail on Action shows the Soon pill for its placeholder child", () => {
+  it("reopening the rail on Action shows the real queue and the Soon pill for the agent", () => {
     renderCollapsed();
     const actionIcon = screen.getByLabelText("Action");
     fireEvent.click(actionIcon);
 
     const nav = screen.getByLabelText("Main workspace navigation");
     const childList = within(nav).getByLabelText("Action pages");
+    expect(within(childList).getByText("Action Queue")).toBeTruthy();
     expect(within(childList).getByText("Soon")).toBeTruthy();
   });
 });

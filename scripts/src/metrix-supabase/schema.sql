@@ -262,6 +262,13 @@ alter table concept_performance add column if not exists buying_intent_score num
 alter table concept_performance add column if not exists performance_lift_vs_baseline text;
 alter table concept_performance add column if not exists performance_tier text;
 alter table concept_performance add column if not exists confidence_level text;
+-- Creative evidence (2026-09-02): how much of the concept's spend ran on
+-- ads whose copy the export carried, the grade that coverage earns, and
+-- the confidence tier scaled by it. Additive; readers treat null as
+-- "computed before this column existed", never as zero evidence.
+alter table concept_performance add column if not exists creative_coverage_pct numeric;
+alter table concept_performance add column if not exists evidence_grade text;
+alter table concept_performance add column if not exists confidence_score numeric;
 
 create table if not exists campaign_windows (
   id bigint generated always as identity primary key,

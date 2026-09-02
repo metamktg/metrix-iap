@@ -99,6 +99,8 @@
   "artifacts/metrix-iap/src/lib/tokenizeConceptCodes.ts::hasConceptCode": "unreferenced",
   "artifacts/metrix-iap/src/lib/variable-registry.ts::resolveVariableStackLabel": "unreferenced",
   "artifacts/metrix-iap/src/lib/warningSeverity.ts::isInformationalWarning": "test-only",
+  "artifacts/metrix-iap/src/navigation/navHistory.ts::recordNavigation": "test-only",
+  "artifacts/metrix-iap/src/navigation/navHistory.ts::resetNavigationHistory": "test-only",
   "artifacts/metrix-iap/src/navigation/preLoginRoutes.ts::PRE_LOGIN_ROUTE_PATHS": "test-only",
   "artifacts/metrix-iap/src/pages/metrix/OverviewLoopHub.tsx::accountLoopStages": "unreferenced",
   "artifacts/metrix-iap/src/pages/metrix/analysis/AudienceView.tsx::adaptApiDemoRows": "test-only",

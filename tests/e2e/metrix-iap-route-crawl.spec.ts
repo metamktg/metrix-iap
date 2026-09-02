@@ -60,6 +60,15 @@ function navRoutes(): string[] {
     "utf-8",
   );
   for (const m of app.matchAll(/path="(\/app[a-z0-9/-]*)"/g)) routes.add(m[1]!);
+  // The legacy redirects moved out of App.tsx into one table; App.tsx maps
+  // over it, so the literal scan above no longer sees them. Read the table
+  // too — without this the crawl silently dropped 19 routes (57 visits) and
+  // still printed PASS.
+  const legacy = fs.readFileSync(
+    path.resolve(REPO_ROOT, "artifacts/metrix-iap/src/navigation/legacyRoutes.ts"),
+    "utf-8",
+  );
+  for (const m of legacy.matchAll(/"(\/app[a-z0-9/-]*)"/g)) routes.add(m[1]!);
   return [...routes].sort();
 }
 

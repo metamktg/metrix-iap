@@ -20,6 +20,7 @@ import {
   ADMIN_PATH,
   CREATE_ACCOUNT_PATH,
 } from "@/navigation/preLoginRoutes";
+import { LEGACY_REDIRECTS } from "@/navigation/legacyRoutes";
 import { CreateAccountPage } from "@/pages/auth/CreateAccountPage";
 
 // Seed-hydrated Metrix pages (manager → ad-account hierarchy)
@@ -180,15 +181,12 @@ export function Router() {
       <Route path="/app/exports/reports"   component={ExportsReportsView} />
       <Route path="/app/exports/brief"     component={ExportsBriefView} />
 
-      {/* ── Analyze section ───────────────────────────────────────────── */}
+      {/* ── Analyze · Findings (AI verdict panel; an Analysis page) ──── */}
       <Route path="/app/analyze/findings" component={FindingsView} />
-      <Route path="/app/analyze">{() => <Redirect to="/app/analyze/findings" replace />}</Route>
 
-      {/* ── Act section ───────────────────────────────────────────────── */}
-      <Route path="/app/act/queue" component={ActionQueueView} />
-
-      {/* ── 09 Action (coming soon) ──────────────────────────────────── */}
-      <Route path="/app/action/agent" component={MetrixAgent} />
+      {/* ── 09 Action ─────────────────────────────────────────────────── */}
+      <Route path="/app/act/queue"     component={ActionQueueView} />
+      <Route path="/app/action/agent"  component={MetrixAgent} />
 
       {/* ── 10 Settings ───────────────────────────────────────────────── */}
       <Route path="/app/settings/general"       component={GeneralView} />
@@ -198,26 +196,13 @@ export function Router() {
       <Route path="/app/settings/billing"       component={BillingView} />
       <Route path="/app/settings/provenance"    component={DataProvenanceView} />
 
-      {/* ── Legacy route redirects (old IA → new IA, zero dead ends) ──── */}
+      {/* ── Legacy route redirects (old IA → new IA, zero dead ends) ────
+          One table (navigation/legacyRoutes.ts) drives these, the route
+          tests, and the lint that stops new code linking to an old path. */}
       <Route path="/app/analysis/overview" component={AnalysisOverview} />
-      <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
-      <Route path="/app/mst/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
-      <Route path="/app/mst/crossmap">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
-      <Route path="/app/mst/matrix">{() => <Redirect to="/app/mst/sprints" replace />}</Route>
-      <Route path="/app/strategy/brief-builder">{() => <Redirect to="/app/creative/builder" replace />}</Route>
-      <Route path="/app/briefs/builder">{() => <Redirect to="/app/creative/builder" replace />}</Route>
-      <Route path="/app/briefs/history">{() => <Redirect to="/app/creative" replace />}</Route>
-      <Route path="/app/briefs">{() => <Redirect to="/app/creative" replace />}</Route>
-      <Route path="/app/report-builder">{() => <Redirect to="/app/reports/builder" replace />}</Route>
-      <Route path="/app/reports/new">{() => <Redirect to="/app/reports/builder" replace />}</Route>
-      <Route path="/app/reports/settings">{() => <Redirect to="/app/reports/configuration" replace />}</Route>
-      <Route path="/app/reports/exports">{() => <Redirect to="/app/exports/reports" replace />}</Route>
-      <Route path="/app/agent">{() => <Redirect to="/app/action/agent" replace />}</Route>
-      <Route path="/app/action">{() => <Redirect to="/app/action/agent" replace />}</Route>
-      <Route path="/app/settings">{() => <Redirect to="/app/settings/general" replace />}</Route>
-      <Route path="/app/settings/account">{() => <Redirect to="/app/settings/general" replace />}</Route>
-      <Route path="/app/settings/team">{() => <Redirect to="/app/settings/users" replace />}</Route>
-      <Route path="/app/settings/notifications">{() => <Redirect to="/app/settings/general" replace />}</Route>
+      {LEGACY_REDIRECTS.map(([from, to]) => (
+        <Route key={from} path={from}>{() => <Redirect to={to} replace />}</Route>
+      ))}
 
       {/* ── 404 ───────────────────────────────────────────────────────── */}
       <Route component={NotFound} />
