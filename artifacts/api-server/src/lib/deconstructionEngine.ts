@@ -20,6 +20,7 @@ import { fetchSuccessfulRuns, splitBySource } from "./generatedCurrency";
 import { logger } from "./logger";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { extractVideoKeyframes } from "./videoKeyframes";
+import { loadImportBytes } from "./supabaseBinary";
 import {
   GENERATION_MODEL,
   GenerationError,
@@ -240,12 +241,6 @@ export function supportedImageMediaType(contentType: string | null | undefined, 
 }
 
 const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm", "m4v", "avi", "mkv", "mpeg", "mpg", "ogv"]);
-function decodeStagedBytes(hexOrRaw: string): Buffer {
-  // Supabase/PostgREST returns bytea as a hex string prefixed with \x.
-  const hex = hexOrRaw.startsWith("\\x") ? hexOrRaw.slice(2) : hexOrRaw;
-  return Buffer.from(hex, "hex");
-}
-
 // ─── prompt ───────────────────────────────────────────────────────────
 
 function deconstructionPrompt(opts: {
@@ -993,9 +988,14 @@ export async function startCreativeDeconstruction(
   if (!account?.[0]) throw new GenerationError("Ad account not found.", 404);
   const accountName = String(account[0]["name"] ?? accountId);
 
+  // Metadata only. Selecting `content` for the whole batch is what
+  // cancelled this start on the first fresh-account run: 91 creatives at
+  // ~2.3 MB each, hex-encoded and json_agg'd in one statement, hit the
+  // database's statement timeout before the run row even existed. Each
+  // import's bytes are read one at a time, inside the loop, when needed.
   const { data: imports, error: impErr } = await supabase
     .from("manual_imports")
-    .select("id, filename, content_type, content, ad_names, kind")
+    .select("id, filename, content_type, ad_names, kind, size_bytes")
     .eq("account_id", accountId)
     .eq("kind", "creative_asset")
     .in("id", importIds);
@@ -1132,9 +1132,11 @@ export async function startCreativeDeconstruction(
           // the same image pipeline. Only truly unknown formats (and videos
           // ffmpeg cannot decode) stay unsupported.
           let videoFrames: Array<{ label: string; jpeg: Buffer }> | null = null;
+          const sizeBytes = typeof imp["size_bytes"] === "number" ? (imp["size_bytes"] as number) : null;
+          const readBytes = () => loadImportBytes(importId, sizeBytes);
           if (!mediaType && isVideoCreative(imp["content_type"] as string | null, filename)) {
             try {
-              videoFrames = await extractVideoKeyframes(decodeStagedBytes(String(imp["content"])), filename);
+              videoFrames = await extractVideoKeyframes(await readBytes(), filename);
             } catch (frameErr) {
               logger.warn({ accountId, importId, filename, err: frameErr }, "Video keyframe extraction failed");
               videoFrames = null;
@@ -1180,7 +1182,7 @@ export async function startCreativeDeconstruction(
                   source: {
                     type: "base64",
                     media_type: mediaType!,
-                    data: decodeStagedBytes(String(imp["content"])).toString("base64"),
+                    data: (await readBytes()).toString("base64"),
                   },
                 },
               ];

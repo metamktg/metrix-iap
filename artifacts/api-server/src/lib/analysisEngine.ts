@@ -41,7 +41,7 @@ import { computeObjectiveCoverage, OBJECTIVE_GROUP_FOR_KEY } from "./objectiveCo
 import { convertXlsxToCsvText, looksLikeXlsxContent, readXlsxHeaderCells } from "./xlsxToCsv";
 import { extensionOf } from "./creativeAssetType";
 import { syncStickyCreativeAssetMappings } from "./creativeAssetMappingService";
-import { fetchImportContent, fetchImportChunk } from "./supabaseBinary";
+import { loadImportBytes } from "./supabaseBinary";
 import { autoMapUnmappedCreatives } from "./creativeAutoMap";
 
 
@@ -701,48 +701,21 @@ export async function loadImportContentBuffer(imp: {
   }
   const importId = String(imp.id ?? "");
   if (!importId) throw new Error("Import row has neither inline content nor an id to load bytes by.");
-  const supabase = getSupabase();
-  const { data: index, error: idxErr } = await supabase
-    .from("manual_import_chunks")
-    .select("chunk_index")
-    .eq("import_id", importId)
-    .order("chunk_index", { ascending: true });
-  if (idxErr) throw new Error(idxErr.message);
-  const indices = (index ?? []).map((r) => Number(r["chunk_index"]));
-
-  if (indices.length === 0) {
-    if (imp.content === null) {
+  if (imp.content === null) {
+    // The caller knows the row is chunked (the upload-complete route);
+    // an inline read would be wrong, so loadImportBytes' chunk index must
+    // be non-empty — it throws with the row id when it is not.
+    const hasChunks = await getSupabase()
+      .from("manual_import_chunks")
+      .select("chunk_index")
+      .eq("import_id", importId)
+      .limit(1);
+    if (hasChunks.error) throw new Error(hasChunks.error.message);
+    if (!hasChunks.data || hasChunks.data.length === 0) {
       throw new Error(`Import ${importId} has no inline content and no stored chunks.`);
     }
-    // Inline row. Read its size first so a short or empty binary response is
-    // caught as the error it is, instead of parsing an empty file.
-    const expected =
-      typeof imp.size_bytes === "number"
-        ? imp.size_bytes
-        : await (async () => {
-            const meta = await supabase.from("manual_imports").select("size_bytes").eq("id", importId).limit(1);
-            if (meta.error) throw new Error(meta.error.message);
-            if (!meta.data || meta.data.length === 0) throw new Error(`Import ${importId} does not exist.`);
-            const n = meta.data[0]?.["size_bytes"];
-            return typeof n === "number" ? n : null;
-          })();
-    const bytes = await fetchImportContent(importId);
-    if (bytes === null) throw new Error(`Import ${importId} does not exist.`);
-    if (expected !== null && bytes.length !== expected) {
-      throw new Error(
-        `Import ${importId} read ${bytes.length} bytes but the row records ${expected} — refusing to parse a partial file.`,
-      );
-    }
-    return bytes;
   }
-
-  const parts: Buffer[] = [];
-  for (const i of indices) {
-    const chunk = await fetchImportChunk(importId, i);
-    if (chunk === null || chunk.length === 0) throw new Error(`Import ${importId} chunk ${i} is empty.`);
-    parts.push(chunk);
-  }
-  return Buffer.concat(parts);
+  return loadImportBytes(importId, typeof imp.size_bytes === "number" ? imp.size_bytes : null);
 }
 
 /**

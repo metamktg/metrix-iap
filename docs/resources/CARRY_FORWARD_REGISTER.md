@@ -392,3 +392,39 @@ security, executable by the service role only. Applied live as migrations
 calls those RPCs; if binary output is ever refused again it falls back to the one thing that
 was always safe — ONE row's `content` as JSON, one file at a time — and logs that it did. Unit
 tests pin both paths and that a non-406 failure is raised, never read as "missing".
+
+### 13.5 Deconstruction start timeout, wrong guess mappings, progress assurance (2026-09-02, 14:20Z)
+
+Re-run on the fixed build: the analysis run **succeeded** (every byte read through the RPCs
+answered 200). Then "Couldn't start deconstruction — HTTP 502: canceling statement due to
+statement timeout". Postgres logs: the start path selected `content` for every selected
+creative in one statement (the account now holds 91 creatives, ~2.3 MB each — ~210 MB as
+hex JSON) and the database cancelled it on its statement timeout, before the run row
+existed. The same class as §13.1, one code path over; the six parallel `/file` reads for
+thumbnails took 10–27 s each while that statement ran.
+
+The mappings the server had written were wrong in the way the owner described: the
+low-confidence "guess" tier attached 17 unrelated "ChatGPT Image …" files to one ad and six
+"SKOV 03 (n)" files to another. The identifier that should have decided — the cell code
+(C1A, C2B) the IAP convention puts in both the ad name and the file name — was not one the
+matcher recognised (its code pattern needed three or more digits). This account's export
+carries no image or video names (`ad_creative_metadata` is null on all 491 rows), so ad names
+are the only signal there.
+
+**Fixes.**
+- `startCreativeDeconstruction` selects metadata only; each import's bytes are read inside
+  the loop through `loadImportBytes` (one cell per request, size-checked). No code path
+  selects `content` for a list of rows anywhere in the server now.
+- `adNameMatch.ts` (both copies, drift-tested): cell codes are identifiers; a code owned by
+  exactly one candidate decides the match, and a code shared by several restricts the
+  similarity pass to those owners, so two files that differ only by code land on two ads.
+- `creativeAutoMap.ts`: candidates are the ad name plus the Meta image / video names the
+  export recorded for it; only an identifier or a confident similarity match is applied — a
+  guess is a suggestion for the editor, never a link. Pure `decideAdForFile`, unit-tested.
+- Progress: deconstruction shows the run's stage ("Classifying creative n of m"), the measured
+  elapsed time and a remaining estimate derived from the measured rate (never before the
+  first unit is done); the analysis run shows elapsed time and that the banner follows it.
+  A toast confirms the start with the queued count.
+
+**Data fix, owner-visible:** the guess mappings this morning's server wrote on the tester's
+account are cleared and re-derived under the new rules after the deploy (recorded below).

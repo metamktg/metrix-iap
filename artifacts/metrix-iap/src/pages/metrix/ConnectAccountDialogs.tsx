@@ -90,6 +90,8 @@ import { guessedCreativeImports } from "./manualImportUtils";
 import type { ManualImportInput, ManualImportResult } from "@workspace/api-client-react";
 import { useDeconstruction, DECONSTRUCTION_STATUS_LABEL } from "@/components/creative/useDeconstruction";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { RunProgress } from "@/components/widgets/RunProgress";
+import { fmtDuration, remainingLabel } from "@/lib/runEta";
 import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
 import { ListStack } from "@/components/widgets/ListStack";
 
@@ -1113,6 +1115,8 @@ function CreativeThumbnail({ accountId, asset }: { accountId: string; asset: Man
         <video src={fileUrl} className="w-full h-full object-cover" muted onError={() => setBroken(true)} />
       ) : (
         <img
+          loading="lazy"
+          decoding="async"
           src={fileUrl}
           alt={asset.filename}
           className="w-full h-full object-cover"
@@ -1906,6 +1910,18 @@ function DeconstructBadge({ status }: { status: CreativeDeconstruction["status"]
   );
 }
 
+/** Whole seconds since `sinceMs`, ticking once a second; null when there is no start. */
+function useElapsedSince(sinceMs: number | null): number | null {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (sinceMs === null) return;
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [sinceMs]);
+  if (sinceMs === null) return null;
+  return Math.max(0, Math.round((now - sinceMs) / 1000));
+}
+
 function CreativeDeconstructSection({
   accountId,
   creativeAssets,
@@ -1913,7 +1929,8 @@ function CreativeDeconstructSection({
   accountId: string;
   creativeAssets: { id: string; filename: string; ad_names: string[] }[];
 }) {
-  const { byImportId, isRunning, progress, start, startBackfill } = useDeconstruction(accountId);
+  const { byImportId, isRunning, progress, startedAt, start, startBackfill } = useDeconstruction(accountId);
+  const elapsed = useElapsedSince(isRunning ? startedAt : null);
   if (creativeAssets.length === 0) return null;
 
   const pending = creativeAssets.filter((a) => {
@@ -1985,15 +2002,26 @@ function CreativeDeconstructSection({
             : `Deconstruct all${pending.length > 0 ? ` (${pending.length})` : ""}`}
         </button>
       </div>
-      {isRunning && progress && (
-        <div className="px-0.5" data-testid="deconstruct-progress">
-          <ProgressMeter
-            value={progress.done}
-            total={Math.max(1, progress.total)}
-            label="Deconstruction progress"
-            size="md"
-            fillClassName="bg-primary"
+      {isRunning && (
+        <div className="px-0.5 space-y-1" data-testid="deconstruct-progress">
+          <RunProgress
+            phase="running"
+            stage={
+              progress
+                ? `Classifying creative ${Math.min(progress.done + 1, progress.total)} of ${progress.total}`
+                : "Starting the deconstruction run"
+            }
+            pct={progress ? Math.round((progress.done / Math.max(1, progress.total)) * 100) : null}
           />
+          <p className="text-label text-muted-foreground/80 tabular-nums" data-testid="deconstruct-eta">
+            {elapsed !== null ? `${fmtDuration(elapsed)} elapsed` : "Starting"}
+            {progress && elapsed !== null && remainingLabel(progress.done, progress.total, elapsed)
+              ? ` · ${remainingLabel(progress.done, progress.total, elapsed)}`
+              : progress
+                ? " · each creative takes roughly 10–30 s"
+                : ""}
+            {" · you can leave this page; results file into the IAP Library as they finish."}
+          </p>
         </div>
       )}
       {/* Two groups, because they are two different things. A creative

@@ -92,3 +92,22 @@ describe("decodeByteaJson", () => {
     expect(decodeByteaJson("AB").toString("utf8")).toBe("AB");
   });
 });
+
+describe("byte reads are capped in flight", () => {
+  it("never has more than three RPC reads outstanding at once", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    fetchMock.mockImplementation(async () => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      await new Promise((r) => setTimeout(r, 15));
+      inFlight -= 1;
+      return binaryResponse(new Uint8Array([1]));
+    });
+    const reads = Array.from({ length: 10 }, (_, i) => fetchImportContent(`imp-${i}`));
+    const out = await Promise.all(reads);
+    expect(out.every((b) => b !== null && b.length === 1)).toBe(true);
+    expect(peak).toBeLessThanOrEqual(3);
+    expect(fetchMock).toHaveBeenCalledTimes(10);
+  });
+});

@@ -38,6 +38,7 @@ import { InfoTooltip, DetailReveal, DenseText } from "./shared";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { ActionSlider } from "@/components/widgets/ActionSlider";
 import { RunProgress } from "@/components/widgets/RunProgress";
+import { fmtDuration } from "@/lib/runEta";
 import { CsvWarningsPanel } from "@/components/analysis/CsvWarningsPanel";
 import {
   AlertDialog,
@@ -1021,6 +1022,14 @@ export function AnalysisControls({
 
   const run = latest?.run ?? null;
   const isRunning = run?.status === "running";
+  const runStartedAt = isRunning && run?.started_at ? new Date(run.started_at).getTime() : null;
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (runStartedAt === null) return;
+    const t = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [runStartedAt]);
+  const runElapsed = runStartedAt === null ? null : Math.max(0, Math.round((nowMs - runStartedAt) / 1000));
 
   // A run destages the files it consumes (status flips staged -> processed,
   // tagged with the run id) so the staging area is empty again for the next
@@ -1506,6 +1515,12 @@ export function AnalysisControls({
             pct={starting && !isRunning ? null : run?.progress_pct}
             doneLabel="Analysis complete"
           />
+          {(starting || isRunning) && (
+            <p className="text-label text-muted-foreground/80 tabular-nums" data-testid="analysis-run-eta">
+              {runElapsed !== null ? `${fmtDuration(runElapsed)} elapsed` : "Starting"}
+              {" · exports this size usually finish within a few minutes · you can leave this page; the banner at the top follows the run."}
+            </p>
+          )}
           {isRunning && (
             <div className="grid grid-cols-5 gap-0.5 pt-0.5">
               {[

@@ -120,8 +120,15 @@ export function useDeconstruction(accountId: string | null) {
     firingRef.current = true;
     setFiring(true);
     try {
-      await mutate();
+      const started = (await mutate()) as { total?: number } | undefined;
       setPolling(true);
+      const n = typeof started?.total === "number" ? started.total : null;
+      toast({
+        title: "Deconstruction started",
+        description: n
+          ? `${n} creative${n === 1 ? "" : "s"} queued. Each one is classified in turn — the meter below counts them.`
+          : "Each creative is classified in turn — the meter below counts them.",
+      });
       void queryClient.invalidateQueries({
         queryKey: getGetLatestGenerationRunQueryKey(accountId, "deconstruct"),
       });
@@ -169,6 +176,7 @@ export function useDeconstruction(accountId: string | null) {
   const byImportId = new Map(deconstructions.map((d) => [d.manual_import_id, d]));
 
   const isRunning = firing || run?.status === "running" || startMutation.isPending || backfillMutation.isPending;
+  const startedAt = run?.status === "running" && run.started_at ? new Date(run.started_at).getTime() : null;
 
   return {
     deconstructions,
@@ -179,6 +187,8 @@ export function useDeconstruction(accountId: string | null) {
       isRunning && run?.status === "running" && run.progress_total != null
         ? { done: run.progress_done ?? 0, total: run.progress_total }
         : null,
+    /** Epoch ms of the in-flight run's start, for an elapsed readout. */
+    startedAt,
     runError: run?.status === "error" ? (run.error_message ?? "The run failed.") : null,
     start,
     startBackfill,
