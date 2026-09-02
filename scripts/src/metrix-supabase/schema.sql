@@ -740,6 +740,7 @@ begin
       'performance_placement_csv',
       'performance_ad_summary_csv',
       'performance_conversion_device_csv',
+      'performance_asset_csv',
       'creative_asset'
     ));
 end $$;
@@ -865,6 +866,19 @@ alter table manual_imports add column if not exists mapping_summary jsonb;
 --          existed). The UI must not read this as "no warnings".
 --   []   — validation ran and found none. That is a real, positive finding.
 alter table manual_imports add column if not exists upload_warnings jsonb;
+
+-- What the file can PROVE, detected once at staging from its resolved columns
+-- and rows (report class, Ad ID presence and joinability, daily vs
+-- whole-period, dimensions, delivered asset columns, currency, account ids,
+-- header conflicts) — the ReportGrain shape in lib/reportGrain.ts. Read by
+-- the upload dialog to say what a file is before the run, and by the run to
+-- decide source compatibility and authority. NULL for creative_asset rows and
+-- for files staged before the column existed. Spec §4.
+alter table manual_imports add column if not exists report_grain jsonb;
+-- Duplicated headers whose occurrences DISAGREED row by row — schema
+-- conflicts (DuplicateHeaderConflict[]). NULL = not recorded; [] = validated,
+-- none found. A conflict on "Ad ID" makes the file unjoinable at ad grain.
+alter table manual_imports add column if not exists header_conflicts jsonb;
 
 -- (Re)apply the check idempotently. `add column if not exists` above won't
 -- widen a pre-existing id/fuzzy-only constraint, so drop any existing

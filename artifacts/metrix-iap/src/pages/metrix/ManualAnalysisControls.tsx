@@ -100,7 +100,7 @@ function RunAnalysisBtn({
   );
 }
 
-export type IapCsvClassKey = "demographic" | "device_placement" | "ad_summary" | "conversion_device";
+export type IapCsvClassKey = "demographic" | "device_placement" | "ad_summary" | "conversion_device" | "asset";
 
 // Labels the required-columns panel by report, not by file format — the
 // same columns are required whether the export arrives as CSV (preferred)
@@ -110,6 +110,7 @@ const CSV_CLASS_TITLES: Record<IapCsvClassKey, string> = {
   device_placement: "Placements",
   ad_summary: "Ad Summary",
   conversion_device: "Conversion Device",
+  asset: "Asset breakdown",
 };
 
 /**

@@ -136,10 +136,12 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
     // way, and is shared verbatim with the chunked-upload complete route.
     let csvMappingSummary: PerformanceCsvValidation["mappingSummary"];
     let csvUploadWarnings: string[] | undefined;
+    let csvValidation: PerformanceCsvValidation = {};
     try {
       const validation = await validatePerformanceCsvUpload(parsed.data.kind, parsed.data.filename, content);
       csvMappingSummary = validation.mappingSummary;
       csvUploadWarnings = validation.uploadWarnings;
+      csvValidation = validation;
     } catch (err) {
       if (err instanceof IapCsvFormatError) {
         res.status(422).json({ message: err.message });
@@ -202,6 +204,8 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
         // which is what keeps [] (validated, none found — a real finding)
         // distinguishable from NULL (never validated, e.g. a creative asset).
         ...(csvMappingSummary ? { upload_warnings: csvUploadWarnings ?? [] } : {}),
+        ...(csvValidation.reportGrain ? { report_grain: csvValidation.reportGrain } : {}),
+        ...(csvValidation.headerConflicts ? { header_conflicts: csvValidation.headerConflicts } : {}),
       })
       .select("id")
       .single();
@@ -241,6 +245,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
         note: "File staged for the analysis pipeline. Performance data appears only after an analysis run processes it — nothing is parsed or fabricated at upload time.",
         ...(csvMappingSummary ? { mapping_summary: csvMappingSummary } : {}),
         ...(csvUploadWarnings ? { upload_warnings: csvUploadWarnings } : {}),
+        ...(csvValidation.reportGrain ? { report_grain: csvValidation.reportGrain } : {}),
         ...(linkResult
           ? { link_result: { matched: linkResult.matched, unmatched: linkResult.unmatched } }
           : {}),

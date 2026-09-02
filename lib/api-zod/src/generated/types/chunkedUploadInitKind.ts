@@ -17,4 +17,5 @@ export const ChunkedUploadInitKind = {
   performance_placement_csv: 'performance_placement_csv',
   performance_ad_summary_csv: 'performance_ad_summary_csv',
   performance_conversion_device_csv: 'performance_conversion_device_csv',
+  performance_asset_csv: 'performance_asset_csv',
 } as const;

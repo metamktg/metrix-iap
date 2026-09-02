@@ -8,7 +8,9 @@
 // records a deterministic auto-mapping (curated alias / slug / the folded
 // "matched automatically" summary) or an optional-column absence. Everything
 // else stays ATTENTION: ID corruption, date normalization, duplicate
-// headers, moderate-confidence inference ("please verify"), coverage /
+// headers whose occurrences DISAGREE (a duplicated header whose values are
+// identical on every row arrives as a "Note:" line and is routine),
+// moderate-confidence inference ("please verify"), coverage /
 // reconciliation / totals / re-run / duplicate-data findings.
 //
 // Runs persist their warnings verbatim (manual_analysis_runs.csv_warnings),

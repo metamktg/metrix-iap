@@ -7,6 +7,7 @@
  */
 import type { ColumnMappingSummaryEntry } from './columnMappingSummaryEntry';
 import type { CreativeLinkResult } from './creativeLinkResult';
+import type { ManualImportResultReportGrain } from './manualImportResultReportGrain';
 import type { ManualImportResultStatus } from './manualImportResultStatus';
 
 export interface ManualImportResult {
@@ -21,4 +22,6 @@ export interface ManualImportResult {
   mapping_summary?: ColumnMappingSummaryEntry[];
   /** Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only. */
   upload_warnings?: string[] | null;
+  /** What the file can prove, detected at staging from its resolved columns and rows (lib/reportGrain.ts ReportGrain): report_class (ad_summary | time_series | demographic | placement | asset | demographic_asset | placement_asset | conversion_device), has_ad_id, ad_id_joinable, has_day, aggregate_shape, period, dimensions, asset_columns, distinct_ad_ids, distinct_ad_names, reused_ad_names, currency, account_ids, header_conflicts, additive_metrics, non_additive_metrics. Absent/null for creative assets and for imports staged before grain detection existed. */
+  report_grain?: ManualImportResultReportGrain;
 }

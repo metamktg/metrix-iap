@@ -24,6 +24,10 @@ complete record and the zip is no longer needed.
    full defect register.
 7. `METRIX_Phase2_Kickoff_Prompt_Final.md` — the sprint's original kickoff prompt, kept for
    provenance. Its Track 1 / Track 2 instructions are now history: both tracks are merged.
+8. `../specs/iap-multi-report-reconciliation.md` — the reconciliation-first evidence layer
+   (2026-09-02). Read its §0 first: it records where the code disproved the brief (duplicate
+   headers resolve to the first column, Ad ID is dropped at every breakdown bucket, "8 of 19 ads"
+   counts names, the tester's Ad Summary has no Ad ID). Register §14 is its ship record.
 
 ## Where the work actually stands
 

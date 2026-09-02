@@ -277,7 +277,7 @@ describe("duplicate-header fold policy", () => {
     const row = ["2026-07-01", "Ad One", "Ad One", "100", "1000"].join(",");
     const [notice] = dupWarnings(parseIapCsv(`${header}\n${row}\n`, "ad_summary" as never).warnings);
     expect(notice).toBe(
-      'Column "Ad name" appears more than once in the header row — only the first occurrence is used.',
+      'Note: column "Ad name" appears more than once in the header row (columns 2 and 3) — the values are identical on every row; column 2 is used.',
     );
   });
 

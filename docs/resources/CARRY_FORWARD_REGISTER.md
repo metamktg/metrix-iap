@@ -440,3 +440,32 @@ byte reads are capped at three in flight on the server (the edge logs showed six
 
 **Shipped** as PR #179 → `main` `e46fe01` (CI run 375 green); workspace merged; published
 (deployment `329ef7e0`); verified by entry-bundle hash against a local build of `e46fe01`.
+
+## 14. Reconciliation-first evidence layer (2026-09-02, owner go-ahead)
+
+**Specification:** `docs/specs/iap-multi-report-reconciliation.md` — the first file under
+`docs/specs/` (the repository had no spec/ADR convention; register sections were the decision
+record until now). Its §0 is the verification of the brief against the code and the live tester
+account; every correction the implementation follows is recorded there.
+
+**Why.** The tester's demographic export carried 60.05% of the account's spend (2,645.74 of
+4,405.61) because its grain was Day × Ad ID × Age × Gender × Text; the engine then dropped Ad ID
+at the demographic bucket (`analysisEngine.ts:2059`) and wrote every demographic signal at
+account grain, so no creative could ever show a demographic breakdown; the Funnel tab joined a
+table manual runs never write; and "8 of 19 ads" counted ad names (44 Ad IDs share 19 names).
+
+**What ships** (one PR, three commits — see the spec's §16–§18 and the PR): ordinal-preserving
+duplicate-header verification; report-grain detection recorded on each import; Account ID +
+Ad ID identity with no blind name fallback; `ad_breakdown_performance` at ad grain beside the
+existing tables; the per-ad × per-metric `reconciliation_ledger` with signed residuals;
+`creative_assets` (instance + content identity), `variable_evidence` (many-to-many, no spend
+duplication) and `variable_segment_performance`; evidence states in storage, seed and UI;
+creative dialogs joining through mapped Ad IDs first; the Demographics heat grid, Placements
+drill, Evidence tab, Reconciliation panel and Audience coverage tile on the existing Watermelon
+mechanics. The modelled tier ships as a pure, tested balancing function and nothing emits its
+output (spec §19).
+
+**Supersedes:** the unwritten `import_metric_reconciliation` table and the reserved
+`AnalysisRun.reconciliation` API field (both left in place, documented as superseded). C1's
+"ad-level placement rollup that no ingestion path writes today" is now written.
+

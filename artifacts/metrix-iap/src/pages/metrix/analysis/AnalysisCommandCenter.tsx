@@ -46,6 +46,7 @@ const IMPORT_KIND_LABEL: Record<ManualImportKind, string> = {
   performance_placement_csv: "Placements CSV",
   performance_ad_summary_csv: "Ad Summary CSV",
   performance_conversion_device_csv: "Conversion Device CSV",
+  performance_asset_csv: "Asset breakdown CSV",
   creative_asset: "Creative asset",
 };
 

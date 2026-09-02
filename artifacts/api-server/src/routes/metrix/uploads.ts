@@ -137,7 +137,7 @@ router.post("/metrix/accounts/:accountId/manual-imports/uploads", requireAuth, a
   const accountId = String(req.params["accountId"]);
   const { z } = await import("zod/v4");
   const Body = z.object({
-    kind: z.enum(["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv", "performance_conversion_device_csv"]),
+    kind: z.enum(["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv", "performance_conversion_device_csv", "performance_asset_csv"]),
     filename: z.string().min(1),
     content_type: z.string().nullish(),
     size_bytes: z.number().int().positive(),
@@ -345,6 +345,8 @@ router.post(
           // Same persistence as the single-request path: warnings outlive the
           // dialog. [] means validated-and-clean; NULL means never validated.
           ...(validation.mappingSummary ? { upload_warnings: validation.uploadWarnings ?? [] } : {}),
+          ...(validation.reportGrain ? { report_grain: validation.reportGrain } : {}),
+          ...(validation.headerConflicts ? { header_conflicts: validation.headerConflicts } : {}),
         })
         .eq("id", importId)
         .eq("status", "uploading");
@@ -363,6 +365,7 @@ router.post(
           note: "File staged for the analysis pipeline. Performance data appears only after an analysis run processes it — nothing is parsed or fabricated at upload time.",
           ...(validation.mappingSummary ? { mapping_summary: validation.mappingSummary } : {}),
           ...(validation.uploadWarnings ? { upload_warnings: validation.uploadWarnings } : {}),
+          ...(validation.reportGrain ? { report_grain: validation.reportGrain } : {}),
         }),
       );
     } catch (err) {
@@ -390,7 +393,7 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
     }
     const { data, error } = await supabase
       .from("manual_imports")
-      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, match_method, status, manual_analysis_run_id, created_at, mapping_summary, upload_warnings")
+      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, match_method, status, manual_analysis_run_id, created_at, mapping_summary, upload_warnings, report_grain, header_conflicts")
       .neq("status", "uploading")
       .eq("account_id", accountId)
       .order("created_at", { ascending: false });
@@ -414,6 +417,8 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
           // column means the warnings were never recorded, which is a
           // different claim from "validation found none" ([]).
           upload_warnings: r["upload_warnings"] ?? null,
+          report_grain: r["report_grain"] ?? null,
+          header_conflicts: r["header_conflicts"] ?? null,
         })),
       }),
     );

@@ -24,6 +24,112 @@ export const CREATIVE_METADATA_COLUMNS: readonly string[] = [
   "Ad creative link caption",
 ];
 
+/**
+ * Creative asset types — the vocabulary shared by delivered asset breakdowns
+ * (a pivot broken down "by asset": Meta's `Text`, `Headline`, `Image name`…
+ * columns) and configured creative context (the Ad Summary's creative
+ * metadata columns). Nothing is hardcoded around the `Text` column: a new
+ * Meta asset breakdown is one line in ASSET_BREAKDOWN_COLUMNS.
+ * See docs/specs/iap-multi-report-reconciliation.md §10.
+ */
+export type AssetType =
+  | "primary_text"
+  | "headline"
+  | "description"
+  | "cta_type"
+  | "cta_text"
+  | "destination"
+  | "display_link"
+  | "image"
+  | "video"
+  | "media";
+
+/**
+ * Delivered asset breakdown columns → asset type. A pivot export carrying one
+ * of these as a breakdown dimension reports metrics Meta attributed to that
+ * specific asset instance (spec §10 "delivered asset evidence"). Keys are the
+ * exact Meta header; matching is case-insensitive on the trimmed header.
+ */
+export const ASSET_BREAKDOWN_COLUMNS: Readonly<Record<string, AssetType>> = {
+  "Text": "primary_text",
+  "Body": "primary_text",
+  "Headline": "headline",
+  "Title": "headline",
+  "Description": "description",
+  "Call to action": "cta_type",
+  "Call to action type": "cta_type",
+  "Image name": "image",
+  "Image": "image",
+  "Video name": "video",
+  "Video": "video",
+  "Image, video and slideshow": "media",
+  "Media": "media",
+};
+
+/**
+ * Configured creative context columns → asset type. These describe what the
+ * ad was set up with (spec §10 "configured creative context"); they carry no
+ * metrics of their own and only ever receive `ad_context` evidence. The Ad
+ * Summary's CREATIVE_METADATA_COLUMNS are the subset Meta emits today.
+ */
+export const CONFIGURED_ASSET_COLUMNS: Readonly<Record<string, AssetType>> = {
+  "Ad creative body text": "primary_text",
+  "Body (ad settings)": "primary_text",
+  "Ad creative headline": "headline",
+  "Headline (ad settings)": "headline",
+  "Ad creative description": "description",
+  "Description (ad settings)": "description",
+  "Ad creative call to action type": "cta_type",
+  "Call to action type": "cta_type",
+  "Ad creative link destination": "destination",
+  "Website URL": "destination",
+  "Link (ad settings)": "destination",
+  "Ad creative link caption": "display_link",
+  "Display link": "display_link",
+  "Image name": "image",
+  "Image hash": "image",
+  "Video name": "video",
+  "Video ID": "video",
+};
+
+/**
+ * Report-context columns captured verbatim when present (never required):
+ * they decide source COMPATIBILITY (account, currency, attribution, period
+ * end) in the reconciliation layer — spec §7.
+ */
+export const REPORT_CONTEXT_COLUMNS: readonly string[] = [
+  "Account ID",
+  "Account name",
+  "Reporting ends",
+  "Report end",
+  "Date end",
+  "Attribution setting",
+  "Currency",
+];
+
+/**
+ * Metrics that may only be read at the exact grain Meta returned. Summing
+ * them across ads, days or segments is meaningless (a person reached by two
+ * ads is one person), so the parser never cross-checks them against a totals
+ * row, the reconciliation layer nulls them on every aggregated row and the
+ * ledger never reconciles them. Keyed by slug. Spec §12.
+ */
+export const NON_ADDITIVE_METRIC_SLUGS: ReadonlySet<string> = new Set([
+  "reach",
+  "frequency",
+  "unique_clicks_all",
+  "unique_outbound_clicks",
+  "unique_2_second_continuous_video_plays",
+  "video_average_play_time",
+]);
+
+/** Pre-divided ratio columns in BASE_METRICS: never summed, never averaged; recomputed from sums. */
+export const RATE_METRIC_SLUGS: ReadonlySet<string> = new Set([
+  "cpm_cost_per_1_000_impressions",
+  "ctr_all",
+  "ctr_link_click_through_rate",
+]);
+
 export const BASE_METRICS: readonly string[] = [
   "Amount spent ({ACCOUNT_CURRENCY})",
   "Reach",
@@ -257,6 +363,27 @@ export const DEMOGRAPHIC_BREAKDOWN_COLUMNS: readonly string[] = [
   "Text",
 ];
 
+/**
+ * Breakdown columns resolved for the `asset` class: the ad identity columns
+ * plus any demographic / placement dimension that rides along. The delivered
+ * asset column(s) are captured separately by the parser from
+ * ASSET_BREAKDOWN_COLUMNS, whatever the slot.
+ */
+export const ASSET_CLASS_BREAKDOWN_COLUMNS: readonly string[] = [
+  "Day",
+  "Campaign ID",
+  "Campaign name",
+  "Ad set ID",
+  "Ad set name",
+  "Ad ID",
+  "Ad name",
+  "Gender",
+  "Age",
+  "Impression device",
+  "Platform",
+  "Placement",
+];
+
 export const DEVICE_PLACEMENT_BREAKDOWN_COLUMNS: readonly string[] = [
   "Day",
   "Campaign ID",
@@ -299,10 +426,10 @@ export const AD_SUMMARY_BREAKDOWN_COLUMNS: readonly string[] = [
   "Ad name",
 ];
 
-export type IapCsvClass = "demographic" | "device_placement" | "ad_summary" | "conversion_device";
+export type IapCsvClass = "demographic" | "device_placement" | "ad_summary" | "conversion_device" | "asset";
 
 export type IapCsvClassSpec = {
-  className: "IAP_DEMOGRAPHIC_TEXT_SIGNAL" | "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL" | "IAP_AD_SUMMARY" | "IAP_CONVERSION_DEVICE_SIGNAL";
+  className: "IAP_DEMOGRAPHIC_TEXT_SIGNAL" | "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL" | "IAP_AD_SUMMARY" | "IAP_CONVERSION_DEVICE_SIGNAL" | "IAP_ASSET_SIGNAL";
   breakdownColumns: readonly string[];
   /** Breakdown columns that must have a value on every row (Day, Ad name are load-bearing). */
   requiredBreakdownColumns: readonly string[];
@@ -337,6 +464,16 @@ export const IAP_CSV_CLASS_SPECS: Record<IapCsvClass, IapCsvClassSpec> = {
     className: "IAP_CONVERSION_DEVICE_SIGNAL",
     breakdownColumns: CONVERSION_DEVICE_BREAKDOWN_COLUMNS,
     requiredBreakdownColumns: ["Day", "Campaign name", "Ad name", "Conversion device"],
+  },
+  // A pivot "by asset" (Text / Headline / Image name … as the breakdown).
+  // Demographic or placement dimensions may ride along — the grain detector
+  // then classifies the file as demographic_asset / placement_asset (spec §3)
+  // — so nothing beyond the load-bearing ad columns is required here; the
+  // asset column itself is verified by the grain detector, not the template.
+  asset: {
+    className: "IAP_ASSET_SIGNAL",
+    breakdownColumns: ASSET_CLASS_BREAKDOWN_COLUMNS,
+    requiredBreakdownColumns: ["Day", "Campaign name", "Ad name"],
   },
 };
 
@@ -817,6 +954,10 @@ export const CSV_CLASS_SIGNATURE_COLUMNS: Record<IapCsvClass, readonly string[]>
   ad_summary: [],
   // conversion_device is identified by the exclusive "Conversion device" column
   conversion_device: ["Conversion device"],
+  // asset has no exclusive signature: its asset column may accompany any
+  // dimension, so the slot accepts every delivery export and the grain
+  // detector says what the file actually is.
+  asset: [],
 };
 
 /**
@@ -872,6 +1013,23 @@ export function detectCsvClassMismatch(
         `which only appears in that pivot type. ` +
         `Did you upload it in the wrong slot? ` +
         `Upload it as the Conversion Device CSV instead, and provide an ad-level summary export here.`
+      );
+    }
+    return null;
+  }
+
+  if (expectedClass === "asset") {
+    // The asset slot accepts any delivery pivot (a demographic × asset or
+    // placement × asset file is a JOINT report, spec §3) — only a
+    // conversion-device export, which carries no delivery metrics, is wrong here.
+    const convMatched = CSV_CLASS_SIGNATURE_COLUMNS.conversion_device.filter(
+      (col) => findColumnInHeader(headers, col) !== null,
+    );
+    if (convMatched.length > 0) {
+      const quotedCols = convMatched.map((c) => `"${c}"`).join(", ");
+      return (
+        `This file looks like a Conversion Device pivot export — it contains ${quotedCols}. ` +
+        `Did you upload it in the wrong slot? Upload it as the Conversion Device CSV instead.`
       );
     }
     return null;
@@ -1094,6 +1252,7 @@ const CSV_CLASS_LABEL: Record<IapCsvClass, string> = {
   device_placement: "Device/Placement (Impression device, Platform, Placement)",
   ad_summary: "Ad Summary (ad-level, no demographic or placement breakdown)",
   conversion_device: "Conversion Device (conversion-based device breakdown, no spend/impressions)",
+  asset: "Asset (broken down by Text, Headline, Image name or another creative asset)",
 };
 
 /** Human-readable label for a CSV class, for use in error messages. */
@@ -1107,6 +1266,7 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
   const isDemo = csvClass === "demographic";
   const isSummary = csvClass === "ad_summary";
   const isConversion = csvClass === "conversion_device";
+  const isAsset = csvClass === "asset";
 
   // For conversion_device, only breakdown + conversion metrics (no spend/impressions columns)
   // For ad_summary, include creative metadata columns in addition to base metrics
@@ -1114,7 +1274,8 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
   const baseMetricCols = isConversion ? [] : BASE_METRICS.map(resolveCurrencyColumn);
   const conversionMetricCols = isConversion ? [...CONVERSION_METRIC_COLS] : [];
   const creativeMeta = isSummary ? CREATIVE_METADATA_COLUMNS : [];
-  const header = [...spec.breakdownColumns, ...baseMetricCols, ...conversionMetricCols, ...creativeMeta];
+  const assetBreakdown = isAsset ? ["Text"] : [];
+  const header = [...spec.breakdownColumns, ...assetBreakdown, ...baseMetricCols, ...conversionMetricCols, ...creativeMeta];
 
   const commonBreakdowns: Record<string, string> = {
     Day: "2026-06-01",
@@ -1127,6 +1288,8 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
   };
   const breakdownSample1: Record<string, string> = isDemo
     ? { ...commonBreakdowns, Gender: "female", Age: "25-34", Text: "" }
+    : isAsset
+    ? { ...commonBreakdowns, Gender: "", Age: "", "Impression device": "", Platform: "", Placement: "", Text: "Real meat first. No fillers." }
     : isSummary
     ? { ...commonBreakdowns }
     : isConversion
@@ -1134,6 +1297,8 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
     : { ...commonBreakdowns, "Impression device": "iphone", Platform: "facebook", Placement: "feed" };
   const breakdownSample2: Record<string, string> = isDemo
     ? { ...breakdownSample1, Gender: "male", Age: "35-44" }
+    : isAsset
+    ? { ...breakdownSample1, Text: "Try the first box for 50% off." }
     : isSummary
     ? { ...commonBreakdowns, Day: "2026-06-02" }
     : isConversion

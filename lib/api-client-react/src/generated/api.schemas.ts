@@ -392,6 +392,7 @@ export const ManualImportInputKind = {
   performance_placement_csv: 'performance_placement_csv',
   performance_ad_summary_csv: 'performance_ad_summary_csv',
   performance_conversion_device_csv: 'performance_conversion_device_csv',
+  performance_asset_csv: 'performance_asset_csv',
   creative_asset: 'creative_asset',
 } as const;
 
@@ -479,6 +480,7 @@ export const ChunkedUploadInitKind = {
   performance_placement_csv: 'performance_placement_csv',
   performance_ad_summary_csv: 'performance_ad_summary_csv',
   performance_conversion_device_csv: 'performance_conversion_device_csv',
+  performance_asset_csv: 'performance_asset_csv',
 } as const;
 
 export interface ChunkedUploadInit {
@@ -525,6 +527,11 @@ export const ManualImportResultStatus = {
   staged: 'staged',
 } as const;
 
+/**
+ * What the file can prove, detected at staging from its resolved columns and rows (lib/reportGrain.ts ReportGrain): report_class (ad_summary | time_series | demographic | placement | asset | demographic_asset | placement_asset | conversion_device), has_ad_id, ad_id_joinable, has_day, aggregate_shape, period, dimensions, asset_columns, distinct_ad_ids, distinct_ad_names, reused_ad_names, currency, account_ids, header_conflicts, additive_metrics, non_additive_metrics. Absent/null for creative assets and for imports staged before grain detection existed.
+ */
+export type ManualImportResultReportGrain = { [key: string]: unknown } | null;
+
 export interface ManualImportResult {
   status: ManualImportResultStatus;
   import_id: string;
@@ -537,6 +544,8 @@ export interface ManualImportResult {
   mapping_summary?: ColumnMappingSummaryEntry[];
   /** Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only. */
   upload_warnings?: string[] | null;
+  /** What the file can prove, detected at staging from its resolved columns and rows (lib/reportGrain.ts ReportGrain): report_class (ad_summary | time_series | demographic | placement | asset | demographic_asset | placement_asset | conversion_device), has_ad_id, ad_id_joinable, has_day, aggregate_shape, period, dimensions, asset_columns, distinct_ad_ids, distinct_ad_names, reused_ad_names, currency, account_ids, header_conflicts, additive_metrics, non_additive_metrics. Absent/null for creative assets and for imports staged before grain detection existed. */
+  report_grain?: ManualImportResultReportGrain;
 }
 
 export type ManualImportKind = typeof ManualImportKind[keyof typeof ManualImportKind];
@@ -547,6 +556,7 @@ export const ManualImportKind = {
   performance_placement_csv: 'performance_placement_csv',
   performance_ad_summary_csv: 'performance_ad_summary_csv',
   performance_conversion_device_csv: 'performance_conversion_device_csv',
+  performance_asset_csv: 'performance_asset_csv',
   creative_asset: 'creative_asset',
 } as const;
 
@@ -571,6 +581,13 @@ export const ManualImportStatus = {
   rejected: 'rejected',
 } as const;
 
+/**
+ * What the file can prove, detected at staging from its resolved columns and rows (lib/reportGrain.ts ReportGrain): report_class (ad_summary | time_series | demographic | placement | asset | demographic_asset | placement_asset | conversion_device), has_ad_id, ad_id_joinable, has_day, aggregate_shape, period, dimensions, asset_columns, distinct_ad_ids, distinct_ad_names, reused_ad_names, currency, account_ids, header_conflicts, additive_metrics, non_additive_metrics. Absent/null for creative assets and for imports staged before grain detection existed.
+ */
+export type ManualImportReportGrain = { [key: string]: unknown } | null;
+
+export type ManualImportHeaderConflictsItem = { [key: string]: unknown };
+
 export interface ManualImport {
   id: string;
   account_id: string;
@@ -590,6 +607,10 @@ export interface ManualImport {
   mapping_summary?: ColumnMappingSummaryEntry[] | null;
   /** Warnings recorded by upload-time validation, persisted so they outlive the upload dialog. NULL and [] mean different things and must not be conflated: NULL is "not recorded" (a creative_asset row, or a file staged before warnings were persisted) and must never render as "no warnings"; [] is "validation ran and found none", which is a real positive finding. */
   upload_warnings?: string[] | null;
+  /** What the file can prove, detected at staging from its resolved columns and rows (lib/reportGrain.ts ReportGrain): report_class (ad_summary | time_series | demographic | placement | asset | demographic_asset | placement_asset | conversion_device), has_ad_id, ad_id_joinable, has_day, aggregate_shape, period, dimensions, asset_columns, distinct_ad_ids, distinct_ad_names, reused_ad_names, currency, account_ids, header_conflicts, additive_metrics, non_additive_metrics. Absent/null for creative assets and for imports staged before grain detection existed. */
+  report_grain?: ManualImportReportGrain;
+  /** Duplicated headers whose occurrences DISAGREED row by row (DuplicateHeaderConflict: header, ordinals, conflictingRows, totalRows, example). NULL = not recorded; [] = validated, none found. A conflict on "Ad ID" makes the file unjoinable at ad grain. */
+  header_conflicts?: ManualImportHeaderConflictsItem[] | null;
 }
 
 export interface RestageManualImportsResult {
@@ -651,6 +672,8 @@ export interface ManualPerformanceCsvFormat {
   ad_summary: IapCsvClassFormat;
   /** Format spec for the optional Conversion Device pivot export (conversion-only metrics, no spend/impressions). Upload to the performance_conversion_device_csv slot. */
   conversion_device?: IapCsvClassFormat;
+  /** Format spec for the optional asset-breakdown pivot export (a report "by asset" — Text, Headline, Image name …, optionally with demographic or placement dimensions). Upload to the performance_asset_csv slot. */
+  asset?: IapCsvClassFormat;
   /** Known accepted column name variants for the most commonly misnamed columns, derived from the server COLUMN_ALIASES map. Collapsed reference guide for the upload UI. */
   column_aliases: ColumnAliasEntry[];
 }
@@ -877,6 +900,7 @@ export const ReportClassCoverageReportClass = {
   device_placement: 'device_placement',
   ad_summary: 'ad_summary',
   conversion_device: 'conversion_device',
+  asset: 'asset',
 } as const;
 
 /**
