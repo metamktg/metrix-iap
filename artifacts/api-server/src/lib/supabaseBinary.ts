@@ -46,7 +46,37 @@ export function decodeByteaJson(value: string): Buffer {
   return Buffer.from(value, "utf8");
 }
 
+// ── Concurrency cap ────────────────────────────────────────────────────
+// One request per cell is necessary but not sufficient: a Creative Library
+// page with 91 creatives asks for 91 thumbnails at once, and the edge logs
+// on 2026-09-02 show six parallel 2.3 MB reads taking 10–27 s EACH while
+// the database served them together. Byte reads queue here so at most a
+// few are in flight against the database at any moment; the rest wait in
+// order. Reads are large and few; queuing them costs the reader tens of
+// milliseconds and spares the instance the pile-up.
+const MAX_CONCURRENT_BYTE_READS = 3;
+let inFlight = 0;
+const waiters: Array<() => void> = [];
+
+async function withReadSlot<T>(work: () => Promise<T>): Promise<T> {
+  if (inFlight >= MAX_CONCURRENT_BYTE_READS) {
+    await new Promise<void>((resolve) => waiters.push(resolve));
+  }
+  inFlight += 1;
+  try {
+    return await work();
+  } finally {
+    inFlight -= 1;
+    const next = waiters.shift();
+    if (next) next();
+  }
+}
+
 async function callBinaryRpc(fn: string, args: Record<string, string | number>): Promise<Buffer | null> {
+  return withReadSlot(() => callBinaryRpcNow(fn, args));
+}
+
+async function callBinaryRpcNow(fn: string, args: Record<string, string | number>): Promise<Buffer | null> {
   const { url, serviceRoleKey } = getSupabaseRest();
   const res = await fetch(`${url}/rest/v1/rpc/${fn}`, {
     method: "POST",

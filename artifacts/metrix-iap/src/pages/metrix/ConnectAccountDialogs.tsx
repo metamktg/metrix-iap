@@ -1115,6 +1115,8 @@ function CreativeThumbnail({ accountId, asset }: { accountId: string; asset: Man
         <video src={fileUrl} className="w-full h-full object-cover" muted onError={() => setBroken(true)} />
       ) : (
         <img
+          loading="lazy"
+          decoding="async"
           src={fileUrl}
           alt={asset.filename}
           className="w-full h-full object-cover"
