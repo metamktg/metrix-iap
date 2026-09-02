@@ -426,5 +426,17 @@ are the only signal there.
   first unit is done); the analysis run shows elapsed time and that the banner follows it.
   A toast confirms the start with the queued count.
 
-**Data fix, owner-visible:** the guess mappings this morning's server wrote on the tester's
-account are cleared and re-derived under the new rules after the deploy (recorded below).
+**Data fix — none needed after all.** By the time the fix was live the tester had already
+re-mapped by hand: no `guess` rows remained on the account (44 mappings set through the editor,
+20 confident server matches). Human decisions are never rescored, so nothing was touched.
+
+**Recurrence at 14:30–14:37Z, before the fix shipped.** The tester pressed "Deconstruct all"
+on the live build (91 creatives); the same bulk `content` statement ran again and the origin
+went unreachable for seven minutes (Cloudflare 525, "SSL handshake failed" — the origin
+restarting). It recovered on its own this time. Two more protections went into the same PR:
+byte reads are capped at three in flight on the server (the edge logs showed six parallel
+2.3 MB thumbnail reads taking 10–27 s each), and creative thumbnails load lazily so a
+91-creative library asks only for what is on screen.
+
+**Shipped** as PR #179 → `main` `e46fe01` (CI run 375 green); workspace merged; published
+(deployment `329ef7e0`); verified by entry-bundle hash against a local build of `e46fe01`.
