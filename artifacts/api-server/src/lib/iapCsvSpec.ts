@@ -42,7 +42,9 @@ export type AssetType =
   | "display_link"
   | "image"
   | "video"
-  | "media";
+  | "media"
+  /** The delivered combination when several asset fields vary together on one row (spec §10a). */
+  | "copy_signature";
 
 /**
  * Delivered asset breakdown columns → asset type. A pivot export carrying one

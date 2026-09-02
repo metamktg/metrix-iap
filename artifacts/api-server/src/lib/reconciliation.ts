@@ -52,9 +52,12 @@ export const EVIDENCE_STATES: readonly EvidenceState[] = [
 ];
 
 /** Which breakdown a fact row belongs to; joint reports also yield their margins. */
-export type Breakdown = "demographic" | "placement" | "asset" | "demographic_asset" | "placement_asset";
+export type Breakdown = "demographic" | "placement" | "asset" | "demographic_asset" | "placement_asset" | "demographic_placement";
 
-export const BREAKDOWNS: readonly Breakdown[] = ["demographic", "placement", "asset", "demographic_asset", "placement_asset"];
+export const BREAKDOWNS: readonly Breakdown[] = ["demographic", "placement", "asset", "demographic_asset", "placement_asset", "demographic_placement"];
+
+/** How a fact row was attributed: by an asset breakdown, by a joint file, or by a single-dimension breakdown. */
+export type Attribution = "direct_asset" | "direct_joint" | "direct_segment";
 
 export interface SegmentDims {
   gender?: string;
@@ -65,10 +68,13 @@ export interface SegmentDims {
   asset_type?: AssetType;
   asset_hash?: string;
   asset_value?: string;
+  /** For a copy signature: the delivered field values by column (spec §10a). */
+  asset_fields?: Record<string, string>;
 }
 
 export interface Observation {
   breakdown: Breakdown;
+  attribution: Attribution;
   identity: AdIdentity;
   segment: SegmentDims;
   segment_key: string;
@@ -113,7 +119,7 @@ const SEP = "";
 
 export function segmentKeyOf(segment: SegmentDims): string {
   return Object.entries(segment)
-    .filter(([, v]) => v !== undefined && v !== "")
+    .filter(([k, v]) => k !== "asset_fields" && v !== undefined && v !== "")
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([k, v]) => `${k}=${v}`)
     .join(SEP);
@@ -153,9 +159,17 @@ export function breakdownsFor(grain: ReportGrain): Breakdown[] {
       return ["demographic", "asset", "demographic_asset"];
     case "placement_asset":
       return ["placement", "asset", "placement_asset"];
+    case "demographic_placement":
+      return ["demographic", "placement", "demographic_placement"];
     default:
       return [];
   }
+}
+
+export function attributionFor(breakdown: Breakdown): Attribution {
+  if (breakdown === "asset") return "direct_asset";
+  if (breakdown === "demographic" || breakdown === "placement") return "direct_segment";
+  return "direct_joint";
 }
 
 /**
@@ -182,15 +196,25 @@ function segmentsFor(row: IapCsvRow, breakdown: Breakdown, grain: ReportGrain): 
     placement: row.breakdowns["Placement"] || undefined,
     device: row.breakdowns["Impression device"] || undefined,
   });
+  // Only BREAKDOWN-role columns attribute; context columns are creative
+  // metadata beside the real breakdown. One breakdown column → that asset;
+  // several varying together → the delivered combination, a copy signature,
+  // never any single field (spec §10a).
   const assets = (): SegmentDims[] => {
-    const out: SegmentDims[] = [];
-    for (const { column, asset_type } of grain.asset_columns) {
-      const raw = row.assetBreakdowns?.[column];
-      if (!raw) continue;
+    const breakdownCols = grain.asset_columns.filter((c) => c.role === "breakdown");
+    const present = breakdownCols
+      .map((c) => ({ ...c, raw: row.assetBreakdowns?.[c.column] ?? "" }))
+      .filter((c) => c.raw);
+    if (present.length === 0) return [];
+    if (present.length === 1) {
+      const { asset_type, raw } = present[0]!;
       const normalized = normalizeAssetValue(asset_type, raw);
-      out.push({ asset_type, asset_hash: assetContentHash(asset_type, normalized), asset_value: normalized });
+      return [{ asset_type, asset_hash: assetContentHash(asset_type, normalized), asset_value: normalized }];
     }
-    return out;
+    const fields: Record<string, string> = {};
+    for (const c of present) fields[c.column] = normalizeAssetValue(c.asset_type, c.raw);
+    const ordered = present.map((c) => `${c.column}=${fields[c.column]}`).join("\u0001");
+    return [{ asset_type: "copy_signature", asset_hash: assetContentHash("copy_signature", ordered), asset_value: ordered, asset_fields: fields }];
   };
   switch (breakdown) {
     case "demographic":
@@ -203,6 +227,8 @@ function segmentsFor(row: IapCsvRow, breakdown: Breakdown, grain: ReportGrain): 
       return assets().map((a) => ({ ...demo(), ...a }));
     case "placement_asset":
       return assets().map((a) => ({ ...place(), ...a }));
+    case "demographic_placement":
+      return [{ ...demo(), ...place() }];
   }
 }
 
@@ -262,6 +288,7 @@ export function buildObservations(
     if (!obs) {
       obs = {
         breakdown: ref.breakdown,
+        attribution: attributionFor(ref.breakdown),
         identity: ref.identity,
         segment: ref.segment,
         segment_key: ref.segment_key,
@@ -306,8 +333,21 @@ export function buildObservations(
 
 export type TruthSource = "ad_summary" | "totals_row" | "none";
 
+export interface TruthAlternative {
+  source: TruthSource;
+  label: string;
+  import_ids: string[];
+  account: Record<string, number>;
+}
+
 export interface TruthSet {
   source: TruthSource;
+  /** Which candidate was selected and why, for the ledger and the run log. */
+  precedence: string;
+  /** Candidates not selected, summed for comparison — never averaged in. */
+  alternatives: TruthAlternative[];
+  /** Disagreements above 1% between the selected source and an alternative, per metric. */
+  conflicts: string[];
   import_ids: string[];
   /** How per-ad truth is keyed; null when the control is account-grain only. */
   identity_kind: "ad_id" | "ad_name" | null;
@@ -316,6 +356,8 @@ export interface TruthSet {
   currency: string | null;
   account_ids: string[];
   period: { start: string; end: string } | null;
+  attribution_settings?: string[];
+  result_types?: string[];
 }
 
 /**
@@ -324,63 +366,132 @@ export interface TruthSet {
  * proven-unique name) → else the file's own Meta totals row at account
  * grain → else none.
  */
+function summariseReports(
+  reports: readonly ReportInput[],
+  instancesByName?: ReadonlyMap<string, readonly string[]>,
+): { per_ad: TruthSet["per_ad"]; account: Record<string, number>; allJoinable: boolean } {
+  const per_ad = new Map<string, { identity: AdIdentity; metrics: Record<string, number>; result_type: string }>();
+  const account: Record<string, number> = {};
+  let allJoinable = true;
+  for (const report of reports) {
+    if (!report.grain.ad_id_joinable) allJoinable = false;
+    for (const row of report.rows) {
+      const identity = resolveIdentity(row, report.grain, instancesByName);
+      const m = additiveMetricsOf(row);
+      addMetrics(account, m);
+      const k = identityKey(identity);
+      const cur = per_ad.get(k);
+      if (cur) addMetrics(cur.metrics, m);
+      else per_ad.set(k, { identity, metrics: { ...m }, result_type: typeof row.base["result_type"] === "string" ? row.base["result_type"] : "" });
+    }
+  }
+  return { per_ad, account, allJoinable };
+}
+
+function conflictsBetween(selected: Record<string, number>, alternative: TruthAlternative): string[] {
+  const out: string[] = [];
+  for (const [metric, v] of Object.entries(selected)) {
+    const other = alternative.account[metric];
+    if (other === undefined || v === 0) continue;
+    const diff = Math.abs(other - v) / v;
+    if (diff > 0.01) out.push(`[Truth] ${metric}: selected control reports ${round2(v).toLocaleString("en-US")}, ${alternative.label} reports ${round2(other).toLocaleString("en-US")} (${Math.round(diff * 1000) / 10}% apart). The selected source is used; the disagreement is recorded, not averaged.`);
+  }
+  return out;
+}
+
+/**
+ * Source precedence (spec §6a): a whole-period Ad Summary keyed by Ad ID →
+ * a daily Ad Summary summed to the window → a name-keyed Ad Summary →
+ * the file's own Meta totals row → none. Every unselected candidate is
+ * summed and compared; a disagreement is surfaced, never averaged.
+ */
 export function buildTruth(
   reports: readonly ReportInput[],
   opts: { instancesByName?: ReadonlyMap<string, readonly string[]> } = {},
 ): TruthSet {
-  const summaries = reports.filter((r) => r.grain.report_class === "ad_summary" || r.grain.report_class === "time_series");
-  if (summaries.length > 0) {
-    const per_ad = new Map<string, { identity: AdIdentity; metrics: Record<string, number>; result_type: string }>();
-    const account: Record<string, number> = {};
-    let allJoinable = true;
-    for (const report of summaries) {
-      if (!report.grain.ad_id_joinable) allJoinable = false;
-      for (const row of report.rows) {
-        const identity = resolveIdentity(row, report.grain, opts.instancesByName);
-        const m = additiveMetricsOf(row);
-        addMetrics(account, m);
-        const k = identityKey(identity);
-        const cur = per_ad.get(k);
-        if (cur) addMetrics(cur.metrics, m);
-        else per_ad.set(k, { identity, metrics: { ...m }, result_type: typeof row.base["result_type"] === "string" ? row.base["result_type"] : "" });
-      }
+  const wholeWithId = reports.filter((r) => r.grain.report_class === "ad_summary" && r.grain.ad_id_joinable);
+  const dailyWithId = reports.filter((r) => r.grain.report_class === "time_series" && r.grain.ad_id_joinable);
+  const byName = reports.filter((r) => (r.grain.report_class === "ad_summary" || r.grain.report_class === "time_series") && !r.grain.ad_id_joinable);
+  const withTotals = reports.filter((r) => r.totals_row);
+
+  const candidates: { key: string; label: string; reports: ReportInput[]; source: TruthSource; precedence: string }[] = [
+    { key: "whole_id", label: "the whole-period Ad Summary (per Ad ID)", reports: wholeWithId, source: "ad_summary" as TruthSource, precedence: "whole-period Ad Summary keyed by Ad ID" },
+    { key: "daily_id", label: "the daily Ad Summary (per Ad ID)", reports: dailyWithId, source: "ad_summary" as TruthSource, precedence: "daily Ad Summary keyed by Ad ID, summed to the window" },
+    { key: "by_name", label: "the name-keyed Ad Summary", reports: byName, source: "ad_summary" as TruthSource, precedence: "Ad Summary keyed by ad name (account grain; per ad only through a unique name)" },
+  ].filter((c) => c.reports.length > 0);
+
+  const alternatives: TruthAlternative[] = [];
+  let selected: TruthSet | null = null;
+  for (const c of candidates) {
+    const { per_ad, account, allJoinable } = summariseReports(c.reports, opts.instancesByName);
+    if (!selected) {
+      const first = c.reports[0]!.grain;
+      selected = {
+        source: c.source,
+        precedence: c.precedence,
+        alternatives: [],
+        conflicts: [],
+        import_ids: c.reports.map((r) => r.import_id),
+        identity_kind: allJoinable ? "ad_id" : "ad_name",
+        per_ad,
+        account,
+        currency: first.currency,
+        account_ids: first.account_ids,
+        period: first.period,
+        attribution_settings: [...new Set(c.reports.flatMap((r) => r.grain.attribution_settings))],
+        result_types: [...new Set(c.reports.flatMap((r) => r.grain.result_types))],
+      };
+    } else {
+      alternatives.push({ source: c.source, label: c.label, import_ids: c.reports.map((r) => r.import_id), account });
     }
-    const first = summaries[0]!.grain;
-    return {
-      source: "ad_summary",
-      import_ids: summaries.map((r) => r.import_id),
-      identity_kind: allJoinable ? "ad_id" : "ad_name",
-      per_ad,
-      account,
-      currency: first.currency,
-      account_ids: first.account_ids,
-      period: first.period,
-    };
   }
-  const withTotals = reports.find((r) => r.totals_row);
-  if (withTotals?.totals_row) {
+  for (const t of withTotals) {
     const account: Record<string, number> = {};
-    for (const [slug, v] of Object.entries(withTotals.totals_row)) {
+    for (const [slug, v] of Object.entries(t.totals_row!)) {
       if (typeof v === "number" && isAdditiveMetric(slug)) account[slug] = v;
     }
-    return {
-      source: "totals_row",
-      import_ids: [withTotals.import_id],
-      identity_kind: null,
-      per_ad: new Map(),
-      account,
-      currency: withTotals.grain.currency,
-      account_ids: withTotals.grain.account_ids,
-      period: withTotals.grain.period,
-    };
+    if (!selected) {
+      selected = {
+        source: "totals_row",
+        precedence: "Meta's totals row (account grain)",
+        alternatives: [],
+        conflicts: [],
+        import_ids: [t.import_id],
+        identity_kind: null,
+        per_ad: new Map(),
+        account,
+        currency: t.grain.currency,
+        account_ids: t.grain.account_ids,
+        period: t.grain.period,
+        attribution_settings: t.grain.attribution_settings,
+        result_types: t.grain.result_types,
+      };
+    } else {
+      alternatives.push({ source: "totals_row", label: "Meta's totals row", import_ids: [t.import_id], account });
+    }
   }
-  return { source: "none", import_ids: [], identity_kind: null, per_ad: new Map(), account: null, currency: null, account_ids: [], period: null };
+  if (!selected) {
+    return { source: "none", precedence: "no control source", alternatives: [], conflicts: [], import_ids: [], identity_kind: null, per_ad: new Map(), account: null, currency: null, account_ids: [], period: null };
+  }
+  selected.alternatives = alternatives;
+  selected.conflicts = alternatives.flatMap((a) => conflictsBetween(selected!.account ?? {}, a));
+  return selected;
 }
 
 // ─── Ledger ────────────────────────────────────────────────────────────────
 
 export interface CompatibilityFailure {
-  kind: "currency" | "account" | "period" | "header_conflict" | "truth_missing_ad_id" | "unjoinable" | "no_control_source" | "metric_not_in_control";
+  kind:
+    | "currency"
+    | "account"
+    | "period"
+    | "attribution"
+    | "result_definition"
+    | "header_conflict"
+    | "truth_missing_ad_id"
+    | "unjoinable"
+    | "no_control_source"
+    | "metric_not_in_control";
   detail: string;
 }
 
@@ -399,6 +510,8 @@ export interface LedgerRow {
   coverage_pct: number | null;
   /** Signed: truth − observed. Negative means the breakdown over-counts. */
   residual: number | null;
+  /** max(0, observed − truth): the over-count itself, kept for diagnosis and never normalised away. */
+  overcoverage: number | null;
   direct_share: number;
   modelled_share: number;
   evidence_state: EvidenceState;
@@ -432,6 +545,8 @@ export interface BreakdownSummary {
 export interface ReconciliationSummary {
   truth_source: TruthSource;
   truth_identity_kind: "ad_id" | "ad_name" | null;
+  truth_precedence: string;
+  truth_conflicts: string[];
   breakdowns: BreakdownSummary[];
   notes: string[];
 }
@@ -442,6 +557,7 @@ const GRAIN_LABEL: Record<Breakdown, string> = {
   asset: "ad × asset × period",
   demographic_asset: "ad × age × gender × asset × period",
   placement_asset: "ad × platform × placement × device × asset × period",
+  demographic_placement: "ad × age × gender × platform × placement × device × period",
 };
 
 /** Spec §9: within ±1% is reconciled; below is partial; above is overcounted. */
@@ -471,7 +587,18 @@ function compatibilityOf(report: ReportInput, truth: TruthSet, breakdown: Breakd
   if (g.period && truth.period && (g.period.end < truth.period.start || g.period.start > truth.period.end)) {
     out.push({ kind: "period", detail: `${breakdown} export covers ${g.period.start} → ${g.period.end}; the control source covers ${truth.period.start} → ${truth.period.end}.` });
   }
+  const truthAttribution = truth.attribution_settings ?? [];
+  if (g.attribution_settings.length > 0 && truthAttribution.length > 0 && !g.attribution_settings.some((a) => truthAttribution.includes(a))) {
+    out.push({ kind: "attribution", detail: `${breakdown} export uses attribution ${g.attribution_settings.join(", ")}; the control source uses ${truthAttribution.join(", ")}.` });
+  }
   return out;
+}
+
+/** Result-definition check for the `results` metric: a breakdown whose result types share nothing with the control's cannot reconcile results. */
+function resultDefinitionFailure(reportTypes: readonly string[], truthTypes: readonly string[], breakdown: Breakdown): CompatibilityFailure | null {
+  if (reportTypes.length === 0 || truthTypes.length === 0) return null;
+  if (reportTypes.some((t) => truthTypes.includes(t))) return null;
+  return { kind: "result_definition", detail: `${breakdown} export reports results as ${reportTypes.join(", ")}; the control source reports ${truthTypes.join(", ")} — results are not the same definition.` };
 }
 
 export interface BuildLedgerResult {
@@ -525,8 +652,13 @@ export function buildLedger(args: {
       const observed = round2(obs.reduce((s, o) => s + (o.metrics[metric] ?? 0), 0));
       const truthValue = incompatible ? null : truth.account?.[metric] ?? null;
       const state: EvidenceState = incompatible ? "incompatible" : evidenceStateFor(truthValue, observed);
+      const resultDef = metric === "results" ? resultDefinitionFailure(reportInputs.flatMap((r) => r.grain.result_types), truth.result_types ?? [], breakdown) : null;
+      const metricIncompatible = incompatible || resultDef !== null;
+      const stateFor = metricIncompatible ? ("incompatible" as EvidenceState) : state;
       const rowFailures: CompatibilityFailure[] = incompatible
         ? failures
+        : resultDef
+        ? [resultDef]
         : truth.source === "none"
         ? [{ kind: "no_control_source", detail: noControlDetail! }]
         : truthValue === null
@@ -542,19 +674,20 @@ export function buildLedger(args: {
         metric,
         grain: GRAIN_LABEL[breakdown],
         truth_source: truth.source,
-        truth_value: truthValue === null ? null : round2(truthValue),
+        truth_value: truthValue === null || metricIncompatible ? null : round2(truthValue),
         observed_value: observed,
-        coverage_pct: coverageOf(truthValue, observed),
-        residual: truthValue === null ? null : round2(truthValue - observed),
+        coverage_pct: metricIncompatible ? null : coverageOf(truthValue, observed),
+        residual: truthValue === null || metricIncompatible ? null : round2(truthValue - observed),
+        overcoverage: truthValue === null || metricIncompatible ? null : round2(Math.max(0, observed - truthValue)),
         direct_share: 1,
         modelled_share: 0,
-        evidence_state: state,
+        evidence_state: stateFor,
         compatibility_failures: rowFailures,
         truth_import_ids: truth.import_ids,
         observed_import_ids: reportIds,
       };
       rows.push(row);
-      byMetric.push({ metric, truth_value: row.truth_value, observed_value: observed, coverage_pct: row.coverage_pct, residual: row.residual, evidence_state: state });
+      byMetric.push({ metric, truth_value: row.truth_value, observed_value: observed, coverage_pct: row.coverage_pct, residual: row.residual, evidence_state: stateFor });
     }
 
     // Ad scope.
@@ -618,11 +751,20 @@ export function buildLedger(args: {
       }
       let spendState: EvidenceState = "unreconciled";
       let spendCoverage: number | null = null;
+      const adResultType = obs.find((o) => identityKey(o.identity) === k)?.result_type ?? "";
+      const truthResultType = truth.per_ad.get(k)?.result_type ?? "";
       for (const metric of metrics) {
         const observed = round2(ad.observed[metric] ?? 0);
-        const truthValue = truthMetrics ? truthMetrics[metric] ?? null : null;
-        const state: EvidenceState = incompatible ? "incompatible" : evidenceStateFor(truthValue, observed);
-        const rowFailures = truthMetrics && truthValue === null && !incompatible
+        let truthValue = truthMetrics ? truthMetrics[metric] ?? null : null;
+        const resultDef =
+          metric === "results" && truthMetrics && adResultType && truthResultType && adResultType !== truthResultType
+            ? resultDefinitionFailure([adResultType], [truthResultType], breakdown)
+            : null;
+        if (resultDef) truthValue = null;
+        const state: EvidenceState = incompatible || resultDef ? "incompatible" : evidenceStateFor(truthValue, observed);
+        const rowFailures = resultDef
+          ? [...adFailures, resultDef]
+          : truthMetrics && truthValue === null && !incompatible
           ? [...adFailures, { kind: "metric_not_in_control" as const, detail: `The control source does not carry "${metric}".` }]
           : adFailures;
         rows.push({
@@ -639,6 +781,7 @@ export function buildLedger(args: {
           observed_value: observed,
           coverage_pct: coverageOf(truthValue, observed),
           residual: truthValue === null ? null : round2(truthValue - observed),
+          overcoverage: truthValue === null ? null : round2(Math.max(0, observed - truthValue)),
           direct_share: 1,
           modelled_share: 0,
           evidence_state: state,
@@ -693,9 +836,17 @@ export function buildLedger(args: {
     }
   }
 
+  notes.push(...truth.conflicts);
   return {
     rows,
-    summary: { truth_source: truth.source, truth_identity_kind: truth.identity_kind, breakdowns: summaries, notes },
+    summary: {
+      truth_source: truth.source,
+      truth_identity_kind: truth.identity_kind,
+      truth_precedence: truth.precedence,
+      truth_conflicts: truth.conflicts,
+      breakdowns: summaries,
+      notes,
+    },
     observations: observationsOut,
   };
 }
@@ -754,12 +905,33 @@ export function interactionIndex(args: {
   };
 }
 
-export type VolumeConfidence = "high" | "medium" | "low" | "insufficient";
+/** The canonical `confidence_level` vocabulary (IAP_DATA_BUNDLE_PREP v2.0, blueprint §8.3). */
+export type VolumeConfidence = "high" | "medium" | "validation_required" | "insufficient";
 
-/** The creativeComponents volume tiers, reused so one number means one thing. */
-export function volumeConfidence(spend: number, results: number): VolumeConfidence {
-  if (spend >= 500 && results >= 30) return "high";
-  if (spend >= 100 && results >= 5) return "medium";
-  if (spend > 0 && results >= 1) return "low";
-  return "insufficient";
+/**
+ * The DOCUMENTED confidence classification, implemented literally
+ * (docs/prompts/IAP_DATA_BUNDLE_PREP_v2.0.md "confidence_level";
+ * docs/architecture/METRIX_IAP_MASTER_BLUEPRINT_v2.0.md §8.3):
+ *
+ *   high                 > 100 conversions OR > $1,000 spend
+ *   medium               10–100 conversions OR $100–1,000 spend
+ *   validation_required  < 10 conversions OR < $100 spend, but promising
+ *   insufficient         below the minimum thresholds (the prompt's own
+ *                        floor: < $50 spend or < 10 impressions)
+ *
+ * "Conversions" is the terminal-stage result of the derived objective — the
+ * `results` a row carries — never purchases assumed. The qualitative
+ * modifiers ("with a consistent pattern", "directional", "promising") are
+ * not evaluated by this function; it classifies the numeric bands only and
+ * the evidence state / coverage carry the rest. The shipped concept tier
+ * (`creativeComponents.volumeConfidence`: high ≥ $500 and ≥ 30) predates
+ * this and deviates from the canonical bands — recorded in register §14 as
+ * an owner decision, not changed here.
+ */
+export function confidenceLevel(spend: number, conversions: number, impressions: number | null = null): VolumeConfidence {
+  if (conversions > 100 || spend > 1000) return "high";
+  if (conversions >= 10 || spend >= 100) return "medium";
+  const belowFloor = spend < 50 || (impressions !== null && impressions < 10);
+  if (belowFloor && conversions < 1) return "insufficient";
+  return "validation_required";
 }

@@ -660,3 +660,119 @@ export function buildAssetCsv(opts: { adFilter?: (ad: FixtureAd, index: number) 
   });
   return lines.join("\n") + "\n";
 }
+
+// ─── The $100 copy scenario (spec §10a, §17a) ──────────────────────────
+//
+// Ad 001: authoritative spend $100. A pivot broken down by Text reports
+// Text A $40 and Text B $50 — $90 covered, $10 unattributed to copy. The
+// same file carries Headline and Description columns whose values never
+// change within the ad: creative metadata beside the real breakdown, not a
+// breakdown of their own.
+
+export const COPY_AD = { adId: "9001", adName: "C1A_HK_Question_FW_PAS_TN_Warm", campaign: "Prospecting - Broad", adSet: "AS1" } as const;
+export const COPY_TEXT_A = "Text A — stop guessing what your dog needs.";
+export const COPY_TEXT_B = "Text B — real meat first, no fillers.";
+export const COPY_HEADLINE_X = "Headline X";
+export const COPY_DESCRIPTION_P = "Description P";
+
+const copyMetricHeader = (currency = FIXTURE_CURRENCY): string[] => [`Amount spent (${currency})`, "Impressions", "Result type", "Results", "Clicks (all)", "Link clicks", "Purchases"];
+
+/** Ad Summary: one row, $100, 10,000 impressions, 500 clicks, 20 purchases. */
+export function buildCopyAdSummaryCsv(opts: { currency?: string; attribution?: string; resultType?: string; adId?: string } = {}): string {
+  const currency = opts.currency ?? FIXTURE_CURRENCY;
+  const header = ["Reporting starts", "Reporting ends", "Account ID", "Attribution setting", "Ad ID", "Ad name", "Ad set name", ...copyMetricHeader(currency), "Ad creative body text", "Ad creative headline", "Ad creative description", "Ad creative call to action type"];
+  const row = [FIXTURE_WINDOW.start, FIXTURE_WINDOW.end, FIXTURE_ACCOUNT_ID, opts.attribution ?? "7-day click, 1-day view", opts.adId ?? COPY_AD.adId, COPY_AD.adName, COPY_AD.adSet, "100.00", "10000", opts.resultType ?? "Purchases", "20", "500", "480", "20", COPY_TEXT_A, COPY_HEADLINE_X, COPY_DESCRIPTION_P, "SHOP_NOW"];
+  return [csvLine(header), csvLine(row)].join("\n") + "\n";
+}
+
+export interface CopyPivotOptions {
+  /** Headline / Description vary WITH the text (a delivered combination) instead of staying constant. */
+  headlineVaries?: boolean;
+  /** Add Age × Gender to every row (a demographic × copy joint report). */
+  withDemographics?: boolean;
+  currency?: string;
+  attribution?: string;
+  resultType?: string;
+  /** Scale every metric so the rows exceed the truth (an overlapping export). */
+  scale?: number;
+}
+
+/**
+ * Text pivot: Text A $40 / 8,000 impressions / 250 clicks / 8 purchases,
+ * Text B $50 / 0 impressions? — no: B carries 0 impressions would be odd;
+ * B: 0 → keep the validated shape: impressions 8,000 total (80%), clicks 480
+ * total (96%), purchases 12 total (60%) across A and B.
+ */
+export function buildCopyPivotCsv(opts: CopyPivotOptions = {}): string {
+  const currency = opts.currency ?? FIXTURE_CURRENCY;
+  const k = opts.scale ?? 1;
+  const header = [
+    "Day",
+    "Account ID",
+    "Attribution setting",
+    "Campaign name",
+    "Ad ID",
+    "Ad name",
+    ...(opts.withDemographics ? ["Gender", "Age"] : []),
+    "Text",
+    "Headline",
+    "Description",
+    ...copyMetricHeader(currency),
+  ];
+  const cells = (text: string, headline: string, description: string, spendCents: number, impressions: number, clicksAll: number, linkClicks: number, purchases: number, demo: string[] = []) => [
+    FIXTURE_WINDOW.start,
+    FIXTURE_ACCOUNT_ID,
+    opts.attribution ?? "7-day click, 1-day view",
+    COPY_AD.campaign,
+    COPY_AD.adId,
+    COPY_AD.adName,
+    ...demo,
+    text,
+    headline,
+    description,
+    (Math.round(spendCents * k) / 100).toFixed(2),
+    String(Math.round(impressions * k)),
+    opts.resultType ?? "Purchases",
+    String(Math.round(purchases * k)),
+    String(Math.round(clicksAll * k)),
+    String(Math.round(linkClicks * k)),
+    String(Math.round(purchases * k)),
+  ];
+  const hA = COPY_HEADLINE_X;
+  const hB = opts.headlineVaries ? "Headline Y" : COPY_HEADLINE_X;
+  const dA = COPY_DESCRIPTION_P;
+  const dB = opts.headlineVaries ? "Description Q" : COPY_DESCRIPTION_P;
+  const rows = opts.withDemographics
+    ? [
+        cells(COPY_TEXT_A, hA, dA, 2500, 5000, 150, 140, 5, ["female", "25-34"]),
+        cells(COPY_TEXT_A, hA, dA, 1500, 1500, 100, 100, 3, ["male", "25-34"]),
+        cells(COPY_TEXT_B, hB, dB, 3000, 1000, 150, 150, 3, ["female", "25-34"]),
+        cells(COPY_TEXT_B, hB, dB, 2000, 500, 80, 90, 1, ["male", "35-44"]),
+      ]
+    : [cells(COPY_TEXT_A, hA, dA, 4000, 6500, 250, 240, 8), cells(COPY_TEXT_B, hB, dB, 5000, 1500, 230, 240, 4)];
+  return [csvLine(header), ...rows.map(csvLine)].join("\n") + "\n";
+}
+
+/** Demographic pivot for the copy ad: the same $90 split by Age × Gender (no Text column). */
+export function buildCopyDemographicCsv(): string {
+  const header = ["Day", "Account ID", "Campaign name", "Ad ID", "Ad name", "Gender", "Age", ...copyMetricHeader()];
+  const rows = [
+    [FIXTURE_WINDOW.start, FIXTURE_ACCOUNT_ID, COPY_AD.campaign, COPY_AD.adId, COPY_AD.adName, "female", "25-34", "55.00", "6000", "Purchases", "8", "300", "290", "8"],
+    [FIXTURE_WINDOW.start, FIXTURE_ACCOUNT_ID, COPY_AD.campaign, COPY_AD.adId, COPY_AD.adName, "male", "25-34", "15.00", "1500", "Purchases", "3", "100", "100", "3"],
+    [FIXTURE_WINDOW.start, FIXTURE_ACCOUNT_ID, COPY_AD.campaign, COPY_AD.adId, COPY_AD.adName, "male", "35-44", "20.00", "500", "Purchases", "1", "80", "90", "1"],
+  ];
+  return [csvLine(header), ...rows.map(csvLine)].join("\n") + "\n";
+}
+
+/** A daily Ad Summary where the headline changes on day 15 under the same Ad ID. */
+export function buildCopyVersionedSummaryCsv(): string {
+  const header = ["Day", "Account ID", "Ad ID", "Ad name", "Ad set name", ...copyMetricHeader(), "Ad creative body text", "Ad creative headline"];
+  const lines = [csvLine(header)];
+  for (let d = 0; d < 30; d++) {
+    const day = new Date(Date.UTC(2026, 7, 1 + d)).toISOString().slice(0, 10);
+    const headline = d < 15 ? COPY_HEADLINE_X : "Headline Y";
+    lines.push(csvLine([day, FIXTURE_ACCOUNT_ID, COPY_AD.adId, COPY_AD.adName, COPY_AD.adSet, "3.00", "300", "Purchases", "1", "15", "14", "1", COPY_TEXT_A, headline]));
+  }
+  return lines.join("\n") + "\n";
+}
+

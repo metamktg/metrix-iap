@@ -42,8 +42,11 @@ function record(
   provenance: AssetProvenance,
   column: string,
   report: ReportInput,
+  day?: string,
 ): CreativeAssetRecord {
   const normalized = normalizeAssetValue(type, raw);
+  const start = report.grain.has_day && day ? day : report.grain.period?.start ?? null;
+  const end = report.grain.has_day && day ? day : report.grain.period?.end ?? null;
   return {
     ad_identity_kind: identity.kind,
     ad_identity: identity.key,
@@ -56,53 +59,82 @@ function record(
     provenance,
     source_column: column,
     source_import_id: report.import_id,
-    date_start: report.grain.period?.start ?? null,
-    date_end: report.grain.period?.end ?? null,
+    date_start: start,
+    date_end: end,
   };
 }
 
-/** Configured assets from the Ad Summary's creative columns (one instance per distinct value per ad). */
+/** Widens an instance's period to cover another sighting of the same content. */
+function widen(existing: CreativeAssetRecord, seen: CreativeAssetRecord): void {
+  if (seen.date_start && (!existing.date_start || seen.date_start < existing.date_start)) existing.date_start = seen.date_start;
+  if (seen.date_end && (!existing.date_end || seen.date_end > existing.date_end)) existing.date_end = seen.date_end;
+}
+
+/**
+ * Configured assets: the Ad Summary's creative columns, plus any asset
+ * column a pivot carries in the CONTEXT role (creative metadata repeated
+ * beside the real breakdown — spec §10a). One instance per distinct value
+ * per ad; the instance's period is the span of rows that carried the value,
+ * so a copy change under one Ad ID is two instances with two periods.
+ */
 export function extractConfiguredAssets(
   reports: readonly ReportInput[],
   instancesByName?: ReadonlyMap<string, readonly string[]>,
 ): CreativeAssetRecord[] {
   const out = new Map<string, CreativeAssetRecord>();
+  const keep = (rec: CreativeAssetRecord): void => {
+    const key = assetKey(rec);
+    const existing = out.get(key);
+    if (existing) widen(existing, rec);
+    else out.set(key, rec);
+  };
   for (const report of reports) {
-    if (report.grain.report_class !== "ad_summary" && report.grain.report_class !== "time_series") continue;
+    const isSummary = report.grain.report_class === "ad_summary" || report.grain.report_class === "time_series";
+    const contextColumns = report.grain.asset_columns.filter((c) => c.role !== "breakdown");
+    if (!isSummary && contextColumns.length === 0) continue;
     for (const row of report.rows) {
-      if (!row.creativeMetadata) continue;
       const identity = resolveIdentity(row, report.grain, instancesByName);
       if (identity.kind === "unjoinable") continue;
-      for (const [column, raw] of Object.entries(row.creativeMetadata)) {
-        const type = CONFIGURED_ASSET_COLUMNS[column];
-        if (!type || !raw.trim()) continue;
-        const rec = record(identity, type, raw.trim(), "configured", column, report);
-        const key = assetKey(rec);
-        if (!out.has(key)) out.set(key, rec);
+      const day = row.breakdowns["Day"];
+      if (isSummary && row.creativeMetadata) {
+        for (const [column, raw] of Object.entries(row.creativeMetadata)) {
+          const type = CONFIGURED_ASSET_COLUMNS[column];
+          if (!type || !raw.trim()) continue;
+          keep(record(identity, type, raw.trim(), "configured", column, report, day));
+        }
+      }
+      for (const { column, asset_type } of contextColumns) {
+        const raw = row.assetBreakdowns?.[column];
+        if (!raw) continue;
+        keep(record(identity, asset_type, raw, "configured", column, report, day));
       }
     }
   }
   return [...out.values()];
 }
 
-/** Delivered assets from every pivot that carries an asset breakdown column. */
+/** Delivered assets: every BREAKDOWN-role asset column on a pivot. */
 export function extractDeliveredAssets(
   reports: readonly ReportInput[],
   instancesByName?: ReadonlyMap<string, readonly string[]>,
 ): CreativeAssetRecord[] {
   const out = new Map<string, CreativeAssetRecord>();
   for (const report of reports) {
-    if (report.grain.asset_columns.length === 0) continue;
+    const breakdownColumns = report.grain.asset_columns.filter((c) => c.role === "breakdown");
+    if (breakdownColumns.length === 0) continue;
     for (const row of report.rows) {
       if (!row.assetBreakdowns) continue;
       const identity = resolveIdentity(row, report.grain, instancesByName);
       if (identity.kind === "unjoinable") continue;
-      for (const { column, asset_type } of report.grain.asset_columns) {
+      const day = row.breakdowns["Day"];
+      for (const { column, asset_type } of breakdownColumns) {
         const raw = row.assetBreakdowns[column];
         if (!raw) continue;
-        const rec = record(identity, asset_type, raw, "delivered", column, report);
+        const rec = record(identity, asset_type, raw, "delivered", column, report, day);
         const key = assetKey(rec);
-        if (!out.has(key)) out.set(key, rec);
+        const existing = out.get(key);
+        if (existing) widen(existing, rec);
+        else out.set(key, rec);
       }
     }
   }

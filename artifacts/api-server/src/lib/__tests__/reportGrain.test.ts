@@ -34,7 +34,7 @@ describe("detectReportGrain", () => {
     expect(grain.ad_id_fill_pct).toBe(100);
     expect(grain.distinct_ad_ids).toBe(34);
     expect(grain.dimensions).toEqual(["Gender", "Age"]);
-    expect(grain.asset_columns).toEqual([{ column: "Text", asset_type: "primary_text" }]);
+    expect(grain.asset_columns).toEqual([{ column: "Text", asset_type: "primary_text", role: "breakdown" }]);
     expect(grain.currency).toBe("CAD");
     expect(grain.account_ids).toEqual([FIXTURE_ACCOUNT_ID]);
     expect(grain.period).toEqual({ start: "2026-08-01", end: "2026-08-30" });
@@ -77,7 +77,7 @@ describe("detectReportGrain", () => {
     const asset = detectReportGrain(parseIapCsv(buildAssetCsv(), "asset"), "asset");
     expect(asset.report_class).toBe("asset");
     expect(asset.dimensions).toEqual([]);
-    expect(asset.asset_columns).toEqual([{ column: "Text", asset_type: "primary_text" }]);
+    expect(asset.asset_columns).toEqual([{ column: "Text", asset_type: "primary_text", role: "breakdown" }]);
   });
 });
 

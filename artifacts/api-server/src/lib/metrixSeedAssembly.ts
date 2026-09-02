@@ -491,6 +491,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     // Reconciliation-first evidence layer, latest run only (spec §16).
     ad_breakdowns: adBreakdowns.map((r) => ({
       breakdown: r["breakdown"],
+      attribution: r["attribution"] ?? "direct_segment",
       ad_identity_kind: r["ad_identity_kind"],
       ad_identity: r["ad_identity"],
       meta_ad_id: r["meta_ad_id"] ?? null,
@@ -528,6 +529,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
             observed_value: Number(r["observed_value"] ?? 0),
             coverage_pct: num(r["coverage_pct"]),
             residual: num(r["residual"]),
+            overcoverage: num(r["overcoverage"]),
             direct_share: Number(r["direct_share"] ?? 1),
             modelled_share: Number(r["modelled_share"] ?? 0),
             evidence_state: r["evidence_state"],
@@ -1328,11 +1330,11 @@ export async function assembleMetrixSeed(): Promise<Row> {
   const [adBreakdownsAll, reconciliationLedgerAll, variableSegmentsAll, variableEvidenceAll, creativeAssetsAll, adInstancesAll] = await Promise.all([
     runScoped(
       "ad_breakdown_performance",
-      "id, account_id, breakdown, ad_identity_kind, ad_identity, meta_ad_id, ad_name, segment, segment_key, result_type, date_start, date_end, spend, impressions, reach, reach_basis, clicks_all, link_clicks, results, metrics, evidence_state, coverage_pct",
+      "id, account_id, breakdown, attribution, ad_identity_kind, ad_identity, meta_ad_id, ad_name, segment, segment_key, result_type, date_start, date_end, spend, impressions, reach, reach_basis, clicks_all, link_clicks, results, metrics, evidence_state, coverage_pct",
     ),
     runScoped(
       "reconciliation_ledger",
-      "id, account_id, scope, ad_identity_kind, ad_identity, ad_name, meta_ad_id, report_class, metric, grain, truth_source, truth_value, observed_value, coverage_pct, residual, direct_share, modelled_share, evidence_state, compatibility_failures",
+      "id, account_id, scope, ad_identity_kind, ad_identity, ad_name, meta_ad_id, report_class, metric, grain, truth_source, truth_value, observed_value, coverage_pct, residual, overcoverage, direct_share, modelled_share, evidence_state, compatibility_failures",
     ),
     runScoped(
       "variable_segment_performance",

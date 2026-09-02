@@ -22,9 +22,9 @@ import {
   type SegmentDims,
   type VolumeConfidence,
   identityKey,
+  confidenceLevel,
   interactionIndex,
   round2,
-  volumeConfidence,
 } from "./reconciliation";
 
 export type EvidenceSourceKind = "deconstruction" | "ad_name_token" | "copy_component";
@@ -277,7 +277,7 @@ export function buildVariableSegmentPerformance(args: {
         interaction_index: null,
         contributing_ads: g.ads.size,
         evidence_state: worstOf(g.states),
-        confidence: volumeConfidence(spend, results),
+        confidence: confidenceLevel(spend, results, totals["impressions"] ?? null),
       });
     }
 
@@ -337,7 +337,7 @@ export function buildVariableSegmentPerformance(args: {
         interaction_index: ix ? round2(ix.adjusted_index * 100) / 100 : null,
         contributing_ads: g.ads.size,
         evidence_state: worstOf(g.states),
-        confidence: volumeConfidence(spend, results),
+        confidence: confidenceLevel(spend, results, totals["impressions"] ?? null),
       });
     }
   }

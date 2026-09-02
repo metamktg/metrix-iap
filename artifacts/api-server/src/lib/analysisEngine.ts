@@ -1177,7 +1177,10 @@ export function missingReportsMessage(
   restagableCount: number,
   missingKindCount: number,
 ): string {
-  const base = `Both reports are required before running analysis. Missing: ${missing.join(" and ")}.`;
+  const base =
+    missing.length >= 3
+      ? `At least one delivery report is required before running analysis — a Demographics, Placements or Ad Summary export. Any additional compatible export adds resolution.`
+      : `Both reports are required before running analysis. Missing: ${missing.join(" and ")}.`;
   if (restagableCount <= 0) return base;
   const files = `${restagableCount} previously processed file${restagableCount === 1 ? "" : "s"}`;
   const which = missingKindCount > 1 ? "these reports" : "this report";
@@ -1629,15 +1632,15 @@ export async function startManualAnalysis(
   const placementImports = (imports ?? []).filter((i) => i["kind"] === "performance_placement_csv");
   const summaryImports = (imports ?? []).filter((i) => i["kind"] === "performance_ad_summary_csv");
   const conversionDeviceImports = (imports ?? []).filter((i) => i["kind"] === "performance_conversion_device_csv");
-  if (demoImports.length === 0 || placementImports.length === 0) {
-    const missingKinds = [
-      demoImports.length === 0 ? "performance_demo_csv" : null,
-      placementImports.length === 0 ? "performance_placement_csv" : null,
-    ].filter((k): k is string => k !== null);
-    const missing = [
-      demoImports.length === 0 ? "Demographics export" : null,
-      placementImports.length === 0 ? "Placements export" : null,
-    ].filter((m): m is string => m !== null);
+  // Adaptive contract (spec §2a): no report class is mandatory. A run needs
+  // at least one DELIVERY report that carries spend per ad — a demographic
+  // pivot, a placement pivot, or an Ad Summary — and every other staged
+  // report only adds resolution. An asset-breakdown pivot alone cannot stand
+  // in for those (it attributes to assets, not to ads and days).
+  const deliveryImports = demoImports.length + placementImports.length + summaryImports.length;
+  if (deliveryImports === 0) {
+    const missingKinds = ["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv"];
+    const missing = ["Demographics export", "Placements export", "Ad Summary export"];
 
     // BUG-08: a run consumes the STAGED batch, so a successful run leaves its
     // files `processed` and the next run reports them missing. That is by
@@ -2011,7 +2014,7 @@ export async function startManualAnalysis(
       const scopedDemo = demoRows.filter((r) => withinRange(r.breakdowns["Day"]!, dateRange, maxDate));
       const scopedPlacement = placementRows.filter((r) => withinRange(r.breakdowns["Day"]!, dateRange, maxDate));
       const scopedSummary = summaryRows.filter((r) => withinRange(r.breakdowns["Day"]!, dateRange, maxDate));
-      if (scopedDemo.length === 0 || scopedPlacement.length === 0) {
+      if (scopedDemo.length === 0 && scopedPlacement.length === 0 && scopedSummary.length === 0) {
         throw new AnalysisError(
           `No rows fall within the selected "${dateRange}" window (latest data is ${maxDate}). Try "all" or a wider range.`,
           422,
@@ -2562,6 +2565,8 @@ export async function startManualAnalysis(
           accountId,
           runId,
           truthSource: truth.source,
+          truthPrecedence: truth.precedence,
+          truthConflicts: truth.conflicts.length,
           truthIdentity: truth.identity_kind,
           breakdowns: ledger.summary.breakdowns.map((b) => ({
             report_class: b.report_class,
@@ -2646,6 +2651,7 @@ export async function startManualAnalysis(
         ad_identity: o.identity.key,
         meta_ad_id: o.identity.meta_ad_id,
         ad_name: o.identity.ad_name || null,
+        attribution: o.attribution,
         segment: o.segment,
         segment_key: o.segment_key,
         result_type: o.result_type,
@@ -2681,6 +2687,7 @@ export async function startManualAnalysis(
         observed_value: r.observed_value,
         coverage_pct: r.coverage_pct,
         residual: r.residual,
+        overcoverage: r.overcoverage,
         direct_share: r.direct_share,
         modelled_share: r.modelled_share,
         evidence_state: r.evidence_state,

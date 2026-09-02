@@ -12,8 +12,8 @@ import {
   evidenceStateFor,
   interactionIndex,
   rateOf,
+  confidenceLevel,
   segmentKeyOf,
-  volumeConfidence,
 } from "../reconciliation";
 import {
   ACCOUNT_TRUTH,
@@ -301,11 +301,17 @@ describe("rates, states and helpers", () => {
     expect(interactionIndex({ joint: { numerator: 1, denominator: 1 }, segment: { numerator: 0, denominator: 0 }, asset: { numerator: 1, denominator: 1 }, overall: { numerator: 1, denominator: 1 } })).toBeNull();
   });
 
-  it("volume tiers match the creative-components thresholds", () => {
-    expect(volumeConfidence(600, 31)).toBe("high");
-    expect(volumeConfidence(150, 6)).toBe("medium");
-    expect(volumeConfidence(20, 1)).toBe("low");
-    expect(volumeConfidence(20, 0)).toBe("insufficient");
+  it("confidence bands are the documented ones (IAP_DATA_BUNDLE_PREP / blueprint §8.3), not the shipped $500/30 tier", () => {
+    expect(confidenceLevel(1200, 5)).toBe("high"); // > $1,000 spend
+    expect(confidenceLevel(300, 101)).toBe("high"); // > 100 conversions
+    expect(confidenceLevel(600, 31)).toBe("medium"); // the old "high" is documented medium
+    expect(confidenceLevel(150, 6)).toBe("medium");
+    expect(confidenceLevel(40, 12)).toBe("medium"); // 10–100 conversions
+    expect(confidenceLevel(80, 3)).toBe("validation_required");
+    expect(confidenceLevel(20, 1)).toBe("validation_required"); // promising: a result exists
+    expect(confidenceLevel(20, 0)).toBe("insufficient"); // < $50, no result
+    expect(confidenceLevel(200, 0, 5)).toBe("medium"); // spend band wins; impressions floor only below it
+    expect(confidenceLevel(60, 0, 5)).toBe("insufficient");
   });
 
   it("segment keys are order-independent and blank-free", () => {

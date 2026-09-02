@@ -37,6 +37,7 @@ export type ReportClass =
   | "asset"
   | "demographic_asset"
   | "placement_asset"
+  | "demographic_placement"
   | "conversion_device";
 
 export type AdIdentityKind = "ad_id" | "ad_name" | "unjoinable";
@@ -49,9 +50,19 @@ export interface AdIdentity {
   meta_ad_id: string | null;
 }
 
+/**
+ * How an asset column relates to the rows (spec §10a): `breakdown` — its
+ * value varies within ads, so Meta broke performance down by it;
+ * `context` — one value per ad across the file, creative metadata repeated
+ * beside the real breakdown; `ambiguous` — varies but only on a minority of
+ * ads (treated as context; recorded so the reader can see it).
+ */
+export type AssetColumnRole = "breakdown" | "context" | "ambiguous";
+
 export interface AssetColumnPresence {
   column: string;
   asset_type: AssetType;
+  role: AssetColumnRole;
 }
 
 export interface ReportGrain {
@@ -89,6 +100,12 @@ export interface ReportGrain {
   additive_metrics: string[];
   /** Non-additive metric slugs present (reach, frequency, unique_*, averages). */
   non_additive_metrics: string[];
+  /** Distinct "Result type" values — the objective / result definition the rows carry. */
+  result_types: string[];
+  /** Meta's grand-totals row was present (an account-grain control of its own). */
+  has_totals_row: boolean;
+  has_campaign_ids: boolean;
+  has_ad_set_ids: boolean;
 }
 
 // ─── Metric additivity ─────────────────────────────────────────────────────
@@ -116,17 +133,44 @@ export function isAdditiveMetric(slug: string): boolean {
 const DIMENSION_COLUMNS: readonly string[] = ["Gender", "Age", "Platform", "Placement", "Impression device", "Conversion device"];
 
 function classifyReport(csvClass: IapCsvClass, dims: string[], assetColumns: AssetColumnPresence[], hasDay: boolean): ReportClass {
-  const hasAsset = assetColumns.length > 0;
+  const hasAsset = assetColumns.some((c) => c.role === "breakdown");
   if (csvClass === "conversion_device") return "conversion_device";
   if (csvClass === "ad_summary") return hasDay ? "time_series" : "ad_summary";
   const hasDemo = dims.includes("Gender") || dims.includes("Age");
   const hasPlacement = dims.includes("Platform") || dims.includes("Placement") || dims.includes("Impression device");
   if (hasDemo && hasAsset) return "demographic_asset";
   if (hasPlacement && hasAsset) return "placement_asset";
+  if (hasDemo && hasPlacement) return "demographic_placement";
   if (hasDemo) return "demographic";
   if (hasPlacement) return "placement";
   if (hasAsset) return "asset";
   return csvClass === "demographic" ? "demographic" : "placement";
+}
+
+/**
+ * Role of each asset column by row variation within an ad: a column whose
+ * value never changes for any ad is context; one that changes within most
+ * ads that have several rows is a breakdown; in between is ambiguous.
+ */
+export function classifyAssetColumns(rows: readonly IapCsvRow[], columns: ReadonlyMap<string, AssetType>): AssetColumnPresence[] {
+  const out: AssetColumnPresence[] = [];
+  for (const [column, asset_type] of columns) {
+    const perAd = new Map<string, Set<string>>();
+    const rowsPerAd = new Map<string, number>();
+    for (const row of rows) {
+      const ad = row.breakdowns["Ad ID"]?.trim() || row.breakdowns["Ad name"]?.trim() || "";
+      rowsPerAd.set(ad, (rowsPerAd.get(ad) ?? 0) + 1);
+      const v = row.assetBreakdowns?.[column];
+      if (!v) continue;
+      (perAd.get(ad) ?? perAd.set(ad, new Set()).get(ad)!).add(v);
+    }
+    const multiRowAds = [...rowsPerAd.entries()].filter(([, n]) => n > 1).map(([ad]) => ad);
+    const varying = multiRowAds.filter((ad) => (perAd.get(ad)?.size ?? 0) > 1).length;
+    const role: AssetColumnRole =
+      multiRowAds.length === 0 ? "breakdown" : varying === 0 ? "context" : varying * 2 >= multiRowAds.length ? "breakdown" : "ambiguous";
+    out.push({ column, asset_type, role });
+  }
+  return out;
 }
 
 /**
@@ -147,8 +191,11 @@ export function detectReportGrain(parsed: IapCsvParseResult, csvClass: IapCsvCla
   const assetCols = new Map<string, AssetType>();
   const additive = new Set<string>();
   const nonAdditive = new Set<string>();
+  const resultTypes = new Set<string>();
   let adIdRows = 0;
   let periodEnd: string | null = null;
+  let campaignIds = false;
+  let adSetIds = false;
 
   for (const row of rows) {
     const day = row.breakdowns["Day"];
@@ -165,6 +212,9 @@ export function detectReportGrain(parsed: IapCsvParseResult, csvClass: IapCsvCla
       }
     }
     if (adName) adNames.add(adName);
+    if (row.breakdowns["Campaign ID"]) campaignIds = true;
+    if (row.breakdowns["Ad set ID"]) adSetIds = true;
+    if (typeof row.base["result_type"] === "string" && row.base["result_type"]) resultTypes.add(row.base["result_type"]);
     for (const dim of DIMENSION_COLUMNS) {
       if (row.breakdowns[dim]) dimsWithValues.add(dim);
     }
@@ -195,7 +245,7 @@ export function detectReportGrain(parsed: IapCsvParseResult, csvClass: IapCsvCla
   const hasDay = sortedDays.length > 1;
   const reusedNames = [...idsByName.values()].filter((set) => set.size > 1).length;
   const dims = DIMENSION_COLUMNS.filter((d) => dimsWithValues.has(d));
-  const assetColumns = [...assetCols.entries()].map(([column, asset_type]) => ({ column, asset_type }));
+  const assetColumns = classifyAssetColumns(rows, assetCols);
   const hasAdId = adIds.size > 0;
 
   return {
@@ -222,6 +272,10 @@ export function detectReportGrain(parsed: IapCsvParseResult, csvClass: IapCsvCla
     header_conflicts: [...conflictHeaders].sort(),
     additive_metrics: [...additive].sort(),
     non_additive_metrics: [...nonAdditive].sort(),
+    result_types: [...resultTypes].sort(),
+    has_totals_row: parsed.totalsRow !== null && parsed.totalsRow !== undefined,
+    has_campaign_ids: campaignIds,
+    has_ad_set_ids: adSetIds,
   };
 }
 
