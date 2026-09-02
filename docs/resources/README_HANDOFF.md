@@ -45,6 +45,12 @@ in-app links routed through context-dropping redirects, three orphan pages, no B
 palette. Nine findings, all shipped with tests; the open remainder is in its §3. The
 register's §8 re-verifies every open item above against the same tree.
 
+**Shipped to app.metrix.ad (2026-09-02).** PR #174 (navigation overhaul, creative components,
+Phase 4 plan) merged to `main` at `5cdaaa5`, the workspace merged `main`, and the publish was
+verified by bundle hash and content marker (register §12). Validation of the shipped build is
+`METRIX_Manual_Import_Validation_Runbook_2026-09.md`: a fresh account and a new user, nothing on
+Bookster. The tester's approval is the one manual step.
+
 ---
 
 ## Next phase — Release Readiness (R1–R5)
