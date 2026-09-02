@@ -198,7 +198,7 @@ on this tree.
 | Metrix IAP vitest | **182 files, 2337 tests, 0 failures** (one pre-existing test pinned the legacy tray route; updated) |
 | scripts unit tests | 7 files, 119 tests |
 | `smoke:metrix-iap-build` | `BUILD OK` and the login render check |
-| `smoke:metrix-iap-route-crawl` | 153 visits clean, 0 problems on the first run (before the spec read the table); the re-run with the table is recorded in the closing commit |
+| `smoke:metrix-iap-route-crawl` | **210/210 visits clean, 0 problems** (70 routes × 3 account shapes, with the spec reading the legacy table) |
 
 The crawl reads its route list out of `navTree.ts`, `App.tsx` and, from this pass,
 `legacyRoutes.ts` — the first run after the table move walked 153 visits and
