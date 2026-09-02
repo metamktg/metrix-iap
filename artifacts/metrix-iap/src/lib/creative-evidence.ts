@@ -148,18 +148,24 @@ export const EVIDENCE_MEANING: Record<EvidenceState, string> = {
 export type EvidenceTone = "success" | "warning" | "danger" | "muted" | "primary";
 
 export function evidenceTone(state: EvidenceState | null): EvidenceTone {
+  // Owner direction 2026-09-02: emphasise what is reconciled or direct;
+  // a partial read is quiet context, not a warning. Only an over-count or an
+  // incompatible source is a problem worth colour.
   switch (state) {
-    case "observed_reconciled":
-      return "success";
     case "direct_asset":
     case "direct_joint":
-      return "primary";
-    case "observed_partial":
-    case "modelled":
-      return "warning";
+    case "observed_reconciled":
+      return "success";
     case "overcounted":
     case "incompatible":
       return "danger";
+    case "ad_context":
+      return "primary";
+    case "observed_partial":
+    case "modelled":
+    case "unreconciled":
+    case "unavailable":
+    case null:
     default:
       return "muted";
   }

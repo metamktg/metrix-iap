@@ -58,6 +58,7 @@ import {
 } from "@/lib/segment-analytics";
 import { buildSegmentMetricCatalog, segmentMetricReason } from "@/lib/data/segmentMetricsCatalog";
 import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
+import { SignalTag } from "@/components/evidence/SignalTag";
 import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
 import { FilterDisclosure } from "@/components/widgets/FilterDisclosure";
 import { CoverageStrip, EvidenceChip, EvidenceExplainer } from "@/components/evidence/EvidenceChip";
@@ -650,21 +651,7 @@ function RankedListTab({
                 <span className={cn(TYPE.title, "text-foreground/90 flex-1 truncate")}>
                   {segmentLabel(e.seg)}
                 </span>
-                {e.signal.state === "insufficient_coverage" ? (
-                  <span
-                    className="inline-flex items-center gap-0.5 text-label uppercase text-muted-foreground/75 shrink-0"
-                    title={e.signal.reasons.join(" ")}
-                  >
-                    <AlertTriangle className="w-3.5 h-3.5" /> Coverage
-                  </span>
-                ) : e.signal.low ? (
-                  <span
-                    className="inline-flex items-center gap-0.5 text-label uppercase text-status-warning/65 shrink-0"
-                    title={e.signal.reasons.join(" ")}
-                  >
-                    <AlertTriangle className="w-3.5 h-3.5" /> Low
-                  </span>
-                ) : null}
+                <SignalTag signal={e.signal} className="shrink-0" />
                 <span className={cn(TYPE.title, "font-bold tabular-nums text-foreground/80 shrink-0 mr-1")}>
                   {v != null ? activeMetric.format(v) : "—"}
                 </span>
@@ -953,30 +940,36 @@ export function AudienceView() {
                     isFetching={presetFetching}
                   />
 
-                  <div className="px-6 pt-5">
-                    <DataCoverageBanner coverage={demoCoverage} />
-                  </div>
+                  {!demoReconciliation && (
+                    <div className="px-6 pt-5">
+                      <DataCoverageBanner coverage={demoCoverage} />
+                    </div>
+                  )}
 
                   {demoReconciliation && (
                     <div className="px-6 pt-5" data-testid="audience-coverage-tile">
-                      <div className="rounded-lg border border-border/40 bg-foreground/[0.02] px-4 py-3 space-y-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={cn(TYPE.label, "uppercase tracking-widest text-muted-foreground/75")}>Coverage · demographic vs control</span>
+                      <div className="rounded-lg border border-border/40 bg-foreground/[0.02] px-4 py-2.5 flex items-center gap-x-5 gap-y-2 flex-wrap">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={cn(TYPE.label, "uppercase tracking-widest text-muted-foreground/75")}>Coverage</span>
                           <EvidenceChip state={demoReconciliation.by_metric.find((m) => m.metric === "amount_spent")?.evidence_state ?? null} testId="audience-coverage-state" />
-                          <span className={cn(TYPE.caption, "text-muted-foreground/75")}>
+                          <span className={cn(TYPE.caption, "text-muted-foreground/75 truncate")}>
                             {demoReconciliation.ads_reconciled} of {demoReconciliation.ads_total} ads reconciled
-                            {demoReconciliation.ads_missing_from_breakdown > 0 ? ` · ${demoReconciliation.ads_missing_from_breakdown} absent from this breakdown` : ""}
+                            {demoReconciliation.ads_missing_from_breakdown > 0 ? ` · ${demoReconciliation.ads_missing_from_breakdown} absent` : ""}
                           </span>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="flex items-center gap-4 flex-wrap flex-1 min-w-0">
                           {demoReconciliation.by_metric
                             .filter((m) => ["amount_spent", "impressions", "results", "link_clicks"].includes(m.metric))
                             .slice(0, 3)
                             .map((m) => (
-                              <CoverageStrip key={m.metric} coveragePct={m.coverage_pct} metricLabel={metricLabel(m.metric).toLowerCase()} testId={`coverage-${m.metric}`} />
+                              <CoverageStrip key={m.metric} coveragePct={m.coverage_pct} metricLabel={metricLabel(m.metric).toLowerCase()} testId={`coverage-${m.metric}`} className="w-40 shrink-0" />
                             ))}
                         </div>
-                        <EvidenceExplainer state={demoReconciliation.by_metric.find((m) => m.metric === "amount_spent")?.evidence_state ?? null} coveragePct={demoReconciliation.by_metric.find((m) => m.metric === "amount_spent")?.coverage_pct ?? null} />
+                        <EvidenceExplainer
+                          state={demoReconciliation.by_metric.find((m) => m.metric === "amount_spent")?.evidence_state ?? null}
+                          coveragePct={demoReconciliation.by_metric.find((m) => m.metric === "amount_spent")?.coverage_pct ?? null}
+                          className="shrink-0"
+                        />
                       </div>
                     </div>
                   )}

@@ -724,5 +724,6 @@ rows from the raw tables and fails on any disagreement.
 | Objective is a lens, never a wall; cost per result, never ROAS by default | register §6a/§6b, `check:cohort-reach` | no ROAS anywhere in the layer; result types kept apart | implemented |
 | Interaction index with shrinkage | owner brief 2026-09-02 (`expected = segment × asset ÷ overall`), standard empirical-Bayes shrinkage | `interactionIndex` (prior weight m = 1,000 impressions) — documented as a supported association, never causal | implemented |
 | Copy signature: direct evidence to the delivered combination when fields vary together | owner amendment 2026-09-02 §4 | `classifyAssetColumns` roles + `copy_signature` observations | implemented |
+| Client segment signal: `high | ok | low` on the segment's own volume; coverage carried beside it, never a gate | Owner direction 2026-09-02 ("the signal is the product"); bands as above | `segment-analytics.ts` `confidenceBand` (mirror of `confidenceLevel`) + `assessSegmentSignal`; `SignalTag`/`CoverageTag` | implemented |
 | Modelled tier: IPF respecting margins, direct cells, structural zeros | owner amendment §9 | `balanceMatrix` interface + tests; nothing emitted (§19) | deferred by design |
 

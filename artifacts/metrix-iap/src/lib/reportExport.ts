@@ -18,7 +18,6 @@ import {
 import {
   computeSegmentDrilldown,
   type DemographicCoverageInput,
-  type SegmentSignal,
   segmentLabel,
   type SegmentId,
 } from "@/lib/segment-analytics";
@@ -448,16 +447,19 @@ function buildSegmentComparisonSection(
   const title = `Segment Comparison: ${labelA} vs ${labelB}`;
   const blocks: ReportBlock[] = [];
 
-  // Signal warnings surface before the numbers so readers see them first.
-  // The prefix names which of the three states fired — calling an
-  // insufficient-coverage read "low signal" understates it.
-  const signalPrefix = (state: SegmentSignal["state"]) =>
-    state === "insufficient_coverage" ? "Insufficient join coverage" : "Low signal";
-  for (const reason of a.signal.reasons) {
-    blocks.push({ kind: "text", text: `${signalPrefix(a.signal.state)} — ${labelA}: ${reason}` });
+  // Context before the numbers: the source's measured coverage once, then
+  // the signal per segment — a high read is stated, a thin read is named.
+  // The emphasis belongs on signal, not on caveats.
+  const coverage = a.signal.coverage ?? b.signal.coverage;
+  if (coverage?.partial) {
+    blocks.push({
+      kind: "text",
+      text: `Coverage — demographic rows carry ${coverage.pct != null ? `${coverage.pct}%` : "part"} of this account's spend; segment reads describe that slice.`,
+    });
   }
-  for (const reason of b.signal.reasons) {
-    blocks.push({ kind: "text", text: `${signalPrefix(b.signal.state)} — ${labelB}: ${reason}` });
+  for (const [label, side] of [[labelA, a], [labelB, b]] as const) {
+    if (side.signal.state === "high") blocks.push({ kind: "text", text: `High signal — ${label}: clears the documented high confidence band on its own volume.` });
+    for (const reason of side.signal.reasons) blocks.push({ kind: "text", text: `Low signal — ${label}: ${reason}` });
   }
 
   // Side-by-side key metrics table.

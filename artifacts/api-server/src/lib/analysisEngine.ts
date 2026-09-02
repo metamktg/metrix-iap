@@ -1313,11 +1313,12 @@ export function computeDataCoverage(args: {
         `Its $${spend.toLocaleString("en-US")} period total was used for creative metadata and total-spend cross-checking only — never added to daily totals. ` +
         `Re-export it with the "Day" breakdown to include ad-level daily spend.`;
     } else if (belowThreshold && key === "demographic") {
+      // Context, not a warning (owner direction 2026-09-02): what the rows
+      // carry, what that means for a segment read, and how to widen it.
       note =
-        `Demographic rows carry $${spend.toLocaleString("en-US")} of spend (${spendCoverage}% of the $${baselineSpend.toLocaleString("en-US")} daily-attributable total) ` +
-        `across ${ads.size} of ${baselineAds.size} ads. Demographic breakdowns, segment rankings, and signal classification describe only this slice. ` +
-        `Metrix records the gap and does not guess Meta's cause; the usual ones are the export's grain (a Text or other asset breakdown omits delivery Meta cannot attribute to an asset) and a subset scope. ` +
-        `Remedy: re-export Demographics from Meta Ads Reporting as CSV, covering all ads for the full window.`;
+        `Demographic rows carry $${spend.toLocaleString("en-US")} of the $${baselineSpend.toLocaleString("en-US")} daily-attributable spend (${spendCoverage}%) ` +
+        `across ${ads.size} of ${baselineAds.size} ads; segment reads describe that slice. ` +
+        `To widen it, re-export Demographics for all ads over the full window.`;
     } else if (belowThreshold) {
       note =
         `${iapCsvClassLabel(key)} rows carry ${spendCoverage}% of the daily-attributable spend for this window — surfaces built from this class describe only that slice.`;

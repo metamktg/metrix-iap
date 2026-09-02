@@ -14,8 +14,9 @@ describe("splitWarningsBySeverity", () => {
       "[Coverage] Demographic rows carry $802.16 of spend (2.9% of the $28,129.5 daily-attributable total)…",
       "[Re-run] Replaced 3195 previously ingested row(s)…",
     ]);
-    expect(notices.length).toBe(2);
-    expect(attention.length).toBe(4);
+    // Coverage is context (a notice), not a decision — three notices, three attention.
+    expect(notices.length).toBe(3);
+    expect(attention.length).toBe(3);
   });
 
   it("classifies pre-fold stored-run lines the same way (runs persist warnings verbatim)", () => {

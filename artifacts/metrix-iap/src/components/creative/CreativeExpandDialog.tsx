@@ -10,7 +10,7 @@ import { TabRail } from "@/components/nav/TabRail";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
 import { DenseText, platformLabel } from "@/pages/metrix/shared";
-import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle, TrendingDown } from "lucide-react";
+import { Upload, ImageOff, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
@@ -28,7 +28,6 @@ import { EvidenceChip, EvidenceExplainer } from "@/components/evidence/EvidenceC
 import { KpiTileRow } from "@/components/metrics/KpiTile";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import { buildLibraryMetricCatalog } from "@/lib/data/metricsCatalog";
-import { Layers } from "lucide-react";
 
 // ─── QA mapping status ─────────────────────────────────────────────────
 // MSTLibraryCell.qa_mapping_status, observed values: "pass",
@@ -738,6 +737,14 @@ export function CreativeExpandDialog({
   // paths below; the account-level fallbacks stay for accounts whose latest
   // run predates the layer.
   const evidence = useCreativeEvidence(data.conceptCode);
+  // The cell-grain demographic rows live on the account's analysis; a call
+  // site that passes none (the Creative Library did) must not turn a cell
+  // with rows into "No demographic data" — the derivation one line down
+  // reads the same rows and would say they exist.
+  const cellDemographic = useMemo(
+    () => (demographic.length > 0 ? demographic : (evidence.cellDemographic ?? [])),
+    [demographic, evidence.cellDemographic],
+  );
   const hasAdDemo = evidence.demographic.length > 0;
   const hasAdPlacement = evidence.placement.length > 0;
   const funnelFromAds = !perfRow && evidence.funnel ? evidence.funnel : null;
@@ -747,12 +754,15 @@ export function CreativeExpandDialog({
   const placeReason = hasAdPlacement ? null : placementsEmptyReason ?? derivedReasons.placements;
   const funnelReason = effectivePerfRow ? null : funnelEmptyReason ?? derivedReasons.funnel;
 
-  const TABS: { id: Tab; label: string; Icon: typeof BarChart2 }[] = [
-    { id: "overview",     label: "Overview",     Icon: BarChart2 },
-    { id: "demographics", label: "Demographics", Icon: Users },
-    { id: "placements",   label: "Placements",   Icon: Monitor },
-    { id: "funnel",       label: "Funnel",       Icon: TrendingDown },
-    { id: "evidence",     label: "Evidence",     Icon: Layers },
+  // Labels only: five tabs beside the media pane clipped the last one when
+  // each carried an icon (the rail scrolls, but a clipped "Evi…" reads as a
+  // defect). The icon set stays in the imports for the tab content headers.
+  const TABS: { id: Tab; label: string }[] = [
+    { id: "overview",     label: "Overview" },
+    { id: "demographics", label: "Demographics" },
+    { id: "placements",   label: "Placements" },
+    { id: "funnel",       label: "Funnel" },
+    { id: "evidence",     label: "Evidence" },
   ];
 
   return (
@@ -852,7 +862,7 @@ export function CreativeExpandDialog({
               {tab === "overview"     && <OverviewTab      data={data} perfRows={effectivePerfRows} />}
               {tab === "demographics" && (hasAdDemo
                 ? <DemographicHeatGrid rows={evidence.demographic} resultLabel={data.stats?.resultLabel ?? "results"} />
-                : <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} emptyReason={demoReason} />)}
+                : <DemographicsTab  rows={cellDemographic} onSegmentClick={onSegmentClick} emptyReason={demoReason} />)}
               {tab === "placements"   && (hasAdPlacement
                 ? <PlacementDrill rows={evidence.placement} unattributedSpend={evidence.placementUnattributed} resultLabel={data.stats?.resultLabel ?? "results"} />
                 : <PlacementsTab    rows={placements} emptyReason={placeReason} />)}

@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
-import { Settings2, Check, ChevronUp, ChevronDown, RotateCcw, Info, AlertTriangle, Ban, GitCompareArrows, X, ArrowLeftRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { Settings2, Check, ChevronUp, ChevronDown, RotateCcw, Info, Ban, GitCompareArrows, X, ArrowLeftRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -40,7 +40,8 @@ import {
 } from "@/lib/data/segmentMetricsCatalog";
 import { useSegmentMetricSelection } from "@/hooks/useSegmentMetricSelection";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
-import { fmtUSD, fmtNum, fmtPct, DenseText } from "@/pages/metrix/shared";
+import { fmtUSD, fmtNum, fmtPct, DenseText, DetailReveal } from "@/pages/metrix/shared";
+import { CoverageTag, SignalTag, signalExplainerSections } from "@/components/evidence/SignalTag";
 import { TYPE, DIALOG } from "@/pages/metrix/typography";
 import type { AnalysisData } from "@/lib/data/seedTypes";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
@@ -240,21 +241,6 @@ function CompareSegmentPicker({
 }
 
 // ─── Side-by-side comparison view ─────────────────────────────────────
-
-function CompareLowSignalBanner({ data, label }: { data: SegmentDrilldownData; label: string }) {
-  if (!data.signal.low) return null;
-  return (
-    <div
-      className="flex items-start gap-2 text-caption text-status-warning/90 leading-relaxed rounded-lg border border-status-warning/25 bg-status-warning/[0.06] p-2.5"
-      data-testid={`banner-low-signal-${segmentKey(data.segment)}`}
-    >
-      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-status-warning" />
-      <span>
-        <span className="font-semibold">{label}: low signal.</span> {data.signal.reasons.join(" ")}
-      </span>
-    </div>
-  );
-}
 
 // ─── Winner computation ────────────────────────────────────────────────
 
@@ -757,10 +743,12 @@ export function SegmentDrilldownModal({
                 <div className="flex items-center gap-2">
                   <span className="text-caption font-semibold text-foreground px-2 py-1 rounded-md bg-primary/[0.08] border border-primary/20" data-testid="label-compare-a">
                     {label}
+                    <SignalTag signal={data.signal} className="ml-1.5 align-middle" testId="signal-tag-a" />
                   </span>
                   <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground/75" />
                   <span className="text-caption font-semibold text-foreground px-2 py-1 rounded-md bg-foreground/[0.04] border border-border/40" data-testid="label-compare-b">
                     {compareLabel}
+                    <SignalTag signal={compareData.signal} className="ml-1.5 align-middle" testId="signal-tag-b" />
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -779,8 +767,21 @@ export function SegmentDrilldownModal({
                 </div>
               </div>
 
-              <CompareLowSignalBanner data={data} label={label} />
-              <CompareLowSignalBanner data={compareData} label={compareLabel!} />
+              {(data.signal.coverage?.partial || data.signal.state !== "ok" || compareData.signal.state !== "ok") && (
+                <div className="flex items-center gap-2 flex-wrap" data-testid="compare-signal-row">
+                  <CoverageTag coverage={data.signal.coverage} />
+                  <DetailReveal
+                    label="How to read the signal"
+                    eyebrow="Signal"
+                    sections={[
+                      ...signalExplainerSections(data.signal).map((sec, i) => (i === 0 ? { ...sec, label: `${label} · ${sec.label}` } : sec)),
+                      ...signalExplainerSections({ ...compareData.signal, coverage: null }).map((sec) => ({ ...sec, label: `${compareLabel} · ${sec.label}` })),
+                    ]}
+                    labelClassName={cn(TYPE.caption, "text-muted-foreground/75")}
+                    testId="compare-signal-why"
+                  />
+                </div>
+              )}
 
               {/* Metric comparison table */}
               <CompareMetricTable
@@ -821,13 +822,17 @@ export function SegmentDrilldownModal({
             </div>
           ) : (
             <div className="space-y-4">
-              {data.signal.low && (
-                <div className="flex items-start gap-2 text-caption text-status-warning/90 leading-relaxed rounded-lg border border-status-warning/25 bg-status-warning/[0.06] p-3" data-testid="banner-low-signal">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-status-warning" />
-                  <span>
-                    <span className="font-semibold">Low signal.</span>{" "}
-                    {data.signal.reasons.join(" ")} Read these numbers as directional, not conclusive.
-                  </span>
+              {(data.signal.state !== "ok" || data.signal.coverage?.partial) && (
+                <div className="flex items-center gap-2 flex-wrap" data-testid="segment-signal-row">
+                  <SignalTag signal={data.signal} />
+                  <CoverageTag coverage={data.signal.coverage} />
+                  <DetailReveal
+                    label="How to read this"
+                    eyebrow="Signal"
+                    sections={signalExplainerSections(data.signal)}
+                    labelClassName={cn(TYPE.caption, "text-muted-foreground/75")}
+                    testId="segment-signal-why"
+                  />
                 </div>
               )}
 

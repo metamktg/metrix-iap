@@ -608,7 +608,7 @@ describe("buildReportModel — segment comparison coverage gating", () => {
       .map((b) => b.text);
   }
 
-  it("qualifies both segments when the run's demographic coverage is below threshold", () => {
+  it("states the run's partial demographic coverage once, as context, and never as a per-segment warning", () => {
     const texts = comparisonText({
       segmentComparison: req,
       demoCoverage: {
@@ -617,12 +617,13 @@ describe("buildReportModel — segment comparison coverage gating", () => {
         note: "Re-export Demographics from Meta Ads Reporting as CSV.",
       },
     });
-    const qualified = texts.filter((t) => t.startsWith("Insufficient join coverage —"));
-    expect(qualified).toHaveLength(2);
-    expect(qualified[0]).toContain("only 2%");
-    expect(qualified[0]).toContain("Re-export Demographics");
-    // The state is named for what it is — not softened into "low signal".
-    expect(texts.some((t) => t.startsWith("Low signal —"))).toBe(false);
+    const coverage = texts.filter((t) => t.startsWith("Coverage —"));
+    expect(coverage).toHaveLength(1);
+    expect(coverage[0]).toContain("2%");
+    expect(coverage[0]).toContain("segment reads describe that slice");
+    // Coverage is context (owner direction 2026-09-02): it does not downgrade
+    // a segment's own read, so no "insufficient" line and no invented "low".
+    expect(texts.some((t) => t.startsWith("Insufficient join coverage —"))).toBe(false);
   });
 
   it("leaves an adequately covered run's segments unqualified", () => {
@@ -630,12 +631,12 @@ describe("buildReportModel — segment comparison coverage gating", () => {
       segmentComparison: req,
       demoCoverage: { spend_coverage_pct: 96, below_threshold: false, note: null },
     });
-    expect(texts.some((t) => t.startsWith("Insufficient join coverage —"))).toBe(false);
+    expect(texts.some((t) => t.startsWith("Coverage —"))).toBe(false);
   });
 
   it("falls back to per-segment heuristics on a legacy run with no measured coverage", () => {
     const texts = comparisonText({ segmentComparison: req });
-    expect(texts.some((t) => t.startsWith("Insufficient join coverage —"))).toBe(false);
+    expect(texts.some((t) => t.startsWith("Coverage —"))).toBe(false);
   });
 });
 

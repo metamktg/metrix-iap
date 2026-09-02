@@ -1,11 +1,12 @@
-// Coverage-gated signal classification + cause-specific creative empty
-// states — the client half of the degraded-data honesty layer.
+// Signal classification with coverage as context — and cause-specific
+// creative empty states — the client half of the honesty layer.
 //
-// A "signal ✓" badge computed from 1% of account spend is fabricated
-// confidence (the AAFE bug): when the analysis run's measured demographic
-// join coverage is below the server threshold, NO segment may classify as
-// signal — the state is "insufficient_coverage", regardless of per-segment
-// impressions/spend-share heuristics.
+// Owner direction (2026-09-02): coverage is context, never a wall. A
+// segment's own rows are observed evidence whatever share of the account
+// the demographic export covers; the measured coverage travels beside the
+// classification so a surface can show it once, quietly. A strong segment
+// therefore stays HIGH under partial coverage, and the coverage figure is
+// there for the surface to state.
 
 import { describe, expect, it } from "vitest";
 import {
@@ -29,31 +30,50 @@ const strongTotals: SegmentRawTotals = {
 };
 const scopedTotals: SegmentRawTotals = { ...strongTotals, spend: 850, impressions: 60_000 };
 
-describe("assessSegmentSignal coverage gating", () => {
-  it("classifies a strong segment as ok without coverage info (legacy runs)", () => {
+describe("assessSegmentSignal — bands and coverage as context", () => {
+  it("classifies a strong segment on its own volume without coverage info (legacy runs)", () => {
     const s = assessSegmentSignal(strongTotals, scopedTotals, null);
-    expect(s.state).toBe("ok");
+    expect(s.state).toBe("ok"); // $400 / 20 results: the documented medium band
+    expect(s.band).toBe("medium");
     expect(s.low).toBe(false);
+    expect(s.coverage).toBeNull();
   });
 
-  it("downgrades EVERY segment to insufficient_coverage below the threshold — even statistically strong ones", () => {
-    const s = assessSegmentSignal(strongTotals, scopedTotals, {
-      spend_coverage_pct: 1.3,
+  it("emphasises a segment that clears the documented high band", () => {
+    const s = assessSegmentSignal({ ...strongTotals, spend: 1400, results: 120 }, { ...scopedTotals, spend: 3000 }, null);
+    expect(s.state).toBe("high");
+    expect(s.band).toBe("high");
+    expect(s.reasons).toEqual([]);
+  });
+
+  it("keeps a strong segment HIGH under partial coverage and carries the coverage beside it", () => {
+    const s = assessSegmentSignal({ ...strongTotals, spend: 1400, results: 120 }, { ...scopedTotals, spend: 3000 }, {
+      spend_coverage_pct: 59.3,
       below_threshold: true,
-      note: "Demographic rows carry $856.52 of spend…",
+      note: "Demographic rows carry $1,257.34 of the $2,121.74 daily-attributable spend (59.3%)…",
     });
-    expect(s.state).toBe("insufficient_coverage");
-    expect(s.low).toBe(true); // existing warn-styling call sites stay conservative
-    expect(s.reasons.join(" ")).toContain("1.3%");
+    expect(s.state).toBe("high");
+    expect(s.low).toBe(false);
+    expect(s.reasons).toEqual([]); // no caveat prose on the read itself
+    expect(s.coverage).toEqual({ pct: 59.3, partial: true, note: expect.stringContaining("59.3%") });
   });
 
-  it("does not gate when coverage is measured and above threshold", () => {
+  it("marks a thin read low with the documented band as the reason", () => {
+    const s = assessSegmentSignal({ ...strongTotals, spend: 30, results: 0, impressions: 400 }, scopedTotals, null);
+    expect(s.state).toBe("low");
+    expect(s.band).toBe("insufficient");
+    expect(s.reasons.join(" ")).toContain("400 impressions");
+    expect(s.reasons.join(" ")).toContain("documented floor");
+  });
+
+  it("carries measured, above-threshold coverage without marking it partial", () => {
     const s = assessSegmentSignal(strongTotals, scopedTotals, {
       spend_coverage_pct: 97.2,
       below_threshold: false,
       note: null,
     });
     expect(s.state).toBe("ok");
+    expect(s.coverage).toEqual({ pct: 97.2, partial: false, note: null });
   });
 });
 

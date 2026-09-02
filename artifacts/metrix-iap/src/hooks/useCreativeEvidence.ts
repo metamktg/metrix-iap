@@ -9,7 +9,7 @@ import { useMemo } from "react";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { getAdAccount, getAnalysisData, getMST } from "@/lib/data/metrixSeedAdapter";
-import type { AdBreakdownRow, CreativeAssetRow, LedgerRow, VariableEvidenceRow, VariableSegmentRow } from "@/lib/data/seedTypes";
+import type { AdBreakdownRow, CreativeAssetRow, DemographicRow, LedgerRow, VariableEvidenceRow, VariableSegmentRow } from "@/lib/data/seedTypes";
 import {
   type CreativeAdIdentity,
   adIdentityForCreative,
@@ -22,6 +22,8 @@ import {
 export interface CreativeEvidence {
   identity: CreativeAdIdentity;
   demographic: AdBreakdownRow[];
+  /** The account's cell-grain demographic rows for this cell (the pre-layer path). */
+  cellDemographic: DemographicRow[];
   placement: AdBreakdownRow[];
   ledger: LedgerRow[];
   /** The placement breakdown's account-level unattributed spend, when the ledger has it. */
@@ -48,6 +50,7 @@ export function useCreativeEvidence(cellId: string | null | undefined): Creative
     return {
       identity,
       demographic: breakdownRowsFor(analysis?.ad_breakdowns, "demographic", identity),
+      cellDemographic: cellId ? (analysis?.demographic_registration_signal ?? []).filter((r) => r.cell_id === cellId) : [],
       placement: breakdownRowsFor(analysis?.ad_breakdowns, "placement", identity),
       ledger,
       placementUnattributed: placementAccount?.residual !== null && placementAccount?.residual !== undefined && placementAccount.residual > 0 ? placementAccount.residual : null,

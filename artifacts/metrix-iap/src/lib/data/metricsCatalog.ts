@@ -341,3 +341,42 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[]): MetricDef
     def("lib_cost_per_checkout","Cost / Checkout",    costPerCheckout, costPerCheckout != null ? fmtUSD(costPerCheckout) : "—", hasChkData ? "spend ÷ checkouts initiated" : coverageSub(chk, "checkouts initiated")),
   ];
 }
+
+// ─── Variable drill-down catalog ─────────────────────────────────────────
+// Owner direction (2026-09-02): the IAP Library's catalog-driven, configurable
+// tile row is THE metric header pattern — every variable / metric surface
+// uses it, persisted per view. This builds the catalog for one variable from
+// the import's own variable-level totals (v3_variable_performance), with the
+// same formatters as every other tile in this file. Token-level rows carry no impressions
+// (the engine sets 0 — CTR is not computable at token grain), so the
+// impression-based entries hide themselves rather than render a dash.
+export interface VariableCatalogTotals {
+  spend: number;
+  results: number;
+  impressions: number;
+  linkClicks: number;
+  uniqueAds: number;
+  cpa: number | null;
+  ctrPct: number | null;
+  resultTypes: string[];
+}
+
+export function buildVariableMetricCatalog(t: VariableCatalogTotals): MetricDef[] {
+  const hasImpressions = t.impressions > 0;
+  const cvr = t.linkClicks > 0 && t.results > 0 ? (t.results / t.linkClicks) * 100 : null;
+  const cpc = t.linkClicks > 0 ? t.spend / t.linkClicks : null;
+  const cpm = hasImpressions ? (t.spend / t.impressions) * 1000 : null;
+  const eventSub = t.resultTypes.length > 0 ? t.resultTypes.join(" + ") : undefined;
+  return [
+    { id: "spend", label: "Spend", value: t.spend, formatted: fmtUSD(t.spend, 0), isResultEvent: false },
+    { id: "results", label: "Results", value: t.results, formatted: fmtNum(t.results), isResultEvent: false, sub: eventSub },
+    { id: "cpa", label: "Cost per result", value: t.cpa, formatted: fmtUSD(t.cpa), isResultEvent: false, sub: t.cpa == null ? "no results yet" : undefined },
+    { id: "unique_ads", label: "Unique ads", value: t.uniqueAds, formatted: fmtNum(t.uniqueAds), isResultEvent: false },
+    { id: "link_clicks", label: "Link clicks", value: t.linkClicks, formatted: fmtNum(t.linkClicks), isResultEvent: false },
+    { id: "cvr", label: "Link CVR", value: cvr, formatted: fmtPct(cvr), isResultEvent: false, hideWhenNull: true, sub: "results ÷ link clicks" },
+    { id: "cpc", label: "Cost per link click", value: cpc, formatted: fmtUSD(cpc), isResultEvent: false, hideWhenNull: true },
+    { id: "impressions", label: "Impressions", value: hasImpressions ? t.impressions : null, formatted: fmtNum(hasImpressions ? t.impressions : null), isResultEvent: false, hideWhenNull: true },
+    { id: "link_ctr", label: "Link CTR", value: t.ctrPct, formatted: fmtPct(t.ctrPct), isResultEvent: false, hideWhenNull: true },
+    { id: "cpm", label: "CPM", value: cpm, formatted: fmtUSD(cpm), isResultEvent: false, hideWhenNull: true },
+  ].filter((m) => !(m.hideWhenNull && m.value == null));
+}

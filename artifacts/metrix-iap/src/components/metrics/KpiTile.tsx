@@ -340,11 +340,13 @@ export function KpiTile({
 
 export function KpiTileRow({
   viewKey, catalog, tileCount = 4, primaryFirst = true,
-  isRefetching = false, disclosures, onTileClick, trendFor,
+  isRefetching = false, disclosures, onTileClick, trendFor, defaults,
 }: {
   viewKey: string;
   catalog: MetricDef[];
   tileCount?: number;
+  /** Metric ids to fill the slots with before the reader has chosen (falls back to the platform defaults). */
+  defaults?: string[];
   /** Render the first slot with the primary accent (matches old MetricTile rows). */
   primaryFirst?: boolean;
   isRefetching?: boolean;
@@ -355,7 +357,7 @@ export function KpiTileRow({
   trendFor?: (metricId: string) => { trend: KpiTileTrend | null; spark: string | null };
 }) {
   const availableIds = useMemo(() => catalog.map((m) => m.id), [catalog]);
-  const { tileMetricIds, setTileMetric } = useKpiTileMetrics(viewKey, availableIds, { tileCount });
+  const { tileMetricIds, setTileMetric } = useKpiTileMetrics(viewKey, availableIds, { tileCount, defaults });
   return (
     <>
       {tileMetricIds.map((metricId, slotIdx) => {

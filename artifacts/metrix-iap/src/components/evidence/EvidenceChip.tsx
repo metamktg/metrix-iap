@@ -51,7 +51,7 @@ export function CoverageStrip({
     <div className={cn("space-y-1", className)} data-testid={testId ?? "coverage-strip"}>
       <div className="flex items-center justify-between gap-2">
         <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Coverage · {metricLabel}</span>
-        <span className={cn(TYPE.caption, "tabular-nums font-medium", value === null ? "text-muted-foreground/75" : value >= 99 ? "text-status-success" : "text-status-warning")}>
+        <span className={cn(TYPE.caption, "tabular-nums font-medium", value === null ? "text-muted-foreground/75" : value >= 99 ? "text-status-success" : "text-foreground/80")}>
           {coveragePct === null ? "not reconciled" : `${coveragePct}%`}
         </span>
       </div>
@@ -60,7 +60,7 @@ export function CoverageStrip({
         total={100}
         label={`Coverage of ${metricLabel}`}
         size="sm"
-        fillClassName={value === null ? "bg-muted-foreground/30" : value >= 99 ? "bg-status-success/60" : "bg-status-warning/60"}
+        fillClassName={value === null ? "bg-muted-foreground/30" : value >= 99 ? "bg-status-success/60" : "bg-primary/50"}
       />
     </div>
   );

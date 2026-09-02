@@ -53,7 +53,10 @@ register's §8 re-verifies every open item above against the same tree.
 `../specs/iap-multi-report-reconciliation.md`; register §14. Adaptive multi-report reconciliation per
 Ad ID and per metric, asset instances and copy signatures, variable evidence without spend
 duplication, evidence states on every new surface, the canonical confidence bands, and a live
-cross-check script. The modelled tier is a tested interface only (spec §19).
+cross-check script. The modelled tier is a tested interface only (spec §19). Shipped the same
+evening: PR #181 merged as `d0e0de0`, DDL applied as migration `reconciliation_evidence_layer`,
+published and verified (register §14 ship record). The first run on the new build, and the live
+ledger cross-check that follows it, are the owner's next step.
 
 **Shipped to app.metrix.ad (2026-09-02).** PR #174 (navigation overhaul, creative components,
 Phase 4 plan) merged to `main` at `5cdaaa5`, the workspace merged `main`, and the publish was
