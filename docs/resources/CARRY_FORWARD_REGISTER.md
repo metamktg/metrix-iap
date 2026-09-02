@@ -299,3 +299,10 @@ Verified against the live Supabase project by read-only SQL, not from a checkout
 Still owner-only from a cloud checkout (no secrets here): `check:seed-fixture-drift`,
 `refresh:seed-fixture`, running analysis on Bookster / Fresh Import, deleting
 `archive/phase2-pre-rebase`, and the Auth leaked-password toggle.
+
+**Schema ↔ live database drift check (2026-09-02).** Every table (43) and column (500) that
+`schema.sql` declares exists on the live project, and every column the live project carries on
+those tables is declared in `schema.sql` (nine of them via `alter table if exists … add column`,
+which a first parse missed and a second confirmed). No drift in either direction. Method: the
+declared set parsed from `schema.sql`, compared against `information_schema.columns` through the
+Supabase connector. PR #174 opened for the branch; its CI is the merge-path verification.
