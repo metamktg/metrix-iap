@@ -18,6 +18,7 @@ import {
   SectionCard, CrossLink,
 } from "../shared";
 import { CreativeSourceNudge } from "@/components/creative/CreativeSourceNudge";
+import { CreativeNextStepNudge } from "@/components/creative/CreativeNextStepNudge";
 import {
   useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote, GenerationProgressBar,
 } from "@/components/generation/GenerationControls";
@@ -96,6 +97,7 @@ export function CreativeCommandCenter() {
             <FlowCrumb {...fp} />
             <StageLoopHub stages={buildLoopStages(status)} current="creative" />
             <CreativeSourceNudge account={acct} />
+            <CreativeNextStepNudge accountId={acct.id} />
 
             <div className="px-6 py-5 space-y-4 max-w-4xl">
               {/* Execution card: verb title + input-metric tiles + primary action —

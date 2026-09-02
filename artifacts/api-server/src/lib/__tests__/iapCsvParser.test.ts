@@ -448,3 +448,49 @@ describe("parseIapCsv — derivable & irrelevant columns", () => {
     expect(BASE_METRICS).not.toContain("Quality ranking");
   });
 });
+
+// ── Ad Summary is a ledger, not a lens ──────────────────────────────────────
+// The summary export exists to state full spend and results per ad-day and to
+// cross-check the pivots' spend. The first fresh-account tester (2026-09-02)
+// staged a correct one and was warned it was "missing" fifteen engagement and
+// video columns the class never uses, with a confidence grade cut to match.
+// Expectation is now per class: the summary is judged on spend, impressions,
+// reach, results and result type; the pivots keep the full base list.
+
+describe("parseIapCsv — ad_summary metric expectations are the ledger's, not the pivots'", () => {
+  const SUMMARY_COLUMNS = ["Amount spent ({ACCOUNT_CURRENCY})", "Impressions", "Reach", "Results", "Result type"];
+
+  function summaryCsv(metricCols: readonly string[]): string {
+    const breakdownCols = AD_SUMMARY_BREAKDOWN_COLUMNS;
+    const header = [...breakdownCols.map(resolveCurrency), ...metricCols.map(resolveCurrency)];
+    const row = [...breakdownCols.map(breakdownValue), ...metricCols.map(baseValue)];
+    return [line(header), line(row)].join("\n");
+  }
+
+  it("does not report engagement/video columns as missing on a summary export", () => {
+    const result = parseIapCsv(summaryCsv(SUMMARY_COLUMNS), "ad_summary");
+    expect(result.rows.length).toBe(1);
+    expect(result.missingColumns).toEqual([]);
+    expect(result.warnings.some((w) => /supplementary metric columns/.test(w))).toBe(false);
+    expect(result.warnings.some((w) => /Reduced confidence/.test(w))).toBe(false);
+    // Nothing the class never expected reaches the mapping summary as
+    // "missing" either — that list is what the confidence grade is built on.
+    expect(result.mappingSummary.filter((e) => e.tier === "missing")).toEqual([]);
+  });
+
+  it("still flags the ledger columns themselves when a summary export lacks them", () => {
+    const result = parseIapCsv(summaryCsv(["Amount spent ({ACCOUNT_CURRENCY})", "Impressions"]), "ad_summary");
+    expect(result.missingColumns).toContain("Results");
+    expect(result.missingColumns).toContain("Result type");
+    expect(result.warnings.some((w) => /Reduced confidence/.test(w) && /Results/.test(w))).toBe(true);
+  });
+
+  it("keeps the full base list as the expectation for a demographic pivot", () => {
+    const breakdownCols = DEMOGRAPHIC_BREAKDOWN_COLUMNS;
+    const header = [...breakdownCols.map(resolveCurrency), ...SUMMARY_COLUMNS.map(resolveCurrency)];
+    const row = [...breakdownCols.map(breakdownValue), ...SUMMARY_COLUMNS.map(baseValue)];
+    const result = parseIapCsv([line(header), line(row)].join("\n"), "demographic");
+    expect(result.missingColumns).toContain("Link clicks");
+    expect(result.warnings.some((w) => /Reduced confidence/.test(w))).toBe(true);
+  });
+});

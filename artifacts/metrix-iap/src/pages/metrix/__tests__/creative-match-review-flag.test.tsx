@@ -1,16 +1,20 @@
 // ─── Creative match review-flag regression test ───────────────────────
-// Staging a creative file pre-maps it to the closest ("most logical") ad
-// name. Confident matches map silently, but a low-confidence "guess" tier
-// MUST render a visible "Best guess — please review" badge so users know
-// to double-check before running analysis. If a refactor ever applied a
-// guessed mapping without that flag (e.g. dropping match_method or
-// collapsing the badge), users could silently ship the wrong mapping.
+// Staging a creative file gets it mapped to the closest ("most logical")
+// ad name — on the SERVER, since 2026-09-02 (creativeAutoMap.ts): the
+// client sends no mapping, the server runs the matcher against the
+// account's ad registry and persists ad_names + match_method. Confident
+// matches map silently, but a low-confidence "guess" tier MUST render a
+// visible "Best guess — please review" badge so users know to double-check
+// before running analysis. If a refactor ever applied a guessed mapping
+// without that flag (e.g. dropping match_method or collapsing the badge),
+// users could silently ship the wrong mapping.
 //
-// This drives the real upload flow (suggestAdNameMatch → stage →
-// MatchMethodBadge) end to end so it fails loudly if the review flag is
-// ever silently lost. A fake XHR captures the staged payload and feeds it
-// back through a store-backed useListManualImports so the badge renders
-// from the same match_method that was actually staged.
+// This drives the real upload flow end to end: the panel stages the file,
+// a fake XHR stands in for the server — applying the SAME matcher the
+// server runs (adNameMatch.ts is byte-identical on both sides; the scripts
+// drift test enforces it) — and feeds the staged row back through a
+// store-backed useListManualImports, so the badge renders from the exact
+// match_method the server would have persisted.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
@@ -54,10 +58,12 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
     },
     useUpdateManualImportAdNames: () => ({ mutateAsync: async () => {}, isPending: false }),
     useDeleteManualImport: () => ({ mutateAsync: async () => {}, isPending: false }),
+    useSyncCreativeLinks: () => ({ mutateAsync: async () => {}, isPending: false }),
   };
 });
 
 import { CreativeLibraryPanel } from "../ConnectAccountDialogs";
+import { suggestAdNameMatch } from "@/lib/adNameMatch";
 
 let importCounter = 0;
 
@@ -82,6 +88,13 @@ class MockXHR {
       ad_names: string[];
       match_method?: string | null;
     };
+    // The client must NOT map — that is the server's job now. Pin it here so
+    // a client-side matcher cannot quietly come back.
+    expect(data.ad_names).toEqual([]);
+    expect(data.match_method).toBeUndefined();
+    // Server behaviour (creativeAutoMap.ts): match the filename against the
+    // account's ad registry and persist the result with its method.
+    const match = suggestAdNameMatch(data.filename, AVAILABLE_AD_NAMES);
     const id = `imp_${++importCounter}`;
     store.push({
       id,
@@ -90,8 +103,8 @@ class MockXHR {
       filename: data.filename,
       content_type: data.content_type ?? null,
       size_bytes: 1234,
-      ad_names: data.ad_names,
-      match_method: data.match_method,
+      ad_names: match ? [match.name] : [],
+      match_method: match?.method ?? null,
       status: "staged",
       created_at: new Date().toISOString(),
     });
@@ -189,9 +202,10 @@ describe("creative match review flag", () => {
 
     await waitFor(() => expect(screen.getAllByText("holiday_v3_1080x1080.mp4").length).toBeGreaterThan(0));
 
-    // The staged import must carry the guess method (proves the mapping was
-    // applied *with* the review signal, not silently) … The store populates
-    // asynchronously relative to the filename render, so poll for it.
+    // The staged row must carry the guess method the server persisted
+    // (proves the mapping was applied *with* the review signal, not
+    // silently) … The store populates asynchronously relative to the
+    // filename render, so poll for it.
     await waitFor(() => {
       const staged = store.get() as { ad_names: string[]; match_method?: string }[];
       expect(staged).toHaveLength(1);

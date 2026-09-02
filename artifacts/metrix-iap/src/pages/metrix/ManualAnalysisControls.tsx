@@ -994,6 +994,17 @@ export function AnalysisControls({
   }, []);
   const [error, setError] = useState<string | null>(null);
   const [conversionExportConfirm, setConversionExportConfirm] = useState<{ message: string; files: string[] } | null>(null);
+  // True from the click until the server's own run row is visible. The POST
+  // does not answer until the staged files have been validated (duplicate
+  // class check + conversion-export gate parse every file — tens of seconds
+  // for a large workbook), and the run row only exists after that, so
+  // every running-state surface stayed unmounted while the user waited.
+  // That gap is the "clicking Run does nothing" report: the button spun,
+  // nothing else moved, and the progress bar sat below the fold. The bar
+  // now renders from the click, says what the server is doing, and is
+  // scrolled into view.
+  const [starting, setStarting] = useState(false);
+  const progressRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
@@ -1058,6 +1069,10 @@ export function AnalysisControls({
       imp.mapping_summary?.some((e) => e.tier === "missing" && e.is_required)
   );
   const [forceRunAcknowledged, setForceRunAcknowledged] = useState(false);
+
+  useEffect(() => {
+    if (isRunning) setStarting(false);
+  }, [isRunning]);
 
   useEffect(() => {
     if (isRunning && !pollRef.current) {
@@ -1141,6 +1156,12 @@ export function AnalysisControls({
 
   const handleRun = async (confirmConversionExport = false) => {
     setError(null);
+    setStarting(true);
+    // Hand the reader to the progress surface on the click itself, before
+    // the server answers — the bar below is what they came to watch.
+    window.requestAnimationFrame(() => {
+      progressRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
     try {
       await startMutation.mutateAsync({
         accountId,
@@ -1149,6 +1170,7 @@ export function AnalysisControls({
       setConversionExportConfirm(null);
       await refetch();
     } catch (err) {
+      setStarting(false);
       if (err instanceof ApiError) {
         const errData = err.data as { code?: string; files?: string[]; message?: string } | null;
         if (errData?.code === "conversion_export_confirmation_required") {
@@ -1458,9 +1480,11 @@ export function AnalysisControls({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Real per-stage progress bar — polls every 1 s while running */}
-      {(isRunning || run?.status === "success") && (
-        <div className="space-y-1.5">
+      {/* Real per-stage progress bar — polls every 1 s while running. From
+          the click until the run row exists it shows the server's pre-flight
+          (validating the staged files) rather than nothing. */}
+      {(starting || isRunning || run?.status === "success") && (
+        <div className="space-y-1.5" ref={progressRef} data-testid="analysis-run-progress">
           {/* Was a static bar with a static label. Between polls — 2.5s, and a
               stage can hold for twenty seconds — neither moved, which is
               indistinguishable from a job that has died. RunProgress sweeps
@@ -1469,9 +1493,17 @@ export function AnalysisControls({
               progress_pct of null now renders as "—" rather than 0%: no
               number yet is a different claim from a measured zero. */}
           <RunProgress
-            phase={run?.status === "success" ? "success" : run?.status === "error" ? "error" : "running"}
-            stage={run?.progress_stage}
-            pct={run?.progress_pct}
+            phase={
+              starting || isRunning
+                ? "running"
+                : run?.status === "success"
+                  ? "success"
+                  : run?.status === "error"
+                    ? "error"
+                    : "running"
+            }
+            stage={starting && !isRunning ? "Validating staged files before the run starts" : run?.progress_stage}
+            pct={starting && !isRunning ? null : run?.progress_pct}
             doneLabel="Analysis complete"
           />
           {isRunning && (

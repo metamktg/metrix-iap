@@ -13,6 +13,15 @@ export function useStageStatus(accountId: string | null) {
     query: {
       queryKey: getGetAccountStageStatusQueryKey(accountId ?? ""),
       enabled: !!accountId,
+      // The server reports live progress here (progress_pct / stage) but the
+      // global staleTime is Infinity, so a run in flight was read once and
+      // never again until it settled. Poll while anything is running.
+      refetchInterval: (q) => {
+        const d = q.state.data;
+        const running =
+          d?.analysis?.status === "running" || d?.strategy?.status === "running" || d?.briefs?.status === "running";
+        return running ? 3000 : false;
+      },
     },
   });
 

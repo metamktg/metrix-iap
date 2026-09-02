@@ -967,6 +967,46 @@ export const BLOCKING_DELIVERY_PRIMITIVES: readonly string[] = [
   "Impressions",
 ];
 
+/**
+ * What the Ad Summary export is FOR decides which metric columns it is
+ * expected to carry.
+ *
+ * The demographic and device/placement pivots are lenses: every base metric
+ * they carry is sliced by their breakdown and feeds a signal. The Ad Summary
+ * export is a ledger: it exists to state each ad's full daily spend and
+ * results without the privacy-limited attribution of the pivots, and to
+ * cross-check the pivots' spend against that total (computeDataCoverage,
+ * BUG-05). Judging it against the pivots' 34-column metric list warned the
+ * first fresh-account tester (2026-09-02) that a correct summary export was
+ * "missing" fifteen engagement and video columns it never needed, and cut
+ * its confidence grade for the same reason — BUG-27 had only restyled that
+ * list, never stopped producing it. These sets are the honest expectation.
+ */
+export const AD_SUMMARY_EXPECTED_METRICS: readonly string[] = [
+  "Amount spent ({ACCOUNT_CURRENCY})",
+  "Impressions",
+  "Reach",
+  "Results",
+  "Result type",
+];
+
+/** The subset whose absence degrades what the summary is for: spend and results per ad-day. */
+export const AD_SUMMARY_CORE_METRICS: ReadonlySet<string> = new Set([
+  "Amount spent ({ACCOUNT_CURRENCY})",
+  "Impressions",
+  "Results",
+]);
+
+/** Metric columns a class is expected to carry — absent ones are reported, present extras are accepted silently. */
+export function expectedBaseMetricsFor(csvClass: IapCsvClass): readonly string[] {
+  return csvClass === "ad_summary" ? AD_SUMMARY_EXPECTED_METRICS : BASE_METRICS;
+}
+
+/** Expected metrics whose absence earns the "Reduced confidence" warning for this class. */
+export function coreBaseMetricsFor(csvClass: IapCsvClass): ReadonlySet<string> {
+  return csvClass === "ad_summary" ? AD_SUMMARY_CORE_METRICS : CORE_BASE_METRICS;
+}
+
 export const CORE_BASE_METRICS: ReadonlySet<string> = new Set([
   "Amount spent ({ACCOUNT_CURRENCY})",
   "Reach",
@@ -1182,9 +1222,21 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
         { name: "Conversion Metrics", required: true, columns: ["Results", "Result type"] },
         { name: "App (optional)", required: false, columns: APP_METRICS },
       ]
+    : isSummary
+    ? [
+        { name: "Spend & results (ledger)", required: true, columns: AD_SUMMARY_EXPECTED_METRICS.map(resolveCurrencyColumn) },
+        { name: "Ad Creative Metadata", required: false, columns: CREATIVE_METADATA_COLUMNS as readonly string[] },
+        {
+          name: "Engagement & video (optional — not needed for spend validation)",
+          required: false,
+          columns: BASE_METRICS.filter((c) => !AD_SUMMARY_EXPECTED_METRICS.includes(c)).map(resolveCurrencyColumn),
+        },
+        { name: "Ecommerce", required: false, columns: ECOMMERCE_METRICS },
+        { name: "Service", required: false, columns: SERVICE_METRICS },
+        { name: "App", required: false, columns: APP_METRICS },
+      ]
     : [
         { name: "Base", required: true, columns: BASE_METRICS.map(resolveCurrencyColumn) },
-        ...(isSummary ? [{ name: "Ad Creative Metadata", required: false, columns: CREATIVE_METADATA_COLUMNS as readonly string[] }] : []),
         { name: "Ecommerce", required: false, columns: ECOMMERCE_METRICS },
         { name: "Service", required: false, columns: SERVICE_METRICS },
         { name: "App", required: false, columns: APP_METRICS },
