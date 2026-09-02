@@ -13,7 +13,8 @@ import { ensureSupabaseAuthUser } from "@workspace/auth-mirror";
 import { sendApprovalEmail } from "../../lib/approvalEmail";
 import { invalidateMetrixSeedCache } from "../../lib/metrixSeedAssembly";
 import { getSupabase } from "../../lib/supabase";
-import { parseIapCsv, IapCsvFormatError } from "../../lib/iapCsvParser";
+import { parseIapCsv, IapCsvFormatError, type DuplicateHeaderConflict } from "../../lib/iapCsvParser";
+import { detectReportGrain, type ReportGrain } from "../../lib/reportGrain";
 import { IAP_CSV_CLASS_SPECS, type IapCsvClass } from "../../lib/iapCsvSpec";
 import { convertXlsxToCsvText, looksLikeXlsxContent } from "../../lib/xlsxToCsv";
 import { resolveCreativeLinkResult, extensionOf, type CreativeLinkResult } from "../../lib/creativeAssetType";
@@ -199,6 +200,9 @@ export const PERFORMANCE_CSV_CLASS: Record<string, IapCsvClass> = {
   // Rows carry only conversion metrics (no spend/impressions) and must be
   // kept separate to avoid tracking_basis collisions with impression-device rows.
   performance_conversion_device_csv: "conversion_device",
+  // Asset breakdown: a pivot "by asset" (Text / Headline / Image name …),
+  // optionally with demographic or placement dimensions (a joint report).
+  performance_asset_csv: "asset",
 };
 
 export type PerformanceCsvValidation = {
@@ -211,6 +215,10 @@ export type PerformanceCsvValidation = {
     is_required: boolean;
   }>;
   uploadWarnings?: string[];
+  /** Detected grain — what the file can prove (lib/reportGrain.ts). Absent for creative assets. */
+  reportGrain?: ReportGrain;
+  /** Duplicated headers whose occurrences disagreed. [] when validation ran and found none. */
+  headerConflicts?: DuplicateHeaderConflict[];
 };
 
 /**
@@ -256,6 +264,8 @@ export async function validatePerformanceCsvUpload(
   return {
     mappingSummary,
     ...(allWarnings.length > 0 ? { uploadWarnings: allWarnings } : {}),
+    reportGrain: detectReportGrain(parseResult, csvClass),
+    headerConflicts: parseResult.headerConflicts,
   };
 }
 

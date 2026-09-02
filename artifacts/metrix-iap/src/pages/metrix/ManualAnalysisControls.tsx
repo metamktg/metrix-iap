@@ -40,6 +40,9 @@ import { ActionSlider } from "@/components/widgets/ActionSlider";
 import { RunProgress } from "@/components/widgets/RunProgress";
 import { fmtDuration } from "@/lib/runEta";
 import { CsvWarningsPanel } from "@/components/analysis/CsvWarningsPanel";
+import { ReconciliationPanel } from "@/components/evidence/ReconciliationPanel";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -100,7 +103,7 @@ function RunAnalysisBtn({
   );
 }
 
-export type IapCsvClassKey = "demographic" | "device_placement" | "ad_summary" | "conversion_device";
+export type IapCsvClassKey = "demographic" | "device_placement" | "ad_summary" | "conversion_device" | "asset";
 
 // Labels the required-columns panel by report, not by file format — the
 // same columns are required whether the export arrives as CSV (preferred)
@@ -110,6 +113,7 @@ const CSV_CLASS_TITLES: Record<IapCsvClassKey, string> = {
   device_placement: "Placements",
   ad_summary: "Ad Summary",
   conversion_device: "Conversion Device",
+  asset: "Asset breakdown",
 };
 
 /**
@@ -1007,6 +1011,10 @@ export function AnalysisControls({
   const [starting, setStarting] = useState(false);
   const progressRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
+  // The latest run's reconciliation ledger (seed, scoped to the account) —
+  // rendered as the Reconciliation panel once a run has settled.
+  const seed = useMetrixSeed();
+  const reconciliation = getAnalysisData(seed, accountId)?.reconciliation ?? null;
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
   const { data: runsData } = useListAnalysisRuns(accountId);
@@ -1552,6 +1560,7 @@ export function AnalysisControls({
       )}
 
       {run && run.status === "success" && <CsvWarningsPanel run={run} />}
+      {run && run.status === "success" && <ReconciliationPanel reconciliation={reconciliation} />}
       {run && run.status === "success" && <ObjectiveFlagsPanel run={run} />}
 
       {/* Server-verified module completeness — shown once the run settles */}

@@ -69,7 +69,7 @@ export const stageManualImportBodyFilenameMax = 255;
 
 
 export const StageManualImportBody = zod.object({
-  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv', 'creative_asset']),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv', 'performance_asset_csv', 'creative_asset']),
   "filename": zod.string().min(1).max(stageManualImportBodyFilenameMax),
   "content_type": zod.string().optional().describe('Original MIME type of the uploaded file, if known.'),
   "content_base64": zod.string().min(1).describe('Base64-encoded file content. Max 50 MB decoded.'),
@@ -95,7 +95,8 @@ export const StageManualImportResponse = zod.object({
   "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
   "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
 }).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).optional().describe('Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column.'),
-  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only.')
+  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only.'),
+  "report_grain": zod.record(zod.string(), zod.unknown()).nullish().describe('What the file can prove, detected at staging from its resolved columns and rows (lib\/reportGrain.ts ReportGrain): report_class (ad_summary | time_series | demographic | placement | asset | demographic_asset | placement_asset | conversion_device), has_ad_id, ad_id_joinable, has_day, aggregate_shape, period, dimensions, asset_columns, distinct_ad_ids, distinct_ad_names, reused_ad_names, currency, account_ids, header_conflicts, additive_metrics, non_additive_metrics. Absent\/null for creative assets and for imports staged before grain detection existed.')
 })
 
 
@@ -114,7 +115,7 @@ export const ListManualImportsResponse = zod.object({
   "imports": zod.array(zod.object({
   "id": zod.string(),
   "account_id": zod.string(),
-  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv', 'creative_asset']),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv', 'performance_asset_csv', 'creative_asset']),
   "filename": zod.string(),
   "content_type": zod.string().nullish(),
   "size_bytes": zod.number(),
@@ -135,7 +136,9 @@ export const ListManualImportsResponse = zod.object({
   "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
   "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
 }).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).nullish().describe('Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the \'Run analysis\' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.'),
-  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings recorded by upload-time validation, persisted so they outlive the upload dialog. NULL and [] mean different things and must not be conflated: NULL is \"not recorded\" (a creative_asset row, or a file staged before warnings were persisted) and must never render as \"no warnings\"; [] is \"validation ran and found none\", which is a real positive finding.')
+  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings recorded by upload-time validation, persisted so they outlive the upload dialog. NULL and [] mean different things and must not be conflated: NULL is \"not recorded\" (a creative_asset row, or a file staged before warnings were persisted) and must never render as \"no warnings\"; [] is \"validation ran and found none\", which is a real positive finding.'),
+  "report_grain": zod.record(zod.string(), zod.unknown()).nullish().describe('What the file can prove, detected at staging from its resolved columns and rows (lib\/reportGrain.ts ReportGrain): report_class (ad_summary | time_series | demographic | placement | asset | demographic_asset | placement_asset | conversion_device), has_ad_id, ad_id_joinable, has_day, aggregate_shape, period, dimensions, asset_columns, distinct_ad_ids, distinct_ad_names, reused_ad_names, currency, account_ids, header_conflicts, additive_metrics, non_additive_metrics. Absent\/null for creative assets and for imports staged before grain detection existed.'),
+  "header_conflicts": zod.array(zod.record(zod.string(), zod.unknown())).nullish().describe('Duplicated headers whose occurrences DISAGREED row by row (DuplicateHeaderConflict: header, ordinals, conflictingRows, totalRows, example). NULL = not recorded; [] = validated, none found. A conflict on \"Ad ID\" makes the file unjoinable at ad grain.')
 }))
 })
 
@@ -157,7 +160,7 @@ export const InitChunkedManualImportUploadParams = zod.object({
 
 
 export const InitChunkedManualImportUploadBody = zod.object({
-  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv']).describe('Performance report kinds only — creative assets use single-request staging.'),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv', 'performance_asset_csv']).describe('Performance report kinds only — creative assets use single-request staging.'),
   "filename": zod.string().min(1),
   "content_type": zod.string().nullish(),
   "size_bytes": zod.number().min(1).describe('Total file size in bytes (max 150 MB). Verified against the assembled chunks at completion.'),
@@ -231,7 +234,8 @@ export const CompleteChunkedManualImportUploadResponse = zod.object({
   "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
   "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
 }).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).optional().describe('Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column.'),
-  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only.')
+  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only.'),
+  "report_grain": zod.record(zod.string(), zod.unknown()).nullish().describe('What the file can prove, detected at staging from its resolved columns and rows (lib\/reportGrain.ts ReportGrain): report_class (ad_summary | time_series | demographic | placement | asset | demographic_asset | placement_asset | conversion_device), has_ad_id, ad_id_joinable, has_day, aggregate_shape, period, dimensions, asset_columns, distinct_ad_ids, distinct_ad_names, reused_ad_names, currency, account_ids, header_conflicts, additive_metrics, non_additive_metrics. Absent\/null for creative assets and for imports staged before grain detection existed.')
 })
 
 
@@ -275,7 +279,7 @@ export const UpdateManualImportAdNamesBody = zod.object({
 export const UpdateManualImportAdNamesResponse = zod.object({
   "id": zod.string(),
   "account_id": zod.string(),
-  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv', 'creative_asset']),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv', 'performance_asset_csv', 'creative_asset']),
   "filename": zod.string(),
   "content_type": zod.string().nullish(),
   "size_bytes": zod.number(),
@@ -296,7 +300,9 @@ export const UpdateManualImportAdNamesResponse = zod.object({
   "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
   "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
 }).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).nullish().describe('Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the \'Run analysis\' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.'),
-  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings recorded by upload-time validation, persisted so they outlive the upload dialog. NULL and [] mean different things and must not be conflated: NULL is \"not recorded\" (a creative_asset row, or a file staged before warnings were persisted) and must never render as \"no warnings\"; [] is \"validation ran and found none\", which is a real positive finding.')
+  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings recorded by upload-time validation, persisted so they outlive the upload dialog. NULL and [] mean different things and must not be conflated: NULL is \"not recorded\" (a creative_asset row, or a file staged before warnings were persisted) and must never render as \"no warnings\"; [] is \"validation ran and found none\", which is a real positive finding.'),
+  "report_grain": zod.record(zod.string(), zod.unknown()).nullish().describe('What the file can prove, detected at staging from its resolved columns and rows (lib\/reportGrain.ts ReportGrain): report_class (ad_summary | time_series | demographic | placement | asset | demographic_asset | placement_asset | conversion_device), has_ad_id, ad_id_joinable, has_day, aggregate_shape, period, dimensions, asset_columns, distinct_ad_ids, distinct_ad_names, reused_ad_names, currency, account_ids, header_conflicts, additive_metrics, non_additive_metrics. Absent\/null for creative assets and for imports staged before grain detection existed.'),
+  "header_conflicts": zod.array(zod.record(zod.string(), zod.unknown())).nullish().describe('Duplicated headers whose occurrences DISAGREED row by row (DuplicateHeaderConflict: header, ordinals, conflictingRows, totalRows, example). NULL = not recorded; [] = validated, none found. A conflict on \"Ad ID\" makes the file unjoinable at ad grain.')
 })
 
 
@@ -377,6 +383,16 @@ export const GetManualPerformanceCsvFormatResponse = zod.object({
 })),
   "sample_csv": zod.string()
 }).optional().describe('Format spec for the optional Conversion Device pivot export (conversion-only metrics, no spend\/impressions). Upload to the performance_conversion_device_csv slot.'),
+  "asset": zod.object({
+  "report_name": zod.string().describe('Exact Meta pivot report template name this CSV must match.'),
+  "breakdown_columns": zod.array(zod.string()),
+  "metric_groups": zod.array(zod.object({
+  "name": zod.string(),
+  "required": zod.boolean(),
+  "columns": zod.array(zod.string())
+})),
+  "sample_csv": zod.string()
+}).optional().describe('Format spec for the optional asset-breakdown pivot export (a report \"by asset\" — Text, Headline, Image name …, optionally with demographic or placement dimensions). Upload to the performance_asset_csv slot.'),
   "column_aliases": zod.array(zod.object({
   "canonical": zod.string().describe('The exact column name as required by the Metrix spec (currency placeholder resolved to plain label for display).'),
   "aliases": zod.array(zod.string()).describe('Alias variants accepted by the CSV parser (title-cased for readability).')
@@ -670,7 +686,7 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
   "baseline_distinct_ads": zod.number(),
   "threshold_pct": zod.number().describe('Coverage % below which a class is not trustworthy enough to classify segments from.'),
   "classes": zod.array(zod.object({
-  "report_class": zod.enum(['demographic', 'device_placement', 'ad_summary', 'conversion_device']),
+  "report_class": zod.enum(['demographic', 'device_placement', 'ad_summary', 'conversion_device', 'asset']),
   "rows_scoped": zod.number().describe('Rows from this class inside the analysis window.'),
   "distinct_ads": zod.number().describe('Distinct ad names present in this class\'s scoped rows.'),
   "spend": zod.number().nullable().describe('Spend carried by this class\'s scoped rows; null when the class never carries spend (e.g. conversion_device).'),
@@ -781,7 +797,7 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
   "baseline_distinct_ads": zod.number(),
   "threshold_pct": zod.number().describe('Coverage % below which a class is not trustworthy enough to classify segments from.'),
   "classes": zod.array(zod.object({
-  "report_class": zod.enum(['demographic', 'device_placement', 'ad_summary', 'conversion_device']),
+  "report_class": zod.enum(['demographic', 'device_placement', 'ad_summary', 'conversion_device', 'asset']),
   "rows_scoped": zod.number().describe('Rows from this class inside the analysis window.'),
   "distinct_ads": zod.number().describe('Distinct ad names present in this class\'s scoped rows.'),
   "spend": zod.number().nullable().describe('Spend carried by this class\'s scoped rows; null when the class never carries spend (e.g. conversion_device).'),
@@ -947,7 +963,7 @@ export const GetAnalysisSummaryResponse = zod.object({
   "baseline_distinct_ads": zod.number(),
   "threshold_pct": zod.number().describe('Coverage % below which a class is not trustworthy enough to classify segments from.'),
   "classes": zod.array(zod.object({
-  "report_class": zod.enum(['demographic', 'device_placement', 'ad_summary', 'conversion_device']),
+  "report_class": zod.enum(['demographic', 'device_placement', 'ad_summary', 'conversion_device', 'asset']),
   "rows_scoped": zod.number().describe('Rows from this class inside the analysis window.'),
   "distinct_ads": zod.number().describe('Distinct ad names present in this class\'s scoped rows.'),
   "spend": zod.number().nullable().describe('Spend carried by this class\'s scoped rows; null when the class never carries spend (e.g. conversion_device).'),

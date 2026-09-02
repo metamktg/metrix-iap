@@ -20,6 +20,15 @@ import { AdsManagerButton } from "./AdsManagerLink";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 import { useCreativeEmptyReasons } from "@/hooks/useCreativeEmptyReasons";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { useCreativeEvidence } from "@/hooks/useCreativeEvidence";
+import { DemographicHeatGrid } from "@/components/evidence/DemographicHeatGrid";
+import { PlacementDrill } from "@/components/evidence/PlacementDrill";
+import { EvidenceTab } from "@/components/evidence/EvidenceTab";
+import { EvidenceChip, EvidenceExplainer } from "@/components/evidence/EvidenceChip";
+import { KpiTileRow } from "@/components/metrics/KpiTile";
+import { SharePieChart } from "@/components/charts/SharePieChart";
+import { buildLibraryMetricCatalog } from "@/lib/data/metricsCatalog";
+import { Layers } from "lucide-react";
 
 // ─── QA mapping status ─────────────────────────────────────────────────
 // MSTLibraryCell.qa_mapping_status, observed values: "pass",
@@ -150,7 +159,7 @@ function pct(n: number | null | undefined): string {
 // emptyReason and explains itself, which tells the reader why this creative
 // has no placement rows. A disabled tab would only say "no".
 
-type Tab = "overview" | "demographics" | "placements" | "funnel";
+type Tab = "overview" | "demographics" | "placements" | "funnel" | "evidence";
 type DemoMetric = "spend" | "results";
 type PlacementMetric = "spend" | "cpa";
 
@@ -181,11 +190,37 @@ function MetricToggle({ options, value, onChange }: {
 
 // ─── Overview tab ──────────────────────────────────────────────────────
 
-function OverviewTab({ data }: { data: CreativeCardData }) {
+function OverviewTab({ data, perfRows }: { data: CreativeCardData; perfRows: CellPerformanceRow[] }) {
   const s = data.stats;
+  // Owner spec "Creative Overview Tiles": the platform's KpiTileRow over this
+  // creative's own per-result-event rows, so the split behind a blended
+  // results figure is shown (SharePieChart in the tile's ⓘ disclosure —
+  // the existing hover/touch mechanic) instead of being lost one layer up.
+  // The hand-rolled grid stays as the fallback when no rows exist.
+  const catalog = useMemo(
+    () => (perfRows.length > 0 ? buildLibraryMetricCatalog(perfRows).filter((m) => m.id !== "lib_cells") : []),
+    [perfRows],
+  );
+  const eventSplit = useMemo(() => {
+    const by = new Map<string, number>();
+    for (const r of perfRows) by.set(r["Result type"] || "results", (by.get(r["Result type"] || "results") ?? 0) + r.Results);
+    return [...by.entries()].map(([name, value]) => ({ name, value }));
+  }, [perfRows]);
+  const disclosures = useMemo(
+    () =>
+      eventSplit.length > 1
+        ? { lib_results: <SharePieChart data={eventSplit} unit="count" height={180} />, lib_cpa: <SharePieChart data={eventSplit} unit="count" height={180} /> }
+        : undefined,
+    [eventSplit],
+  );
   return (
     <div className="space-y-5">
-      {s && (
+      {catalog.length > 0 && (
+        <div className="grid grid-cols-2 gap-2" data-testid="creative-kpi-tiles">
+          <KpiTileRow viewKey="creative-overview" catalog={catalog} tileCount={4} primaryFirst={false} disclosures={disclosures} />
+        </div>
+      )}
+      {s && catalog.length === 0 && (
         <div className="grid grid-cols-2 gap-2">
           {([
             { label: "Spend", value: usd(s.spend) },
@@ -672,6 +707,8 @@ export interface CreativeExpandDialogProps {
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
   /** Performance row for this cell — used to render the Funnel tab. */
   perfRow?: CellPerformanceRow | null;
+  /** Every per-result-event row for this cell (the blended-results split). */
+  perfRows?: CellPerformanceRow[];
   /** Cause-specific empty-state text per tab (§1.4 honesty: "file never imported" vs "imported but no rows for this cell" vs "account-level grain only" each need a different remedy). */
   demographicEmptyReason?: string | null;
   placementsEmptyReason?: string | null;
@@ -683,6 +720,7 @@ export function CreativeExpandDialog({
   demographic = [], placements = [],
   expandFooter, unmapped, onUploadCreatives, onSegmentClick,
   perfRow = null,
+  perfRows,
   demographicEmptyReason,
   placementsEmptyReason,
   funnelEmptyReason,
@@ -695,15 +733,26 @@ export function CreativeExpandDialog({
   // still wins — callers that scope a card differently than by cell code
   // know better than the derivation does.
   const derivedReasons = useCreativeEmptyReasons(data.conceptCode);
-  const demoReason = demographicEmptyReason ?? derivedReasons.demographic;
-  const placeReason = placementsEmptyReason ?? derivedReasons.placements;
-  const funnelReason = funnelEmptyReason ?? derivedReasons.funnel;
+  // Evidence joined through the creative's mapped Ad IDs first, cell code
+  // second (spec §14). When ad-grain rows exist they replace the cell-only
+  // paths below; the account-level fallbacks stay for accounts whose latest
+  // run predates the layer.
+  const evidence = useCreativeEvidence(data.conceptCode);
+  const hasAdDemo = evidence.demographic.length > 0;
+  const hasAdPlacement = evidence.placement.length > 0;
+  const funnelFromAds = !perfRow && evidence.funnel ? evidence.funnel : null;
+  const effectivePerfRow = perfRow ?? funnelFromAds?.row ?? null;
+  const effectivePerfRows = perfRows && perfRows.length > 0 ? perfRows : effectivePerfRow ? [effectivePerfRow] : [];
+  const demoReason = hasAdDemo ? null : demographicEmptyReason ?? derivedReasons.demographic;
+  const placeReason = hasAdPlacement ? null : placementsEmptyReason ?? derivedReasons.placements;
+  const funnelReason = effectivePerfRow ? null : funnelEmptyReason ?? derivedReasons.funnel;
 
   const TABS: { id: Tab; label: string; Icon: typeof BarChart2 }[] = [
     { id: "overview",     label: "Overview",     Icon: BarChart2 },
     { id: "demographics", label: "Demographics", Icon: Users },
     { id: "placements",   label: "Placements",   Icon: Monitor },
     { id: "funnel",       label: "Funnel",       Icon: TrendingDown },
+    { id: "evidence",     label: "Evidence",     Icon: Layers },
   ];
 
   return (
@@ -800,10 +849,28 @@ export function CreativeExpandDialog({
                 </div>
               )}
 
-              {tab === "overview"     && <OverviewTab      data={data} />}
-              {tab === "demographics" && <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} emptyReason={demoReason} />}
-              {tab === "placements"   && <PlacementsTab    rows={placements} emptyReason={placeReason} />}
-              {tab === "funnel"       && <FunnelTab        perfRow={perfRow} emptyReason={funnelReason} />}
+              {tab === "overview"     && <OverviewTab      data={data} perfRows={effectivePerfRows} />}
+              {tab === "demographics" && (hasAdDemo
+                ? <DemographicHeatGrid rows={evidence.demographic} resultLabel={data.stats?.resultLabel ?? "results"} />
+                : <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} emptyReason={demoReason} />)}
+              {tab === "placements"   && (hasAdPlacement
+                ? <PlacementDrill rows={evidence.placement} unattributedSpend={evidence.placementUnattributed} resultLabel={data.stats?.resultLabel ?? "results"} />
+                : <PlacementsTab    rows={placements} emptyReason={placeReason} />)}
+              {tab === "funnel"       && (
+                <div className="space-y-3">
+                  {funnelFromAds && (
+                    <div className="flex items-center gap-2 flex-wrap" data-testid="funnel-evidence">
+                      <EvidenceChip state={funnelFromAds.evidence_state} testId="funnel-evidence-chip" />
+                      <span className={cn(TYPE.caption, "text-muted-foreground/75")}>
+                        joined through {evidence.identity.adIds.length} mapped Ad ID{evidence.identity.adIds.length === 1 ? "" : "s"} · {funnelFromAds.source === "ad_summary" ? "Ad Summary control" : "ad-level totals"}
+                      </span>
+                      <EvidenceExplainer state={funnelFromAds.evidence_state} contextual={funnelFromAds.source !== "ad_summary"} />
+                    </div>
+                  )}
+                  <FunnelTab perfRow={effectivePerfRow} emptyReason={funnelReason} />
+                </div>
+              )}
+              {tab === "evidence"     && <EvidenceTab identity={evidence.identity} assets={evidence.assets} evidence={evidence.variableEvidence} segments={evidence.variableSegments} />}
             </div>
 
             {/* Footer */}

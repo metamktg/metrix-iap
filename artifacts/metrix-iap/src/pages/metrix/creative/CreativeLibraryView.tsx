@@ -436,6 +436,7 @@ export function CreativeLibraryView() {
                 demographic={(a?.demographic_registration_signal ?? []).filter((r: DemographicRow) => r.cell_id === openCellId)}
                 placements={([...(a?.v3_placement_signal ?? []), ...(a?.c4e_placement_signal ?? [])]) as PlacementRow[]}
                 perfRow={a?.performance_by_cell?.find((r) => r.cell_id === openCellId) ?? null}
+                perfRows={a?.performance_by_cell?.filter((r) => r.cell_id === openCellId) ?? []}
                 demographicEmptyReason={demographicEmptyReasonFor(a?.demographic_registration_signal ?? [], openCellId)}
                 placementsEmptyReason={placementsEmptyReasonFor([...(a?.v3_placement_signal ?? []), ...(a?.c4e_placement_signal ?? [])])}
                 funnelEmptyReason={funnelEmptyReasonFor(a?.performance_by_cell, openCellId)}

@@ -740,6 +740,7 @@ begin
       'performance_placement_csv',
       'performance_ad_summary_csv',
       'performance_conversion_device_csv',
+      'performance_asset_csv',
       'creative_asset'
     ));
 end $$;
@@ -865,6 +866,19 @@ alter table manual_imports add column if not exists mapping_summary jsonb;
 --          existed). The UI must not read this as "no warnings".
 --   []   — validation ran and found none. That is a real, positive finding.
 alter table manual_imports add column if not exists upload_warnings jsonb;
+
+-- What the file can PROVE, detected once at staging from its resolved columns
+-- and rows (report class, Ad ID presence and joinability, daily vs
+-- whole-period, dimensions, delivered asset columns, currency, account ids,
+-- header conflicts) — the ReportGrain shape in lib/reportGrain.ts. Read by
+-- the upload dialog to say what a file is before the run, and by the run to
+-- decide source compatibility and authority. NULL for creative_asset rows and
+-- for files staged before the column existed. Spec §4.
+alter table manual_imports add column if not exists report_grain jsonb;
+-- Duplicated headers whose occurrences DISAGREED row by row — schema
+-- conflicts (DuplicateHeaderConflict[]). NULL = not recorded; [] = validated,
+-- none found. A conflict on "Ad ID" makes the file unjoinable at ad grain.
+alter table manual_imports add column if not exists header_conflicts jsonb;
 
 -- (Re)apply the check idempotently. `add column if not exists` above won't
 -- widen a pre-existing id/fuzzy-only constraint, so drop any existing
@@ -1260,6 +1274,201 @@ create table if not exists creative_deconstructions (
 
 create index if not exists creative_deconstructions_account_idx
   on creative_deconstructions (account_id, status);
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Reconciliation-first evidence layer (2026-09-02).
+-- docs/specs/iap-multi-report-reconciliation.md §8, §9, §11, §16.
+--
+-- Five additive tables beside the existing rollups. Nothing existing changes
+-- shape: demographic_signal keeps its ACCOUNT rows, the daily *_performance
+-- tables keep their grain. These carry what those cannot — the ad identity
+-- (Account ID + Ad ID, never a blind name), the per-ad × per-metric ledger
+-- with SIGNED residuals, asset instances with content identity, and the
+-- many-to-many variable evidence that aggregates through unique observations.
+-- ─────────────────────────────────────────────────────────────────────
+
+-- Observed facts at ad × segment × reporting period, per run. `breakdown`
+-- names the grain; joint reports also write their margins. `segment` holds
+-- the dimensions (gender, age, platform, placement, device, asset_type,
+-- asset_hash, asset_value). Additive metrics are summed; `reach` survives
+-- only at the exact grain Meta returned (`reach_basis = 'exact'`).
+-- `evidence_state` / `coverage_pct` are the reconciliation status of the ad
+-- × breakdown this row belongs to. Residuals are NEVER rows here.
+create table if not exists ad_breakdown_performance (
+  id bigint generated always as identity primary key,
+  account_id text not null references ad_accounts(id),
+  manual_analysis_run_id uuid not null references manual_analysis_runs(id) on delete cascade,
+  breakdown text not null check (breakdown in ('demographic','placement','asset','demographic_asset','placement_asset','demographic_placement')),
+  -- direct_asset | direct_joint | direct_segment — how the row was attributed (spec §12a)
+  attribution text not null default 'direct_segment',
+  ad_identity_kind text not null check (ad_identity_kind in ('ad_id','ad_name','unjoinable')),
+  ad_identity text not null,
+  meta_ad_id text,
+  ad_name text,
+  segment jsonb not null default '{}',
+  segment_key text not null,
+  result_type text not null default '',
+  date_start date not null,
+  date_end date not null,
+  spend numeric,
+  impressions bigint,
+  reach bigint,
+  reach_basis text check (reach_basis in ('exact')),
+  clicks_all bigint,
+  link_clicks bigint,
+  results numeric,
+  metrics jsonb not null default '{}',
+  row_count integer not null default 0,
+  source_import_ids uuid[] not null default '{}',
+  evidence_state text not null default 'unreconciled',
+  coverage_pct numeric,
+  unique (account_id, manual_analysis_run_id, breakdown, ad_identity_kind, ad_identity, segment_key, result_type)
+);
+create index if not exists ad_breakdown_performance_account_run_idx
+  on ad_breakdown_performance (account_id, manual_analysis_run_id, breakdown);
+create index if not exists ad_breakdown_performance_ad_idx
+  on ad_breakdown_performance (account_id, meta_ad_id);
+
+-- One row per (scope, ad, report class, additive metric) per run:
+--   truth_value    authoritative value for the scope (null: no compatible control)
+--   observed_value Σ compatible rows of the report class at the scope
+--   coverage_pct   observed / truth × 100
+--   residual       truth − observed, SIGNED (negative = the breakdown over-counts)
+-- Ads the control knows but the breakdown omits get rows with observed 0.
+create table if not exists reconciliation_ledger (
+  id bigint generated always as identity primary key,
+  account_id text not null references ad_accounts(id),
+  manual_analysis_run_id uuid not null references manual_analysis_runs(id) on delete cascade,
+  scope text not null check (scope in ('account','ad')),
+  ad_identity_kind text check (ad_identity_kind in ('ad_id','ad_name','unjoinable')),
+  ad_identity text not null default '',
+  ad_name text,
+  meta_ad_id text,
+  report_class text not null check (report_class in ('demographic','placement','asset','demographic_asset','placement_asset','demographic_placement')),
+  metric text not null,
+  grain text not null,
+  truth_source text not null check (truth_source in ('ad_summary','totals_row','none')),
+  truth_value numeric,
+  observed_value numeric not null,
+  coverage_pct numeric,
+  residual numeric,
+  -- max(0, observed − truth): the over-count itself, never normalised away
+  overcoverage numeric,
+  direct_share numeric not null default 1,
+  modelled_share numeric not null default 0,
+  evidence_state text not null,
+  compatibility_failures jsonb not null default '[]',
+  truth_import_ids uuid[] not null default '{}',
+  observed_import_ids uuid[] not null default '{}',
+  reconciled_at timestamptz not null default now(),
+  unique (account_id, manual_analysis_run_id, scope, ad_identity, report_class, metric)
+);
+create index if not exists reconciliation_ledger_account_run_idx
+  on reconciliation_ledger (account_id, manual_analysis_run_id, report_class, scope);
+
+-- Asset instances: THIS asset on THIS ad. `content_hash` is the cross-ad
+-- content identity; `provenance` separates configured context (the Ad
+-- Summary's creative columns — never carries metrics of its own) from
+-- delivered evidence (a pivot's asset breakdown — the only kind that can
+-- receive direct_asset evidence). Upserted, not run-scoped: a re-run attaches
+-- to the same record so a creative is deconstructed once.
+create table if not exists creative_assets (
+  id uuid primary key default gen_random_uuid(),
+  account_id text not null references ad_accounts(id),
+  ad_identity_kind text not null check (ad_identity_kind in ('ad_id','ad_name')),
+  ad_identity text not null,
+  meta_ad_id text,
+  ad_name text not null,
+  asset_type text not null,
+  raw_value text not null,
+  normalized_value text not null,
+  content_hash text not null,
+  provenance text not null check (provenance in ('configured','delivered')),
+  source_column text not null,
+  source_import_id uuid references manual_imports(id) on delete set null,
+  date_start date,
+  date_end date,
+  last_seen_run_id uuid references manual_analysis_runs(id) on delete set null,
+  first_seen_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now(),
+  unique (account_id, ad_identity_kind, ad_identity, asset_type, provenance, content_hash)
+);
+create index if not exists creative_assets_content_idx
+  on creative_assets (account_id, content_hash);
+create index if not exists creative_assets_ad_idx
+  on creative_assets (account_id, meta_ad_id);
+
+-- Many-to-many: a deconstructed variable × the ad (and, when a delivered
+-- media breakdown names the same asset, the asset instance) that carries it.
+-- `relationship` is direct_asset or ad_context — the line the spec draws
+-- between attributed and contextual evidence.
+create table if not exists variable_evidence (
+  id bigint generated always as identity primary key,
+  account_id text not null references ad_accounts(id),
+  manual_analysis_run_id uuid not null references manual_analysis_runs(id) on delete cascade,
+  variable_family text not null,
+  variable_id text not null,
+  source_kind text not null check (source_kind in ('deconstruction','ad_name_token','copy_component')),
+  source_ref text not null,
+  asset_key text,
+  ad_identity_kind text not null check (ad_identity_kind in ('ad_id','ad_name')),
+  ad_identity text not null,
+  meta_ad_id text,
+  ad_name text not null,
+  relationship text not null check (relationship in ('direct_asset','ad_context')),
+  confidence numeric,
+  unique (account_id, manual_analysis_run_id, variable_family, variable_id, source_kind, source_ref, ad_identity_kind, ad_identity, asset_key)
+);
+create index if not exists variable_evidence_account_run_idx
+  on variable_evidence (account_id, manual_analysis_run_id, variable_family, variable_id);
+
+-- Per variable × breakdown × segment × result type, per run — what the IAP
+-- Library answers from. Aggregated over UNIQUE (ad, segment) observations so
+-- a creative mapped to three variables never triples its spend; direct and
+-- contextual totals stay separate; the interaction index is the shrunk
+-- ratio of the cell rate to segment × variable ÷ overall.
+create table if not exists variable_segment_performance (
+  id bigint generated always as identity primary key,
+  account_id text not null references ad_accounts(id),
+  manual_analysis_run_id uuid not null references manual_analysis_runs(id) on delete cascade,
+  variable_family text not null,
+  variable_id text not null,
+  breakdown text not null check (breakdown in ('all','demographic','placement','asset','demographic_asset','placement_asset','demographic_placement')),
+  segment jsonb not null default '{}',
+  segment_key text not null default '',
+  result_type text not null default '',
+  contributing_ad_ids text[] not null default '{}',
+  contributing_asset_keys text[] not null default '{}',
+  direct_totals jsonb not null default '{}',
+  contextual_totals jsonb not null default '{}',
+  observed_coverage_pct numeric,
+  modelled_share numeric not null default 0,
+  result_volume numeric not null default 0,
+  cost_per_result numeric,
+  raw_rate numeric,
+  adjusted_rate numeric,
+  interaction_index numeric,
+  contributing_ads integer not null default 0,
+  evidence_state text not null,
+  confidence text not null,
+  unique (account_id, manual_analysis_run_id, variable_family, variable_id, breakdown, segment_key, result_type)
+);
+create index if not exists variable_segment_performance_account_run_idx
+  on variable_segment_performance (account_id, manual_analysis_run_id, variable_family, variable_id);
+
+-- Per-run summary (truth source, per-metric account coverage per breakdown,
+-- ads per evidence state) so History can show it without reading the ledger.
+alter table if exists manual_analysis_runs add column if not exists reconciliation_summary jsonb;
+
+-- RLS for the five tables — the importer_tables array above predates them.
+do $$
+declare t text;
+begin
+  foreach t in array array['ad_breakdown_performance','reconciliation_ledger','creative_assets','variable_evidence','variable_segment_performance'] loop
+    execute format('alter table if exists public.%I enable row level security', t);
+    execute format('revoke all on public.%I from anon, authenticated', t);
+  end loop;
+end $$;
 
 -- Allow the 'deconstruct' generation kind (constraint predates it).
 do $$

@@ -240,6 +240,7 @@ export function CreativeCard({
   onUploadCreative,
   onSegmentClick,
   perfRow,
+  perfRows,
   demographicEmptyReason,
   placementsEmptyReason,
   funnelEmptyReason,
@@ -256,6 +257,8 @@ export function CreativeCard({
   onFullBreakdownClick?: () => void;
   /** Performance row for the Funnel tab in the expand dialog. */
   perfRow?: import("@/lib/data/seedTypes").CellPerformanceRow | null;
+  /** Every per-result-event row for this cell — the split behind the blended results tile. */
+  perfRows?: import("@/lib/data/seedTypes").CellPerformanceRow[];
   /** Cause-specific empty-state text forwarded to the expand dialog tabs. */
   demographicEmptyReason?: string | null;
   placementsEmptyReason?: string | null;
@@ -425,6 +428,7 @@ export function CreativeCard({
         onUploadCreatives={onUploadCreatives}
         onSegmentClick={onSegmentClick}
         perfRow={perfRow}
+        perfRows={perfRows}
         demographicEmptyReason={demographicEmptyReason}
         placementsEmptyReason={placementsEmptyReason}
         funnelEmptyReason={funnelEmptyReason}

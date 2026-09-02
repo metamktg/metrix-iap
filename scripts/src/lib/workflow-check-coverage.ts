@@ -25,6 +25,16 @@ export const MANUAL_ONLY_CHECK_SCRIPTS: Record<string, string> = {
     "SUPABASE_DB_PASSWORD already lives. It exits 2 (not 0) when no credential " +
     "resolves, precisely so an unattended runner cannot mistake 'nothing was " +
     "checked' for 'the views are fine'.",
+  "check:reconciliation-ledger":
+    "read-only cross-check that a completed manual analysis run's reconciliation " +
+    "ledger is internally consistent (per-ad rows sum to the account row, coverage " +
+    "matches observed/truth, no residual was inserted into a fact row, run-scoped " +
+    "tables belong to the run they name). Same constraint as check:db-credentials " +
+    "and check:ad-performance-views: it needs a LIVE database credential, which CI " +
+    "deliberately does not carry, and Claude Code cloud environments are not a " +
+    "secrets store either. Run it by hand in the Replit shell after a real run — " +
+    "docs/specs/iap-multi-report-reconciliation.md §17a names it as the third " +
+    "leg of the triple validation. Exits 2 (not 0) when no credential resolves.",
   "check:unexplained-dashes":
     "measures every VISIBLE em-dash in the rendered DOM and fails on any that " +
     "carries no title, aria-label or info affordance a reader could resolve. " +

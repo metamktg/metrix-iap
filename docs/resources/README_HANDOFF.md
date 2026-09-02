@@ -24,6 +24,10 @@ complete record and the zip is no longer needed.
    full defect register.
 7. `METRIX_Phase2_Kickoff_Prompt_Final.md` — the sprint's original kickoff prompt, kept for
    provenance. Its Track 1 / Track 2 instructions are now history: both tracks are merged.
+8. `../specs/iap-multi-report-reconciliation.md` — the reconciliation-first evidence layer
+   (2026-09-02). Read its §0 first: it records where the code disproved the brief (duplicate
+   headers resolve to the first column, Ad ID is dropped at every breakdown bucket, "8 of 19 ads"
+   counts names, the tester's Ad Summary has no Ad ID). Register §14 is its ship record.
 
 ## Where the work actually stands
 
@@ -44,6 +48,12 @@ user-journey pass the release brief asked for: the sidebar's deferred-click mode
 in-app links routed through context-dropping redirects, three orphan pages, no Back, no
 palette. Nine findings, all shipped with tests; the open remainder is in its §3. The
 register's §8 re-verifies every open item above against the same tree.
+
+**Reconciliation-first evidence layer (2026-09-02, later the same day).** Specification
+`../specs/iap-multi-report-reconciliation.md`; register §14. Adaptive multi-report reconciliation per
+Ad ID and per metric, asset instances and copy signatures, variable evidence without spend
+duplication, evidence states on every new surface, the canonical confidence bands, and a live
+cross-check script. The modelled tier is a tested interface only (spec §19).
 
 **Shipped to app.metrix.ad (2026-09-02).** PR #174 (navigation overhaul, creative components,
 Phase 4 plan) merged to `main` at `5cdaaa5`, the workspace merged `main`, and the publish was

@@ -61,6 +61,7 @@
     "check:cohort-reach": "tsx ./src/check-cohort-reach.ts",
     "check:locator-ambiguity": "tsx ./src/check-locator-ambiguity.ts",
     "check:ad-performance-views": "tsx ./src/check-ad-performance-views.ts",
+    "check:reconciliation-ledger": "tsx ./src/check-reconciliation-ledger.ts",
     "apply:ad-performance-views": "tsx ./src/apply-ad-performance-views.ts",
     "smoke:metrix-iap-dom-validity": "tsx ./src/smoke-metrix-iap-dom-validity.ts",
     "smoke:metrix-iap-shared-layout": "tsx ./src/smoke-metrix-iap-shared-layout.ts",

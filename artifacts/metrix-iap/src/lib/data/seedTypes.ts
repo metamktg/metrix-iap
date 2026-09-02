@@ -255,6 +255,196 @@ export interface AnalysisData {
   concept_rollup?: ConceptRollupRow[];
   /** Conversion-attributed device/platform/placement funnel signal (present when the account's import carried a conversion-device export). */
   conversion_tracking_signal?: ConversionTrackingSignal | null;
+  /**
+   * Reconciliation-first evidence layer (docs/specs/iap-multi-report-
+   * reconciliation.md), scoped to latest_analysis_run_id. Ad-grain
+   * breakdown facts keyed by Account ID + Ad ID, the per-ad × per-metric
+   * ledger with signed residuals, and per-variable segment performance.
+   * Absent on accounts whose latest run predates the layer.
+   */
+  ad_breakdowns?: AdBreakdownRow[];
+  reconciliation?: ReconciliationData | null;
+  variable_segment_performance?: VariableSegmentRow[];
+}
+
+// ─── Reconciliation-first evidence layer ──────────────────────────────
+
+export type EvidenceState =
+  | "direct_asset"
+  | "direct_joint"
+  | "ad_context"
+  | "observed_reconciled"
+  | "observed_partial"
+  | "modelled"
+  | "overcounted"
+  | "unreconciled"
+  | "incompatible"
+  | "unavailable";
+
+export type BreakdownKind = "demographic" | "placement" | "asset" | "demographic_asset" | "placement_asset" | "demographic_placement";
+/** How a fact row was attributed: an asset breakdown, a joint file, or a single-dimension breakdown. */
+export type AttributionKind = "direct_asset" | "direct_joint" | "direct_segment";
+export type AdIdentityKind = "ad_id" | "ad_name" | "unjoinable";
+
+export interface SegmentDims {
+  gender?: string;
+  age?: string;
+  platform?: string;
+  placement?: string;
+  device?: string;
+  asset_type?: string;
+  asset_hash?: string;
+  asset_value?: string;
+  /** For a copy signature: the delivered field values by column. */
+  asset_fields?: Record<string, string>;
+}
+
+/** One observed fact at ad × segment × reporting period. Residuals are never rows here. */
+export interface AdBreakdownRow {
+  breakdown: BreakdownKind;
+  attribution: AttributionKind;
+  ad_identity_kind: AdIdentityKind;
+  ad_identity: string;
+  meta_ad_id: string | null;
+  ad_name: string | null;
+  segment: SegmentDims;
+  segment_key: string;
+  result_type: string;
+  date_start: string;
+  date_end: string;
+  spend: number | null;
+  impressions: number | null;
+  /** Only at the exact grain Meta returned (reach_basis "exact"); null on every aggregated row. */
+  reach: number | null;
+  reach_basis: "exact" | null;
+  clicks_all: number | null;
+  link_clicks: number | null;
+  results: number | null;
+  /** Every additive metric by slug (purchases, leads, landing_page_views …). */
+  metrics: Record<string, number>;
+  evidence_state: EvidenceState;
+  /** Spend coverage of this ad × breakdown against the control; null without a per-ad control. */
+  coverage_pct: number | null;
+}
+
+export interface CompatibilityFailure {
+  kind: string;
+  detail: string;
+}
+
+/** One ledger row per (scope, ad, report class, additive metric). residual = truth − observed, signed. */
+export interface LedgerRow {
+  scope: "account" | "ad";
+  ad_identity_kind: AdIdentityKind | null;
+  ad_identity: string;
+  ad_name: string | null;
+  meta_ad_id: string | null;
+  report_class: BreakdownKind;
+  metric: string;
+  grain: string;
+  truth_source: "ad_summary" | "totals_row" | "none";
+  truth_value: number | null;
+  observed_value: number;
+  coverage_pct: number | null;
+  residual: number | null;
+  /** max(0, observed − truth) — the over-count, kept for diagnosis. */
+  overcoverage?: number | null;
+  direct_share: number;
+  modelled_share: number;
+  evidence_state: EvidenceState;
+  compatibility_failures: CompatibilityFailure[];
+}
+
+export interface MetricReconciliation {
+  metric: string;
+  truth_value: number | null;
+  observed_value: number;
+  coverage_pct: number | null;
+  residual: number | null;
+  evidence_state: EvidenceState;
+}
+
+export interface BreakdownReconciliationSummary {
+  report_class: BreakdownKind;
+  by_metric: MetricReconciliation[];
+  ads_total: number;
+  ads_reconciled: number;
+  ads_partial: number;
+  ads_overcounted: number;
+  ads_unreconciled: number;
+  ads_incompatible: number;
+  ads_missing_from_breakdown: number;
+}
+
+export interface ReconciliationSummary {
+  truth_source: "ad_summary" | "totals_row" | "none";
+  truth_identity_kind: "ad_id" | "ad_name" | null;
+  /** Which candidate control was selected and why (source precedence). */
+  truth_precedence?: string;
+  /** Disagreements above 1% between the selected control and an alternative — recorded, never averaged. */
+  truth_conflicts?: string[];
+  breakdowns: BreakdownReconciliationSummary[];
+  notes: string[];
+}
+
+export interface ReconciliationData {
+  summary: ReconciliationSummary | null;
+  ledger: LedgerRow[];
+}
+
+/** Per variable × breakdown × segment × result type; direct and contextual totals stay separate. */
+export interface VariableSegmentRow {
+  variable_family: string;
+  variable_id: string;
+  breakdown: "all" | BreakdownKind;
+  segment: SegmentDims;
+  segment_key: string;
+  result_type: string;
+  contributing_ad_ids: string[];
+  contributing_asset_keys: string[];
+  direct_totals: Record<string, number>;
+  contextual_totals: Record<string, number>;
+  observed_coverage_pct: number | null;
+  modelled_share: number;
+  result_volume: number;
+  cost_per_result: number | null;
+  raw_rate: number | null;
+  adjusted_rate: number | null;
+  interaction_index: number | null;
+  contributing_ads: number;
+  evidence_state: EvidenceState;
+  /** The documented confidence_level vocabulary (IAP_DATA_BUNDLE_PREP), not the shipped concept tier. */
+  confidence: "high" | "medium" | "validation_required" | "insufficient";
+}
+
+/** An asset instance — this asset on this ad; content_hash is the cross-ad content identity. */
+export interface CreativeAssetRow {
+  id: string;
+  ad_identity_kind: "ad_id" | "ad_name";
+  ad_identity: string;
+  meta_ad_id: string | null;
+  ad_name: string;
+  asset_type: string;
+  raw_value: string;
+  normalized_value: string;
+  content_hash: string;
+  provenance: "configured" | "delivered";
+  source_column: string;
+}
+
+/** A deconstructed variable × the ad (and asset instance) that carries it. */
+export interface VariableEvidenceRow {
+  variable_family: string;
+  variable_id: string;
+  source_kind: "deconstruction" | "ad_name_token" | "copy_component";
+  source_ref: string;
+  asset_key: string | null;
+  ad_identity_kind: "ad_id" | "ad_name";
+  ad_identity: string;
+  meta_ad_id: string | null;
+  ad_name: string;
+  relationship: "direct_asset" | "ad_context";
+  confidence: number | null;
 }
 
 // ─── Strategy / Brief ─────────────────────────────────────────────────
@@ -643,6 +833,12 @@ export interface AdRecord {
   variation?: string | null;
   test_id?: string | null;
   meta_ad_id?: string | null;
+  /**
+   * Every Meta ad instance observed under this name (ad_instances). Ad
+   * names are reused across ad sets — the tester's 19 names cover 44 Ad IDs
+   * — so this, not meta_ad_id, is the join to ad-grain evidence.
+   */
+  meta_ad_ids?: string[];
   creative_asset_url?: string | null;
   asset_filename?: string | null;
   asset_servable?: boolean;
@@ -787,6 +983,10 @@ export interface AdAccount {
   creative_deconstructions?: CreativeDeconstruction[];
   /** Copy-level components weighted against performance; null until the account has ad rows. */
   creative_components?: CreativeComponents | null;
+  /** Asset instances (configured context + delivered evidence) — spec §10. */
+  creative_assets?: CreativeAssetRow[];
+  /** Variable ↔ ad/asset evidence relationships for the latest run — spec §11. */
+  variable_evidence?: VariableEvidenceRow[];
 }
 
 // ─── Creative deconstruction (uploaded creatives → IAP library) ───────

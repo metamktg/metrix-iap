@@ -14,4 +14,5 @@ export const ReportClassCoverageReportClass = {
   device_placement: 'device_placement',
   ad_summary: 'ad_summary',
   conversion_device: 'conversion_device',
+  asset: 'asset',
 } as const;

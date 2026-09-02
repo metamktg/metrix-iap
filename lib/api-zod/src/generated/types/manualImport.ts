@@ -7,8 +7,10 @@
  */
 import type { ColumnMappingSummaryEntry } from './columnMappingSummaryEntry';
 import type { CreativeLinkResult } from './creativeLinkResult';
+import type { ManualImportHeaderConflictsItem } from './manualImportHeaderConflictsItem';
 import type { ManualImportKind } from './manualImportKind';
 import type { ManualImportMatchMethod } from './manualImportMatchMethod';
+import type { ManualImportReportGrain } from './manualImportReportGrain';
 import type { ManualImportStatus } from './manualImportStatus';
 
 export interface ManualImport {
@@ -30,4 +32,8 @@ export interface ManualImport {
   mapping_summary?: ColumnMappingSummaryEntry[] | null;
   /** Warnings recorded by upload-time validation, persisted so they outlive the upload dialog. NULL and [] mean different things and must not be conflated: NULL is "not recorded" (a creative_asset row, or a file staged before warnings were persisted) and must never render as "no warnings"; [] is "validation ran and found none", which is a real positive finding. */
   upload_warnings?: string[] | null;
+  /** What the file can prove, detected at staging from its resolved columns and rows (lib/reportGrain.ts ReportGrain): report_class (ad_summary | time_series | demographic | placement | asset | demographic_asset | placement_asset | conversion_device), has_ad_id, ad_id_joinable, has_day, aggregate_shape, period, dimensions, asset_columns, distinct_ad_ids, distinct_ad_names, reused_ad_names, currency, account_ids, header_conflicts, additive_metrics, non_additive_metrics. Absent/null for creative assets and for imports staged before grain detection existed. */
+  report_grain?: ManualImportReportGrain;
+  /** Duplicated headers whose occurrences DISAGREED row by row (DuplicateHeaderConflict: header, ordinals, conflictingRows, totalRows, example). NULL = not recorded; [] = validated, none found. A conflict on "Ad ID" makes the file unjoinable at ad grain. */
+  header_conflicts?: ManualImportHeaderConflictsItem[] | null;
 }

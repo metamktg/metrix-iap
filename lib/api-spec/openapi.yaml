@@ -4138,7 +4138,7 @@ components:
       properties:
         kind:
           type: string
-          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, performance_conversion_device_csv, creative_asset]
+          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, performance_conversion_device_csv, performance_asset_csv, creative_asset]
         filename:
           type: string
           minLength: 1
@@ -4215,7 +4215,7 @@ components:
       properties:
         kind:
           type: string
-          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, performance_conversion_device_csv]
+          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, performance_conversion_device_csv, performance_asset_csv]
           description: Performance report kinds only — creative assets use single-request staging.
         filename:
           type: string
@@ -4279,6 +4279,20 @@ components:
           description: Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only.
           items:
             type: string
+        report_grain:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: >-
+            What the file can prove, detected at staging from its resolved
+            columns and rows (lib/reportGrain.ts ReportGrain): report_class
+            (ad_summary | time_series | demographic | placement | asset |
+            demographic_asset | placement_asset | conversion_device),
+            has_ad_id, ad_id_joinable, has_day, aggregate_shape, period,
+            dimensions, asset_columns, distinct_ad_ids, distinct_ad_names,
+            reused_ad_names, currency, account_ids, header_conflicts,
+            additive_metrics, non_additive_metrics. Absent/null for creative
+            assets and for imports staged before grain detection existed.
       required:
         - status
         - import_id
@@ -4294,7 +4308,7 @@ components:
           type: string
         kind:
           type: string
-          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, performance_conversion_device_csv, creative_asset]
+          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, performance_conversion_device_csv, performance_asset_csv, creative_asset]
         filename:
           type: string
         content_type:
@@ -4338,6 +4352,31 @@ components:
           nullable: true
           items:
             type: string
+        report_grain:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: >-
+            What the file can prove, detected at staging from its resolved
+            columns and rows (lib/reportGrain.ts ReportGrain): report_class
+            (ad_summary | time_series | demographic | placement | asset |
+            demographic_asset | placement_asset | conversion_device),
+            has_ad_id, ad_id_joinable, has_day, aggregate_shape, period,
+            dimensions, asset_columns, distinct_ad_ids, distinct_ad_names,
+            reused_ad_names, currency, account_ids, header_conflicts,
+            additive_metrics, non_additive_metrics. Absent/null for creative
+            assets and for imports staged before grain detection existed.
+        header_conflicts:
+          type: array
+          nullable: true
+          description: >-
+            Duplicated headers whose occurrences DISAGREED row by row
+            (DuplicateHeaderConflict: header, ordinals, conflictingRows,
+            totalRows, example). NULL = not recorded; [] = validated, none
+            found. A conflict on "Ad ID" makes the file unjoinable at ad grain.
+          items:
+            type: object
+            additionalProperties: true
       required:
         - id
         - account_id
@@ -4446,6 +4485,9 @@ components:
         conversion_device:
           $ref: "#/components/schemas/IapCsvClassFormat"
           description: Format spec for the optional Conversion Device pivot export (conversion-only metrics, no spend/impressions). Upload to the performance_conversion_device_csv slot.
+        asset:
+          $ref: "#/components/schemas/IapCsvClassFormat"
+          description: Format spec for the optional asset-breakdown pivot export (a report "by asset" — Text, Headline, Image name …, optionally with demographic or placement dimensions). Upload to the performance_asset_csv slot.
         column_aliases:
           type: array
           items:
@@ -4741,7 +4783,7 @@ components:
       properties:
         report_class:
           type: string
-          enum: [demographic, device_placement, ad_summary, conversion_device]
+          enum: [demographic, device_placement, ad_summary, conversion_device, asset]
         rows_scoped: { type: integer, description: "Rows from this class inside the analysis window." }
         distinct_ads: { type: integer, description: "Distinct ad names present in this class's scoped rows." }
         spend: { type: number, nullable: true, description: "Spend carried by this class's scoped rows; null when the class never carries spend (e.g. conversion_device)." }

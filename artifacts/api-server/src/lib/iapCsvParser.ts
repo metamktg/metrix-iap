@@ -41,6 +41,10 @@ import {
   type ColumnMatch,
   detectObjectiveColumnGroups,
   type ObjectiveColumnGroup,
+  ASSET_BREAKDOWN_COLUMNS,
+  REPORT_CONTEXT_COLUMNS,
+  NON_ADDITIVE_METRIC_SLUGS,
+  RATE_METRIC_SLUGS,
 } from "./iapCsvSpec";
 
 export class IapCsvFormatError extends Error {
@@ -62,6 +66,42 @@ export type IapCsvRow = {
    * Never fabricated — absent columns are not included.
    */
   creativeMetadata?: Record<string, string>;
+  /**
+   * Delivered asset breakdown values (pivot classes only), keyed by the exact
+   * header Meta emitted ("Text", "Headline", "Image name" …). Present only
+   * when the file carries such a column and this row has a value. The asset
+   * type each column maps to is ASSET_BREAKDOWN_COLUMNS (spec §10).
+   */
+  assetBreakdowns?: Record<string, string>;
+  /**
+   * Report-context columns captured verbatim when present ("Account ID",
+   * "Reporting ends", "Attribution setting", …) — they decide source
+   * compatibility in the reconciliation layer, never row semantics.
+   */
+  context?: Record<string, string>;
+  /**
+   * Values of a duplicated header on THIS row, by ordinal, recorded only when
+   * the occurrences DISAGREED (spec §5: retain both). Rows where every
+   * occurrence agreed carry the single canonical value and no entry here.
+   */
+  duplicates?: Record<string, string[]>;
+};
+
+/** A header that appears more than once with identical values on every row (informational). */
+export type DuplicateHeaderNote = { header: string; ordinals: number[] };
+
+/**
+ * A header that appears more than once with DIFFERENT values on at least one
+ * row — a schema conflict. The field is unusable for joins and reconciliation
+ * from this file until the export is fixed; consumers read `header` to know
+ * which canonical field to distrust.
+ */
+export type DuplicateHeaderConflict = {
+  header: string;
+  ordinals: number[];
+  conflictingRows: number;
+  totalRows: number;
+  example: { line: number; values: string[] };
 };
 
 /**
@@ -139,6 +179,20 @@ export type IapCsvParseResult = {
    * blocks BLANK or absent spend/impressions. A file can trip either alone.
    */
   conversionExportSuspected: boolean;
+  /** Duplicated headers whose occurrences agreed on every row — canonical = first ordinal. */
+  headerNotes: DuplicateHeaderNote[];
+  /** Duplicated headers whose occurrences disagreed — see DuplicateHeaderConflict. */
+  headerConflicts: DuplicateHeaderConflict[];
+  /** ISO-4217 code read from the resolved spend header ("Amount spent (CAD)" → "CAD"); null when the header carries none. */
+  currency: string | null;
+  /**
+   * Meta's own grand-totals row (Day blank), base metrics by slug, when the
+   * file carried exactly one. It is an ACCOUNT-grain control source of its
+   * own (spec §7: below an Ad Summary, above nothing) — the reconciliation
+   * layer reads additive metrics from it and ignores the rest. Null when
+   * absent or when several subtotal rows made it ambiguous.
+   */
+  totalsRow: Record<string, number | string | null> | null;
 };
 
 /** Measured fill for one canonical column across every parsed row. */
@@ -302,36 +356,32 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
 
   // ── Duplicate header names ────────────────────────────────────────────
   // Every column resolution below picks the FIRST occurrence of a header
-  // string (via findIndex). A duplicated header name — Meta's own pivot
-  // exporter has been observed to emit "Result value type" twice — silently
-  // drops the LATER occurrence's column, but with no visible index the drop
-  // reads as if that data never existed. Surface it once, up front.
-  {
-    const seen = new Set<string>();
-    const duplicated = new Set<string>();
-    for (const h of headerStrings) {
-      if (h === "") continue;
-      if (seen.has(h)) duplicated.add(h);
-      seen.add(h);
-    }
-    // Folded into ONE line, same policy as the auto-match cascades below.
-    // Meta's pivot exporter duplicates a fixed set of headers together, so
-    // this fired three times per file on every real export — six of the
-    // fifteen warnings on a live AAFE run were this one notice, crowding
-    // out the coverage and ID-corruption warnings that actually needed
-    // acting on. One line naming every affected column says the same thing.
-    const dupes = [...duplicated];
-    if (dupes.length === 1) {
-      warnings.push(
-        `Column "${dupes[0]}" appears more than once in the header row — only the first occurrence is used.`,
-      );
-    } else if (dupes.length > 1) {
-      warnings.push(
-        `${dupes.length} columns appear more than once in the header row — only the first occurrence of each is used: ` +
-          `${dupes.map((h) => `"${h}"`).join(", ")}.`,
-      );
-    }
+  // string (via findIndex). Meta's own pivot exporter has been observed to
+  // emit "Result value type", "Ad ID" and "Ad name" twice. The later column
+  // is unreachable through the keyed row, so the parser keeps every ordinal
+  // here and compares the occurrences ROW BY ROW after normalization
+  // (spec §5): identical everywhere → an informational note, the first
+  // ordinal is canonical; different on any row → a schema conflict, the
+  // field is unusable for joins from this file, and the disagreeing values
+  // are retained on the row. Assuming Meta's duplicates are harmless is
+  // exactly the kind of silent overwrite the spec forbids.
+  const duplicateOrdinals = new Map<string, number[]>();
+  headerStrings.forEach((h, i) => {
+    if (h === "") return;
+    const list = duplicateOrdinals.get(h);
+    if (list) list.push(i);
+    else duplicateOrdinals.set(h, [i]);
+  });
+  for (const [h, ordinals] of [...duplicateOrdinals]) {
+    if (ordinals.length < 2) duplicateOrdinals.delete(h);
   }
+  const duplicateDisagreements = new Map<string, { rows: number; example: { line: number; values: string[] } | null }>();
+  const normalizeDupCell = (v: string | undefined): string => {
+    const t = (v ?? "").trim();
+    if (t === "") return "";
+    const n = parseNumericCell(t);
+    return n !== null ? String(n) : t;
+  };
 
   // Single authoritative summary map: canonical → entry. Using a Map (not an
   // array) guarantees exactly one entry per canonical column even when a column
@@ -407,6 +457,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   const baseMetricIdx = new Map<string, number>();
   const missingBaseMetrics: string[] = [];
   let amountSpentIdx = -1;
+  let amountSpentHeader: string | null = null;
 
   // Derived/irrelevant metrics are accepted transparently when present but are
   // never expected: absence is not recorded, warned about, or inferred against.
@@ -424,6 +475,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       const match = findColumnInHeader(headerStrings, col);
       if (match) {
         amountSpentIdx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
+        amountSpentHeader = match.headerValue;
         claimedHeaderValues.add(match.headerValue);
         if (match.via !== "exact" && match.via !== "currency") {
           columnMappings[col] = match;
@@ -733,6 +785,33 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     );
   }
 
+  // ── Currency ──────────────────────────────────────────────────────────
+  // Read from the spend header that actually resolved ("Amount spent (CAD)"),
+  // never from the template placeholder: the totals-row and coverage
+  // warnings once printed "Amount spent (USD)" for a CAD account.
+  const currencyCode = amountSpentHeader?.match(/\(([A-Za-z]{3})\)\s*$/)?.[1]?.toUpperCase() ?? null;
+  const currencyLabel = (col: string): string => col.replace("{ACCOUNT_CURRENCY}", currencyCode ?? "USD");
+
+  // ── Delivered asset breakdown + report-context columns ────────────────
+  // Captured verbatim by exact (case-insensitive) header. Asset breakdowns
+  // are a property of PIVOT exports (a report "by asset"); the Ad Summary's
+  // creative columns are configured context and go through creativeMetadata
+  // instead, so the two evidence kinds never blur (spec §10).
+  const findHeaderOrdinal = (name: string): number =>
+    headerStrings.findIndex((h) => h.toLowerCase() === name.toLowerCase());
+  const assetColIdx = new Map<string, number>();
+  if (!isAdSummary) {
+    for (const col of Object.keys(ASSET_BREAKDOWN_COLUMNS)) {
+      const idx = findHeaderOrdinal(col);
+      if (idx >= 0) assetColIdx.set(col, idx);
+    }
+  }
+  const contextColIdx = new Map<string, number>();
+  for (const col of REPORT_CONTEXT_COLUMNS) {
+    const idx = findHeaderOrdinal(col);
+    if (idx >= 0) contextColIdx.set(col, idx);
+  }
+
   // ── Parse rows ────────────────────────────────────────────────────────
   const parseBaseMetrics = (cells: string[]): Record<string, number | string | null> => {
     const base: Record<string, number | string | null> = {};
@@ -767,6 +846,18 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   for (let li = 1; li < lines.length; li++) {
     const cells = lines[li]!;
     if (cells.every((c) => c.trim() === "")) continue;
+
+    let duplicates: Record<string, string[]> | undefined;
+    for (const [h, ordinals] of duplicateOrdinals) {
+      const values = ordinals.map((i) => (cells[i] ?? "").trim());
+      const norm = values.map(normalizeDupCell);
+      if (norm.every((v) => v === norm[0])) continue;
+      const entry = duplicateDisagreements.get(h) ?? { rows: 0, example: null };
+      entry.rows += 1;
+      if (!entry.example) entry.example = { line: li + 1, values };
+      duplicateDisagreements.set(h, entry);
+      (duplicates ??= {})[h] = values;
+    }
 
     const breakdowns: Record<string, string> = {};
     for (const col of spec.breakdownColumns) {
@@ -823,7 +914,64 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       if (Object.keys(creativeMetadata).length === 0) creativeMetadata = undefined;
     }
 
-    rows.push({ breakdowns, base, extra, ...(creativeMetadata ? { creativeMetadata } : {}) });
+    let assetBreakdowns: Record<string, string> | undefined;
+    for (const [col, idx] of assetColIdx) {
+      const val = (cells[idx] ?? "").trim();
+      if (val) (assetBreakdowns ??= {})[col] = val;
+    }
+    let context: Record<string, string> | undefined;
+    for (const [col, idx] of contextColIdx) {
+      const val = (cells[idx] ?? "").trim();
+      if (val) (context ??= {})[col] = val;
+    }
+
+    rows.push({
+      breakdowns,
+      base,
+      extra,
+      ...(creativeMetadata ? { creativeMetadata } : {}),
+      ...(assetBreakdowns ? { assetBreakdowns } : {}),
+      ...(context ? { context } : {}),
+      ...(duplicates ? { duplicates } : {}),
+    });
+  }
+
+  // ── Duplicate header verdicts ─────────────────────────────────────────
+  // Now that every row has been compared, each duplicated header is either a
+  // note (identical everywhere) or a conflict (disagreed somewhere). The
+  // wording keeps "appears more than once in the header row" so the severity
+  // classifiers on both sides keep recognising the line.
+  const headerNotes: DuplicateHeaderNote[] = [];
+  const headerConflicts: DuplicateHeaderConflict[] = [];
+  const totalDataRows = rows.length + totalsRows.length;
+  for (const [header, ordinals] of duplicateOrdinals) {
+    const dis = duplicateDisagreements.get(header);
+    if (!dis || !dis.example) headerNotes.push({ header, ordinals });
+    else headerConflicts.push({ header, ordinals, conflictingRows: dis.rows, totalRows: totalDataRows, example: dis.example });
+  }
+  const columnList = (ordinals: number[]): string => {
+    const cols = ordinals.map((i) => i + 1);
+    return cols.length === 2 ? `columns ${cols[0]} and ${cols[1]}` : `columns ${cols.join(", ")}`;
+  };
+  if (headerNotes.length === 1) {
+    const n = headerNotes[0]!;
+    warnings.push(
+      `Note: column "${n.header}" appears more than once in the header row (${columnList(n.ordinals)}) — ` +
+        `the values are identical on every row; column ${n.ordinals[0]! + 1} is used.`,
+    );
+  } else if (headerNotes.length > 1) {
+    warnings.push(
+      `Note: ${headerNotes.length} columns appear more than once in the header row with identical values on every row — ` +
+        `the first of each is used: ${headerNotes.map((n) => `"${n.header}" (${columnList(n.ordinals)})`).join(", ")}.`,
+    );
+  }
+  for (const c of headerConflicts) {
+    warnings.push(
+      `Column "${c.header}" appears more than once in the header row with DIFFERENT values on ` +
+        `${c.conflictingRows.toLocaleString()} of ${c.totalRows.toLocaleString()} rows (${columnList(c.ordinals)}; ` +
+        `e.g. line ${c.example.line}: ${c.example.values.map((v) => `"${v}"`).join(" vs ")}). ` +
+        `Metrix will not join or reconcile through "${c.header}" from this file until the export is fixed.`,
+    );
   }
 
   if (rows.length === 0) {
@@ -898,6 +1046,11 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     for (const col of BASE_METRICS) {
       if (STRING_VALUED.has(col)) continue;
       const slug = slugifyColumn(col);
+      // Reach, frequency, unique counts and pre-divided ratios are not sums of
+      // their rows — Meta's totals-row reach is the de-duplicated account
+      // reach, never Σ row reach — so a mismatch there is arithmetic, not a
+      // finding. The tester's run carried nine such false warnings.
+      if (NON_ADDITIVE_METRIC_SLUGS.has(slug) || RATE_METRIC_SLUGS.has(slug)) continue;
       const reported = totalsRow.base[slug];
       if (typeof reported !== "number") continue;
       const computed = coverage.columns.find((c) => c.slug === slug)?.sum;
@@ -906,7 +1059,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       const tolerance = Math.max(1, Math.abs(reported) * 0.01);
       if (diff > tolerance) {
         warnings.push(
-          `Totals row (line ${totalsRow.line}) reports ${resolveCurrencyLabel(col)} = ${reported.toLocaleString()}, ` +
+          `Totals row (line ${totalsRow.line}) reports ${currencyLabel(col)} = ${reported.toLocaleString()}, ` +
             `but the ${rows.length.toLocaleString()} data rows sum to ${computed.toLocaleString()} ` +
             `— off by ${diff.toLocaleString()}. Check the export wasn't truncated before running analysis.`,
         );
@@ -943,7 +1096,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     const allDeliveryEmpty = DELIVERY_PRIMITIVES.every(
       (col) => emptyColumns.includes(col) || !coverage.columns.find((c) => c.canonical === col)?.present,
     );
-    const named = emptyDelivery.map((c) => `"${resolveCurrencyLabel(c)}"`).join(" and ");
+    const named = emptyDelivery.map((c) => `"${currencyLabel(c)}"`).join(" and ");
     // Three distinct causes, three distinct fixes. Naming the wrong one sends
     // the user to change a setting that is already correct.
     const cause = absentDelivery.length === emptyDelivery.length
@@ -996,6 +1149,10 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     mappingSummary: Array.from(summaryMap.values()),
     coverage,
     conversionExportSuspected,
+    headerNotes,
+    headerConflicts,
+    currency: currencyCode,
+    totalsRow: totalsRows.length === 1 ? totalsRows[0]!.base : null,
   };
 }
 

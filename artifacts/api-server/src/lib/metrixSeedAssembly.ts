@@ -178,6 +178,15 @@ export type AccountTables = {
   cellCreativeOverrides: Map<string, Row[]>;
   creativeDeconstructions: Map<string, Row[]>;
   generationRuns: Map<string, Row[]>;
+  // Reconciliation-first evidence layer (spec §16): run-scoped rows are
+  // fetched for each account's LATEST successful run only, so the wire
+  // size is one run's worth, never the history.
+  adBreakdowns: Map<string, Row[]>;
+  reconciliationLedger: Map<string, Row[]>;
+  variableSegments: Map<string, Row[]>;
+  variableEvidence: Map<string, Row[]>;
+  creativeAssets: Map<string, Row[]>;
+  adInstances: Map<string, Row[]>;
   accountModules: Row[];
   signalCards: Row[];
 };
@@ -253,7 +262,24 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   // ── Full assembly from this account's rows ──────────────────────────
   const conceptPerformance = forAccount(t.conceptPerformance, accountId);
   // Fetched newest-first, so [0] is the most recent SUCCESSFUL run.
-  const latestAnalysisRunId = (forAccount(t.successfulRuns, accountId)[0]?.["id"] as string | undefined) ?? null;
+  const latestRun = forAccount(t.successfulRuns, accountId)[0] ?? null;
+  const latestAnalysisRunId = (latestRun?.["id"] as string | undefined) ?? null;
+  const adBreakdowns = forAccount(t.adBreakdowns, accountId);
+  const reconciliationLedger = forAccount(t.reconciliationLedger, accountId);
+  const variableSegments = forAccount(t.variableSegments, accountId);
+  const variableEvidence = forAccount(t.variableEvidence, accountId);
+  const creativeAssets = forAccount(t.creativeAssets, accountId);
+  const adInstances = forAccount(t.adInstances, accountId);
+  const metaAdIdsByName = new Map<string, string[]>();
+  for (const r of adInstances) {
+    const name = String(r["ad_name"] ?? "");
+    const id = String(r["meta_ad_id"] ?? "");
+    if (!name || !id) continue;
+    const list = metaAdIdsByName.get(name) ?? [];
+    if (!list.includes(id)) list.push(id);
+    metaAdIdsByName.set(name, list);
+  }
+  const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
   const campaignWindows = forAccount(t.campaignWindows, accountId);
   const dataQualityFlags = forAccount(t.dataQualityFlags, accountId);
   const libraryCells = forAccount(t.libraryCells, accountId);
@@ -462,6 +488,77 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     // concept reads as $N,000. Null when no run has succeeded yet, in which
     // case there is nothing to scope and every row is untagged history.
     latest_analysis_run_id: latestAnalysisRunId,
+    // Reconciliation-first evidence layer, latest run only (spec §16).
+    ad_breakdowns: adBreakdowns.map((r) => ({
+      breakdown: r["breakdown"],
+      attribution: r["attribution"] ?? "direct_segment",
+      ad_identity_kind: r["ad_identity_kind"],
+      ad_identity: r["ad_identity"],
+      meta_ad_id: r["meta_ad_id"] ?? null,
+      ad_name: r["ad_name"] ?? null,
+      segment: r["segment"] ?? {},
+      segment_key: r["segment_key"],
+      result_type: r["result_type"] ?? "",
+      date_start: r["date_start"],
+      date_end: r["date_end"],
+      spend: num(r["spend"]),
+      impressions: num(r["impressions"]),
+      reach: num(r["reach"]),
+      reach_basis: r["reach_basis"] ?? null,
+      clicks_all: num(r["clicks_all"]),
+      link_clicks: num(r["link_clicks"]),
+      results: num(r["results"]),
+      metrics: r["metrics"] ?? {},
+      evidence_state: r["evidence_state"],
+      coverage_pct: num(r["coverage_pct"]),
+    })),
+    reconciliation: latestRun
+      ? {
+          summary: latestRun["reconciliation_summary"] ?? null,
+          ledger: reconciliationLedger.map((r) => ({
+            scope: r["scope"],
+            ad_identity_kind: r["ad_identity_kind"] ?? null,
+            ad_identity: r["ad_identity"] ?? "",
+            ad_name: r["ad_name"] ?? null,
+            meta_ad_id: r["meta_ad_id"] ?? null,
+            report_class: r["report_class"],
+            metric: r["metric"],
+            grain: r["grain"],
+            truth_source: r["truth_source"],
+            truth_value: num(r["truth_value"]),
+            observed_value: Number(r["observed_value"] ?? 0),
+            coverage_pct: num(r["coverage_pct"]),
+            residual: num(r["residual"]),
+            overcoverage: num(r["overcoverage"]),
+            direct_share: Number(r["direct_share"] ?? 1),
+            modelled_share: Number(r["modelled_share"] ?? 0),
+            evidence_state: r["evidence_state"],
+            compatibility_failures: r["compatibility_failures"] ?? [],
+          })),
+        }
+      : null,
+    variable_segment_performance: variableSegments.map((r) => ({
+      variable_family: r["variable_family"],
+      variable_id: r["variable_id"],
+      breakdown: r["breakdown"],
+      segment: r["segment"] ?? {},
+      segment_key: r["segment_key"] ?? "",
+      result_type: r["result_type"] ?? "",
+      contributing_ad_ids: r["contributing_ad_ids"] ?? [],
+      contributing_asset_keys: r["contributing_asset_keys"] ?? [],
+      direct_totals: r["direct_totals"] ?? {},
+      contextual_totals: r["contextual_totals"] ?? {},
+      observed_coverage_pct: num(r["observed_coverage_pct"]),
+      modelled_share: Number(r["modelled_share"] ?? 0),
+      result_volume: Number(r["result_volume"] ?? 0),
+      cost_per_result: num(r["cost_per_result"]),
+      raw_rate: num(r["raw_rate"]),
+      adjusted_rate: num(r["adjusted_rate"]),
+      interaction_index: num(r["interaction_index"]),
+      contributing_ads: Number(r["contributing_ads"] ?? 0),
+      evidence_state: r["evidence_state"],
+      confidence: r["confidence"],
+    })),
     // Cross-book concept view from the normalized bundle (new, real data)
     concept_rollup: conceptPerformance.map((r) => ({
       book: r["book"],
@@ -872,6 +969,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
           variation: r["variation"] ?? null,
           test_id: r["test_id"] ?? null,
           meta_ad_id: r["meta_ad_id"] ?? null,
+          meta_ad_ids: metaAdIdsByName.get(String(r["ad_name"] ?? "")) ?? (r["meta_ad_id"] ? [String(r["meta_ad_id"])] : []),
           creative_asset_url: override ? override.url : (r["creative_asset_url"] ?? null),
           asset_filename: override ? override.filename : (r["asset_filename"] ?? null),
           asset_servable: override ? true : r["asset_servable"] === true,
@@ -912,6 +1010,32 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       return [...baseAds, ...syntheticAds];
     })(),
     creative_components: creativeComponents.coverage.ads_total > 0 ? creativeComponents : null,
+    creative_assets: creativeAssets.map((r) => ({
+      id: String(r["id"]),
+      ad_identity_kind: r["ad_identity_kind"],
+      ad_identity: r["ad_identity"],
+      meta_ad_id: r["meta_ad_id"] ?? null,
+      ad_name: r["ad_name"],
+      asset_type: r["asset_type"],
+      raw_value: r["raw_value"],
+      normalized_value: r["normalized_value"],
+      content_hash: r["content_hash"],
+      provenance: r["provenance"],
+      source_column: r["source_column"],
+    })),
+    variable_evidence: variableEvidence.map((r) => ({
+      variable_family: r["variable_family"],
+      variable_id: r["variable_id"],
+      source_kind: r["source_kind"],
+      source_ref: r["source_ref"],
+      asset_key: r["asset_key"] ?? null,
+      ad_identity_kind: r["ad_identity_kind"],
+      ad_identity: r["ad_identity"],
+      meta_ad_id: r["meta_ad_id"] ?? null,
+      ad_name: r["ad_name"],
+      relationship: r["relationship"],
+      confidence: num(r["confidence"]),
+    })),
     iap: {
       metadata,
       core_reanalysis_read: coreRead,
@@ -1131,7 +1255,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     // that shows "this account" rather than "this run" has a correct default
     // to reach for. Without one the only available default was every run at
     // once, which sums re-measurements of the same period.
-    selectAll("manual_analysis_runs", (q) => q.eq("status", "success").order("started_at", { ascending: false }), "id, started_at, account_id"),
+    selectAll("manual_analysis_runs", (q) => q.eq("status", "success").order("started_at", { ascending: false }), "id, started_at, account_id, reconciliation_summary"),
     selectAll("campaign_windows", (q) => q.order("date_start").order("id")),
     selectAll("data_quality_flags", (q) => q.order("id")),
     selectAll("library_cells", (q) => q.order("row_index").order("id")),
@@ -1187,6 +1311,46 @@ export async function assembleMetrixSeed(): Promise<Row> {
       "Supabase holds no imported Metrix data yet. Run: pnpm --filter @workspace/scripts run import:metrix",
     );
   }
+
+  // ── Reconciliation layer: the latest successful run per account ─────
+  // These tables retain one set of rows per run by design; the seed ships
+  // the latest run's only. A second round trip, deliberately: the run ids
+  // are not known until the batch above returns. Graceful: [] before the
+  // tables exist.
+  const latestRunIdByAccount = new Map<string, string>();
+  for (const r of successfulRunsAll) {
+    const acct = String(r["account_id"] ?? "");
+    if (acct && !latestRunIdByAccount.has(acct)) latestRunIdByAccount.set(acct, String(r["id"]));
+  }
+  const latestRunIds = [...latestRunIdByAccount.values()];
+  const runScoped = (table: string, columns: string): Promise<Row[]> =>
+    latestRunIds.length === 0
+      ? Promise.resolve([] as Row[])
+      : selectAll(table, (q) => q.in("manual_analysis_run_id", latestRunIds).order("id"), columns).catch(() => [] as Row[]);
+  const [adBreakdownsAll, reconciliationLedgerAll, variableSegmentsAll, variableEvidenceAll, creativeAssetsAll, adInstancesAll] = await Promise.all([
+    runScoped(
+      "ad_breakdown_performance",
+      "id, account_id, breakdown, attribution, ad_identity_kind, ad_identity, meta_ad_id, ad_name, segment, segment_key, result_type, date_start, date_end, spend, impressions, reach, reach_basis, clicks_all, link_clicks, results, metrics, evidence_state, coverage_pct",
+    ),
+    runScoped(
+      "reconciliation_ledger",
+      "id, account_id, scope, ad_identity_kind, ad_identity, ad_name, meta_ad_id, report_class, metric, grain, truth_source, truth_value, observed_value, coverage_pct, residual, overcoverage, direct_share, modelled_share, evidence_state, compatibility_failures",
+    ),
+    runScoped(
+      "variable_segment_performance",
+      "id, account_id, variable_family, variable_id, breakdown, segment, segment_key, result_type, contributing_ad_ids, contributing_asset_keys, direct_totals, contextual_totals, observed_coverage_pct, modelled_share, result_volume, cost_per_result, raw_rate, adjusted_rate, interaction_index, contributing_ads, evidence_state, confidence",
+    ),
+    runScoped(
+      "variable_evidence",
+      "id, account_id, variable_family, variable_id, source_kind, source_ref, asset_key, ad_identity_kind, ad_identity, meta_ad_id, ad_name, relationship, confidence",
+    ),
+    selectAll(
+      "creative_assets",
+      (q) => q.order("id"),
+      "id, account_id, ad_identity_kind, ad_identity, meta_ad_id, ad_name, asset_type, raw_value, normalized_value, content_hash, provenance, source_column",
+    ).catch(() => [] as Row[]),
+    selectAll("ad_instances", (q) => q.order("id"), "id, account_id, meta_ad_id, ad_name").catch(() => [] as Row[]),
+  ]);
 
   // ── Auto-heal: sync creative links for accounts that need it ────────
   // Detect accounts where creative_asset manual_imports exist (with mapped
@@ -1388,6 +1552,12 @@ export async function assembleMetrixSeed(): Promise<Row> {
     cellCreativeOverrides: groupByAccount(cellCreativeOverridesAll),
     creativeDeconstructions: groupByAccount(creativeDeconstructionsAll),
     generationRuns: groupByAccount(generationRunsAll),
+    adBreakdowns: groupByAccount(adBreakdownsAll),
+    reconciliationLedger: groupByAccount(reconciliationLedgerAll),
+    variableSegments: groupByAccount(variableSegmentsAll),
+    variableEvidence: groupByAccount(variableEvidenceAll),
+    creativeAssets: groupByAccount(creativeAssetsAll),
+    adInstances: groupByAccount(adInstancesAll),
     accountModules,
     signalCards,
   };

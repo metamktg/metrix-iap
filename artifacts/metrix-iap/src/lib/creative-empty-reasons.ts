@@ -24,9 +24,9 @@ export function demographicEmptyReasonFor(
   const hasCellRows = demoRows.some((r) => r.cell_id === cellId);
   if (hasCellRows) return null; // tab won't be empty
   if (demoRows.every((r) => r.cell_id === ACCOUNT_GRAIN_CELL_ID || !r.cell_id)) {
-    return "This account's demographic data is account-level — the imported export has no per-creative demographic split, so a per-creative breakdown cannot be honestly shown. See Analysis → Audience for the account-level breakdown.";
+    return "Account-level demographic evidence exists (see Analysis → Audience), but no rows join to this creative's mapped Ad IDs from the latest run. Map the creative to its ad and re-run analysis; an Ad Summary export with the Ad ID column adds per-ad coverage.";
   }
-  return "The imported demographic export contains no rows that join to this creative's mapped ads.";
+  return "The imported demographic export contains no rows that join to this creative's mapped ads. Map the creative to its ad and re-run analysis.";
 }
 
 export function placementsEmptyReasonFor(placements: unknown[]): string | null {
@@ -41,7 +41,7 @@ export function funnelEmptyReasonFor(
   cellId: string,
 ): string | null {
   if (!perfRows || perfRows.length === 0) {
-    return "No per-creative performance rows exist for this account yet. Performance joins to creatives through their mapped ad names — check the creative-to-ad mapping on the uploaded assets.";
+    return "No per-creative performance rows join to this creative yet. Performance joins through the creative's mapped Ad IDs first (then its cell code) — map the creative to its ad and re-run analysis.";
   }
   if (!perfRows.some((r) => r.cell_id === cellId)) {
     return "No performance rows joined to this creative — its mapped ad names don't appear in the imported performance exports.";

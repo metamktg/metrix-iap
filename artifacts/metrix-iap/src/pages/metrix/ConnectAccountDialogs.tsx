@@ -550,7 +550,8 @@ type CsvKind =
   | "performance_demo_csv"
   | "performance_placement_csv"
   | "performance_ad_summary_csv"
-  | "performance_conversion_device_csv";
+  | "performance_conversion_device_csv"
+  | "performance_asset_csv";
 
 const SMART_CSV_SLOTS: {
   kind: CsvKind;
@@ -562,6 +563,7 @@ const SMART_CSV_SLOTS: {
   { kind: "performance_placement_csv", csvClass: "device_placement", label: "Placements" },
   { kind: "performance_ad_summary_csv", csvClass: "ad_summary", label: "Ad Summary", optional: true },
   { kind: "performance_conversion_device_csv", csvClass: "conversion_device", label: "Conversion Device", optional: true },
+  { kind: "performance_asset_csv", csvClass: "asset", label: "Asset breakdown", optional: true },
 ];
 
 /** Reads the target kind a "wrong slot" server message is steering the file

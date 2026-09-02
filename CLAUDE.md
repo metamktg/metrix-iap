@@ -52,6 +52,14 @@ business-model logic, and are deliberately exempt from the cohort-awareness repa
 - `METRIX_RLS_and_Service_Role_Security.md` — Blueprint §12, extracted verbatim. Required reading
   before touching `service_role` Edge Functions or implementing `supabase/policies/`.
 
+### `docs/specs/`
+
+Implementation specifications, written before the code and kept in agreement with it. The first is
+`iap-multi-report-reconciliation.md` — the reconciliation-first evidence layer (report classes and
+grains, ad/asset identity, source authority, the ledger, evidence states, the IAP deconstruction
+integration, UI behaviour, the modelled-tier contract). Its §0 records where the code disproved the
+brief that commissioned it; read that before trusting any figure elsewhere about coverage.
+
 ### `docs/resources/`
 
 Planning and audit record — handoff synthesis, document briefs, and the Phase 1 cohort-awareness
