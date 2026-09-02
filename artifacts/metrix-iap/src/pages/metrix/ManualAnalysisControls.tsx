@@ -40,6 +40,9 @@ import { ActionSlider } from "@/components/widgets/ActionSlider";
 import { RunProgress } from "@/components/widgets/RunProgress";
 import { fmtDuration } from "@/lib/runEta";
 import { CsvWarningsPanel } from "@/components/analysis/CsvWarningsPanel";
+import { ReconciliationPanel } from "@/components/evidence/ReconciliationPanel";
+import { useMetrixSeedOptional } from "@/contexts/MetrixDataContext";
+import { getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1008,6 +1011,10 @@ export function AnalysisControls({
   const [starting, setStarting] = useState(false);
   const progressRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
+  // The latest run's reconciliation ledger (seed, scoped to the account) —
+  // rendered as the Reconciliation panel once a run has settled.
+  const seed = useMetrixSeedOptional();
+  const reconciliation = seed ? getAnalysisData(seed, accountId)?.reconciliation ?? null : null;
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
   const { data: runsData } = useListAnalysisRuns(accountId);
@@ -1553,6 +1560,7 @@ export function AnalysisControls({
       )}
 
       {run && run.status === "success" && <CsvWarningsPanel run={run} />}
+      {run && run.status === "success" && <ReconciliationPanel reconciliation={reconciliation} />}
       {run && run.status === "success" && <ObjectiveFlagsPanel run={run} />}
 
       {/* Server-verified module completeness — shown once the run settles */}

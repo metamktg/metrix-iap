@@ -38,6 +38,11 @@ import { BreakdownControl } from "@/components/data-module/BreakdownControl";
 import { Popover, PopoverTrigger, PopoverContent } from "@workspace/command-deck/components/ui/popover";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import { SERIES_VARS, seriesColor, divergingFill, divergingLegend, magnitudeFill, magnitudeLegend, VERDICT } from "@/components/charts/chartTokens";
+import { DemographicHeatGrid } from "@/components/evidence/DemographicHeatGrid";
+import { PlacementDrill } from "@/components/evidence/PlacementDrill";
+import { ReconciliationPanel } from "@/components/evidence/ReconciliationPanel";
+import { EvidenceChip, CoverageStrip } from "@/components/evidence/EvidenceChip";
+import type { AdBreakdownRow, EvidenceState, ReconciliationData } from "@/lib/data/seedTypes";
 
 const money = (n: number) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 const money2 = (n: number) => `$${n.toFixed(2)}`;
@@ -55,6 +60,82 @@ function Panel({ title, note, children }: { title: string; note?: string; childr
 }
 
 // ── Fixtures ──────────────────────────────────────────────────────────
+const evidenceRow = (over: Partial<AdBreakdownRow>): AdBreakdownRow => ({
+  breakdown: "demographic",
+  attribution: "direct_segment",
+  ad_identity_kind: "ad_id",
+  ad_identity: "120341800018",
+  meta_ad_id: "120341800018",
+  ad_name: "C8A_HK_Question_FW_AIDA_TN_Warm",
+  segment: { gender: "female", age: "25-34" },
+  segment_key: "",
+  result_type: "Purchases",
+  date_start: "2026-08-01",
+  date_end: "2026-08-30",
+  spend: 0,
+  impressions: 0,
+  reach: null,
+  reach_basis: null,
+  clicks_all: 0,
+  link_clicks: 0,
+  results: 0,
+  metrics: {},
+  evidence_state: "observed_partial",
+  coverage_pct: 60,
+  ...over,
+});
+const EVIDENCE_DEMO_ROWS: AdBreakdownRow[] = [
+  evidenceRow({ segment: { gender: "female", age: "18-24" }, spend: 212.4, impressions: 18_200, link_clicks: 94, results: 2, evidence_state: "observed_partial", coverage_pct: 58 }),
+  evidenceRow({ segment: { gender: "female", age: "25-34" }, spend: 611.9, impressions: 41_300, link_clicks: 240, results: 6, evidence_state: "observed_partial", coverage_pct: 61 }),
+  evidenceRow({ segment: { gender: "female", age: "35-44" }, spend: 388.2, impressions: 26_900, link_clicks: 151, results: 4, evidence_state: "observed_reconciled", coverage_pct: 100 }),
+  evidenceRow({ segment: { gender: "male", age: "25-34" }, spend: 140.6, impressions: 12_100, link_clicks: 55, results: 1, evidence_state: "observed_partial", coverage_pct: 59 }),
+  evidenceRow({ segment: { gender: "male", age: "35-44" }, spend: 97.3, impressions: 8_400, link_clicks: 32, results: 0, evidence_state: "observed_partial", coverage_pct: 62 }),
+  evidenceRow({ segment: { gender: "unknown", age: "25-34" }, spend: 24.1, impressions: 2_300, link_clicks: 9, results: 0, evidence_state: "unreconciled", coverage_pct: null }),
+];
+const EVIDENCE_PLACEMENT_ROWS: AdBreakdownRow[] = [
+  evidenceRow({ breakdown: "placement", segment: { platform: "instagram", placement: "instagram_reels", device: "iphone" }, spend: 820.4, impressions: 61_000, link_clicks: 380, results: 8, evidence_state: "observed_reconciled", coverage_pct: 100 }),
+  evidenceRow({ breakdown: "placement", segment: { platform: "instagram", placement: "instagram_reels", device: "android_smartphone" }, spend: 402.2, impressions: 30_100, link_clicks: 170, results: 3, evidence_state: "observed_reconciled", coverage_pct: 100 }),
+  evidenceRow({ breakdown: "placement", segment: { platform: "instagram", placement: "instagram_stories", device: "iphone" }, spend: 211.7, impressions: 15_400, link_clicks: 88, results: 2, evidence_state: "observed_reconciled", coverage_pct: 100 }),
+  evidenceRow({ breakdown: "placement", segment: { platform: "facebook", placement: "feed", device: "desktop" }, spend: 340.0, impressions: 22_800, link_clicks: 121, results: 3, evidence_state: "observed_reconciled", coverage_pct: 100 }),
+  evidenceRow({ breakdown: "placement", segment: { platform: "facebook", placement: "feed", device: "android_smartphone" }, spend: 158.9, impressions: 11_900, link_clicks: 60, results: 1, evidence_state: "observed_reconciled", coverage_pct: 100 }),
+  evidenceRow({ breakdown: "placement", segment: { platform: "audience_network", placement: "rewarded_video", device: "android_smartphone" }, spend: 61.3, impressions: 7_300, link_clicks: 14, results: 0, evidence_state: "observed_reconciled", coverage_pct: 100 }),
+];
+const EVIDENCE_RECONCILIATION: ReconciliationData = {
+  summary: {
+    truth_source: "ad_summary",
+    truth_identity_kind: "ad_id",
+    truth_precedence: "whole-period Ad Summary keyed by Ad ID",
+    truth_conflicts: [],
+    breakdowns: [
+      {
+        report_class: "demographic",
+        by_metric: [
+          { metric: "amount_spent", truth_value: 4405.61, observed_value: 2645.74, coverage_pct: 60.05, residual: 1759.87, evidence_state: "observed_partial" },
+          { metric: "impressions", truth_value: 320_430, observed_value: 103_687, coverage_pct: 32.36, residual: 216_743, evidence_state: "observed_partial" },
+          { metric: "link_clicks", truth_value: 1350, observed_value: 771, coverage_pct: 57.11, residual: 579, evidence_state: "observed_partial" },
+          { metric: "purchases", truth_value: 18, observed_value: 14, coverage_pct: 77.78, residual: 4, evidence_state: "observed_partial" },
+        ],
+        ads_total: 44,
+        ads_reconciled: 0,
+        ads_partial: 44,
+        ads_overcounted: 0,
+        ads_unreconciled: 0,
+        ads_incompatible: 0,
+        ads_missing_from_breakdown: 10,
+      },
+    ],
+    notes: [],
+  },
+  ledger: [
+    { scope: "account", ad_identity_kind: null, ad_identity: "", ad_name: null, meta_ad_id: null, report_class: "demographic", metric: "amount_spent", grain: "ad × age × gender × period", truth_source: "ad_summary", truth_value: 4405.61, observed_value: 2645.74, coverage_pct: 60.05, residual: 1759.87, overcoverage: 0, direct_share: 1, modelled_share: 0, evidence_state: "observed_partial", compatibility_failures: [] },
+    { scope: "account", ad_identity_kind: null, ad_identity: "", ad_name: null, meta_ad_id: null, report_class: "demographic", metric: "purchases", grain: "ad × age × gender × period", truth_source: "ad_summary", truth_value: 18, observed_value: 14, coverage_pct: 77.78, residual: 4, overcoverage: 0, direct_share: 1, modelled_share: 0, evidence_state: "observed_partial", compatibility_failures: [] },
+    { scope: "ad", ad_identity_kind: "ad_id", ad_identity: "120341800018", ad_name: "C8A_HK_Question_FW_AIDA_TN_Warm", meta_ad_id: "120341800018", report_class: "demographic", metric: "amount_spent", grain: "", truth_source: "ad_summary", truth_value: 2380.1, observed_value: 1474.5, coverage_pct: 61.95, residual: 905.6, overcoverage: 0, direct_share: 1, modelled_share: 0, evidence_state: "observed_partial", compatibility_failures: [] },
+    { scope: "ad", ad_identity_kind: "ad_id", ad_identity: "120340300003", ad_name: "C2B_HK_Story_FW_AIDA_TN_Direct", meta_ad_id: "120340300003", report_class: "demographic", metric: "amount_spent", grain: "", truth_source: "ad_summary", truth_value: 483.14, observed_value: 0, coverage_pct: 0, residual: 483.14, overcoverage: 0, direct_share: 1, modelled_share: 0, evidence_state: "observed_partial", compatibility_failures: [] },
+    { scope: "ad", ad_identity_kind: "ad_id", ad_identity: "120341200012", ad_name: "C6B_HK_Story_FW_BAB_TN_Warm", meta_ad_id: "120341200012", report_class: "demographic", metric: "amount_spent", grain: "", truth_source: "ad_summary", truth_value: 1542.37, observed_value: 1171.24, coverage_pct: 75.94, residual: 371.13, overcoverage: 0, direct_share: 1, modelled_share: 0, evidence_state: "observed_partial", compatibility_failures: [] },
+    { scope: "ad", ad_identity_kind: "ad_id", ad_identity: "120340900009", ad_name: "C5A_HK_Question_FW_BAB_TN_Playful", meta_ad_id: "120340900009", report_class: "demographic", metric: "amount_spent", grain: "", truth_source: "ad_summary", truth_value: null, observed_value: 42.7, coverage_pct: null, residual: null, overcoverage: null, direct_share: 1, modelled_share: 0, evidence_state: "unreconciled", compatibility_failures: [{ kind: "truth_missing_ad_id", detail: 'Add "Ad ID" to the Ad Summary export to reconcile per ad; ad names are reused across instances.' }] },
+  ],
+};
+
 const BARS = [
   { key: "reels", label: "Instagram Reels", value: 14820, detail: "31 ads · 2.1M impressions" },
   { key: "feed", label: "Facebook Feed", value: 9640 },
@@ -286,6 +367,26 @@ function App() {
             ]}
             unitLabel="conversion-attributed actions"
           />
+        </Panel>
+
+        <Panel title="Evidence layer — the validated account, as the surfaces show it" note="Reconciled against the Ad Summary per Ad ID · demographic coverage 60.05% · residual never allocated" >
+          <div id="evidence-lab" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-1.5">
+                {(["direct_asset", "direct_joint", "ad_context", "observed_reconciled", "observed_partial", "modelled", "overcounted", "unreconciled", "incompatible", "unavailable"] as EvidenceState[]).map((s) => (
+                  <EvidenceChip key={s} state={s} />
+                ))}
+              </div>
+              <CoverageStrip coveragePct={60.05} metricLabel="spend" />
+              <CoverageStrip coveragePct={100} metricLabel="impressions" />
+              <CoverageStrip coveragePct={null} metricLabel="purchases" />
+              <DemographicHeatGrid rows={EVIDENCE_DEMO_ROWS} resultLabel="purchases" />
+            </div>
+            <div className="space-y-4">
+              <PlacementDrill rows={EVIDENCE_PLACEMENT_ROWS} unattributedSpend={131.2} resultLabel="purchases" />
+              <ReconciliationPanel reconciliation={EVIDENCE_RECONCILIATION} defaultOpen />
+            </div>
+          </div>
         </Panel>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

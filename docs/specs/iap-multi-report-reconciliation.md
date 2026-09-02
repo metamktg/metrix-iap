@@ -1,6 +1,8 @@
 # IAP multi-report reconciliation — a reconciliation-first evidence layer
 
-**Status:** implemented on `claude/pre-release-reconciliation-ux-cznjbz` (2026-09-02). This is the
+**Status:** implemented on `claude/pre-release-reconciliation-ux-cznjbz` (2026-09-02). **Amended the same day**
+by the owner's follow-up: not a fixed four-file contract but an adaptive multi-report reconciliation and
+evidence-cube engine (§2a, §3a, §6a, §7a, §10a, §12a, §17a, §19). Amendment sections are marked "(amended)". This is the
 first document under `docs/specs/`; the repository had no spec or ADR convention before it
 (decisions were recorded as numbered register sections — see `docs/resources/CARRY_FORWARD_REGISTER.md`
 §14, which links here). The blueprint remains canonical where the two disagree.
@@ -42,6 +44,17 @@ follows the verified architecture, not the brief's wording.
 | Totals-row warnings on the second demographic upload | spend, reach, impressions, frequency, CPM, views, clicks, CTR, link clicks, unique clicks, outbound clicks… each independently short |
 
 The totals-row warning mislabels the currency (`Amount spent (USD)` for a CAD column). Fixed in §5.
+
+**Verification added at the amendment (creative identity, versions, compatibility fields):**
+
+| Question | Finding |
+|---|---|
+| Do imported rows retain primary text, headline, description, CTA, destination, image, video, asset ids? | The Ad Summary parse retains `CREATIVE_METADATA_COLUMNS` (`Image name`, `Video name`, `Ad creative body text`, `… headline`, `… call to action type`, `… link destination`, `… link caption`) in `row.creativeMetadata`; pivot rows retain any `ASSET_BREAKDOWN_COLUMNS` value in `row.assetBreakdowns` (commit 1). Meta's CSV exports carry **no creative id, no asset id and no thumbnail**; `Image hash` / `Video ID` are accepted when present (`CONFIGURED_ASSET_COLUMNS`). |
+| Can creatives change under one Ad ID; are versions stored? | Nothing stored versions before this work. `creative_assets` now keys an instance by (ad, type, provenance, content hash) and records `date_start` / `date_end` from the rows that carried the value, so a headline changed mid-period under the same Ad ID is two instances with two periods (§10a). Without a creative id the version boundary is the content change itself. |
+| Timezone, attribution window, action reporting time, objective? | Meta's Ads Reporting export carries `Attribution setting` as a column when selected (captured in `row.context`) and no timezone or action-reporting-time column; the objective is the per-row `Result type` (already the derived-objective source). Compatibility therefore checks account id, currency, period, attribution setting and result definition — timezone cannot be checked from the files and is documented as unavailable. |
+| Where are demographic and placement dimensions discarded? | `analysisEngine.ts` demographic buckets `[gender, age, date]`, placement `[placement, date]`, platform `[platform, date]`, device `[device, date]`, and the window signals `[gender, age]` / `[placement, platform]` — none carries the ad. The new `ad_breakdown_performance` rows do. |
+| How are creatives, ads, cells and variables joined? | Creative file → `manual_imports.ad_names` (matcher) → `ads` (keyed by name) → `ads.cell` (regex on the name) → `library_cells` / `performance_by_cell` by cell id. Variables: `creative_deconstructions.variables` per import, `variable_performance` from ad-name tokens. Now: `ads[].meta_ad_ids` (every instance), `variable_evidence` (many-to-many), joins by Ad ID first. |
+| Are the four files mandatory? | The run refused to start without both a demographic and a placement export (`startManualAnalysis`, 422 "Both reports are required"). Amended: a run needs at least one delivery report with spend; every other class only adds resolution (§2a). |
 
 ---
 
@@ -102,6 +115,28 @@ assume it.
 - Changing what the objective is (owner decision 2026-09-01): the terminal KPI stays the derived
   objective's result and cost per result, never ROAS.
 
+## 2a. Adaptive contract, not a fixed file set (amended)
+
+The engine accepts whichever compatible Meta exports the user provides, in any order and any number,
+and extracts the maximum defensible evidence from them:
+
+- **No report class is mandatory.** A run starts with at least one delivery report that carries spend
+  (demographic, placement, asset-breakdown pivot, or a daily Ad Summary). Every additional compatible
+  report only adds resolution: a missing report lowers coverage or prevents one intersection; it never
+  invalidates unrelated evidence.
+- **Capability, not filename.** Each staged file is classified by its actual grain and what it can
+  prove (§3a). The slot the user chose only selects the column template; the grain says what the file is.
+- **Progressive resolution.** Ad truth (Ad × Day), copy (Ad × copy signature), demographic
+  (Ad × Age × Gender), placement (Ad × Platform × Placement × Device) and every direct joint the exports
+  carry populate the evidence cube (§12a) independently. Overlapping exports are never added: they are
+  superseded by import order or partitioned when provably disjoint (§8).
+- **Coverage differences are normal evidence conditions**, not import failures. Meta states that
+  breakdown totals need not add up to overall totals and that demographic breakdowns can omit data;
+  the engine measures what is present and never assumes what Meta should have returned. Geography and
+  market change availability and coverage, never the mathematics — nothing is hard-coded per country.
+- **Native currency.** Reconciliation runs in the account's native currency; FX conversion belongs to
+  a separate comparison layer and never alters the ledger.
+
 ## 3. Supported report classes and grains
 
 The staged `manual_imports.kind` values stay the entry point (client-declared slot; the parser's
@@ -144,6 +179,26 @@ Classification is deterministic and happens at staging, from the header row alon
 
 Nothing is rejected for being partial. Rejection stays reserved for the wrong slot, no data rows, or
 an unreadable file.
+
+## 3a. Report capability detection (amended)
+
+`manual_imports.report_grain` (`ReportGrain`, `reportGrain.ts`) now declares or infers, per file:
+
+| Field | Source |
+|---|---|
+| `report_class`, `dimensions`, `asset_columns` (each with `role: breakdown | context`, §10a) | resolved columns + row variation |
+| `has_ad_id`, `ad_id_fill_pct`, `ad_id_joinable`, `has_campaign_ids`, `has_ad_set_ids` | columns + header conflicts |
+| `has_day`, `distinct_days`, `aggregate_shape`, `period` | Day values, `Reporting ends` |
+| `account_ids`, `currency`, `attribution_settings` | `Account ID`, the spend header, `Attribution setting` |
+| `result_types` (the objective / result definition present) | `Result type` values |
+| `has_totals_row` | the parked grand-totals row |
+| `additive_metrics`, `non_additive_metrics` | the metric additivity tables |
+| `header_conflicts` | duplicated headers that disagreed |
+| source fingerprint, import timestamp | `manual_imports.content_md5`, `created_at` (existing) |
+| creative id / version, timezone, action reporting time | **not in Meta's CSV exports** — recorded as unavailable |
+
+Joint classes recognised: `demographic_asset`, `placement_asset` and (amended) `demographic_placement`
+(Age, Gender with Platform / Placement / Device on one row).
 
 ## 5. Header and schema normalization
 
@@ -196,6 +251,33 @@ provably unique, its rows are `unjoinable` at ad grain and the run warning names
 **Creative identity.** Meta's export carries no creative id; the "configured creative bundle" is the
 set of configured asset instances on one ad identity for one reporting period.
 
+## 6a. Compatibility key and source precedence (amended)
+
+Ad ID is the reconciliation anchor, never the whole identity. Two rows are compatible — may sit in one
+ledger — only when every field both carry agrees:
+
+```
+Account ID · Ad ID · reporting period (overlapping) · native currency ·
+attribution setting · result definition (result type) · metric definition (slug)
+```
+
+A mismatch is a `compatibility_failure` of kind `account | period | currency | attribution |
+result_definition | header_conflict`, and the affected rows are `incompatible` for that metric — never
+blended, never averaged. Creative id / version and timezone are not in the exports and cannot be checked;
+when a future source carries them they join the key without a schema change (`compatibility_failures`
+is free-form JSON).
+
+**Source precedence for truth** (per additive metric): a whole-period Ad Summary keyed by Ad ID → a daily
+Ad Summary (time series) summed to the window → an Ad Summary keyed by name (account grain, and per ad only
+through a registry-proven unique name) → the file's own Meta totals row (account grain) → none. When more
+than one candidate exists the selected source is recorded (`truth_source`, `truth_import_ids`), the
+alternatives are summed and compared, and a disagreement above 1% is surfaced as a `[Truth]` warning
+and `truth_conflicts` on the summary — never resolved by averaging.
+
+Ad-name fallback: only when the file has no Ad ID and the name maps to exactly one instance in the
+compatible account and period; a second instance seen under a "unique" name is the registry being wrong,
+not a join (tested).
+
 ## 7. Source authority by metric
 
 Authority is decided per metric **and per grain**. A source is *compatible* when account id (if
@@ -212,6 +294,26 @@ row and the source is skipped for that metric — never silently blended.
 
 Compatible sources are ranked: direct joint observation > non-overlapping campaign/ad-batch export
 of the same class > reconciled observed cells > explicitly modelled residuals (phase 2, §19).
+
+## 7a. Every metric independently (amended)
+
+```
+observed(ad, metric, breakdown) = Σ compatible unique breakdown rows
+residual(ad, metric, breakdown) = truth(ad, metric) − observed(ad, metric, breakdown)
+coverage(ad, metric, breakdown) = observed / truth
+```
+
+Spend coverage is never a proxy for another metric: the same ad can be 90% on spend, 80% on
+impressions, 96% on clicks and 60% on purchases, and each has its own ledger row. Missing purchases are
+never distributed by spend share. Zero and null truth are handled explicitly: null truth →
+`unreconciled`; zero truth with zero observed → `observed_reconciled`; zero truth with observed > 0 →
+`overcounted`. `overcoverage = max(0, observed − truth)` is stored beside the signed residual so an
+overlapping or duplicated export is diagnosable, never normalised back to 100%.
+
+Rates are recomputed from the compatible additive components (CTR = clicks ÷ impressions; CPM = spend ÷
+impressions × 1,000; CPC = spend ÷ clicks; cost per result = spend ÷ the derived objective's result;
+ROAS only from a valid purchase value ÷ spend, and only where the objective is purchase-based). Row-level
+ratios are never averaged. Reach and frequency keep their own rule (§12).
 
 ## 8. Reconciliation formulas and the ledger
 
@@ -306,6 +408,31 @@ The `Text` breakdown is a delivered primary-text asset. It is never assigned to 
 description merely because those values sit on the same row; those keep `ad_context` until Meta
 provides a corresponding breakdown.
 
+## 10a. Copy signatures and asset-column roles (amended)
+
+The presence of a `Headline` or `Description` column does not prove Meta broke performance down by
+it. The parser therefore classifies every asset column on a file by **row variation within an ad**:
+
+- a column whose value is constant for every ad (one value per Ad ID across the file) is **context** —
+  creative metadata repeated beside the real breakdown; it becomes a configured asset instance and
+  receives `ad_context` evidence only;
+- a column whose value varies within ads is a **breakdown** dimension;
+- when exactly one breakdown column exists, direct evidence is attributed to that asset type
+  (`primary_text` for `Text`);
+- when several breakdown columns vary **together** (each combination is a distinct row), direct evidence
+  is attributed to the delivered combination — a **copy signature** (`asset_type = "copy_signature"`,
+  hash over the ordered field values, the fields retained in `segment.asset_fields`) — and never to any
+  single field independently;
+- an ambiguous relationship (a column that varies but is not aligned with the breakdown) is recorded on
+  the grain as `role: "ambiguous"` and treated as context.
+
+The $100 example (§17a, fixture): Ad 001 truth $100; Text A $40 and Text B $50 directly attributed;
+$10 `unattributed_to_copy`; coverage 90%. The engine states exactly those four facts and never scales
+A and B to $44.44 / $55.56, never files the $10 under an Unknown segment, never claims Text A *caused*
+$40 of results, and never copies the $40 onto headline, description, CTA and every deconstructed variable
+as separate spend. Versions: a configured asset's `date_start` / `date_end` come from the rows that
+carried the value, so a copy change under one Ad ID is two instances with two periods.
+
 ## 11. IAP deconstruction integration
 
 The relationship is `Ad → configured creative bundle → asset instances → deconstructed IAP variables
@@ -375,6 +502,34 @@ volume, contributing ad count and evidence state are stored side by side.
 below the `low` volume tier are pooled into the neighbouring band and labelled as pooled; nothing is
 ranked on a band with fewer than 5 results.
 
+## 12a. The reconciled evidence cube and attribution (amended)
+
+Fact sets, each with provenance (`source_import_ids`) and evidence status:
+
+| Fact | Grain | Table |
+|---|---|---|
+| Ad truth | Ad × Day × metric | `ad_performance` (existing) + the ledger's `truth_value` per ad |
+| Copy | Ad × copy signature (or single asset) × metric | `ad_breakdown_performance` (`breakdown = asset`) |
+| Demographic | Ad × Age × Gender × metric | `ad_breakdown_performance` (`demographic`) |
+| Placement | Ad × Platform × Placement × Device × metric | `ad_breakdown_performance` (`placement`) |
+| Direct joints | Ad × Demo × Copy · Ad × Placement × Copy · Ad × Demo × Placement | `ad_breakdown_performance` (`demographic_asset`, `placement_asset`, `demographic_placement`) |
+
+Every fact row carries `attribution`: `direct_asset` (the file's breakdown dimension is an asset),
+`direct_joint` (a joint file), or `direct_segment` (a single-dimension breakdown). Separate demographic
+and copy margins never produce a joint row — a joint exists only when a file carried it. Duplicates and
+overlaps are detected by grain, account, Ad IDs, period, attribution setting, source fingerprint
+(`content_md5`, rejected at staging), row identity and import order; only provably disjoint partitions
+are summed, otherwise the later import supersedes and the overlap is recorded (§8).
+
+### Thresholds (amended §12)
+
+There is no universal cut-off. Every variable row exposes its components — spend, result volume,
+contributing ads, coverage, direct versus contextual share, evidence state — and the UI ranks only on
+rows whose components support it. The one composite retained is the existing volume tier
+(`volumeConfidence`: high ≥ 500 spend and ≥ 30 results; medium ≥ 100 and ≥ 5; low > 0 and ≥ 1), kept
+because the creative-components surface already uses and tests it; it is documented here, tested, and
+never the only thing shown.
+
 ## 13. Residual and missing-data handling
 
 - Residuals live only in the ledger (§8). The UI shows "Unattributed by this breakdown" as its own
@@ -413,6 +568,17 @@ Existing components are used; one substitution is recorded.
 | Command Center → Reconciliation | reveal | `RevealPanel` + `ProgressMeter` | per-ad truth, observed, coverage meter, unattributed; metric selector; `unreconciled` rows say which field is missing |
 | Audience | collapse-to-trigger | `FilterDisclosure` (required `activeSummary`) | segment filters + a Coverage tile per metric |
 | Explanations | popover | `DetailReveal` | evidence state, coverage, contextual attribution, non-additive notes; never inside a `<button>` card |
+
+**Empty states (amended).** "No demographic data for this cell" is replaced wherever partial or
+account-level evidence exists: the tab shows what evidence there is (the creative's ad-grain rows, or
+the account-level rows), its coverage, and which export would raise it (an Ad Summary with `Ad ID`; a
+demographic export without a `Text` breakdown; a demographic × Text export for the joint).
+
+**Creative overview tile (owner spec "Creative Overview Tiles", 2026-09-02).** The Overview tab's
+hand-rolled four-tile grid moves onto the platform's `KpiTileRow`; the blended-results tile receives the
+creative's per-result-event rows (the array, not the pre-reduced primary row) so the split behind
+"selected events" is shown as a `SharePieChart` inside `MetricHoverPopover` — the existing hover/touch
+wrapper — and never lost one layer up.
 
 **Substitution recorded:** the brief names "the existing progress mechanic as a static coverage
 meter". `RunProgress` is a run-phase widget (`phase: RunPhase`); the static meter is `ProgressMeter`
@@ -473,6 +639,19 @@ Acceptance (each is a test):
 12. Typecheck, gates, unit and integration tests, production build pass; the dialog is
     screenshot-verified at 390, 768 and 1440 px.
 
+### 17a. Acceptance added at the amendment
+
+17. The $100 / $40 / $50 / $10 copy fixture reconciles exactly (observed 90, residual 10, coverage 90%),
+    with no scaling, no Unknown bucket, and one fact behind every variable the creative maps to.
+18. A text row carrying constant headline and description columns attributes nothing to those fields.
+19. Fields that vary together attribute direct performance to the copy signature, never to one field.
+20. Separate demographic and copy margins produce no joint row; a demographic × copy file does, as
+    `direct_joint`.
+21. Balancing cannot overwrite direct cells (balanceMatrix tests).
+22. Attribution-setting and result-definition mismatches are `incompatible`; native currencies stay apart.
+23. A headline changed mid-period under one Ad ID is two asset instances with two periods.
+24. Multiple truth candidates: precedence recorded, conflict surfaced, never averaged.
+
 ## 18. Rollout, logging and observability
 
 - Runs log one line per ledger scope: `[Reconciliation] spend: account 60.1% (truth ad_summary),
@@ -504,3 +683,46 @@ or row; structural zeros stay zero; every emitted cell is `evidence_state = 'mod
 `direct_share`/`modelled_share` split on the ledger row; convergence error is stored; the UI shows
 modelled cells hatched and labelled. The schema already carries `modelled_share` and the `modelled`
 state so this needs no migration.
+
+**Deferred, and why (amended).** The repository has no validated statistical infrastructure for a
+hierarchical response model, and an unvalidated model would be exactly the fabricated precision this
+spec forbids. Nothing in this PR emits a modelled value; no proportional allocation stands in for one.
+The follow-up plan:
+
+1. **Allocation tier** — wire `balanceMatrix` to emit `demographic_asset` cells where both margins are
+   `observed_reconciled` / `observed_partial` with the residual supplied as its own row and column,
+   every emitted cell `evidence_state = "modelled"`, `modelled_share` on the ledger, model name and
+   version plus convergence error stored in a `model_runs` table; the UI hatches modelled cells.
+2. **Response tier** — a partial-pooling model on actual denominators,
+   `logit(p) = ad baseline + demographic + copy variable + demographic × copy + placement/device +
+   account/market`, fitted offline first against the validated accounts, with posterior intervals
+   surfaced as uncertainty rather than a single index; allocation (where delivery went) and response
+   (how the audience reacted) stay separate tables, and causality is claimed only from controlled
+   comparisons (MST cells).
+3. **Overlapping features** — independent effects for co-occurring variables (hook, pain, benefit,
+   CTA, format) only through the response tier; until then the library shows supporting spend,
+   outcomes, unique ads and signatures per variable and never totals across feature categories.
+
+## 20. Reconciliation against the documented algorithms (triple validation)
+
+Every formula and threshold the layer applies was checked against its canonical source, then
+implemented literally, then tested. The three validations are: (1) the unit and acceptance suites
+over the synthetic fixtures; (2) this table, which names the canonical source for each rule and
+the code that implements it; (3) the live cross-check after the run on the validated account
+(`scripts/src/check-reconciliation-ledger.ts`, read-only), which re-derives the ledger's account
+rows from the raw tables and fails on any disagreement.
+
+| Rule | Canonical source | Implementation | Verdict |
+|---|---|---|---|
+| Confidence bands: high > 100 conversions or > $1,000; medium 10–100 or $100–1,000; validation_required < 10 or < $100 but promising; insufficient below the floor (< $50 spend or < 10 impressions) | `docs/prompts/IAP_DATA_BUNDLE_PREP_v2.0.md` "confidence_level" (lines 244–256, 189); blueprint §8.3 | `reconciliation.ts` `confidenceLevel` — the numeric bands literally; the qualitative modifiers ("consistent pattern", "directional", "promising") are not evaluated and are documented as such | **implemented** |
+| "Conversions" = the terminal-stage result of the derived objective | `IAP_DATA_BUNDLE_PREP_v2.0.md` line 264; owner decision 2026-09-01 (`check:cohort-reach`) | `results` per row / per ad; cost per result = spend ÷ results; ROAS never used | implemented |
+| Rates from raw counts, never from a pre-divided column | `iapCsvSpec.ts` `DERIVED_OR_IRRELEVANT_METRICS` rationale; `analysisEngine.ts` `derivedRates` | `rateOf`, `RATE_METRIC_SLUGS` excluded from sums and from the totals cross-check | implemented |
+| Creative identity: naming convention primary, `ad_id` fallback secondary, unresolved → INSUFFICIENT | blueprint §7.2 `resolveCreativeIdentity` | Unchanged for cells (`ads.cell` from the name). For *reconciliation* the anchor is Account ID + Ad ID (§6/§6a) because ad names are proven non-unique (44 : 19); the two are complementary, not in conflict — cells classify, Ad IDs reconcile | implemented; noted |
+| Evidence grade: full ≥ 80% · partial · none; `confidence_score = VOLUME_SCORE × (0.7 + 0.3 × coverage)` | `creativeComponents.ts` (`evidenceGrade`, `confidenceScore`), register §10 | Left as is on `concept_performance`; the new layer carries coverage numerically per metric instead of a grade | unchanged |
+| **Shipped concept volume tier** (high ≥ $500 and ≥ 30 results; medium ≥ $100 and ≥ 5; low; validation_required) | `creativeComponents.ts` `volumeConfidence` (used by `concept_performance.confidence_level`) | **Deviates from the canonical bands above** (a $600 / 31-result concept is "high" there and "medium" canonically). Not changed in this PR: it feeds shipped surfaces and tests. Recorded as register §14 `[decision]` for the owner: migrate `concept_performance.confidence_level` to the canonical bands, or amend the blueprint | **discrepancy recorded** |
+| Reach/frequency non-additive | Meta reporting semantics; `metricsCatalog.ts` `accountLevelDeliveryTotal` caveat | `NON_ADDITIVE_METRIC_SLUGS`; reach kept only at exact grain | implemented |
+| Objective is a lens, never a wall; cost per result, never ROAS by default | register §6a/§6b, `check:cohort-reach` | no ROAS anywhere in the layer; result types kept apart | implemented |
+| Interaction index with shrinkage | owner brief 2026-09-02 (`expected = segment × asset ÷ overall`), standard empirical-Bayes shrinkage | `interactionIndex` (prior weight m = 1,000 impressions) — documented as a supported association, never causal | implemented |
+| Copy signature: direct evidence to the delivered combination when fields vary together | owner amendment 2026-09-02 §4 | `classifyAssetColumns` roles + `copy_signature` observations | implemented |
+| Modelled tier: IPF respecting margins, direct cells, structural zeros | owner amendment §9 | `balanceMatrix` interface + tests; nothing emitted (§19) | deferred by design |
+

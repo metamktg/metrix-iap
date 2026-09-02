@@ -149,6 +149,17 @@ export function useMetrixSeed(): MetrixSeed {
   return ctx;
 }
 
+/**
+ * The seed when a provider is above, null when there is none. For widgets
+ * that decorate a surface with seed-derived evidence (the reconciliation
+ * panel under the run controls) but are also rendered by tests and design-
+ * lab fixtures that never mount the provider — those render without the
+ * decoration rather than throwing.
+ */
+export function useMetrixSeedOptional(): MetrixSeed | null {
+  return useContext(MetrixDataContext);
+}
+
 /** Returns true while the seed is being re-fetched in the background. */
 export function useMetrixIsRefetching(): boolean {
   return useContext(MetrixLoadingContext).isRefetching;

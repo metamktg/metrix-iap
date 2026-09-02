@@ -59,6 +59,9 @@ import {
 import { buildSegmentMetricCatalog, segmentMetricReason } from "@/lib/data/segmentMetricsCatalog";
 import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
 import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
+import { FilterDisclosure } from "@/components/widgets/FilterDisclosure";
+import { CoverageStrip, EvidenceChip, EvidenceExplainer } from "@/components/evidence/EvidenceChip";
+import { metricLabel } from "@/lib/creative-evidence";
 import {
   buildAudienceClusters, groupSegmentsByAge, classifyQuadrant, QUADRANT_LABEL,
   type AudienceGroup, type PositioningQuadrant,
@@ -759,6 +762,23 @@ export function AudienceView() {
     } catch { return "cluster"; }
   });
   const [preset, setPreset] = useState<ViewPreset>("all");
+  // Segment filters (FilterDisclosure — collapse-to-trigger; the active
+  // summary is required so a collapsed row can never hide what it filters).
+  const [genderFilter, setGenderFilter] = useState<Set<string>>(() => new Set());
+  const [ageFilter, setAgeFilter] = useState<Set<string>>(() => new Set());
+  const toggleIn = (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (value: string) =>
+    setter((cur) => {
+      const next = new Set(cur);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  const toggleGender = toggleIn(setGenderFilter);
+  const toggleAge = toggleIn(setAgeFilter);
+  const clearFilters = useCallback(() => {
+    setGenderFilter(new Set());
+    setAgeFilter(new Set());
+  }, []);
 
   const { data: presetData, isFetching: presetFetching } = useQuery({
     ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
@@ -787,9 +807,34 @@ export function AudienceView() {
     return analysis?.demographic_registration_signal ?? [];
   }, [preset, presetData, analysis]);
 
-  const scopedRows = useMemo(
+  const unfilteredRows = useMemo(
     () => scopeDemographicRows(activeDemoRows, null),
     [activeDemoRows]
+  );
+  const genderOptions = useMemo(() => [...new Set(unfilteredRows.map((r) => r.Gender))].sort(), [unfilteredRows]);
+  const ageOptions = useMemo(
+    () => [...new Set(unfilteredRows.map((r) => r.Age))].sort((a, b) => (parseInt(a) || 999) - (parseInt(b) || 999)),
+    [unfilteredRows],
+  );
+  const scopedRows = useMemo(
+    () =>
+      unfilteredRows.filter(
+        (r) => (genderFilter.size === 0 || genderFilter.has(r.Gender)) && (ageFilter.size === 0 || ageFilter.has(r.Age)),
+      ),
+    [unfilteredRows, genderFilter, ageFilter],
+  );
+  const activeFilterSummary = useMemo(
+    () => [
+      ...(genderFilter.size > 0 ? [`Gender: ${[...genderFilter].join(", ")}`] : []),
+      ...(ageFilter.size > 0 ? [`Age: ${[...ageFilter].join(", ")}`] : []),
+    ],
+    [genderFilter, ageFilter],
+  );
+  // Reconciliation coverage per metric for the demographic breakdown —
+  // the run's ledger, latest run (spec §15 "Coverage tile").
+  const demoReconciliation = useMemo(
+    () => analysis?.reconciliation?.summary?.breakdowns.find((b) => b.report_class === "demographic") ?? null,
+    [analysis],
   );
 
   const entries = useMemo<SegmentEntry[]>(() => {
@@ -910,6 +955,83 @@ export function AudienceView() {
 
                   <div className="px-6 pt-5">
                     <DataCoverageBanner coverage={demoCoverage} />
+                  </div>
+
+                  {demoReconciliation && (
+                    <div className="px-6 pt-5" data-testid="audience-coverage-tile">
+                      <div className="rounded-lg border border-border/40 bg-foreground/[0.02] px-4 py-3 space-y-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={cn(TYPE.label, "uppercase tracking-widest text-muted-foreground/75")}>Coverage · demographic vs control</span>
+                          <EvidenceChip state={demoReconciliation.by_metric.find((m) => m.metric === "amount_spent")?.evidence_state ?? null} testId="audience-coverage-state" />
+                          <span className={cn(TYPE.caption, "text-muted-foreground/75")}>
+                            {demoReconciliation.ads_reconciled} of {demoReconciliation.ads_total} ads reconciled
+                            {demoReconciliation.ads_missing_from_breakdown > 0 ? ` · ${demoReconciliation.ads_missing_from_breakdown} absent from this breakdown` : ""}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {demoReconciliation.by_metric
+                            .filter((m) => ["amount_spent", "impressions", "results", "link_clicks"].includes(m.metric))
+                            .slice(0, 3)
+                            .map((m) => (
+                              <CoverageStrip key={m.metric} coveragePct={m.coverage_pct} metricLabel={metricLabel(m.metric).toLowerCase()} testId={`coverage-${m.metric}`} />
+                            ))}
+                        </div>
+                        <EvidenceExplainer state={demoReconciliation.by_metric.find((m) => m.metric === "amount_spent")?.evidence_state ?? null} coveragePct={demoReconciliation.by_metric.find((m) => m.metric === "amount_spent")?.coverage_pct ?? null} />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="px-6 pt-5">
+                    <FilterDisclosure
+                      label="Segment filters"
+                      activeSummary={activeFilterSummary}
+                      resultNote={`${scopedRows.length} of ${unfilteredRows.length} rows`}
+                      onClear={activeFilterSummary.length > 0 ? clearFilters : undefined}
+                      data-testid="audience-filters"
+                    >
+                      <div className="flex flex-wrap gap-4">
+                        <div className="space-y-1.5">
+                          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Gender</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {genderOptions.map((g) => (
+                              <button
+                                key={g}
+                                type="button"
+                                onClick={() => toggleGender(g)}
+                                aria-pressed={genderFilter.has(g)}
+                                className={cn(
+                                  "pressable rounded-full border px-2.5 py-1.5 transition-colors",
+                                  TYPE.caption,
+                                  genderFilter.has(g) ? "border-primary/40 bg-primary/10 text-foreground" : "border-border/40 text-muted-foreground hover:text-foreground",
+                                )}
+                              >
+                                {g}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Age</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {ageOptions.map((a) => (
+                              <button
+                                key={a}
+                                type="button"
+                                onClick={() => toggleAge(a)}
+                                aria-pressed={ageFilter.has(a)}
+                                className={cn(
+                                  "pressable rounded-full border px-2.5 py-1.5 transition-colors",
+                                  TYPE.caption,
+                                  ageFilter.has(a) ? "border-primary/40 bg-primary/10 text-foreground" : "border-border/40 text-muted-foreground hover:text-foreground",
+                                )}
+                              >
+                                {a}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </FilterDisclosure>
                   </div>
 
                   {(isRefetching || (preset !== "all" && presetFetching)) ? (

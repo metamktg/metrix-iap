@@ -281,7 +281,9 @@ export type EvidenceState =
   | "incompatible"
   | "unavailable";
 
-export type BreakdownKind = "demographic" | "placement" | "asset" | "demographic_asset" | "placement_asset";
+export type BreakdownKind = "demographic" | "placement" | "asset" | "demographic_asset" | "placement_asset" | "demographic_placement";
+/** How a fact row was attributed: an asset breakdown, a joint file, or a single-dimension breakdown. */
+export type AttributionKind = "direct_asset" | "direct_joint" | "direct_segment";
 export type AdIdentityKind = "ad_id" | "ad_name" | "unjoinable";
 
 export interface SegmentDims {
@@ -293,11 +295,14 @@ export interface SegmentDims {
   asset_type?: string;
   asset_hash?: string;
   asset_value?: string;
+  /** For a copy signature: the delivered field values by column. */
+  asset_fields?: Record<string, string>;
 }
 
 /** One observed fact at ad × segment × reporting period. Residuals are never rows here. */
 export interface AdBreakdownRow {
   breakdown: BreakdownKind;
+  attribution: AttributionKind;
   ad_identity_kind: AdIdentityKind;
   ad_identity: string;
   meta_ad_id: string | null;
@@ -342,6 +347,8 @@ export interface LedgerRow {
   observed_value: number;
   coverage_pct: number | null;
   residual: number | null;
+  /** max(0, observed − truth) — the over-count, kept for diagnosis. */
+  overcoverage?: number | null;
   direct_share: number;
   modelled_share: number;
   evidence_state: EvidenceState;
@@ -372,6 +379,10 @@ export interface BreakdownReconciliationSummary {
 export interface ReconciliationSummary {
   truth_source: "ad_summary" | "totals_row" | "none";
   truth_identity_kind: "ad_id" | "ad_name" | null;
+  /** Which candidate control was selected and why (source precedence). */
+  truth_precedence?: string;
+  /** Disagreements above 1% between the selected control and an alternative — recorded, never averaged. */
+  truth_conflicts?: string[];
   breakdowns: BreakdownReconciliationSummary[];
   notes: string[];
 }
@@ -402,7 +413,8 @@ export interface VariableSegmentRow {
   interaction_index: number | null;
   contributing_ads: number;
   evidence_state: EvidenceState;
-  confidence: "high" | "medium" | "low" | "insufficient";
+  /** The documented confidence_level vocabulary (IAP_DATA_BUNDLE_PREP), not the shipped concept tier. */
+  confidence: "high" | "medium" | "validation_required" | "insufficient";
 }
 
 /** An asset instance — this asset on this ad; content_hash is the cross-ad content identity. */

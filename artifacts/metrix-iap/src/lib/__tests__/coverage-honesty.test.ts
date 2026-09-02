@@ -88,7 +88,7 @@ function demoRow(cellId: string): DemographicRow {
 describe("creative empty-state reasons", () => {
   it("distinguishes never-imported from account-level-grain from no-rows-for-cell", () => {
     expect(demographicEmptyReasonFor([], "C8A")).toContain("No demographic export has been imported");
-    expect(demographicEmptyReasonFor([demoRow(ACCOUNT_GRAIN_CELL_ID)], "C8A")).toContain("account-level");
+    expect(demographicEmptyReasonFor([demoRow(ACCOUNT_GRAIN_CELL_ID)], "C8A")).toContain("Account-level demographic evidence exists");
     expect(demographicEmptyReasonFor([demoRow("C1A")], "C8A")).toContain("no rows that join to this creative");
     expect(demographicEmptyReasonFor([demoRow("C8A")], "C8A")).toBeNull();
   });
@@ -99,8 +99,9 @@ describe("creative empty-state reasons", () => {
   });
 
   it("funnel reason distinguishes no-mapping-at-all from no-rows-for-this-cell", () => {
-    expect(funnelEmptyReasonFor(undefined, "C8A")).toContain("creative-to-ad mapping");
-    expect(funnelEmptyReasonFor([], "C8A")).toContain("creative-to-ad mapping");
+    // The reason names the join order (mapped Ad IDs first, then the cell code) and the remedy.
+    expect(funnelEmptyReasonFor(undefined, "C8A")).toContain("mapped Ad IDs first");
+    expect(funnelEmptyReasonFor([], "C8A")).toContain("map the creative to its ad and re-run analysis");
     const perfRow = { cell_id: "C1A" } as CellPerformanceRow;
     expect(funnelEmptyReasonFor([perfRow], "C8A")).toContain("don't appear in the imported performance exports");
     expect(funnelEmptyReasonFor([perfRow], "C1A")).toBeNull();
@@ -124,7 +125,7 @@ describe("creativeEmptyReasonsFor", () => {
 
   it("derives all three tab reasons for a cell with no joined rows", () => {
     const r = creativeEmptyReasonsFor(analysis, "C8A");
-    expect(r.demographic).toContain("account-level");
+    expect(r.demographic).toContain("Account-level demographic evidence exists");
     expect(r.placements).toContain("No device × placement export");
     expect(r.funnel).toContain("don't appear in the imported performance exports");
   });

@@ -49,6 +49,12 @@ in-app links routed through context-dropping redirects, three orphan pages, no B
 palette. Nine findings, all shipped with tests; the open remainder is in its §3. The
 register's §8 re-verifies every open item above against the same tree.
 
+**Reconciliation-first evidence layer (2026-09-02, later the same day).** Specification
+`../specs/iap-multi-report-reconciliation.md`; register §14. Adaptive multi-report reconciliation per
+Ad ID and per metric, asset instances and copy signatures, variable evidence without spend
+duplication, evidence states on every new surface, the canonical confidence bands, and a live
+cross-check script. The modelled tier is a tested interface only (spec §19).
+
 **Shipped to app.metrix.ad (2026-09-02).** PR #174 (navigation overhaul, creative components,
 Phase 4 plan) merged to `main` at `5cdaaa5`, the workspace merged `main`, and the publish was
 verified by bundle hash and content marker (register §12). Validation of the shipped build is

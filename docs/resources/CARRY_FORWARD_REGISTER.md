@@ -469,3 +469,20 @@ output (spec §19).
 `AnalysisRun.reconciliation` API field (both left in place, documented as superseded). C1's
 "ad-level placement rollup that no ingestion path writes today" is now written.
 
+**Amendment (same day).** The owner's follow-up replaced the four-file contract with an adaptive
+multi-report engine: no report class mandatory (a run needs one delivery report with spend),
+capability detection per file (spec §3a), a compatibility key (account · Ad ID · period · currency ·
+attribution · result definition, §6a), source precedence with recorded alternatives and surfaced
+conflicts, asset-column roles and copy signatures (§10a), per-metric independence with
+`overcoverage` (§7a), the evidence cube with `attribution` (§12a), and the canonical confidence bands.
+
+**`[decision]` — concept confidence tier deviates from the documented bands.**
+`creativeComponents.volumeConfidence` (high ≥ $500 and ≥ 30 results; medium ≥ $100 and ≥ 5; low;
+validation_required) drives `concept_performance.confidence_level` and the Copy components surface.
+The canonical classification (`IAP_DATA_BUNDLE_PREP_v2.0` "confidence_level", blueprint §8.3) is
+high > 100 conversions or > $1,000 spend; medium 10–100 or $100–1,000; validation_required below
+that but promising; insufficient below the floor. The new evidence layer implements the canonical
+bands (`reconciliation.ts` `confidenceLevel`, spec §20); the shipped tier was left untouched because
+it feeds shipped surfaces and tests. Owner call: migrate the concept tier to the canonical bands
+(a data migration re-grading existing rows) or amend the blueprint to the shipped one.
+
