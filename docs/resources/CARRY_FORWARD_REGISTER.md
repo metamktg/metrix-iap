@@ -842,3 +842,35 @@ local md5s — 130 match, 0 differ, 0 missing; `/api/healthz` 200. The live side
 collapsible one whose pages branch out beside it. The docs-only PR #190 (the second-pass ship
 record) merged as `d8f8ccd` in between.
 
+
+**Passes 2–7 of the autonomous run (2026-09-03), on branch
+`claude/pre-release-reconciliation-ux-cznjbz`, PR #194.** Change log entries 10–17. Pass 7's own
+work and what it found:
+
+- **`check:friction` promoted from a scratch harness into `scripts/`** (entry 15). Fifty-one
+  routes × two accounts × two widths, defects at zero and counted signals ratcheting per route in
+  `check-friction.baseline.json`. It is an operator gate, NOT a `.replit` validation — the same
+  reason `check:accessible-names`, `check:chart-geometry` and `check:unexplained-dashes` are not,
+  and it is registered in `MANUAL_ONLY_CHECK_SCRIPTS` with that reason, because the coverage test
+  is right that every `check:*` script must be wired or registered.
+- **The reduced-motion, focus-ring and tabular-numeral sweep found nothing to fix**, measured
+  rather than assumed: the global `prefers-reduced-motion` block zeroes every transition and
+  animation and all three JS-animated components read the hook; `:focus-visible` paints a
+  full-opacity 2px ring already guarded by a contrast test; and every numeric table cell and tile
+  figure across nineteen data-heavy route visits already computes `tabular-nums`.
+- **Two gates asked for a run record rather than for data** (entry 16), found by the visual pass
+  and confirmed against the server. Strategy and Creative each locked their own stage on the demo
+  account while displaying the data that stage consumes, because `stage-status` reports MANUAL
+  analysis runs and in-app generation runs, and an importer account has neither. Both now ask
+  what the generator actually consumes. The MST gate needed nothing: `mst.unlocked` was already
+  `briefsCount > 0`.
+- **The four command centres carried three different content widths**, so the column jumped as a
+  reader walked the loop and the same Execution-card pattern rendered 2-across on one stage and
+  4-across on the next. One width now (`max-w-5xl`, MST's, the widest content).
+- **A spec locator named a control by the words inside it** (entry 17) and resolved to a
+  recommendation card 1,300 px off-screen. Five locators scoped to `[data-testid="kpi-tile"]`,
+  and `check:locator-ambiguity` extended to flag the substring form while exempting anchored
+  regexes.
+
+Still listed for the owner rather than taken, unchanged: wiring `ad_traffic_quality` into the
+seed (a seed-contract change).
