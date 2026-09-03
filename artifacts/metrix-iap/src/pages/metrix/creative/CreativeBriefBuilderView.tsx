@@ -11,7 +11,7 @@
 // working); without one, the first brief is selected like the canvas.
 
 import { ActionConfirmButton } from "@/components/widgets/CopyConfirmButton";
-import { humanizeEnum } from "@/lib/normalize";
+import { briefStatusLabel } from "@/lib/normalize";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -31,14 +31,6 @@ import { AddToTrayButton } from "@/components/tray/AddToTrayButton";
 import { cn } from "@workspace/command-deck/lib/utils";
 
 const SECTION = "Creative · 05";
-
-const STATUS_LABEL: Record<string, string> = {
-  draft_from_seed: "Draft",
-  validation_draft_from_seed: "Validation draft",
-  control_refresh_from_seed: "Control refresh",
-  generated_p1: "Generated · P1",
-  generated_p2: "Generated · P2",
-};
 
 // ─── full_brief accessors ──────────────────────────────────────────────
 // full_brief is a loosely-typed loop-output document; these read one
@@ -285,7 +277,7 @@ export function CreativeBriefBuilderView() {
                           {pillarOf(b.source_pillar)?.label ?? b.source_pillar}
                         </span>
                         <span className={cn(TYPE.label, "shrink-0 inline-flex border border-border/40 bg-foreground/[0.04] rounded-full px-2 py-0.5 text-foreground/70")}>
-                          {STATUS_LABEL[b.status] ?? humanizeEnum(b.status)}
+                          {briefStatusLabel(b.status)}
                         </span>
                       </span>
                       {/* VALUES, not labels — so no label role. TYPE.label uppercases

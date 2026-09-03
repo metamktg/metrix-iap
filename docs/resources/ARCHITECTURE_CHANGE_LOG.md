@@ -422,3 +422,321 @@ reader did not choose. The register item was written without reading that commen
 **Reach.** Chrome only. No seed, schema, or route change. Other `MetricTile` callers are
 unchanged by default; `SegmentGridModal` keeps serving the per-cell and per-card grids.
 
+## 10. Recommendations derived from the rows, not waiting on a stage (2026-09-03, autonomous pass 2)
+
+**What.** `lib/data/recommendations.ts` derives a ranked, evidence-carrying recommendation set
+from the account JSON that exists, and emits the `DeckCard` shape the recommendation surfaces
+already consume. A new `RecommendationSlider` puts that set on the account overview and, filtered
+to the stage it belongs to, on the Analysis, Strategy, Creative and MST command centres.
+
+Sources, in the order the cards rank: `scaling_playbook.avoid_combinations` (the money being
+lost), `scale_now`, the budget reallocation note, `intelligence.failure_patterns`,
+`scaling_playbook.optimize` and `validate`, `strategy.active_hypotheses`, and critical
+`data_quality` anomalies. Concept references are parsed with the existing `parseHierarchyRef`
+and joined to run-scoped `concept_rollup` rows for the measured spend, results and cost per
+result. Ad-level failure patterns are grouped by the engine's own diagnosis — nineteen identical
+tiles on the validated account is noise, one card carrying the count and the summed spend is
+direction. A `data_quality` anomaly whose campaign a failure pattern already covers is dropped
+rather than stated twice.
+
+**Why.** Every recommendation surface in the product — the Next Best Action hero, the swipe deck,
+the Action Queue — reads `iap.optimization_loop.recommendation_cards`. That array is written only
+by the Optimization Loop stage, which is execute-on-command and has never run for any account in
+the deployment, so four surfaces rendered an empty state on accounts whose strategy map, findings
+and hypothesis queue were full of direction. Owner ask (2026-09-03): "continue surfacing and
+leveraging the json outputs … recommendation tile sliders, which we need to fill the schema of on
+the main account overview and command center pages".
+
+**The honesty rules it works under.** Nothing is invented: a card's numbers come from a row, and
+a reference the rollup cannot match says so in words rather than showing a zero. Every card names
+the JSON that produced it and links to the surface where the evidence lives. `confidence` carries
+the engine's own grade where one exists; a hypothesis reads "untested", which is its epistemic
+state rather than a fabricated score. A generated card, if the loop ever runs, leads and is not
+marked derived. Cost per result throughout — never ROAS, never purchases.
+
+**Where.** `lib/data/recommendations.ts` (new, pure), `components/deck/RecommendationSlider.tsx`
+(new), `pages/metrix/AdAccountOverview.tsx` (hero, deck and slider all read the derived set),
+`analysis/AnalysisCommandCenter.tsx`, `strategy/StrategyCommandCenter.tsx`,
+`creative/CreativeCommandCenter.tsx`, `mst/MstCommandCenter.tsx` (stage-filtered slider, rendered
+only when that stage has cards). The manager overview is unchanged: its own
+`recommendation_cards` are populated.
+
+**Proof.** `lib/data/__tests__/recommendations.test.ts` (11) recomputes the numbers from the
+fixture rather than restating the module's output, and pins the ranking, the no-number case, the
+dedupe, purity, and the generated-cards-win rule.
+`components/deck/__tests__/recommendation-slider.test.tsx` (6) covers provenance on every tile, the
+absent-number line, paging controls disabled rather than hidden, and the empty state speaking in
+the account's own words. Full client suite 2,508.
+
+**Reach.** Chrome only. No seed, schema or server change — the derivation is client-side over
+data the seed already ships. `ActionQueueView` and `listen/RecommendationsView` still read the raw
+loop array and stay empty until it runs; wiring them to the same derivation is listed for the next
+pass rather than done here, because both consume the raw snake_case seed shape and adapting them
+is a change to their contracts.
+
+**Locator note.** Three assertions in `loop-command-chain.test.tsx` matched the stage tile by the
+substring `/strategy/i`; the overview now also carries recommendation prose citing the strategy
+map, so they resolve by the tile's own test id instead. This is the `check:locator-ambiguity`
+class of failure in a place that gate does not reach (it covers `SectionCard` titles only).
+
+## 11. Three fields the seed shipped and nothing showed (2026-09-03, autonomous pass 3)
+
+**What.** `check:field-coverage` lists fields the seed computes, ships, and no surface reads.
+Three of them changed how a number should be weighed, so their absence was not cosmetic:
+
+- **`spend_share_pct`** (per result event and per intent class). The Library header said
+  "Conversion-led" without saying whether that is 91% of the money or 34% of it; it now names the
+  dominant class's share, read from the seed, whose grain (account-wide) matches that header's.
+  The results-by-event table on the account overview gains a Share column computed from the rows
+  the table itself shows — that table is windowed by the date preset, and putting the seed's
+  full-flight percentage beside a windowed dollar figure would be two grains in one row.
+- **`lift_basis`** (`concept_rollup`). "23% above baseline" means opposite things depending on
+  whether the engine compared cost per result or link CTR. The Findings concept card now names
+  the basis when the row carries one, and reads as it always did when it does not.
+- **the per-event intent class** on the results-by-event table, joined from the seed's
+  `result_events`. An event's class is a property of the event rather than of the window, so that
+  join is safe under any date preset.
+
+Also in this pass: `ActionQueueView` and `listen/RecommendationsView` read the same derivation
+entry 10 introduced, through `toLoopCards`, which adapts it to the seed's own
+`RecommendationCard` shape (the derivation's source lands in `source_path`, a field that shape
+already has). Both surfaces were empty on every account for the same reason the hero was.
+
+**Why.** Owner: "ensure all modules are fully populated with available authority data to maximise
+ad confidence". A field that is computed, stored, shipped and never read is authority data the
+reader is paying for and not getting.
+
+**Where.** `pages/metrix/AdAccountOverview.tsx` (Share column, intent chip),
+`analysis/IapLibraryView.tsx` (`intentSummaryFragments`), `analysis/FindingsView.tsx`
+(`liftLabel` takes a basis), `act/ActionQueueView.tsx`, `listen/RecommendationsView.tsx`,
+`lib/data/recommendations.ts` (`toLoopCards`), and
+`pages/metrix/__tests__/authority-data-surfacing.test.tsx` (new, 8).
+
+**Reach.** Chrome only. No seed or server change: every field read here was already shipped.
+
+**Still unread, with the reason.** `WorkspaceBilling` (7 fields) and `AppDefaults` (5) have no
+surface because neither feature is built; `OptimizationLoop.manager_overview_visibility` and
+`dismiss_policy` are behaviour config the client does not honour yet;
+`CreativeAssetRow.content_hash` / `normalized_value`, `VariableEvidenceRow.source_ref` /
+`asset_key` and `SegmentDims.asset_*` are reconciliation internals whose surfacing belongs with
+the evidence drill-down, not with this pass. `check:field-coverage` remains a worklist, not a
+verdict — it under-reports by design.
+
+## 12. The tile pattern reaches the pages whose subject it is (2026-09-03, autonomous pass 4)
+
+**What.** Task #38 — "apply the IAP Library tile pattern throughout" — on the two pages that
+carried the account's most interpretive content with no measured header:
+
+- **Creative DNA**, the page about variables, had no tiles at all: a reader arrived at gene loci
+  with no idea how much money the scope in front of them represents. It now carries a
+  configurable `KpiTileRow` built from the same landed, run-scoped variable rows the loci read,
+  and a tile opens the shared `KpiDrilldownModal` — whose dimensions include one per variable
+  family, so the page's own subject is one press away.
+- **Avatars** had four structural counts (profiles, pillars, segments, matrix avatars) and not one
+  figure about money. Those stay — they answer "how many", which no performance tile does — and a
+  labelled "Audience performance · this result scope" row sits under them, built from the same
+  scoped demographic rows the segment cards read.
+- **The variable drill-down's segment rows** carried the volume band as a signal tag and dropped
+  the per-segment evidence state the rollup already computed (only the header's worst-of survived).
+  Each row now carries its own `EvidenceChip`: two segments can share a volume band and rest on
+  different evidence — reconciled ad-grain rows in one, a name-keyed join in the other — and the
+  reader deciding which to fund needs that on the row. Rendered as a span, so it never nests a
+  control inside the row's button.
+
+**Why.** The tile pattern is how this product states a measured number with a way into its
+breakdown. A page that interprets variables or audiences without one asks the reader to trust an
+interpretation whose scale they cannot see.
+
+**Where.** `pages/metrix/analysis/AnalysisDnaView.tsx`, `pages/metrix/strategy/AvatarsView.tsx`,
+`components/creative/VariableDrilldownModal.tsx`,
+`pages/metrix/__tests__/tile-pattern-reach.test.tsx` (new, 4).
+
+**Reach.** Chrome only. The structural tiles, the run-scope narrowing test that reads the Message
+pillars tile, and every existing segment assertion are untouched.
+
+## 13. The last charts join the theme (2026-09-03, autonomous pass 5)
+
+**What.** The chart pass's remaining surfaces (master plan §4 Phase D, register C-3/C-5/C-6):
+
+- **StrategyOverview's coverage meters** were painted from `--metrix-gold` and `--metrix-success`,
+  two legacy aliases no other chart uses, with a raw `hsl(var(--foreground) / 0.18)` for the low
+  tier. They read from `VERDICT` now — the theme's diverging polarity set — which gains a
+  `partial` step for the middle tier rather than borrowing a categorical hue for it.
+- **The Audience positioning map** carried five raw colour literals and 9/10 px type: the grid,
+  axis lines, tick fills, the bubble stroke and label, and the median reference lines. All of them
+  are `AXIS`, `CHART_TYPE` and `MARK` now, so the scatter recesses the way every other chart does
+  and its smallest type sits at the 11 px chrome floor instead of 9.
+
+**Why.** One theme or no theme. A chart that keeps its own colours and its own type scale is a
+chart that will drift, and the two that were left were the two a demo actually opens.
+
+**Where.** `components/charts/chartTokens.ts` (`VERDICT.partial`),
+`pages/metrix/strategy/StrategyOverview.tsx`, `pages/metrix/analysis/AudienceView.tsx`.
+
+**Proof.** `check:chart-geometry` and `check:accessible-names` PASS against a dev server;
+`check:unexplained-dashes` clean over 684 dashes across 16 routes × 2 accounts. Client suite
+2,520. The eight static gates PASS.
+
+**Reach.** Chrome only. No data change; every figure these charts draw is the one it drew before.
+
+## 14. The wayfinding leftovers, and two owner decisions (2026-09-03, autonomous pass 6)
+
+**What.**
+
+- **A history row arrives already scoped (N-5).** "Open in Analysis Overview" left the reader to
+  find, in the run picker, the run they had just clicked. The link carries `?run=<id>` and
+  `usePersistedRunScope` applies it on arrival — once per account+run, only when the run list is
+  loaded and actually contains the id, and by writing into the SAME stored selection the picker
+  owns, so the picker still holds the scope afterwards and a later change is not fought by the
+  URL. A stale id is ignored rather than emptying the page.
+- **A linked recommendation opens (N-10).** A manager recommendation links to
+  `/app/listen/recommendations?focus=<id>` and landed the reader on the deck's first card.
+  `RecommendationDeck` takes a `focusId` and opens that card, once, and only when the deck really
+  contains it.
+- **Data Provenance ends somewhere.** The page closed with a wall of lineage and no way forward;
+  it now offers the analysis centre and the IAP Library — the two places a provenance read
+  continues.
+- **Owner decision: the MST "Creative Scan" is "Sprint Asset Check"** (N-13). Two pages carried
+  one name; the Creative section's page is the scan, and the MST one checks a sprint's assets
+  against the matrix before launch.
+- **Owner decision: Findings is a visible page** (N-6). It was hidden "until its producer runs for
+  real accounts" — but its producer is `intelligence.failure_patterns` and `concept_scores`, which
+  every configured account carries, and since entry 10 its recommendations derive from those rows.
+  A page with real content reachable only from one cross-link is a page most readers never find.
+
+**Where.** `lib/run-scope.ts`, `analysis/AnalysisHistoryView.tsx`,
+`components/deck/RecommendationDeck.tsx`, `listen/RecommendationsView.tsx`,
+`settings/DataProvenanceView.tsx`, `navigation/navTree.ts`, `mst/MstCommandCenter.tsx`,
+`lib/__tests__/run-scope-deeplink.test.tsx` (new, 5), and the sidebar test, which now derives
+"which children appear" from the tree instead of naming Findings as hidden.
+
+**Reach.** Chrome only. `?run=` is read by `usePersistedRunScope`, so every page using the picker
+accepts it; no other query contract changed.
+
+
+---
+
+## 15. The friction gate, and a badge that called success a warning (2026-09-03, autonomous pass 7)
+
+**What.**
+
+- **`check:friction` is promoted from a scratch harness to a checked-in gate.** It walks every
+  route `navTree.ts` and `App.tsx` declare (51 today, legacy redirects excluded so a finding is
+  never filed against the wrong page) for two fixture accounts at 1440 and 390 px, and separates
+  two kinds of finding. **Defects**, never baselined, must stay at zero: an uncaught exception or
+  console error, horizontal overflow, a `<button>` nested in a `<button>`, and copy the
+  signal/coverage rework retired. **Ratchets**, held per route in
+  `scripts/src/check-friction.baseline.json`, count first-layer warning boxes, warning glyphs and
+  prose over the rulebook's 220 characters — a route may lower its count freely, and raising it
+  fails. No-data phrases are held as a SET per route rather than a count: "No creative scan yet"
+  on the Creative Scan page is the loop's honest empty state, while the same sentence on Analysis
+  Overview means a surface stopped reading a dataset its siblings still have, and only the phrase
+  and the route together can tell those apart.
+- **A brief's status stopped being painted as a problem.** Every status chip on the Creative
+  Command Center wore the amber warning tint, so `Generated · High` — the best outcome the
+  generation engine can report — was the same colour as a failure, and a page of briefs read as a
+  page of warnings. The chip is now the Brief Builder's neutral one. That page also fell through
+  to the RAW enum: its private `STATUS_LABEL` knew three statuses, the engine writes more, and
+  `GENERATED_HIGH` sat on screen in an uppercase chip. `humanizeEnum` had already been written for
+  exactly this bug and wired into the Builder only — because the lookup existed TWICE. There is
+  now one `briefStatusLabel` in `lib/normalize.ts` and no private copy. The same stale-map
+  fallback in `CreativeExpandDialog`'s QA chip reads through `humanizeEnum` too.
+- **The motion, focus and numeral sweep found nothing to fix, and that is the finding.** Reduced
+  motion is honoured globally (`index.css` zeroes `--transition-speed`, `--mx-fast`, `--mx-med`
+  and every animation/transition duration under `prefers-reduced-motion: reduce`) and by the three
+  components that animate in JS. `:focus-visible` paints a full-opacity 2px primary ring with a
+  contrast test already guarding the value. Every numeric table cell and tile figure across
+  nineteen data-heavy route visits already computes `font-variant-numeric: tabular-nums` —
+  measured, not assumed.
+
+**Where.** `scripts/src/check-friction.mjs` (new), `scripts/src/check-friction.baseline.json`
+(new), `scripts/package.json`, `lib/normalize.ts`, `lib/__tests__/normalize.test.ts`,
+`creative/CreativeCommandCenter.tsx`, `creative/CreativeBriefBuilderView.tsx`,
+`components/creative/CreativeExpandDialog.tsx`, and `tests/e2e/metrix-iap-ad-account-overview.spec.ts`.
+
+**What proves it.** The gate found the badge fix on its second run: 206 first-layer warning boxes
+across the app before, 160 after, with `/app/creative` reported below baseline. `normalize.test.ts`
+covers `briefStatusLabel` including a status no map has heard of. The tabular-numeral and
+reduced-motion results are browser measurements, not source reads.
+
+**Reach.** `check:friction` is NOT wired into `.replit`, for the same reason
+`check:accessible-names`, `check:chart-geometry` and `check:unexplained-dashes` are not: it needs a
+running dev server, and a validation that cannot run without one fails every validation sweep. It
+is an operator gate, run beside its three siblings. `briefStatusLabel` is display-only — no seed
+field, route or stored value changed.
+
+---
+
+## 16. The loop gates asked for a run record, not for data (2026-09-03, autonomous pass 7)
+
+**What.** Two command centres locked their own stage on the demo account while displaying the
+very data that stage consumes. The visual pass found both on one screen each.
+
+- **Strategy** gated on `stage-status.analysis.status === "success"`, which reports the latest
+  MANUAL analysis run: `getLatestAnalysisRun()` reads `manual_analysis_runs`, falls back to
+  `report_pulls` for live-Meta accounts, and returns null for everything imported. So the page
+  said "this account doesn't have a completed analysis run yet" directly beneath tiles reading
+  3 message pillars, 4 hypotheses and 4 ICP profiles, and beneath a recommendation naming $32.15
+  per result — all computed from the analysis rows the gate said were missing. It now gates on
+  `validated`, the server's own account-wide completeness verdict, which
+  `verifyAnalysisRunCompleteness()` already computes for exactly these accounts. `validated`
+  ALONE decides: a successful run whose surfaces came up short must still hold the gate, so run
+  success is not a second ticket through it, and a run in flight holds it with a message that
+  says so.
+- **Creative** gated on `stage-status.strategy.status === "success"` — the latest strategy
+  GENERATION run — so an account whose strategy arrived through the importer was told "Generate
+  strategy first" above a list of its sixteen briefs. The server never agreed: `storedPillars()`
+  in `generationEngine.ts` takes "the CURRENT generated set if one exists, else the imported
+  set", so the generation the gate refused to offer would have worked. It now asks for the input
+  the generator consumes — message pillars, imported or generated.
+- **One column width across all four command centres.** They were `max-w-3xl` (Analysis,
+  Strategy), `max-w-4xl` (Creative) and `max-w-5xl` (MST), so the content column jumped between
+  three widths as a reader walked the loop, and the same Execution-card pattern rendered its
+  tiles 2-across on Strategy and 4-across on Creative — a width workaround, commented as one.
+  MST's, the widest content, sets it for all four; Strategy's tile grid is now the same
+  `grid-cols-2 md:grid-cols-4` as Creative's.
+
+**Where.** `strategy/StrategyCommandCenter.tsx`, `creative/CreativeCommandCenter.tsx`,
+`analysis/AnalysisCommandCenter.tsx`, and `__tests__/loop-gates-read-data-not-runs.test.tsx`
+(new, 6).
+
+**What proves it.** The new test drives both pages with the stage-status an IMPORTER account
+really returns (`analysis.status: "none"`, `validated: true`, `strategy.status: "none"`) and
+asserts each gate opens; it also asserts each still holds for the cases that must hold — no
+pillars, surfaces not validated, a run in flight — and that the successful-but-incomplete case
+still says which of the two it was. Browser screenshots at 1440 and 390 px confirm both pages.
+
+**Reach.** Client gate predicates only. No endpoint, seed field or generation contract changed —
+and the MST gate needed nothing, because `mst.unlocked` was already `briefsCount > 0`, a fact
+about data rather than about a run.
+
+---
+
+## 17. A locator that named a control by the words in it (2026-09-03, autonomous pass 7)
+
+**What.** `smoke:metrix-iap-hover-popover` failed one of its 26 tests after the recommendation
+slider shipped, and the failure named the wrong thing: "waiting for `Diagnose full breakdown` to
+be visible". The popover was fine. `openDrilldown()` found its tile with
+`page.locator("button").filter({ hasText: tileLabel }).first()`, and the slider had arrived
+carrying a recommendation titled "traffic_quality - reach without qualified action" — which
+contains "Reach", comes earlier in the DOM, and sits scrolled off inside the horizontal rail. The
+hover landed on a control 1,300 px off-screen, so no popover opened.
+
+Five tile locators used that form. All five now scope to `[data-testid="kpi-tile"]`, which is the
+tile and nothing else. `check:locator-ambiguity` learned the pattern: it flags
+`locator("<tag>").filter({ hasText: … })` where the text is a string literal, an identifier, or
+an unanchored regex, and exempts an ANCHORED regex (`/^Segment$/`) because `^` is exactly what
+`exact: true` buys elsewhere. Ten existing call sites use the anchored form and are correct; the
+gate passes at 0 findings.
+
+**Where.** `tests/e2e/metrix-iap-hover-popover.spec.ts`, `scripts/src/check-locator-ambiguity.ts`,
+`replit.md`.
+
+**Reach.** Test infrastructure. The gate's new rule reads `tests/e2e/*.spec.ts` only, adds no
+runtime dependency, and runs in the same second as the rest of it.
+
+**Why it matters beyond one spec.** This is the second time a locator matched by substring and
+resolved to something the author never meant — the first cost nine tests in one file and left
+others broken behind a fail-fast run. Both times the failure message described the assertion, not
+the locator, which is what makes the class expensive to diagnose. A locator should name a control
+structurally; the words inside it belong to the product and will change.

@@ -76,6 +76,7 @@ import {
   rankBarPct, MetricPickerTile, type RankMetric, type MetricGroup,
   type ResolvedMetricOption,
 } from "./rankSort";
+import { AXIS, CHART_TYPE, MARK } from "@/components/charts/chartTokens";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -301,12 +302,12 @@ function PositioningMapCard({
       return (
         <g role="img" aria-label={payload.group.label} style={{ cursor: "default" }}>
           <circle cx={cx} cy={cy} r={r + 4} fill={fill} fillOpacity={0.08} />
-          <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.72} stroke="hsl(var(--foreground) / 0.15)" strokeWidth={1.5} />
+          <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.72} stroke={AXIS.stroke} strokeWidth={1.5} />
           <text
             x={cx} y={cy + 0.5}
             textAnchor="middle" dominantBaseline="middle"
-            fontSize={9} fontWeight={700}
-            fill="hsl(var(--foreground) / 0.92)"
+            fontSize={CHART_TYPE.tick} fontWeight={700}
+            fill={MARK.valueLabel.fill}
             style={{ pointerEvents: "none" }}
           >
             {payload.group.id}
@@ -393,21 +394,21 @@ function PositioningMapCard({
 
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart margin={{ top: 10, right: 20, bottom: 45, left: 60 }}>
-              <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--foreground) / 0.10)" />
+              <CartesianGrid {...AXIS.grid} />
               <XAxis
                 dataKey="x"
                 type="number"
                 domain={["auto", "auto"]}
                 tickFormatter={(v: number) => fmtUSD(v, 0)}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                axisLine={{ stroke: "hsl(var(--foreground) / 0.08)" }}
+                tick={AXIS.tick}
+                axisLine={{ stroke: AXIS.stroke }}
                 tickLine={false}
                 label={{
                   value: `${costLabel} →`,
                   position: "insideBottom",
                   offset: -30,
-                  fill: "hsl(var(--muted-foreground))",
-                  fontSize: 10,
+                  fill: AXIS.tick.fill,
+                  fontSize: CHART_TYPE.label,
                 }}
               />
               <YAxis
@@ -415,32 +416,30 @@ function PositioningMapCard({
                 type="number"
                 domain={["auto", "auto"]}
                 tickFormatter={(v: number) => fmtNum(v)}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                axisLine={{ stroke: "hsl(var(--foreground) / 0.08)" }}
+                tick={AXIS.tick}
+                axisLine={{ stroke: AXIS.stroke }}
                 tickLine={false}
                 label={{
                   value: `${resultPlural} →`,
                   angle: -90,
                   position: "insideLeft",
                   offset: 50,
-                  fill: "hsl(var(--muted-foreground))",
-                  fontSize: 10,
+                  fill: AXIS.tick.fill,
+                  fontSize: CHART_TYPE.label,
                 }}
               />
               {medianCpa > 0 && (
                 <ReferenceLine
                   x={medianCpa}
-                  stroke="hsl(var(--chart-1) / 0.30)"
-                  strokeDasharray="4 3"
-                  label={{ value: "median", position: "insideTopRight", fill: "hsl(var(--chart-1) / 0.70)", fontSize: 9 }}
+                  {...AXIS.reference}
+                  label={{ value: "median", position: "insideTopRight", fill: AXIS.tick.fill, fontSize: CHART_TYPE.tick }}
                 />
               )}
               {medianResults > 0 && (
                 <ReferenceLine
                   y={medianResults}
-                  stroke="hsl(var(--chart-1) / 0.30)"
-                  strokeDasharray="4 3"
-                  label={{ value: "median", position: "insideTopRight", fill: "hsl(var(--chart-1) / 0.70)", fontSize: 9 }}
+                  {...AXIS.reference}
+                  label={{ value: "median", position: "insideTopRight", fill: AXIS.tick.fill, fontSize: CHART_TYPE.tick }}
                 />
               )}
               <Tooltip content={<MapTooltip />} cursor={false} />

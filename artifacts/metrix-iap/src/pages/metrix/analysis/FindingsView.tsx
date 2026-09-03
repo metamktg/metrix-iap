@@ -51,6 +51,8 @@ interface ConceptScore {
   cpa: number | null;
   buying_intent_score?: number;
   performance_lift_vs_baseline?: string | number | null;
+  /** What that lift compares — "cpa" or "link_ctr" (concept_rollup.lift_basis). */
+  lift_basis?: string | null;
   performance_tier?: string;
   confidence_level?: string;
   what?: string;
@@ -120,12 +122,21 @@ function liftIcon(lift: string | number | null | undefined) {
   return <Minus className="w-3 h-3 text-muted-foreground/75 shrink-0" />;
 }
 
-function liftLabel(lift: string | number | null | undefined): string {
+/**
+ * "23% above baseline" leaves out what was measured: the engine compares
+ * cost per result on conversion rows and link CTR on awareness ones
+ * (`concept_rollup.lift_basis`), and those move in opposite directions —
+ * above baseline on cost is bad news, above baseline on CTR is good. The
+ * basis is named whenever the row carries one; rows written before the
+ * column read as they always did.
+ */
+export function liftLabel(lift: string | number | null | undefined, basis?: string | null): string {
   if (lift == null) return "";
   const n = typeof lift === "number" ? lift : parseFloat(String(lift));
   if (isNaN(n)) return "";
   const pct = Math.round(Math.abs(n) * 100);
-  return n > 0 ? `${pct}% above baseline` : `${pct}% below baseline`;
+  const what = basis === "cpa" ? " cost per result" : basis === "link_ctr" ? " link CTR" : "";
+  return n > 0 ? `${pct}% above${what} baseline` : `${pct}% below${what} baseline`;
 }
 
 // ─── Verdict banner ───────────────────────────────────────────────────
@@ -213,7 +224,7 @@ function VerdictBanner({
 function ConceptCard({ score }: { score: ConceptScore }) {
   const tb = tierBadge(score.performance_tier);
   const lift = liftIcon(score.performance_lift_vs_baseline);
-  const liftLbl = liftLabel(score.performance_lift_vs_baseline);
+  const liftLbl = liftLabel(score.performance_lift_vs_baseline, score.lift_basis);
   // Rendered directly rather than through TokenizedConceptText, so the
   // upstream number formatting is corrected here explicitly.
   const whatText = normalizeMetricsInProse(score.what);
@@ -400,6 +411,7 @@ export function FindingsView() {
           cpa: r.cpa,
           buying_intent_score: r.buying_intent_score ?? undefined,
           performance_lift_vs_baseline: r.performance_lift_vs_baseline ?? undefined,
+          lift_basis: r.lift_basis ?? undefined,
           performance_tier: r.performance_tier ?? undefined,
           confidence_level: r.confidence_level ?? undefined,
         }));

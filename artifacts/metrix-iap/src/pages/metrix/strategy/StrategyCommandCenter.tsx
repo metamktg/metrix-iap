@@ -16,6 +16,8 @@ import {
   useGenerationRun, GenerateButton, GenerationErrorNote, ProvenanceBadge, GenerationProgressBar,
 } from "@/components/generation/GenerationControls";
 import { Map, Users, MessageSquare, ListChecks, History, Compass, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
+import { deriveRecommendations, recommendationsForStage } from "@/lib/data/recommendations";
 
 const SECTION = "Strategy · 04";
 
@@ -40,13 +42,33 @@ export function StrategyCommandCenter() {
     <ModuleScopeGate section={SECTION} title="Strategy" account={account}>
       {() => {
         const acct = account!;
-        // Strategy unlocks only once the analysis is VALIDATED: a successful
-        // run plus the server-side completeness check confirming every
-        // analysis surface (tiles, demographics, placements, …) got data.
-        const analysisOk = status.analysis.status === "success" && status.analysis.validated !== false;
-        const gateMessage = status.analysis.status === "success" && status.analysis.validated === false
-          ? "The latest analysis run finished, but not every analysis surface has validated data yet. Check the Analysis completeness report before generating strategy."
-          : "Strategy generation reads validated analysis data — this account doesn't have a completed analysis run yet.";
+        // Strategy unlocks once the analysis data is VALIDATED — the
+        // server-side completeness check confirming every analysis surface
+        // (tiles, demographics, placements, …) actually has rows.
+        //
+        // WHY NOT "a successful run". `status.analysis.status` reports the
+        // latest MANUAL analysis run, and an importer account has never had
+        // one: getLatestAnalysisRun() reads manual_analysis_runs, falling
+        // back to report_pulls for live-Meta accounts and to null for
+        // everything imported. So this page told bookster "this account
+        // doesn't have a completed analysis run yet" directly beneath tiles
+        // reading 3 message pillars, 4 hypotheses and 4 ICP profiles, and
+        // beneath a recommendation naming $32.15 per result — every one of
+        // them computed from the analysis rows the gate said were missing.
+        // verifyAnalysisRunCompleteness() already handles those accounts
+        // account-wide, which is exactly why `validated` is the honest
+        // predicate and the run record is not. A run in flight or failed
+        // still holds the gate: its rows are mid-rewrite.
+        // `validated` alone decides: a successful run whose surfaces came up
+        // short must still hold the gate, so run success is not a second,
+        // independent ticket through it.
+        const analysisRunning = status.analysis.status === "running";
+        const analysisOk = !analysisRunning && status.analysis.validated === true;
+        const gateMessage = analysisRunning
+          ? "An analysis run is in progress. Strategy generation reads its output, so it unlocks when the run finishes."
+          : status.analysis.status === "success"
+            ? "The latest analysis run finished, but not every analysis surface has validated data yet. Check the Analysis completeness report before generating strategy."
+            : "Strategy generation reads validated analysis data, and this account has none yet.";
         const run = generation.lastRun;
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -59,17 +81,24 @@ export function StrategyCommandCenter() {
             />
             <StageLoopHub stages={buildLoopStages(status)} current="strategy" />
 
-            <div className="px-6 py-5 space-y-4 max-w-3xl">
+            {/* One column width across all four command centres (MST's, the
+                widest content, sets it): a reader walking Listen → Analysis →
+                Strategy → Creative → MST saw the content column jump between
+                three widths, and the same "Execution card" pattern render
+                2-across on one stage and 4-across on the next. */}
+            <div className="px-6 py-5 space-y-4 max-w-5xl">
+              {/* Direction for this stage, from the account's own rows —
+                  each tile carries the number behind it and a link to the
+                  surface that proves it. Absent when this stage has none. */}
+              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 3); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="What the data says to do next" /> : null; })()}
+
               {/* Execution card: verb title + input-metric tiles + primary action —
                   canvas's Command Center Execution-card pattern. The tile grid stays
                   unconditional on real strategy data (as it always has), independent
                   of whether generation itself is currently gated. */}
               <SectionCard title="Generate strategy" desc="Runs the Metrix engine over this account's analysis data. Generated pillars/hypotheses fully replace the prior generated set.">
-                {/* 2x2 (not the page-width 4-across row this replaced) — the
-                    card's own max-w-3xl column doesn't leave enough room per
-                    tile at 4-across without truncating labels. */}
                 {strategy && (
-                  <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                     <MetricTile label="Message pillars" value={fmtNum(strategy.message_pillars.length)} variant="primary" />
                     <MetricTile label="Active hypotheses" value={fmtNum(strategy.active_hypotheses.length)} />
                     <MetricTile label="ICP profiles" value={fmtNum(strategy.icp_profiles?.length ?? 0)} />

@@ -10,7 +10,7 @@
 // predating run-scoping (manual_analysis_run_id null), always passes —
 // never hide a row we can't honestly attribute to a run.
 
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { useMemo, useCallback, useRef, useState, useEffect } from "react";
 import type { AnalysisData, ConceptScopedRow } from "@/lib/data/seedTypes";
 import { conceptForCell } from "@/lib/date-scope";
 import { ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
@@ -89,6 +89,25 @@ export function usePersistedRunScope(
       : enabled
         ? readStoredRunScope(pageKey, adAccountId)
         : ALL_TIME_SELECTION;
+
+  // ── Arriving pre-scoped (N-5) ────────────────────────────────────────
+  // A history row used to link to "Open in Analysis Overview" and leave the
+  // reader to find that run again in the picker — the one thing they had
+  // just chosen. `?run=<id>` applies it on arrival, ONCE: it is copied into
+  // the same stored selection the picker writes, so the picker keeps working
+  // and a later change is not fought by the URL. Applied only when the run
+  // list is loaded and actually contains the id, so a stale link falls back
+  // to whatever the reader had rather than emptying the page.
+  const appliedRunRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!enabled || !adAccountId || runs === undefined) return;
+    const requested = new URLSearchParams(window.location.search).get("run");
+    if (!requested || appliedRunRef.current === `${scopeKey}|${requested}`) return;
+    if (!runs.some((r) => r.id === requested)) return;
+    appliedRunRef.current = `${scopeKey}|${requested}`;
+    setSelection({ allTime: false, selectedRunIds: [requested] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, adAccountId, runs, scopeKey]);
 
   const setSelection = useCallback(
     (v: RunSelectorValue) => {

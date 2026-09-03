@@ -804,6 +804,35 @@ browser probe re-opened the branch on Escape through the section's own focus han
 sidebar-nav 31, layout suite 117, client suite 2,483, the eight static gates, the browser probe
 and screenshots in `shots-sidebar3/` (expanded branch, rail branch, phone drawer).
 
+**Autonomous optimization run (2026-09-03, owner offline).** Owner approved a seven-pass plan:
+close the register's carried items, fill the recommendation schema from the JSON outputs, drive
+`check:field-coverage` toward zero, apply the tile pattern, finish the chart pass, close the
+wayfinding leftovers, and land a friction gate — publishing after each pass. Escalation rule:
+anything architecturally significant is listed, not done. Approved decisions taken: rename the MST
+"Creative Scan", make Findings a visible page, wire `variable_registry` (found already wired —
+see below).
+
+**Pass 1 shipped (2026-09-03, 09:20Z).** PR #193 merged as `1d2592c`; deployment `329ef7e0`
+verified by fetching the live IAP Library chunk and finding "Full breakdown", "Ad Summary
+control", "Variable family", "reconciled against" and "per result" in it; `/api/healthz` 200.
+Register L-4, L-5, L-11, L-15 closed (change log entry 9); **L-16 refused and recorded** — the
+opposite rule is documented in `tables.tsx` and the register item was written without reading it.
+One real bug found by the new test: the Library's `lib_*` metric ids were unknown to
+`metricValueFromTotals`, so the breakdown a tile now opens would have read "n/a" in every row.
+
+**L-14 reconciled against the server (2026-09-03).** The register said four tables are never
+selected by the seed. `variable_registry` IS selected (`metrixSeedAssembly.ts:1471`) and shipped
+(`:1875`), read by `lib/data/provenance.ts` and the Data Provenance view — that item was stale.
+The remaining three, with the decision on each: `copy_library` (importer-era hand-authored copy
+per code) is superseded in practice by `creative_components`, which derives copy-level
+intelligence from `ad_creative_metadata` on every run — wiring both would give two competing copy
+sources for the same cells; `import_metric_reconciliation` (per-run demographic vs placement
+totals with a delta flag) is superseded by `reconciliation_ledger` and `computeDataCoverage`,
+the signed-residual system the spec mandates; `ad_traffic_quality` (per-ad CTR/CVR with a
+classification and a confidence) is the one with real value for ad confidence and is **listed for
+the owner** — wiring it is a seed-contract change (one query per seed build plus a new field), and
+the standing rule this run works under is that such changes are listed rather than taken.
+
 **Shipped to app.metrix.ad (2026-09-03, 07:53–08:07Z).** PR #191 merged as `05eb66b` (CI green on
 the head `69f8190`; main's tree after the merge is the branch head's tree). Smokes on that head:
 all fifteen green. The workspace merged main without a change of its own (HEAD `bdb591c`, clean,
@@ -813,3 +842,35 @@ local md5s — 130 match, 0 differ, 0 missing; `/api/healthz` 200. The live side
 collapsible one whose pages branch out beside it. The docs-only PR #190 (the second-pass ship
 record) merged as `d8f8ccd` in between.
 
+
+**Passes 2–7 of the autonomous run (2026-09-03), on branch
+`claude/pre-release-reconciliation-ux-cznjbz`, PR #194.** Change log entries 10–17. Pass 7's own
+work and what it found:
+
+- **`check:friction` promoted from a scratch harness into `scripts/`** (entry 15). Fifty-one
+  routes × two accounts × two widths, defects at zero and counted signals ratcheting per route in
+  `check-friction.baseline.json`. It is an operator gate, NOT a `.replit` validation — the same
+  reason `check:accessible-names`, `check:chart-geometry` and `check:unexplained-dashes` are not,
+  and it is registered in `MANUAL_ONLY_CHECK_SCRIPTS` with that reason, because the coverage test
+  is right that every `check:*` script must be wired or registered.
+- **The reduced-motion, focus-ring and tabular-numeral sweep found nothing to fix**, measured
+  rather than assumed: the global `prefers-reduced-motion` block zeroes every transition and
+  animation and all three JS-animated components read the hook; `:focus-visible` paints a
+  full-opacity 2px ring already guarded by a contrast test; and every numeric table cell and tile
+  figure across nineteen data-heavy route visits already computes `tabular-nums`.
+- **Two gates asked for a run record rather than for data** (entry 16), found by the visual pass
+  and confirmed against the server. Strategy and Creative each locked their own stage on the demo
+  account while displaying the data that stage consumes, because `stage-status` reports MANUAL
+  analysis runs and in-app generation runs, and an importer account has neither. Both now ask
+  what the generator actually consumes. The MST gate needed nothing: `mst.unlocked` was already
+  `briefsCount > 0`.
+- **The four command centres carried three different content widths**, so the column jumped as a
+  reader walked the loop and the same Execution-card pattern rendered 2-across on one stage and
+  4-across on the next. One width now (`max-w-5xl`, MST's, the widest content).
+- **A spec locator named a control by the words inside it** (entry 17) and resolved to a
+  recommendation card 1,300 px off-screen. Five locators scoped to `[data-testid="kpi-tile"]`,
+  and `check:locator-ambiguity` extended to flag the substring form while exempting anchored
+  regexes.
+
+Still listed for the owner rather than taken, unchanged: wiring `ad_traffic_quality` into the
+seed (a seed-contract change).

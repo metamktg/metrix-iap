@@ -244,10 +244,10 @@ five before anything else.
 
 | Surface | Lift |
 |---|---|
-| Account Overview | KPI hover chart on the theme (done); loop stepper from `LOOP_STAGES` (done); Next-best-action names the runnable stage and links to it; results-by-event table gains the intent-class column. |
+| Account Overview | KPI hover chart on the theme (done); loop stepper from `LOOP_STAGES` (done); Next-best-action names the runnable stage and links to it; results-by-event table gains the intent-class column. **Recommendations now derive from the account's own rows (change log entry 10)** — the hero, the deck and a new evidence-carrying slider are populated on every configured account instead of waiting on an Optimization Loop stage that has never run. |
 | Analysis command center | Run block first; reconciliation panel always states its control (done); Findings CrossLink (done); tab rail (done). |
 | IAP Library | Top performers by dominant event (done); intent + unplaced spend in the header (done); provenance on rows (done); **next:** variable-family multi-select filter (L-15), per-chip cost in the drawer (L-5), tile → "by variable family" dimension (L-4), coverage chip → reconciliation (L-11), URL-encoded sort (L-16). |
-| Creative DNA | Lands on its scope (done); family cards get the KpiTileRow header (#38); the drill-down modal's segment rows carry confidence + coverage badges. |
+| Creative DNA | Lands on its scope (done); **the page carries a configurable KpiTileRow over its own landed rows, opening the shared breakdown (#38, change log entry 12)**; the drill-down's segment rows carry the volume band AND their own evidence chip. |
 | Audience | Scope bar above the guard (done); positioning map on the theme's scatter tokens; rank groups per scale (done in #44). |
 | Strategy Map | `--metrix-gold`/`--metrix-success` → status tokens (C-6); hypothesis chips first-layer (done); "Draft a brief" → builder (done). |
 | Brief Builder | `?from=` origin crumb (done); inline-toast confirm on download (done); the brief preview uses the report's type ramp. |
@@ -274,6 +274,29 @@ meters, `hover-card` base (done).
 A `check:token-colors` rule that fails on `hsl(var(--x))` where `--x` is not defined in
 `index.css` (C-8). Until it exists the undefined-token class of bug is invisible to every
 test.
+
+**Status (2026-09-03, autonomous pass 7).** Phase E is done and larger than it was written.
+`check:token-colors` ships and passes across 452 files. Two more gates joined it:
+
+- **`check:friction`** (change log 15) — every route `navTree.ts` and `App.tsx` declare, two
+  fixture accounts, 1440 and 390 px. Defects (console errors, sideways overflow, nested buttons,
+  retired copy) must stay at zero; first-layer warning boxes, warning glyphs and prose over 220
+  characters ratchet per route in `check-friction.baseline.json`; no-data phrases are held as a
+  SET per route so the loop's honest empty states are distinguishable from a surface that stopped
+  reading a dataset. It found the Creative Command Center painting every brief status amber on
+  its second run (206 first-layer warning boxes → 160).
+- **`check:locator-ambiguity`, extended** (change log 17) — now also flags
+  `locator("<tag>").filter({ hasText: … })` in substring form, the pattern that made a KPI-tile
+  locator resolve to a recommendation card 1,300 px off-screen.
+
+`check:friction` is an operator gate, not a `.replit` validation: it needs a running dev server,
+the same constraint that keeps `check:accessible-names`, `check:chart-geometry` and
+`check:unexplained-dashes` out of the validation set. It is registered in
+`MANUAL_ONLY_CHECK_SCRIPTS` with that reason.
+
+The pass's own sweep — reduced motion, focus rings, tabular numerals — found nothing to fix, and
+that is the result rather than an omission: each was measured in a browser (nineteen data-heavy
+route visits for the numerals) rather than read off the source.
 
 ---
 

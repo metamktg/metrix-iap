@@ -17,6 +17,8 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import { NextBestActionCard } from "@/components/deck/NextBestActionCard";
+import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
+import { deriveRecommendations, toDeckCards } from "@/lib/data/recommendations";
 import {
   ModuleHeader, SectionCard, SectionInfoIcon, CaveatNote, DetailReveal, deriveLabel,
   UnconfiguredState, PendingState, CrossLink, fmtUSD, fmtNum, eventLabel, resultTerm,
@@ -34,6 +36,7 @@ import { KpiTile } from "@/components/metrics/KpiTile";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { MetricHoverPopover } from "@/components/metrics/MetricHoverPopover";
 import { LoopCommandChain } from "@/components/loop/LoopCommandChain";
+import { INTENT_CLASSES } from "@/lib/resultEvents";
 
 /** The navTree section label; one spelling for every state of this page. */
 const SECTION = "Account Overview · 01";
@@ -46,21 +49,14 @@ export function AdAccountOverview() {
   const [, navigate] = useLocation();
   const account = getAdAccount(seed, adAccountId);
 
-  const optLoop = account?.iap?.optimization_loop ?? null;
-  const deckCards: DeckCard[] = useMemo(
-    () =>
-      (optLoop?.recommendation_cards ?? []).map((c) => ({
-        id: c.id,
-        title: c.title,
-        rationale: c.rationale,
-        recommendedAction: c.recommended_action,
-        impact: c.impact,
-        confidence: c.confidence,
-        scope: c.scope,
-        actionGroup: actionGroupForScope(c.scope),
-      })),
-    [optLoop]
-  );
+  // Recommendations come from `deriveRecommendations`, not straight off
+  // `optimization_loop.recommendation_cards`: that array is written only by
+  // the Optimization Loop stage, which has never run for any account, so the
+  // hero, the deck and the queue all rendered an empty state on an account
+  // whose strategy map, findings and hypothesis queue were full. The loop's
+  // own cards still lead when it HAS run.
+  const recommendations = useMemo(() => deriveRecommendations(account), [account]);
+  const deckCards: DeckCard[] = useMemo(() => toDeckCards(recommendations), [recommendations]);
 
   // ── Hooks hoisted above early returns (Rules of Hooks) ──────────────
   const isRefetching = useMetrixIsRefetching();
@@ -179,6 +175,13 @@ export function AdAccountOverview() {
   const mst = getMST(seed, adAccountId);
 
   const events = Object.entries(account.iap.campaign_summary.bottom_line_totals);
+  // The spend the table itself shows, for a share column that agrees with the
+  // dollars beside it, plus the seed's per-event intent class (a property of
+  // the event, not of the window).
+  const eventSpendTotal = events.reduce((sum, [, e]) => sum + (e.spend ?? 0), 0);
+  const resultEventClass = new Map(
+    (account.result_events ?? []).flatMap((e) => (e.intent_class ? [[e.raw, e.intent_class] as const] : [])),
+  );
   const term = resultTerm(account);
 
   // Resolve concept IDs to human-readable names from the MST library.
@@ -245,6 +248,14 @@ export function AdAccountOverview() {
             scopeId={account.id}
             cards={deckCards}
             stageNote={account.iap?.loop_status?.find((st) => st.stage === "optimization_loop")?.note ?? null}
+          />
+
+          {/* Every recommendation the account's own rows support, ranked by
+              the money each moves, each carrying its number and a link to
+              the surface that proves it. */}
+          <RecommendationSlider
+            recs={recommendations}
+            emptyNote={account.iap?.loop_status?.find((st) => st.stage === "optimization_loop")?.note ?? null}
           />
 
           {/* Account Totals — fixed 4-tile Nocturne hero row, each tile
@@ -322,6 +333,7 @@ export function AdAccountOverview() {
                     <th>Event</th>
                     <th className="text-right">Results</th>
                     <th className="text-right">Spend</th>
+                    <th className="text-right">Share</th>
                     <th className="text-right">Cost / result</th>
                   </tr>
                 </thead>
@@ -329,11 +341,32 @@ export function AdAccountOverview() {
                   {events.map(([key, e]) => {
                     const isZero = !e.results || e.results === 0;
                     const cpa = e.results > 0 ? e.spend / e.results : null;
+                    // Share of the spend ON THIS TABLE, not the account-wide
+                    // share the seed computes: the rows above are windowed by
+                    // the date preset, and mixing the two grains would put a
+                    // full-flight percentage beside a windowed dollar figure.
+                    const share = eventSpendTotal > 0 ? (e.spend / eventSpendTotal) * 100 : null;
+                    // The intent class IS a property of the event rather than
+                    // of the window, so it joins safely from the seed.
+                    const cls = resultEventClass.get(key) ?? null;
                     return (
                       <tr key={key} className={cn(isZero && "opacity-40")}>
-                        <td><span className="font-medium text-foreground/90">{eventLabel(key)}</span></td>
+                        <td>
+                          <span className="font-medium text-foreground/90">{eventLabel(key)}</span>
+                          {cls && (
+                            <span
+                              className={cn(TYPE.microLabel, "ml-1.5 border border-border/40 rounded px-1 py-0.5 leading-none text-muted-foreground/75")}
+                              title={`Intent class · ${INTENT_CLASSES[cls].label}`}
+                            >
+                              {INTENT_CLASSES[cls].label}
+                            </span>
+                          )}
+                        </td>
                         <td className="text-right tabular-nums text-foreground/85">{fmtNum(e.results)}</td>
                         <td className="text-right tabular-nums text-muted-foreground/75">{fmtUSD(e.spend, 0)}</td>
+                        <td className="text-right tabular-nums text-muted-foreground/75" title="Share of the spend shown in this table">
+                          {share != null ? `${share < 1 ? "<1" : Math.round(share)}%` : "—"}
+                        </td>
                         <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/75")}>
                           {cpa != null ? fmtUSD(cpa) : "n/a"}
                         </td>

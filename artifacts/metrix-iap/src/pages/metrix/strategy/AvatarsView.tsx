@@ -20,13 +20,16 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
 import { DataCoverageBanner } from "@/components/analysis/DataCoverageBanner";
 import { SignalTag } from "@/components/evidence/SignalTag";
+import { KpiTileRow } from "@/components/metrics/KpiTile";
+import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
+import { buildMetricCatalog } from "@/lib/data/metricsCatalog";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { segmentMetricReason } from "@/lib/data/segmentMetricsCatalog";
 import { getAdAccount, getMST, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
-  fmtUSD, fmtPct, fmtNum,
+  fmtUSD, fmtPct, fmtNum, eventLabel,
   DenseText, deriveLabel, useFocusParam, useStaleFocus, StaleFocusNotice,
   SegmentGenderIcon,
   platformLabel,
@@ -1043,6 +1046,38 @@ export function AvatarsView() {
     [scopedAnalysis],
   );
 
+  // ── The Library's tile pattern on the audience page (#38) ────────────
+  // The structural counts above stay what they are — how many profiles,
+  // pillars, segments and matrix avatars exist. They say nothing about
+  // money. This row is the measured performance of the SAME scoped
+  // demographic rows the segment cards below read, configurable per reader
+  // and opening the same breakdown a Library tile opens (whose dimensions
+  // include the avatar segment).
+  const audienceSource = useMemo(() => {
+    const rows = scopedDemoRows;
+    const spend = rows.reduce((n, r) => n + (r["Amount spent (USD)"] ?? 0), 0);
+    const impressions = rows.reduce((n, r) => n + (r.Impressions ?? 0), 0);
+    const linkClicks = rows.reduce((n, r) => n + (r["Link clicks"] ?? 0), 0);
+    const events = [...new Set(rows.map((r) => r["Result type"]).filter((k): k is string => !!k))];
+    return {
+      spend,
+      impressions,
+      reach: rows.reduce((n, r) => n + (r.Reach ?? 0), 0),
+      clicksAll: rows.reduce((n, r) => n + (r["Clicks (all)"] ?? 0), 0),
+      linkClicks,
+      linkCtrPct: impressions > 0 ? (linkClicks / impressions) * 100 : null,
+      resultEvents: events.map((key) => ({
+        key,
+        label: eventLabel(key),
+        results: rows.filter((r) => r["Result type"] === key).reduce((n, r) => n + (r.Results ?? 0), 0),
+        spend: rows.filter((r) => r["Result type"] === key).reduce((n, r) => n + (r["Amount spent (USD)"] ?? 0), 0),
+      })),
+      isMultiEvent: events.length > 1,
+    };
+  }, [scopedDemoRows]);
+  const audienceCatalog = useMemo(() => buildMetricCatalog(audienceSource), [audienceSource]);
+  const [audienceMetricId, setAudienceMetricId] = useState<string | null>(null);
+
   const segmentStats = useMemo(() => {
     if (!scopedAnalysis || segmentList.length === 0) {
       return new Map<string, { totals: SegmentRawTotals; derived: SegmentDerivedMetrics; signal: SegmentSignal; bestVariableCode: string | null; variableUnavailableReason: string | null }>();
@@ -1127,6 +1162,7 @@ export function AvatarsView() {
   }, [focus, focusResolved, scrollToProfile]);
 
   return (
+    <>
     <ModuleScopeGate section={SECTION} title="Avatars / ICP / PMF" account={account}>
       {() => {
         const acct = account!;
@@ -1173,6 +1209,20 @@ export function AvatarsView() {
               <MetricTile label="Segments" value={String(segmentList.length)} sub="audience signal" />
               <MetricTile label="Avatars mapped" value={String(matrix?.columns.length ?? 0)} sub="matrix · see MST" />
             </div>
+
+            {scopedDemoRows.length > 0 && (
+              <div className="px-6 pt-3">
+                <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-2")}>Audience performance · this result scope</p>
+                <div className="grid grid-cols-dashboard-4 gap-3" data-testid="audience-tile-row">
+                  <KpiTileRow
+                    viewKey="avatars-audience"
+                    catalog={audienceCatalog}
+                    primaryFirst={false}
+                    onTileClick={(id) => setAudienceMetricId(id)}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               {focusStale && <StaleFocusNotice label="ICP profile" />}
@@ -1265,5 +1315,17 @@ export function AvatarsView() {
         );
       }}
     </ModuleScopeGate>
+    {analysis && (
+      <KpiDrilldownModal
+        open={audienceMetricId != null}
+        onClose={() => setAudienceMetricId(null)}
+        scope="account"
+        metricId={audienceMetricId}
+        catalog={audienceCatalog}
+        analysis={analysis}
+        windowLabel="demographic rows in this result scope"
+      />
+    )}
+    </>
   );
 }

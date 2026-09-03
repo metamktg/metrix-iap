@@ -35,6 +35,25 @@ export const MANUAL_ONLY_CHECK_SCRIPTS: Record<string, string> = {
     "secrets store either. Run it by hand in the Replit shell after a real run — " +
     "docs/specs/iap-multi-report-reconciliation.md §17a names it as the third " +
     "leg of the triple validation. Exits 2 (not 0) when no credential resolves.",
+  "check:friction":
+    "walks every route navTree.ts and App.tsx declare, for two fixture accounts " +
+    "at 1440 and 390 px, and reports what a reader meets on the FIRST layer: " +
+    "warning boxes and glyphs, prose over the rulebook's 220 characters, " +
+    "no-data phrases, sideways overflow, nested buttons, retired copy and " +
+    "console errors. Needs a RUNNING dev server, the same constraint as " +
+    "check:accessible-names, check:chart-geometry and check:unexplained-dashes; " +
+    "a validation that cannot run without one fails every validation sweep. " +
+    "Every signal is a property of the RENDERED page — whether a warning is " +
+    "visible or inside a popover, whether prose sits on the card face or " +
+    "behind a reveal — so a source scan sees the JSX that could produce any of " +
+    "them and cannot say which one a reader gets. Defects (errors, overflow, " +
+    "nested buttons, retired copy) must stay at zero and are never baselined; " +
+    "the counted signals ratchet per route in check-friction.baseline.json, " +
+    "regenerated with -- --write-baseline. Baseline 2026-09-03: 51 routes, 204 " +
+    "visits, 160 first-layer warning boxes (206 before it found the Creative " +
+    "Command Center painting every brief status amber), 0 defects. Exits 2 " +
+    "(not 0) when the server is unreachable so 'nothing was checked' can never " +
+    "read as a pass.",
   "check:unexplained-dashes":
     "measures every VISIBLE em-dash in the rendered DOM and fails on any that " +
     "carries no title, aria-label or info affordance a reader could resolve. " +

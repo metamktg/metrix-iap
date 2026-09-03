@@ -9,12 +9,13 @@ import { getAdAccount, getOptimizationLoop, getAnalysisData } from "@/lib/data/m
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
   ModuleHeader, ModuleScopeGate, StageNotRunState, MetricTile, CaveatNote,
-  CrossLink, ConnectionNudgeBanner,
+  CrossLink, ConnectionNudgeBanner, useFocusParam,
 } from "../shared";
 import { Lightbulb } from "lucide-react";
 import { useGetMetaConnection } from "@workspace/api-client-react";
 import { SegmentGridModal } from "@/components/creative/SegmentGridModal";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
+import { deriveRecommendations, toLoopCards } from "@/lib/data/recommendations";
 
 const SECTION = "Listen · 02";
 
@@ -31,6 +32,9 @@ function cellIdsForCard(card: RecommendationCard, knownCells: Set<string>): stri
 }
 
 export function RecommendationsView() {
+  // A manager recommendation links here with `?focus=<id>`; the deck opens
+  // that card rather than landing the reader on its first one (N-10).
+  const focus = useFocusParam();
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
@@ -44,7 +48,10 @@ export function RecommendationsView() {
         const acct = account!;
         const loop = getOptimizationLoop(seed, adAccountId);
         const analysis = getAnalysisData(seed, adAccountId);
-        const rawCards = loop?.recommendation_cards ?? [];
+        // Same derivation the overview and the queue read: the loop's cards
+        // when it has run, the account's own rows when it has not. `loop` is
+        // still read for its action policy, which is the stage's own words.
+        const rawCards = toLoopCards(deriveRecommendations(acct), acct.id);
         const knownCells = new Set((analysis?.performance_by_cell ?? []).map((r) => r.cell_id));
         const cards: DeckCard[] = rawCards.map((c) => ({
           id: c.id,
@@ -93,6 +100,7 @@ export function RecommendationsView() {
               {cards.length ? (
                 <RecommendationDeck
                   scopeId={acct.id}
+                  focusId={focus}
                   cards={cards}
                   emptyLabel="All recommendations reviewed"
                   onSegments={analysis ? (card) => setSegmentCardId(card.id) : undefined}

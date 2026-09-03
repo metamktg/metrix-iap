@@ -26,17 +26,20 @@
 
 import { useResultScope } from "@/hooks/useResultScope";
 import { ResultScopeBar, LandedScopeNote } from "@/components/analysis/ResultScopeBar";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import { scopeToRun } from "@/lib/run-supersede";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, SectionCard, CrossLink,
-  fmtUSD, fmtNum, useShowMore, ShowMoreButton, SectionInfoIcon,
+  fmtUSD, fmtNum, useShowMore, ShowMoreButton, SectionInfoIcon, eventLabel,
 } from "../shared";
 import { VariableChip, VariableCombinationsGrid, familyLabel } from "../strategy/strategyShared";
 import { VariableDrilldownModal } from "@/components/creative/VariableDrilldownModal";
+import { KpiTileRow } from "@/components/metrics/KpiTile";
+import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
+import { buildMetricCatalog } from "@/lib/data/metricsCatalog";
 import { Dna } from "lucide-react";
 import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -207,6 +210,36 @@ export function AnalysisDnaView() {
   const variableLanding = resultScope.landRows(runRows, (r) => r["Result type"]);
   const variableRows = variableLanding.rows;
   const activeScope = variableLanding.landed ?? resultScope.scope;
+  // ── The Library's tile pattern, on the page whose subject is variables
+  //    (#38). The catalog is built from the SAME landed, run-scoped rows the
+  //    gene loci below read, so a tile can never disagree with the card under
+  //    it, and a tile opens the same breakdown a Library tile opens — whose
+  //    dimensions include one per variable family.
+  const dnaSource = useMemo(() => {
+    const spend = variableRows.reduce((n, r) => n + (r["Amount spent (USD)"] ?? 0), 0);
+    const results = variableRows.reduce((n, r) => n + (r.Results ?? 0), 0);
+    const impressions = variableRows.reduce((n, r) => n + (r.Impressions ?? 0), 0);
+    const linkClicks = variableRows.reduce((n, r) => n + (r["Link clicks"] ?? 0), 0);
+    const events = [...new Set(variableRows.map((r) => r["Result type"]))];
+    return {
+      spend,
+      impressions,
+      reach: variableRows.reduce((n, r) => n + (r.Reach ?? 0), 0),
+      clicksAll: variableRows.reduce((n, r) => n + (r["Clicks (all)"] ?? 0), 0),
+      linkClicks,
+      linkCtrPct: impressions > 0 ? (linkClicks / impressions) * 100 : null,
+      resultEvents: events.map((key) => ({
+        key,
+        label: eventLabel(key),
+        results: variableRows.filter((r) => r["Result type"] === key).reduce((n, r) => n + (r.Results ?? 0), 0),
+        spend: variableRows.filter((r) => r["Result type"] === key).reduce((n, r) => n + (r["Amount spent (USD)"] ?? 0), 0),
+      })),
+      isMultiEvent: events.length > 1,
+    };
+  }, [variableRows]);
+  const dnaCatalog = useMemo(() => buildMetricCatalog(dnaSource), [dnaSource]);
+  const [dnaMetricId, setDnaMetricId] = useState<string | null>(null);
+
   const combinations = strategy?.variable_combinations ?? [];
   const optimizationLoop = account?.iap?.loop_status?.find(
     (s) => s.stage === "optimization_loop"
@@ -251,6 +284,15 @@ export function AnalysisDnaView() {
               <LandedScopeNote landed={variableLanding.landed} what="Creative DNA" />
               <div className="px-6 py-5 space-y-4 max-w-5xl">
                 {variableRows.length > 0 && (
+                  <div className="grid grid-cols-dashboard-4 gap-3" data-testid="dna-tile-row">
+                    <KpiTileRow
+                      viewKey="analysis-dna"
+                      catalog={dnaCatalog}
+                      onTileClick={(id) => setDnaMetricId(id)}
+                    />
+                  </div>
+                )}
+                {variableRows.length > 0 && (
                   <GeneLociCard rows={variableRows} onOpenVariable={setVariableCode} />
                 )}
 
@@ -281,6 +323,17 @@ export function AnalysisDnaView() {
           );
         }}
       </ModuleScopeGate>
+      {account && analysis && (
+        <KpiDrilldownModal
+          open={dnaMetricId != null}
+          onClose={() => setDnaMetricId(null)}
+          scope="account"
+          metricId={dnaMetricId}
+          catalog={dnaCatalog}
+          analysis={analysis}
+          windowLabel="variable rows in this scope"
+        />
+      )}
       {account && analysis && (
         <VariableDrilldownModal
           open={variableCode != null}

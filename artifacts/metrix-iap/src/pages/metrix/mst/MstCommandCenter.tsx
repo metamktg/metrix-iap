@@ -44,13 +44,15 @@ import {
 import type { MSTMatrixColumn, MSTMatrixCell, ICPProfile, AdRecord, CellPerformanceRow } from "@/lib/data/seedTypes";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
+import { deriveRecommendations, recommendationsForStage } from "@/lib/data/recommendations";
 
 const SECTION = "MST · 06";
 
 const CHILDREN = [
   { to: "/app/mst/cross-map", label: "Cross-Map", Icon: Network, desc: "Concepts mapped to strategy pillars, and planned cells crossmapped to observed performance.", lineage: "mst.local_book2_library[] · performance_by_cell[]" },
   { to: "/app/mst/sprints", label: "Sprints", Icon: Grid3x3, desc: "The 4×4 test matrix for this account.", lineage: "mst.historical_matrix_4x4 · concept_rollup[]" },
-  { to: "/app/mst/creative-scan", label: "Creative Scan", Icon: Library, desc: "Scanned local creative library: message system, variable stack, and mapping confidence per concept.", lineage: "mst.local_book2_library[]" },
+  { to: "/app/mst/creative-scan", label: "Sprint Asset Check", Icon: Library, desc: "Scanned local creative library: message system, variable stack, and mapping confidence per concept.", lineage: "mst.local_book2_library[]" },
   { to: "/app/mst/direction", label: "Direction", Icon: Compass, desc: "The Optimization Loop — next-sprint priorities.", lineage: "optimization_loop" },
 ];
 
@@ -582,6 +584,11 @@ export function MstCommandCenter() {
             <StageLoopHub stages={buildLoopStages(status)} current="mst" />
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
+              {/* Direction for this stage, from the account's own rows —
+                  each tile carries the number behind it and a link to the
+                  surface that proves it. Absent when this stage has none. */}
+              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 5); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="What the data says to do next" /> : null; })()}
+
               <PrerequisiteGate
                 met={status.mst.unlocked}
                 title="Generate briefs first"

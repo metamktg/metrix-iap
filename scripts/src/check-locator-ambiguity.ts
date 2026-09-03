@@ -109,7 +109,7 @@ interface Finding {
   locator: string;
   hits: string[];
   /** Which matcher produced the collision — they need different fixes. */
-  kind: "role-name" | "has-text";
+  kind: "role-name" | "has-text" | "tag-filter";
 }
 
 const findings: Finding[] = [];
@@ -124,9 +124,39 @@ const LOCATOR_RE =
 // button:has-text("X")  /  button[...]:has-text('X')
 const HAS_TEXT_RE = /\bbutton\b[^"'\n]*?:has-text\(\s*("[^"\n]*"|'[^'\n]*')\s*\)/g;
 
+// locator("button" | "a" | …).filter({ hasText: … }) — a bare element type
+// narrowed only by substring text. This one needs no SectionCard to collide
+// with: ANY control on the page whose text contains the string is a match,
+// and `.first()` then silently picks whichever comes earliest in the DOM.
+// It cost a run on 2026-09-03: five tile locators read
+// `locator("button").filter({ hasText: label })`, the recommendation slider
+// arrived carrying "traffic_quality - reach without qualified action", and
+// the "Reach" tile test hovered that instead — off-screen inside the
+// horizontal rail, so nothing opened and the failure named the popover,
+// not the locator. Scope to the thing itself: [data-testid="kpi-tile"].
+//
+// An ANCHORED regex (/^Segment$/, /^UPPER FUNNEL$/) is exempt: `^` makes it a
+// full-string match, which is what `exact: true` buys elsewhere. What this
+// flags is the substring form — a bare string literal, or a regex with no
+// anchor.
+const TAG_FILTER_RE =
+  /\.locator\(\s*["'`]([a-z]+)["'`]\s*\)\s*(?:\r?\n\s*)?\.filter\(\s*\{\s*hasText:\s*(\/(?:[^/\\\n]|\\.)+\/[a-z]*|"[^"\n]*"|'[^'\n]*'|`[^`\n]*`|[A-Za-z_$][\w$]*)/g;
+
 for (const file of walk(SPEC_DIR, /\.spec\.ts$/)) {
   const src = fs.readFileSync(file, "utf8");
   const rel = path.relative(repoRoot, file);
+
+  for (const m of src.matchAll(TAG_FILTER_RE)) {
+    const arg = m[2] ?? "";
+    if (arg.startsWith("/") && /^\/\^/.test(arg)) continue; // anchored = full-string
+    findings.push({
+      file: rel,
+      line: lineAt(src, m.index!),
+      locator: m[1]!,
+      hits: [],
+      kind: "tag-filter",
+    });
+  }
 
   for (const m of src.matchAll(LOCATOR_RE)) {
     const nameTok = m[2]!;
@@ -203,6 +233,16 @@ if (findings.length > 0) {
         `        Playwright matches name by case-insensitive SUBSTRING. Two matches is a\n` +
           `        strict-mode violation, so this spec fails. Add exact: true, or query the\n` +
           `        role the control actually has (a ModuleTabs tab is role="tab").\n`,
+      );
+    } else if (f.kind === "tag-filter") {
+      console.error(`      · ${f.file}:${f.line} — locator("${f.locator}").filter({ hasText: … })`);
+      console.error(
+        `        A bare element type narrowed only by SUBSTRING text matches every\n` +
+          `        <${f.locator}> on the page whose text contains it, and .first() then picks\n` +
+          `        whichever comes earliest in the DOM — which changes the day any surface\n` +
+          `        above it renders content carrying the same word. Scope to the thing\n` +
+          `        itself: locator('[data-testid="…"]').filter({ hasText: … }), or\n` +
+          `        getByRole(role, { name: "…", exact: true }).\n`,
       );
     } else {
       console.error(`      · ${f.file}:${f.line} — button:has-text(${f.locator})`);
