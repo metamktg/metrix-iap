@@ -93,7 +93,6 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "useTabParam",
   "useStaleFocus",
   "StaleFocusNotice",
-  "MetricSelectionBar",
   "PILL_ACTIVE",
   "PILL_INACTIVE",
   "SegmentedToggle",
@@ -310,17 +309,6 @@ describe("shared.tsx display components — render checks (no context)", () => {
       <shared.SectionCard title="Performance">
         <span>content</span>
       </shared.SectionCard>
-    );
-    expect(container.firstChild).not.toBeNull();
-  });
-
-  it("MetricSelectionBar renders non-empty output", () => {
-    const { container } = render(
-      <shared.MetricSelectionBar
-        events={["install", "purchase"]}
-        isSelected={(e) => e === "install"}
-        onToggle={() => {}}
-      />
     );
     expect(container.firstChild).not.toBeNull();
   });

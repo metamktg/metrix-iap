@@ -616,3 +616,40 @@ tester's latest run (`47505a6a`) re-derives exactly from its raw rows (0 per-ad 
 ad × class rows) and exposed the period-compatibility defect fixed above. **Visual:** page-level
 screenshots at 1440 and 390 px of Audience (cluster + ranked), the segment drill-down, Avatars, the
 variable drill-down and the Creative dialog tabs, judged against the rulebook.
+
+**Shipped to app.metrix.ad (2026-09-03, ~02:00Z).** PR #183 (triple-pass validation: the control must
+share the run window; friction-audit fixes) merged as `61d0e4e` on CI run 33705125157 (green on
+`7fa37e3`). Workspace merged `main` (`e7a94c8`, `origin/main` an ancestor, diff against it empty, lockfile
+unchanged), deployment `329ef7e0` reached success, live entry bundle `index-DRGHhOye.js` equals the
+local build of the same tree, the `CreativeCard` chunk md5 (`7154def8…`) matches, `/api/healthz` 200.
+The live health path is `/api/healthz`; the bare `/healthz` the earlier ship records name returns 404
+through the deployment proxy, so those records should be read as the prefixed path. Still waiting on
+the owner: an Ad Summary export for exactly the run window (or with a Day breakdown) so the tester
+account gains a compatible control under the period rule.
+
+**`[shipped]` Result events and intent classes (2026-09-03).** Owner direction: awareness campaigns
+and purchase-intent events serve different strategic purposes and are never weighted against each
+other; awareness reads on communication signals and gap analysis, purchase-intent events on their
+own cost-per-result scale; the reader gets blended results AND each event on its own. Contract:
+`docs/specs/result-events-and-intent-classes.md`. Record: `ARCHITECTURE_CHANGE_LOG.md` entries
+1–3. What the maps found first: the engine's one bucket primitive summed `results` across whatever
+rows fell into a bucket and kept the first result type it saw — eight output tables inherited it
+(concept tiers judged against a baseline diluted by other events; every variable stamped with the
+account's modal result type; demographic signal rows asserting a "Result type" over a blended
+sum); the client had thirty-one places ranking or summing rows of different result types, rooted
+in a multi-select whose default was "every event" and eight surfaces with no scope at all. What
+shipped: the taxonomy (server canonical, client byte-identical, drift-tested); result-event grain
+on every engine rollup with same-event baselines and awareness on click-through; `result_events`
+and `intent_summary` on the seed; `result_type` / `intent_class` / `results_by_event` on the
+summary API; creative-component result math scoped to the dominant class; one client result scope
+read by the Library, Budget, Overview, DNA, Audience, Avatars, MST Command Center, Concept Map,
+Sprints, Direction, Findings, Creative Library and the drill-downs; scale-aware catalogs (blended
+conversions are terminal events only; awareness events get their own rate, never a cost). Also
+fixed on the way: `unique_ads` counted ad-day rows (the "30 unique ads" on a two-ad token).
+**Decisions:** blending is terminal conversion events only, two or more — a checkout is a step
+toward the purchase it precedes and reach overlaps ThruPlays, so neither is ever summed;
+`unknown` / custom events get no class, no scale and no verdict, and stay visible as "Unplaced";
+the scope is a per-account session convenience, never a property of the account (cohort-reach
+rule unchanged). **Open:** report export and the deep-dive still print one blended cost with a
+caption; `creative-evidence.ts` synthesises a cell row stamped with the first ad's result type;
+the live DDL (result-event grain block) must be applied before the next run on any account.

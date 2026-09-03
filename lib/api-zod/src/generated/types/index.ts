@@ -42,6 +42,7 @@ export * from './analysisRunListResult';
 export * from './analysisRunStatus';
 export * from './analysisSummaryConceptRow';
 export * from './analysisSummaryDayRow';
+export * from './analysisSummaryDayRowResultsByEvent';
 export * from './analysisSummaryDemoRow';
 export * from './analysisSummaryPlacementRow';
 export * from './analysisSummaryResult';

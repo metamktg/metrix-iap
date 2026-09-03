@@ -14,6 +14,7 @@
 //     conversion_tracking_signal) never mix with delivery-basis metrics:
 //     only link_clicks (the one shared field) is offered there.
 
+import { blendableEvents, classifyResultEvent } from "@/lib/resultEvents";
 import { fmtUSD, fmtNum, fmtPct, eventLabel, platformLabel, deviceLabel } from "@/pages/metrix/shared";
 import { scopeToRun } from "@/lib/run-supersede";
 import type {
@@ -54,8 +55,23 @@ export function addTotals(t: BreakdownTotals, u: Partial<BreakdownTotals>): Brea
  * Ratios are numerator-sum ÷ denominator-sum — never an average of rates.
  * Returns null whenever the inputs can't honestly support the metric.
  */
+/**
+ * The result event a per-event metric id names — "result:<key>" (count),
+ * "cost:<key>" (cost per result) or "rate:<key>" (an awareness event's own
+ * rate, results ÷ impressions) — or null for a delivery / blended metric.
+ */
+function eventKeyOfMetric(metricId: string): string | null {
+  for (const prefix of ["result:", "cost:", "rate:"]) {
+    if (metricId.startsWith(prefix)) return metricId.slice(prefix.length);
+  }
+  return null;
+}
+
 export function metricValueFromTotals(metricId: string, t: BreakdownTotals): number | null {
   if (metricId.startsWith("result:")) return t.results;
+  if (metricId.startsWith("cost:")) return t.spend != null && t.results != null && t.results > 0 ? t.spend / t.results : null;
+  if (metricId.startsWith("rate:"))
+    return t.results != null && t.impressions != null && t.impressions > 0 && t.results <= t.impressions ? (t.results / t.impressions) * 100 : null;
   switch (metricId) {
     case "spend": return t.spend;
     case "impressions": return t.impressions;
@@ -88,6 +104,8 @@ export function metricValueFromTotals(metricId: string, t: BreakdownTotals): num
 export function formatBreakdownValue(metricId: string, v: number | null): string {
   if (v == null) return "n/a";
   if (metricId.startsWith("result:")) return fmtNum(v);
+  if (metricId.startsWith("cost:")) return fmtUSD(v);
+  if (metricId.startsWith("rate:")) return fmtPct(v);
   switch (metricId) {
     case "spend": return fmtUSD(v, 0);
     case "cpc":
@@ -153,9 +171,9 @@ export function accountTotalsForMetric(a: AdAccount, metricId: string): Breakdow
   const cs = a.iap?.campaign_summary;
   if (!cs) return EMPTY_TOTALS;
   const events = Object.entries(cs.bottom_line_totals);
-  if (metricId.startsWith("result:")) {
-    const key = metricId.slice("result:".length);
-    const e = cs.bottom_line_totals[key];
+  const eventKey = eventKeyOfMetric(metricId);
+  if (eventKey != null) {
+    const e = cs.bottom_line_totals[eventKey];
     // Account doesn't track this event → all-null totals ⇒ honest n/a.
     if (!e) return EMPTY_TOTALS;
     return {
@@ -163,13 +181,19 @@ export function accountTotalsForMetric(a: AdAccount, metricId: string): Breakdow
       clicksAll: e.clicks_all, linkClicks: e.link_clicks, results: e.results,
     };
   }
+  // Blended `results` are TERMINAL CONVERSION events only — the same rule
+  // the catalog's "Cost per conversion (blended)" tile follows — so a reach
+  // campaign's ThruPlays never sit in the denominator of a blended cost.
+  const blendKeys = blendableEvents(events.map(([k]) => k));
+  const terminal = (k: string) => { const c = classifyResultEvent(k); return c.intent === "conversion" && c.stage === "terminal"; };
+  const inBlend = (k: string) => (blendKeys.length >= 2 ? blendKeys.includes(k) : terminal(k));
   let reach: number | null = null;
   let clicksAll: number | null = null;
   let results: number | null = null;
-  for (const [, e] of events) {
+  for (const [k, e] of events) {
     reach = add(reach, e.reach);
     clicksAll = add(clicksAll, e.clicks_all);
-    results = add(results, e.results);
+    if (inBlend(k)) results = add(results, e.results);
   }
   return {
     spend: cs.total_spend_usd ?? null,
@@ -198,7 +222,7 @@ export function buildManagerBreakdown(accounts: AdAccount[], metricId: string): 
         windowLabel: fmtWindowLabel(accountReportingWindow(a)),
       });
       if (row.value == null) {
-        row.note = metricId.startsWith("result:")
+        row.note = eventKeyOfMetric(metricId) != null
           ? `${a.name} doesn't track this result event.`
           : `Not available for ${a.name}'s tracking basis.`;
       }
@@ -311,8 +335,8 @@ export function dimensionMetricRestriction(dimensionId: string, metricId: string
       ? null
       : "Conversion-basis rows carry no delivery data (spend, impressions) — delivery metrics never mix with conversion tracking. Only link clicks is available here.";
   }
-  if (metricId.startsWith("result:") && !(dimensionId === "cell" || dimensionId === "concept" || dimensionId.startsWith("var:"))) {
-    return "The demographic and placement exports carry no result-type column, so per-event results can't be honestly scoped to this dimension.";
+  if (eventKeyOfMetric(metricId) != null && !(dimensionId === "cell" || dimensionId === "concept" || dimensionId.startsWith("var:") || dimensionId === "avatar")) {
+    return "The placement export carries no result-type column, so per-event results can't be honestly scoped to this dimension.";
   }
   if ((dimensionId === "placement" || dimensionId === "platform" || dimensionId === "device") && (metricId === "reach" || metricId === "clicks_all" || metricId === "ctr_all")) {
     return "Placement/device rows don't carry reach or clicks (all) in this import.";
@@ -370,7 +394,7 @@ export function buildAccountBreakdown(
   scopedCellRows?: CellPerformanceRow[],
 ): BreakdownRow[] {
   if (dimensionMetricRestriction(dimensionId, metricId) != null) return [];
-  const eventKey = metricId.startsWith("result:") ? metricId.slice("result:".length) : null;
+  const eventKey = eventKeyOfMetric(metricId);
   const cellRows = (scopedCellRows ?? a.performance_by_cell ?? []).filter(
     (r) => eventKey == null || r["Result type"] === eventKey,
   );
@@ -394,7 +418,12 @@ export function buildAccountBreakdown(
     }), metricId);
   }
   if (dimensionId === "avatar") {
-    return groupRows(a.demographic_registration_signal ?? [], (r) => `${r.Age}|${r.Gender}`, (r) => `${r.Age} · ${r.Gender}`, (r) => ({
+    // Demographic rows are (age × gender × event) since the result-event
+    // grain; rows written before the split carry no type and are kept.
+    const demoRows = (a.demographic_registration_signal ?? []).filter(
+      (r) => eventKey == null || r["Result type"] == null || r["Result type"] === eventKey,
+    );
+    return groupRows(demoRows, (r) => `${r.Age}|${r.Gender}`, (r) => `${r.Age} · ${r.Gender}`, (r) => ({
       spend: r["Amount spent (USD)"], impressions: r.Impressions, reach: r.Reach,
       clicksAll: r["Clicks (all)"], linkClicks: r["Link clicks"], results: r.Results,
     }), metricId);
@@ -434,5 +463,9 @@ export function buildAccountBreakdown(
 /** Friendly metric label for result-event metrics without a catalog lookup. */
 export function breakdownMetricLabel(metricId: string, catalogLabel?: string): string {
   if (catalogLabel) return catalogLabel;
-  return metricId.startsWith("result:") ? eventLabel(metricId.slice("result:".length)) : metricId;
+  const key = eventKeyOfMetric(metricId);
+  if (key == null) return metricId;
+  if (metricId.startsWith("cost:")) return `Cost per result · ${eventLabel(key)}`;
+  if (metricId.startsWith("rate:")) return `Rate · ${eventLabel(key)}`;
+  return eventLabel(key);
 }

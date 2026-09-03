@@ -3,6 +3,8 @@
 // cell performance bars, variable table, placement bars, demo heatmap,
 // then the core control reads and drill-in module cards.
 
+import { useResultScope } from "@/hooks/useResultScope";
+import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import { useState, useMemo, useEffect } from "react";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { rollupPlacements, derivePlacementRollup, type PlacementRollup } from "@/lib/placement-rollup";
@@ -688,6 +690,8 @@ export function AnalysisOverview() {
     "analysis-overview", adAccountId, analysisRunsData?.runs,
   );
   const { filterByRun } = useCellRunScope(analysis, runSelection);
+  // One result scope for every analysis surface (lib/result-scope.ts).
+  const resultScope = useResultScope(account, adAccountId, analysis?.performance_by_cell.map((r) => r["Result type"]));
 
   // KPI tile drill-down modal (one shared modal for all tiles).
   const [drillMetricId, setDrillMetricId] = useState<string | null>(null);
@@ -805,11 +809,16 @@ export function AnalysisOverview() {
         // cell-level rows go through the shared cell→concept run mapping.
         // Untagged legacy rows (null run id) always pass — never hide data
         // we can't honestly attribute to a run.
+        // Result scope: rows written at result-event grain are filtered to
+        // the scope's event(s); rows from before the split (null result_type)
+        // are kept — they are "not split", not "another event".
+        const { inScope, scopeRows } = resultScope;
         const rollup = (a.concept_rollup ?? []).filter(
           (r) =>
-            runSelection.allTime ||
-            r.manual_analysis_run_id == null ||
-            runSelection.selectedRunIds.includes(r.manual_analysis_run_id),
+            (runSelection.allTime ||
+              r.manual_analysis_run_id == null ||
+              runSelection.selectedRunIds.includes(r.manual_analysis_run_id)) &&
+            (r.result_type == null || inScope(r.result_type)),
         );
         // Variable rows carry a run id too — the assembler projects it
         // alongside the payload precisely so they can be scoped. The card's
@@ -817,13 +826,13 @@ export function AnalysisOverview() {
         // linkage)", which stopped being true when that projection landed, so
         // the table summed every variable once per run while telling the
         // reader it could not be scoped at all.
-        const scopedVariableRows = (a.v3_variable_performance ?? []).filter(
+        const scopedVariableRows = scopeRows(a.v3_variable_performance ?? [], (r) => r["Result type"]).filter(
           (r) =>
             runSelection.allTime ||
             r.manual_analysis_run_id == null ||
             runSelection.selectedRunIds.includes(r.manual_analysis_run_id),
         );
-        const cellRows = filterByRun(a.performance_by_cell);
+        const cellRows = filterByRun(scopeRows(a.performance_by_cell, (r) => r["Result type"]));
         const runScoped = !runSelection.allTime;
 
         // Run-scoped KPI totals, derived from the scoped cell rows so the
@@ -835,7 +844,7 @@ export function AnalysisOverview() {
         const scopedImpressions = cellRows.reduce((s, r) => s + r.Impressions, 0);
         const scopedLinkClicks = cellRows.reduce((s, r) => s + r["Link clicks"], 0);
         const scopedCtrPct = scopedImpressions > 0 ? (scopedLinkClicks / scopedImpressions) * 100 : 0;
-        const scopedDemoRows = filterByRun(a.demographic_registration_signal);
+        const scopedDemoRows = filterByRun(scopeRows(a.demographic_registration_signal, (r) => r["Result type"]));
 
         // ── MST lookup for control-name resolution ────────────────────
         const mst = getMST(seed, adAccountId);
@@ -873,7 +882,7 @@ export function AnalysisOverview() {
         // Prefer API rows whenever a window is selected OR the seed-side
         // surface is empty (manual accounts without cell codes).
         const sortedCells: CellBarItem[] = (runData && (selectedWindow || a.performance_by_cell.length === 0))
-          ? [...runData.concept_rows]
+          ? [...runData.concept_rows].filter((r) => inScope(r.result_type))
               .sort((x, y) =>
                 cellSort === "spend"
                   ? y.spend - x.spend
@@ -1022,6 +1031,7 @@ export function AnalysisOverview() {
                 />
               }
             />
+            <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
             <>
                 {/* ── Data-window picker ──────────────────────────────── */}
                 <DataWindowBar

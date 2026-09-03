@@ -195,6 +195,9 @@ jobs:
           src/lib/__tests__/balanceMatrix.test.ts
           src/lib/__tests__/creativeAssetsEvidence.test.ts
           src/lib/__tests__/reconciliationAmendment.test.ts
+          src/lib/__tests__/resultEvents.test.ts
+          src/lib/__tests__/analysisEngineResultGrain.test.ts
+          src/lib/__tests__/resultGrainStress.test.ts
 
       - name: API server smoke (boots without Supabase env by design)
         # The server now imports the Anthropic AI integration client at module

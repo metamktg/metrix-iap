@@ -7,6 +7,7 @@
 
 import { fmtUSD, fmtNum, fmtPct, eventLabel, costPerResultLabel } from "@/pages/metrix/shared";
 import { sumStrictWithCoverage, type StrictSum } from "@/lib/strict-sum";
+import { blendableEvents, classifyResultEvent, type EvaluationScale } from "@/lib/resultEvents";
 import type { CampaignSummary, CellPerformanceRow, ManagerBottomLineTotals, SeedResultEventTotals } from "./seedTypes";
 
 export interface MetricResultEvent {
@@ -16,6 +17,8 @@ export interface MetricResultEvent {
   results: number | null;
   /** Null when the source could not measure this event's spend — never 0. */
   spend: number | null;
+  /** Impressions the event's ads delivered — the denominator of an awareness event's own rate. */
+  impressions?: number | null;
 }
 
 /** Normalized numeric source both overview scopes can build a catalog from. */
@@ -52,7 +55,7 @@ export function metricSourceFromCampaignSummary(cs: CampaignSummary): MetricSour
     clicksAll: accountLevelDeliveryTotal(events, (e) => e.clicks_all),
     linkClicks: cs.total_link_clicks,
     linkCtrPct: cs.overall_link_ctr_pct,
-    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results, spend: e.spend })),
+    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results, spend: e.spend, impressions: e.impressions })),
     isMultiEvent: events.length > 1,
   };
 }
@@ -75,7 +78,7 @@ export function metricSourceFromApiTotals(t: ApiTotalsLike): MetricSource {
     clicksAll: accountLevelDeliveryTotal(events, (e) => e.clicks_all),
     linkClicks: t.total_link_clicks,
     linkCtrPct: t.overall_link_ctr_pct,
-    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results, spend: e.spend })),
+    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results, spend: e.spend, impressions: e.impressions })),
     isMultiEvent: events.length > 1,
   };
 }
@@ -89,7 +92,7 @@ export function metricSourceFromManagerTotals(totals: ManagerBottomLineTotals): 
     clicksAll: accountLevelDeliveryTotal(events, (e) => e.clicks_all),
     linkClicks: totals.link_clicks,
     linkCtrPct: totals.link_ctr_pct,
-    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results, spend: e.spend })),
+    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results, spend: e.spend, impressions: e.impressions })),
     isMultiEvent: events.length > 1,
   };
 }
@@ -122,6 +125,11 @@ export function resultCostMetricId(eventKey: string): string {
   return `cost:${eventKey}`;
 }
 
+/** Own-rate metric id for an awareness event — e.g. "rate:ThruPlays" (results ÷ impressions). */
+function resultRateMetricId(eventKey: string): string {
+  return `rate:${eventKey}`;
+}
+
 export interface MetricDef {
   id: string;
   label: string;
@@ -144,13 +152,30 @@ export interface MetricDef {
  * (null value) are omitted entirely — never rendered as blank tiles.
  */
 export function buildMetricCatalog(source: MetricSource): MetricDef[] {
-  // Strict: null if ANY event's results are unmeasured, so every metric
-  // derived from the total (CPA blended, CVR) stays null rather than being
-  // computed against a partial sum that looks complete.
-  const totalResults = source.resultEvents.some((e) => e.results == null)
+  // Blended results are TERMINAL CONVERSION events only (resultEvents.ts
+  // blendableEvents — a purchase and a lead, never a checkout step, never
+  // a ThruPlay). With one terminal event the blend IS that event; with none
+  // there is nothing honest to blend and the tiles hide themselves. Strict:
+  // null if any blended event's results are unmeasured, so a derived figure
+  // never reads complete over a partial sum.
+  const blendKeys = blendableEvents(source.resultEvents.map((e) => e.key));
+  const blendEvents =
+    blendKeys.length >= 2
+      ? source.resultEvents.filter((e) => blendKeys.includes(e.key))
+      : source.resultEvents.filter((e) => { const c = classifyResultEvent(e.key); return c.intent === "conversion" && c.stage === "terminal"; });
+  const blendLabel = blendEvents.length > 1 ? "conversions" : (blendEvents[0] ? blendEvents[0].label.toLowerCase() : "conversions");
+  const totalResults = blendEvents.length === 0 || blendEvents.some((e) => e.results == null)
     ? null
-    : source.resultEvents.reduce((n, e) => n + (e.results ?? 0), 0);
-  const cpaBlended = source.spend != null && totalResults != null && totalResults > 0 ? source.spend / totalResults : null;
+    : blendEvents.reduce((n, e) => n + (e.results ?? 0), 0);
+  const blendSpend = blendEvents.length === 0 || blendEvents.some((e) => e.spend == null)
+    ? null
+    : blendEvents.reduce((n, e) => n + (e.spend ?? 0), 0);
+  const cpaBlended = blendSpend != null && totalResults != null && totalResults > 0 ? blendSpend / totalResults : null;
+  const blendSub = blendEvents.length > 1
+    ? `spend ÷ results across ${blendEvents.map((e) => e.label.toLowerCase()).join(" + ")} — terminal conversion events only`
+    : blendEvents.length === 1
+      ? `spend ÷ ${blendLabel} — the account's one terminal conversion event`
+      : "no terminal conversion event in this source — awareness and traffic events are never blended into a cost per result";
   // For multi-event accounts, delivery totals (reach, clicks) are cross-event
   // sums that may over-count — flag them with a small caveat sub-label.
   const deliverySub = source.isMultiEvent ? "est. across events" : undefined;
@@ -182,14 +207,20 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
     { id: "ctr_all", label: "CTR (all)", value: ctrAll, formatted: fmtPct(ctrAll), isResultEvent: false, sub: "clicks (all) ÷ impressions", hideWhenNull: true },
     { id: "cpc", label: "CPC", value: cpc, formatted: cpc != null ? fmtUSD(cpc) : "—", isResultEvent: false, sub: "spend ÷ link clicks", hideWhenNull: true },
     { id: "cpm", label: "CPM", value: cpm, formatted: cpm != null ? fmtUSD(cpm) : "—", isResultEvent: false, sub: "spend ÷ impressions × 1,000", hideWhenNull: true },
-    { id: "cpa_blended", label: "CPA (blended)", value: cpaBlended, formatted: cpaBlended != null ? fmtUSD(cpaBlended) : "—", isResultEvent: false, sub: "spend ÷ all results" },
-    { id: "cvr", label: "CVR", value: cvr, formatted: cvr != null ? fmtPct(cvr) : "—", isResultEvent: false, sub: "results ÷ link clicks", hideWhenNull: true },
+    { id: "results_blended", label: blendEvents.length > 1 ? "Conversions (blended)" : "Conversions", value: totalResults, formatted: fmtNum(totalResults), isResultEvent: false, sub: blendEvents.length > 0 ? blendEvents.map((e) => e.label).join(" + ") : blendSub, hideWhenNull: true },
+    { id: "cpa_blended", label: blendEvents.length > 1 ? "Cost per conversion (blended)" : "Cost per conversion", value: cpaBlended, formatted: cpaBlended != null ? fmtUSD(cpaBlended) : "—", isResultEvent: false, sub: blendSub, hideWhenNull: blendEvents.length === 0 },
+    { id: "cvr", label: "CVR", value: cvr, formatted: cvr != null ? fmtPct(cvr) : "—", isResultEvent: false, sub: `${blendLabel} ÷ link clicks`, hideWhenNull: true },
   ];
 
   // ── Per-objective cost metrics — one "Cost per X" per real event type ──
   // this account reports (never a fixed Purchase/Lead/etc. list); omitted
   // entirely when the event has zero results (no division by zero).
+  // Each event on ITS OWN scale (owner direction 2026-09-03): a cost per
+  // result for purchase-intent and traffic events; for an awareness event
+  // the event's own rate (ThruPlays ÷ impressions) — never a cost per
+  // ThruPlay, which would weight reach against a purchase.
   for (const e of source.resultEvents) {
+    const c = classifyResultEvent(e.key);
     catalog.push({
       id: resultMetricId(e.key),
       label: e.label,
@@ -197,7 +228,22 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
       formatted: fmtNum(e.results),
       isResultEvent: true,
       eventKey: e.key,
+      sub: c.intent === "awareness" ? "awareness event · communication scale" : c.intent === null ? "result type not placed on a scale" : undefined,
     });
+    if (c.scale === "communication") {
+      const rate = e.impressions != null && e.impressions > 0 && e.results != null && e.results <= e.impressions ? (e.results / e.impressions) * 100 : null;
+      catalog.push({
+        id: resultRateMetricId(e.key),
+        label: `${c.noun.charAt(0).toUpperCase() + c.noun.slice(1)} rate`,
+        value: rate,
+        formatted: rate != null ? fmtPct(rate) : "—",
+        isResultEvent: true,
+        eventKey: e.key,
+        sub: `${e.label.toLowerCase()} ÷ impressions — an awareness event is read on communication signals, never cost per result`,
+        hideWhenNull: true,
+      });
+      continue;
+    }
     const costPerResult = e.spend != null && e.results != null && e.results > 0 ? e.spend / e.results : null;
     catalog.push({
       id: resultCostMetricId(e.key),
@@ -234,11 +280,20 @@ export function metricById(catalog: MetricDef[], id: string): MetricDef | null {
 export const LIBRARY_METRIC_STORAGE_KEY = "metrix.library.metric_tiles.v1";
 export const LIBRARY_DEFAULT_METRIC_IDS: string[] = ["lib_cells", "lib_spend", "lib_results", "lib_cpa"];
 
-export function buildLibraryMetricCatalog(rows: CellPerformanceRow[]): MetricDef[] {
+export interface LibraryCatalogScope {
+  /** The scale the rows are judged on; communication hides cost per result and leads with CPM / CTR / frequency. */
+  scale?: EvaluationScale | null;
+  /** The scope's label for the results tiles ("Purchases", "All conversions"). */
+  label?: string;
+}
+
+export function buildLibraryMetricCatalog(rows: CellPerformanceRow[], scopeInfo: LibraryCatalogScope = {}): MetricDef[] {
   const uniqueCells = new Set(rows.map((r) => r.cell_id)).size;
   const spend = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
   const results = rows.reduce((s, r) => s + r.Results, 0);
-  const cpa = results > 0 ? spend / results : null;
+  const communication = scopeInfo.scale === "communication";
+  const cpa = !communication && results > 0 ? spend / results : null;
+  const resultsLabel = scopeInfo.label ? `${scopeInfo.label}` : "Results (selected)";
 
   const singleEvent = new Set(rows.map((r) => r["Result type"])).size <= 1;
   const deliverySum = (pick: (r: CellPerformanceRow) => number): number | null =>
@@ -250,6 +305,11 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[]): MetricDef
   const clicksAll = deliverySum((r) => r["Clicks (all)"]);
   const ctr = impressions != null && impressions > 0 && linkClicks != null ? (linkClicks / impressions) * 100 : null;
   const multiEventSub = singleEvent ? undefined : "select one event to see delivery totals";
+  // Communication scale (awareness scope): the event's own rate, CPM and
+  // frequency lead; cost per result is not a verdict here and is omitted.
+  const cpm = impressions != null && impressions > 0 ? (spend / impressions) * 1000 : null;
+  const frequency = impressions != null && reach != null && reach > 0 && reach <= impressions ? impressions / reach : null;
+  const resultRate = communication && impressions != null && impressions > 0 && results <= impressions ? (results / impressions) * 100 : null;
 
   // ── Lower-funnel: conversion event aggregates ─────────────────────
   //
@@ -323,11 +383,20 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[]): MetricDef
     id, label, value, formatted, isResultEvent: false, ...(sub ? { sub } : {}),
   });
 
+  const communicationTiles: MetricDef[] = communication
+    ? [
+        def("lib_result_rate", "Result rate", resultRate, resultRate != null ? fmtPct(resultRate) : "—", "results ÷ impressions — the awareness event's own rate"),
+        def("lib_cpm", "CPM", cpm, cpm != null ? fmtUSD(cpm) : "—", multiEventSub ?? "spend ÷ impressions × 1,000"),
+        def("lib_frequency", "Frequency", frequency, frequency != null ? frequency.toFixed(2) : "—", multiEventSub ?? "impressions ÷ reach"),
+      ]
+    : [];
+
   return [
     def("lib_cells",           "Creative cells",      uniqueCells,   fmtNum(uniqueCells)),
     def("lib_spend",           "Spend (selected)",    spend,         fmtUSD(spend, 0)),
-    def("lib_results",         "Results (selected)",  results,       fmtNum(results)),
-    def("lib_cpa",             "Avg CPA",             cpa,           cpa != null ? fmtUSD(cpa) : "—",     "spend ÷ results across selection"),
+    def("lib_results",         resultsLabel,          results,       fmtNum(results), communication ? "awareness event · communication scale" : undefined),
+    ...(communication ? [] : [def("lib_cpa", "Avg CPA", cpa, cpa != null ? fmtUSD(cpa) : "—", "spend ÷ results across the scope")]),
+    ...communicationTiles,
     def("lib_impressions",     "Impressions",         impressions,   fmtNum(impressions),                  multiEventSub),
     def("lib_reach",           "Reach",               reach,         fmtNum(reach),                        multiEventSub),
     def("lib_link_clicks",     "Link clicks",         linkClicks,    fmtNum(linkClicks),                   multiEventSub),
@@ -359,18 +428,21 @@ export interface VariableCatalogTotals {
   cpa: number | null;
   ctrPct: number | null;
   resultTypes: string[];
+  /** The scale the rows are judged on; communication omits cost per result. */
+  scale?: EvaluationScale | null;
 }
 
 export function buildVariableMetricCatalog(t: VariableCatalogTotals): MetricDef[] {
   const hasImpressions = t.impressions > 0;
-  const cvr = t.linkClicks > 0 && t.results > 0 ? (t.results / t.linkClicks) * 100 : null;
+  const communication = t.scale === "communication";
+  const cvr = !communication && t.linkClicks > 0 && t.results > 0 ? (t.results / t.linkClicks) * 100 : null;
   const cpc = t.linkClicks > 0 ? t.spend / t.linkClicks : null;
   const cpm = hasImpressions ? (t.spend / t.impressions) * 1000 : null;
-  const eventSub = t.resultTypes.length > 0 ? t.resultTypes.join(" + ") : undefined;
+  const eventSub = t.resultTypes.length > 0 ? t.resultTypes.map((rt) => classifyResultEvent(rt).label).join(" + ") : undefined;
   return [
     { id: "spend", label: "Spend", value: t.spend, formatted: fmtUSD(t.spend, 0), isResultEvent: false },
-    { id: "results", label: "Results", value: t.results, formatted: fmtNum(t.results), isResultEvent: false, sub: eventSub },
-    { id: "cpa", label: "Cost per result", value: t.cpa, formatted: fmtUSD(t.cpa), isResultEvent: false, sub: t.cpa == null ? "no results yet" : undefined },
+    { id: "results", label: "Results", value: t.results, formatted: fmtNum(t.results), isResultEvent: false, sub: communication ? `${eventSub ?? "awareness event"} · communication scale` : eventSub },
+    { id: "cpa", label: "Cost per result", value: communication ? null : t.cpa, formatted: fmtUSD(communication ? null : t.cpa), isResultEvent: false, sub: communication ? "not a verdict for an awareness event" : t.cpa == null ? "no results yet" : undefined, hideWhenNull: communication },
     { id: "unique_ads", label: "Unique ads", value: t.uniqueAds, formatted: fmtNum(t.uniqueAds), isResultEvent: false },
     { id: "link_clicks", label: "Link clicks", value: t.linkClicks, formatted: fmtNum(t.linkClicks), isResultEvent: false },
     { id: "cvr", label: "Link CVR", value: cvr, formatted: fmtPct(cvr), isResultEvent: false, hideWhenNull: true, sub: "results ÷ link clicks" },

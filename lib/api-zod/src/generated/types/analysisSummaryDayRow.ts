@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AnalysisSummaryDayRowResultsByEvent } from './analysisSummaryDayRowResultsByEvent';
 
 /**
  * One calendar day of additive ad_performance totals inside the active window — feeds sparklines and daily trend reads.
@@ -15,5 +16,8 @@ export interface AnalysisSummaryDayRow {
   spend: number;
   impressions: number;
   link_clicks: number;
+  /** Sum across every event — read results_by_event before treating it as one thing. */
   results: number;
+  /** Results per Meta result type for the day, so a reader can scope to one event or one intent class. */
+  results_by_event: AnalysisSummaryDayRowResultsByEvent;
 }

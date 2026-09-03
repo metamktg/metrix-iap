@@ -24,6 +24,8 @@
 //    the seed's own pending reason, rather than fabricating a formula
 //    sentence or stat tiles.
 
+import { useResultScope } from "@/hooks/useResultScope";
+import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -194,10 +196,12 @@ export function AnalysisDnaView() {
   // unscoped: after four runs the token STAT appeared four times — duplicate
   // React keys, and $60,704 of spend for a token that spent $26,869.
   // kpiBreakdown was fixed for this; the DNA view has its own read and was not.
-  const variableRows = scopeToRun(
-    analysis?.v3_variable_performance ?? [],
-    analysis?.latest_analysis_run_id ?? null,
-  );
+  // One result scope for every analysis surface (lib/result-scope.ts):
+  // variable rows are (variable × event × run), filtered to the scope's
+  // event(s) before any family is rolled up or ranked.
+  const runRows = scopeToRun(analysis?.v3_variable_performance ?? [], analysis?.latest_analysis_run_id ?? null);
+  const resultScope = useResultScope(account, adAccountId, runRows.map((r) => r["Result type"]));
+  const variableRows = resultScope.scopeRows(runRows, (r) => r["Result type"]);
   const combinations = strategy?.variable_combinations ?? [];
   const optimizationLoop = account?.iap?.loop_status?.find(
     (s) => s.stage === "optimization_loop"
@@ -230,6 +234,7 @@ export function AnalysisDnaView() {
                 subtitle="Per-variable lift and tested combinations — the account's isolated creative signal."
                 tabs="analysis"
               />
+              <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
               <div className="px-6 py-5 space-y-4 max-w-5xl">
                 {variableRows.length > 0 && (
                   <GeneLociCard rows={variableRows} onOpenVariable={setVariableCode} />
@@ -269,7 +274,8 @@ export function AnalysisDnaView() {
           code={variableCode}
           analysis={analysis}
           variableRows={variableRows}
-          selectedResultTypes={null}
+          selectedResultTypes={resultScope.selectedTypes}
+          resultScope={resultScope.scope}
         />
       )}
     </>

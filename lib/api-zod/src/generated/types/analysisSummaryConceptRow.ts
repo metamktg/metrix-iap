@@ -9,6 +9,10 @@
 export interface AnalysisSummaryConceptRow {
   concept: string;
   book: string | null;
+  /** Result-event grain: the Meta result type these totals were summed under — one row per (book, concept, event). */
+  result_type: string;
+  /** awareness | consideration | conversion, derived from result_type; null when unplaced. */
+  intent_class: string | null;
   spend: number;
   results: number;
   link_clicks: number;

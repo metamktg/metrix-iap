@@ -21,6 +21,7 @@
 //     staged before a run can start — the two exports are required, not
 //     optional alternatives.
 
+import { classifyResultEvent, type IntentClass } from "./resultEvents";
 import {
   confidenceScore,
   creativeInputFromMetadata,
@@ -87,6 +88,9 @@ export interface AnalysisSummaryTotals {
 export interface AnalysisSummaryDemoRow {
   age: string;
   gender: string;
+  /** Result-event grain (2026-09-03): the event these totals were summed under ("unknown" for rows written before the split). */
+  result_type: string;
+  intent_class: string | null;
   spend: number | null;
   /** Null on rows ingested before demographic_performance carried the column. */
   impressions: number | null;
@@ -101,6 +105,9 @@ export interface AnalysisSummaryDemoRow {
 
 export interface AnalysisSummaryPlacementRow {
   placement: string;
+  /** Result-event grain (2026-09-03): the event these totals were summed under. */
+  result_type: string;
+  intent_class: string | null;
   spend: number;
   impressions: number;
   link_clicks: number;
@@ -110,6 +117,9 @@ export interface AnalysisSummaryPlacementRow {
 export interface AnalysisSummaryConceptRow {
   concept: string;
   book: string | null;
+  /** Result-event grain (2026-09-03): the event these totals were summed under. */
+  result_type: string;
+  intent_class: string | null;
   spend: number;
   results: number;
   link_clicks: number;
@@ -121,7 +131,10 @@ export interface AnalysisSummaryDayRow {
   spend: number;
   impressions: number;
   link_clicks: number;
+  /** Sum across every event — read `results_by_event` before treating it as one thing. */
   results: number;
+  /** Results per Meta result type for the day, so a reader can scope to one event or one intent class. */
+  results_by_event: Record<string, number>;
 }
 
 export interface AnalysisSummaryResult {
@@ -863,6 +876,23 @@ function emptyBucket(): AggBucket {
   };
 }
 
+/**
+ * The result type a row is summed under. Every aggregate bucket the engine
+ * builds includes this in its key (owner direction 2026-09-03: awareness and
+ * purchase-intent events are never blended), so a bucket only ever holds one
+ * event. Rows with no result type at all fold under "unknown" — the engine's
+ * long-standing name for that data-quality gap, kept visible, never dropped.
+ */
+function rowResultType(row: IapCsvRow): string {
+  const rt = row.base["result_type"];
+  return typeof rt === "string" && rt.trim() !== "" ? rt.trim() : "unknown";
+}
+
+/** Intent class of a result type, or null when the export named no event Metrix can place. */
+function intentClassOf(resultType: string | null | undefined): IntentClass | null {
+  return classifyResultEvent(resultType).intent;
+}
+
 function accumulate(bucket: AggBucket, row: IapCsvRow): void {
   bucket.spend = sumOptional(bucket.spend, num(row.base["amount_spent"]));
   bucket.impressions = sumOptional(bucket.impressions, num(row.base["impressions"]));
@@ -1419,6 +1449,198 @@ export function buildAdPerformanceRows(
   });
 }
 
+// ─── Result-event grain builders (pure, tested) ─────────────────────────
+// Owner direction (2026-09-03): awareness campaigns and purchase-intent
+// events are never weighted against each other. These builders replace the
+// inline concept / variable rollups that keyed on (book, concept) and
+// (token) alone — summing purchases + leads + ThruPlays into one `results`
+// and judging a concept against a book baseline diluted by other events.
+// Now every row is one event, every baseline is the same event, and an
+// awareness row's lift reads click-through, not cost per result.
+
+export interface AdPerformanceLikeRow {
+  ad_name?: unknown;
+  meta_ad_id?: unknown;
+  result_type?: unknown;
+  spend?: unknown;
+  results?: unknown;
+  link_clicks?: unknown;
+  impressions?: unknown;
+  ad_creative_metadata?: unknown;
+}
+
+const rowType = (row: AdPerformanceLikeRow): string => {
+  const rt = row.result_type;
+  return typeof rt === "string" && rt.trim() !== "" ? rt.trim() : "unknown";
+};
+
+/** Tier thresholds on lift vs the same-event baseline. */
+function tierForLift(lift: number | null, results: number, scale: "cost_per_result" | "communication" | null): string | null {
+  if (lift !== null) {
+    if (lift >= 0.1) return "1 - Scale Winners";
+    if (lift >= 0) return "2 - Optimize";
+    if (lift >= -0.2) return "3 - Hold";
+    return "4 - Eliminate";
+  }
+  // Zero results is "no signal" only on a cost-per-result scale; an
+  // awareness row with no link clicks has no click-through read, not a verdict.
+  if (results === 0 && scale === "cost_per_result") return "4 - Eliminate";
+  return null;
+}
+
+export interface ConceptRowsOptions {
+  accountId: string;
+  runId: string;
+  dateStart: string;
+  dateEnd: string;
+  libraryConcepts: ReadonlySet<string>;
+  extractConcept: (adName: string) => string | null;
+  extractBook: (adName: string) => string | null;
+  hasCopyForAd: (row: AdPerformanceLikeRow) => boolean;
+}
+
+/**
+ * concept_performance rows at (book, concept, result_type) grain.
+ *
+ * Lift and tier compare a concept with the SAME event's book baseline:
+ * cost-per-result classes on CPA (cheaper is lift), awareness on link CTR
+ * (higher is lift) — the communication scale. buying_intent_score is null
+ * for awareness rows: a ThruPlay is not a purchase-intent signal.
+ */
+export function buildConceptPerformanceRows(adRows: readonly AdPerformanceLikeRow[], o: ConceptRowsOptions): Record<string, any>[] {
+  type Agg = { book: string | null; concept: string; resultType: string; spend: number; results: number; linkClicks: number; impressions: number; spendWithCopy: number };
+  const conceptMap = new Map<string, Agg>();
+  for (const row of adRows) {
+    const concept = o.extractConcept(String(row.ad_name ?? ""));
+    if (!concept) continue;
+    const book = o.extractBook(String(row.ad_name ?? ""));
+    const resultType = rowType(row);
+    const cKey = [book ?? "", concept, resultType].join("\u0001");
+    if (!conceptMap.has(cKey)) {
+      conceptMap.set(cKey, { book, concept, resultType, spend: 0, results: 0, linkClicks: 0, impressions: 0, spendWithCopy: 0 });
+    }
+    const c = conceptMap.get(cKey)!;
+    const rowSpend = Number(row.spend ?? 0);
+    c.spend += rowSpend;
+    c.results += Number(row.results ?? 0);
+    c.linkClicks += Number(row.link_clicks ?? 0);
+    c.impressions += Number(row.impressions ?? 0);
+    if (o.hasCopyForAd(row)) c.spendWithCopy += rowSpend;
+  }
+  if (conceptMap.size === 0) return [];
+
+  // Book baseline PER EVENT: total spend / results (cost scale) and
+  // link clicks / impressions (communication scale) for the same result type.
+  const bookTotals = new Map<string, { spend: number; results: number; linkClicks: number; impressions: number }>();
+  for (const c of conceptMap.values()) {
+    const bk = [c.book ?? "", c.resultType].join("\u0001");
+    const t = bookTotals.get(bk) ?? { spend: 0, results: 0, linkClicks: 0, impressions: 0 };
+    t.spend += c.spend; t.results += c.results; t.linkClicks += c.linkClicks; t.impressions += c.impressions;
+    bookTotals.set(bk, t);
+  }
+
+  return Array.from(conceptMap.values()).map((c) => {
+    const classification = classifyResultEvent(c.resultType);
+    const scale = classification.scale;
+    const spend = c.spend > 0 ? c.spend : null;
+    const results = c.results > 0 ? c.results : null;
+    const cpa = spend !== null && results !== null ? spend / results : null;
+    const cvrLinkPct = c.linkClicks > 0 && results !== null ? (results / c.linkClicks) * 100 : null;
+    const ctr = c.impressions > 0 ? (c.linkClicks / c.impressions) * 100 : null;
+    const base = bookTotals.get([c.book ?? "", c.resultType].join("\u0001"))!;
+
+    let liftVsBaseline: number | null = null;
+    let liftBasis: "cpa" | "link_ctr" = "cpa";
+    if (scale === "communication") {
+      liftBasis = "link_ctr";
+      const baseCtr = base.impressions > 0 ? (base.linkClicks / base.impressions) * 100 : null;
+      liftVsBaseline = ctr !== null && baseCtr !== null && baseCtr > 0 ? (ctr - baseCtr) / baseCtr : null;
+    } else {
+      const baseCpa = base.results > 0 ? base.spend / base.results : null;
+      liftVsBaseline = cpa !== null && baseCpa !== null && baseCpa > 0 ? (baseCpa - cpa) / baseCpa : null;
+    }
+    const performanceTier = tierForLift(liftVsBaseline, c.results, scale);
+    // buying_intent_score: result volume with an engagement signal — only
+    // meaningful for an event that IS intent. Awareness rows get null.
+    const buyingIntentScore = scale === "communication" ? null : c.results * 10 + c.linkClicks;
+    const confidenceLevel = volumeConfidence(c.spend, c.results);
+    const creativeCoverage = c.spend > 0 ? c.spendWithCopy / c.spend : 0;
+    return {
+      account_id: o.accountId,
+      manual_analysis_run_id: o.runId,
+      book: c.book,
+      concept: c.concept,
+      result_type: c.resultType,
+      intent_class: classification.intent,
+      lift_basis: liftBasis,
+      date_start: o.dateStart,
+      date_end: o.dateEnd,
+      spend,
+      impressions: c.impressions > 0 ? c.impressions : null,
+      link_clicks: c.linkClicks > 0 ? c.linkClicks : null,
+      results,
+      cpa,
+      cvr_link_pct: cvrLinkPct,
+      mapped_in_library: o.libraryConcepts.has(c.concept),
+      buying_intent_score: buyingIntentScore !== null && buyingIntentScore > 0 ? buyingIntentScore : null,
+      performance_lift_vs_baseline: liftVsBaseline !== null ? liftVsBaseline.toFixed(4) : null,
+      performance_tier: performanceTier,
+      confidence_level: confidenceLevel,
+      creative_coverage_pct: Math.round(creativeCoverage * 10000) / 100,
+      evidence_grade: evidenceGrade(creativeCoverage),
+      confidence_score: confidenceScore(confidenceLevel, creativeCoverage),
+    };
+  });
+}
+
+const isSkippedAdToken = (t: string): boolean =>
+  /^[A-Za-z]\d+[A-Za-z]*$/.test(t) || // cell/concept codes: C2, C2E, C2EA
+  /^BOOK\d+$/i.test(t) ||              // BOOK0, BOOK2
+  /^T\d+$/i.test(t) ||                 // T1, T2 (test round)
+  /^\d+$/.test(t);                     // purely numeric tokens
+
+/**
+ * variable_performance rows at (token, result_type) grain. Raw variable
+ * tokens are the underscore-delimited parts of an ad name that are not the
+ * cell/concept code, BOOK label or test-round suffix ("C2E_STC_QF_BOOK2_T1"
+ * → STC, QF). `unique_ads` counts DISTINCT ads (Meta ad id, else name) —
+ * the previous count was ad-day rows, which read "30 unique ads" for a
+ * token two ads carried across fifteen days.
+ */
+export function buildVariablePerformanceRows(
+  adRows: readonly AdPerformanceLikeRow[],
+  o: { accountId: string; runId: string; dateStart: string; dateEnd: string },
+): Record<string, any>[] {
+  type Agg = { token: string; resultType: string; spend: number; results: number; linkClicks: number; ads: Set<string> };
+  const map = new Map<string, Agg>();
+  for (const row of adRows) {
+    const adName = String(row.ad_name ?? "");
+    const adKey = (typeof row.meta_ad_id === "string" && row.meta_ad_id.trim() !== "" ? row.meta_ad_id.trim() : adName) || adName;
+    const resultType = rowType(row);
+    const tokens = adName.split("_").map((t) => t.trim().toUpperCase()).filter((t) => t.length > 0 && !isSkippedAdToken(t));
+    for (const token of new Set(tokens)) {
+      const k = [token, resultType].join("\u0001");
+      const v = map.get(k) ?? { token, resultType, spend: 0, results: 0, linkClicks: 0, ads: new Set<string>() };
+      v.spend += Number(row.spend ?? 0);
+      v.results += Number(row.results ?? 0);
+      v.linkClicks += Number(row.link_clicks ?? 0);
+      if (adKey) v.ads.add(adKey);
+      map.set(k, v);
+    }
+  }
+  return Array.from(map.values()).map((v) => ({
+    account_id: o.accountId,
+    manual_analysis_run_id: o.runId,
+    variable_family: "raw_token",
+    variable_id: v.token,
+    result_type: v.resultType,
+    intent_class: classifyResultEvent(v.resultType).intent,
+    date_start: o.dateStart,
+    date_end: o.dateEnd,
+    payload: variablePerformancePayload(v.token, { spend: v.spend, results: v.results, linkClicks: v.linkClicks, adCount: v.ads.size }, v.resultType),
+  }));
+}
+
 /**
  * Builds one variable_performance row's `payload` for a single raw-token
  * aggregate (variable_family: "raw_token" — see the Stage 2 variable-level
@@ -1442,7 +1664,7 @@ export function buildAdPerformanceRows(
 export function variablePerformancePayload(
   token: string,
   v: { spend: number; results: number; linkClicks: number; adCount: number },
-  accountResultType: string,
+  resultType: string,
 ): Record<string, unknown> {
   const cpa = v.results > 0 ? v.spend / v.results : null;
   const cvrLinkPct = v.linkClicks > 0 && v.results > 0 ? (v.results / v.linkClicks) * 100 : null;
@@ -1452,7 +1674,7 @@ export function variablePerformancePayload(
     // these rows without a transform.
     variable_family: "raw_token",
     variable_id: token,
-    "Result type": accountResultType,
+    "Result type": resultType,
     "Amount spent (USD)": v.spend,
     // Reach / Impressions / Clicks (all) are not available at the token
     // level — set to 0 so numeric consumers don't receive undefined.
@@ -2122,13 +2344,14 @@ export async function startManualAnalysis(
       }
 
       // ── Demographic rows: aggregate demo export by gender/age/day.
-      const demoBuckets = new Map<string, AggBucket & { gender: string; age: string; date: string }>();
+      const demoBuckets = new Map<string, AggBucket & { gender: string; age: string; date: string; resultType: string }>();
       for (const row of scopedDemo) {
         const gender = row.breakdowns["Gender"]!;
         const age = row.breakdowns["Age"]!;
         const date = row.breakdowns["Day"]!;
-        const key = [gender, age, date].join("\u0001");
-        if (!demoBuckets.has(key)) demoBuckets.set(key, { ...emptyBucket(), gender, age, date });
+        const resultType = rowResultType(row);
+        const key = [gender, age, date, resultType].join("\u0001");
+        if (!demoBuckets.has(key)) demoBuckets.set(key, { ...emptyBucket(), gender, age, date, resultType });
         accumulate(demoBuckets.get(key)!, row);
       }
 
@@ -2141,9 +2364,9 @@ export async function startManualAnalysis(
       // fine. Rows with a blank/missing device value are excluded from the
       // device dimension only — they still feed placement/platform aggregation
       // below, so a missing device breakdown never blocks the rest of the run.
-      const deviceBuckets = new Map<string, AggBucket & { device: string; date: string }>();
-      const placementBuckets = new Map<string, AggBucket & { placement: string; date: string }>();
-      const platformBuckets = new Map<string, AggBucket & { platform: string; date: string }>();
+      const deviceBuckets = new Map<string, AggBucket & { device: string; date: string; resultType: string }>();
+      const placementBuckets = new Map<string, AggBucket & { placement: string; date: string; resultType: string }>();
+      const platformBuckets = new Map<string, AggBucket & { platform: string; date: string; resultType: string }>();
       let deviceEligibleRows = 0;
       let deviceCoveredRows = 0;
       for (const row of scopedPlacement) {
@@ -2151,21 +2374,22 @@ export async function startManualAnalysis(
         const device = row.breakdowns["Impression device"];
         const placement = row.breakdowns["Placement"]!;
         const platform = row.breakdowns["Platform"]!;
+        const resultType = rowResultType(row);
 
         deviceEligibleRows += 1;
         if (device != null && device.trim() !== "") {
           deviceCoveredRows += 1;
-          const dKey = [device, date].join("\u0001");
-          if (!deviceBuckets.has(dKey)) deviceBuckets.set(dKey, { ...emptyBucket(), device, date });
+          const dKey = [device, date, resultType].join("\u0001");
+          if (!deviceBuckets.has(dKey)) deviceBuckets.set(dKey, { ...emptyBucket(), device, date, resultType });
           accumulate(deviceBuckets.get(dKey)!, row);
         }
 
-        const pKey = [placement, date].join("\u0001");
-        if (!placementBuckets.has(pKey)) placementBuckets.set(pKey, { ...emptyBucket(), placement, date });
+        const pKey = [placement, date, resultType].join("\u0001");
+        if (!placementBuckets.has(pKey)) placementBuckets.set(pKey, { ...emptyBucket(), placement, date, resultType });
         accumulate(placementBuckets.get(pKey)!, row);
 
-        const plKey = [platform, date].join("\u0001");
-        if (!platformBuckets.has(plKey)) platformBuckets.set(plKey, { ...emptyBucket(), platform, date });
+        const plKey = [platform, date, resultType].join("\u0001");
+        if (!platformBuckets.has(plKey)) platformBuckets.set(plKey, { ...emptyBucket(), platform, date, resultType });
         accumulate(platformBuckets.get(plKey)!, row);
       }
       // Surface the gap honestly instead of silently emitting an empty/partial
@@ -2193,21 +2417,23 @@ export async function startManualAnalysis(
       // Without them a manual account's analysis would populate totals but
       // leave those surfaces permanently empty (see demographic_signal /
       // placement_signal writes below).
-      const demoWindowBuckets = new Map<string, AggBucket & { gender: string; age: string }>();
+      const demoWindowBuckets = new Map<string, AggBucket & { gender: string; age: string; windowResultType: string }>();
       for (const row of scopedDemo) {
         const gender = row.breakdowns["Gender"]!;
         const age = row.breakdowns["Age"]!;
-        const key = [gender, age].join("");
-        if (!demoWindowBuckets.has(key)) demoWindowBuckets.set(key, { ...emptyBucket(), gender, age });
+        const windowResultType = rowResultType(row);
+        const key = [gender, age, windowResultType].join("\u0001");
+        if (!demoWindowBuckets.has(key)) demoWindowBuckets.set(key, { ...emptyBucket(), gender, age, windowResultType });
         accumulate(demoWindowBuckets.get(key)!, row);
       }
-      const placementWindowBuckets = new Map<string, AggBucket & { placement: string; platform: string }>();
+      const placementWindowBuckets = new Map<string, AggBucket & { placement: string; platform: string; windowResultType: string }>();
       for (const row of scopedPlacement) {
         const placement = row.breakdowns["Placement"]!;
         const platform = row.breakdowns["Platform"]!;
-        const key = [placement, platform].join("");
+        const windowResultType = rowResultType(row);
+        const key = [placement, platform, windowResultType].join("\u0001");
         if (!placementWindowBuckets.has(key)) {
-          placementWindowBuckets.set(key, { ...emptyBucket(), placement, platform });
+          placementWindowBuckets.set(key, { ...emptyBucket(), placement, platform, windowResultType });
         }
         accumulate(placementWindowBuckets.get(key)!, row);
       }
@@ -2273,198 +2499,56 @@ export async function startManualAnalysis(
       // confidence_score below — the "presence of granular breakdown data"
       // the confidence adjustment reads. Copy known for 0% of spend is
       // recorded as 0, never as a fabricated full coverage.
-      const conceptMap = new Map<string, { book: string | null; concept: string; spend: number; results: number; linkClicks: number; spendWithCopy: number }>();
-      for (const row of adRows) {
-        const concept = extractConcept(String(row.ad_name ?? ""));
-        if (!concept) continue;
-        const book = extractBook(String(row.ad_name ?? ""));
-        const cKey = [book ?? "", concept].join("\u0001");
-        if (!conceptMap.has(cKey)) {
-          conceptMap.set(cKey, { book, concept, spend: 0, results: 0, linkClicks: 0, spendWithCopy: 0 });
-        }
-        const c = conceptMap.get(cKey)!;
-        const rowSpend = Number(row.spend ?? 0);
-        c.spend += rowSpend;
-        c.results += Number(row.results ?? 0);
-        c.linkClicks += Number(row.link_clicks ?? 0);
-        if (hasCopy(creativeInputFromMetadata(String(row.ad_name ?? ""), row.meta_ad_id ?? null, row.ad_creative_metadata))) {
-          c.spendWithCopy += rowSpend;
-        }
-      }
-      if (conceptMap.size > 0) {
-        // ── Stage 2 Analysis Core: pre-compute intelligence fields ──────────
-        // These are deterministic formulas applied to the aggregated concept data.
-
-        // 1. mapped_in_library: resolve concept codes against the client library.
-        //    Non-fatal — if the query fails, all concepts stay unmapped (false).
-        const libraryConceptsSet = new Set<string>();
-        try {
-          const libResp = await supabase
-            .from("library_cells")
-            .select("cell_id, concept_id")
-            .eq("account_id", accountId);
-          if (!libResp.error && libResp.data) {
-            for (const row of libResp.data) {
-              // cell_id like "C2E" → concept "C2"; concept_id like "C2" is used directly
-              const fromCell = extractConcept(String(row.cell_id ?? ""));
-              if (fromCell) libraryConceptsSet.add(fromCell);
-              const fromConceptId = String(row.concept_id ?? "").trim().toUpperCase();
-              if (fromConceptId) libraryConceptsSet.add(fromConceptId);
-            }
+      // Concept- and variable-level aggregates are built by pure, tested
+      // builders at RESULT-EVENT grain: one row per (concept, event) and per
+      // (token, event), a same-event baseline for every lift, awareness rows
+      // judged on click-through rather than cost per result (owner direction
+      // 2026-09-03). The library lookup is the only I/O and stays here.
+      const libraryConceptsSet = new Set<string>();
+      try {
+        const libResp = await supabase
+          .from("library_cells")
+          .select("cell_id, concept_id")
+          .eq("account_id", accountId);
+        if (!libResp.error && libResp.data) {
+          for (const row of libResp.data) {
+            // cell_id like "C2E" → concept "C2"; concept_id like "C2" is used directly
+            const fromCell = extractConcept(String(row.cell_id ?? ""));
+            if (fromCell) libraryConceptsSet.add(fromCell);
+            const fromConceptId = String(row.concept_id ?? "").trim().toUpperCase();
+            if (fromConceptId) libraryConceptsSet.add(fromConceptId);
           }
-        } catch (_) {
-          // non-fatal: mapped_in_library will be false for all concepts
         }
-
-        // 2. Book-level blended CPA (baseline): total spend / total results per book.
-        //    Used to compute lift vs. baseline for each concept.
-        const bookTotalSpend = new Map<string, number>();
-        const bookTotalResults = new Map<string, number>();
-        for (const c of conceptMap.values()) {
-          const bk = c.book ?? "";
-          bookTotalSpend.set(bk, (bookTotalSpend.get(bk) ?? 0) + c.spend);
-          bookTotalResults.set(bk, (bookTotalResults.get(bk) ?? 0) + c.results);
-        }
-        const getBlendedCpa = (book: string | null): number | null => {
-          const bk = book ?? "";
-          const s = bookTotalSpend.get(bk) ?? 0;
-          const r = bookTotalResults.get(bk) ?? 0;
-          return r > 0 ? s / r : null;
-        };
-
-        // No delete here: concept_performance is run-tagged (manual_analysis_run_id)
-        // and retains full history across runs — deleting-then-inserting the whole
-        // account on every run used to destroy every prior run's rollup. A failed
-        // run's rows are cleaned up by deleteRunOutputs (see below), not here.
-        const conceptRows = Array.from(conceptMap.values()).map((c) => {
-          const spend = c.spend > 0 ? c.spend : null;
-          const results = c.results > 0 ? c.results : null;
-          const cpa = spend !== null && results !== null && results > 0 ? spend / results : null;
-          const cvrLinkPct = c.linkClicks > 0 && results !== null ? (results / c.linkClicks) * 100 : null;
-
-          // buying_intent_score: combines result volume with engagement signal
-          const buyingIntentScore = c.results * 10 + c.linkClicks;
-
-          // performance_lift_vs_baseline: positive = concept is cheaper than book average
-          const blendedCpa = getBlendedCpa(c.book);
-          const liftVsBaseline =
-            cpa !== null && blendedCpa !== null && blendedCpa > 0
-              ? (blendedCpa - cpa) / blendedCpa
-              : null;
-
-          // performance_tier: 1-4 bucketed by lift threshold
-          //   Tier 1 (Scale):    lift ≥ +10%  — concept CPA at least 10% below account baseline
-          //   Tier 2 (Optimize): lift in [0%, +10%)  — on or slightly below baseline
-          //   Tier 3 (Hold):     lift in [-20%, 0%)  — up to 20% above baseline, still viable
-          //   Tier 4 (Eliminate):lift < -20%  — concept CPA more than 20% worse than baseline
-          let performanceTier: string | null = null;
-          if (liftVsBaseline !== null) {
-            if (liftVsBaseline >= 0.10) performanceTier = "1 - Scale Winners";
-            else if (liftVsBaseline >= 0) performanceTier = "2 - Optimize";
-            else if (liftVsBaseline >= -0.20) performanceTier = "3 - Hold";
-            else performanceTier = "4 - Eliminate";
-          } else if (c.results === 0) {
-            performanceTier = "4 - Eliminate"; // zero results = no signal
-          }
-
-          // confidence_level: based on spend volume and result sample size
-          //   high:                 spend ≥ $500 AND results ≥ 30
-          //   medium:               spend ≥ $100 AND results ≥ 5
-          //   low:                  any spend with at least 1 result
-          //   validation_required:  no results yet
-          // The tier lives in creativeComponents.volumeConfidence so the
-          // component weighting grades on the same thresholds.
-          const confidenceLevel = volumeConfidence(c.spend, c.results);
-          // Evidence: how much of this concept's spend the engine can explain
-          // at the copy level. The tier is not relabelled by it (sample size
-          // is sample size); the numeric score and the grade carry it.
-          const creativeCoverage = c.spend > 0 ? c.spendWithCopy / c.spend : 0;
-
-          return {
-            account_id: accountId,
-            manual_analysis_run_id: runId,
-            book: c.book,
-            concept: c.concept,
-            date_start: dateStart,
-            date_end: dateEnd,
-            spend,
-            link_clicks: c.linkClicks > 0 ? c.linkClicks : null,
-            results,
-            cpa,
-            cvr_link_pct: cvrLinkPct,
-            mapped_in_library: libraryConceptsSet.has(c.concept),
-            buying_intent_score: buyingIntentScore > 0 ? buyingIntentScore : null,
-            performance_lift_vs_baseline:
-              liftVsBaseline !== null ? liftVsBaseline.toFixed(4) : null,
-            performance_tier: performanceTier,
-            confidence_level: confidenceLevel,
-            creative_coverage_pct: Math.round(creativeCoverage * 10000) / 100,
-            evidence_grade: evidenceGrade(creativeCoverage),
-            confidence_score: confidenceScore(confidenceLevel, creativeCoverage),
-          };
-        });
-        await insertChunked("concept_performance", conceptRows);
+      } catch (_) {
+        // non-fatal: mapped_in_library will be false for all concepts
       }
+      const conceptRows = buildConceptPerformanceRows(adRows, {
+        accountId,
+        runId,
+        dateStart,
+        dateEnd,
+        libraryConcepts: libraryConceptsSet,
+        extractConcept,
+        extractBook,
+        hasCopyForAd: (row) =>
+          hasCopy(
+            creativeInputFromMetadata(
+              String(row.ad_name ?? ""),
+              typeof row.meta_ad_id === "string" ? row.meta_ad_id : null,
+              row.ad_creative_metadata as Parameters<typeof creativeInputFromMetadata>[2],
+            ),
+          ),
+      });
+      // No delete here: concept_performance is run-tagged (manual_analysis_run_id)
+      // and retains full history across runs — deleting-then-inserting the whole
+      // account on every run used to destroy every prior run's rollup. A failed
+      // run's rows are cleaned up by deleteRunOutputs, not here.
+      if (conceptRows.length > 0) await insertChunked("concept_performance", conceptRows);
 
       // ── Stage 2: Variable-level performance ─────────────────────────────
-      // Extract raw variable tokens from ad names (all underscore-delimited tokens
-      // that are not the cell/concept code, BOOK label, or test-round suffix).
-      // Example: "C2E_STC_QF_BOOK2_T1" → tokens ["STC", "QF"]
-      // Tokens are written to variable_performance so the generation engine has
-      // real variable-level evidence when building strategy and briefs.
       await updateProgress(runId, 82, "Computing variable performance");
-      const isSkippedAdToken = (t: string): boolean =>
-        /^[A-Za-z]\d+[A-Za-z]*$/.test(t) || // cell/concept codes: C2, C2E, C2EA
-        /^BOOK\d+$/i.test(t) ||              // BOOK0, BOOK2
-        /^T\d+$/i.test(t) ||                 // T1, T2 (test round)
-        /^\d+$/.test(t);                     // purely numeric tokens
-
-      const varPerfMap = new Map<
-        string,
-        { spend: number; results: number; linkClicks: number; adCount: number }
-      >();
-      for (const row of adRows) {
-        const tokens = String(row.ad_name ?? "")
-          .split("_")
-          .map((t) => t.trim().toUpperCase())
-          .filter((t) => t.length > 0 && !isSkippedAdToken(t));
-        for (const token of tokens) {
-          if (!varPerfMap.has(token)) {
-            varPerfMap.set(token, { spend: 0, results: 0, linkClicks: 0, adCount: 0 });
-          }
-          const v = varPerfMap.get(token)!;
-          v.spend += Number(row.spend ?? 0);
-          v.results += Number(row.results ?? 0);
-          v.linkClicks += Number(row.link_clicks ?? 0);
-          v.adCount += 1;
-        }
-      }
-      if (varPerfMap.size > 0) {
-        // Derive the most common result_type for this account's ad rows
-        const rtCounts = new Map<string, number>();
-        for (const row of adRows) {
-          const rt = String(row.result_type ?? "unknown");
-          rtCounts.set(rt, (rtCounts.get(rt) ?? 0) + 1);
-        }
-        const accountResultType =
-          [...rtCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "unknown";
-
-        // No delete here: variable_performance is run-tagged (manual_analysis_run_id)
-        // and retains full history across runs, same reasoning as concept_performance
-        // above — a full account wipe here used to destroy every prior run's rollup.
-
-        const varRows = Array.from(varPerfMap.entries()).map(([token, v]) => ({
-          account_id: accountId,
-          manual_analysis_run_id: runId,
-          variable_family: "raw_token",
-          variable_id: token,
-          result_type: accountResultType,
-          date_start: dateStart,
-          date_end: dateEnd,
-          payload: variablePerformancePayload(token, v, accountResultType),
-        }));
-        await insertChunked("variable_performance", varRows);
-      }
+      const varRows = buildVariablePerformanceRows(adRows, { accountId, runId, dateStart, dateEnd });
+      if (varRows.length > 0) await insertChunked("variable_performance", varRows);
 
       await updateProgress(runId, 84, "Linking creative assets");
       // Upsert each unique ad_name into the ads registry so that
@@ -2774,6 +2858,8 @@ export async function startManualAnalysis(
         manual_analysis_run_id: runId,
         gender: b.gender,
         age: b.age,
+        result_type: b.resultType,
+        intent_class: intentClassOf(b.resultType),
         date_start: b.date,
         date_end: b.date,
         spend: b.spend,
@@ -2804,6 +2890,8 @@ export async function startManualAnalysis(
         account_id: accountId,
         manual_analysis_run_id: runId,
         placement: b.placement,
+        result_type: b.resultType,
+        intent_class: intentClassOf(b.resultType),
         date_start: b.date,
         date_end: b.date,
         spend: b.spend,
@@ -2825,6 +2913,8 @@ export async function startManualAnalysis(
         account_id: accountId,
         manual_analysis_run_id: runId,
         platform: b.platform,
+        result_type: b.resultType,
+        intent_class: intentClassOf(b.resultType),
         date_start: b.date,
         date_end: b.date,
         spend: b.spend,
@@ -2845,6 +2935,8 @@ export async function startManualAnalysis(
         account_id: accountId,
         manual_analysis_run_id: runId,
         device: b.device,
+        result_type: b.resultType,
+        intent_class: intentClassOf(b.resultType),
         date_start: b.date,
         date_end: b.date,
         spend: b.spend,
@@ -2864,18 +2956,21 @@ export async function startManualAnalysis(
       // These rows have no spend/impressions — they carry only conversion counts.
       // Stored with tracking_basis='conversion' and device_kind='conversion' so
       // they are distinguishable from impression-device rows.
-      const convDeviceBuckets = new Map<string, AggBucket & { device: string; date: string }>();
+      const convDeviceBuckets = new Map<string, AggBucket & { device: string; date: string; resultType: string }>();
       for (const row of scopedConversionDevice) {
         const date = row.breakdowns["Day"]!;
         const device = row.breakdowns["Conversion device"]!;
-        const dKey = [device, date].join("\u0001");
-        if (!convDeviceBuckets.has(dKey)) convDeviceBuckets.set(dKey, { ...emptyBucket(), device, date });
+        const resultType = rowResultType(row);
+        const dKey = [device, date, resultType].join("\u0001");
+        if (!convDeviceBuckets.has(dKey)) convDeviceBuckets.set(dKey, { ...emptyBucket(), device, date, resultType });
         accumulate(convDeviceBuckets.get(dKey)!, row);
       }
       const convDeviceRowsOut = Array.from(convDeviceBuckets.values()).map((b) => ({
         account_id: accountId,
         manual_analysis_run_id: runId,
         device: b.device,
+        result_type: b.resultType,
+        intent_class: intentClassOf(b.resultType),
         date_start: b.date,
         date_end: b.date,
         spend: null,
@@ -2942,6 +3037,7 @@ export async function startManualAnalysis(
           ad_name: MANUAL_DEMO_AD_NAME,
           age: b.age,
           gender: b.gender,
+          result_type: b.windowResultType,
           date_start: dateStart,
           date_end: dateEnd,
           row_index: i,
@@ -2950,7 +3046,7 @@ export async function startManualAnalysis(
             "Ad name": MANUAL_DEMO_AD_NAME,
             Age: b.age,
             Gender: b.gender,
-            "Result type": b.resultType,
+            "Result type": b.windowResultType,
             "Amount spent (USD)": b.spend,
             Reach: b.reach,
             Impressions: b.impressions,
@@ -2971,12 +3067,14 @@ export async function startManualAnalysis(
           signal_scope: "v3",
           placement: b.placement,
           platform: b.platform,
+          result_type: b.windowResultType,
           date_start: dateStart,
           date_end: dateEnd,
           row_index: i,
           payload: {
             Placement: b.placement,
             Platform: b.platform,
+            "Result type": b.windowResultType,
             "Amount spent (USD)": b.spend,
             Impressions: b.impressions,
             "Link clicks": b.linkClicks,
@@ -3115,11 +3213,14 @@ function buildDailySeries(rows: any[]): AnalysisSummaryDayRow[] {
   for (const r of rows) {
     const date = String((r as any).date_start ?? "");
     if (!date) continue;
-    const d = byDate.get(date) ?? { date, spend: 0, impressions: 0, link_clicks: 0, results: 0 };
+    const d = byDate.get(date) ?? { date, spend: 0, impressions: 0, link_clicks: 0, results: 0, results_by_event: {} };
+    const results = Number((r as any).results ?? 0);
+    const event = String((r as any).result_type ?? "unknown");
     d.spend       += Number((r as any).spend ?? 0);
     d.impressions += Number((r as any).impressions ?? 0);
     d.link_clicks += Number((r as any).link_clicks ?? 0);
-    d.results     += Number((r as any).results ?? 0);
+    d.results     += results;
+    d.results_by_event[event] = (d.results_by_event[event] ?? 0) + results;
     byDate.set(date, d);
   }
   return Array.from(byDate.values())
@@ -3281,7 +3382,8 @@ export async function getAnalysisSummaryByPreset(
     const concept = extractConceptCode(String((r as any).ad_name ?? ""));
     if (!concept) continue;
     const book = extractBookCode(String((r as any).ad_name ?? ""));
-    const key = `${book ?? ""}\x01${concept}`;
+    const resultType = String((r as any).result_type ?? "unknown");
+    const key = `${book ?? ""}\x01${concept}\x01${resultType}`;
     const c = conceptMap.get(key) ?? { book, spend: 0, results: 0, link_clicks: 0 };
     c.spend       += Number((r as any).spend ?? 0);
     c.results     += Number((r as any).results ?? 0);
@@ -3291,6 +3393,8 @@ export async function getAnalysisSummaryByPreset(
   const concept_rows: AnalysisSummaryConceptRow[] = Array.from(conceptMap.entries()).map(([key, v]) => ({
     concept: key.split("\x01")[1]!,
     book:    v.book,
+    result_type: key.split("\x01")[2] ?? "unknown",
+    intent_class: intentClassOf(key.split("\x01")[2] ?? "unknown"),
     spend:   roundN(v.spend),
     results: v.results,
     link_clicks: v.link_clicks,
@@ -3300,13 +3404,13 @@ export async function getAnalysisSummaryByPreset(
   const demoRows = await selectAllRows(
     "demographic_performance",
     (q) => q.eq("account_id", accountId),
-    "date_start, age, gender, spend, impressions, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value",
+    "date_start, age, gender, result_type, spend, impressions, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value",
   );
 
   const demoMap = new Map<string, { spend: number; impressions: number | null; results: number; link_clicks: number; adds_to_cart: number | null; checkouts_initiated: number | null; purchases: number | null; adds_to_cart_value: number | null }>();
   for (const r of demoRows ?? []) {
     if (!withinViewPreset(String((r as any).date_start ?? ""), preset, anchor)) continue;
-    const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}`;
+    const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}|${String((r as any).result_type ?? "unknown")}`;
     const d = demoMap.get(key) ?? { spend: 0, impressions: null, results: 0, link_clicks: 0, adds_to_cart: null, checkouts_initiated: null, purchases: null, adds_to_cart_value: null };
     d.spend       += Number((r as any).spend ?? 0);
     d.results     += Number((r as any).results ?? 0);
@@ -3322,10 +3426,12 @@ export async function getAnalysisSummaryByPreset(
     demoMap.set(key, d);
   }
   const demographic_rows: AnalysisSummaryDemoRow[] = Array.from(demoMap.entries()).map(([key, v]) => {
-    const [age, gender] = key.split("|");
+    const [age, gender, resultType] = key.split("|");
     return {
       age:        age ?? "",
       gender:     gender ?? "",
+      result_type: resultType ?? "unknown",
+      intent_class: intentClassOf(resultType ?? "unknown"),
       spend:      v.spend,
       impressions: v.impressions,
       results:    v.results,
@@ -3341,14 +3447,14 @@ export async function getAnalysisSummaryByPreset(
   const placRows = await selectAllRows(
     "placement_performance",
     (q) => q.eq("account_id", accountId),
-    "date_start, placement, spend, impressions, link_clicks, results, tracking_basis",
+    "date_start, placement, result_type, spend, impressions, link_clicks, results, tracking_basis",
   );
 
   const placMap = new Map<string, { spend: number; impressions: number; link_clicks: number; results: number }>();
   for (const r of placRows ?? []) {
     if ((r as any).tracking_basis === "conversion") continue; // delivery rows only
     if (!withinViewPreset(String((r as any).date_start ?? ""), preset, anchor)) continue;
-    const key = String((r as any).placement ?? "");
+    const key = `${String((r as any).placement ?? "")}|${String((r as any).result_type ?? "unknown")}`;
     const p = placMap.get(key) ?? { spend: 0, impressions: 0, link_clicks: 0, results: 0 };
     p.spend       += Number((r as any).spend ?? 0);
     p.impressions += Number((r as any).impressions ?? 0);
@@ -3356,8 +3462,10 @@ export async function getAnalysisSummaryByPreset(
     p.results     += Number((r as any).results ?? 0);
     placMap.set(key, p);
   }
-  const placement_rows: AnalysisSummaryPlacementRow[] = Array.from(placMap.entries()).map(([placement, v]) => ({
-    placement,
+  const placement_rows: AnalysisSummaryPlacementRow[] = Array.from(placMap.entries()).map(([key, v]) => ({
+    placement: key.split("|")[0] ?? "",
+    result_type: key.split("|")[1] ?? "unknown",
+    intent_class: intentClassOf(key.split("|")[1] ?? "unknown"),
     spend:       roundN(v.spend),
     impressions: v.impressions,
     link_clicks: v.link_clicks,
@@ -3474,7 +3582,8 @@ async function _computeAnalysisSummaryForDateRange(
     const concept = extractConceptCode(String((r as any).ad_name ?? ""));
     if (!concept) continue;
     const book = extractBookCode(String((r as any).ad_name ?? ""));
-    const key  = `${book ?? ""}\x01${concept}`;
+    const resultType = String((r as any).result_type ?? "unknown");
+    const key  = `${book ?? ""}\x01${concept}\x01${resultType}`;
     const c    = conceptMap.get(key) ?? { book, spend: 0, results: 0, link_clicks: 0 };
     c.spend       += Number((r as any).spend ?? 0);
     c.results     += Number((r as any).results ?? 0);
@@ -3484,6 +3593,8 @@ async function _computeAnalysisSummaryForDateRange(
   const concept_rows: AnalysisSummaryConceptRow[] = Array.from(conceptMap.entries()).map(([key, v]) => ({
     concept: key.split("\x01")[1]!,
     book:    v.book,
+    result_type: key.split("\x01")[2] ?? "unknown",
+    intent_class: intentClassOf(key.split("\x01")[2] ?? "unknown"),
     spend:   roundN(v.spend),
     results: v.results,
     link_clicks: v.link_clicks,
@@ -3493,12 +3604,12 @@ async function _computeAnalysisSummaryForDateRange(
   const demoRows = await selectAllRows(
     "demographic_performance",
     (q) => q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end),
-    "date_start, age, gender, spend, impressions, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value",
+    "date_start, age, gender, result_type, spend, impressions, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value",
   );
 
   const demoMap = new Map<string, { spend: number; impressions: number | null; results: number; link_clicks: number; adds_to_cart: number | null; checkouts_initiated: number | null; purchases: number | null; adds_to_cart_value: number | null }>();
   for (const r of demoRows ?? []) {
-    const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}`;
+    const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}|${String((r as any).result_type ?? "unknown")}`;
     const d   = demoMap.get(key) ?? { spend: 0, impressions: null, results: 0, link_clicks: 0, adds_to_cart: null, checkouts_initiated: null, purchases: null, adds_to_cart_value: null };
     d.spend       += Number((r as any).spend ?? 0);
     d.results     += Number((r as any).results ?? 0);
@@ -3514,10 +3625,12 @@ async function _computeAnalysisSummaryForDateRange(
     demoMap.set(key, d);
   }
   const demographic_rows: AnalysisSummaryDemoRow[] = Array.from(demoMap.entries()).map(([key, v]) => {
-    const [age, gender] = key.split("|");
+    const [age, gender, resultType] = key.split("|");
     return {
       age: age ?? "",
       gender: gender ?? "",
+      result_type: resultType ?? "unknown",
+      intent_class: intentClassOf(resultType ?? "unknown"),
       spend: v.spend,
       impressions: v.impressions,
       results: v.results,
@@ -3533,13 +3646,13 @@ async function _computeAnalysisSummaryForDateRange(
   const placRows = await selectAllRows(
     "placement_performance",
     (q) => q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end),
-    "date_start, placement, spend, impressions, link_clicks, results, tracking_basis",
+    "date_start, placement, result_type, spend, impressions, link_clicks, results, tracking_basis",
   );
 
   const placMap = new Map<string, { spend: number; impressions: number; link_clicks: number; results: number }>();
   for (const r of placRows ?? []) {
     if ((r as any).tracking_basis === "conversion") continue;
-    const key = String((r as any).placement ?? "");
+    const key = `${String((r as any).placement ?? "")}|${String((r as any).result_type ?? "unknown")}`;
     const p   = placMap.get(key) ?? { spend: 0, impressions: 0, link_clicks: 0, results: 0 };
     p.spend       += Number((r as any).spend ?? 0);
     p.impressions += Number((r as any).impressions ?? 0);
@@ -3547,8 +3660,10 @@ async function _computeAnalysisSummaryForDateRange(
     p.results     += Number((r as any).results ?? 0);
     placMap.set(key, p);
   }
-  const placement_rows: AnalysisSummaryPlacementRow[] = Array.from(placMap.entries()).map(([placement, v]) => ({
-    placement,
+  const placement_rows: AnalysisSummaryPlacementRow[] = Array.from(placMap.entries()).map(([key, v]) => ({
+    placement: key.split("|")[0] ?? "",
+    result_type: key.split("|")[1] ?? "unknown",
+    intent_class: intentClassOf(key.split("|")[1] ?? "unknown"),
     spend:       roundN(v.spend),
     impressions: v.impressions,
     link_clicks: v.link_clicks,
@@ -3659,6 +3774,8 @@ export type DailySeriesPoint = {
   ctr_link_pct: number | null;     // link_clicks / impressions
   cvr_link_pct: number | null;     // results / link_clicks
   ads: number;                     // ad rows contributing to this day
+  /** Results per Meta result type for the day — scope before reading `results` as one thing. */
+  results_by_event: Record<string, number>;
 };
 
 export type DailySeriesResult = {
@@ -3703,7 +3820,7 @@ export async function getAccountDailySeries(
         .lte("date_start", end)
         .order("date_start")
         .order("id"),
-    "date_start, spend, impressions, reach, clicks_all, link_clicks, results",
+    "date_start, spend, impressions, reach, clicks_all, link_clicks, results, result_type",
   );
   return aggregateDailySeries(rows ?? []);
 }
@@ -3735,6 +3852,13 @@ export function aggregateDailySeries(rows: Record<string, unknown>[]): DailySeri
       const impressions = sumOrNull(pick("impressions"));
       const linkClicks = sumOrNull(pick("link_clicks"));
       const results = sumOrNull(pick("results"));
+      const resultsByEvent: Record<string, number> = {};
+      for (const r of dayRows) {
+        const v = r["results"];
+        if (v == null || !Number.isFinite(Number(v))) continue;
+        const event = typeof r["result_type"] === "string" && r["result_type"] !== "" ? (r["result_type"] as string) : "unknown";
+        resultsByEvent[event] = (resultsByEvent[event] ?? 0) + Number(v);
+      }
       return {
         day,
         spend,
@@ -3747,6 +3871,7 @@ export function aggregateDailySeries(rows: Record<string, unknown>[]): DailySeri
         ctr_link_pct: ratio(linkClicks, impressions, 100),
         cvr_link_pct: ratio(results, linkClicks, 100),
         ads: dayRows.length,
+        results_by_event: resultsByEvent,
       };
     });
 

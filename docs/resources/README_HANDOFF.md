@@ -63,6 +63,22 @@ beside the classification, never a gate; the variable drill-down joins through t
 the IAP Library's `KpiTileRow` is the one metric-header pattern (Avatars segment cards and DNA family
 cards are the open candidates). Shipped as PR #182 and verified live.
 
+**Result events and intent classes (2026-09-03, later).** Spec
+`docs/specs/result-events-and-intent-classes.md`; change log entries 1–3. Every aggregate the
+engine writes is now one result event; concepts are judged against a same-event baseline, awareness
+on click-through; the seed carries `result_events` and `intent_summary`; the client reads one
+account-level result scope on every analysis surface (Conversion · Consideration · Awareness ·
+Unplaced; "All conversions" blends terminal outcomes only). A re-run moves an account onto the
+new grain. Open: report export and deep-dive print one blended cost; creative-evidence's
+synthesised cell row.
+
+**Triple pass, shipped (2026-09-03).** Register §14, last entries. The live pass found that the
+reconciliation control was read from the file's period rather than the run window; `buildTruth` now
+takes the window and records every rejected control with its reason. The friction audit's fixes (24 px
+hit targets, neutral unmapped-card border, phone wrap) went with it. Shipped as PR #183 (`61d0e4e`)
+and verified live by bundle hash and chunk md5. The tester account needs a window-exact Ad Summary
+export before it reconciles per ad again.
+
 **Shipped to app.metrix.ad (2026-09-02).** PR #174 (navigation overhaul, creative components,
 Phase 4 plan) merged to `main` at `5cdaaa5`, the workspace merged `main`, and the publish was
 verified by bundle hash and content marker (register §12). Validation of the shipped build is

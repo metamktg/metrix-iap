@@ -211,9 +211,11 @@ export function buildVariableSegmentPerformance(args: {
     (byVariable.get(k) ?? byVariable.set(k, []).get(k)!).push(e);
   }
 
-  // Account baselines per (breakdown, segment, result type) and overall.
+  // Account baselines per (breakdown, segment, result type) and overall PER
+  // RESULT TYPE: the interaction index's fourth term was the one type-blended
+  // denominator in an otherwise event-scoped calculation (2026-09-03).
   const segmentBaseline = new Map<string, { results: number; impressions: number }>();
-  const overall = { results: 0, impressions: 0 };
+  const overallByType = new Map<string, { results: number; impressions: number }>();
   const obsByAd = new Map<string, Observation[]>();
   for (const o of args.observations) {
     if (!breakdowns.includes(o.breakdown)) continue;
@@ -226,8 +228,10 @@ export function buildVariableSegmentPerformance(args: {
     segmentBaseline.set(sk, b);
   }
   for (const t of args.adTotals.values()) {
-    overall.results += t.metrics["results"] ?? 0;
-    overall.impressions += t.metrics["impressions"] ?? 0;
+    const o = overallByType.get(t.result_type) ?? { results: 0, impressions: 0 };
+    o.results += t.metrics["results"] ?? 0;
+    o.impressions += t.metrics["impressions"] ?? 0;
+    overallByType.set(t.result_type, o);
   }
 
   const out: VariableSegmentRow[] = [];
@@ -308,8 +312,9 @@ export function buildVariableSegmentPerformance(args: {
       const variableAll = allByType.get(g.result_type);
       const variableTotals = variableAll ? (() => { const t = { ...variableAll.direct }; addMetrics(t, variableAll.contextual); return t; })() : null;
       const seg = segmentBaseline.get([g.breakdown, g.segment_key, g.result_type].join(""));
+      const overall = overallByType.get(g.result_type);
       const ix =
-        variableTotals && seg
+        variableTotals && seg && overall
           ? interactionIndex({
               joint: { numerator: results, denominator: impressions },
               segment: { numerator: seg.results, denominator: seg.impressions },

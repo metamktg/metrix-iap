@@ -9,6 +9,8 @@
 // second, so it belongs on the MST overview rather than duplicated onto
 // the Strategy/Avatars ICP page.
 
+import { useResultScope } from "@/hooks/useResultScope";
+import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -453,7 +455,11 @@ export function MstCommandCenter() {
     "mst-command-center", adAccountId, analysisRunsData?.runs,
   );
   const { filterByRun } = useCellRunScope(analysis, runSelection);
-  const cellRows = useMemo(() => filterByRun(analysis?.performance_by_cell ?? []), [analysis, filterByRun]);
+  // One result scope for every analysis surface: avatar-column KPIs are
+  // summed over the scope's event(s) only.
+  const resultScope = useResultScope(account, adAccountId, analysis?.performance_by_cell.map((r) => r["Result type"]));
+  const { scopeRows } = resultScope;
+  const cellRows = useMemo(() => filterByRun(scopeRows(analysis?.performance_by_cell ?? [], (r) => r["Result type"])), [analysis, filterByRun, scopeRows]);
   const scopedAnalysis = useMemo(
     () => (analysis ? { ...analysis, performance_by_cell: cellRows } : analysis),
     [analysis, cellRows],
@@ -556,6 +562,7 @@ export function MstCommandCenter() {
                 />
               }
             />
+            <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
             <StageLoopHub stages={buildLoopStages(status)} current="mst" />
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">

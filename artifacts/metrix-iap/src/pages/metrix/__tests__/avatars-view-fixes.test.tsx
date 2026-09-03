@@ -102,6 +102,7 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
+import { buildResultScopes, defaultScopeId, eventInputsFromAccount, resolveScope, scopeRows } from "@/lib/result-scope";
 import { AvatarsView } from "../strategy/AvatarsView";
 import type { AnalysisRun } from "@workspace/api-client-react";
 
@@ -204,7 +205,20 @@ const timePoorProfile = icpProfilesRaw.find((p) => p.profile_id === TIME_POOR_PR
 if (!timePoorProfile?.performance_data) throw new Error(`fixture is missing ${TIME_POOR_PROFILE_ID}'s performance_data`);
 const ORIGINAL_ALL_TIME_SPEND = timePoorProfile.performance_data.spend;
 
-const C2B_ROWS = bookster.iap.analysis.performance_by_cell.filter((r: { cell_id: string }) => r.cell_id === "C2B");
+// The view reads its cells under the account's landing result scope
+// (one event, or the allowed blend of terminal conversions — never every
+// event summed together), so the scoped figures are computed over the same
+// rows the page lands on: C2B's rows under that scope.
+const LANDING_SCOPE = (() => {
+  const built = buildResultScopes(eventInputsFromAccount(bookster as unknown as Parameters<typeof eventInputsFromAccount>[0]));
+  const present = (bookster.iap.analysis.performance_by_cell as { "Result type": string }[]).map((r) => r["Result type"]);
+  return resolveScope(built.scopes, defaultScopeId(built.groups, present));
+})();
+const C2B_ROWS = scopeRows(
+  bookster.iap.analysis.performance_by_cell.filter((r: { cell_id: string }) => r.cell_id === "C2B") as { "Result type": string; "Amount spent (USD)": number; Results: number; "Link clicks": number }[],
+  LANDING_SCOPE,
+  (r) => r["Result type"],
+);
 const SCOPED_SPEND = C2B_ROWS.reduce((s: number, r: { "Amount spent (USD)": number }) => s + r["Amount spent (USD)"], 0);
 const SCOPED_RESULTS = C2B_ROWS.reduce((s: number, r: { Results: number }) => s + r.Results, 0);
 const SCOPED_LINK_CLICKS = C2B_ROWS.reduce((s: number, r: { "Link clicks": number }) => s + r["Link clicks"], 0);

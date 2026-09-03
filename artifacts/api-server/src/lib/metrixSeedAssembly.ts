@@ -13,6 +13,7 @@
 // Nothing is fabricated; gap tables (data_quality, variable_registry) are
 // passed through so the client can surface them.
 
+import { classifyResultEvent, INTENT_CLASS_ORDER, type IntentClass } from "./resultEvents";
 import {
   creativeInputFromMetadata,
   mergeCreativeInputs,
@@ -225,6 +226,108 @@ const overrideEventTotals = (byEvent: Record<string, Row>, ov: Row | null | unde
   if (ov["impressions"] != null) byEvent[event]["impressions"] = Number(ov["impressions"]);
   if (ov["purchases"] != null) byEvent[event]["results"] = Number(ov["purchases"]);
 };
+
+// ─── Result events (per event, per intent class) ───────────────────────
+
+export interface SeedResultEvent {
+  /** Meta's own string, the key of bottom_line_totals. */
+  raw: string;
+  event_key: string;
+  label: string;
+  intent_class: IntentClass | null;
+  scale: "communication" | "cost_per_result" | null;
+  spend: number;
+  results: number;
+  impressions: number;
+  reach: number;
+  link_clicks: number;
+  clicks_all: number;
+  /** Distinct ads (Meta ad id, else name) optimised towards this event. */
+  ads: number;
+  cost_per_result: number | null;
+  spend_share_pct: number;
+}
+
+export interface SeedIntentClassSummary {
+  intent_class: IntentClass;
+  scale: "communication" | "cost_per_result";
+  spend: number;
+  results: number;
+  impressions: number;
+  link_clicks: number;
+  ads: number;
+  events: string[];
+  spend_share_pct: number;
+}
+
+/**
+ * Per-event and per-class rollups from ad-day rows. `dominant_intent` is
+ * the class that carries the most spend, in conversion → consideration →
+ * awareness order on a tie, or null when no row could be placed. Unplaced
+ * rows (unknown / custom result types) appear in `result_events` with a
+ * null class so their spend is never hidden, and in `unplaced_spend`.
+ */
+export function buildResultEventSummary(rows: readonly Row[]): {
+  result_events: SeedResultEvent[];
+  intent_summary: { classes: SeedIntentClassSummary[]; dominant_intent: IntentClass | null; unplaced_spend: number; total_spend: number };
+} {
+  type Agg = { spend: number; results: number; impressions: number; reach: number; link_clicks: number; clicks_all: number; ads: Set<string> };
+  const byEvent = new Map<string, Agg>();
+  let totalSpend = 0;
+  for (const r of rows) {
+    const raw = typeof r["result_type"] === "string" && String(r["result_type"]).trim() !== "" ? String(r["result_type"]).trim() : "unknown";
+    const a = byEvent.get(raw) ?? { spend: 0, results: 0, impressions: 0, reach: 0, link_clicks: 0, clicks_all: 0, ads: new Set<string>() };
+    a.spend += Number(r["spend"] ?? 0);
+    a.results += Number(r["results"] ?? 0);
+    a.impressions += Number(r["impressions"] ?? 0);
+    a.reach += Number(r["reach"] ?? 0);
+    a.link_clicks += Number(r["link_clicks"] ?? 0);
+    a.clicks_all += Number(r["clicks_all"] ?? 0);
+    const adKey = String(r["meta_ad_id"] ?? "").trim() || String(r["ad_name"] ?? "").trim();
+    if (adKey) a.ads.add(adKey);
+    totalSpend += Number(r["spend"] ?? 0);
+    byEvent.set(raw, a);
+  }
+  const pct = (n: number) => (totalSpend > 0 ? Math.round((n / totalSpend) * 10000) / 100 : 0);
+  const result_events: SeedResultEvent[] = [...byEvent.entries()]
+    .map(([raw, a]) => {
+      const c = classifyResultEvent(raw);
+      return {
+        raw,
+        event_key: c.key,
+        label: c.key === "custom" ? raw : c.label,
+        intent_class: c.intent,
+        scale: c.scale,
+        spend: round(a.spend),
+        results: a.results,
+        impressions: a.impressions,
+        reach: a.reach,
+        link_clicks: a.link_clicks,
+        clicks_all: a.clicks_all,
+        ads: a.ads.size,
+        cost_per_result: a.results > 0 ? round(a.spend / a.results) : null,
+        spend_share_pct: pct(a.spend),
+      };
+    })
+    .sort((x, y) => y.spend - x.spend || x.raw.localeCompare(y.raw));
+  const classAgg = new Map<IntentClass, SeedIntentClassSummary>();
+  let unplaced = 0;
+  for (const e of result_events) {
+    if (e.intent_class === null) { unplaced += e.spend; continue; }
+    const c = classAgg.get(e.intent_class) ?? {
+      intent_class: e.intent_class, scale: e.scale!, spend: 0, results: 0, impressions: 0, link_clicks: 0, ads: 0, events: [], spend_share_pct: 0,
+    };
+    c.spend = round(c.spend + e.spend); c.results += e.results; c.impressions += e.impressions; c.link_clicks += e.link_clicks; c.ads += e.ads;
+    c.events.push(e.raw);
+    classAgg.set(e.intent_class, c);
+  }
+  const classes = INTENT_CLASS_ORDER.filter((k) => classAgg.has(k)).map((k) => ({ ...classAgg.get(k)!, spend_share_pct: pct(classAgg.get(k)!.spend) }));
+  const dominant = classes.length > 0 ? [...classes].sort((a, b) => b.spend - a.spend || INTENT_CLASS_ORDER.indexOf(a.intent_class) - INTENT_CLASS_ORDER.indexOf(b.intent_class))[0]!.intent_class : null;
+  return {
+    result_events,
+    intent_summary: { classes, dominant_intent: dominant, unplaced_spend: round(unplaced), total_spend: round(totalSpend) },
+  };
+}
 
 // ─── generic per-account assembly ─────────────────────────────────────
 
@@ -563,6 +666,12 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     concept_rollup: conceptPerformance.map((r) => ({
       book: r["book"],
       concept: r["concept"],
+      // Result-event grain (2026-09-03): one row per event; null on rows
+      // written before the engine split by event — "not split", kept.
+      result_type: r["result_type"] ?? null,
+      intent_class: r["intent_class"] ?? null,
+      lift_basis: r["lift_basis"] ?? null,
+      impressions: r["impressions"] === null || r["impressions"] === undefined ? null : Number(r["impressions"]),
       date_start: r["date_start"],
       date_end: r["date_end"],
       manual_analysis_run_id: r["manual_analysis_run_id"] ?? null,
@@ -906,6 +1015,11 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     // Objectives DERIVED by the analysis run; legacy single-cohort
     // rows resolve to their one objective — never a silent default.
     objectives: resolveAccountObjectives(account),
+    // Result events and intent classes, DERIVED from the rows (owner
+    // direction 2026-09-03): what this account's ads were optimised
+    // towards, each on its own scale. Read-time context for the KPI
+    // catalogs and rankings — never a property an operator sets.
+    ...buildResultEventSummary(adPerformance),
     facebook_page_dp_url: account["facebook_page_dp_url"] ?? null,
     source_status: account["source_status"] ?? undefined,
     // Numeric Meta ad account id (no "act_" prefix) for Ads Manager deep

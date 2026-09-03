@@ -8,6 +8,8 @@
 // Data sources: account.iap.intelligence (summary + concept_scores +
 // failure_patterns) with fallback to optimization_loop recommendation_cards.
 
+import { useResultScope } from "@/hooks/useResultScope";
+import { scopeRollupRows } from "@/lib/result-scope";
 import { useMemo } from "react";
 import { normalizeMetricsInProse } from "@/lib/normalize";
 import { fmtDayRange } from "@/lib/normalize";
@@ -362,6 +364,7 @@ export function FindingsView() {
   const reportMeta = intel?.summary?.report_metadata;
 
   const analysis = getAnalysisData(seed, accountId);
+  const resultScope = useResultScope(getAdAccount(seed, accountId), accountId);
   const conceptScores: ConceptScore[] = useMemo(() => {
     // Primary source: concept_intelligence (importer-authored). Manual
     // accounts never get those rows — but the manual analysis engine
@@ -371,7 +374,7 @@ export function FindingsView() {
     // work was persisted, serialized, and rendered nowhere.
     const raw: ConceptScore[] = (intel?.concept_scores?.length ?? 0) > 0
       ? intel!.concept_scores!
-      : scopeToRun(analysis?.concept_rollup ?? [], analysis?.latest_analysis_run_id ?? null).map((r) => ({
+      : scopeRollupRows(scopeToRun(analysis?.concept_rollup ?? [], analysis?.latest_analysis_run_id ?? null), resultScope.scope).map((r) => ({
           book: r.book,
           concept_code: r.concept,
           mapped_in_library: r.mapped_in_library,
@@ -391,7 +394,7 @@ export function FindingsView() {
       if (b.cpa == null) return -1;
       return a.cpa - b.cpa;
     });
-  }, [intel, analysis]);
+  }, [intel, analysis, resultScope.scope]);
 
   const failurePatterns: FailurePattern[] = intel?.failure_patterns ?? [];
 

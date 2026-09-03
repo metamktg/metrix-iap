@@ -8,6 +8,8 @@
 // metrix-optimization-loop skill runs that manually today); the caveat
 // below states that honestly rather than fabricating a re-weighting run.
 
+import { useResultScope } from "@/hooks/useResultScope";
+import { scopeRollupRows } from "@/lib/result-scope";
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -55,6 +57,7 @@ export function MstDirectionView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const [filter, setFilter] = useState<ScalingBucket | "all">("all");
+  const resultScope = useResultScope(account, adAccountId);
 
   return (
     <ModuleScopeGate section={SECTION} title="Direction" account={account}>
@@ -62,7 +65,8 @@ export function MstDirectionView() {
         const acct = account!;
         const strategy = getStrategyData(seed, adAccountId);
         const playbook = strategy?.scaling_playbook ?? null;
-        const rollup = getAnalysisData(seed, adAccountId)?.concept_rollup ?? [];
+        // Result scope: one event (or the allowed blend); pre-split rows kept.
+        const rollup = scopeRollupRows(getAnalysisData(seed, adAccountId)?.concept_rollup ?? [], resultScope.scope);
         const subtitle = "Scale / optimize / validate / avoid — this account's current playbook applied to every measured concept.";
 
         if (!playbook) {

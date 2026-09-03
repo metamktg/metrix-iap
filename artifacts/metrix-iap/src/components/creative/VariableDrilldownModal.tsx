@@ -10,6 +10,9 @@
 // The relationship is shown, never upgraded: ad-name tokens and
 // deconstructed variables are contextual evidence on the ad.
 
+import { ResultScopeTag } from "@/components/analysis/ResultScopeBar";
+import type { ResultScope } from "@/lib/result-scope";
+import { classifyResultEvent } from "@/lib/resultEvents";
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import { ChevronRight, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
@@ -48,6 +51,16 @@ function bandSignal(row: VariableSegmentRollup): SegmentSignal {
 
 /** What a variable is judged on first: what it cost, what it returned, per result, across how many ads. */
 const VARIABLE_TILE_DEFAULTS = ["spend", "results", "cpa", "unique_ads"];
+/** An awareness variable is never judged on cost per result: spend, the event's own count, the clicks it drew, the ads. */
+const AWARENESS_TILE_DEFAULTS = ["spend", "results", "link_clicks", "unique_ads"];
+
+/** The scale a set of result types is judged on when the page passed no scope: communication only when EVERY type is awareness. */
+function scaleOfTypes(types: readonly string[]): "communication" | "cost_per_result" | null {
+  if (types.length === 0) return null;
+  const scales = new Set(types.map((t) => classifyResultEvent(t).scale));
+  if (scales.size === 1 && scales.has("communication")) return "communication";
+  return scales.has("cost_per_result") ? "cost_per_result" : null;
+}
 
 const SEGMENT_SOURCE_LABEL = {
   cells: "scoped to this variable's cells",
@@ -63,6 +76,7 @@ export function VariableDrilldownModal({
   /** Metric-filtered v3 rows so header totals match the page selection. */
   variableRows,
   selectedResultTypes,
+  resultScope,
   onBack,
 }: {
   open: boolean;
@@ -73,6 +87,8 @@ export function VariableDrilldownModal({
   variableRows: VariablePerformanceRow[];
   /** The page's result-type selection — scopes cell/segment sections too. */
   selectedResultTypes?: string[] | null;
+  /** The page's result scope, for the scale the header tiles are judged on (communication hides cost per result). */
+  resultScope?: ResultScope | null;
   /** If set, a ← Back button appears in the modal header. */
   onBack?: () => void;
 }) {
@@ -105,7 +121,12 @@ export function VariableDrilldownModal({
     [analysis, mst, seed, adAccountId]
   );
 
-  const catalog = useMemo(() => (data?.totals ? buildVariableMetricCatalog({ ...data.totals, resultTypes: data.totals.resultTypes.map(eventLabel) }) : []), [data]);
+  const scale = resultScope?.scale ?? (data?.totals ? scaleOfTypes(data.totals.resultTypes) : null);
+  const catalog = useMemo(
+    () => (data?.totals ? buildVariableMetricCatalog({ ...data.totals, scale }) : []),
+    [data, scale],
+  );
+  const tileDefaults = scale === "communication" ? AWARENESS_TILE_DEFAULTS : VARIABLE_TILE_DEFAULTS;
 
   if (!code || !data) return null;
 
@@ -135,6 +156,7 @@ export function VariableDrilldownModal({
             <DialogTitle className={cn(DIALOG.title, "flex items-center gap-2 flex-wrap")} data-testid="title-variable-drilldown">
               {readableVariables(code)}
               <span className="text-caption font-normal text-muted-foreground/75 border border-border/30 px-1.5 py-0.5 rounded">{code}</span>
+              {resultScope && <ResultScopeTag scope={resultScope} />}
               {data.evidenceState && <EvidenceChip state={data.evidenceState} testId="variable-evidence-chip" />}
             </DialogTitle>
             <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
@@ -147,7 +169,7 @@ export function VariableDrilldownModal({
             {/* ── Header KPIs: the platform's configurable tile row over this variable's own totals ── */}
             {catalog.length > 0 ? (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2" data-testid="variable-kpi-tiles">
-                <KpiTileRow viewKey="variable-drilldown" catalog={catalog} tileCount={4} primaryFirst={false} defaults={VARIABLE_TILE_DEFAULTS} />
+                <KpiTileRow viewKey={scale === "communication" ? "variable-drilldown:awareness" : "variable-drilldown"} catalog={catalog} tileCount={4} primaryFirst={false} defaults={tileDefaults} />
               </div>
             ) : (
               <p className={cn(TYPE.caption, "text-muted-foreground/75 leading-relaxed")}>

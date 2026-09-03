@@ -187,7 +187,11 @@ export function computeVariableDrilldown(
   const { analysis, mst, variableRows, selectedResultTypes } = opts;
 
   // ── Header totals: the import's own variable-level rows ─────────────
-  const v3Rows = variableRows.filter((r) => r.variable_id === code);
+  // Rows are (variable × result type × run); inside the page's result
+  // scope only, so the header never sums a ThruPlay row into a purchase.
+  const v3Rows = variableRows.filter(
+    (r) => r.variable_id === code && (!selectedResultTypes || selectedResultTypes.includes(r["Result type"])),
+  );
   let totals: VariableTotals | null = null;
   if (v3Rows.length > 0) {
     const spend = v3Rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
