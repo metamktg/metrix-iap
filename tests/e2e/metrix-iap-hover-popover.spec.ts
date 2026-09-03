@@ -7,7 +7,7 @@
 //   2. The "Diagnose full breakdown" footer link inside the popover opens the
 //      KpiDrilldownModal dialog (data-testid="kpi-drilldown-modal", header
 //      eyebrow "Metric breakdown").
-//   3. The CPA (blended) tile — popover header shows the correct metric label.
+//   3. The Cost per conversion (blended) tile — popover header shows the correct metric label.
 //   4. A result-event tile (Mobile app installs) — popover header shows the
 //      event label.
 //   5. KpiDrilldownModal concept breakdown — standard metric (spend): the
@@ -17,8 +17,10 @@
 //   7. KpiDrilldownModal avatar breakdown: selecting the "avatar" dimension and
 //      Table view renders ≥1 age-group segment row — catches silent empty
 //      breakdown regressions.
-//   8. Result-event × avatar restriction: selecting the "avatar" breakdown for
-//      a result-event metric renders the restriction notice and no table.
+//   8. Result-event × avatar: since the result-event grain the demographic
+//      rows carry a Result type, so selecting the "avatar" breakdown for a
+//      result-event metric renders per-event segment rows and NO restriction
+//      notice (rows written before the split carry no type and are kept).
 //   13a. KpiDrilldownModal placement breakdown — spend metric: the metric column
 //      shows dollar values ("$"), never "n/a".
 //   13b. KpiDrilldownModal placement breakdown — link_ctr metric: the metric
@@ -313,13 +315,13 @@ async function main() {
       },
     );
 
-    // ── Test 6: CPA (blended) tile popover ────────────────────────────────
+    // ── Test 6: Cost per conversion (blended) tile popover ────────────────────────────────
     // CPA uses amber bar colour and sorts ascending (lower is better).
     // This test confirms the popover renders for the CPA metric and that the
     // header shows the correct label.  The bookster fixture has no
     // cell_performance_rows so the fallback path is exercised.
     await test(
-      '"CPA (blended)" tile: hover popover shows correct metric label',
+      '"Cost per conversion (blended)" tile: hover popover shows correct metric label',
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -347,7 +349,7 @@ async function main() {
           // Find the CPA tile button.
           const tileBtn = page
             .locator("button")
-            .filter({ hasText: "CPA (blended)" })
+            .filter({ hasText: "Cost per conversion (blended)" })
             .first();
           await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
           await tileBtn.hover();
@@ -366,8 +368,8 @@ async function main() {
           await headerLabel.waitFor({ state: "visible", timeout: 3_000 });
           const headerText = (await headerLabel.textContent()) ?? "";
           assert(
-            headerText.includes("CPA (blended)"),
-            `Popover header must show "CPA (blended)", got: "${headerText}"`,
+            headerText.includes("Cost per conversion (blended)"),
+            `Popover header must show "Cost per conversion (blended)", got: "${headerText}"`,
           );
 
           // Chart or stat fallback must be present.
@@ -604,11 +606,11 @@ async function main() {
     );
 
     // ── Test 9: CPA 'avg' reference line appears with ≥2 concept rows ────────
-    // Same injection strategy as Test 8 but for the CPA (blended) tile.
+    // Same injection strategy as Test 8 but for the Cost per conversion (blended) tile.
     // cpaBlended = total_spend / total_results — bookster's campaign_summary
     // already has both so the tile value is non-null; refValue is non-null too.
     await test(
-      '"CPA (blended)" tile: avg reference line appears in chart when ≥2 concept rows exist',
+      '"Cost per conversion (blended)" tile: avg reference line appears in chart when ≥2 concept rows exist',
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -712,7 +714,7 @@ async function main() {
 
           const tileBtn = page
             .locator("button")
-            .filter({ hasText: "CPA (blended)" })
+            .filter({ hasText: "Cost per conversion (blended)" })
             .first();
           await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
           await tileBtn.hover();
@@ -1140,14 +1142,14 @@ async function main() {
       },
     );
 
-    // ── Test 13: result-event × avatar restriction notice ─────────────────────
-    // result:* metrics can't be honestly scoped to the avatar dimension (the
-    // demographic export carries no result-type column — see
-    // dimensionMetricRestriction in kpiBreakdown.ts).  Selecting the "avatar"
-    // breakdown for a result-event metric must render the restriction notice
-    // and NO table.
+    // ── Test 13: result-event × avatar breakdown is scoped per event ──────────
+    // Since the result-event grain, demographic rows are (age × gender × event)
+    // and the avatar dimension is allowed for result:* metrics (see
+    // dimensionMetricRestriction in kpiBreakdown.ts — rows written before the
+    // split carry no type and are kept).  Selecting the "avatar" breakdown for
+    // a result-event metric must render segment rows and NO restriction notice.
     await test(
-      "KpiDrilldownModal: result-event metric + avatar breakdown shows restriction notice and no table",
+      "KpiDrilldownModal: result-event metric + avatar breakdown renders per-event segment rows and no restriction notice",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -1236,27 +1238,28 @@ async function main() {
           // Open the drill-down for the result-event tile.
           const modal = await openDrilldown(page, "Mobile app installs");
 
-          // Select the "avatar" breakdown — result:* metrics can't be scoped to
-          // the demographic dimension, so a restriction notice must render.
+          // Select the "avatar" breakdown — demographic rows are scoped to the
+          // tile's event (or kept when they carry no type), so rows render.
           await modal.getByLabel("Breakdown").selectOption("avatar");
+          await toTableView(page);
 
-          // The restriction notice must appear (dimensionMetricRestriction copy).
-          const bodyText = (await modal.textContent()) ?? "";
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          await table.waitFor({ state: "visible", timeout: 8_000 });
+          const rowCount = await table.locator("tbody tr").count();
           assert(
-            bodyText.includes("can't be honestly scoped to this dimension"),
-            'The restriction notice ("can\'t be honestly scoped to this dimension") ' +
-              "must appear for a result-event metric under the avatar breakdown. " +
-              `Got modal text: "${bodyText.slice(0, 300)}"`,
+            rowCount >= 1,
+            `The avatar breakdown must render ≥1 segment row for a result-event ` +
+              `metric, but found ${rowCount}.`,
           );
 
-          // No table must render while the restriction is active.
-          const tableCount = await modal
-            .locator('[data-testid="kpi-drilldown-table"]')
-            .count();
+          // The old restriction notice must NOT appear — the avatar dimension
+          // is honestly scoped per event now.
+          const bodyText = (await modal.textContent()) ?? "";
           assert(
-            tableCount === 0,
-            `No kpi-drilldown-table must render for a result-event metric under the ` +
-              `avatar breakdown, but found ${tableCount}.`,
+            !bodyText.includes("can't be honestly scoped to this dimension"),
+            'The restriction notice ("can\'t be honestly scoped to this dimension") ' +
+              "must not appear for a result-event metric under the avatar breakdown. " +
+              `Got modal text: "${bodyText.slice(0, 300)}"`,
           );
         } finally {
           await ctx.close();
@@ -1479,7 +1482,7 @@ async function main() {
     );
 
     // ── Test 15c: KpiDrilldownModal avatar breakdown — cpa_blended metric ─────
-    // Opens KpiDrilldownModal for the "CPA (blended)" tile, selects the "avatar"
+    // Opens KpiDrilldownModal for the "Cost per conversion (blended)" tile, selects the "avatar"
     // breakdown, and asserts the metric column shows a dollar value ("$").  The
     // bookster demographic rows carry Results > 0 so spend ÷ results yields a
     // real CPA for every avatar segment.
@@ -1491,7 +1494,7 @@ async function main() {
         });
         const page = await ctx.newPage();
         try {
-          // "CPA (blended)" is not a default tile — inject via localStorage
+          // "Cost per conversion (blended)" is not a default tile — inject via localStorage
           // so the tile is selected before the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
@@ -1509,8 +1512,8 @@ async function main() {
             .getByText("Account Totals", { exact: false })
             .waitFor({ state: "visible", timeout: 20_000 });
 
-          // Open the drill-down for the "CPA (blended)" tile.
-          const modal = await openDrilldown(page, "CPA (blended)");
+          // Open the drill-down for the "Cost per conversion (blended)" tile.
+          const modal = await openDrilldown(page, "Cost per conversion (blended)");
 
           // Select the "avatar" breakdown, then switch to Table view.
           await modal.getByLabel("Breakdown").selectOption("avatar");
