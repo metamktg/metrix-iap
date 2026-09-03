@@ -78,6 +78,11 @@ session picking up phase work:
 - `CARRY_FORWARD_REGISTER.md` — the E6 register, reconciled against live code. Every item
   carries a verdict (`[shipped]` / `[open]` / `[decision]`) established by reading the file it
   names. Update an item's status in place as you work it; never drop one silently.
+- `METRIX_UI_LIFT_MASTER_PLAN_2026-09.md` — the UI/UX lift master plan and session
+  reconciliation: a verdict per task this session claimed (with the file or finding that proves or
+  disproves it), the bug register from four audits with a status per finding, the module-by-module
+  lift to demo standard, the navigation plan, the demo-readiness bar and the handoff. Read its §0
+  before trusting a verdict; every number in it names the command that produced it.
 - `METRIX_UI_REFACE_REGISTER_2026-08.md` — the UI reface register. What the design pass has
   closed, what is open, the Watermelon component mapping, and the phased plan. Every claim in it
   is produced by a re-runnable command (`check:ui-inventory`, `check:field-coverage`, and the

@@ -697,3 +697,57 @@ Playwright for a headless shell that is not installed here — which is a runner
 test result. **Next run on any account moves it onto the result-event grain**; rows written before
 carry a null result type and read as "not split by event" everywhere.
 
+**`[shipped]` The UI lift pass: rail-and-map sidebar, the hover chart that no one could see, optional inputs that never blank a surface, one loop shape, the Library logs everything (2026-09-03, later).**
+Owner direction (verbatim intent in `METRIX_UI_LIFT_MASTER_PLAN_2026-09.md`): the UI is
+regressing; reconcile every stated task against the code; walk the product for bugs and for
+bugs that fixes create; no friction, minimal warnings, nothing withheld because an optional
+input is missing; everything logged in the IAP Library; the sidebar expands rightwards on a
+dwell as a flow chart in the Watermelon aesthetic with no expand/collapse; the KPI hover bar
+chart's dark-blue formatting fixed; every module premium.
+
+**Method.** Four read-only audits ran against the live tree first (optional-input gates and
+warning noise — 17 findings; navigation — 20 findings and a 17-click first-run path with five
+guess points; Library completeness — 16 gaps; charts and hovers — every surface, one root
+cause). Their registers are §3 of the master plan; each finding carries the file:line as found
+and its status. The session's 48 tasks were re-verified against the tree: 33 held, 10 partial
+(every gap closed or carried with its phase), 2 superseded by this pass, 1 open (#38).
+
+**Root causes worth knowing.** (1) The KPI hover chart painted its bars with
+`hsl(var(--interactive))` — a token that does not exist — so the SVG fill fell back to black
+over the navy card, at three sites. (2) The hover card was never portaled, so the tile's
+`overflow: hidden` clipped it to a 2px stripe; Playwright's visibility check ignores overflow
+clipping, which is why the e2e spec passed on a popover no reader ever saw. (3) The run and the
+onboarding Review demanded both pivot exports while the server needed one delivery report.
+(4) Four loop shapes shipped at once and none offered Action. (5) Top performers were selected
+by an `onb_initiate_checkout` literal.
+
+**What shipped.** Change log entry 6 (the sidebar); the chart theme (`chartTokens` /
+`chartChrome`: series tokens, 11/12 px chart type, one `ChartTooltip`, no-animation marks) on
+six chart surfaces and the `hover-card` base; `LOOP_STAGES` as the one loop source with Action
+offered and `?from=` surviving the Creative and MST command centers; the gates register closed
+(§3.1); the Library register closed where it composed (§3.3: dominant-event top performers,
+tiles and funnel from the events present, `intent_class` in the seed, provenance and evidence
+columns, "Unranked" with the reason, copy components in the Ad copy tab); CTR/CPM absence a note.
+
+**Verification (this head).** Client `vitest run`: 200 files / 2,472 tests, green in isolation
+(two route-crawl cases exceeded the 5 s budget only while three suites ran at once — 151/151 on
+re-run). Server CI list: 35 files / 534. Scripts: 9 files / 121. Gates: token-colors,
+type-scale, disclosure-rulebook (4 ≤ 4), optical-authority, interaction, locator-ambiguity,
+cohort-reach, chart-palette, signal-weights-drift, text-primary/text-muted/css-token/
+command-deck contrast, command-deck-token-drift, communications-section-icons, unused-exports
+(baseline rewritten for the test-only seams), and the three browser-backed gates against a dev
+server (accessible-names 273/273; chart-geometry 9 surfaces / 25 marks clean; unexplained-dashes
+86 resolvable). `check:api-codegen-drift` PASS. Smokes and the visual pass: see the ship line.
+
+**Decisions.** Tab rails stay on child pages; command centers carry the loop hub and Explore
+grid, so a rail there would duplicate the grid. The Command Hub keeps Data as the leading step
+and Reports as the output tile. The video note appears only for accounts with video creative.
+Optional breakdown columns were never in the confidence denominator (documented, tested).
+
+**Open (carried in the master plan §4/§7).** #38; Library filter by variable family, per-chip
+cost, tile → family dimension, coverage chip → reconciliation, URL-encoded sort; MST "Creative
+Scan" rename (owner); Findings visible-or-folded (owner); the four tables the seed never selects;
+`refresh:seed-fixture` against a running server (the fixture predates `intent_class` and
+`top_performers_event`); a `check:token-colors` rule for undefined `hsl(var(--x))` tokens;
+`check:friction` from the scratch audit script.
+
