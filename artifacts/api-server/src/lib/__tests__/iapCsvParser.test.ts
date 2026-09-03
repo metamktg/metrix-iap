@@ -494,3 +494,54 @@ describe("parseIapCsv — ad_summary metric expectations are the ledger's, not t
     expect(result.warnings.some((w) => /Reduced confidence/.test(w))).toBe(true);
   });
 });
+
+// ─── Derived rates are not core; optional columns at moderate confidence are notes ─
+//
+// "CTR (link click-through rate)" and "CPM (cost per 1,000 impressions)" are
+// computed from Link clicks, Impressions and spend — all of which ARE core —
+// and the engine recomputes every rate from raw counts. Their absence used to
+// fire "⚠ Reduced confidence" on an export the engine could analyse in full.
+
+describe("parseIapCsv — derived-rate columns and optional-column inference", () => {
+  const DERIVED = ["CTR (link click-through rate)", "CPM (cost per 1,000 impressions)"];
+
+  function demoCsv(metricCols: readonly string[], renameHeader: (h: string) => string = (h) => h): string {
+    const breakdownCols = DEMOGRAPHIC_BREAKDOWN_COLUMNS;
+    const header = [...breakdownCols.map(resolveCurrency), ...metricCols.map(resolveCurrency)].map(renameHeader);
+    const row = [...breakdownCols.map(breakdownValue), ...metricCols.map(baseValue)];
+    return [line(header), line(row)].join("\n");
+  }
+
+  it("files a missing CTR (link) / CPM as a supplementary Note, never as Reduced confidence", () => {
+    const result = parseIapCsv(demoCsv(BASE_METRICS.filter((c) => !DERIVED.includes(c))), "demographic");
+    expect(result.rows.length).toBe(1);
+    expect(result.warnings.some((w) => /Reduced confidence/.test(w))).toBe(false);
+    const note = result.warnings.find((w) => /^Note: supplementary metric columns not found/.test(w));
+    expect(note).toBeDefined();
+    expect(note).toContain("CTR (link click-through rate)");
+    expect(note).toContain("CPM (cost per 1,000 impressions)");
+    // Still recorded as absent for the confidence report.
+    expect(result.missingColumns).toContain("CPM (cost per 1,000 impressions)");
+  });
+
+  it("still fires Reduced confidence for a genuinely core column (Link clicks)", () => {
+    const result = parseIapCsv(demoCsv(BASE_METRICS.filter((c) => c !== "Link clicks")), "demographic");
+    expect(result.warnings.some((w) => /Reduced confidence/.test(w) && /Link clicks/.test(w))).toBe(true);
+  });
+
+  it("prefixes a moderate-confidence match on an OPTIONAL column with Note:, and leaves a core one as please-verify", () => {
+    // "Post saves count" ↔ "Post saves": 2 of 3 tokens (67%) — moderate.
+    // "Link clicks count" ↔ "Link clicks": same score, but core.
+    const result = parseIapCsv(
+      demoCsv(BASE_METRICS, (h) => (h === "Post saves" ? "Post saves count" : h === "Link clicks" ? "Link clicks count" : h)),
+      "demographic",
+    );
+    const optional = result.warnings.find((w) => /"Post saves"/.test(w) && /moderate confidence/.test(w));
+    const core = result.warnings.find((w) => /"Link clicks"/.test(w) && /moderate confidence/.test(w));
+    expect(optional).toBeDefined();
+    expect(optional!.startsWith("Note: ")).toBe(true);
+    expect(core).toBeDefined();
+    expect(core!.startsWith("Note: ")).toBe(false);
+    expect(core).toContain("please verify");
+  });
+});

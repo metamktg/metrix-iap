@@ -157,3 +157,32 @@ describe("MST sprints canvas composition (Bookster)", () => {
     expect(screen.getByTestId("matrix-cell-C3A").className).not.toMatch(/opacity-30/);
   });
 });
+
+// ─── Result scope is visible, and rows land where their data is ───────────
+
+describe("MstSprintsView — result scope", () => {
+  it("renders the scope bar (the page scoped its rollup silently before)", () => {
+    renderFor("bookster");
+    expect(screen.getByTestId("result-scope-bar")).toBeTruthy();
+    expect(screen.queryByTestId("result-scope-landed")).toBeNull();
+  });
+
+  it("lands on the event the rollup carries when the account default would empty it, and says so", () => {
+    // Bookster's default scope is the terminal-conversion blend; a rollup
+    // stamped with an intermediate event (checkout initiated) has nothing
+    // under that blend. Before landRows the matrix rendered with no CPA
+    // overlay and no explanation; now it lands on the event and names it.
+    const bookster = seed.ad_accounts.find((a: { id: string }) => a.id === "bookster");
+    const rollup = bookster.iap.analysis.concept_rollup as Array<{ result_type?: string | null }>;
+    const saved = rollup.map((r) => r.result_type);
+    for (const r of rollup) r.result_type = "onb_initiate_checkout";
+    try {
+      renderFor("bookster");
+      const note = screen.getByTestId("result-scope-landed");
+      expect(note.textContent).toContain("Sprints landed on");
+      expect(within(note).getByTestId("result-scope-tag").textContent).toContain("Checkout");
+    } finally {
+      rollup.forEach((r, i) => { r.result_type = saved[i]; });
+    }
+  });
+});
