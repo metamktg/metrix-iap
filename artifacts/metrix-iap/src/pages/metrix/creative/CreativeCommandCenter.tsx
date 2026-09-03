@@ -65,9 +65,21 @@ export function CreativeCommandCenter() {
     <ModuleScopeGate section={SECTION} title="Creative" account={account}>
       {() => {
         const acct = account!;
-        const strategyOk = status.strategy.status === "success";
         const briefs = bb?.draft_briefs ?? [];
         const strategy = getStrategyData(seed, adAccountId);
+        // The prerequisite for generating briefs is PILLARS, not a run.
+        // `status.strategy` reports the latest in-app strategy GENERATION
+        // RUN, and an account whose strategy arrived through the importer
+        // has never had one — so this page told bookster "this account
+        // doesn't have a completed strategy run yet" directly beneath a
+        // tile reading "Pillars covered 3 of 3" and above a list of its
+        // sixteen briefs. The server never agreed: storedPillars() in
+        // generationEngine.ts takes "the CURRENT generated set if one
+        // exists, else the imported set", so the generation the gate was
+        // blocking would have worked. Ask for the input the generator
+        // actually consumes.
+        const strategyOk =
+          status.strategy.status === "success" || (strategy?.message_pillars.length ?? 0) > 0;
         const pillarOf = (id: string) => strategy?.message_pillars.find((p) => p.id === id);
         const byFormat = (f: FormatTab) => briefs.filter((b) => formatOf(b.asset_type) === f);
         const shown = byFormat(tab);
@@ -106,7 +118,12 @@ export function CreativeCommandCenter() {
               <CreativeSourceNudge account={acct} />
             </div>
 
-            <div className="px-6 py-5 space-y-4 max-w-4xl">
+            {/* One column width across all four command centres (MST's, the
+                widest content, sets it): a reader walking Listen → Analysis →
+                Strategy → Creative → MST saw the content column jump between
+                three widths, and the same "Execution card" pattern render
+                2-across on one stage and 4-across on the next. */}
+            <div className="px-6 py-5 space-y-4 max-w-5xl">
               {/* Direction for this stage, from the account's own rows —
                   each tile carries the number behind it and a link to the
                   surface that proves it. Absent when this stage has none. */}
@@ -130,7 +147,7 @@ export function CreativeCommandCenter() {
                 <PrerequisiteGate
                   met={strategyOk}
                   title="Generate strategy first"
-                  message="Briefs are generated from strategy message pillars — this account doesn't have a completed strategy run yet."
+                  message="Briefs are generated from strategy message pillars, and this account has none yet — imported or generated, either works."
                   ctaLabel="Go to Strategy"
                   ctaTo={withFrom("/app/strategy", fp)}
                 >
@@ -207,7 +224,7 @@ export function CreativeCommandCenter() {
                   title={`No ${tab === "ugc" ? "UGC" : tab} briefs yet`}
                   message={
                     !strategyOk
-                      ? "Briefs are generated from strategy message pillars — this account doesn't have a completed strategy run yet."
+                      ? "Briefs are generated from strategy message pillars, and this account has none yet."
                       : tab === "static"
                         ? "No draft briefs for this account yet — generate a set from its strategy pillars."
                         : `No source-backed ${tab === "ugc" ? "UGC" : "video"} briefs exist for this account yet. Briefs are only generated from validated strategy — nothing is fabricated.`

@@ -664,3 +664,48 @@ reduced-motion results are browser measurements, not source reads.
 running dev server, and a validation that cannot run without one fails every validation sweep. It
 is an operator gate, run beside its three siblings. `briefStatusLabel` is display-only — no seed
 field, route or stored value changed.
+
+---
+
+## 16. The loop gates asked for a run record, not for data (2026-09-03, autonomous pass 7)
+
+**What.** Two command centres locked their own stage on the demo account while displaying the
+very data that stage consumes. The visual pass found both on one screen each.
+
+- **Strategy** gated on `stage-status.analysis.status === "success"`, which reports the latest
+  MANUAL analysis run: `getLatestAnalysisRun()` reads `manual_analysis_runs`, falls back to
+  `report_pulls` for live-Meta accounts, and returns null for everything imported. So the page
+  said "this account doesn't have a completed analysis run yet" directly beneath tiles reading
+  3 message pillars, 4 hypotheses and 4 ICP profiles, and beneath a recommendation naming $32.15
+  per result — all computed from the analysis rows the gate said were missing. It now gates on
+  `validated`, the server's own account-wide completeness verdict, which
+  `verifyAnalysisRunCompleteness()` already computes for exactly these accounts. `validated`
+  ALONE decides: a successful run whose surfaces came up short must still hold the gate, so run
+  success is not a second ticket through it, and a run in flight holds it with a message that
+  says so.
+- **Creative** gated on `stage-status.strategy.status === "success"` — the latest strategy
+  GENERATION run — so an account whose strategy arrived through the importer was told "Generate
+  strategy first" above a list of its sixteen briefs. The server never agreed: `storedPillars()`
+  in `generationEngine.ts` takes "the CURRENT generated set if one exists, else the imported
+  set", so the generation the gate refused to offer would have worked. It now asks for the input
+  the generator consumes — message pillars, imported or generated.
+- **One column width across all four command centres.** They were `max-w-3xl` (Analysis,
+  Strategy), `max-w-4xl` (Creative) and `max-w-5xl` (MST), so the content column jumped between
+  three widths as a reader walked the loop, and the same Execution-card pattern rendered its
+  tiles 2-across on Strategy and 4-across on Creative — a width workaround, commented as one.
+  MST's, the widest content, sets it for all four; Strategy's tile grid is now the same
+  `grid-cols-2 md:grid-cols-4` as Creative's.
+
+**Where.** `strategy/StrategyCommandCenter.tsx`, `creative/CreativeCommandCenter.tsx`,
+`analysis/AnalysisCommandCenter.tsx`, and `__tests__/loop-gates-read-data-not-runs.test.tsx`
+(new, 6).
+
+**What proves it.** The new test drives both pages with the stage-status an IMPORTER account
+really returns (`analysis.status: "none"`, `validated: true`, `strategy.status: "none"`) and
+asserts each gate opens; it also asserts each still holds for the cases that must hold — no
+pillars, surfaces not validated, a run in flight — and that the successful-but-incomplete case
+still says which of the two it was. Browser screenshots at 1440 and 390 px confirm both pages.
+
+**Reach.** Client gate predicates only. No endpoint, seed field or generation contract changed —
+and the MST gate needed nothing, because `mst.unlocked` was already `briefsCount > 0`, a fact
+about data rather than about a run.

@@ -119,7 +119,12 @@ export function AnalysisCommandCenter() {
             <StageLoopHub stages={buildLoopStages(status)} current="analysis" />
             <CreativeNextStepNudge accountId={acct.id} />
 
-            <div className="px-6 py-5 space-y-4 max-w-3xl">
+            {/* One column width across all four command centres (MST's, the
+                widest content, sets it): a reader walking Listen → Analysis →
+                Strategy → Creative → MST saw the content column jump between
+                three widths, and the same "Execution card" pattern render
+                2-across on one stage and 4-across on the next. */}
+            <div className="px-6 py-5 space-y-4 max-w-5xl">
               {/* Direction for this stage, from the account's own rows —
                   each tile carries the number behind it and a link to the
                   surface that proves it. Absent when this stage has none. */}
@@ -129,11 +134,7 @@ export function AnalysisCommandCenter() {
                 title="Run analysis"
                 desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically."
               >
-                {/* 2x2 (not a page-width 4-across row) — this card's own
-                    max-w-3xl column doesn't leave enough room per tile at
-                    4-across without truncating labels (same fix already
-                    applied in StrategyCommandCenter's execution card).
-                    Pre-run readiness stats, not stale analysis-derived
+                {/* Pre-run readiness stats, not stale analysis-derived
                     numbers — every value here still reflects real state
                     even when no analysis has ever run for this account. */}
                 <div className="grid grid-cols-dashboard-3 gap-3 mb-2.5">
