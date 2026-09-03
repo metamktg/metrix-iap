@@ -329,6 +329,65 @@ export function buildResultEventSummary(rows: readonly Row[]): {
   };
 }
 
+// ─── Top performers · which event the ranked set is built on ───────────
+// The "Top performers" tab used to be built on a literal
+// ("onb_initiate_checkout") — one client's custom checkout event, applied
+// to every account as if every account sold physical goods. The event is
+// DERIVED here from the rows the set can actually be built from: the
+// account's dominant terminal conversion event by spend, else its dominant
+// intermediate conversion event, else the highest-spend event present.
+// The choice travels in the payload so the reader is told which event the
+// ranking is on, rather than inferring it from a heading.
+
+export interface TopPerformersEvent {
+  /** Meta's own string — the "Result type" the ranked rows carry. */
+  result_type: string;
+  event_key: string;
+  label: string;
+  intent_class: IntentClass | null;
+  stage: "terminal" | "intermediate" | null;
+  basis: "dominant_terminal_conversion" | "dominant_intermediate_conversion" | "highest_spend";
+  spend: number;
+}
+
+/**
+ * Pick the event the top-performer set ranks on. Candidates are the result
+ * types the ranked ROWS carry (a cell or variable row can only be ranked on
+ * an event it was measured under); spend comes from `result_events` where
+ * the raw type matches, else from the rows themselves. Null when no row
+ * carries a result type — then there is nothing honest to rank.
+ */
+export function selectTopPerformersEvent(events: readonly SeedResultEvent[], rows: readonly Row[]): TopPerformersEvent | null {
+  const rowSpend = new Map<string, number>();
+  for (const r of rows) {
+    const raw = typeof r["Result type"] === "string" ? String(r["Result type"]).trim() : "";
+    if (!raw) continue;
+    rowSpend.set(raw, (rowSpend.get(raw) ?? 0) + Number(r["Amount spent (USD)"] ?? 0));
+  }
+  if (rowSpend.size === 0) return null;
+  const eventSpend = new Map(events.map((e) => [e.raw, e.spend] as const));
+  const tierOf = (raw: string): 0 | 1 | 2 => {
+    const c = classifyResultEvent(raw);
+    if (c.intent === "conversion" && c.stage === "terminal" && c.key !== "custom") return 0;
+    if (c.intent === "conversion" && c.stage === "intermediate") return 1;
+    return 2;
+  };
+  const ranked = [...rowSpend.keys()]
+    .map((raw) => ({ raw, tier: tierOf(raw), spend: round(eventSpend.get(raw) ?? rowSpend.get(raw) ?? 0) }))
+    .sort((a, b) => a.tier - b.tier || b.spend - a.spend || a.raw.localeCompare(b.raw));
+  const pick = ranked[0]!;
+  const c = classifyResultEvent(pick.raw);
+  return {
+    result_type: pick.raw,
+    event_key: c.key,
+    label: c.key === "custom" ? pick.raw : c.label,
+    intent_class: c.intent,
+    stage: c.stage,
+    basis: pick.tier === 0 ? "dominant_terminal_conversion" : pick.tier === 1 ? "dominant_intermediate_conversion" : "highest_spend",
+    spend: pick.spend,
+  };
+}
+
 // ─── generic per-account assembly ─────────────────────────────────────
 
 /**
@@ -495,18 +554,38 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   // spend once per run: after N analysis runs a $1,000 variable read as
   // $N,000. Projecting the row's own run id and window alongside the payload
   // is what makes scoping possible at all.
-  const variablePerf: Row[] = variablePerformance.map((r) => ({
-    ...(r["payload"] as Row),
-    manual_analysis_run_id: r["manual_analysis_run_id"] ?? null,
-    date_start: r["date_start"] ?? null,
-    date_end: r["date_end"] ?? null,
-  }));
-  const checkout = "onb_initiate_checkout";
-  const topCheckoutCells = performanceByCell
-    .filter((r) => r["Result type"] === checkout)
+  //
+  // The result-event grain columns the engine writes on the ROW
+  // (`result_type`, `intent_class` — schema.sql's result-event block) never
+  // reached the seed either: the payload was spread alone, so a client
+  // deciding which scale to judge a variable on had to re-classify the raw
+  // "Result type" string. Both are projected now; `intent_class` is the
+  // stored value (null on rows written before the split — "not split",
+  // never re-derived here into "another event").
+  const variablePerf: Row[] = variablePerformance.map((r) => {
+    const payload = (r["payload"] as Row) ?? {};
+    return {
+      ...payload,
+      ...(payload["Result type"] == null && r["result_type"] != null ? { "Result type": r["result_type"] } : {}),
+      intent_class: r["intent_class"] ?? null,
+      manual_analysis_run_id: r["manual_analysis_run_id"] ?? null,
+      date_start: r["date_start"] ?? null,
+      date_end: r["date_end"] ?? null,
+    };
+  });
+  // Result events and intent classes, DERIVED from the ad-day rows (owner
+  // direction 2026-09-03). Built once here: the account object spreads it,
+  // and the top-performer event below ranks on it.
+  const resultEventSummary = buildResultEventSummary(adPerformance);
+  // The event the "Top performers" set ranks on — derived, never a literal
+  // (this was "onb_initiate_checkout" for every account until 2026-09-03).
+  const topPerformersEvent = selectTopPerformersEvent(resultEventSummary.result_events, [...performanceByCell, ...variablePerf]);
+  const topEventType = topPerformersEvent?.result_type ?? null;
+  const topCheckoutCells = topEventType == null ? [] : performanceByCell
+    .filter((r) => r["Result type"] === topEventType)
     .sort((a, b) => Number(b["Results"] ?? 0) - Number(a["Results"] ?? 0));
-  const topCheckoutVariables = variablePerf
-    .filter((r) => r["Result type"] === checkout && Number(r["Results"] ?? 0) > 0)
+  const topCheckoutVariables = topEventType == null ? [] : variablePerf
+    .filter((r) => r["Result type"] === topEventType && Number(r["Results"] ?? 0) > 0)
     .sort(
       (a, b) =>
         Number(b["Results"] ?? 0) - Number(a["Results"] ?? 0) ||
@@ -582,8 +661,11 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     c4e_placement_signal: placementSignal.filter((r) => r["signal_scope"] === "c4e").map((r) => r["payload"]),
     device_delivery_signal: deliveryDevices,
     ...(conversionTrackingSignal ? { conversion_tracking_signal: conversionTrackingSignal } : {}),
+    // Keys keep their historical names (every consumer reads them); the
+    // event they are ranked on is stated here, not implied by the name.
     top_checkout_cells: topCheckoutCells,
     top_checkout_variables: topCheckoutVariables,
+    top_performers_event: topPerformersEvent,
     // The run a consumer should scope to when it is showing "this account"
     // rather than "this run". concept_rollup and v3_variable_performance both
     // retain one row per run by design, so an unscoped aggregate over them
@@ -1019,7 +1101,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     // direction 2026-09-03): what this account's ads were optimised
     // towards, each on its own scale. Read-time context for the KPI
     // catalogs and rankings — never a property an operator sets.
-    ...buildResultEventSummary(adPerformance),
+    ...resultEventSummary,
     facebook_page_dp_url: account["facebook_page_dp_url"] ?? null,
     source_status: account["source_status"] ?? undefined,
     // Numeric Meta ad account id (no "act_" prefix) for Ads Manager deep

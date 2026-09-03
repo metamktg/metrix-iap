@@ -122,6 +122,14 @@ export interface VariablePerformanceRow {
   manual_analysis_run_id?: string | null;
   date_start?: string | null;
   date_end?: string | null;
+  /**
+   * awareness | consideration | conversion, DERIVED by the engine from the
+   * row's result type and stored on the row (schema.sql result-event
+   * block). Null on rows written before the split — "not split", never
+   * re-derived into another event; a reader classifies the raw
+   * "Result type" itself when it needs a scale for such a row.
+   */
+  intent_class?: IntentClass | null;
 }
 
 export interface DemographicRow {
@@ -244,6 +252,17 @@ export interface ConceptRollupRow {
   confidence_score?: number | null;
 }
 
+export interface TopPerformersEvent {
+  /** Meta's own string — the "Result type" the ranked rows carry. */
+  result_type: string;
+  event_key: string;
+  label: string;
+  intent_class: IntentClass | null;
+  stage: "terminal" | "intermediate" | null;
+  basis: "dominant_terminal_conversion" | "dominant_intermediate_conversion" | "highest_spend";
+  spend: number;
+}
+
 export interface AnalysisData {
   performance_by_cell: CellPerformanceRow[];
   v3_variable_performance: VariablePerformanceRow[];
@@ -261,8 +280,21 @@ export interface AnalysisData {
   c4e_placement_signal: PlacementRow[];
   /** Delivery-based device breakdown (real spend/impressions). Empty when Meta's export omitted the device dimension for this window — see conversion_tracking_signal.devices for the funnel-attributed fallback. */
   device_delivery_signal?: DeviceDeliveryRow[];
+  /**
+   * The ranked "Top performers" sets. Keys keep their historical names;
+   * the event they are ranked on is DERIVED per account and stated in
+   * `top_performers_event` — never assumed from the key name.
+   */
   top_checkout_cells: CellPerformanceRow[];
   top_checkout_variables: VariablePerformanceRow[];
+  /**
+   * Which result event the top sets rank on: the account's dominant
+   * terminal conversion event by spend, else its dominant intermediate
+   * conversion event, else the highest-spend event the rows carry. Null
+   * when no cell or variable row carries a result type (both sets empty).
+   * Absent on seeds built before 2026-09-03.
+   */
+  top_performers_event?: TopPerformersEvent | null;
   /** Cross-book (BOOK0 + BOOK2) concept view from the normalized bundle. */
   concept_rollup?: ConceptRollupRow[];
   /** Conversion-attributed device/platform/placement funnel signal (present when the account's import carried a conversion-device export). */

@@ -22,9 +22,31 @@ import { resolveVariableDescription, variableFamilyLabel } from "@/lib/variable-
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel, SectionInfoIcon, PILL_ACTIVE, PILL_INACTIVE } from "../shared";
+import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel, SectionInfoIcon, PILL_ACTIVE, PILL_INACTIVE, ConfidenceBadge } from "../shared";
 import { TYPE } from "../typography";
-import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
+import { classifyResultEvent } from "@/lib/resultEvents";
+import { spansMultipleRuns } from "@/lib/run-supersede";
+import { fmtDayRange } from "@/lib/normalize";
+import type { CellPerformanceRow, VariablePerformanceRow, VariableSegmentRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
+
+// ─── Scale of a row ───────────────────────────────────────────────────
+// Awareness rows are never scored on cost (owner direction 2026-09-03):
+// their verdict is communication signals, so the CPA cell reads "—" with
+// the reason in its title, and no bar is drawn for it. The stored
+// `intent_class` wins when a row carries one; the raw result type is
+// classified otherwise.
+function isCommunicationRow(r: { "Result type": string; intent_class?: string | null }): boolean {
+  if (r.intent_class === "awareness") return true;
+  if (r.intent_class === "conversion" || r.intent_class === "consideration") return false;
+  return classifyResultEvent(r["Result type"]).scale === "communication";
+}
+const COMMUNICATION_CPA_TIP = "Awareness event — read on communication signals (CPM, link CTR, frequency), never on cost per result";
+
+/** "Jun 1 – Jun 30" for a run-tagged row's window, else the run id's first segment. */
+function runWindowLabel(r: { manual_analysis_run_id?: string | null; date_start?: string | null; date_end?: string | null }): string {
+  if (r.date_start && r.date_end) return fmtDayRange(r.date_start, r.date_end);
+  return r.manual_analysis_run_id ? r.manual_analysis_run_id.split("-")[0]! : "—";
+}
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
   // Font-size/uppercase/tracking/color/weight/padding all come from the
@@ -339,7 +361,8 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
   const spendScale = useMemo(() => barScale(rows.map((r) => r["Amount spent (USD)"])), [rows]);
   const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
   // invert: on CPA the best value is the smallest, so it gets the longest bar.
-  const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA_result), true), [rows]);
+  // Awareness rows contribute nothing to the scale — their cost is not a verdict.
+  const cpaScale = useMemo(() => barScale(rows.map((r) => (isCommunicationRow(r) ? null : r.CPA_result)), true), [rows]);
 
   const renderRow = (r: CellPerformanceRow, _i: number) => {
     return (
@@ -360,12 +383,16 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
         <Td>{eventLabel(r["Result type"])}</Td>
         <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
         <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
-        <MagnitudeCell
-          value={r.CPA_result}
-          display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
-          scale={cpaScale}
-          label="CPA"
-        />
+        {isCommunicationRow(r) ? (
+          <Td right><span title={COMMUNICATION_CPA_TIP}>—</span></Td>
+        ) : (
+          <MagnitudeCell
+            value={r.CPA_result}
+            display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+            scale={cpaScale}
+            label="CPA"
+          />
+        )}
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
         <Td right>{fmtPct(r.Result_per_link_click_pct)}</Td>
       </tr>
@@ -409,13 +436,51 @@ const VARIABLE_COLUMNS: ColumnAccessors<VariablePerformanceRow> = {
   ctr: { get: (r) => r.CTR_link_pct, defaultDir: "desc" },
 };
 
+/**
+ * The evidence-layer row for one variable × result type: the `all`
+ * breakdown of `variable_segment_performance` (spec §16). Joined on
+ * variable id AND result type — a purchase row's evidence never describes
+ * the same token's lead row.
+ */
+function segmentIndex(segments: readonly VariableSegmentRow[] | undefined): Map<string, VariableSegmentRow> {
+  const map = new Map<string, VariableSegmentRow>();
+  for (const s of segments ?? []) {
+    if (s.breakdown !== "all") continue;
+    map.set(`${s.variable_id}\u0001${s.result_type}`, s);
+  }
+  return map;
+}
+
+const EVIDENCE_STATE_LABEL: Record<string, string> = {
+  direct_asset: "direct (asset)",
+  direct_joint: "direct (joint)",
+  ad_context: "ad context",
+  observed_reconciled: "observed · reconciled",
+  observed_partial: "observed · partial",
+  modelled: "modelled",
+  overcounted: "overcounted",
+  unreconciled: "unreconciled",
+  incompatible: "incompatible",
+};
+
 export function VariableTable({
   rows,
   onRowClick,
+  segments,
+  runLabel,
 }: {
   rows: VariablePerformanceRow[];
   /** When provided, rows become clickable and open the variable drill-down. */
   onRowClick?: (row: VariablePerformanceRow) => void;
+  /**
+   * The run's `variable_segment_performance` rows. When given, and a row has
+   * an `all` entry for its variable × result type, an Evidence column shows
+   * its confidence and observed coverage, and — where the layer computed
+   * one — an Adjusted rate beside CPA with the raw rate in its title.
+   */
+  segments?: VariableSegmentRow[];
+  /** Label for a run id (the picker's own label, so both agree); the row's window is the fallback. */
+  runLabel?: (runId: string) => string | undefined;
 }) {
   // inline-table-control, designed around the virtualizer: this table
   // virtualizes past a threshold, and a row that grows in place gives the
@@ -431,7 +496,19 @@ export function VariableTable({
 
   const spendScale = useMemo(() => barScale(rows.map((r) => r["Amount spent (USD)"])), [rows]);
   const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
-  const cpaScale = useMemo(() => barScale(rows.map((r) => r.CPA_result), true), [rows]);
+  const cpaScale = useMemo(() => barScale(rows.map((r) => (isCommunicationRow(r) ? null : r.CPA_result)), true), [rows]);
+  // Provenance (G1): rows from more than one run get a Run column — the
+  // reader can then see two measurements of the same token are two runs,
+  // not a doubled variable. One run needs no column; its window is on the
+  // picker.
+  const multiRun = useMemo(() => spansMultipleRuns(rows), [rows]);
+  const segIndex = useMemo(() => segmentIndex(segments), [segments]);
+  const segFor = (r: VariablePerformanceRow) => segIndex.get(`${r.variable_id}\u0001${r["Result type"]}`) ?? null;
+  const hasEvidence = useMemo(() => segIndex.size > 0 && rows.some((r) => segIndex.has(`${r.variable_id}\u0001${r["Result type"]}`)), [rows, segIndex]);
+  // The `all` row's rates are null by construction today (rates live on the
+  // segment rows); the column appears only when the layer has one to show,
+  // never as a column of dashes.
+  const hasAdjustedRate = useMemo(() => rows.some((r) => segFor(r)?.adjusted_rate != null), [rows, segIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rowKey = (r: VariablePerformanceRow, i: number) => `${r.variable_id}|${r["Result type"]}|${i}`;
   const quickRow = quickKey != null ? sorted.map((r, i) => ({ r, k: rowKey(r, i) })).find((x) => x.k === quickKey)?.r ?? null : null;
@@ -439,6 +516,11 @@ export function VariableTable({
   const renderRow = (r: VariablePerformanceRow, i: number) => {
     const k = rowKey(r, i);
     const isQuick = quickKey === k;
+    const seg = segFor(r);
+    const runId = r.manual_analysis_run_id ?? null;
+    const runTitle = runId
+      ? `Run ${runId}${r.date_start && r.date_end ? ` · ${r.date_start} – ${r.date_end}` : ""}`
+      : "Untagged — measured before runs were recorded";
     return (
       <tr
         key={r.variable_id + r["Result type"] + i}
@@ -462,16 +544,50 @@ export function VariableTable({
         </Td>
         <Td>{variableFamilyLabel(r.variable_family)}</Td>
         <Td>{eventLabel(r["Result type"])}</Td>
+        {multiRun && (
+          <Td>
+            <span className="text-label text-muted-foreground/75 whitespace-nowrap" title={runTitle} data-testid="variable-run-cell">
+              {runId ? (runLabel?.(runId) ?? runWindowLabel(r)) : "untagged"}
+            </span>
+          </Td>
+        )}
         <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
         <Td right>{fmtNum(r.unique_ads)}</Td>
         <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
-        <MagnitudeCell
-          value={r.CPA_result}
-          display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
-          scale={cpaScale}
-          label="CPA"
-        />
+        {isCommunicationRow(r) ? (
+          <Td right><span title={COMMUNICATION_CPA_TIP}>—</span></Td>
+        ) : (
+          <MagnitudeCell
+            value={r.CPA_result}
+            display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+            scale={cpaScale}
+            label="CPA"
+          />
+        )}
+        {hasAdjustedRate && (
+          <Td right>
+            {seg?.adjusted_rate != null ? (
+              <span title={`Raw rate ${fmtPct(seg.raw_rate)} · adjusted for ${fmtPct(seg.observed_coverage_pct, 0)} observed coverage`}>{fmtPct(seg.adjusted_rate)}</span>
+            ) : "—"}
+          </Td>
+        )}
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
+        {hasEvidence && (
+          <Td>
+            {seg ? (
+              <span
+                className="inline-flex items-center gap-1 whitespace-nowrap"
+                title={`${EVIDENCE_STATE_LABEL[seg.evidence_state] ?? seg.evidence_state} · ${seg.contributing_ads} contributing ad${seg.contributing_ads === 1 ? "" : "s"}${seg.observed_coverage_pct != null ? ` · ${fmtPct(seg.observed_coverage_pct, 0)} of spend observed` : " · coverage not reconciled"}`}
+                data-testid="variable-evidence-cell"
+              >
+                <ConfidenceBadge value={seg.confidence.replace(/_/g, " ")} />
+                <span className="text-label tabular-nums text-muted-foreground/75">{seg.observed_coverage_pct != null ? fmtPct(seg.observed_coverage_pct, 0) : "—"}</span>
+              </span>
+            ) : (
+              <span className="text-label text-muted-foreground/75" title="No evidence row for this variable under this result type">—</span>
+            )}
+          </Td>
+        )}
       </tr>
     );
   };
@@ -482,11 +598,14 @@ export function VariableTable({
         <SortableTh sortKey="variable" sort={sort} onToggle={toggle} onReset={reset}>Variable</SortableTh>
         <SortableTh sortKey="family" sort={sort} onToggle={toggle} onReset={reset}>Family</SortableTh>
         <Th>Result type</Th>
+        {multiRun && <Th>Run</Th>}
         <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
         <SortableTh right sortKey="ads" sort={sort} onToggle={toggle} onReset={reset}>Ads</SortableTh>
         <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
         <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset} info={INVERTED_BAR_TIP}>CPA</SortableTh>
+        {hasAdjustedRate && <Th right>Adjusted rate</Th>}
         <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle} onReset={reset}>Link CTR</SortableTh>
+        {hasEvidence && <Th>Evidence</Th>}
       </tr>
     </thead>
   );

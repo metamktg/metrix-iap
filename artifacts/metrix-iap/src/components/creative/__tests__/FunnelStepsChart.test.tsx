@@ -1,85 +1,115 @@
 // ─── FunnelStepsChart & buildFunnelSteps tests ───────────────────────
+// The chain is BUILT FROM THE ACCOUNT'S OBSERVED RESULT EVENTS (G8): the
+// delivery steps come first for every account, then one step per
+// conversion event, ordered by funnel stage through the taxonomy. Nothing
+// here assumes cart → checkout → purchase for a lead-gen or awareness
+// account.
+//
 // Covers:
-//   · buildFunnelSteps extracts impressions, link_clicks, and optional
-//     downstream funnel fields from a CellPerformanceRow-shaped object
-//   · FunnelStepsChart renders values for present steps
-//   · Null steps render with "No data" label (not omitted)
-//   · Conversion rate labels appear between steps that both have data
+//   · delivery steps always present, first
+//   · chain from events, in stage order, counts from the cell's own rows
+//   · legacy funnel columns fill a step that counts the same event
+//   · a step the account carries but the cell did not measure is null
+//   · no conversion events → delivery only, and describeFunnelChain names
+//     what the account did run
+//   · no account context → the row's own measured chain, nothing invented
+//   · rendering: "No data" for null steps, rate labels between measured steps
 
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
-import { FunnelStepsChart, buildFunnelSteps } from "../FunnelStepsChart";
+import { FunnelStepsChart, buildFunnelSteps, describeFunnelChain } from "../FunnelStepsChart";
 
 afterEach(cleanup);
 
-// ─── buildFunnelSteps ─────────────────────────────────────────────────
+const ECOM_EVENTS = ["Website purchases", "onb_initiate_checkout", "Adds to cart", "Link clicks"];
 
-describe("buildFunnelSteps", () => {
-  it("produces 5 steps in order: Impressions, Link Clicks, Adds to Cart, Checkouts, Purchases", () => {
-    const steps = buildFunnelSteps({
-      Impressions: 10000,
-      "Link clicks": 200,
-      adds_to_cart: 30,
-      checkouts_initiated: 15,
-      purchases: 10,
-    });
-    expect(steps.map((s) => s.label)).toEqual([
-      "Impressions",
-      "Link Clicks",
-      "Adds to Cart",
-      "Checkouts Initiated",
-      "Purchases",
-    ]);
+describe("buildFunnelSteps · chain from observed events", () => {
+  it("starts with the delivery steps and follows with the conversion chain in funnel-stage order", () => {
+    const steps = buildFunnelSteps(
+      { Impressions: 10000, "Link clicks": 200, "Result type": "Website purchases", Results: 10 },
+      {
+        events: ECOM_EVENTS,
+        rowsByEvent: [
+          { "Result type": "Website purchases", Results: 10 },
+          { "Result type": "onb_initiate_checkout", Results: 15 },
+          { "Result type": "Adds to cart", Results: 30 },
+        ],
+      },
+    );
+    expect(steps.map((s) => s.label)).toEqual(["Impressions", "Link Clicks", "Adds to cart", "Checkouts initiated", "Purchases"]);
+    expect(steps.map((s) => s.kind)).toEqual(["delivery", "delivery", "conversion", "conversion", "conversion"]);
+    expect(steps.map((s) => s.value)).toEqual([10000, 200, 30, 15, 10]);
+    // A traffic event is not part of the conversion chain.
+    expect(steps.some((s) => s.label === "Link clicks")).toBe(false);
   });
 
-  it("carries the numeric values through", () => {
-    const steps = buildFunnelSteps({
-      Impressions: 5000,
-      "Link clicks": 100,
-      adds_to_cart: 15,
-      checkouts_initiated: 8,
-      purchases: 5,
-    });
-    expect(steps[0].value).toBe(5000);
-    expect(steps[1].value).toBe(100);
-    expect(steps[2].value).toBe(15);
-    expect(steps[3].value).toBe(8);
-    expect(steps[4].value).toBe(5);
+  it("builds a lead-gen chain with no cart or checkout step at all", () => {
+    const steps = buildFunnelSteps(
+      { Impressions: 5000, "Link clicks": 100, "Result type": "Leads (form)", Results: 8 },
+      { events: ["Leads (form)", "Landing page views"], rowsByEvent: [{ "Result type": "Leads (form)", Results: 8 }] },
+    );
+    expect(steps.map((s) => s.label)).toEqual(["Impressions", "Link Clicks", "Leads"]);
+    expect(steps[2]!.value).toBe(8);
+    expect(steps[2]!.resultType).toBe("Leads (form)");
   });
 
-  it("sets downstream step value to null when field is absent", () => {
-    const steps = buildFunnelSteps({
-      Impressions: 10000,
-      "Link clicks": 200,
-    });
-    expect(steps[2].value).toBeNull(); // adds_to_cart
-    expect(steps[3].value).toBeNull(); // checkouts_initiated
-    expect(steps[4].value).toBeNull(); // purchases
+  it("fills a step from the legacy funnel column that counts the same event when the cell has no row for it", () => {
+    const steps = buildFunnelSteps(
+      { Impressions: 10000, "Link clicks": 200, "Result type": "Website purchases", Results: 10, adds_to_cart: 30, checkouts_initiated: 15 },
+      { events: ECOM_EVENTS, rowsByEvent: [{ "Result type": "Website purchases", Results: 10 }] },
+    );
+    expect(steps.map((s) => s.value)).toEqual([10000, 200, 30, 15, 10]);
   });
 
-  it("sets downstream step value to null when field is explicitly null", () => {
-    const steps = buildFunnelSteps({
-      Impressions: 10000,
-      "Link clicks": 200,
-      adds_to_cart: null,
-      checkouts_initiated: null,
-      purchases: null,
-    });
-    expect(steps[2].value).toBeNull();
-    expect(steps[3].value).toBeNull();
-    expect(steps[4].value).toBeNull();
+  it("leaves a step null — never 0 — when the account carries the event but this cell did not measure it", () => {
+    const steps = buildFunnelSteps(
+      { Impressions: 10000, "Link clicks": 200, "Result type": "Website purchases", Results: 10 },
+      { events: ECOM_EVENTS, rowsByEvent: [{ "Result type": "Website purchases", Results: 10 }] },
+    );
+    expect(steps.find((s) => s.label === "Adds to cart")!.value).toBeNull();
+    expect(steps.find((s) => s.label === "Checkouts initiated")!.value).toBeNull();
+    expect(steps.find((s) => s.label === "Purchases")!.value).toBe(10);
   });
 
-  it("formats impressions and link_clicks correctly", () => {
-    const steps = buildFunnelSteps({
-      Impressions: 30803,
-      "Link clicks": 463,
-      adds_to_cart: 69,
-    });
-    expect(steps[0].formatted).toBe("30,803");
-    expect(steps[1].formatted).toBe("463");
-    expect(steps[2].formatted).toBe("69");
-    expect(steps[3].formatted).toBe("—"); // null
+  it("shows delivery steps only for an awareness account, and describeFunnelChain names what it ran", () => {
+    const events = ["ThruPlays", "Link clicks"];
+    const steps = buildFunnelSteps({ Impressions: 30803, "Link clicks": 463, "Result type": "ThruPlays", Results: 900 }, { events });
+    expect(steps.map((s) => s.label)).toEqual(["Impressions", "Link Clicks"]);
+    const { chain, other } = describeFunnelChain(events);
+    expect(chain).toEqual([]);
+    expect(other.map((c) => c.label)).toEqual(["ThruPlays", "Link clicks"]);
+  });
+
+  it("orders the chain by stage regardless of the order the events arrive in", () => {
+    const { chain } = describeFunnelChain(["Website purchases", "Adds to cart", "Payment info added", "onb_initiate_checkout", "Leads (form)"]);
+    expect(chain.map((c) => c.key)).toEqual(["add_to_cart", "initiate_checkout", "add_payment_info", "purchase", "lead"]);
+  });
+
+  it("keeps one step per raw result type and ignores blanks", () => {
+    const { chain } = describeFunnelChain(["Website purchases", "Website purchases", "", "  "]);
+    expect(chain.map((c) => c.raw)).toEqual(["Website purchases"]);
+  });
+});
+
+describe("buildFunnelSteps · no account context", () => {
+  it("uses only what the row measured: its own conversion result type plus present legacy columns", () => {
+    const steps = buildFunnelSteps({ Impressions: 30803, "Link clicks": 463, "Result type": "Website purchases", Results: 23, adds_to_cart: 69 });
+    expect(steps.map((s) => s.label)).toEqual(["Impressions", "Link Clicks", "Adds to cart", "Purchases"]);
+    expect(steps.map((s) => s.value)).toEqual([30803, 463, 69, 23]);
+    expect(steps[2]!.formatted).toBe("69");
+    expect(steps[0]!.formatted).toBe("30,803");
+  });
+
+  it("invents no chain when the row carries no conversion event and no funnel column", () => {
+    const steps = buildFunnelSteps({ Impressions: 10000, "Link clicks": 200 });
+    expect(steps.map((s) => s.label)).toEqual(["Impressions", "Link Clicks"]);
+  });
+
+  it("treats an explicitly null legacy column as a present-but-unmeasured step", () => {
+    const steps = buildFunnelSteps({ Impressions: 10000, "Link clicks": 200, checkouts_initiated: null });
+    expect(steps.map((s) => s.label)).toEqual(["Impressions", "Link Clicks", "Checkouts initiated"]);
+    expect(steps[2]!.value).toBeNull();
+    expect(steps[2]!.formatted).toBe("—");
   });
 });
 
@@ -87,32 +117,23 @@ describe("buildFunnelSteps", () => {
 
 describe("FunnelStepsChart · full funnel data", () => {
   function renderFull() {
-    const steps = buildFunnelSteps({
-      Impressions: 30803,
-      "Link clicks": 463,
-      adds_to_cart: 69,
-      checkouts_initiated: 37,
-      purchases: 23,
-    });
+    const steps = buildFunnelSteps(
+      { Impressions: 30803, "Link clicks": 463, "Result type": "Website purchases", Results: 23, adds_to_cart: 69, checkouts_initiated: 37 },
+      { events: ECOM_EVENTS, rowsByEvent: [{ "Result type": "Website purchases", Results: 23 }] },
+    );
     return render(<FunnelStepsChart steps={steps} />);
   }
 
-  it("renders all 5 step labels", () => {
+  it("renders every step label", () => {
     renderFull();
-    expect(screen.getByText("Impressions")).toBeTruthy();
-    expect(screen.getByText("Link Clicks")).toBeTruthy();
-    expect(screen.getByText("Adds to Cart")).toBeTruthy();
-    expect(screen.getByText("Checkouts Initiated")).toBeTruthy();
-    expect(screen.getByText("Purchases")).toBeTruthy();
+    for (const label of ["Impressions", "Link Clicks", "Adds to cart", "Checkouts initiated", "Purchases"]) {
+      expect(screen.getByText(label)).toBeTruthy();
+    }
   });
 
   it("renders formatted values for all present steps", () => {
     renderFull();
-    expect(screen.getByText("30,803")).toBeTruthy();
-    expect(screen.getByText("463")).toBeTruthy();
-    expect(screen.getByText("69")).toBeTruthy();
-    expect(screen.getByText("37")).toBeTruthy();
-    expect(screen.getByText("23")).toBeTruthy();
+    for (const v of ["30,803", "463", "69", "37", "23"]) expect(screen.getByText(v)).toBeTruthy();
   });
 
   it("does NOT render any 'No data' labels when all steps have values", () => {
@@ -120,56 +141,43 @@ describe("FunnelStepsChart · full funnel data", () => {
     expect(screen.queryByText("No data")).toBeNull();
   });
 
-  it("renders conversion rate labels between steps (e.g. '1.5% conversion')", () => {
+  it("renders a rate label between adjacent measured steps", () => {
     renderFull();
-    // Expect at least one conversion rate label between steps
-    const convLabels = screen.getAllByText(/conversion/i);
-    expect(convLabels.length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/conversion/i).length).toBeGreaterThan(0);
   });
 });
 
-describe("FunnelStepsChart · partial funnel (null downstream steps)", () => {
+describe("FunnelStepsChart · partial chain (unmeasured steps)", () => {
   function renderPartial() {
-    const steps = buildFunnelSteps({
-      Impressions: 10000,
-      "Link clicks": 200,
-      // no downstream data
-    });
+    const steps = buildFunnelSteps(
+      { Impressions: 10000, "Link clicks": 200, "Result type": "Website purchases", Results: 10 },
+      { events: ECOM_EVENTS, rowsByEvent: [{ "Result type": "Website purchases", Results: 10 }] },
+    );
     return render(<FunnelStepsChart steps={steps} />);
   }
 
-  it("renders all 5 step labels even when downstream steps are null", () => {
+  it("renders every step the account carries, even the ones this cell did not measure", () => {
     renderPartial();
-    expect(screen.getByText("Impressions")).toBeTruthy();
-    expect(screen.getByText("Adds to Cart")).toBeTruthy();
+    expect(screen.getByText("Adds to cart")).toBeTruthy();
+    expect(screen.getByText("Checkouts initiated")).toBeTruthy();
     expect(screen.getByText("Purchases")).toBeTruthy();
   });
 
-  it("renders 'No data' labels for null steps (not omitted)", () => {
+  it("renders 'No data' for the unmeasured steps (not omitted)", () => {
     renderPartial();
-    const noDataLabels = screen.getAllByText("No data");
-    // 3 null steps: adds_to_cart, checkouts_initiated, purchases
-    expect(noDataLabels.length).toBe(3);
+    expect(screen.getAllByText("No data").length).toBe(2);
   });
 
-  it("shows a conversion rate between Impressions and Link Clicks (both have data)", () => {
+  it("shows a rate between Impressions and Link Clicks, and '— no rate' where a side is unmeasured", () => {
     renderPartial();
     expect(screen.getAllByText(/conversion/i).length).toBeGreaterThan(0);
-  });
-
-  it("does NOT show a conversion rate between Link Clicks and Adds to Cart (no data)", () => {
-    renderPartial();
-    const noRateLabels = screen.queryAllByText(/— no rate/);
-    expect(noRateLabels.length).toBeGreaterThan(0);
+    expect(screen.queryAllByText(/— no rate/).length).toBeGreaterThan(0);
   });
 });
 
 describe("FunnelStepsChart · zero impressions edge case", () => {
   it("renders without crashing when all values are 0 or null", () => {
-    const steps = buildFunnelSteps({
-      Impressions: 0,
-      "Link clicks": 0,
-    });
+    const steps = buildFunnelSteps({ Impressions: 0, "Link clicks": 0 }, { events: ["Website purchases"] });
     expect(() => render(<FunnelStepsChart steps={steps} />)).not.toThrow();
   });
 });

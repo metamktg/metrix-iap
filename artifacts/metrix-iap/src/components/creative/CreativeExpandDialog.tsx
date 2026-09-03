@@ -15,7 +15,10 @@ import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { CreativeCardData } from "./CreativeCard";
-import { FunnelStepsChart, buildFunnelSteps } from "./FunnelStepsChart";
+import { FunnelStepsChart, buildFunnelSteps, describeFunnelChain, funnelStepLabel } from "./FunnelStepsChart";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { AdsManagerButton } from "./AdsManagerLink";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 import { useCreativeEmptyReasons } from "@/hooks/useCreativeEmptyReasons";
@@ -658,7 +661,25 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
 
 // ─── Funnel tab ─────────────────────────────────────────────────────────
 
-function FunnelTab({ perfRow, emptyReason }: { perfRow: CellPerformanceRow | null; emptyReason?: string | null }) {
+/**
+ * The result types the scoped account's ads ran under — the seed's derived
+ * `result_events`, else the distinct types on its cell rows. This is what
+ * decides which conversion steps the funnel has (G8): the chain is built
+ * from observed events, never from a fixed cart → checkout → purchase list.
+ */
+function useAccountResultTypes(): string[] {
+  const seed = useMetrixSeed();
+  const adAccountId = useScopedAdAccountId();
+  const account = getAdAccount(seed, adAccountId);
+  return useMemo(() => {
+    const fromEvents = (account?.result_events ?? []).map((e) => e.raw);
+    if (fromEvents.length > 0) return fromEvents;
+    return [...new Set((account?.iap?.analysis?.performance_by_cell ?? []).map((r) => r["Result type"]).filter(Boolean))];
+  }, [account]);
+}
+
+function FunnelTab({ perfRow, perfRows, emptyReason }: { perfRow: CellPerformanceRow | null; perfRows: CellPerformanceRow[]; emptyReason?: string | null }) {
+  const events = useAccountResultTypes();
   if (!perfRow) {
     return (
       <div className="py-10 text-center space-y-1.5">
@@ -669,17 +690,24 @@ function FunnelTab({ perfRow, emptyReason }: { perfRow: CellPerformanceRow | nul
       </div>
     );
   }
-  const steps = buildFunnelSteps(perfRow);
-  const hasAnyFunnel = perfRow.adds_to_cart != null || perfRow.checkouts_initiated != null || perfRow.purchases != null;
+  const steps = buildFunnelSteps(perfRow, { events, rowsByEvent: perfRows });
+  const { chain, other } = describeFunnelChain(events);
+  const unmeasured = steps.filter((s) => s.kind === "conversion" && s.value == null);
+  const observed = other.map((c) => funnelStepLabel(c.raw));
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-label uppercase tracking-widest text-muted-foreground/75">Conversion funnel</p>
+        <p className="text-label uppercase tracking-widest text-muted-foreground/75">{chain.length > 0 ? "Conversion funnel" : "Delivery"}</p>
       </div>
       <FunnelStepsChart steps={steps} />
-      {!hasAnyFunnel && (
+      {chain.length === 0 && (
+        <p className={cn(TYPE.caption, "text-muted-foreground/75 pt-1 border-t border-border/20")} data-testid="funnel-no-chain">
+          No conversion chain — this account's ads ran under {observed.length > 0 ? observed.join(", ") : "no placed result event"}. Delivery steps only.
+        </p>
+      )}
+      {chain.length > 0 && unmeasured.length > 0 && (
         <p className={cn(TYPE.caption, "text-muted-foreground/75 pt-1 border-t border-border/20")}>
-          Adds to cart, checkouts, and purchases are only available when the source export includes conversion-event columns.
+          Not measured for this cell: {unmeasured.map((s) => s.label).join(", ")}. A step is filled from the cell's own row for that event, or from the export's funnel column that counts it.
         </p>
       )}
     </div>
@@ -877,7 +905,7 @@ export function CreativeExpandDialog({
                       <EvidenceExplainer state={funnelFromAds.evidence_state} contextual={funnelFromAds.source !== "ad_summary"} />
                     </div>
                   )}
-                  <FunnelTab perfRow={effectivePerfRow} emptyReason={funnelReason} />
+                  <FunnelTab perfRow={effectivePerfRow} perfRows={effectivePerfRows} emptyReason={funnelReason} />
                 </div>
               )}
               {tab === "evidence"     && <EvidenceTab identity={evidence.identity} assets={evidence.assets} evidence={evidence.variableEvidence} segments={evidence.variableSegments} />}
