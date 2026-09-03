@@ -1297,7 +1297,6 @@ export function AnalysisControls({
   const optionalExportsNote = !noDeliveryStaged && absentOptionalExports.length > 0 && !isRunning && (
     <div data-testid="optional-exports-note">
       <CaveatNote
-        defaultExpanded
         text={
           `Not staged: ${absentOptionalExports.map((e) => `${e.label} (adds ${e.adds})`).join("; ")}. ` +
           `The run proceeds on what is staged — each export adds resolution.` +

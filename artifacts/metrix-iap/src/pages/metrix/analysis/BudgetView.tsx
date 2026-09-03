@@ -322,7 +322,6 @@ export function BudgetView() {
             ) : (
               <div className="px-6 pt-5" data-testid="budget-no-summary-note">
                 <CaveatNote
-                  defaultExpanded
                   text="Event totals are not available — this account has no campaign summary yet. Concept and placement spend below read the analysis rows directly."
                 />
               </div>

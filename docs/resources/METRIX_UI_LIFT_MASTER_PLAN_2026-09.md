@@ -44,7 +44,7 @@ this pass closes or carries · **[superseded]** replaced by later work in this s
 | # | Task (as stated) | Verdict | Evidence / gap |
 |---|---|---|---|
 | 1 | Single route table: legacy redirects + hidden nav children | **[partial]** | `navigation/legacyRoutes.ts` + the legacy-link test hold. Gap (nav audit #19): `/app/analysis/overview`, a visible child, was registered inside the legacy-redirect block of `App.tsx`. Closed in §2. |
-| 2 | Sidebar overhaul: link + chevron, no double-click | **[superseded]** | Replaced twice: by the category-defining expanded sidebar (#48), then by the rail-and-map (§2.1). The link/chevron contract no longer exists. |
+| 2 | Sidebar overhaul: link + chevron, no double-click | **[superseded]** | The link stays; the chevron button is gone — pages open on intent (dwell / focus), never on a click (§2.1). |
 | 3 | Wayfinding: nav history, Back button, breadcrumb parents | **[partial]** | `navigation/navHistory.ts` holds. Gap (nav audit #9): structural Back drops query state (`?from=`, `?account=`). Closed in §2. |
 | 4 | Command palette (Watermelon command-search + quick-switcher) | **[held]** | `components/nav/CommandPalette.tsx`; nav audit found it omits hidden children by design (Findings) — see #1/§5. |
 | 5 | Fix legacy in-app links and dead topbar controls | **[held]** | Legacy-link test green; no dead Topbar control found. |
@@ -79,7 +79,7 @@ this pass closes or carries · **[superseded]** replaced by later work in this s
 | 45 | Change log + docs | **[held]** | `ARCHITECTURE_CHANGE_LOG.md` entries 1–6. |
 | 46 | E2E stress test, UI finalize, ship (PR #185) | **[held]** | Register §14 ship record; 16 smokes; migration `result_event_grain` live. |
 | 47 | Panels: one persisted width/expand behaviour | **[held]** | `lib/panel-prefs.ts`, `ResizeHandle`. The sidebar no longer has a width at all (§2.1). |
-| 48 | Sidebar category definition | **[superseded]** | The groups, stages and purposes it added to the tree are what the map now draws; the expanded/collapsed sidebar itself is gone (§2.1). |
+| 48 | Sidebar category definition | **[partial]** | Groups and loop numerals stay; the inline purpose lines it added were the clutter the owner named and are tooltips now (§2.1). |
 
 Net: 33 held, 10 partial (all addressed or carried below), 2 superseded, 1 open.
 
@@ -89,11 +89,17 @@ Net: 33 held, 10 partial (all addressed or carried below), 2 superseded, 1 open.
 
 Filled at the end of the pass — see the commits on the branch and the register §14 entry.
 
-### 2.1 The sidebar is a rail and a map
-Change log entry 6. Rail (56 px, never a mode) + map (opens rightwards over the page on a
-260 ms dwell / focus / tap; the product as a flow chart: numbered loop nodes on one spine,
-the focused node's pages branching beside it; Escape returns focus; 220 ms leave grace;
-always open inside the compact drawer). No toggle, no handle, no stored width.
+### 2.1 The sidebar: collapsible again, pages on intent
+Change log entry 7 (entry 6's rail-and-map shipped for a few hours and was withdrawn on the
+owner's second pass). The sidebar is the collapsible / expandable navigation (216 px or a 56 px
+rail; toggle and keyboard splitter; remembered per browser) and keeps one idea from the map: a
+section's pages disclose on intent — a 180 ms dwell or focus opens the list in place, the label
+stays a plain link, the list follows real pointer travel (a row that lands under a resting
+pointer after the layout shifts is ignored), leaving returns to the active section after a
+260 ms grace; the rail gets a flyout of pages on the same dwell and its icons navigate. What a
+module or page is for is its tooltip, never a line in the sidebar. The sentence-style notes this
+pass had added (landing scope, three optional-input caveats) are back behind the existing
+disclosure patterns: a tag with its reason in the title; caveats collapsed by default.
 
 ### 2.2 Charts: the root cause and the theme
 The KPI hover bar chart's "dark blue" was `hsl(var(--interactive))` — an undefined token, so

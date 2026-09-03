@@ -114,11 +114,17 @@ export function ResultScopeTag({ scope, className }: { scope: ResultScope | null
  */
 export function LandedScopeNote({ landed, what = "This page", className }: { landed: ResultScope | null; what?: string; className?: string }) {
   if (!landed) return null;
+  // A tag, not a sentence: the page's landing scope is chrome. The reason it
+  // landed here lives in the title (and the tag's own title), the way every
+  // other first-layer qualifier on these surfaces is disclosed.
   return (
-    <p data-testid="result-scope-landed" className={cn(TYPE.caption, "text-muted-foreground/75 px-6 pt-2 flex items-center gap-1.5 flex-wrap", className)}>
-      <span>{what} landed on</span>
+    <p
+      data-testid="result-scope-landed"
+      className={cn(TYPE.microLabel, "text-muted-foreground/75 px-6 pt-2 flex items-center gap-1.5 flex-wrap normal-case tracking-normal font-normal", className)}
+      title={`${what} landed on ${scopeSubtitle(landed)} — no rows under the account's default scope. Pick a chip above to change it.`}
+    >
+      <span>Landed on</span>
       <ResultScopeTag scope={landed} />
-      <span>· no rows under the account's default scope. Pick a chip above to change it.</span>
     </p>
   );
 }

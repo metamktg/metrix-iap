@@ -179,7 +179,8 @@ describe("MstSprintsView — result scope", () => {
     try {
       renderFor("bookster");
       const note = screen.getByTestId("result-scope-landed");
-      expect(note.textContent).toContain("Sprints landed on");
+      expect(note.getAttribute("title")).toContain("Sprints landed on");
+      expect(note.textContent).toContain("Landed on");
       expect(within(note).getByTestId("result-scope-tag").textContent).toContain("Checkout");
     } finally {
       rollup.forEach((r, i) => { r.result_type = saved[i]; });
