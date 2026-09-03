@@ -51,9 +51,9 @@ import { sumStrict } from "@/lib/strict-sum";
 import { FunnelChart } from "@/components/charts/FunnelChart";
 import {
   TrendingUp, Layers, Table2, Activity, ArrowDown, ArrowUp,
-  ChevronsUpDown, Video, ArrowRight,
+  ChevronsUpDown, ArrowRight,
 } from "lucide-react";
-import type { DemographicRow, PlacementRow, DeviceDeliveryRow } from "@/lib/data/seedTypes";
+import type { AdAccount, DemographicRow, PlacementRow, DeviceDeliveryRow } from "@/lib/data/seedTypes";
 import { TYPE } from "../typography";
 
 const SECTION = "Analysis · 03";
@@ -660,14 +660,36 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
   );
 }
 
-function VideoPlaceholder() {
+const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "m4v", "webm", "avi", "mkv"]);
+
+/**
+ * True when the account is known to run video: an ad's export copy named a
+ * video, an uploaded asset carries a video extension, or a delivered asset
+ * row is typed as video. Read from the account's own records — never
+ * assumed — so the video-metrics caveat below appears only where video
+ * metrics would mean something.
+ */
+export function accountHasVideoCreative(account: Pick<AdAccount, "ads" | "creative_assets"> | null | undefined): boolean {
+  if (!account) return false;
+  for (const ad of account.ads ?? []) {
+    if (ad.creative?.video_name) return true;
+    const name = ad.asset_filename ?? ad.creative_asset_url ?? "";
+    const ext = name.split("?")[0]?.split(".").pop()?.toLowerCase();
+    if (ext && VIDEO_EXTENSIONS.has(ext)) return true;
+  }
+  return (account.creative_assets ?? []).some((r) => /video/i.test(r.asset_type));
+}
+
+/**
+ * Video-metrics caveat: a plain CaveatNote (no titled box), rendered ONLY
+ * when the account has video creatives — a "video metrics unavailable"
+ * panel on an account with no video was a warning about nothing.
+ */
+function VideoMetricsNote({ show }: { show: boolean }) {
+  if (!show) return null;
   return (
-    <div className="rounded-xl border border-border/30 bg-foreground/[0.015] p-5 flex items-start gap-3">
-      <Video className="w-5 h-5 text-muted-foreground/75 shrink-0 mt-0.5" />
-      <div className="space-y-1.5 max-w-xl flex-1 min-w-0">
-        <div className="text-body font-semibold text-foreground/80">Video engagement metrics not available</div>
-        <CaveatNote text="ThruPlay rate and video-play-percentage data require a Meta Video Creative report CSV — a separate export from the standard demographic/placement performance report, not currently detected in staged uploads. To see video metrics: in Meta Ads Manager, go to Columns → Customize, add ThruPlays and Video play %, export as CSV, and stage it alongside your performance exports." />
-      </div>
+    <div data-testid="video-metrics-note">
+      <CaveatNote text="ThruPlay rate and video-play-percentage data require a Meta Video Creative report CSV — a separate export from the standard demographic/placement performance report, not currently detected in staged uploads. To see video metrics: in Meta Ads Manager, go to Columns → Customize, add ThruPlays and Video play %, export as CSV, and stage it alongside your performance exports." />
     </div>
   );
 }
@@ -695,14 +717,28 @@ export function EngagementFunnelView() {
   const analysis   = getAnalysisData(seed, acctId ?? null);
   const isRefetch  = useMetrixIsRefetching();
 
-  const [viewMode, setViewMode]   = useState<ViewMode>("funnel");
-  const [dim, setDim]             = useState<BreakdownDim>("audience");
+  const [viewModeRaw, setViewMode] = useState<ViewMode>("funnel");
+  const [dimRaw, setDim]           = useState<BreakdownDim>("audience");
   const { activeId: sortId, select: setSort } = useRankMetric(SORT_KEY, BREAKDOWN_METRICS.map((m) => m.id), "ctrLink");
 
   const demoRows   = analysis?.demographic_registration_signal ?? [];
   const placRows   = [...(analysis?.v3_placement_signal ?? []), ...(analysis?.c4e_placement_signal ?? [])];
   const deviceRows: DeviceDeliveryRow[] = analysis?.device_delivery_signal ?? [];
   const convDevices = analysis?.conversion_tracking_signal?.devices ?? [];
+
+  // The Demographics export is ONE of three inputs here. The funnel, the
+  // account tiles, the audience dimension and the frequency scatter read it;
+  // the placement and device breakdowns do not. When it is absent the page
+  // lands on the Placement (else Device) breakdown and the demo-only modes
+  // are disabled with the reason named — never a blank page while placement
+  // or device rows exist. Derived, not an effect: the state keeps the
+  // reader's raw choice and is honoured again the moment demo rows arrive.
+  const hasDemo = demoRows.length > 0;
+  const hasVideo = accountHasVideoCreative(account);
+  const demoOnlyReason = "Needs the Demographics export — not staged for this account";
+  const fallbackDim: BreakdownDim = placRows.length > 0 ? "placement" : "device";
+  const dim: BreakdownDim = hasDemo ? dimRaw : dimRaw === "audience" ? fallbackDim : dimRaw;
+  const viewMode: ViewMode = hasDemo ? viewModeRaw : "breakdown";
 
   const funnelStages = useMemo(() => buildFunnelStages(demoRows), [demoRows]);
 
@@ -747,13 +783,13 @@ export function EngagementFunnelView() {
       {() => {
         const acct = account!;
 
-        if (demoRows.length === 0) {
+        if (demoRows.length === 0 && placRows.length === 0 && deviceRows.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Engagement Funnel" accountName={acct.name} tabs="analysis" />
               <PendingState
                 title="No engagement data"
-                message="Stage demographic performance CSVs and run analysis to see the engagement funnel."
+                message="Stage a demographic, placement or device performance export and run analysis to see the engagement funnel."
                 icon={TrendingUp}
                 action={<CrossLink to="/app/analysis" label="Go to Analysis" />}
               />
@@ -772,7 +808,14 @@ export function EngagementFunnelView() {
             />
 
             {/* ── Summary tiles ─────────────────────────────────────── */}
-            {isRefetch ? (
+            {!hasDemo ? (
+              <div className="px-6 pt-5" data-testid="funnel-no-demo-note">
+                <CaveatNote
+                  defaultExpanded
+                  text="The funnel, the account engagement tiles and the audience breakdown read the Demographics export, which is not staged for this account. The placement and device breakdowns below read the Placement and Device exports."
+                />
+              </div>
+            ) : isRefetch ? (
               <div className="px-6 pt-5"><SkeletonTileRow count={5} /></div>
             ) : (
               <div className="px-6 pt-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
@@ -812,11 +855,14 @@ export function EngagementFunnelView() {
                   <button
                     key={mode}
                     onClick={() => setViewMode(mode)}
+                    disabled={!hasDemo && mode !== "breakdown"}
+                    title={!hasDemo && mode !== "breakdown" ? demoOnlyReason : undefined}
                     className={cn(
                       "pressable inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
                       viewMode === mode
                         ? "bg-primary/20 text-interactive border border-primary/25"
-                        : "text-muted-foreground/75 hover:text-foreground/80"
+                        : "text-muted-foreground/75 hover:text-foreground/80",
+                      !hasDemo && mode !== "breakdown" && "opacity-50 cursor-not-allowed"
                     )}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -832,11 +878,14 @@ export function EngagementFunnelView() {
                     <button
                       key={d}
                       onClick={() => setDim(d)}
+                      disabled={!hasDemo && d === "audience"}
+                      title={!hasDemo && d === "audience" ? demoOnlyReason : undefined}
                       className={cn(
                         "pressable px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
                         dim === d
                           ? "bg-primary/20 text-interactive border border-primary/25"
-                          : "text-muted-foreground/75 hover:text-foreground/80"
+                          : "text-muted-foreground/75 hover:text-foreground/80",
+                        !hasDemo && d === "audience" && "opacity-50 cursor-not-allowed"
                       )}
                     >
                       {l}
@@ -919,7 +968,7 @@ export function EngagementFunnelView() {
                     )}
                   </SectionCard>
 
-                  <VideoPlaceholder />
+                  <VideoMetricsNote show={hasVideo} />
                 </>
               )}
 
@@ -979,7 +1028,7 @@ export function EngagementFunnelView() {
                       </div>
                     )}
                   </SectionCard>
-                  <VideoPlaceholder />
+                  <VideoMetricsNote show={hasVideo} />
                 </>
               )}
             </div>

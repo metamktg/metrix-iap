@@ -229,7 +229,15 @@ export function BudgetView() {
         const acct = account!;
         const a = getAnalysisData(seed, adAccountId);
 
-        if (!summary) {
+        // The campaign summary is ONE input (the event-total tiles and the
+        // per-event efficiency list read it). Concept spend reads the cell
+        // rows and placement spend reads the placement signals, neither of
+        // which needs it — so a missing summary gates only the tiles it
+        // feeds, never the whole page. The page is pending only when none
+        // of the three exists.
+        const hasPlacementRows = Boolean(a && (a.v3_placement_signal.length > 0 || a.c4e_placement_signal.length > 0));
+        const hasCellRows = (a?.performance_by_cell.length ?? 0) > 0;
+        if (!summary && !hasPlacementRows && !hasCellRows) {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Budget" accountName={acct.name} tabs="analysis" />
@@ -246,11 +254,18 @@ export function BudgetView() {
         // When a preset is active use API bottom_line_totals; otherwise seed summary.
         const activeBlt = preset !== "all" && presetData
           ? presetData.totals.bottom_line_totals
-          : summary.bottom_line_totals;
+          : (summary?.bottom_line_totals ?? null);
 
-        const eventRows = selected
-          .map((e) => ({ event: e, totals: activeBlt[e] }))
-          .filter((r) => r.totals != null);
+        const eventRows = activeBlt
+          ? selected
+              .map((e) => ({ event: e, totals: activeBlt[e] }))
+              .filter((r) => r.totals != null)
+          : [];
+        const tileCatalog = preset !== "all" && presetData
+          ? buildMetricCatalog(metricSourceFromApiTotals(presetData.totals))
+          : summary
+            ? buildMetricCatalog(metricSourceFromCampaignSummary(summary))
+            : null;
 
         // Spend by concept, inside the result scope: API concept rows now
         // carry result_type (one row per event), so a window read scopes the
@@ -296,30 +311,30 @@ export function BudgetView() {
               <div className="px-6 pt-5">
                 <SkeletonTileRow count={4} />
               </div>
-            ) : (
+            ) : tileCatalog ? (
               <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                 <KpiTileRow
                   viewKey="budget"
-                  catalog={buildMetricCatalog(
-                    preset !== "all" && presetData
-                      ? metricSourceFromApiTotals(presetData.totals)
-                      : metricSourceFromCampaignSummary(summary),
-                  )}
+                  catalog={tileCatalog}
                   onTileClick={setDrillMetricId}
+                />
+              </div>
+            ) : (
+              <div className="px-6 pt-5" data-testid="budget-no-summary-note">
+                <CaveatNote
+                  defaultExpanded
+                  text="Event totals are not available — this account has no campaign summary yet. Concept and placement spend below read the analysis rows directly."
                 />
               </div>
             )}
 
+            {tileCatalog && (
             <KpiDrilldownModal
               open={drillMetricId != null}
               onClose={() => setDrillMetricId(null)}
               scope="account"
               metricId={drillMetricId}
-              catalog={buildMetricCatalog(
-                preset !== "all" && presetData
-                  ? metricSourceFromApiTotals(presetData.totals)
-                  : metricSourceFromCampaignSummary(summary),
-              )}
+              catalog={tileCatalog}
               analysis={a}
               // Seed cell rows have no daily grain, so under a date preset we
               // pass no cell rows rather than full-flight rows mislabeled as
@@ -334,9 +349,10 @@ export function BudgetView() {
                     : "all data (full flight)"
               }
             />
+            )}
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
-              {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}
+              {summary?.data_caveat && <CaveatNote text={summary.data_caveat} />}
 
               {/* No SectionCard here: DataModule IS the card, and it carries
                   the title, the view switcher and the scope chips itself.
@@ -350,7 +366,11 @@ export function BudgetView() {
                   desc="Spend · results · CPA per event type"
                   right={<SectionInfoIcon tip="Breaks down spend, results, and CPA by each tracked result event so you can see which conversion goals are running efficiently." />}
                 >
-                  <PendingState title="No events selected" message="Select at least one result event above." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />
+                  <PendingState
+                    title={activeBlt ? "No events selected" : "No campaign summary"}
+                    message={activeBlt ? "Select at least one result event above." : "Per-event totals appear once analysis writes a campaign summary for this account."}
+                    action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
+                  />
                 </SectionCard>
               ) : (
                 <EventRowsList rows={eventRows} />

@@ -4,9 +4,10 @@
 // performance data at upload time), and ConnectMetaDialog hands off to
 // the live Meta OAuth flow in Settings → Integrations.
 //
-// Manual imports require the two exact IAP report templates (Demographics +
-// Placements), uploaded as CSV (preferred) or XLSX — same required columns
-// either way — plus optional individual creative files with an editable
+// Manual imports take Meta's IAP report exports (Demographics, Placements,
+// Ad Summary — any ONE lets analysis run, the rest add resolution), uploaded
+// as CSV (preferred) or XLSX — same columns either way — plus optional
+// individual creative files with an editable
 // ad-name mapping. Date range selection does NOT live here — it belongs
 // only to the explicit "Run analysis" step (see AnalysisControls),
 // which is surfaced from the account setup screen, not this dialog.
@@ -553,18 +554,25 @@ type CsvKind =
   | "performance_conversion_device_csv"
   | "performance_asset_csv";
 
+// No slot is mandatory on its own (server contract, analysisEngine.ts /
+// spec §2a): a run needs ONE `delivery` slot filled — a report carrying
+// spend per ad — and every other slot adds resolution. `adds` is the
+// resolution that slot contributes, shown on the slot while it is empty.
 const SMART_CSV_SLOTS: {
   kind: CsvKind;
   csvClass: IapCsvClassKey;
   label: string;
-  optional?: boolean;
+  /** Carries spend per ad — any one of these lets analysis run. */
+  delivery?: boolean;
+  adds: string;
 }[] = [
-  { kind: "performance_demo_csv", csvClass: "demographic", label: "Demographics" },
-  { kind: "performance_placement_csv", csvClass: "device_placement", label: "Placements" },
-  { kind: "performance_ad_summary_csv", csvClass: "ad_summary", label: "Ad Summary", optional: true },
-  { kind: "performance_conversion_device_csv", csvClass: "conversion_device", label: "Conversion Device", optional: true },
-  { kind: "performance_asset_csv", csvClass: "asset", label: "Asset breakdown", optional: true },
+  { kind: "performance_demo_csv", csvClass: "demographic", label: "Demographics", delivery: true, adds: "age × gender breakdown" },
+  { kind: "performance_placement_csv", csvClass: "device_placement", label: "Placements", delivery: true, adds: "placement × platform breakdown" },
+  { kind: "performance_ad_summary_csv", csvClass: "ad_summary", label: "Ad Summary", delivery: true, adds: "full per-ad spend ledger and the reconciliation control" },
+  { kind: "performance_conversion_device_csv", csvClass: "conversion_device", label: "Conversion Device", adds: "conversion device breakdown" },
+  { kind: "performance_asset_csv", csvClass: "asset", label: "Asset breakdown", adds: "per-asset attribution" },
 ];
+const DELIVERY_KINDS: readonly CsvKind[] = SMART_CSV_SLOTS.filter((s) => s.delivery).map((s) => s.kind);
 
 /** Reads the target kind a "wrong slot" server message is steering the file
  *  towards, so a misfiled drop can be silently retried against the correct
@@ -650,8 +658,9 @@ async function sniffCsvKind(file: File): Promise<CsvKind> {
 }
 
 /**
- * One drop zone for every Meta performance export (2 required pivots + 2
- * optional Ads Manager CSVs). Nobody uploading these files thinks in terms
+ * One drop zone for every Meta performance export (three delivery reports,
+ * any one of which lets analysis run, plus the resolution-only CSVs).
+ * Nobody uploading these files thinks in terms
  * of "slots" — they just have a folder of exports from Meta — so instead of
  * making the user sort files into four separately-labeled boxes, this
  * accepts any number of files at once (dragged or picked, in any order) and
@@ -682,9 +691,9 @@ function SmartCsvUpload({
   const fileRef = useRef<HTMLInputElement>(null);
   const deleteMutation = useDeleteManualImport();
 
-  const bothRequiredStaged = Boolean(
-    (staged.performance_demo_csv?.length ?? 0) > 0 && (staged.performance_placement_csv?.length ?? 0) > 0,
-  );
+  // Any ONE delivery report is enough for a run (server contract); the
+  // other slots add resolution. This used to demand both pivots.
+  const anyDeliveryStaged = DELIVERY_KINDS.some((k) => (staged[k]?.length ?? 0) > 0);
 
   const stageOne = async (fileToStage: File): Promise<ManualImportResult> => {
     const sniffedKind = await sniffCsvKind(fileToStage);
@@ -777,8 +786,8 @@ function SmartCsvUpload({
         <div className="text-body font-semibold text-foreground">Performance CSVs</div>
         <p className="text-caption text-foreground/75 mt-0.5">
           Drag in every export you have from Meta Ads Manager — CSV or XLSX, Metrix reads each file's headers and
-          files it automatically. Demographics and Placements are required; Ad Summary and Conversion Device are
-          optional but recommended.
+          files it automatically. Any one of Demographics, Placements or Ad Summary lets analysis run; every
+          other export adds resolution.
         </p>
       </div>
 
@@ -833,11 +842,12 @@ function SmartCsvUpload({
               {filled ? (
                 <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
               ) : (
-                <div className={cn("w-3.5 h-3.5 rounded-full border shrink-0", slot.optional ? "border-border/50" : "border-status-warning/50")} />
+                <div className={cn("w-3.5 h-3.5 rounded-full border shrink-0", slot.delivery && !anyDeliveryStaged ? "border-status-warning/50" : "border-border/50")} />
               )}
-              <span className={cn("truncate flex-1", filled ? "text-foreground/85" : "text-muted-foreground/75")}>
+              <span className={cn("truncate flex-1", filled ? "text-foreground/85" : "text-muted-foreground/75")} title={filled ? undefined : `Adds ${slot.adds}`}>
                 {slot.label}
-                {!slot.optional && !filled && <span className="text-status-warning/70"> *</span>}
+                {slot.delivery && !filled && !anyDeliveryStaged && <span className="text-status-warning/70"> *</span>}
+                {!filled && (slot.delivery ? anyDeliveryStaged : true) && <span className="text-muted-foreground/75"> · adds resolution</span>}
                 {importsForSlot.length > 1 && (
                   <span className="text-status-success/80"> · {importsForSlot.length} files</span>
                 )}
@@ -887,8 +897,8 @@ function SmartCsvUpload({
           ))}
         </div>
       )}
-      {!bothRequiredStaged && (
-        <p className="text-label text-muted-foreground/75 px-0.5">* Demographics and Placements are required before you can continue.</p>
+      {!anyDeliveryStaged && (
+        <p className="text-label text-muted-foreground/75 px-0.5">* Stage any one delivery export — Demographics, Placements or Ad Summary — to continue.</p>
       )}
 
       <details className="group rounded-lg border border-border/30">
@@ -1558,8 +1568,8 @@ function CreativeUploadSection({
 }
 
 /**
- * Full manual-import upload flow for an account: both required CSV
- * templates, optional individual creative files with editable ad-name
+ * Full manual-import upload flow for an account: the performance CSV
+ * exports (any one delivery report unlocks Review), optional individual creative files with editable ad-name
  * mapping, and an explicit confirmation/review step before finalizing.
  * No date range lives here — that's a separate, explicit "Run analysis"
  * step from the account setup screen.
@@ -1702,20 +1712,22 @@ export function ManualUploadPanel({
   const placementImport = placementImports[0] ?? null;
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
   const guessedImports = guessedCreativeImports(imports);
-  const bothRequiredStaged = Boolean(demoImports.length > 0 && placementImports.length > 0);
+  // Any ONE delivery report (demo / placement / Ad Summary) lets the run go
+  // — the server's contract; the others add resolution.
+  const anyDeliveryStaged = demoImports.length > 0 || placementImports.length > 0 || summaryImports.length > 0;
   const creativeMappedCount = creativeAssets.filter((a) => a.ad_names.length > 0).length;
   const creativeUnmappedCount = creativeAssets.length - creativeMappedCount;
 
-  // Auto-advance to review/run step once when both required CSVs are already
+  // Auto-advance to review/run step once when a delivery report is already
   // staged — reopening the dialog (e.g. from Analysis Hub or Library) skips
   // the upload step and lands straight on Run Analysis.
   const hasAutoAdvancedRef = useRef(false);
   useEffect(() => {
-    if (!hasAutoAdvancedRef.current && bothRequiredStaged) {
+    if (!hasAutoAdvancedRef.current && anyDeliveryStaged) {
       setStep("review");
       hasAutoAdvancedRef.current = true;
     }
-  }, [bothRequiredStaged]);
+  }, [anyDeliveryStaged]);
 
   // Ad names actually seen aren't known client-side (CSVs are staged raw,
   // not parsed) — mismatch warnings are informational only, based on
@@ -1875,10 +1887,12 @@ export function ManualUploadPanel({
 
       <div className="flex items-center justify-between pt-1 border-t border-border/30 mt-1">
         <div className="max-w-[60%]">
-          <p className="text-label text-foreground/75 font-medium">Both CSVs are required before you can continue.</p>
+          <p className="text-label text-foreground/75 font-medium">
+            {anyDeliveryStaged ? "Ready to review — any export not yet staged adds resolution." : "Stage any one delivery export (Demographics, Placements or Ad Summary) to continue."}
+          </p>
           <p className="text-label text-muted-foreground/75 leading-relaxed mt-0.5">Files are stored raw until an analysis run explicitly processes them.</p>
         </div>
-        <PrimaryBtn onClick={() => setStep("review")} disabled={!bothRequiredStaged}>
+        <PrimaryBtn onClick={() => setStep("review")} disabled={!anyDeliveryStaged}>
           Review <ArrowRight className="w-3.5 h-3.5" />
         </PrimaryBtn>
       </div>
@@ -2237,7 +2251,7 @@ export function ManualImportDialog({
               </div>
               <DialogTitle className={DIALOG.title}>Add Manual Import</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
-                Upload the two required exports for{" "}
+                Upload Meta performance exports for{" "}
                 <span className="text-foreground/80 font-medium">{account.name}</span>, plus any
                 creative files. Files are staged for the analysis pipeline — performance data appears
                 only after you explicitly run analysis from the account's setup screen.

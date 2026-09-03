@@ -25,7 +25,7 @@
 
 import type { EvaluationScale } from "@/lib/resultEvents";
 import { useResultScope } from "@/hooks/useResultScope";
-import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
+import { ResultScopeBar, LandedScopeNote } from "@/components/analysis/ResultScopeBar";
 import { useMemo, useState, useCallback } from "react";
 import { DumbbellRows } from "@/components/charts/DumbbellRows";
 import { VERDICT, divergingFill } from "@/components/charts/chartTokens";
@@ -780,7 +780,16 @@ export function AudienceView() {
   // demographic rows are (age × gender × event) and are filtered to the
   // scope BEFORE any segment total is summed.
   const resultScope = useResultScope(account, adAccountId, analysis?.demographic_registration_signal?.map((r) => r["Result type"]));
-  const scopeDemo = resultScope.scopeRows;
+  // Land where THIS page's rows are before the reader has chosen (legacy
+  // imports stamped every demographic row with one event, which is not
+  // always the account default); a stored choice is always honoured, so an
+  // empty page is then an honest empty with the switch still on screen.
+  const allDemoRows = analysis?.demographic_registration_signal;
+  const demoLanding = useMemo(
+    () => resultScope.landRows(allDemoRows ?? [], (r) => r["Result type"]),
+    [resultScope.landRows, allDemoRows],
+  );
+  const activeScope = demoLanding.landed ?? resultScope.scope;
   const [selectedSeg, setSelectedSeg] = useState<SegmentId | null>(null);
   const [mode, setMode] = useState<SegmentByMode>(() => {
     try {
@@ -831,8 +840,8 @@ export function AudienceView() {
   // When a preset is active and data has loaded, use the API rows; otherwise seed rows.
   const activeDemoRows = useMemo(() => {
     if (preset !== "all" && presetData) return adaptApiDemoRows(presetData.demographic_rows);
-    return scopeDemo(analysis?.demographic_registration_signal ?? [], (r) => r["Result type"]);
-  }, [preset, presetData, analysis]);
+    return demoLanding.rows;
+  }, [preset, presetData, demoLanding]);
 
   const unfilteredRows = useMemo(
     () => scopeDemographicRows(activeDemoRows, null),
@@ -881,7 +890,7 @@ export function AudienceView() {
     ? resultTerm(account)
     : { singular: "result", plural: "results", Plural: "Results" };
 
-  const scale = resultScope.scope?.scale ?? null;
+  const scale = activeScope?.scale ?? null;
   const rankMetrics = useMemo(() => buildRankMetrics(term.Plural, scale), [term.Plural, scale]);
   const rankGroups = useMemo(() => audienceRankGroups(scale), [scale]);
   const { activeId, select } = useRankMetric(RANK_KEY, rankMetrics.map((m) => m.id), "results");
@@ -949,15 +958,25 @@ export function AudienceView() {
       <ModuleScopeGate section={SECTION} title="Audience" account={account}>
         {() => {
           const acct = account!;
-          const rows = scopeDemo(analysis?.demographic_registration_signal ?? [], (r) => r["Result type"]);
+          const rows = demoLanding.rows;
+          const totalDemoRows = allDemoRows?.length ?? 0;
 
           if (rows.length === 0) {
+            // The scope bar renders ABOVE the empty state: when the stored
+            // scope empties the rows, the reader needs the switch, and the
+            // message says the rows exist under other events rather than
+            // claiming there is no signal at all.
             return (
               <div className="flex-1 flex flex-col">
                 <ModuleHeader section={SECTION} title="Audience" accountName={acct.name} tabs="analysis" />
+                <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
                 <PendingState
                   title="No demographic signal"
-                  message="Audience intelligence appears once demographic result data exists."
+                  message={
+                    totalDemoRows > 0
+                      ? `${totalDemoRows} demographic row${totalDemoRows === 1 ? "" : "s"} exist under other result events — switch the result scope above to read them.`
+                      : "Audience intelligence appears once demographic result data exists."
+                  }
                   icon={Users}
                   action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
                 />
@@ -974,7 +993,8 @@ export function AudienceView() {
                 subtitle={`${clusterGroups.length} real behavioral cluster${clusterGroups.length !== 1 ? "s" : ""}, derived from the demographic breakdown — not declared targeting.`}
                 tabs="analysis"
               />
-              <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
+              <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
+              <LandedScopeNote landed={demoLanding.landed} what="Audience" />
               <>
                   <DatePresetBar
                     value={preset}

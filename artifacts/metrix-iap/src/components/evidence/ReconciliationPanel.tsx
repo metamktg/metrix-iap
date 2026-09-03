@@ -39,7 +39,13 @@ export function ReconciliationPanel({ reconciliation, defaultOpen = false, class
   const summary = reconciliation?.summary ?? null;
   const breakdownSummary = summary?.breakdowns.find((b) => b.report_class === active) ?? null;
 
-  if (!reconciliation || !summary || breakdowns.length === 0) return null;
+  // Null only when there is no reconciliation at all. A summary with no
+  // breakdown class reconciled (an Ad Summary staged alone, say) still
+  // carries the truth source, and the reader deserves to see which control
+  // was found and that nothing was reconciled against it — silence read as
+  // "this feature does not exist here".
+  if (!reconciliation || !summary) return null;
+  const noBreakdown = breakdowns.length === 0;
   const spend = breakdownSummary?.by_metric.find((m) => m.metric === "amount_spent") ?? null;
   // A rejected control names itself: "no compatible control source for this window".
   const truthLabel = summary.truth_source === "ad_summary" ? (summary.truth_identity_kind === "ad_id" ? "Ad Summary per Ad ID" : "Ad Summary per ad name") : summary.truth_source === "totals_row" ? "Meta's totals row" : summary.truth_precedence || "no control source";
@@ -55,14 +61,19 @@ export function ReconciliationPanel({ reconciliation, defaultOpen = false, class
         <span className="flex items-center gap-2 flex-wrap min-w-0">
           <span className={cn(TYPE.label, "uppercase tracking-widest text-muted-foreground/75")}>Reconciliation</span>
           <EvidenceChip state={spend?.evidence_state ?? null} testId="reconciliation-state" />
-          <span className={cn(TYPE.caption, "text-muted-foreground/75 truncate")}>
-            {spend?.coverage_pct !== null && spend?.coverage_pct !== undefined ? `${spend.coverage_pct}% of spend` : "not reconciled"} · control: {truthLabel}
+          <span className={cn(TYPE.caption, "text-muted-foreground/75 truncate")} data-testid="reconciliation-summary-line">
+            {noBreakdown ? "no breakdown class reconciled" : spend?.coverage_pct !== null && spend?.coverage_pct !== undefined ? `${spend.coverage_pct}% of spend` : "not reconciled"} · control: {truthLabel}
           </span>
         </span>
         <ChevronDown className={cn("w-4 h-4 text-muted-foreground/75 transition-transform shrink-0", open && "rotate-180")} aria-hidden />
       </button>
       <RevealPanel open={open}>
         <div className="px-4 pb-4 space-y-4">
+          {noBreakdown && (
+            <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
+              No demographic, placement or asset breakdown was staged for this window, so there is nothing to reconcile against the control. Stage a breakdown export to see per-ad coverage here.
+            </p>
+          )}
           <div className="flex items-center gap-3 flex-wrap">
             {breakdowns.length > 1 && (
               <SegmentedToggle

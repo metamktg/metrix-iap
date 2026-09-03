@@ -104,3 +104,21 @@ export function ResultScopeTag({ scope, className }: { scope: ResultScope | null
     </span>
   );
 }
+
+/**
+ * One line under the bar when a surface LANDED on a scope other than the
+ * account default because its own rows carry nothing under that default
+ * (useResultScope.landRows). Null when nothing landed — the common case —
+ * so it costs no chrome. The reader learns that the chips above reflect
+ * where this page's data is, not a choice they made.
+ */
+export function LandedScopeNote({ landed, what = "This page", className }: { landed: ResultScope | null; what?: string; className?: string }) {
+  if (!landed) return null;
+  return (
+    <p data-testid="result-scope-landed" className={cn(TYPE.caption, "text-muted-foreground/75 px-6 pt-2 flex items-center gap-1.5 flex-wrap", className)}>
+      <span>{what} landed on</span>
+      <ResultScopeTag scope={landed} />
+      <span>· no rows under the account's default scope. Pick a chip above to change it.</span>
+    </p>
+  );
+}

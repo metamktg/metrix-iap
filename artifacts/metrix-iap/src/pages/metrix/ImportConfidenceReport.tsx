@@ -127,15 +127,25 @@ function SingleCsvConfidenceReport({
   // null is "not recorded" (staged before this was persisted), [] is
   // "validation ran and found none".
   const uploadWarnings = imp.upload_warnings;
-  if (!summary || summary.length === 0) return null;
+  // Render when EITHER exists. The column report and the upload warnings
+  // are separate records; a file whose mapping summary was never stored
+  // (or is empty) can still carry the warnings that say what went wrong at
+  // upload, and dropping the card dropped those with it.
+  const hasColumnReport = Boolean(summary && summary.length > 0);
+  const hasUploadWarnings = Boolean(uploadWarnings && uploadWarnings.length > 0);
+  if (!hasColumnReport && !hasUploadWarnings) return null;
 
   // Build column reports with signal weights
-  const columns: ColumnReport[] = summary.map((entry) => ({
+  const columns: ColumnReport[] = (summary ?? []).map((entry) => ({
     ...entry,
     signalWeight: getSignalWeight(entry.canonical),
   }));
 
-  // Grade = sum of weights for present columns / sum of all weights for weighted columns
+  // Grade = sum of weights for present columns / sum of all weights for
+  // weighted columns. Optional breakdown columns ("Campaign ID", "Ad set
+  // name" …) carry no signal weight (SIGNAL_WEIGHTS lists metrics and the
+  // one required "Conversion device" breakdown), so a "Note:"-level absence
+  // never enters the denominator — a "not in export" chip, not a penalty.
   let totalWeight = 0;
   let presentWeight = 0;
   for (const col of columns) {
@@ -168,12 +178,18 @@ function SingleCsvConfidenceReport({
         ) : (
           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
         )}
-        <GradeBadge grade={grade} />
+        {hasColumnReport && <GradeBadge grade={grade} />}
         <div className="flex-1 min-w-0">
           <div className="text-body font-medium text-foreground truncate">{csvLabel}</div>
           <p className="text-label text-muted-foreground/75">
-            {Math.round(pct * 100)}% signal coverage ·{" "}
-            {resolvedColumns.length} of {summary.length} columns matched
+            {hasColumnReport ? (
+              <>
+                {Math.round(pct * 100)}% signal coverage ·{" "}
+                {resolvedColumns.length} of {columns.length} columns matched
+              </>
+            ) : (
+              <>column report not recorded</>
+            )}
             {uploadWarnings && uploadWarnings.length > 0 && (
               <> · {uploadWarnings.length} upload warning{uploadWarnings.length === 1 ? "" : "s"}</>
             )}
@@ -226,9 +242,10 @@ function SingleCsvConfidenceReport({
           )}
 
           {/* Full column table */}
+          {hasColumnReport && (
           <div className="space-y-1">
             <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">
-              All columns ({summary.length})
+              All columns ({columns.length})
             </div>
             <div className="rounded-md border border-border/30 divide-y divide-border/20">
               {columns.map((col, i) => (
@@ -255,6 +272,12 @@ function SingleCsvConfidenceReport({
               ))}
             </div>
           </div>
+          )}
+          {!hasColumnReport && (
+            <p className="text-label text-muted-foreground/75">
+              No column report was recorded for this file, so it carries no grade — the upload warnings above are what was kept.
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -277,8 +300,7 @@ export function ImportConfidenceReport({ imports }: { imports: ManualImport[] })
         imp.kind === "performance_placement_csv" ||
         imp.kind === "performance_ad_summary_csv" ||
         imp.kind === "performance_conversion_device_csv") &&
-      imp.mapping_summary &&
-      imp.mapping_summary.length > 0
+      ((imp.mapping_summary && imp.mapping_summary.length > 0) || (imp.upload_warnings && imp.upload_warnings.length > 0))
     ) {
       kindToImport.set(imp.kind, imp); // later entries win → most recent per kind
     }

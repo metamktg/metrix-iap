@@ -1167,14 +1167,18 @@ export function coreBaseMetricsFor(csvClass: IapCsvClass): ReadonlySet<string> {
   return csvClass === "ad_summary" ? AD_SUMMARY_CORE_METRICS : CORE_BASE_METRICS;
 }
 
+// "CTR (link click-through rate)" and "CPM (cost per 1,000 impressions)"
+// are NOT core: both are derived from columns that are (link clicks ÷
+// impressions; spend ÷ impressions × 1,000), and the analysis engine
+// recomputes every rate from raw counts anyway (derivedRates). Listing
+// them here fired "⚠ Reduced confidence" on an export that carried
+// everything the engine needs — their absence is a "Note:" line now.
 export const CORE_BASE_METRICS: ReadonlySet<string> = new Set([
   "Amount spent ({ACCOUNT_CURRENCY})",
   "Reach",
   "Impressions",
   "Results",
   "Link clicks",
-  "CTR (link click-through rate)",
-  "CPM (cost per 1,000 impressions)",
 ]);
 
 export type IapCsvMetricGroup = { name: string; required: boolean; columns: readonly string[] };
