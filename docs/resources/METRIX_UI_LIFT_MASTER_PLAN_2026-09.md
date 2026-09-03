@@ -193,19 +193,19 @@ Status: **fixed** (this pass) · **carried** (planned in §4/§5 with the reason
 |---|---|---|
 | L-1 | No provenance on Library rows | fixed: drawer "Provenance" field (run label, window, result type, evidence grade, confidence); VariableTable "Run" column when rows span more than one run ("untagged" for pre-migration rows) |
 | L-2/3 | `confidence`, coverage, adjusted/raw rate rendered nowhere | fixed: Evidence column (confidence badge + observed coverage, joined on variable × same result type); "Adjusted rate" column appears only when the layer computed one — today the `all` rows carry null rates, so it hides rather than dashes |
-| L-4 | KPI tiles aggregate the scope with no variable attribution | carried (§4 Library) |
-| L-5 | Drawer chips are bare codes with no per-cell cost | carried (§4 Library) |
+| L-4 | KPI tiles aggregate the scope with no variable attribution | fixed: a Library tile opens the full breakdown (`KpiDrilldownModal`), whose dimensions include one per variable family — it could previously open only the avatar × placement grid. The `lib_*` tile ids are aliased in `kpiBreakdown` so those rows carry values instead of "n/a" |
+| L-5 | Drawer chips are bare codes with no per-cell cost | fixed: each chip in the drawer's variable stack carries its cost per result (or its result count) read off `v3_variable_performance`, run-scoped and LANDED (a legacy account whose variable rows carry one event would otherwise show every chip bare); the chip's title names the event |
 | L-6 | Top performers selected by an `onb_initiate_checkout` literal | fixed |
 | L-7 | ATC/checkout tiles and preset for every vertical | fixed (gated on events present) |
 | L-8 | FunnelStepsChart fixes a five-step ecommerce path | fixed (built from result events) |
 | L-9 | `intent_class` never reaches the seed | fixed (projected with the run id; the checked-in seed fixture predates it — `refresh:seed-fixture` against a running server, carried to the next session with a credential) |
 | L-10 | `intent_summary` rendered nowhere | fixed (Library header) |
-| L-11 | Ledger coverage only behind admin controls | carried (§4 Library: coverage chip → panel) |
+| L-11 | Ledger coverage only behind admin controls | fixed: the Library states its reconciliation control in a chip beside its actions and opens the ledger in a dialog for any reader; absent reconciliation renders no chip rather than a false claim |
 | L-12 | Copy components not on the Library | fixed: `CreativeComponentsPanel` mounts inside the Library's Ad copy tab (embedded), with a "Weighted on …" line because its weighting is fixed server-side and does not follow the page scope |
 | L-13 | Copy tier badge with no sample floor | fixed ("Unranked") |
 | L-14 | Four tables never selected by the seed | carried (needs schema reading + a decision on cost) |
-| L-15 | Filters cannot filter by any subjective variable | carried (§4 Library — the family multi-select) |
-| L-16 | Sort state never URL-encoded | carried (§4) |
+| L-15 | Filters cannot filter by any subjective variable | fixed: the Variables tab carries a family multi-select in `FilterDisclosure`; the family cards and the table narrow together, and the active families plus the count stay visible while collapsed |
+| L-16 | Sort state never URL-encoded | **decision: not doing it.** `tables.tsx` states the opposite rule in code — sort state is deliberately ephemeral so a table always opens in data order, and a sort carried across accounts or date ranges silently misrepresents the rows. The register item was written without reading that; the rule stands and this row records it |
 
 ### 3.4 Charts and hovers
 | # | Finding | Status |
