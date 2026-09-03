@@ -142,7 +142,7 @@ Status: **fixed** (this pass) · **carried** (planned in §4/§5 with the reason
 | G-3 | Engagement Funnel blanks without demographics although placement/device rows exist | fixed |
 | G-4 | Audience blanks under a stored scope before the scope bar renders | fixed |
 | G-5 | Creative DNA drops rows instead of landing (`scopeRows` vs `landRows`) | fixed |
-| G-6 | `landRows` used on one surface only | fixed on every scoped surface |
+| G-6 | `landRows` used on one surface only | fixed on Avatars, Sprints, Direction, Creative Library, Findings, Audience and DNA; a `LandedScopeNote` under the bar says which scope the surface landed on and why |
 | G-7 | Findings ignores `failure_patterns`; no scope control | fixed |
 | G-8 | Five surfaces scope rows with no visible scope control | fixed (bar or tag) |
 | G-9 | ReconciliationPanel vanishes without breakdowns | fixed |
@@ -151,7 +151,7 @@ Status: **fixed** (this pass) · **carried** (planned in §4/§5 with the reason
 | G-12 | VideoPlaceholder unconditional | fixed |
 | G-13 | CTR/CPM absence fires "Reduced confidence" | fixed (server) |
 | G-14 | Moderate-confidence inference warnings for optional metrics read as attention | fixed (Note: prefix) |
-| G-15 | Optional breakdown columns drag the confidence grade | fixed / carried per the report (denominator location) |
+| G-15 | Optional breakdown columns drag the confidence grade | no change needed: optional breakdown columns carry no `SIGNAL_WEIGHTS` entry, so they were never in the denominator — now documented by a comment and a test in `ImportConfidenceReport` |
 | G-16 | Amber "Spend will be underreported" on every run without Ad Summary | fixed (neutral caveat) |
 | G-17 | Avatar profile-detail fold vanishes when all three inputs are absent | fixed (disabled disclosure) |
 
@@ -182,17 +182,17 @@ Status: **fixed** (this pass) · **carried** (planned in §4/§5 with the reason
 ### 3.3 Library completeness
 | # | Finding | Status |
 |---|---|---|
-| L-1 | No provenance on Library rows | fixed (drawer line + Run column/title) |
-| L-2/3 | `confidence`, coverage, adjusted/raw rate rendered nowhere | fixed (badge column, adjusted rate) |
+| L-1 | No provenance on Library rows | fixed: drawer "Provenance" field (run label, window, result type, evidence grade, confidence); VariableTable "Run" column when rows span more than one run ("untagged" for pre-migration rows) |
+| L-2/3 | `confidence`, coverage, adjusted/raw rate rendered nowhere | fixed: Evidence column (confidence badge + observed coverage, joined on variable × same result type); "Adjusted rate" column appears only when the layer computed one — today the `all` rows carry null rates, so it hides rather than dashes |
 | L-4 | KPI tiles aggregate the scope with no variable attribution | carried (§4 Library) |
 | L-5 | Drawer chips are bare codes with no per-cell cost | carried (§4 Library) |
 | L-6 | Top performers selected by an `onb_initiate_checkout` literal | fixed |
 | L-7 | ATC/checkout tiles and preset for every vertical | fixed (gated on events present) |
 | L-8 | FunnelStepsChart fixes a five-step ecommerce path | fixed (built from result events) |
-| L-9 | `intent_class` never reaches the seed | fixed |
+| L-9 | `intent_class` never reaches the seed | fixed (projected with the run id; the checked-in seed fixture predates it — `refresh:seed-fixture` against a running server, carried to the next session with a credential) |
 | L-10 | `intent_summary` rendered nowhere | fixed (Library header) |
 | L-11 | Ledger coverage only behind admin controls | carried (§4 Library: coverage chip → panel) |
-| L-12 | Copy components not on the Library | fixed if it composed; else CrossLink + carried |
+| L-12 | Copy components not on the Library | fixed: `CreativeComponentsPanel` mounts inside the Library's Ad copy tab (embedded), with a "Weighted on …" line because its weighting is fixed server-side and does not follow the page scope |
 | L-13 | Copy tier badge with no sample floor | fixed ("Unranked") |
 | L-14 | Four tables never selected by the seed | carried (needs schema reading + a decision on cost) |
 | L-15 | Filters cannot filter by any subjective variable | carried (§4 Library — the family multi-select) |

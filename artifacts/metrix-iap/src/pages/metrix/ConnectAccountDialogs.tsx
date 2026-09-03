@@ -1671,6 +1671,9 @@ function stagedFilesLabel(list: ManualImport[]): string {
   return `${list.length} files — ${list.map((i) => i.filename).join(", ")}`;
 }
 
+/** Accounts the reader staged a file for in this browser session — see the auto-advance note in ManualUploadPanel. */
+const sessionStagedAccounts = new Set<string>();
+
 export function ManualUploadPanel({
   accountId,
   availableAdNames,
@@ -1687,6 +1690,7 @@ export function ManualUploadPanel({
   const imports = data?.imports ?? [];
 
   const refresh = () => {
+    sessionStagedAccounts.add(accountId);
     void refetch();
     void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(accountId) });
   };
@@ -1718,12 +1722,21 @@ export function ManualUploadPanel({
   const creativeMappedCount = creativeAssets.filter((a) => a.ad_names.length > 0).length;
   const creativeUnmappedCount = creativeAssets.length - creativeMappedCount;
 
-  // Auto-advance to review/run step once when a delivery report is already
-  // staged — reopening the dialog (e.g. from Analysis Hub or Library) skips
-  // the upload step and lands straight on Run Analysis.
+  // Auto-advance to review/run step once when a delivery report was ALREADY
+  // staged when the dialog opened — reopening it (e.g. from Analysis Hub or
+  // Library) skips the upload step and lands straight on Run Analysis.
+  //
+  // Never mid-session. One delivery export is enough to review (the server's
+  // rule), so advancing the moment one lands would pull the reader off the
+  // upload step while they are reaching for the second export or their
+  // creatives — the e2e happy path caught exactly that. A file the reader
+  // staged in this browser session marks the account as theirs (module
+  // scope: the Leave gate's "Keep staging" remounts this panel and a ref
+  // would forget); the Review button is then the one way forward, enabled
+  // and named.
   const hasAutoAdvancedRef = useRef(false);
   useEffect(() => {
-    if (!hasAutoAdvancedRef.current && anyDeliveryStaged) {
+    if (!hasAutoAdvancedRef.current && anyDeliveryStaged && !sessionStagedAccounts.has(accountId)) {
       setStep("review");
       hasAutoAdvancedRef.current = true;
     }

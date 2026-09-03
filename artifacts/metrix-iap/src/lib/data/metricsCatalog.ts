@@ -301,7 +301,7 @@ export interface LibraryCatalogScope {
  * column (a real 0 counts — Meta reports 0 when the column is present and
  * the ad had no such events; null is absence).
  */
-export function accountCarriesEvent(
+function accountCarriesEvent(
   eventKey: "add_to_cart" | "initiate_checkout",
   events: readonly string[] | undefined,
   rows: readonly CellPerformanceRow[],
