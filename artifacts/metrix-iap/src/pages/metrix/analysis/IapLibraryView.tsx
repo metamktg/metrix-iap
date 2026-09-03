@@ -197,7 +197,7 @@ export function IapLibraryView() {
     storageKey: LIBRARY_METRIC_STORAGE_KEY,
     // Under a communication scope there is no cost tile to default to; the
     // awareness event's own rate and CPM take that slot.
-    defaultIds: activeScope?.scale === "communication" ? [...LIBRARY_DEFAULT_METRIC_IDS.filter((id) => id !== "lib_cpa"), "lib_result_rate", "lib_cpm"] : LIBRARY_DEFAULT_METRIC_IDS,
+    defaultIds: activeScope?.scale === "communication" ? [...LIBRARY_DEFAULT_METRIC_IDS.filter((id) => id !== "lib_cpa"), "lib_result_rate"] : LIBRARY_DEFAULT_METRIC_IDS,
   });
 
   // When a named funnel stage is active, override tile IDs with the stage's preset.
