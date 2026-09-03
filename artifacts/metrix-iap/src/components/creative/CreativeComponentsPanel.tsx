@@ -83,6 +83,10 @@ export function CreativeComponentsPanel({
 
       <div>
         <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
+          {/* No explicit JSX generic here: the Replit dev server's metadata
+              injection mangles `<TabRail<T>` into a parser error and the
+              Creative Library's lazy module fails to load (2026-09-03). The
+              cast narrows the id back to the family union. */}
           <TabRail
             label="Component family"
             active={family}

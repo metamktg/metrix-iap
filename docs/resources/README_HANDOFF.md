@@ -85,7 +85,7 @@ to a first report, from seventeen), the demo-readiness bar and the handoff. What
 sidebar is a 56 px rail and a workspace map (change log entry 6); the KPI hover chart is drawn
 (undefined token) and visible (un-portaled hover card); optional inputs never blank a surface;
 one loop shape with Action offered; the Library ranks on the derived event and carries intent,
-provenance and evidence. Register §14, last entry, has the verification and the decisions.
+provenance and evidence. Register §14, last entry, has the verification and the decisions. Shipped: PR #187 (`bb90d34`), spec follow-up PR #188; deployment `329ef7e0` verified by entry bundle `index-D3hDNtqW.js` and two chunk md5s; healthz 200. One lesson for the next ship: the Replit workspace may commit its own source change before building (it did here, a JSX generic the dev server cannot parse) — always compare the live bundle to a local build of MAIN and adopt or revert the delta before calling it shipped.
 
 **Result events, panels and the sidebar, shipped (2026-09-03, 04:23Z).** Register §14, last entry.
 PR #185 merged as `ac2ad78`; CI green on the head and on `main`; migration `result_event_grain`
