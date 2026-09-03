@@ -874,3 +874,23 @@ work and what it found:
 
 Still listed for the owner rather than taken, unchanged: wiring `ad_traffic_quality` into the
 seed (a seed-contract change).
+
+**Passes 2–7 shipped (2026-09-03, 11:59–12:12Z).** PR #194 merged as `483002a`. The workspace's
+fast-forward was REFUSED — it carries its own `Published your App` commit (`8f72452`), so `main`
+had diverged and `--ff-only` could not apply; a normal merge landed it as `c04357a`, clean, with
+`git diff origin/main` empty. Deployment `329ef7e0`, status `success`.
+
+A note for the next ship, because it cost twenty minutes here: `get_publish_status` reporting
+`running` means a deploy is IN PROGRESS, not that the new revision is live. The old bundle is
+served throughout, so a bundle grep during `running` reads as "the publish deployed stale code"
+when nothing is wrong. Wait for `success`. The confirmation that it had settled was a changed
+entry hash: `index-WYBE7qaL.js` (previous revision, still serving) → `index-CghRLpFV.js`.
+
+Verified live on the settled build, by fetching the entry and all 117 chunks it names:
+`"What the data says to do next"` in `RecommendationSlider-Drs3BRKS.js` and all four command-centre
+chunks; `"No measured figure in this account's rows"` in the slider; `"and this account has none
+yet"` in both `CreativeCommandCenter-BZTZsG7z.js` and `StrategyCommandCenter-COAEkWJL.js` (the two
+repaired gates); `"An analysis run is in progress"` in the Strategy chunk; `"Generated · "` in the
+entry (`briefStatusLabel` now shared). The retired copy `"this account doesn't have a completed
+strategy run yet"` appears in ZERO files, and the Creative chunk no longer carries its private
+`STATUS_LABEL`. `/api/healthz` 200.
