@@ -72,7 +72,7 @@ import { CellCreativeUploadDialog } from "@/components/creative/CellCreativeUplo
 import { DeconstructionReviewQueue } from "@/components/creative/DeconstructionReviewQueue";
 import { useConceptHighlight } from "@/lib/concept-registry-context";
 import {
-  type FunnelStage, getFunnelStageConfig,
+  type FunnelStage, type SortKey, getFunnelStageConfig,
 } from "@/lib/funnelStages";
 import type { AnalysisRun } from "@workspace/api-client-react";
 import {
@@ -81,6 +81,10 @@ import {
   describeCreativeFilters,
 } from "@/components/creative/CreativeFilterPanel";
 import { FilterDisclosure } from "@/components/widgets/FilterDisclosure";
+import {
+  LibraryGridControls, Pager, usableGroupKeys, groupValueOf, groupLabelOf,
+  type GroupKey, type PageSize,
+} from "@/components/creative/LibraryGridControls";
 
 const SECTION = "Analysis · 03";
 
@@ -187,7 +191,16 @@ export function IapLibraryView() {
   const [uploadCellId, setUploadCellId] = useState<string | null>(null);
   const [groupByConcept, setGroupByConcept] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<10 | 25 | 50>(10);
+  // 25, not 10: the grid is five columns, so ten tiles is two rows and
+  // every account past a handful of cells opened already truncated.
+  const [pageSize, setPageSize] = useState<PageSize>(25);
+  // The cell grid owns its ordering. It used to inherit sortKey from the
+  // funnel-stage config set on another page, so the Library could not be
+  // reordered from the Library. `null` means "follow the funnel config",
+  // which keeps the arriving-from-a-stage behaviour intact until the
+  // reader states an order of their own.
+  const [sortOverride, setSortOverride] = useState<{ key: SortKey; dir: "asc" | "desc" } | null>(null);
+  const [groupKey, setGroupKey] = useState<GroupKey>("none");
   // ── Funnel stage + creative filters (local, non-persisted) ───────────
   const [funnelStage, setFunnelStage] = useState<FunnelStage>("custom");
   const [creativeFilters, setCreativeFilters] = useState<CreativeFilterState>(DEFAULT_FILTER_STATE);
@@ -348,7 +361,7 @@ export function IapLibraryView() {
   }, [focus, adAccountId]);
 
   // Reset to page 1 whenever the active tab, account, or page size changes
-  useEffect(() => { setPage(1); }, [tab, adAccountId, pageSize]);
+  useEffect(() => { setPage(1); }, [tab, adAccountId, pageSize, groupKey, sortOverride]);
 
   return (
     <>
@@ -769,9 +782,10 @@ export function IapLibraryView() {
                         </div>
                       );
                     })() : (() => {
-                      // Apply funnel sort then creative filters
-                      const sortKey = funnelConfig?.sortKey ?? "none";
-                      const sortDir = funnelConfig?.sortDir ?? "desc";
+                      // The reader's order wins; the funnel stage they arrived
+                      // from is the default until they state one.
+                      const sortKey: SortKey = sortOverride?.key ?? funnelConfig?.sortKey ?? "none";
+                      const sortDir = sortOverride?.dir ?? funnelConfig?.sortDir ?? "desc";
                       let sortedCells = uniqueCellRows(cells);
                       if (sortKey !== "none") {
                         sortedCells = [...sortedCells].sort((a, b) => {
@@ -786,11 +800,45 @@ export function IapLibraryView() {
                         conceptGroups.map((g) => g.conceptName).filter(Boolean) as string[]
                       )];
                       const totalCells = filteredCells.length;
-                      const totalPages = Math.max(1, Math.ceil(totalCells / pageSize));
+                      // Only offer groupings these rows can back.
+                      const groupOptions = usableGroupKeys(filteredCells);
+                      const activeGroup: GroupKey = groupOptions.includes(groupKey as never) ? groupKey : "none";
+
+                      // Paging is over GROUPS when grouping is on, so a segment
+                      // arrives whole rather than split across a page break.
+                      const groups: { label: string; rows: typeof filteredCells }[] =
+                        activeGroup === "none"
+                          ? [{ label: "", rows: filteredCells }]
+                          : (() => {
+                              const by = new Map<string, typeof filteredCells>();
+                              for (const r of filteredCells) {
+                                const k = groupValueOf(r, activeGroup) ?? "Not set";
+                                const list = by.get(k) ?? [];
+                                list.push(r);
+                                by.set(k, list);
+                              }
+                              // Largest segment first — the money is the headline.
+                              return [...by.entries()]
+                                .map(([label, rows]) => ({ label, rows }))
+                                .sort((x, y) => y.rows.length - x.rows.length || x.label.localeCompare(y.label));
+                            })();
+
+                      // Ungrouped, a page is N cells. Grouped, a page is N
+                      // segments and every cell in them — the two cannot share
+                      // one slice, because a segment split down the middle is
+                      // the thing grouping exists to prevent.
+                      const unit = activeGroup === "none" ? totalCells : groups.length;
+                      const perPage = pageSize ?? Math.max(unit, 1);
+                      const totalPages = Math.max(1, Math.ceil(unit / perPage));
                       const safePage = Math.min(page, totalPages);
-                      const pagedCells = filteredCells.slice((safePage - 1) * pageSize, safePage * pageSize);
-                      const rangeStart = (safePage - 1) * pageSize + 1;
-                      const rangeEnd = Math.min(safePage * pageSize, totalCells);
+                      const from = (safePage - 1) * perPage;
+                      const pagedCells = activeGroup === "none" ? filteredCells.slice(from, from + perPage) : [];
+                      const pagedGroups = activeGroup === "none" ? [] : groups.slice(from, from + perPage);
+                      const shownCells = activeGroup === "none"
+                        ? pagedCells.length
+                        : pagedGroups.reduce((n, g) => n + g.rows.length, 0);
+                      const rangeStart = unit === 0 ? 0 : from + 1;
+                      const rangeEnd = Math.min(from + perPage, unit);
 
                       if (totalBeforeFilter === 0 && creativeOnlyCellIds.length === 0) {
                         return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />;
@@ -820,11 +868,29 @@ export function IapLibraryView() {
                             />
                           )}
 
+                          {totalCells > 0 && (
+                            <LibraryGridControls
+                              sortKey={sortKey === "none" ? "spend" : sortKey}
+                              sortDir={sortDir}
+                              onSort={(key, dir) => { setSortOverride({ key, dir }); setPage(1); }}
+                              groupKey={activeGroup}
+                              groupOptions={groupOptions}
+                              onGroup={(k) => { setGroupKey(k); setPage(1); }}
+                              pageSize={pageSize}
+                              onPageSize={(n) => { setPageSize(n); setPage(1); }}
+                              shown={shownCells}
+                              total={totalCells}
+                            />
+                          )}
+
                           {/* ── Performance cells ── */}
                           {totalCells > 0 && (
                             <>
-                              <div className="grid grid-cols-dashboard-5-xl gap-3">
-                                {pagedCells.map((row) => (
+                              {/* One cell renderer, used flat and inside every
+                                  group, so a grouped tile can never drift from
+                                  an ungrouped one. */}
+                              {(() => {
+                                const renderCell = (row: typeof filteredCells[number]) => (
                                   <div
                                     key={row.cell_id}
                                     data-concept-cell={row.cell_id}
@@ -860,59 +926,43 @@ export function IapLibraryView() {
                                       )}
                                     />
                                   </div>
-                                ))}
-                              </div>
-
-                              {/* ── Pagination controls ── */}
-                              <div className="flex items-center justify-between pt-3 border-t border-border/20">
-                                <span className="text-label text-muted-foreground/75 tabular-nums">
-                                  {totalCells <= pageSize
-                                    ? `${totalCells} creative${totalCells === 1 ? "" : "s"} with performance data`
-                                    : `${rangeStart}–${rangeEnd} of ${totalCells}`}
-                                </span>
-                                <div className="flex items-center gap-3">
-                                  {/* Page-size toggle */}
-                                  <div className="flex items-center gap-0.5">
-                                    {([10, 25, 50] as const).map((n) => (
-                                      <button
-                                        key={n}
-                                        onClick={() => setPageSize(n)}
-                                        className={`text-label font-medium px-2 py-1 rounded transition-colors ${
-                                          pageSize === n
-                                            ? "bg-primary/15 text-interactive"
-                                            : "text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.04]"
-                                        }`}
-                                      >
-                                        {n}
-                                      </button>
-                                    ))}
-                                    <span className="text-label text-muted-foreground/75 ml-1">per page</span>
-                                  </div>
-                                  {/* Prev / page indicator / Next */}
-                                  {totalPages > 1 && (
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                        disabled={safePage === 1}
-                                        className="pressable text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/75"
-                                        aria-label="Previous page"
-                                      >
-                                        ‹
-                                      </button>
-                                      <span className="text-label tabular-nums text-muted-foreground/75 px-1 min-w-[3rem] text-center">
-                                        {safePage} / {totalPages}
-                                      </span>
-                                      <button
-                                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                        disabled={safePage === totalPages}
-                                        className="pressable text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-foreground/[0.04] transition-colors text-muted-foreground/75"
-                                        aria-label="Next page"
-                                      >
-                                        ›
-                                      </button>
+                                );
+                                if (activeGroup === "none") {
+                                  return (
+                                    <div className="grid grid-cols-dashboard-5-xl gap-3">
+                                      {pagedCells.map(renderCell)}
                                     </div>
-                                  )}
-                                </div>
+                                  );
+                                }
+                                return (
+                                  <div className="space-y-5">
+                                    {pagedGroups.map((g) => (
+                                      <section key={g.label} aria-label={`${groupLabelOf(activeGroup)}: ${g.label}`}>
+                                        <div className="flex items-baseline gap-2 mb-2">
+                                          <h4 className="text-body text-foreground">{g.label}</h4>
+                                          <span className="text-micro-num tabular-nums text-muted-foreground/75">
+                                            {g.rows.length} cell{g.rows.length === 1 ? "" : "s"}
+                                          </span>
+                                          <span className="flex-1 h-px bg-border/25" aria-hidden="true" />
+                                        </div>
+                                        <div className="grid grid-cols-dashboard-5-xl gap-3">
+                                          {g.rows.map(renderCell)}
+                                        </div>
+                                      </section>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
+
+                              <div className="pt-3 border-t border-border/20">
+                                <Pager
+                                  page={safePage}
+                                  totalPages={totalPages}
+                                  onPage={setPage}
+                                  rangeStart={rangeStart}
+                                  rangeEnd={rangeEnd}
+                                  total={unit}
+                                />
                               </div>
                             </>
                           )}
