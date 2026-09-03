@@ -627,7 +627,7 @@ function AudienceSegmentTile({
         <button
           type="button"
           onClick={onExplore}
-          className={cn("pressable inline-flex items-center gap-1", TYPE.caption, "font-medium text-interactive hover:text-primary/80 transition-colors")}
+          className={cn("pressable hit-target-24 inline-flex items-center gap-1", TYPE.caption, "font-medium text-interactive hover:text-primary/80 transition-colors")}
         >
           Explore segment
           <ArrowUpRight className="w-3.5 h-3.5" />

@@ -136,7 +136,7 @@ export function SortableTh({
           title={active ? (sort!.dir === "asc" ? "Sorted ascending — click for descending" : "Sorted descending — click for ascending") : "Click to sort"}
           aria-label={`Sort by ${String(children)}${active ? (sort!.dir === "asc" ? ", currently ascending" : ", currently descending") : ""}`}
           className={cn(
-            "pressable inline-flex items-center gap-0.5 text-label uppercase tracking-widest font-semibold transition-colors",
+            "pressable hit-target-24 inline-flex items-center gap-0.5 text-label uppercase tracking-widest font-semibold transition-colors",
             active ? "text-foreground" : "text-muted-foreground/90 hover:text-foreground",
             right && "flex-row-reverse"
           )}

@@ -2558,7 +2558,7 @@ export async function startManualAnalysis(
         .map((r) => ({ ...r, rows: r.rows.filter((row) => withinRange(row.breakdowns["Day"]!, dateRange, maxDate)) }))
         .filter((r) => r.rows.length > 0);
       const observed = buildObservations(reconReports, { instancesByName });
-      const truth = buildTruth(reconReports, { instancesByName });
+      const truth = buildTruth(reconReports, { instancesByName, window: { start: dateStart, end: dateEnd } });
       const ledger = buildLedger({ observations: observed.observations, truth, reports: reconReports, instancesByName });
       allCsvWarnings.push(...observed.warnings, ...ledger.summary.notes);
       logger.info(

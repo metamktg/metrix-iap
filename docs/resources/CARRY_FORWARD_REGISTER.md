@@ -569,3 +569,50 @@ impressions). Already on it: Audience, the Creative dialog Overview, Analysis Ov
 candidates that still carry a fixed stat trio: Avatars segment cards (Spend · CPA · Link CVR) and the
 DNA family cards (Spend · Results · CPA); the segment drill-down has its own picker and should align
 to the same primitive.
+
+**Shipped to app.metrix.ad (2026-09-02, ~18:45 ET).** PR #182 (signal tags instead of coverage
+warnings; variable drill-down through the evidence layer; one configurable metric-header pattern;
+sweep fixes) merged by the owner on CI run 387 (green on `d460a0f`). The CI round before it failed on
+`smoke:metrix-iap-avatars-tooltips`, which pins the segment badge's accessibility contract (plain
+non-focusable span, sr-only rationale, hover tooltip) — the tag now honours that contract and the spec
+reads the new labels. Workspace merged main (`153daf4`, empty diff), deployment `329ef7e0` succeeded,
+live entry bundle `index-BEARo3NI.js` equals the local build of the same tree, the `CreativeCard`
+chunk md5 matches, healthz 200. The one live check still waiting on the owner: an analysis run on
+`manual_AHXANj6Vjozp` on this build, then `check:reconciliation-ledger`.
+
+**`[shipped]` Triple-pass validation, live finding: the control must share the run window (2026-09-03).**
+The tester ran analysis twice on the evidence-layer build (latest run `47505a6a`, window 2026-08-01
+→ 08-30). The ledger re-derives exactly from the raw rows (per-ad observed spend matches for every ad
+in every class), but its control was Meta's totals row from the 30-day demographic pivot — the
+FILE's period, not the window — so it reported 28.54% demographic coverage ($1,257.34 of $4,405.61)
+where the same-window daily-attributable read is 59.3% ($1,257.34 of $2,121.74). The whole-period
+Ad Summary (Jul 1 → Sep 2) had already been dropped by the window filter. Fix: `buildTruth` takes the
+run window and rejects whole-period sources and totals rows whose period is not the window
+(`periodFit`), records each rejection with its reason (`TruthSet.rejected`, `[Truth] Rejected …`
+run notes), and the ledger's `no_control_source` detail names the export that fixes it (an Ad Summary
+for exactly the window, or with a Day breakdown). Honest consequence for the tester's current files:
+`truth_source: none`, every breakdown `unreconciled` with that detail, and the surfaces show "not
+reconciled · control: no compatible control source for this window" while the daily-attributable
+coverage tag still gives the 59.3% context. A run over the pivot's own 30-day period reconciles
+against the totals row as before.
+
+**`[shipped]` Triple-pass e2e validation (2026-09-03).** Owner ask: full e2e triple pass, high
+confidence, no friction. **Automated:** all 18 Metrix IAP e2e smokes pass (login, forgot-password,
+register persistence, slider persistence, funnel filter, engagement funnel, section-info icons and
+tooltips, Avatars tooltips, ad-account overview, review queue, hover-popover, manual import, failure
+injection, route crawl 70 routes × 3 accounts, shared-layout morph, DOM validity 800 controls); full
+client vitest 190 files / 2,388 tests; api-server CI list 32 files / 490; all fifteen gates. A new
+friction audit (scratch harness, seed fixture, 2 accounts × 51 routes × 1440 and 390 px = 204 visits)
+measured: 0 console errors, 0 navigation errors, 0 nested buttons, 0 horizontal overflow, 0 stale
+copy from the retired warning states. What it found and what shipped: an amber border on every
+unmapped creative card in the IAP Library (69 on the manual account) → neutral border, the "Map
+creative" pill remains the affordance; controls under the 24 px AA target floor (14 px info icons,
+17 px sort headers, 20 px reveal triggers and card actions, the 21 px map pill, an unlabeled 14 px
+collapse chevron) → `hit-target-24` / 24 px hit areas and an accessible name; the Audience coverage
+row overlapping its reveal at 390 px → wraps. Left as designed: warning-tinted alert cards, "Act
+now" recommendations and data-quality notes (content, not chrome); honest "No … yet" empties.
+**Live:** healthz 200; the five evidence tables carry RLS with zero anon/authenticated grants; the
+tester's latest run (`47505a6a`) re-derives exactly from its raw rows (0 per-ad mismatches over 94
+ad × class rows) and exposed the period-compatibility defect fixed above. **Visual:** page-level
+screenshots at 1440 and 390 px of Audience (cluster + ranked), the segment drill-down, Avatars, the
+variable drill-down and the Creative dialog tabs, judged against the rulebook.

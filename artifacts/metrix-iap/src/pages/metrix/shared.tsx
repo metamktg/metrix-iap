@@ -131,7 +131,7 @@ export function SectionInfoIcon({ tip }: { tip: string }) {
           <span
             role="img"
             aria-label="Section info"
-            className="inline-flex items-center justify-center shrink-0 cursor-default text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
+            className="inline-flex items-center justify-center shrink-0 h-6 w-6 -m-[6px] cursor-default text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
           >
             <Info className="w-3 h-3" />
           </span>
@@ -154,7 +154,9 @@ export function InfoTooltip({ content }: { content: string }) {
           <button
             type="button"
             aria-label="More info"
-            className="inline-flex items-center justify-center shrink-0 text-muted-foreground/75 hover:text-muted-foreground/80 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+            // 24×24 hit area around a 14px glyph (WCAG 2.2 AA target size);
+            // the negative margin keeps the glyph's layout footprint.
+            className="inline-flex items-center justify-center shrink-0 h-6 w-6 -m-[5px] text-muted-foreground/75 hover:text-muted-foreground/80 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
           >
             <Info className="w-3.5 h-3.5" />
           </button>
@@ -884,7 +886,7 @@ export function DetailReveal({
           aria-haspopup="dialog"
           data-testid={testId}
           className={cn(
-            "group inline-flex items-start gap-1.5 text-left min-w-0 max-w-full rounded-sm",
+            "group hit-target-24 inline-flex items-start gap-1.5 text-left min-w-0 max-w-full rounded-sm",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
             className
           )}

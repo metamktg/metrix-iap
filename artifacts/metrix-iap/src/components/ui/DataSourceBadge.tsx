@@ -119,9 +119,12 @@ export function DataSourceBadge({ table, className, collapsible = false }: DataS
       )}
       {isCollapsible && (
         <button
+          type="button"
           onClick={() => setCollapsed(c => !c)}
-          className="pressable text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
-          title={collapsed ? "Show table names" : "Collapse"}
+          className="pressable hit-target-24 text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
+          title={collapsed ? "Show table names" : "Collapse table names"}
+          aria-label={collapsed ? "Show table names" : "Collapse table names"}
+          aria-expanded={!collapsed}
         >
           {collapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
         </button>

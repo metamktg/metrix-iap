@@ -41,7 +41,8 @@ export function ReconciliationPanel({ reconciliation, defaultOpen = false, class
 
   if (!reconciliation || !summary || breakdowns.length === 0) return null;
   const spend = breakdownSummary?.by_metric.find((m) => m.metric === "amount_spent") ?? null;
-  const truthLabel = summary.truth_source === "ad_summary" ? (summary.truth_identity_kind === "ad_id" ? "Ad Summary per Ad ID" : "Ad Summary per ad name") : summary.truth_source === "totals_row" ? "Meta's totals row" : "no control source";
+  // A rejected control names itself: "no compatible control source for this window".
+  const truthLabel = summary.truth_source === "ad_summary" ? (summary.truth_identity_kind === "ad_id" ? "Ad Summary per Ad ID" : "Ad Summary per ad name") : summary.truth_source === "totals_row" ? "Meta's totals row" : summary.truth_precedence || "no control source";
 
   return (
     <div className={cn("rounded-lg border border-border/40 bg-foreground/[0.02]", className)} data-testid="reconciliation-panel">
