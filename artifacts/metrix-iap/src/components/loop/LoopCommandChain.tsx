@@ -4,7 +4,14 @@
 // FIVE stage tiles — pure state at a glance, no data on face. Matches the
 // Nocturne canvas stepper spec exactly (22px circle + checkmark/number,
 // connecting line, no counter badge).
-// Stages: Data → Analysis → Strategy → Briefs → Report
+// Stages: Data → Analysis → Strategy → Creative → Reports
+//
+// Data is a real pre-loop step (account setup and ingestion) and Reports is
+// the loop's output; the three between them are IAP loop stages and take
+// their label from navTree's LOOP_STAGES (so the tile that drafts briefs
+// reads "Creative", as the sidebar and every command center do). Each
+// stage's Navigate grid is the section's visible menu rows from navTree —
+// never a hand-typed subset.
 //
 // Re-running the loop is not its own stage — once every stage is complete,
 // the Analysis tile's Command Hub exposes "Re-run Analysis" (see the
@@ -61,6 +68,7 @@ import { buildReportModel, serializeReportModel, downloadReportExport, parseRepo
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { TYPE } from "@/pages/metrix/typography";
 import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
+import { navTree, visibleChildren, loopStageById, type NavChild } from "@/navigation/navTree";
 import {
   BarChart3, Layers, FileText, Database, FileBarChart,
   CheckCircle2, XCircle, Lock, Loader2, X,
@@ -73,44 +81,65 @@ import {
 type Stage = "data" | "analysis" | "strategy" | "briefs" | "report";
 
 // ── Route map ─────────────────────────────────────────────────────────────
+// Which navTree section each chain stage opens. The chain's own stage ids
+// predate the navigation tree ("briefs" is the Creative section, "report"
+// is Reports) and are pinned by tests and data-testids, so they stay; the
+// mapping is the only place the two vocabularies meet.
 
-const STAGE_ROUTES: Record<Stage, { label: string; path: string; desc: string }[]> = {
-  data: [
-    { label: "Account Setup",  path: "/app/settings/general",      desc: "Uploads · source" },
-    { label: "Integrations",   path: "/app/settings/integrations",  desc: "Meta OAuth" },
-  ],
-  analysis: [
-    { label: "Overview",   path: "/app/analysis/overview",   desc: "Cells · variables" },
-    { label: "Library",    path: "/app/analysis/library",    desc: "Creative concepts" },
-    { label: "Audience",   path: "/app/analysis/audience",   desc: "Demographic signal" },
-    { label: "Placements", path: "/app/analysis/placements", desc: "Placement signal" },
-    { label: "Budget",     path: "/app/analysis/budget",     desc: "Spend allocation" },
-  ],
-  strategy: [
-    { label: "Overview",      path: "/app/strategy/overview",   desc: "Pillar summary" },
-    { label: "Strategy Map",  path: "/app/strategy/map",        desc: "Variable combinations" },
-    { label: "Avatars",       path: "/app/strategy/avatars",    desc: "ICP profiles" },
-    { label: "Hypotheses",    path: "/app/strategy/hypotheses", desc: "Test queue" },
-  ],
-  briefs: [
-    { label: "Builder", path: "/app/creative/builder", desc: "Draft & export" },
-    { label: "History", path: "/app/creative", desc: "Past generations" },
-  ],
-  report: [
-    { label: "New Report",    path: "/app/reports/builder",     desc: "Generate a report" },
-    { label: "Report History", path: "/app/reports/history", desc: "Past generations" },
-  ],
+const STAGE_SECTION: Record<Stage, string> = {
+  data: "settings",
+  analysis: "analysis",
+  strategy: "strategy",
+  briefs: "creative",
+  report: "reports",
+};
+
+type StageRoute = { label: string; path: string; desc: string };
+
+function routeOf(c: NavChild): StageRoute {
+  return { label: c.label, path: c.to, desc: c.purpose ?? "" };
+}
+
+/** Every visible menu row of a section, as the hub's Navigate grid. */
+function sectionRoutes(sectionId: string): StageRoute[] {
+  const section = navTree.find((s) => s.id === sectionId);
+  return section ? visibleChildren(section).map(routeOf) : [];
+}
+
+/** One menu row by child id — for a stage that opens a subset of a section. */
+function childRoute(childId: string): StageRoute[] {
+  for (const section of navTree) {
+    const child = section.children?.find((c) => c.id === childId && !c.hidden);
+    if (child) return [routeOf(child)];
+  }
+  return [];
+}
+
+const STAGE_ROUTES: Record<Stage, StageRoute[]> = {
+  // Data opens the two Settings pages that stage and connect data, not the
+  // whole Settings section (Users, Security, Billing are not ingestion).
+  data: [...childRoute("settings-general"), ...childRoute("settings-integrations")],
+  analysis: sectionRoutes(STAGE_SECTION.analysis),
+  strategy: sectionRoutes(STAGE_SECTION.strategy),
+  briefs: sectionRoutes(STAGE_SECTION.briefs),
+  report: sectionRoutes(STAGE_SECTION.report),
 };
 
 // ── Stage config ──────────────────────────────────────────────────────────
+// Loop stages are labelled from LOOP_STAGES; Data and Reports are not loop
+// stages (pre-loop step, output) and carry their own label.
 
-const STAGE_CONFIG = {
-  data:     { icon: Database,     label: "Data"     },
-  analysis: { icon: BarChart3,    label: "Analysis" },
-  strategy: { icon: Layers,       label: "Strategy" },
-  briefs:   { icon: FileText,     label: "Briefs"   },
-  report:   { icon: FileBarChart, label: "Report"   },
-} as const;
+function stageLabel(stage: Stage, fallback: string): string {
+  return loopStageById(STAGE_SECTION[stage])?.label ?? fallback;
+}
+
+const STAGE_CONFIG: Record<Stage, { icon: typeof Database; label: string }> = {
+  data:     { icon: Database,     label: "Data" },
+  analysis: { icon: BarChart3,    label: stageLabel("analysis", "Analysis") },
+  strategy: { icon: Layers,       label: stageLabel("strategy", "Strategy") },
+  briefs:   { icon: FileText,     label: stageLabel("briefs", "Creative") },
+  report:   { icon: FileBarChart, label: navTree.find((s) => s.id === STAGE_SECTION.report)?.label ?? "Reports" },
+};
 
 const DATE_RANGES = [
   { id: "7d"  as const, label: "Last 7 days"  },
@@ -1459,7 +1488,10 @@ function CommandHub({
           <div className="grid grid-cols-2 gap-1">
             {routes.map((r) => {
               const isCurrent    = currentPath === r.path;
-              const isAccessible = isComplete || isRunning;
+              // Data's links ARE how a fresh account gets set up (Account
+              // Setup, Integrations) — gating them on completion locked the
+              // reader out of the pages that complete the stage.
+              const isAccessible = stage === "data" || isComplete || isRunning;
               return (
                 <button
                   key={r.path}

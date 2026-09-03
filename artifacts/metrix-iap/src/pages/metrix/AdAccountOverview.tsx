@@ -35,6 +35,9 @@ import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { MetricHoverPopover } from "@/components/metrics/MetricHoverPopover";
 import { LoopCommandChain } from "@/components/loop/LoopCommandChain";
 
+/** The navTree section label; one spelling for every state of this page. */
+const SECTION = "Account Overview · 01";
+
 // ── Main export ─────────────────────────────────────────────────────────
 
 export function AdAccountOverview() {
@@ -122,7 +125,7 @@ export function AdAccountOverview() {
   if (!account) {
     return (
       <div className="flex-1 flex flex-col">
-        <ModuleHeader section="Ad Account · 01" title="Ad Account Overview" subtitle="Select an ad account to begin." />
+        <ModuleHeader section={SECTION} title="Ad Account Overview" subtitle="Select an ad account to begin." />
         <PendingState
           title="No ad account selected"
           message="Choose an ad account to view its overview."
@@ -136,7 +139,7 @@ export function AdAccountOverview() {
     return (
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <ModuleHeader
-          section="Ad Account · 01"
+          section={SECTION}
           title={account.name}
           subtitle="Set up this account to begin the IAP loop"
         />
@@ -207,7 +210,7 @@ export function AdAccountOverview() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       <ModuleHeader
-        section="Account Overview · 01"
+        section={SECTION}
         title={`${account.name} · Account Overview`}
         subtitle="Command chain · focus · optimization"
         right={

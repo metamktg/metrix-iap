@@ -102,7 +102,8 @@ import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { useListManualImports } from "@workspace/api-client-react";
-import { navTree, visibleChildren } from "@/navigation/navTree";
+import { navTree, visibleChildren, LOOP_STAGES } from "@/navigation/navTree";
+import { fromOriginTarget } from "@/navigation/navHistory";
 import { Plug, FileUp, Clock, Info, ArrowRight, ArrowLeftRight, CheckCircle2, CalendarRange, Maximize2, Minimize2, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Venus, Mars, AlignLeft, Download } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
@@ -448,13 +449,14 @@ function spaNav(href: string, e: React.MouseEvent) {
 
 // The tabs ARE the section's menu rows. They used to be a second hand-typed
 // list of the same eight routes, one rename away from the sidebar saying
-// "Creative DNA" while the tab bar said something else.
-function sectionTabs(section: "analysis" | "strategy"): { label: string; to: string }[] {
+// "Creative DNA" while the tab bar said something else. Any navTree section
+// id with visible children renders; an unknown id renders no tabs.
+function sectionTabs(section: string): { label: string; to: string }[] {
   const node = navTree.find((s) => s.id === section);
   return node ? visibleChildren(node).map((c) => ({ label: c.label, to: c.to })) : [];
 }
 
-export function SectionTabBar({ section }: { section: "analysis" | "strategy" }) {
+export function SectionTabBar({ section }: { section: string }) {
   const [location] = useLocation();
   const tabs = sectionTabs(section);
   return (
@@ -988,8 +990,8 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
             All stages finished. Ready for the next re-run cycle.
           </p>
           <a
-            href="/app/settings/general"
-            onClick={(e) => { e.preventDefault(); navigate("/app/settings/general"); }}
+            href="/app/analysis"
+            onClick={(e) => { e.preventDefault(); navigate("/app/analysis"); }}
             className="inline-flex items-center gap-1 text-label font-semibold text-interactive/80 hover:text-interactive transition-colors"
           >
             Start re-run <ArrowRight className="w-3 h-3" />
@@ -1081,11 +1083,12 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
         { label: "Name the account", done: true },
         { label: "Upload performance CSVs", done: csvsDone, onClick: () => setImportOpen(true) },
         { label: "Map creative assets", done: creativesMapped, route: "/app/settings/general" },
-        { label: "Run analysis", done: false, route: "/app/settings/general" },
+        // The run control lives on the Analysis command center, not Settings.
+        { label: "Run analysis", done: false, route: "/app/analysis" },
       ]
     : [
         { label: "Connect data source", done: false, onClick: () => setConnectOpen(true) },
-        { label: "Run analysis", done: false, route: "/app/settings/general" },
+        { label: "Run analysis", done: false, route: "/app/analysis" },
         { label: "Generate strategy", done: false, route: "/app/strategy/overview" },
         { label: "Generate briefs", done: false, route: "/app/creative/builder" },
       ];
@@ -1528,27 +1531,35 @@ export function useFromParam(): FromParams {
   return { from: p.get("from"), fromCell: p.get("fromCell"), fromHyp: p.get("fromHyp") };
 }
 
+/**
+ * Threads the current page's origin onto an outgoing link, so a hop through
+ * a command center (IAP Library cell → Creative hub → Brief Builder) keeps
+ * the cell that started it. Without this the hub's own links dropped the
+ * params and the crumb on the next page never rendered. A link with no
+ * origin is returned unchanged; an existing query string is preserved.
+ */
+export function withFrom(to: string, fp: FromParams): string {
+  if (!fp.from) return to;
+  const [path, qs = ""] = to.split("?");
+  const p = new URLSearchParams(qs);
+  p.set("from", fp.from);
+  if (fp.fromCell) p.set("fromCell", fp.fromCell);
+  if (fp.fromHyp) p.set("fromHyp", fp.fromHyp);
+  return `${path}?${p.toString()}`;
+}
+
+// The origin → target table lives in navigation/navHistory.ts (keyed by
+// navTree section id, so from=creative / from=mst resolve too) because the
+// Topbar's structural Back reads the same table; these are its page-side
+// views.
+
 /** Returns the back-navigation URL for a given origin param set. */
 function backUrl(fp: FromParams): string | null {
-  if (fp.from === "analysis") {
-    return fp.fromCell ? `/app/analysis/library?focus=${fp.fromCell}` : "/app/analysis/library";
-  }
-  if (fp.from === "strategy") {
-    if (fp.fromHyp) return `/app/strategy/hypotheses?focus=${fp.fromHyp}`;
-    // The chain unwinds one hop at a time. A brief reached from a strategy
-    // page that was itself reached from an analysis cell goes back to that
-    // strategy page WITH its analysis origin intact, so the next Back still
-    // lands on the cell. Dropping the cell here is how a reader ended up on
-    // a bare Strategy Map with no way back to the row that started it.
-    return fp.fromCell ? `/app/strategy/map?from=analysis&fromCell=${fp.fromCell}` : "/app/strategy/map";
-  }
-  return null;
+  return fromOriginTarget(fp)?.to ?? null;
 }
 
 function backLabel(fp: FromParams): string {
-  if (fp.from === "analysis") return fp.fromCell ? `Back to cell ${fp.fromCell}` : "Back to Analysis";
-  if (fp.from === "strategy") return fp.fromHyp ? "Back to Hypothesis" : "Back to Strategy Map";
-  return "Back";
+  return fromOriginTarget(fp)?.label ?? "Back";
 }
 
 /**
@@ -1577,16 +1588,9 @@ export function BackLink() {
  */
 export function FlowCrumb({ from, fromCell, fromHyp }: FromParams) {
   const [, navigate] = useLocation();
-  const fp = { from, fromCell, fromHyp };
-  const url = backUrl(fp);
-  if (!url) return null;
-
-  const origin =
-    from === "analysis" ? (fromCell ? `Analysis · ${fromCell}` : "Analysis · IAP Library")
-    : from === "strategy" ? (fromHyp ? `Strategy · ${fromHyp}` : fromCell ? `Strategy Map · ${fromCell}` : "Strategy Map")
-    : null;
-
-  if (!origin) return null;
+  const target = fromOriginTarget({ from, fromCell, fromHyp });
+  if (!target) return null;
+  const { to: url, crumb: origin } = target;
 
   return (
     <div className="px-6 py-1.5 border-b border-border/20 bg-foreground/[0.01] flex items-center gap-1.5">
@@ -2297,7 +2301,14 @@ export interface StageStatusLike {
   mst: { unlocked: boolean };
 }
 
-/** Builds the 6-stage Listen→Analysis→Strategy→Creative→MST→Reports row every command center renders. */
+/**
+ * Builds the loop row every command center renders: the six stages of
+ * `LOOP_STAGES` (Listen → Analysis → Strategy → Creative → MST → Action),
+ * each with its run state. Ids, labels and routes come from navTree; only
+ * the status is decided here. Reports is an output of the loop, not a stage
+ * of it — it stays reachable through the Outputs group and the account
+ * overview's command chain, never as a loop node.
+ */
 export function buildLoopStages(s: StageStatusLike): LoopStageInfo[] {
   // Strategy (and downstream stages) unlock only when the analysis is
   // VALIDATED — status=success plus the server-side completeness check
@@ -2305,18 +2316,26 @@ export function buildLoopStages(s: StageStatusLike): LoopStageInfo[] {
   // absent on older payloads; treat only an explicit false as "not ready".
   const analysisOk = s.analysis.status === "success" && s.analysis.validated !== false;
   const strategyOk = s.strategy.status === "success";
-  return [
+  const statusById: Record<string, LoopStageStatus> = {
     // Listen has no prerequisite and no discrete "done" state to reach —
     // it's a continuous signal-monitoring surface (real data, ListenCommandCenter)
     // rather than a completable pipeline step, so it's always reachable
     // and never reports "success"/"locked".
-    { id: "listen", label: "Listen", to: "/app/listen", status: "none" },
-    { id: "analysis", label: "Analysis", to: "/app/analysis", status: s.analysis.status as LoopStageStatus },
-    { id: "strategy", label: "Strategy", to: "/app/strategy", status: analysisOk ? (s.strategy.status as LoopStageStatus) : "locked" },
-    { id: "creative", label: "Creative", to: "/app/creative", status: strategyOk ? (s.briefs.status as LoopStageStatus) : "locked" },
-    { id: "mst", label: "MST", to: "/app/mst", status: s.mst.unlocked ? "none" : "locked" },
-    { id: "reports", label: "Reports", to: "/app/reports", status: analysisOk ? "none" : "locked" },
-  ];
+    listen: "none",
+    analysis: s.analysis.status as LoopStageStatus,
+    strategy: analysisOk ? (s.strategy.status as LoopStageStatus) : "locked",
+    creative: strategyOk ? (s.briefs.status as LoopStageStatus) : "locked",
+    mst: s.mst.unlocked ? "none" : "locked",
+    // The queue renders the loop's recommendations, which exist only once
+    // an analysis has validated; like Listen it has no run of its own.
+    action: analysisOk ? "none" : "locked",
+  };
+  return LOOP_STAGES.map((stage) => ({
+    id: stage.id,
+    label: stage.label,
+    to: stage.to,
+    status: statusById[stage.id] ?? "none",
+  }));
 }
 
 /**

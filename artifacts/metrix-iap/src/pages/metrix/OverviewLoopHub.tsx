@@ -13,37 +13,43 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import { TYPE } from "./typography";
 import { cn } from "@workspace/command-deck/lib/utils";
+import { LOOP_STAGES } from "@/navigation/navTree";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
+type Seed = ReturnType<typeof useMetrixSeed>;
+
 export interface AccountLoopStage {
-  id: "analysis" | "strategy" | "creative" | "mst";
+  /** A `LOOP_STAGES` id. */
+  id: string;
   label: string;
   to: string;
   done: boolean;
 }
 
-export function accountLoopStages(
-  seed: ReturnType<typeof useMetrixSeed>,
-  account: AdAccount
-): AccountLoopStage[] {
+// The rollup counts the loop stages that leave real output in the seed.
+// Listen (continuous monitoring) and Action (the optimize producer has not
+// landed — register F-e) have no "done" to count, so they are filtered out
+// of `LOOP_STAGES` here rather than re-typed alongside it.
+const DONE_BY_STAGE: Record<string, (seed: Seed, accountId: string) => boolean> = {
+  analysis: (seed, id) => (getAnalysisData(seed, id)?.performance_by_cell.length ?? 0) > 0,
+  strategy: (seed, id) => (getStrategyData(seed, id)?.message_pillars.length ?? 0) > 0,
+  creative: (seed, id) => (getBriefBuilder(seed, id)?.draft_briefs.length ?? 0) > 0,
+  mst: (seed, id) => (getMST(seed, id)?.local_book2_library?.length ?? 0) > 0,
+};
+
+const COUNTED_STAGES = LOOP_STAGES.filter((s) => s.id in DONE_BY_STAGE);
+
+export function accountLoopStages(seed: Seed, account: AdAccount): AccountLoopStage[] {
   const configured = account.status === "configured";
-  const analysisDone =
-    configured && (getAnalysisData(seed, account.id)?.performance_by_cell.length ?? 0) > 0;
-  const strategyDone =
-    configured && (getStrategyData(seed, account.id)?.message_pillars.length ?? 0) > 0;
-  const briefsDone =
-    configured && (getBriefBuilder(seed, account.id)?.draft_briefs.length ?? 0) > 0;
-  const mstDone =
-    configured && (getMST(seed, account.id)?.local_book2_library?.length ?? 0) > 0;
-  return [
-    { id: "analysis",  label: "Analysis",  to: "/app/analysis",  done: analysisDone },
-    { id: "strategy",  label: "Strategy",  to: "/app/strategy",  done: strategyDone },
-    { id: "creative",  label: "Creative",  to: "/app/creative",  done: briefsDone   },
-    { id: "mst",       label: "MST",       to: "/app/mst",       done: mstDone      },
-  ];
+  return COUNTED_STAGES.map((s) => ({
+    id: s.id,
+    label: s.label,
+    to: s.to,
+    done: configured && DONE_BY_STAGE[s.id]!(seed, account.id),
+  }));
 }
 
-const STAGE_LABELS = ["Analysis", "Strategy", "Creative", "MST"] as const;
+const STAGE_LABELS = COUNTED_STAGES.map((s) => s.label);
 
 // ─── Main export ─────────────────────────────────────────────────────
 

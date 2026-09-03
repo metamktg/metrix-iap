@@ -90,6 +90,16 @@ describe("useBackTarget with no history falls back to the structure", () => {
     expect((await backFor("/app/definitely-not-a-page"))?.to).toBe("/");
   });
 
+  it("prefers the ?from= origin over the structural parent", async () => {
+    const back = await backFor("/app/creative/builder?from=strategy&fromCell=C2B");
+    expect(back?.to).toBe("/app/strategy/map?from=analysis&fromCell=C2B");
+    expect(back?.viaHistory).toBe(false);
+    // An origin outside the two cell-aware sections still resolves.
+    expect((await backFor("/app/mst/sprints?from=creative"))?.to).toBe("/app/creative");
+    // An unknown origin falls back to the structure.
+    expect((await backFor("/app/creative/builder?from=nowhere"))?.to).toBe("/app/creative");
+  });
+
   it("with a recorded previous page, walks history instead", async () => {
     recordNavigation("/app/analysis/library");
     recordNavigation("/app/strategy/map");
