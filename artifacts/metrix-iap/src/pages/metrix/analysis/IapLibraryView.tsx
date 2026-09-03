@@ -10,9 +10,9 @@
 // the library refreshes automatically.
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { TYPE, HEADING } from "../typography";
+import { TYPE, HEADING, DIALOG } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { Images, Dna, RefreshCw, AlertTriangle, PlayCircle, TrendingUp, TrendingDown, Sliders } from "lucide-react";
+import { Images, Dna, RefreshCw, AlertTriangle, PlayCircle, TrendingUp, TrendingDown, Sliders, ShieldCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -54,6 +54,9 @@ import { cardFromCell, libraryCellById } from "@/lib/creative-assembly";
 import { demographicEmptyReasonFor, placementsEmptyReasonFor } from "@/lib/creative-empty-reasons";
 import { groupByConceptFamily } from "@/lib/concept-grouping";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
+import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
+import { ReconciliationPanel } from "@/components/evidence/ReconciliationPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import { VariableDrilldownModal } from "@/components/creative/VariableDrilldownModal";
 import { CellTable, VariableTable } from "./tables";
@@ -157,8 +160,20 @@ export function IapLibraryView() {
   const [importOpen, setImportOpen] = useState(false);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
   // ── Tile-level segment grid: tracks which metric tile the user clicked ─
-  const [tileSegmentsOpen, setTileSegmentsOpen] = useState(false);
   const [tileSegmentMetric, setTileSegmentMetric] = useState<MetricDef | null>(null);
+  // A tile opens the full breakdown, not one dimension of it. The Library's
+  // subject is which VARIABLE carries a number, and the avatar × placement
+  // grid this used to open could not answer that — the variable families are
+  // dimensions in KpiDrilldownModal (`var:<family>`), and avatar segments are
+  // one dimension inside it rather than the only one (register L-4).
+  const [drilldownMetricId, setDrilldownMetricId] = useState<string | null>(null);
+  // Which variable families the Variables tab is narrowed to; empty = all
+  // (register L-15). Local, not persisted: a filter that survives a visit
+  // silently under-reports the account on the next one.
+  const [familyFilter, setFamilyFilter] = useState<string[]>([]);
+  // The reconciliation ledger, reachable from the Library rather than only
+  // from the run controls an admin sees (register L-11).
+  const [coverageOpen, setCoverageOpen] = useState(false);
   const [creativeLibraryOpen, setCreativeLibraryOpen] = useState(false);
   const [uploadCellId, setUploadCellId] = useState<string | null>(null);
   const [groupByConcept, setGroupByConcept] = useState(false);
@@ -214,6 +229,38 @@ export function IapLibraryView() {
     () => filterByRun(scopeRowsFn(a?.performance_by_cell ?? [], (r) => r["Result type"])),
     [a, scopeRowsFn, filterByRun]
   );
+
+  // ── Per-variable cost under the active scope (drawer chips, L-5) ─────
+  // Run-scoped first: v3_variable_performance keeps one row per analysis
+  // run, so summing it unscoped counts the same spend once per run.
+  const variableCost = useMemo(() => {
+    // landRows, not scopeRows: legacy imports stamped every variable row
+    // with one event, so filtering to the account's default scope empties
+    // the map and every chip goes bare — the same drop the Variables tab
+    // already lands around (G-5/G-6). The event each figure belongs to is
+    // named in the chip's title, so a landed number never passes for the
+    // scope the reader selected.
+    const rows = scopeToRun(a?.v3_variable_performance ?? [], a?.latest_analysis_run_id ?? null);
+    const acc = new Map<string, { spend: number; results: number; types: Set<string> }>();
+    for (const r of resultScope.landRows(rows, (x) => x["Result type"]).rows) {
+      const prev = acc.get(r.variable_id) ?? { spend: 0, results: 0, types: new Set<string>() };
+      prev.types.add(r["Result type"]);
+      acc.set(r.variable_id, {
+        spend: prev.spend + (r["Amount spent (USD)"] ?? 0),
+        results: prev.results + (r.Results ?? 0),
+        types: prev.types,
+      });
+    }
+    const out = new Map<string, { cpa: number | null; results: number; event: string | null }>();
+    for (const [code, t] of acc) {
+      out.set(code, {
+        cpa: t.results > 0 ? t.spend / t.results : null,
+        results: t.results,
+        event: t.types.size === 1 ? [...t.types][0]! : null,
+      });
+    }
+    return out;
+  }, [a, resultScope]);
 
   // ── Concept family groups (for "Group by concept" toggle) ────────────
   // Computed at component top-level so no hook rules are violated.
@@ -491,7 +538,9 @@ export function IapLibraryView() {
                         label={m.label}
                         value={m.formatted}
                         sub={m.sub}
-                        onClick={isSegmentable ? () => { setTileSegmentMetric(m); setTileSegmentsOpen(true); } : undefined}
+                        onClick={isSegmentable ? () => { setTileSegmentMetric(m); setDrilldownMetricId(m.id); } : undefined}
+                        actionLabel="Full breakdown"
+                        actionTitle="Open the full breakdown — by concept, variable family, avatar segment or placement"
                       />
                     );
                   })}
@@ -550,6 +599,26 @@ export function IapLibraryView() {
                         : syncResult
                         ? `${syncResult.linked}/${syncResult.total} linked`
                         : "Re-sync creatives"}
+                    </button>
+                  )}
+                  {/* What controls these numbers, said on the surface that
+                      shows them. The ledger used to be reachable only from
+                      the run controls, which are admin-only — a reader could
+                      not tell whether a figure was reconciled against the Ad
+                      Summary or against nothing (register L-11). */}
+                  {a.reconciliation?.summary && (
+                    <button
+                      onClick={() => setCoverageOpen(true)}
+                      data-testid="library-coverage-chip"
+                      title="What these numbers are reconciled against"
+                      className="pressable flex items-center gap-1.5 text-label font-medium border border-border/40 text-muted-foreground/75 hover:text-foreground bg-foreground/[0.02] hover:bg-foreground/[0.04] hover:border-border/60 px-2.5 py-1.5 rounded-md transition-colors"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-interactive/70" />
+                      {a.reconciliation.summary.truth_source === "ad_summary"
+                        ? "Evidence · Ad Summary control"
+                        : a.reconciliation.summary.truth_source === "totals_row"
+                          ? "Evidence · totals-row control"
+                          : "Evidence · no control"}
                     </button>
                   )}
                   <button
@@ -1110,7 +1179,49 @@ export function IapLibraryView() {
                 {/* ── Variables tab ── */}
                 {tab === "variables" && (
                   variables.length ? (
+                    (() => {
+                    // The filter narrows the cards AND the table together: a
+                    // rollup that disagrees with the rows under it is worse
+                    // than no filter. Families come from the rows in scope,
+                    // so the control can never offer an empty one.
+                    const familiesInScope = [...new Set(variables.map((r) => r.variable_family))].sort();
+                    const activeFamilies = familyFilter.filter((f) => familiesInScope.includes(f));
+                    const shownVariables = activeFamilies.length
+                      ? variables.filter((r) => activeFamilies.includes(r.variable_family))
+                      : variables;
+                    return (
                     <div className="space-y-4">
+                      {familiesInScope.length > 1 && (
+                        <FilterDisclosure
+                          label="Variable family"
+                          data-testid="variable-family-filter"
+                          activeSummary={activeFamilies.map((f) => familyLabel(f))}
+                          resultNote={`${shownVariables.length} of ${variables.length} variables`}
+                          onClear={activeFamilies.length ? () => setFamilyFilter([]) : undefined}
+                        >
+                          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Variable families">
+                            {familiesInScope.map((f) => {
+                              const on = activeFamilies.includes(f);
+                              return (
+                                <button
+                                  key={f}
+                                  type="button"
+                                  aria-pressed={on}
+                                  data-testid={`family-filter-${f}`}
+                                  onClick={() =>
+                                    setFamilyFilter((prev) =>
+                                      prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f],
+                                    )
+                                  }
+                                  className={`flex items-center gap-1.5 text-label font-medium border px-2.5 py-1.5 rounded-md transition-colors ${on ? PILL_ACTIVE : PILL_INACTIVE}`}
+                                >
+                                  {familyLabel(f)}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </FilterDisclosure>
+                      )}
                       {/* Family rollup: which DNA families carry the account */}
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
@@ -1120,7 +1231,7 @@ export function IapLibraryView() {
                           </h3>
                         </div>
                         <div className="grid grid-cols-dashboard-4-xl gap-3">
-                          {rollupDnaFamilies(variables, a?.latest_analysis_run_id ?? null, activeScope?.scale).map((f) => (
+                          {rollupDnaFamilies(shownVariables, a?.latest_analysis_run_id ?? null, activeScope?.scale).map((f) => (
                             <div
                               key={f.family}
                               role={f.top ? "button" : undefined}
@@ -1166,8 +1277,10 @@ export function IapLibraryView() {
                           ))}
                         </div>
                       </div>
-                      <VariableTable rows={variables} onRowClick={(r) => setVariableCode(r.variable_id)} segments={a.variable_segment_performance} runLabel={runLabel} />
+                      <VariableTable rows={shownVariables} onRowClick={(r) => setVariableCode(r.variable_id)} segments={a.variable_segment_performance} runLabel={runLabel} />
                     </div>
+                    );
+                    })()
                   ) : (
                     <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />
                   )
@@ -1261,21 +1374,44 @@ export function IapLibraryView() {
                     })()}
                   </div>
                   <DrawerField label="Variable stack — tap a chip to drill down">
+                    {/* Each chip carries what the variable COST under the
+                        active scope, read off v3_variable_performance rather
+                        than recomputed here (register L-5). A bare code says
+                        the cell used a hook; the cost says whether the hook
+                        earned its place. A variable the scope has no row for
+                        stays a bare chip — never a $0. */}
                     <div className="flex flex-wrap gap-1.5">
                       {VARIABLE_FIELDS.map(({ key, label }) => {
                         const code = detail[key];
                         if (!code || typeof code !== "string") return null;
-                        return code.split(/\s*\+\s*/).filter(Boolean).map((c) => (
+                        return code.split(/\s*\+\s*/).filter(Boolean).map((c) => {
+                          const perf = variableCost.get(c) ?? null;
+                          const cost = perf?.cpa != null ? fmtUSD(perf.cpa) : null;
+                          const note = cost
+                            ? `${cost} per result`
+                            : perf
+                              ? `${fmtNum(perf.results)} results`
+                              : null;
+                          return (
                           <button
                             key={key + c}
                             onClick={() => setVariableCode(c)}
-                            title={`${label} — open variable drill-down`}
+                            title={[`${label} — open variable drill-down`, note && `${note}${perf?.event ? ` · ${eventLabel(perf.event)}` : ""}`].filter(Boolean).join(" · ")}
                             data-testid={`chip-drawer-variable-${c}`}
-                            className="rounded transition-transform hover:scale-[1.04] active:scale-[0.97]"
+                            className="rounded transition-transform hover:scale-[1.04] active:scale-[0.97] inline-flex items-center gap-1"
                           >
                             <VariableChip code={c} />
+                            {note && (
+                              <span
+                                data-testid={`chip-drawer-cost-${c}`}
+                                className="text-label tabular-nums text-muted-foreground/75 leading-none"
+                              >
+                                {note}
+                              </span>
+                            )}
                           </button>
-                        ));
+                          );
+                        });
                       })}
                     </div>
                   </DrawerField>
@@ -1372,16 +1508,37 @@ export function IapLibraryView() {
                 />
               )}
 
-              {/* ── Tile-level segment grid (account-wide, metric-scoped) ── */}
-              <SegmentGridModal
-                open={tileSegmentsOpen}
-                onClose={() => setTileSegmentsOpen(false)}
-                kicker="IAP Library · All cells"
-                title={tileSegmentMetric?.label ?? "Segment breakdown"}
+              {/* ── Tile drill-down: every dimension the account's rows back,
+                     variable families included. A Library tile that could only
+                     open avatar × placement answered "who saw it", never
+                     "which variable carried it" (L-4). ── */}
+              <KpiDrilldownModal
+                open={drilldownMetricId != null}
+                onClose={() => setDrilldownMetricId(null)}
+                scope="account"
+                metricId={drilldownMetricId}
+                catalog={tileCatalog}
                 analysis={a}
-                cellIds={null}
-                metric={tileSegmentMetric}
+                scopedCellRows={cells}
+                scopeNarrowed={!runSelection.allTime}
+                windowLabel={runSelection.allTime ? "full flight window" : "selected analysis run(s)"}
               />
+
+              {/* ── Evidence: the reconciliation ledger behind these rows ── */}
+              <Dialog open={coverageOpen} onOpenChange={(v) => !v && setCoverageOpen(false)}>
+                <DialogContent className="max-w-3xl bg-surface-deep border-border/50">
+                  <DialogHeader className="text-left space-y-1">
+                    <div className="text-label text-muted-foreground/75 uppercase tracking-widest">IAP Library · Evidence</div>
+                    <DialogTitle className={DIALOG.title}>What these numbers are reconciled against</DialogTitle>
+                    <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
+                      Every additive metric is reconciled against the strongest control this account staged, and the
+                      residual is recorded with its sign. Residuals are never redistributed into rows and nothing is
+                      scaled to close a gap.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ReconciliationPanel reconciliation={a.reconciliation} defaultOpen />
+                </DialogContent>
+              </Dialog>
 
               {/* ── Variable drill-down (DNA cards, chips, table rows) ── */}
               <VariableDrilldownModal

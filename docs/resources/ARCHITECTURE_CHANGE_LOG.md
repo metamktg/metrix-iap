@@ -375,3 +375,50 @@ type-scale, optical-authority, stray-shell-output.
 **Reach.** Chrome only. Routing, landing routes, `resolveNavLocation`, the palette, the tab
 bars and the Topbar are untouched. The compact drawer renders the same branch to the right of
 the drawer over the backdrop.
+
+## 9. A Library tile answers "which variable", not only "who saw it" (2026-09-03, autonomous pass 1)
+
+**What.** Four attribution gaps in the IAP Library close together, because they are one gap seen
+from four sides — the Library could show a number but not what carried it.
+
+- A metric tile used to open the avatar × placement grid and nothing else. It now opens the full
+  breakdown (`KpiDrilldownModal`), whose dimension list already contained one entry per variable
+  family (`var:<family>`) alongside concept, cell, avatar, placement and platform. The avatar grid
+  is still there — as one dimension inside the modal, and behind its own control on the cards.
+  The tile's affordance line no longer promises "Segment breakdown" (`MetricTile` takes
+  `actionLabel`/`actionTitle`; every other caller keeps the old words).
+- The Library's tiles carry `lib_*` metric ids. `metricValueFromTotals` did not know them, so the
+  breakdown that tile opened would have rendered "n/a" in every row — the aliases now live in
+  `kpiBreakdown` (`lib_spend` → `spend`, `lib_cpa` → `cpa_blended`, `lib_results` and
+  `lib_result_rate` computed from the same totals; `lib_cells` deliberately absent because a count
+  of cells is not derivable from a segment's totals, which is why that tile is not clickable).
+  `SegmentGridModal` had a local copy of this aliasing; the breakdown surfaces now share one.
+- The drawer's variable stack rendered bare codes. Each chip now carries what that variable cost
+  under the active scope, read off `v3_variable_performance` — run-scoped first (the table keeps
+  one row per run) and LANDED rather than filtered, because a legacy account whose variable rows
+  all carry one event would otherwise show every chip bare. The chip's title names the event the
+  figure belongs to, so a landed number never passes for the scope the reader selected.
+- The Variables tab carries a variable-family multi-select. The family cards and the table narrow
+  together — a rollup that disagrees with the rows under it is worse than no filter — and the
+  active families and the resulting count stay on screen while the control is collapsed.
+- The reconciliation ledger is reachable from the Library: a chip names the control the numbers
+  were reconciled against (Ad Summary, totals row, or none) and opens the ledger in a dialog.
+  It was previously mounted only inside the run controls, which are admin-only. An account with
+  no reconciliation renders no chip — silence, not a false claim.
+
+**Why.** Register L-4, L-5, L-11, L-15. The product's claim is objective direction from subjective
+variables; a Library whose tiles can only be broken down by audience, whose chips are bare codes,
+and whose evidence is admin-only cannot make that claim on the surface where it matters.
+
+**Where.** `pages/metrix/analysis/IapLibraryView.tsx`, `pages/metrix/shared.tsx` (`MetricTile`
+action props), `lib/data/kpiBreakdown.ts` (the alias map),
+`pages/metrix/analysis/__tests__/library-attribution.test.tsx` (new, 8 cases).
+
+**Decision recorded, not implemented.** L-16 ("sort state never URL-encoded") is refused:
+`tables.tsx` documents the opposite rule in code — sort is deliberately ephemeral so a table opens
+in data order every time, and a sort carried across accounts or date ranges misrepresents rows the
+reader did not choose. The register item was written without reading that comment.
+
+**Reach.** Chrome only. No seed, schema, or route change. Other `MetricTile` callers are
+unchanged by default; `SegmentGridModal` keeps serving the per-cell and per-card grids.
+
