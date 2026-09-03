@@ -38,6 +38,32 @@ export const MAX_SERIES = SERIES_VARS.length;
 /** Not a category — the bucket everything past the scale folds into. */
 export const NEUTRAL_VAR = "hsl(var(--muted-foreground))";
 
+// ─── Single-series accents ────────────────────────────────────────────
+//
+// A ranked bar of ONE measure is one series, and it wears the product's
+// interactive accent. Three charts used to spell that as
+// `hsl(var(--interactive))`, and `--interactive` does not exist: index.css
+// defines `--color-interactive` (an alias of `--mx-text-interactive`, which
+// already resolves to a colour, not an H S L triplet). An SVG fill that
+// resolves to nothing falls back to BLACK, which is how every KPI hover
+// painted black bars over the navy card. The token is a bare `var()` here
+// for the same reason `SERIES_VARS` are — wrapping a resolved colour in
+// hsl() is a second way to produce the same broken paint.
+
+export const SERIES = {
+  /** The single-series accent. Bare var — see above. */
+  interactive: "var(--color-interactive)",
+  /**
+   * A COST measure (CPA, cost per result, CPM). It is a magnitude, not a
+   * verdict and not a warning, so it takes a second slot of the categorical
+   * scale rather than amber — amber is the data-quality colour, and a CPA
+   * hover in it read as "this import is broken". Slot 2 (cyan) rather than
+   * slot 3, because slot 3 is purple in the dark theme and the owner has
+   * ruled purple out of the KPI surfaces.
+   */
+  cost: SERIES_VARS[1],
+} as const;
+
 /**
  * Colour for a series, by its position in the *stable* ordering.
  * Past the scale, the neutral. Callers derive `index` from an entity key,
@@ -63,14 +89,53 @@ export function assignSeriesColors(keys: readonly string[]): Map<string, string>
 // surface gap between adjacent fills so bars read as separate objects
 // rather than one striped block.
 
+// ─── Type inside a chart ──────────────────────────────────────────────
+//
+// Recharts sets text through SVG attributes, so the CSS role classes in
+// index.css (.text-micro / .text-label / …) cannot reach a tick. These are
+// the SAME steps, restated in px, and the names say which role each one is:
+// nothing inside a chart may sit under the 11px chrome floor. Ticks were at
+// 9px and 10px in four charts and a reference-line label at 8px, which is
+// the "ugly formatting" half of the KPI hover defect.
+
+export const CHART_TYPE = {
+  /** .text-micro — the chrome floor. Axis ticks, a reference-line word. */
+  tick: 11,
+  /** .text-label — a value written beside its bar. */
+  label: 12,
+  /** .text-caption — the reading floor; a tooltip row. */
+  caption: 13,
+  /** .text-body — a tooltip title. */
+  body: 15,
+} as const;
+
 export const MARK = {
   /** Rounded data-end only — the baseline end stays square. */
   barRadius: 4,
+  /** Thickness of a ranked bar. */
+  barSize: 12,
   /** Gap between adjacent bars and between stacked segments. */
   gap: 2,
   lineWidth: 2,
   dotSize: 8,
   activeDotSize: 10,
+  /**
+   * Spread onto a Bar / Area / Pie. Recharts animates every mark in from
+   * zero over 1500ms by default, so a page chart re-grows its bars on every
+   * re-render — a filter change, a resize, a tooltip mount. A measurement
+   * that keeps moving reads as loading, not as data.
+   */
+  noAnimation: { isAnimationActive: false },
+  /**
+   * The direct value label beside a bar: label step, semibold, foreground.
+   * Pair it with `className="tabular-nums"` so a column of values aligns.
+   */
+  valueLabel: {
+    fontSize: 12,
+    fontWeight: 600,
+    fill: "hsl(var(--foreground))",
+    fontFamily: "inherit",
+  },
 } as const;
 
 // ─── Axis + grid: recessive by construction ───────────────────────────
@@ -79,9 +144,15 @@ export const MARK = {
 
 export const AXIS = {
   stroke: "hsl(var(--border))",
+  /**
+   * A dimmed foreground for an axis label that must be read against the
+   * plot rather than the card — the trend and cell charts had this as a
+   * `hsl(var(--foreground) / 0.70)` literal in five places.
+   */
+  labelDim: "hsl(var(--foreground) / 0.70)",
   tick: {
     fill: "hsl(var(--muted-foreground))",
-    fontSize: 11,
+    fontSize: CHART_TYPE.tick,
     fontFamily: "inherit",
   },
   grid: {
@@ -89,10 +160,33 @@ export const AXIS = {
     strokeOpacity: 0.35,
     strokeDasharray: "2 4",
   },
+  /** A fainter grid for a small multiple — foreground at a tenth. */
+  gridSoft: {
+    stroke: "hsl(var(--foreground))",
+    strokeOpacity: 0.1,
+    strokeDasharray: "3 3",
+  },
+  /** Tooltip cursor on a line / area: a hairline. */
   cursor: {
     stroke: "hsl(var(--muted-foreground))",
     strokeOpacity: 0.4,
     strokeWidth: 1,
+  },
+  /** Tooltip cursor on a bar: a faint band behind the hovered row. */
+  cursorFill: {
+    fill: "hsl(var(--muted-foreground))",
+    fillOpacity: 0.08,
+  },
+  /** A reference line (an account average) — dashed, recessive. */
+  reference: {
+    stroke: "hsl(var(--muted-foreground))",
+    strokeOpacity: 0.6,
+    strokeDasharray: "3 3",
+  },
+  /** The zoom brush under a trend: no black literal, the ground at half. */
+  brush: {
+    stroke: "hsl(var(--primary) / 0.35)",
+    fill: "hsl(var(--background) / 0.5)",
   },
 } as const;
 

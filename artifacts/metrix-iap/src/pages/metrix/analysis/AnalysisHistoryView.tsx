@@ -15,6 +15,7 @@ import {
   SectionCard,
   PendingState,
   InfoTooltip,
+  CrossLink,
 } from "../shared";
 import {
   History,
@@ -103,6 +104,17 @@ function RunDetail({ run }: { run: AnalysisRun }) {
           component as the controls panel, so the severity split and the
           reduced-confidence headline can never drift between the two. */}
       {run.status === "success" && <CsvWarningsPanel run={run} compact />}
+
+      {/* A run row used to end here — a dead end. The run's outputs are read
+          on Analysis Overview, whose RunScopePicker scopes to any run; it
+          reads no query param and its store's key builder is private to
+          lib/run-scope.ts, so the link opens the page and the picker does
+          the scoping (audit §1.10). */}
+      {run.status === "success" && (
+        <div className="pt-1">
+          <CrossLink to="/app/analysis/overview" label="Open in Analysis Overview" srNote="scope to this run with the run picker" />
+        </div>
+      )}
 
       {/* Data integrity: `reconciliation` is declared optional in the API
           contract because nothing writes it today (see openapi.yaml). This

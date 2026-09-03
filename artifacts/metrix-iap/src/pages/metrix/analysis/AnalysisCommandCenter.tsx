@@ -305,6 +305,12 @@ export function AnalysisCommandCenter() {
                   },
                 ]}
               />
+              {/* Findings is an Analysis page kept off the menu (navTree
+                  `hidden: true`) until its producer runs for real accounts;
+                  until now its only inbound path was a legacy redirect. */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <CrossLink to="/app/analyze/findings" label="Findings" srNote="verdicts and recommendations from the analysis" />
+              </div>
             </div>
           </div>
         );

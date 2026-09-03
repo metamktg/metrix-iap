@@ -54,6 +54,11 @@ interface AccountTotals {
   id: string; name: string; spend: number; results: number; cpa: number | null;
 }
 
+// The eyebrow spells the navTree section ("Account Overview · 01") the way
+// AdAccountOverview does; the manager view is the same section 01 seen as
+// the agency.
+const SECTION = "Agency Overview · 01";
+
 // ─── Account label badge ─────────────────────────────────────────────────
 
 function AccountBadge({ text }: { text: string }) {
@@ -367,6 +372,14 @@ export function ManagerOverview() {
 
   const accountName = (id: string) => adAccounts.find((a) => a.id === id)?.name ?? id;
 
+  // "Open <account>" on a cross-account card switches scope AND lands the
+  // reader on the page the card belongs to. Switching alone left them on
+  // the account overview with the recommendation nowhere in sight.
+  const openAccountAt = (accountId: string, to: string) => {
+    selectAdAccount(accountId);
+    navigate(to);
+  };
+
   // Per-account KPI totals (spend → results → CPA) from ad account data.
   const accountTotalsMap = useMemo<Map<string, AccountTotals>>(() => {
     const m = new Map<string, AccountTotals>();
@@ -436,7 +449,7 @@ export function ManagerOverview() {
     return (
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         <ModuleHeader
-          section="Agency Overview"
+          section={SECTION}
           title={manager.name}
           subtitle="No ad accounts yet. Add your first account to unlock the intelligence platform."
         />
@@ -450,7 +463,7 @@ export function ManagerOverview() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <ModuleHeader
-        section="Agency Overview"
+        section={SECTION}
         title={manager.name}
         subtitle="Blended performance · all ad accounts"
         right={
@@ -514,7 +527,7 @@ export function ManagerOverview() {
 
           <RevealPanel open={breakdownOpen && !isRefetching}>
             <div className="mt-3 rounded-lg border border-border/40 p-3">
-              <AccountSpendRanking rows={accountTotals} onOpen={selectAdAccount} />
+              <AccountSpendRanking rows={accountTotals} onOpen={(id) => openAccountAt(id, "/app/account")} />
             </div>
           </RevealPanel>
         </div>
@@ -591,7 +604,7 @@ export function ManagerOverview() {
                     key={c.id}
                     card={c}
                     accountLabel={c.manager_card_descriptor ?? accountName(c.account_id)}
-                    onOpen={() => selectAdAccount(c.account_id)}
+                    onOpen={() => openAccountAt(c.account_id, `/app/listen/recommendations?focus=${encodeURIComponent(c.id)}`)}
                   />
                 ))}
               </div>

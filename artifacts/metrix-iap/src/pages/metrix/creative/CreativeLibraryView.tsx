@@ -20,8 +20,8 @@
 // a fabricated interaction.
 
 import { useResultScope } from "@/hooks/useResultScope";
-import { scopeRollupRows } from "@/lib/result-scope";
-import { Fragment, useState } from "react";
+import { ResultScopeBar, LandedScopeNote } from "@/components/analysis/ResultScopeBar";
+import { Fragment, useState, type ReactNode } from "react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { HEADING } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -95,7 +95,27 @@ export function CreativeLibraryView() {
         const components = getCreativeComponents(seed, adAccountId);
         const hasComponents = Boolean(components && components.coverage.ads_with_copy > 0);
         const hasLibrary = Boolean(mst && mst.status === "active" && mst.local_book2_library?.length);
-        const rollupScoped = scopeRollupRows(scopeToRun(a?.concept_rollup ?? [], a?.latest_analysis_run_id ?? null), resultScope.scope);
+        // Rollup rows land where THEIR data is before the reader chooses
+        // (useResultScope.landRows; pre-split null-typed rows are kept). The
+        // scope bar below the header makes the active scope visible — this
+        // page scoped its rows silently before.
+        const rollupLanding = resultScope.landRows(scopeToRun(a?.concept_rollup ?? [], a?.latest_analysis_run_id ?? null), (r) => r.result_type);
+        const rollupScoped = rollupLanding.rows;
+        const activeScope = rollupLanding.landed ?? resultScope.scope;
+
+        // ONE render site for the nudge and the scope bar. Each branch below
+        // used to render `<CreativeSourceNudge>` itself (three call sites for
+        // one suggestion), so a change to where it sits had to be made three
+        // times and could drift between them.
+        const page = (header: ReactNode, body: ReactNode, opts: { scroll?: boolean; scoped?: boolean } = {}) => (
+          <div className={cn("flex-1 flex flex-col", opts.scroll !== false && "min-h-0 overflow-y-auto")}>
+            {header}
+            {opts.scoped && <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />}
+            {opts.scoped && <LandedScopeNote landed={rollupLanding.landed} what="Library" />}
+            <CreativeSourceNudge account={acct} />
+            {body}
+          </div>
+        );
         const componentCount = components
           ? Object.values(components.families).reduce((n, rows) => n + rows.length, 0)
           : 0;
@@ -108,27 +128,24 @@ export function CreativeLibraryView() {
         };
 
         if (!hasLibrary && !hasComponents) {
-          return (
-            <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Library" accountName={acct.name} />
-              <CreativeSourceNudge account={acct} />
-              <PendingState title="No scanned creatives" message={mst?.render_policy ?? "The creative scan populates once the local library is mapped."} icon={Library} />
-            </div>
+          return page(
+            <ModuleHeader section={SECTION} title="Library" accountName={acct.name} />,
+            <PendingState title="No scanned creatives" message={mst?.render_policy ?? "The creative scan populates once the local library is mapped."} icon={Library} />,
+            { scroll: false },
           );
         }
 
         if (!hasLibrary || !mst) {
           const noLibrary = "Scan creatives to populate this — the copy components below come from the performance export";
-          return (
-            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-              <ModuleHeader
-                section={SECTION}
-                title="Library"
-                accountName={acct.name}
-                subtitle="Copy-level components from the performance export · scan creatives for the visual library."
-                table="ad_performance.ad_creative_metadata"
-              />
-              <CreativeSourceNudge account={acct} />
+          return page(
+            <ModuleHeader
+              section={SECTION}
+              title="Library"
+              accountName={acct.name}
+              subtitle="Copy-level components from the performance export · scan creatives for the visual library."
+              table="ad_performance.ad_creative_metadata"
+            />,
+            <>
               <ModuleTabs
                 tabs={[
                   { id: "library", label: "Concept library", count: 0, Icon: Library, disabledReason: noLibrary },
@@ -140,7 +157,8 @@ export function CreativeLibraryView() {
                 onChange={() => {}}
               />
               <CreativeComponentsPanel components={components!} rollup={rollupScoped} />
-            </div>
+            </>,
+            { scoped: true },
           );
         }
 
@@ -193,16 +211,15 @@ export function CreativeLibraryView() {
           return { cpa: results > 0 ? spend / results : null, spend, results, tested: rows.length > 0, cellId: rows[0]?.cell_id ?? null };
         };
 
-        return (
-          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-            <ModuleHeader
-              section={SECTION}
-              title="Library"
-              accountName={acct.name}
-              subtitle="The scanned creative asset register and the variable library it produces."
-              table="local_book2_library"
-            />
-            <CreativeSourceNudge account={acct} />
+        return page(
+          <ModuleHeader
+            section={SECTION}
+            title="Library"
+            accountName={acct.name}
+            subtitle="The scanned creative asset register and the variable library it produces."
+            table="local_book2_library"
+          />,
+          <>
             <div className="px-6 pt-5">
               <SectionCard
                 title="Next moves"
@@ -456,7 +473,8 @@ export function CreativeLibraryView() {
                 variableRows={scopeToRun(a.v3_variable_performance, a.latest_analysis_run_id ?? null)}
               />
             )}
-          </div>
+          </>,
+          { scoped: true },
         );
       }}
     </ModuleScopeGate>

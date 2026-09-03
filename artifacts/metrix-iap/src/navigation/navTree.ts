@@ -592,3 +592,38 @@ export const navTree: NavSection[] = [
     ],
   },
 ];
+
+// ─── The loop, as one list ──────────────────────────────────────────────
+// The IAP loop is the six `group: "loop"` sections above, in `loopStage`
+// order. Four surfaces render a loop shape (the sidebar spine, the
+// command-center stage strip, the Manager Overview rollup, the account
+// overview's command chain) and they used to hand-type it — one ended at
+// Reports, one at Briefs, one had four stages. Every one now reads this
+// list and subsets it by filter; nothing re-types a stage.
+
+export interface LoopStage {
+  /** The section id (`listen` … `action`). */
+  id: string;
+  label: string;
+  /** The stage's command center. */
+  to: string;
+  /** 1-based position in the loop. */
+  loopStage: number;
+  purpose: string;
+}
+
+export const LOOP_STAGES: readonly LoopStage[] = navTree
+  .filter((s): s is NavSection & { loopStage: number } => s.group === "loop" && s.loopStage != null)
+  .sort((a, b) => a.loopStage - b.loopStage)
+  .map((s) => ({
+    id: s.id,
+    label: s.label,
+    to: sectionLandingRoute(s) ?? s.to ?? "/",
+    loopStage: s.loopStage,
+    purpose: s.purpose,
+  }));
+
+/** One loop stage by section id, or null for a section outside the loop. */
+export function loopStageById(id: string): LoopStage | null {
+  return LOOP_STAGES.find((s) => s.id === id) ?? null;
+}

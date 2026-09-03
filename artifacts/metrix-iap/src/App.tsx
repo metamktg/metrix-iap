@@ -136,6 +136,7 @@ export function Router() {
 
       {/* ── 03 Analysis ───────────────────────────────────────────────── */}
       <Route path="/app/analysis"            component={AnalysisCommandCenter} />
+      <Route path="/app/analysis/overview"   component={AnalysisOverview} />
       <Route path="/app/analysis/performance" component={AdPerformanceView} />
       <Route path="/app/analysis/library"    component={IapLibraryView} />
       <Route path="/app/analysis/dna"        component={AnalysisDnaView} />
@@ -144,6 +145,9 @@ export function Router() {
       <Route path="/app/analysis/budget"     component={BudgetView} />
       <Route path="/app/analysis/history"    component={AnalysisHistoryView} />
       <Route path="/app/analysis/funnel"    component={EngagementFunnelView} />
+      {/* Findings — the AI verdict panel; an Analysis page (hidden in the
+          tree until its producer runs for real accounts). */}
+      <Route path="/app/analyze/findings" component={FindingsView} />
 
       {/* ── 04 Strategy ───────────────────────────────────────────────── */}
       <Route path="/app/strategy"              component={StrategyCommandCenter} />
@@ -161,12 +165,6 @@ export function Router() {
       <Route path="/app/creative/scan"         component={CreativeScanView} />
       <Route path="/app/creative/import-export" component={CreativeImportExportView} />
 
-      {/* ── 07 Reports ────────────────────────────────────────────────── */}
-      <Route path="/app/reports"              component={ReportsCommandCenter} />
-      <Route path="/app/reports/builder"      component={ReportBuilderView} />
-      <Route path="/app/reports/configuration" component={ReportConfigurationView} />
-      <Route path="/app/reports/history"      component={ReportHistoryView} />
-
       {/* ── 06 MST ────────────────────────────────────────────────────── */}
       <Route path="/app/mst"                component={MstCommandCenter} />
       <Route path="/app/mst/cross-map"     component={MstCrossMapView} />
@@ -174,19 +172,22 @@ export function Router() {
       <Route path="/app/mst/direction"     component={MstDirectionView} />
       <Route path="/app/mst/creative-scan" component={MstCreativeScanView} />
 
-      {/* ── 08 Exports ────────────────────────────────────────────────── */}
+      {/* ── 07 Action ─────────────────────────────────────────────────── */}
+      <Route path="/app/act/queue"     component={ActionQueueView} />
+      <Route path="/app/action/agent"  component={MetrixAgent} />
+
+      {/* ── 08 Reports ────────────────────────────────────────────────── */}
+      <Route path="/app/reports"              component={ReportsCommandCenter} />
+      <Route path="/app/reports/builder"      component={ReportBuilderView} />
+      <Route path="/app/reports/configuration" component={ReportConfigurationView} />
+      <Route path="/app/reports/history"      component={ReportHistoryView} />
+
+      {/* ── 09 Exports ────────────────────────────────────────────────── */}
       <Route path="/app/exports"           component={ExportsCommandCenter} />
       <Route path="/app/exports/analysis"  component={ExportsAnalysisView} />
       <Route path="/app/exports/strategy"  component={ExportsStrategyView} />
       <Route path="/app/exports/reports"   component={ExportsReportsView} />
       <Route path="/app/exports/brief"     component={ExportsBriefView} />
-
-      {/* ── Analyze · Findings (AI verdict panel; an Analysis page) ──── */}
-      <Route path="/app/analyze/findings" component={FindingsView} />
-
-      {/* ── 09 Action ─────────────────────────────────────────────────── */}
-      <Route path="/app/act/queue"     component={ActionQueueView} />
-      <Route path="/app/action/agent"  component={MetrixAgent} />
 
       {/* ── 10 Settings ───────────────────────────────────────────────── */}
       <Route path="/app/settings/general"       component={GeneralView} />
@@ -199,7 +200,6 @@ export function Router() {
       {/* ── Legacy route redirects (old IA → new IA, zero dead ends) ────
           One table (navigation/legacyRoutes.ts) drives these, the route
           tests, and the lint that stops new code linking to an old path. */}
-      <Route path="/app/analysis/overview" component={AnalysisOverview} />
       {LEGACY_REDIRECTS.map(([from, to]) => (
         <Route key={from} path={from}>{() => <Redirect to={to} replace />}</Route>
       ))}

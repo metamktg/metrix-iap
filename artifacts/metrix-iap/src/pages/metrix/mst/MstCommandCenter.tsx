@@ -19,7 +19,7 @@ import { getAdAccount, getMST, getAnalysisData, getStrategyData, getAds } from "
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
   ModuleHeader, ModuleScopeGate, PrerequisiteGate,
-  StageLoopHub, buildLoopStages, HubNavGrid,
+  StageLoopHub, buildLoopStages, HubNavGrid, FlowCrumb, useFromParam, withFrom,
   MetricTile, SectionCard, SectionInfoIcon, resultTerm, fmtUSD, fmtPct, fmtNum,
   useFocusParam, CaveatNote,
 } from "../shared";
@@ -548,6 +548,11 @@ export function MstCommandCenter() {
     scrollToAvatar(focus);
   }, [focus, matrix, scrollToAvatar]);
 
+  // Loop origin (?from=…): rendered as a crumb and threaded onto every
+  // link out of this hub so the chain unwinds one hop at a time.
+  const fp = useFromParam();
+  const children = CHILDREN.map((c) => ({ ...c, to: withFrom(c.to, fp) }));
+
   return (
     <ModuleScopeGate section={SECTION} title="MST" account={account}>
       {() => {
@@ -572,6 +577,7 @@ export function MstCommandCenter() {
                 />
               }
             />
+            <FlowCrumb {...fp} />
             <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
             <StageLoopHub stages={buildLoopStages(status)} current="mst" />
 
@@ -581,7 +587,7 @@ export function MstCommandCenter() {
                 title="Generate briefs first"
                 message="MST reads matrix cells briefed for this account — this account doesn't have any generated briefs yet."
                 ctaLabel="Go to Creative"
-                ctaTo="/app/creative"
+                ctaTo={withFrom("/app/creative", fp)}
               >
                 {() => (
                   <>
@@ -633,7 +639,7 @@ export function MstCommandCenter() {
                       </>
                     )}
 
-                    <HubNavGrid items={CHILDREN} label="Explore MST" />
+                    <HubNavGrid items={children} label="Explore MST" />
                   </>
                 )}
               </PrerequisiteGate>

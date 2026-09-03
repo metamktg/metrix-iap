@@ -25,7 +25,7 @@
 //    sentence or stat tiles.
 
 import { useResultScope } from "@/hooks/useResultScope";
-import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
+import { ResultScopeBar, LandedScopeNote } from "@/components/analysis/ResultScopeBar";
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -201,7 +201,12 @@ export function AnalysisDnaView() {
   // event(s) before any family is rolled up or ranked.
   const runRows = scopeToRun(analysis?.v3_variable_performance ?? [], analysis?.latest_analysis_run_id ?? null);
   const resultScope = useResultScope(account, adAccountId, runRows.map((r) => r["Result type"]));
-  const variableRows = resultScope.scopeRows(runRows, (r) => r["Result type"]);
+  // Land where THIS page's rows are before the reader has chosen (a stored
+  // choice is always honoured — then an empty page is an honest empty, with
+  // the switch still on screen).
+  const variableLanding = resultScope.landRows(runRows, (r) => r["Result type"]);
+  const variableRows = variableLanding.rows;
+  const activeScope = variableLanding.landed ?? resultScope.scope;
   const combinations = strategy?.variable_combinations ?? [];
   const optimizationLoop = account?.iap?.loop_status?.find(
     (s) => s.stage === "optimization_loop"
@@ -212,12 +217,20 @@ export function AnalysisDnaView() {
       <ModuleScopeGate section={SECTION} title="Creative DNA" account={account}>
         {() => {
           if (variableRows.length === 0 && combinations.length === 0) {
+            // Scope bar ABOVE the guard: when the stored scope empties the
+            // rows the reader keeps the switch, and the message names the
+            // rows that exist under other events.
             return (
               <div className="flex-1 flex flex-col">
                 <ModuleHeader section={SECTION} title="Creative DNA" accountName={account!.name} tabs="analysis" />
+                <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
                 <PendingState
                   title="No creative DNA signal"
-                  message="Gene loci and formula sequences appear once variable-level performance or tested combinations exist for this account."
+                  message={
+                    runRows.length > 0
+                      ? `${runRows.length} variable row${runRows.length === 1 ? "" : "s"} exist under other result events — switch the result scope above to read them.`
+                      : "Gene loci and formula sequences appear once variable-level performance or tested combinations exist for this account."
+                  }
                   icon={Dna}
                   action={<CrossLink to="/app/analysis/library" label="Review IAP Library" />}
                 />
@@ -234,7 +247,8 @@ export function AnalysisDnaView() {
                 subtitle="Per-variable lift and tested combinations — the account's isolated creative signal."
                 tabs="analysis"
               />
-              <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
+              <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
+              <LandedScopeNote landed={variableLanding.landed} what="Creative DNA" />
               <div className="px-6 py-5 space-y-4 max-w-5xl">
                 {variableRows.length > 0 && (
                   <GeneLociCard rows={variableRows} onOpenVariable={setVariableCode} />
@@ -275,7 +289,7 @@ export function AnalysisDnaView() {
           analysis={analysis}
           variableRows={variableRows}
           selectedResultTypes={resultScope.selectedTypes}
-          resultScope={resultScope.scope}
+          resultScope={activeScope}
         />
       )}
     </>

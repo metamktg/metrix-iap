@@ -77,6 +77,24 @@ persisted width and expand behaviour for every drawer and wide popover, one keyb
 resize handle; the nav tree carries group, loop stage and purpose, and the sidebar renders the
 product's shape from them (Action now sits beside MST as the loop's sixth stage).
 
+**The UI lift pass (2026-09-03, later still).** Read
+`docs/resources/METRIX_UI_LIFT_MASTER_PLAN_2026-09.md` first: it is the reconciliation of every
+task this session claimed (verdicts with evidence), the bug register from four audits with a
+status per finding, the module-by-module lift to demo standard, the navigation plan (ten clicks
+to a first report, from seventeen), the demo-readiness bar and the handoff. What shipped: the
+sidebar is a 56 px rail and a workspace map (change log entry 6); the KPI hover chart is drawn
+(undefined token) and visible (un-portaled hover card); optional inputs never blank a surface;
+one loop shape with Action offered; the Library ranks on the derived event and carries intent,
+provenance and evidence. Register §14, last entry, has the verification and the decisions.
+
+**Result events, panels and the sidebar, shipped (2026-09-03, 04:23Z).** Register §14, last entry.
+PR #185 merged as `ac2ad78`; CI green on the head and on `main`; migration `result_event_grain`
+applied live before the publish; deployment `329ef7e0` verified by entry-bundle and chunk md5
+(`index-B2-v4UW_.js`) and `/api/healthz`. The first CI run failed only in the hover-popover spec,
+which still read the pre-scope tile label; fixed in `365a9f1`. Accounts move onto the result-event
+grain on their next run. Open items are the register's: report export and the deep-dive's one
+blended cost, creative-evidence's synthesised cell row, the sidebar's own collapse key.
+
 **Triple pass, shipped (2026-09-03).** Register §14, last entries. The live pass found that the
 reconciliation control was read from the file's period rather than the run window; `buildTruth` now
 takes the window and records every rejected control with its reason. The friction audit's fixes (24 px

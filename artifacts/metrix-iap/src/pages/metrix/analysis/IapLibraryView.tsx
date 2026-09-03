@@ -19,10 +19,15 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useSyncCreativeLinks, getGetMetrixSeedQueryKey, getAuthMeQueryKey, type AuthUser } from "@workspace/api-client-react";
 import {
   getAdAccount, getAnalysisData, getStrategyData, getCampaignSummary,
-  getCreativeLinkContext, getMST,
+  getCreativeLinkContext, getMST, getCreativeComponents,
 } from "@/lib/data/metrixSeedAdapter";
 import { useResultScope } from "@/hooks/useResultScope";
-import { collapseCellRows, scopeSubtitle } from "@/lib/result-scope";
+import { collapseCellRows, scopeSubtitle, scopeRollupRows } from "@/lib/result-scope";
+import { scopeToRun } from "@/lib/run-supersede";
+import { INTENT_CLASSES } from "@/lib/resultEvents";
+import { conceptForCell } from "@/lib/date-scope";
+import { fmtDayRange } from "@/lib/normalize";
+import { CreativeComponentsPanel } from "@/components/creative/CreativeComponentsPanel";
 import { ResultScopeBar, ResultScopeTag } from "@/components/analysis/ResultScopeBar";
 import { useTileSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
@@ -58,14 +63,15 @@ import type { CreativeCardStats } from "@/components/creative/CreativeCard";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import type { SegmentId } from "@/lib/segment-analytics";
-import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
+import type { CellPerformanceRow, DemographicRow, PlacementRow, SeedIntentSummary } from "@/lib/data/seedTypes";
 import { CreativeLibraryDialog, ManualImportDialog } from "@/pages/metrix/ConnectAccountDialogs";
 import { CellCreativeUploadDialog } from "@/components/creative/CellCreativeUploadDialog";
 import { DeconstructionReviewQueue } from "@/components/creative/DeconstructionReviewQueue";
 import { useConceptHighlight } from "@/lib/concept-registry-context";
 import {
-  type FunnelStage, FUNNEL_STAGE_CONFIGS, getFunnelStageConfig,
+  type FunnelStage, getFunnelStageConfig,
 } from "@/lib/funnelStages";
+import type { AnalysisRun } from "@workspace/api-client-react";
 import {
   CreativeFilterPanel, DEFAULT_FILTER_STATE, applyCreativeFilters, sortValueForCell,
   type CreativeFilterState,
@@ -89,6 +95,34 @@ const VARIABLE_FIELDS: { key: keyof CellPerformanceRow; label: string }[] = [
   { key: "funnel_stage_variable", label: "Funnel stage" },
   { key: "awareness_variable",  label: "Awareness" },
 ];
+
+/**
+ * ModuleHeader subtitle fragments from the account's intent summary (G10):
+ * the class carrying the most spend, and the share of spend on result types
+ * the taxonomy could not place. Fragments, "·"-joined by the caller — no
+ * sentence on the first layer. Empty when nothing was derived.
+ */
+export function intentSummaryFragments(summary: SeedIntentSummary | null | undefined): string[] {
+  if (!summary) return [];
+  const out: string[] = [];
+  if (summary.dominant_intent) out.push(`${INTENT_CLASSES[summary.dominant_intent].label}-led`);
+  if (summary.total_spend > 0 && summary.unplaced_spend > 0) {
+    const pct = (summary.unplaced_spend / summary.total_spend) * 100;
+    out.push(`${pct < 1 ? "<1" : Math.round(pct)}% spend unplaced`);
+  }
+  return out;
+}
+
+/** The picker's label for a run, so a table's Run column and the header agree. */
+function runLabelFor(runs: readonly AnalysisRun[] | undefined): (runId: string) => string | undefined {
+  const byId = new Map((runs ?? []).map((r) => [r.id, r] as const));
+  return (runId) => {
+    const run = byId.get(runId);
+    if (!run) return undefined;
+    if (run.date_start && run.date_end) return fmtDayRange(run.date_start, run.date_end);
+    return run.date_range ?? undefined;
+  };
+}
 
 export function IapLibraryView() {
   const seed = useMetrixSeed();
@@ -189,7 +223,16 @@ export function IapLibraryView() {
     [libCells, mst]
   );
 
-  const tileCatalog = useMemo(() => buildLibraryMetricCatalog(libCells, { scale: activeScope?.scale ?? null, label: activeScope?.label }), [libCells, activeScope]);
+  // The result types this account's ads ran under — the seed's derived
+  // result_events, plus whatever the cell rows themselves carry. Decides
+  // which funnel-step tiles exist (G7): never an ATC / checkout tile for an
+  // account with no such event.
+  const accountEvents = useMemo(() => {
+    const set = new Set<string>((account?.result_events ?? []).map((e) => e.raw));
+    for (const r of a?.performance_by_cell ?? []) if (r["Result type"]) set.add(r["Result type"]);
+    return [...set];
+  }, [account, a]);
+  const tileCatalog = useMemo(() => buildLibraryMetricCatalog(libCells, { scale: activeScope?.scale ?? null, label: activeScope?.label, events: accountEvents }), [libCells, activeScope, accountEvents]);
   const tileCatalogIds = useMemo(() => tileCatalog.map((m) => m.id), [tileCatalog]);
   const {
     selected: savedTileIds, toggle: toggleTile, move: moveTile, reset: resetTiles,
@@ -203,7 +246,8 @@ export function IapLibraryView() {
   // When a named funnel stage is active, override tile IDs with the stage's preset.
   // Filter the stage tile IDs against what's actually in the catalog (some may be absent
   // for single-event accounts). Fall back to saved IDs for "custom".
-  const funnelConfig = useMemo(() => getFunnelStageConfig(funnelStage), [funnelStage]);
+  const funnelConfig = useMemo(() => getFunnelStageConfig(funnelStage, { events: accountEvents, scale: activeScope?.scale ?? null }), [funnelStage, accountEvents, activeScope]);
+  const runLabel = useMemo(() => runLabelFor(analysisRunsData?.runs), [analysisRunsData]);
   const tileIds = useMemo(() => {
     if (!funnelConfig) return savedTileIds;
     const available = new Set(tileCatalogIds);
@@ -289,10 +333,18 @@ export function IapLibraryView() {
             (row) => !!libraryCellById(mst, row.cell_id)?.primary_message
           );
 
+          // The event the top sets rank on is DERIVED per account and stated
+          // by the server (G6) — the tab says which, never "checkout".
+          const topEvent = a.top_performers_event ?? null;
+          const topEventLabel = topEvent ? eventLabel(topEvent.result_type) : null;
+          const copyComponents = getCreativeComponents(seed, adAccountId);
+          const hasCopyComponents = Boolean(copyComponents && copyComponents.coverage.ads_with_copy > 0);
+          const rollupScoped = scopeRollupRows(scopeToRun(a.concept_rollup ?? [], a.latest_analysis_run_id ?? null), activeScope);
+
           const TABS: { id: Tab; label: string; count: number }[] = [
             { id: "cells",     label: "Creative cells",   count: cells.length },
             { id: "copy",      label: "Ad copy",          count: copyCells.length },
-            { id: "top",       label: "Top performers",   count: topCells.length + topVariables.length },
+            { id: "top",       label: topEventLabel ? `Top performers · ${topEventLabel}` : "Top performers", count: topCells.length + topVariables.length },
             { id: "variables", label: "Variable performance", count: variables.length },
             // Breakdown: dimension × metric × chart cross-tab (Nocturne
             // "Metrix v1" design). Count = dimensions actually backed by rows.
@@ -357,7 +409,7 @@ export function IapLibraryView() {
                 section={SECTION}
                 title="IAP Library"
                 accountName={acct.name}
-                subtitle={`Cell & variable performance · ${scopeSubtitle(activeScope) || "by result scope"}`}
+                subtitle={["Cell & variable performance", scopeSubtitle(activeScope) || "by result scope", ...intentSummaryFragments(acct.intent_summary)].join(" · ")}
                 tabs="analysis"
                 right={
                   <RunScopePicker
@@ -521,8 +573,8 @@ export function IapLibraryView() {
               </div>
 
               <div className="px-6 py-5 space-y-4">
-                {(a.top_checkout_cells.length > 0 || a.top_checkout_variables.length > 0) && (
-                  <CaveatNote text="V3 checkout results were not populated by age/gender. Demographic checkout claims remain directional based on spend and click quality, not result counts." />
+                {(a.top_checkout_cells.length > 0 || a.top_checkout_variables.length > 0) && topEventLabel && (
+                  <CaveatNote text={`${topEventLabel} results were not populated by age/gender. Demographic ${topEventLabel.toLowerCase()} claims remain directional based on spend and click quality, not result counts.`} />
                 )}
 
                 {/* ── Cells tab ── */}
@@ -880,8 +932,8 @@ export function IapLibraryView() {
                     metric-filtered rows) ranks it into a real Top 25% /
                     Mid 50% / Bottom 25% tier within this same set — never
                     a fabricated grade. */}
-                {tab === "copy" && (
-                  copyCells.length === 0 ? (
+                {tab === "copy" && (<>
+                  {copyCells.length === 0 ? (
                     <PendingState
                       title="No ad copy in selection"
                       message="No creative cell in the current metric selection has mapped primary text yet."
@@ -900,19 +952,49 @@ export function IapLibraryView() {
                     }
 
                     const copyStats = copyCells.map((row) => ({ row, stats: aggStatsForCell(row.cell_id, cells) }));
-                    const rankedCpas = copyStats
-                      .map(({ stats }) => stats.cpa)
+                    // The tier is a percentile of the cell's rank metric
+                    // WITHIN this set, on the scope's scale: cost per result
+                    // (ascending) for a cost-per-result scope, link CTR
+                    // (descending) under a communication scope — an awareness
+                    // cell is never ranked on what it cost (G13).
+                    const communication = activeScope?.scale === "communication";
+                    const rankOf = (st: CreativeCardStats): number | null => (communication ? st.ctrPct : st.cpa) ?? null;
+                    // Sample floor: a percentile over fewer than four cells is
+                    // a label, not a grade; a cell whose concept the engine
+                    // graded "insufficient", or that has no result behind its
+                    // figure, is Unranked with the reason in its title.
+                    const conceptConfidence = new Map<string, string>();
+                    for (const r of rollupScoped) {
+                      const lvl = (r.confidence_level ?? r.confidence ?? "").toString().toLowerCase();
+                      if (lvl) conceptConfidence.set(r.concept, lvl);
+                    }
+                    const ungradedReason = (row: CellPerformanceRow, st: CreativeCardStats): string | null => {
+                      if (rankOf(st) == null) return communication ? "No link CTR measured for this cell" : "No cost per result — no results behind this cell";
+                      if (!communication && (st.results ?? 0) <= 0) return "No results — a cost per result needs at least one";
+                      const lvl = conceptConfidence.get(conceptForCell(row.cell_id) ?? row.concept_variable ?? "");
+                      if (lvl && /insufficient/.test(lvl)) return "Concept confidence insufficient — too little volume to rank";
+                      return null;
+                    };
+                    const eligible = copyStats.filter(({ row, stats }) => ungradedReason(row, stats) == null);
+                    const ranked = eligible
+                      .map(({ stats }) => rankOf(stats))
                       .filter((v): v is number => v != null)
-                      .sort((a, b) => a - b);
-                    const p25 = rankedCpas[Math.floor(rankedCpas.length * 0.25)] ?? rankedCpas[rankedCpas.length - 1];
-                    const p75 = rankedCpas[Math.floor(rankedCpas.length * 0.75)] ?? rankedCpas[rankedCpas.length - 1];
-                    const tierFor = (cpa: number | null): { label: string; cls: string } => {
-                      if (cpa == null || rankedCpas.length < 2) {
-                        return { label: "Unranked", cls: "bg-foreground/[0.05] text-muted-foreground/75 border-border/30" };
-                      }
-                      if (cpa <= p25) return { label: "Top 25%", cls: "bg-status-success/10 text-status-success border-status-success/25" };
-                      if (cpa >= p75) return { label: "Bottom 25%", cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
-                      return { label: "Mid 50%", cls: "bg-foreground/[0.05] text-muted-foreground/75 border-border/30" };
+                      .sort((x, y) => (communication ? y - x : x - y));
+                    const SAMPLE_FLOOR = 4;
+                    const p25 = ranked[Math.floor(ranked.length * 0.25)] ?? ranked[ranked.length - 1];
+                    const p75 = ranked[Math.floor(ranked.length * 0.75)] ?? ranked[ranked.length - 1];
+                    const UNRANKED_CLS = "bg-foreground/[0.05] text-muted-foreground/75 border-border/30";
+                    const tierFor = (row: CellPerformanceRow, st: CreativeCardStats): { label: string; cls: string; reason: string | null } => {
+                      const reason = ungradedReason(row, st);
+                      if (reason) return { label: "Unranked", cls: UNRANKED_CLS, reason };
+                      if (ranked.length < SAMPLE_FLOOR) return { label: "Unranked", cls: UNRANKED_CLS, reason: `${ranked.length} rankable cell${ranked.length === 1 ? "" : "s"} in this selection — a percentile needs at least ${SAMPLE_FLOOR}` };
+                      const v = rankOf(st)!;
+                      const best = communication ? v >= p25 : v <= p25;
+                      const worst = communication ? v <= p75 : v >= p75;
+                      const basis = communication ? "link CTR, higher is better" : "cost per result, lower is better";
+                      if (best) return { label: "Top 25%", cls: "bg-status-success/10 text-status-success border-status-success/25", reason: `Ranked on ${basis}` };
+                      if (worst) return { label: "Bottom 25%", cls: "bg-status-warning/10 text-status-warning border-status-warning/25", reason: `Ranked on ${basis}` };
+                      return { label: "Mid 50%", cls: UNRANKED_CLS, reason: `Ranked on ${basis}` };
                     };
 
                     return (
@@ -927,7 +1009,7 @@ export function IapLibraryView() {
                         <div className="grid grid-cols-dashboard-4-xl gap-3">
                           {copyStats.map(({ row, stats }) => {
                             const lib = libraryCellById(mst, row.cell_id);
-                            const tier = tierFor(stats.cpa ?? null);
+                            const tier = tierFor(row, stats);
                             const ctx = conceptAngleByCellId.get(row.cell_id);
                             const conceptLabel = ctx?.conceptName ?? lib?.book2_concept_name ?? row.book2_concept_name;
                             return (
@@ -940,7 +1022,7 @@ export function IapLibraryView() {
                               >
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="text-label text-interactive/80">{row.cell_id}</span>
-                                  <span className={cn("text-micro font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border shrink-0", tier.cls)}>
+                                  <span className={cn("text-micro font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border shrink-0", tier.cls)} title={tier.reason ?? undefined} data-testid={`ad-copy-tier-${row.cell_id}`}>
                                     {tier.label}
                                   </span>
                                 </div>
@@ -953,7 +1035,7 @@ export function IapLibraryView() {
                                     {ctx?.angleLabel ? ` · ${ctx.angleLabel}` : ""}
                                   </span>
                                   <span className="tabular-nums shrink-0">
-                                    {stats.cpa != null ? fmtUSD(stats.cpa) : "—"} · {stats.results != null ? fmtNum(stats.results) : "—"}
+                                    {communication ? fmtPct(stats.ctrPct) : stats.cpa != null ? fmtUSD(stats.cpa) : "—"} · {stats.results != null ? fmtNum(stats.results) : "—"}
                                   </span>
                                 </div>
                               </button>
@@ -962,14 +1044,27 @@ export function IapLibraryView() {
                         </div>
                       </div>
                     );
-                  })()
-                )}
+                  })()}
+                  {/* ── Copy components (G12): the export's copy-level layer,
+                      logged here in the Library beside the mapped primary
+                      text so every copy value the account ran can be read
+                      against its results. Weighted server-side on the
+                      export's dominant intent class; the panel states which. */}
+                  {hasCopyComponents && copyComponents && (
+                    <div className="space-y-3 pt-2 border-t border-border/15" data-testid="library-copy-components">
+                      <p className="text-label uppercase tracking-widest text-muted-foreground/75">
+                        Copy components · from the performance export
+                      </p>
+                      <CreativeComponentsPanel components={copyComponents} rollup={rollupScoped} embedded />
+                    </div>
+                  )}
+                </>)}
 
                 {/* ── Top performers tab ── */}
                 {tab === "top" && (
                   <div className="space-y-5">
                     <div>
-                      <h3 className={cn(HEADING.h5, "mb-2")}>Top checkout cells</h3>
+                      <h3 className={cn(HEADING.h5, "mb-2")}>{topEventLabel ? `Top cells · ${topEventLabel}` : "Top cells"}</h3>
                       {topCells.length ? (
                         <div className="grid grid-cols-dashboard-5-xl gap-3">
                           {uniqueCellRows(topCells).map((row) => (
@@ -1006,8 +1101,8 @@ export function IapLibraryView() {
                       )}
                     </div>
                     <div>
-                      <h3 className={cn(HEADING.h5, "mb-2")}>Top checkout variables</h3>
-                      {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />}
+                      <h3 className={cn(HEADING.h5, "mb-2")}>{topEventLabel ? `Top variables · ${topEventLabel}` : "Top variables"}</h3>
+                      {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} segments={a.variable_segment_performance} runLabel={runLabel} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />}
                     </div>
                   </div>
                 )}
@@ -1025,7 +1120,7 @@ export function IapLibraryView() {
                           </h3>
                         </div>
                         <div className="grid grid-cols-dashboard-4-xl gap-3">
-                          {rollupDnaFamilies(variables, a?.latest_analysis_run_id ?? null).map((f) => (
+                          {rollupDnaFamilies(variables, a?.latest_analysis_run_id ?? null, activeScope?.scale).map((f) => (
                             <div
                               key={f.family}
                               role={f.top ? "button" : undefined}
@@ -1051,7 +1146,7 @@ export function IapLibraryView() {
                                   <div className={cn(TYPE.microLabel, "leading-none mb-0.5")}>Results</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtNum(f.results)}</div>
                                 </div>
-                                <div>
+                                <div title={f.scale === "communication" ? "Awareness event — read on communication signals, never on cost per result" : undefined}>
                                   <div className={cn(TYPE.microLabel, "leading-none mb-0.5")}>CPA</div>
                                   <div className="text-caption font-semibold text-foreground/80">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
                                 </div>
@@ -1060,16 +1155,18 @@ export function IapLibraryView() {
                                 <div className="mt-2 pt-2 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
                                   <span className={cn(TYPE.microLabel)}>Best read</span>
                                   <VariableChip code={f.top.variableId} showCode={false} className="opacity-80 scale-95 border-border/30" />
-                                  {f.top.cpa != null && (
+                                  {f.top.cpa != null ? (
                                     <span className="text-label tabular-nums text-muted-foreground/75">{fmtUSD(f.top.cpa)} CPA</span>
-                                  )}
+                                  ) : f.top.basis === "most_results" ? (
+                                    <span className="text-label tabular-nums text-muted-foreground/75">{fmtNum(f.top.results)} results</span>
+                                  ) : null}
                                 </div>
                               )}
                             </div>
                           ))}
                         </div>
                       </div>
-                      <VariableTable rows={variables} onRowClick={(r) => setVariableCode(r.variable_id)} />
+                      <VariableTable rows={variables} onRowClick={(r) => setVariableCode(r.variable_id)} segments={a.variable_segment_performance} runLabel={runLabel} />
                     </div>
                   ) : (
                     <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />
@@ -1113,7 +1210,7 @@ export function IapLibraryView() {
                     const stratUrl = matchedHyp
                       ? `/app/strategy/hypotheses?focus=${matchedHyp.id}&from=analysis&fromCell=${detail.cell_id}`
                       : `/app/strategy/map?from=analysis&fromCell=${detail.cell_id}`;
-                    const briefUrl = `/app/creative?from=analysis&fromCell=${detail.cell_id}`;
+                    const briefUrl = `/app/creative/builder?from=analysis&fromCell=${detail.cell_id}`;
                     return (
                       <div className="flex items-center gap-3 flex-wrap">
                         <SegmentDrilldownButton onClick={() => setSegmentsOpen(true)} />
@@ -1181,6 +1278,41 @@ export function IapLibraryView() {
                         ));
                       })}
                     </div>
+                  </DrawerField>
+                  {/* Provenance (G1): which run measured this cell's concept,
+                      over what window, and how the engine graded it. Read off
+                      concept_rollup — the run-tagged table a cell inherits its
+                      run membership from — under the active result scope. */}
+                  <DrawerField label="Provenance">
+                    {(() => {
+                      const concept = conceptForCell(detail.cell_id) ?? detail.concept_variable ?? null;
+                      const rows = concept
+                        ? scopeRollupRows(a.concept_rollup ?? [], activeScope).filter((r) => r.concept === concept)
+                        : [];
+                      if (rows.length === 0) {
+                        return <span className="text-caption text-muted-foreground/75">No run attribution — this cell's rows carry no run-tagged rollup</span>;
+                      }
+                      return (
+                        <ul className="space-y-1" data-testid="cell-provenance">
+                          {rows.map((r, i) => {
+                            const run = r.manual_analysis_run_id ?? null;
+                            const window = r.date_start && r.date_end ? fmtDayRange(r.date_start, r.date_end) : null;
+                            const bits = [
+                              run ? (runLabel(run) ?? `run ${run.split("-")[0]}`) : "untagged run",
+                              window,
+                              r.result_type ? eventLabel(r.result_type) : null,
+                              r.evidence_grade != null ? `evidence ${String(r.evidence_grade)}` : null,
+                              r.confidence_level ? String(r.confidence_level).replace(/_/g, " ") : r.confidence ? String(r.confidence).replace(/_/g, " ") : null,
+                            ].filter(Boolean);
+                            return (
+                              <li key={`${run ?? "none"}-${r.result_type ?? ""}-${i}`} className="text-caption text-foreground/80 tabular-nums" title={run ? `Run ${run}` : undefined}>
+                                {bits.join(" · ")}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      );
+                    })()}
                   </DrawerField>
                   {detail.iap_read && <DrawerField label="IAP read">{detail.iap_read}</DrawerField>}
                   {pillarsForCell(detail.cell_id).length > 0 && (

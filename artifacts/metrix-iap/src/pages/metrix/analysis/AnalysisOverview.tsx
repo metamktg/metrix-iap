@@ -44,6 +44,8 @@ import {
   AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Brush,
 } from "recharts";
+import { AXIS, MARK, NEUTRAL_VAR, SERIES_VARS } from "@/components/charts/chartTokens";
+import { chartTooltipRenderer } from "@/components/charts/chartChrome";
 import { Slider } from "@workspace/command-deck/components/ui/slider";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
@@ -167,15 +169,10 @@ function buildDemoHeatmap(rows: DemographicRow[]) {
   return { cells, ages, genders, maxCpa, minCpa };
 }
 
-// ─── Shared recharts tooltip card ────────────────────────────────────
-
-function ChartTooltipCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm px-3 py-2 text-body elevation-floating">
-      {children}
-    </div>
-  );
-}
+// Tooltips, axes and marks below come from chartTokens / chartChrome. This
+// file used to carry its own tooltip card, its own tick style (9px in a
+// monospace literal) and a black-literal brush fill; each is now the shared
+// token, so this page cannot drift from the chart components beside it.
 
 // ─── Spend + results trend: SMALL MULTIPLES, not a dual axis ─────────
 //
@@ -244,39 +241,28 @@ function TrendPanel({
               <stop offset="95%" stopColor={color} stopOpacity={0.02} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--foreground) / 0.10)" vertical={false} />
+          <CartesianGrid {...AXIS.gridSoft} vertical={false} />
           <XAxis
             dataKey="month"
-            tick={showAxis ? { fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" } : false}
+            tick={showAxis ? { ...AXIS.tick, fill: AXIS.labelDim } : false}
             tickLine={false}
             axisLine={false}
-            height={showAxis ? 18 : 1}
+            height={showAxis ? 20 : 1}
           />
           <YAxis
             tickFormatter={tickFormatter}
-            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ ...AXIS.tick, fill: AXIS.labelDim }}
             tickLine={false}
             axisLine={false}
-            width={44}
+            width={48}
           />
           <Tooltip
-            cursor={{ stroke: "hsl(var(--foreground) / 0.08)", strokeWidth: 1 }}
-            content={({ active, payload, label }) => {
-              if (!active || !payload?.length) return null;
-              const d = payload[0]?.payload as MonthBucket;
-              return (
-                <ChartTooltipCard>
-                  <div className="font-semibold text-foreground mb-1">{label}</div>
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-                      <span className="text-muted-foreground">{title}</span>
-                    </div>
-                    <span className="tabular-nums text-foreground">{formatValue(d[dataKey])}</span>
-                  </div>
-                </ChartTooltipCard>
-              );
-            }}
+            cursor={AXIS.cursor}
+            content={chartTooltipRenderer<MonthBucket>((d) => ({
+              title: d.month,
+              rows: [{ label: title, value: formatValue(d[dataKey]), swatch: color }],
+            }))}
+            wrapperStyle={{ outline: "none" }}
           />
           <Area
             type="monotone"
@@ -287,6 +273,7 @@ function TrendPanel({
             fill={`url(#${gradientId})`}
             dot={false}
             activeDot={{ r: 3, strokeWidth: 0, fill: color }}
+            {...MARK.noAnimation}
           />
           {brush}
         </AreaChart>
@@ -335,8 +322,8 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             travellerWidth={7}
             startIndex={brushRange.startIndex}
             endIndex={brushRange.endIndex}
-            stroke="hsl(var(--primary) / 0.35)"
-            fill="hsl(0 0% 0% / 0.25)"
+            stroke={AXIS.brush.stroke}
+            fill={AXIS.brush.fill}
             aria-label="Drag to zoom the date range"
             onChange={(range) => {
               if (range && range.startIndex != null && range.endIndex != null) {
@@ -375,13 +362,14 @@ function CellPerfBars({ items, resultNoun }: {
           data={items}
           layout="vertical"
           margin={{ top: 0, right: 56, bottom: 4, left: 4 }}
-          barSize={11}
+          barSize={MARK.barSize}
+          barCategoryGap={MARK.gap * 2}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--foreground) / 0.10)" horizontal={false} />
+          <CartesianGrid {...AXIS.gridSoft} horizontal={false} />
           <XAxis
             type="number"
             tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ ...AXIS.tick, fill: AXIS.labelDim }}
             tickLine={false}
             axisLine={false}
           />
@@ -389,35 +377,33 @@ function CellPerfBars({ items, resultNoun }: {
             type="category"
             dataKey="name"
             width={130}
-            tick={{ fill: "hsl(var(--foreground) / 0.70)", fontSize: 10 }}
+            tick={{ ...AXIS.tick, fill: AXIS.labelDim }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v: string) => (v.length > 20 ? v.slice(0, 19) + "…" : v)}
           />
           <Tooltip
-            cursor={{ fill: "hsl(var(--foreground) / 0.03)" }}
-            content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              const d = payload[0]?.payload as CellBarItem;
-              return (
-                <ChartTooltipCard>
-                  <div className="font-semibold text-foreground mb-1 max-w-[220px] truncate">{d.name}</div>
-                  <div className="space-y-0.5">
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Spend</span><span className=" tabular-nums text-foreground">{fmtUSD(d.spend, 0)}</span></div>
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">{resultNoun}</span><span className=" tabular-nums text-foreground">{fmtNum(d.results)}</span></div>
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">CPA</span><span className=" tabular-nums text-foreground">{d.cpa != null ? fmtUSD(d.cpa) : "—"}</span></div>
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Type</span><span className=" tabular-nums text-foreground">{eventLabel(d.resultType)}</span></div>
-                  </div>
-                </ChartTooltipCard>
-              );
-            }}
+            cursor={AXIS.cursorFill}
+            content={chartTooltipRenderer<CellBarItem>((d) => ({
+              title: d.name,
+              rows: [
+                { label: "Spend", value: fmtUSD(d.spend, 0), swatch: SERIES_VARS[0] },
+                { label: resultNoun, value: fmtNum(d.results) },
+                { label: "CPA", value: d.cpa != null ? fmtUSD(d.cpa) : "—" },
+                { label: "Type", value: eventLabel(d.resultType) },
+              ],
+            }))}
+            wrapperStyle={{ outline: "none" }}
           />
-          <Bar dataKey="spend" radius={[0, 3, 3, 0]}>
+          {/* The leader wears the series colour; the field is the neutral
+              bucket. A ranked list highlights ONE thing, and the rest are
+              context — the field is not a second series. */}
+          <Bar dataKey="spend" radius={[0, MARK.barRadius, MARK.barRadius, 0]} {...MARK.noAnimation}>
             {items.map((_, i) => (
               <Cell
                 key={i}
-                fill={i === 0 ? "hsl(var(--primary))" : "hsl(var(--foreground) / 0.22)"}
-                fillOpacity={i === 0 ? 0.9 : 0.55}
+                fill={i === 0 ? SERIES_VARS[0] : NEUTRAL_VAR}
+                fillOpacity={i === 0 ? 1 : 0.45}
               />
             ))}
           </Bar>

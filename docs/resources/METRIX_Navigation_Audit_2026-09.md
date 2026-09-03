@@ -91,7 +91,7 @@ trail was **empty**, the sidebar lit nothing, and Back did not exist.
 **Shipped.** `navTree` children may be `hidden: true` — in the tree for
 breadcrumbs, highlight and Back, without a menu row. Funnel and Findings are
 hidden children of Analysis. The Action Queue is a *visible* child of section
-09 Action, which is no longer a "Soon" placeholder: the queue is a real page
+07 Action, which is no longer a "Soon" placeholder: the queue is a real page
 (honestly empty until the optimize producer lands — register **F-e**), and the
 act stage of the loop now has a home in the navigation. The Agent stays
 "Soon".
@@ -152,6 +152,72 @@ rename in `navTree` and the tab bar would have disagreed with the sidebar.
 
 **Shipped.** `SectionTabBar` derives from `visibleChildren(navTree)`.
 
+### 1.10 Four loop shapes shipped at once (2026-09-03 follow-up)
+
+A second read of the tree after §1.1–1.9 found the loop itself still drawn four
+ways: `navTree` (six stages, Listen → … → Action), `buildLoopStages` in
+`shared.tsx` (six, ending at Reports, no Action), `LoopCommandChain` (five:
+Data · Analysis · Strategy · Briefs · Report) and `OverviewLoopHub` (four). Action
+was never offered as a next step; `/app/creative` was listed in the command
+chain as "History"; Ad Performance, Creative DNA, History and Communications
+were missing from its Navigate grids; and on a fresh account the Data hub
+disabled its own Account Setup / Integrations links (`isAccessible = isComplete
+|| isRunning`).
+
+**Shipped.**
+
+- `navTree.ts` exports `LOOP_STAGES` (id · label · to · loopStage · purpose),
+  derived from the six `group: "loop"` sections. `buildLoopStages`, the Manager
+  Overview rollup (`accountLoopStages`) and the command chain's labels and
+  Navigate grids all derive from it or from `visibleChildren(navTree)`; nothing
+  re-types a stage. `navigation/__tests__/loop-stages.test.ts` pins it.
+- The stage strip ends at **Action** (`/app/act/queue`, locked until an analysis
+  has validated). Reports is an output: it stays in the sidebar's Outputs group
+  and as the command chain's Report tile, not as a loop node. Consequence:
+  `ReportsCommandCenter` passes `current="reports"` to a strip that has no such
+  node, so no stage highlights there (same as Exports already did); that file
+  was outside this pass.
+- The command chain keeps Data as a leading pre-loop step and Reports as its
+  output tile; Analysis / Strategy / Creative are labelled from `LOOP_STAGES`
+  (the tile that drafts briefs now reads "Creative", stage key unchanged). The
+  Data hub's links are exempt from the completion gate.
+- `App.tsx` route groups renumbered to match the tree (07 Action · 08 Reports ·
+  09 Exports); `/app/analysis/overview` and `/app/analyze/findings` sit in the
+  03 Analysis group rather than the legacy-redirect block.
+- Eyebrows: one `SECTION` per overview page — "Account Overview · 01"
+  (AdAccountOverview, Updates), "Agency Overview · 01" (ManagerOverview).
+- `?from=` chain: `navHistory.ts` now owns the origin → target table, keyed by
+  navTree section id, so `from=creative` / `from=mst` produce a crumb and the
+  Topbar's structural Back prefers the origin over the section parent.
+  `withFrom(to, fp)` in `shared.tsx` threads the origin through the Creative and
+  MST hubs (their Explore grids and prerequisite CTAs dropped it). MST renders a
+  `FlowCrumb`.
+- "Draft a brief" lands on `/app/creative/builder?from=…` everywhere (IAP
+  Library, Hypothesis Queue, Strategy Map, task tray).
+- The setup checklist's "Run analysis" step and "Start re-run" go to
+  `/app/analysis`, where the run control is, not Settings.
+- Manager Overview "Open <account>" on a recommendation switches scope AND
+  lands on `/app/listen/recommendations?focus=<card id>`; the spend ranking
+  lands on the account overview. Note: `RecommendationsView` does not yet read
+  `?focus=` (outside this pass); the param follows the app's deep-link
+  convention so the page can pick it up without changing the link.
+- Dead ends: analysis run rows link to Analysis Overview; the strategy run
+  links to the generated strategy; Updates ends with "Next: Run analysis".
+  The Analysis command center links to Findings (still `hidden` in the tree).
+- Creative command center: at most one nudge — next-step over source when
+  both apply.
+
+**Open.** `RunScopePicker` reads no query param and `lib/run-scope.ts` keeps
+its storage-key builder private, so a history row cannot pre-select its run;
+the link opens the Overview where the picker is one click away. Follow-up: have
+Analysis Overview read `?run=<id>` (or export a writer from `run-scope.ts`).
+`SectionTabBar` now accepts any section id, but the convention is that child
+pages carry it (`ModuleHeader tabs=`) while command centers carry the stage
+strip and the Explore grid; mounting it on the Creative / MST / Reports /
+Exports / Listen / Settings command centers would duplicate their Explore
+grid, so it was not added there. `ModuleHeader`'s `tabs` prop keeps its
+`"analysis" | "strategy"` type (outside this pass).
+
 ---
 
 ## 2. What the audit checked and found sound
@@ -159,7 +225,7 @@ rename in `navTree` and the tab bar would have disagreed with the sidebar.
 - **Route coverage.** Every `navTree` path, every hidden child, and every
   in-page literal resolves (`nav-routes`, `inpage-nav-targets`).
 - **The loop's forward direction.** Listen → Analysis → Strategy → Creative →
-  MST → Reports links are all forward or lateral; no page links back into a
+  MST → Action links are all forward or lateral; no page links back into a
   stage that would re-trigger a run. Ingestion never triggers a loop run
   (`replit.md` rule, unchanged).
 - **Deep-dive panel.** Has its own back / breadcrumb / Escape; not changed.
@@ -177,9 +243,10 @@ rename in `navTree` and the tab bar would have disagreed with the sidebar.
 - **`?from=` chain is a URL convention, not history.** It survives a copied
   link, which history does not; the two coexist by design. A future pass could
   fold FlowCrumb into the Topbar Back when both are present.
-- **Findings (`/app/analyze/findings`) has no inbound link.** It reads
-  `iap.intelligence`, present on 9 fixture accounts. Hidden in the tree until
-  an owner decides whether it is a menu row or folds into Analysis Overview.
+- **Findings (`/app/analyze/findings`) is linked only from the Analysis command
+  center** (§1.10). It reads `iap.intelligence`, present on 9 fixture accounts.
+  Hidden in the tree until an owner decides whether it is a menu row or folds
+  into Analysis Overview.
 - **Everything outside navigation in the brief** — data-visualisation depth,
   configurable views beyond the metric tiles, the optimize producer (R1),
   billing (R3), the weighting engine (R4) — is unchanged and tracked in

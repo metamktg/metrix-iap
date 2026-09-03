@@ -6,11 +6,16 @@
 //
 // The palette is the five categorical chart slots and nothing else. It is
 // NOT cycled — see lib/share-slices.ts for why the previous ten-entry,
-// modulo-indexed list painted different segments the same colour.
+// modulo-indexed list painted different segments the same colour. The
+// slots come from chartTokens; this file used to carry its own copy of the
+// list, which is how a re-stepped scale would have left this one chart
+// behind.
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
 import { allocateShareSlices } from "@/lib/share-slices";
+import { MARK, NEUTRAL_VAR, SERIES_VARS } from "./chartTokens";
+import { chartTooltipRenderer } from "./chartChrome";
 
 interface SharePieChartProps {
   data: { name: string; value: number }[];
@@ -21,21 +26,8 @@ interface SharePieChartProps {
   emptyLabel?: string;
 }
 
-/**
- * The categorical scale, in fixed order. Five slots, assigned by position,
- * never cycled. A sixth segment folds into `OTHER_VAR` instead of borrowing
- * slot 1 back.
- */
-const SERIES_VARS = [
-  "var(--color-chart-1)",
-  "var(--color-chart-2)",
-  "var(--color-chart-3)",
-  "var(--color-chart-4)",
-  "var(--color-chart-5)",
-] as const;
-
 /** "Other" is not a category, so it does not get a categorical hue. */
-const OTHER_VAR = "hsl(var(--muted-foreground))";
+const OTHER_VAR = NEUTRAL_VAR;
 
 const sliceFill = (i: number, namedCount: number) =>
   i < namedCount ? SERIES_VARS[i]! : OTHER_VAR;
@@ -88,6 +80,23 @@ export function SharePieChart({
   const fmt = unit === "usd"
     ? (v: number) => fmtUSD(v, 0)
     : (v: number) => fmtNum(v);
+  const valueLabel = unit === "usd" ? "Spend" : "Count";
+
+  const renderTooltip = chartTooltipRenderer<{ name: string; value: number }>((d) => {
+    const i = slices.findIndex((s) => s.name === d.name);
+    const pct = total > 0 ? ((d.value / total) * 100).toFixed(1) : "0";
+    const isOther = other != null && d.name === other.name;
+    return {
+      title: d.name,
+      rows: [
+        { label: valueLabel, value: fmt(d.value), swatch: sliceFill(i < 0 ? slices.length : i, named.length) },
+        { label: "Share", value: `${pct}%` },
+      ],
+      detail: isOther
+        ? `${folded.length} segment${folded.length === 1 ? "" : "s"}: ${folded.map((f) => f.name).join(", ")}`
+        : undefined,
+    };
+  });
 
   return (
     <div
@@ -121,32 +130,13 @@ export function SharePieChart({
             outerRadius="88%"
             paddingAngle={2}
             stroke="none"
+            {...MARK.noAnimation}
           >
             {slices.map((d, i) => (
               <Cell key={d.name} fill={sliceFill(i, named.length)} />
             ))}
           </Pie>
-          <Tooltip
-            content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              const p = payload[0];
-              const name = p.name as string;
-              const value = Number(p.value ?? 0);
-              const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0";
-              return (
-                <div className="rounded-lg border border-border/50 bg-surface px-3 py-2 elevation-floating text-body">
-                  <div className="font-medium text-foreground mb-1">{name}</div>
-                  <div className="text-muted-foreground tabular-nums">{fmt(value)} ({pct}%)</div>
-                  {other && name === other.name && (
-                    <div className="text-caption text-muted-foreground/80 mt-1 max-w-[16rem]">
-                      {folded.length} segment{folded.length === 1 ? "" : "s"}:{" "}
-                      {folded.map((f) => f.name).join(", ")}
-                    </div>
-                  )}
-                </div>
-              );
-            }}
-          />
+          <Tooltip content={renderTooltip} wrapperStyle={{ outline: "none" }} />
         </PieChart>
       </ResponsiveContainer>
       </div>

@@ -1070,3 +1070,117 @@ describe("creative components seed exposure (F-a)", () => {
     expect(acct["creative_components"] ?? null).toBeNull();
   });
 });
+
+// ─── Top performers: derived event, never a literal (G6) ───────────────
+// The ranked set was filtered on "onb_initiate_checkout" — one client's
+// custom checkout event, applied to every account. The event is now picked
+// from the rows and stated in the payload.
+
+import { selectTopPerformersEvent } from "../metrixSeedAssembly";
+
+describe("selectTopPerformersEvent", () => {
+  const ev = (raw: string, spend: number): Row => ({ raw, spend, results: 1 });
+
+  it("ranks on the dominant TERMINAL conversion event by spend, ahead of a checkout step", () => {
+    const events = [ev("onb_initiate_checkout", 900), ev("Website purchases", 400), ev("Leads (form)", 500)] as any;
+    const rows = [
+      { "Result type": "onb_initiate_checkout", "Amount spent (USD)": 900 },
+      { "Result type": "Website purchases", "Amount spent (USD)": 400 },
+      { "Result type": "Leads (form)", "Amount spent (USD)": 500 },
+    ];
+    const pick = selectTopPerformersEvent(events, rows)!;
+    expect(pick.result_type).toBe("Leads (form)");
+    expect(pick.event_key).toBe("lead");
+    expect(pick.basis).toBe("dominant_terminal_conversion");
+    expect(pick.spend).toBe(500);
+  });
+
+  it("falls back to the dominant intermediate conversion event when no terminal event is on the rows", () => {
+    const events = [ev("onb_initiate_checkout", 300), ev("Adds to cart", 700)] as any;
+    const rows = [
+      { "Result type": "onb_initiate_checkout", "Amount spent (USD)": 300 },
+      { "Result type": "Adds to cart", "Amount spent (USD)": 700 },
+    ];
+    const pick = selectTopPerformersEvent(events, rows)!;
+    expect(pick.result_type).toBe("Adds to cart");
+    expect(pick.basis).toBe("dominant_intermediate_conversion");
+  });
+
+  it("falls back to the highest-spend event for an awareness-only account, using row spend when result_events has no entry", () => {
+    const rows = [
+      { "Result type": "ThruPlays", "Amount spent (USD)": 120 },
+      { "Result type": "Link clicks", "Amount spent (USD)": 80 },
+    ];
+    const pick = selectTopPerformersEvent([], rows)!;
+    expect(pick.result_type).toBe("ThruPlays");
+    expect(pick.basis).toBe("highest_spend");
+    expect(pick.intent_class).toBe("awareness");
+    expect(pick.spend).toBe(120);
+  });
+
+  it("only considers events the ranked rows carry — a terminal event in result_events but on no row cannot be ranked on", () => {
+    const events = [ev("Website purchases", 5000), ev("onb_initiate_checkout", 100)] as any;
+    const rows = [{ "Result type": "onb_initiate_checkout", "Amount spent (USD)": 100 }];
+    expect(selectTopPerformersEvent(events, rows)!.result_type).toBe("onb_initiate_checkout");
+  });
+
+  it("returns null when no row carries a result type", () => {
+    expect(selectTopPerformersEvent([], [{ "Amount spent (USD)": 10 }])).toBeNull();
+    expect(selectTopPerformersEvent([], [])).toBeNull();
+  });
+});
+
+describe("buildAccountObject · top performers and variable-row grain", () => {
+  it("builds the top sets on the derived event and states it in top_performers_event", () => {
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([
+      perfRow("tp", { result_type: "Leads (form)", spend: 500, results: 5 }),
+      perfRow("tp", { ad_name: "ad_2", result_type: "onb_initiate_checkout", spend: 900, results: 30 }),
+    ]);
+    t.libraryCellPerformance = groupByAccount([
+      { account_id: "tp", payload: { cell_id: "C1A", "Result type": "Leads (form)", "Amount spent (USD)": 500, Results: 5 } },
+      { account_id: "tp", payload: { cell_id: "C1A", "Result type": "onb_initiate_checkout", "Amount spent (USD)": 900, Results: 30 } },
+    ]);
+    t.variablePerformance = groupByAccount([
+      { account_id: "tp", manual_analysis_run_id: "run_1", result_type: "Leads (form)", intent_class: "conversion", date_start: "2026-06-01", date_end: "2026-06-30",
+        payload: { variable_family: "raw_token", variable_id: "HK_A", "Amount spent (USD)": 500, Results: 5 } },
+      { account_id: "tp", manual_analysis_run_id: "run_1", result_type: "onb_initiate_checkout", intent_class: "conversion", date_start: "2026-06-01", date_end: "2026-06-30",
+        payload: { variable_family: "raw_token", variable_id: "HK_A", "Result type": "onb_initiate_checkout", "Amount spent (USD)": 900, Results: 30 } },
+    ]);
+    const obj = buildAccountObject({ id: "tp", name: "TP", status: "configured" }, t);
+    const analysis = obj["iap"]["analysis"];
+    expect(analysis["top_performers_event"]["result_type"]).toBe("Leads (form)");
+    expect(analysis["top_performers_event"]["basis"]).toBe("dominant_terminal_conversion");
+    expect(analysis["top_checkout_cells"].map((r: Row) => r["Result type"])).toEqual(["Leads (form)"]);
+    expect(analysis["top_checkout_variables"].map((r: Row) => r["Result type"])).toEqual(["Leads (form)"]);
+    // G9: the row's own result-event grain reaches the seed alongside the run id.
+    const vars = analysis["v3_variable_performance"] as Row[];
+    expect(vars[0]["Result type"]).toBe("Leads (form)"); // projected — payload lacked it
+    expect(vars[0]["intent_class"]).toBe("conversion");
+    expect(vars[0]["manual_analysis_run_id"]).toBe("run_1");
+    expect(vars[1]["Result type"]).toBe("onb_initiate_checkout"); // payload value kept
+  });
+
+  it("emits null top_performers_event and empty top sets when no cell or variable row carries a result type", () => {
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow("np", { result_type: "ThruPlays" })]);
+    const obj = buildAccountObject({ id: "np", name: "NP", status: "configured" }, t);
+    const analysis = obj["iap"]["analysis"];
+    expect(analysis["top_performers_event"]).toBeNull();
+    expect(analysis["top_checkout_cells"]).toEqual([]);
+    expect(analysis["top_checkout_variables"]).toEqual([]);
+  });
+
+  it("keeps a pre-split variable row's intent_class null rather than re-deriving it", () => {
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow("ps")]);
+    t.variablePerformance = groupByAccount([
+      { account_id: "ps", manual_analysis_run_id: null, result_type: "Website purchases", intent_class: null,
+        payload: { variable_family: "raw_token", variable_id: "HK_B", "Result type": "Website purchases", "Amount spent (USD)": 10, Results: 1 } },
+    ]);
+    const obj = buildAccountObject({ id: "ps", name: "PS", status: "configured" }, t);
+    const vars = obj["iap"]["analysis"]["v3_variable_performance"] as Row[];
+    expect(vars[0]["intent_class"]).toBeNull();
+    expect(vars[0]["manual_analysis_run_id"]).toBeNull();
+  });
+});

@@ -652,7 +652,7 @@ toward the purchase it precedes and reach overlaps ThruPlays, so neither is ever
 the scope is a per-account session convenience, never a property of the account (cohort-reach
 rule unchanged). **Open:** report export and the deep-dive still print one blended cost with a
 caption; `creative-evidence.ts` synthesises a cell row stamped with the first ad's result type;
-the live DDL (result-event grain block) must be applied before the next run on any account.
+the live DDL (result-event grain block) was applied as Supabase migration `result_event_grain` on 2026-09-03 03:38Z, before the code reached the deployment (ship record below).
 
 **`[shipped]` One panel behaviour; the sidebar defines the category (2026-09-03).** Owner asks: hover
 panels and sliders collapsible, expandable, wider and consistent across every interface; the left
@@ -670,3 +670,84 @@ chars, no sentence) under the disclosure rulebook; a drag that used to snap the 
 stops at its minimum — the tray's own toggle closes it. **Open:** the sidebar keeps its own
 collapse key and handle (tests read them directly); a shared width preference for it is a later
 pass; `SegmentHoverPreview` and `MetricHoverPopover` keep fixed widths by design (hover cards).
+
+**Shipped to app.metrix.ad (2026-09-03, 04:07–04:23Z).** PR #185 (result events and intent classes;
+one panel behaviour; the category-defining sidebar; `7e38838`, `9eab136`, `7e1d60f`, `4db5541`,
+`bc79433`, `365a9f1`) merged by the owner as `ac2ad78` at 04:07Z while CI run 33713417742 was still
+running on the head; that run finished green at 04:14Z and the push run on `main` (33713890299,
+`ac2ad78`) at 04:19Z. The first CI run on the PR (33711829995, `bc79433`) failed in the hover-popover
+Playwright spec only: four tests still asserted the old "CPA (blended)" tile label and the old avatar
+restriction notice — the catalog names the tile "Cost per conversion (blended)" now and the avatar
+breakdown is scoped per event since demographic rows carry a result type — and `365a9f1` updated the
+spec (26/26 locally and on CI). The same spec is why the earlier `main` runs 33710752687 (`bf44115`,
+the owner's merge of PR #184 at 03:16Z) and 33712622604 (`123f6e6`) were red: identical failure, no
+other step. Live DDL first: migration `result_event_grain` (the `schema.sql` result-event grain
+block, verbatim) applied at 03:38Z; the five widened unique keys and the nullable columns were read
+back from `pg_constraint` / `information_schema`, and nothing new reached the deployment before it
+(the live entry bundle stayed `index-DRGHhOye.js` — the PR #183 build — until this publish; the
+three "Published your App" commits on `main` between are empty deployment markers). Workspace
+merged `origin/main` (HEAD `ac2ad78`, status clean, diff against `origin/main` empty, lockfile
+unchanged), deployment `329ef7e0` reached success, the live entry bundle `index-B2-v4UW_.js` and the
+`CreativeCard` chunk (`trroqeAw`) carry the md5s of the local production build of the same tree
+(`5de4e59d…`, `dc272afa…`), `/api/healthz` 200. Local evidence on the shipped tree: server CI list
+35 suites / 523; client 192 files / 2,408; scripts 121; fifteen gates; codegen drift; every one of the
+sixteen declared `smoke:metrix-iap-*` e2e smokes green (the hover-popover spec after `365a9f1`).
+Two smokes depend on `REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE` being set — unset, the spec asks
+Playwright for a headless shell that is not installed here — which is a runner precondition, not a
+test result. **Next run on any account moves it onto the result-event grain**; rows written before
+carry a null result type and read as "not split by event" everywhere.
+
+**`[shipped]` The UI lift pass: rail-and-map sidebar, the hover chart that no one could see, optional inputs that never blank a surface, one loop shape, the Library logs everything (2026-09-03, later).**
+Owner direction (verbatim intent in `METRIX_UI_LIFT_MASTER_PLAN_2026-09.md`): the UI is
+regressing; reconcile every stated task against the code; walk the product for bugs and for
+bugs that fixes create; no friction, minimal warnings, nothing withheld because an optional
+input is missing; everything logged in the IAP Library; the sidebar expands rightwards on a
+dwell as a flow chart in the Watermelon aesthetic with no expand/collapse; the KPI hover bar
+chart's dark-blue formatting fixed; every module premium.
+
+**Method.** Four read-only audits ran against the live tree first (optional-input gates and
+warning noise — 17 findings; navigation — 20 findings and a 17-click first-run path with five
+guess points; Library completeness — 16 gaps; charts and hovers — every surface, one root
+cause). Their registers are §3 of the master plan; each finding carries the file:line as found
+and its status. The session's 48 tasks were re-verified against the tree: 33 held, 10 partial
+(every gap closed or carried with its phase), 2 superseded by this pass, 1 open (#38).
+
+**Root causes worth knowing.** (1) The KPI hover chart painted its bars with
+`hsl(var(--interactive))` — a token that does not exist — so the SVG fill fell back to black
+over the navy card, at three sites. (2) The hover card was never portaled, so the tile's
+`overflow: hidden` clipped it to a 2px stripe; Playwright's visibility check ignores overflow
+clipping, which is why the e2e spec passed on a popover no reader ever saw. (3) The run and the
+onboarding Review demanded both pivot exports while the server needed one delivery report.
+(4) Four loop shapes shipped at once and none offered Action. (5) Top performers were selected
+by an `onb_initiate_checkout` literal.
+
+**What shipped.** Change log entry 6 (the sidebar); the chart theme (`chartTokens` /
+`chartChrome`: series tokens, 11/12 px chart type, one `ChartTooltip`, no-animation marks) on
+six chart surfaces and the `hover-card` base; `LOOP_STAGES` as the one loop source with Action
+offered and `?from=` surviving the Creative and MST command centers; the gates register closed
+(§3.1); the Library register closed where it composed (§3.3: dominant-event top performers,
+tiles and funnel from the events present, `intent_class` in the seed, provenance and evidence
+columns, "Unranked" with the reason, copy components in the Ad copy tab); CTR/CPM absence a note.
+
+**Verification (this head).** Client `vitest run`: 200 files / 2,472 tests, green in isolation
+(two route-crawl cases exceeded the 5 s budget only while three suites ran at once — 151/151 on
+re-run). Server CI list: 35 files / 534. Scripts: 9 files / 121. Gates: token-colors,
+type-scale, disclosure-rulebook (4 ≤ 4), optical-authority, interaction, locator-ambiguity,
+cohort-reach, chart-palette, signal-weights-drift, text-primary/text-muted/css-token/
+command-deck contrast, command-deck-token-drift, communications-section-icons, unused-exports
+(baseline rewritten for the test-only seams), and the three browser-backed gates against a dev
+server (accessible-names 273/273; chart-geometry 9 surfaces / 25 marks clean; unexplained-dashes
+86 resolvable). `check:api-codegen-drift` PASS. Smokes and the visual pass: see the ship line.
+
+**Decisions.** Tab rails stay on child pages; command centers carry the loop hub and Explore
+grid, so a rail there would duplicate the grid. The Command Hub keeps Data as the leading step
+and Reports as the output tile. The video note appears only for accounts with video creative.
+Optional breakdown columns were never in the confidence denominator (documented, tested).
+
+**Open (carried in the master plan §4/§7).** #38; Library filter by variable family, per-chip
+cost, tile → family dimension, coverage chip → reconciliation, URL-encoded sort; MST "Creative
+Scan" rename (owner); Findings visible-or-folded (owner); the four tables the seed never selects;
+`refresh:seed-fixture` against a running server (the fixture predates `intent_class` and
+`top_performers_event`); a `check:token-colors` rule for undefined `hsl(var(--x))` tokens;
+`check:friction` from the scratch audit script.
+

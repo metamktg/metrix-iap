@@ -14,7 +14,7 @@ import { getAdAccount, getBriefBuilder, getStrategyData } from "@/lib/data/metri
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PrerequisiteGate, PendingState,
-  MetricTile, CaveatNote, StageLoopHub, buildLoopStages, FlowCrumb, useFromParam, HubNavGrid,
+  MetricTile, CaveatNote, StageLoopHub, buildLoopStages, FlowCrumb, useFromParam, withFrom, HubNavGrid,
   SectionCard, CrossLink,
 } from "../shared";
 import { CreativeSourceNudge } from "@/components/creative/CreativeSourceNudge";
@@ -83,6 +83,9 @@ export function CreativeCommandCenter() {
         ];
 
         const run = generation.lastRun;
+        // Every link out of this hub carries the page's own origin, so the
+        // cell or hypothesis that led here survives the hop to a child page.
+        const children = CHILDREN.map((c) => ({ ...c, to: withFrom(c.to, fp) }));
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -96,8 +99,15 @@ export function CreativeCommandCenter() {
             />
             <FlowCrumb {...fp} />
             <StageLoopHub stages={buildLoopStages(status)} current="creative" />
-            <CreativeSourceNudge account={acct} />
-            <CreativeNextStepNudge accountId={acct.id} />
+            {/* At most one nudge per page. Both decide for themselves whether
+                they apply (each renders null otherwise), and both can apply at
+                once — creatives staged but not deconstructed, and no servable
+                visual. Priority is DOM order: the next-step nudge first, and
+                any status banner that follows a rendered one is hidden. */}
+            <div className="[&>[role=status]~[role=status]]:hidden" data-testid="creative-nudge-slot">
+              <CreativeNextStepNudge accountId={acct.id} />
+              <CreativeSourceNudge account={acct} />
+            </div>
 
             <div className="px-6 py-5 space-y-4 max-w-4xl">
               {/* Execution card: verb title + input-metric tiles + primary action —
@@ -120,7 +130,7 @@ export function CreativeCommandCenter() {
                   title="Generate strategy first"
                   message="Briefs are generated from strategy message pillars — this account doesn't have a completed strategy run yet."
                   ctaLabel="Go to Strategy"
-                  ctaTo="/app/strategy"
+                  ctaTo={withFrom("/app/strategy", fp)}
                 >
                   {() => (
                     <>
@@ -230,7 +240,7 @@ export function CreativeCommandCenter() {
               )}
 
               <div className="pt-2">
-                <HubNavGrid items={CHILDREN} label="Explore Creative" />
+                <HubNavGrid items={children} label="Explore Creative" />
               </div>
             </div>
           </div>

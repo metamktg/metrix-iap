@@ -21,6 +21,19 @@ import type {
 } from "@/lib/data/seedTypes";
 import { codesFromCarrier, splitCodes } from "@/lib/segment-analytics";
 import { scopeToRun } from "@/lib/run-supersede";
+import { classifyResultEvent, type EvaluationScale } from "@/lib/resultEvents";
+
+/**
+ * The scale a variable row is judged on: the engine's stored `intent_class`
+ * when the row carries one, else the classification of its raw result
+ * type. Awareness rows are never scored on cost (owner direction
+ * 2026-09-03) — this is how a roll-up knows to leave their CPA null.
+ */
+export function variableRowScale(row: Pick<VariablePerformanceRow, "Result type"> & { intent_class?: string | null }): EvaluationScale | null {
+  if (row.intent_class === "awareness") return "communication";
+  if (row.intent_class === "conversion" || row.intent_class === "consideration") return "cost_per_result";
+  return classifyResultEvent(row["Result type"]).scale;
+}
 
 // ─── Variable families ────────────────────────────────────────────────
 
@@ -237,16 +250,22 @@ export interface DnaFamilyTopVariable {
   variableId: string;
   spend: number;
   results: number;
+  /** Null when the rows are awareness rows — cost is not their verdict. */
   cpa: number | null;
+  /** Why this variable is the family's best read. */
+  basis: "lowest_cost_per_result" | "most_results" | "most_spend";
 }
 
 export interface DnaFamilyRollup {
   family: string;
   spend: number;
   results: number;
+  /** Null when the family's rows are awareness rows (communication scale). */
   cpa: number | null;
   variableCount: number;
-  /** Best read in the family: lowest CPA with results, else most spend. */
+  /** The scale the family was rolled up on; communication never ranks on cost. */
+  scale: EvaluationScale | null;
+  /** Best read in the family: lowest cost per result with results (cost scale), else most results (communication), else most spend. */
   top: DnaFamilyTopVariable | null;
 }
 
@@ -266,9 +285,17 @@ export function rollupDnaFamilies(
    * tag at all.
    */
   runId: string | null = null,
+  /**
+   * The scale of the scope the rows were filtered under. When omitted it is
+   * read off the rows themselves (stored `intent_class`, else the raw result
+   * type). A communication scale leaves every CPA null and picks the best
+   * read by results — an awareness row is never scored on cost.
+   */
+  scale?: EvaluationScale | null,
 ): DnaFamilyRollup[] {
   rows = scopeToRun(rows, runId);
   const byFamily = new Map<string, Map<string, { spend: number; results: number }>>();
+  const scalesByFamily = new Map<string, Set<EvaluationScale | null>>();
   for (const r of rows) {
     const fam = byFamily.get(r.variable_family) ?? new Map<string, { spend: number; results: number }>();
     const v = fam.get(r.variable_id) ?? { spend: 0, results: 0 };
@@ -276,24 +303,35 @@ export function rollupDnaFamilies(
     v.results += r.Results;
     fam.set(r.variable_id, v);
     byFamily.set(r.variable_family, fam);
+    (scalesByFamily.get(r.variable_family) ?? scalesByFamily.set(r.variable_family, new Set()).get(r.variable_family)!).add(variableRowScale(r));
   }
 
   const rollups: DnaFamilyRollup[] = Array.from(byFamily.entries()).map(([family, variables]) => {
+    // The family's scale: the caller's, else the one scale its rows share.
+    // Rows on mixed scales (an unscoped pre-split set) get no cost verdict.
+    const rowScales = scalesByFamily.get(family) ?? new Set<EvaluationScale | null>();
+    const familyScale: EvaluationScale | null =
+      scale !== undefined ? scale : rowScales.size === 1 ? [...rowScales][0]! : null;
+    const costScale = familyScale === "cost_per_result";
     let spend = 0;
     let results = 0;
     const entries: DnaFamilyTopVariable[] = Array.from(variables.entries()).map(([variableId, v]) => {
       spend += v.spend;
       results += v.results;
-      return { variableId, spend: v.spend, results: v.results, cpa: ratio(v.spend, v.results) };
+      return { variableId, spend: v.spend, results: v.results, cpa: costScale ? ratio(v.spend, v.results) : null, basis: "most_spend" as const };
     });
-    const withResults = entries.filter((e) => e.results > 0 && e.cpa != null);
-    const top =
-      withResults.length > 0
-        ? withResults.reduce((best, e) => (e.cpa! < best.cpa! || (e.cpa === best.cpa && e.results > best.results) ? e : best))
-        : entries.length > 0
-          ? entries.reduce((best, e) => (e.spend > best.spend ? e : best))
-          : null;
-    return { family, spend, results, cpa: ratio(spend, results), variableCount: variables.size, top };
+    const withResults = entries.filter((e) => e.results > 0);
+    let top: DnaFamilyTopVariable | null = null;
+    if (costScale && withResults.some((e) => e.cpa != null)) {
+      const best = withResults.filter((e) => e.cpa != null).reduce((b, e) => (e.cpa! < b.cpa! || (e.cpa === b.cpa && e.results > b.results) ? e : b));
+      top = { ...best, basis: "lowest_cost_per_result" };
+    } else if (withResults.length > 0) {
+      const best = withResults.reduce((b, e) => (e.results > b.results || (e.results === b.results && e.spend > b.spend) ? e : b));
+      top = { ...best, basis: "most_results" };
+    } else if (entries.length > 0) {
+      top = { ...entries.reduce((b, e) => (e.spend > b.spend ? e : b)), basis: "most_spend" };
+    }
+    return { family, spend, results, cpa: costScale ? ratio(spend, results) : null, variableCount: variables.size, scale: familyScale, top };
   });
 
   return rollups.sort((a, b) => b.spend - a.spend);

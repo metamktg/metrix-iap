@@ -174,15 +174,18 @@ describe("AnalysisCommandCenter — execution card is honest pre-run readiness",
   });
 
   it("stays compact by default: the Run analysis button is visible but the date-range chooser and pre-run warnings are collapsed", async () => {
-    // No Ad Summary export staged and both required CSVs missing — in the
-    // old always-expanded layout this would render both warning boxes.
+    // Nothing staged — in the old always-expanded layout this would render
+    // the blocking warning box. (The run gate now follows the server's
+    // adaptive contract — one delivery report is enough — so the amber
+    // "Spend will be underreported" alert no longer exists; the block copy
+    // names a delivery report, not "both reports".)
     mockImports = [];
     await act(async () => { renderCC(); });
     expect(screen.getByRole("button", { name: "Run analysis" })).toBeTruthy();
     expect(screen.getByText("Date range to analyze")).toBeTruthy();
     expect(screen.queryByText("Last 7 days")).toBeNull();
-    expect(screen.queryByText("Spend will be underreported without an Ad Summary export")).toBeNull();
-    expect(screen.queryByText("Both reports are required before running analysis")).toBeNull();
+    expect(screen.queryByTestId("optional-exports-note")).toBeNull();
+    expect(screen.queryByText("A delivery report is required before running analysis")).toBeNull();
   });
 
   it("reveals the date-range chooser and warnings when the disclosure is opened", async () => {
@@ -191,8 +194,26 @@ describe("AnalysisCommandCenter — execution card is honest pre-run readiness",
     const reveal = screen.getByText("Date range to analyze");
     await act(async () => { fireEvent.click(reveal); });
     expect(screen.getByText("Last 7 days")).toBeTruthy();
-    expect(screen.getByText("Spend will be underreported without an Ad Summary export")).toBeTruthy();
-    expect(screen.getByText("Both reports are required before running analysis")).toBeTruthy();
+    // With nothing staged the hard block shows and the optional-exports note
+    // does not (there is no run for it to annotate).
+    expect(screen.getByText("A delivery report is required before running analysis")).toBeTruthy();
+    expect(screen.queryByTestId("optional-exports-note")).toBeNull();
+  });
+
+  it("lets a run go on one delivery report and names the absent exports as resolution, not a warning", async () => {
+    // Only an Ad Summary staged: the server accepts this (analysisEngine's
+    // adaptive contract), so the client must not block it. The two pivots
+    // are named as what they would ADD, in neutral caveat copy.
+    mockImports = [{ id: "s", filename: "summary.csv", kind: "performance_ad_summary_csv", status: "staged" }];
+    await act(async () => { renderCC(); });
+    await act(async () => { fireEvent.click(screen.getByText("Date range to analyze")); });
+    expect(screen.queryByText("A delivery report is required before running analysis")).toBeNull();
+    const note = screen.getByTestId("optional-exports-note").textContent ?? "";
+    expect(note).toContain("Demographics export");
+    expect(note).toContain("Placements export");
+    expect(note).not.toContain("Ad Summary export");
+    expect(note).toContain("adds resolution");
+    expect((screen.getByRole("button", { name: "Run analysis" }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("expands the execution card's disclosure when the header Summary/Detailed toggle is switched to Detailed", async () => {

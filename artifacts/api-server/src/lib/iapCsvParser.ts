@@ -628,12 +628,20 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
 
       // Only emit a warning for moderate-confidence matches (0.5–<0.75).
       // High-confidence inferred (≥0.75) are auto-applied silently.
+      //
+      // An OPTIONAL column — a breakdown this class does not require, or a
+      // base metric outside the core set — mapped at moderate confidence is
+      // a "Note:" line, which the client's warningSeverity files as a notice
+      // rather than a decision. Only a required breakdown or a core metric
+      // earns the attention-level "please verify": a wrong guess there
+      // corrupts spend or results; a wrong guess on "Post saves" does not.
       if (inferred.confidence < 0.75) {
         const isBreakdown = spec.breakdownColumns.includes(col);
+        const isOptional = isBreakdown ? !spec.requiredBreakdownColumns.includes(col) : !coreBaseMetrics.has(col);
         const label = isBreakdown ? `Column "${col}"` : `Metric column "${col}"`;
         warnings.push(
-          `${label} mapped from "${inferred.headerValue}" with moderate confidence ` +
-            `(${Math.round(inferred.confidence * 100)}%) — please verify this is correct.`,
+          `${isOptional ? "Note: " : ""}${label} mapped from "${inferred.headerValue}" with moderate confidence ` +
+            `(${Math.round(inferred.confidence * 100)}%) — ${isOptional ? "optional column, verify if you rely on it" : "please verify this is correct"}.`,
         );
       }
 

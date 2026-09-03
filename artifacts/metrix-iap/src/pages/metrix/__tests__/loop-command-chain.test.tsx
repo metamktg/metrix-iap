@@ -226,10 +226,12 @@ describe("LoopCommandChain — configured account with full data (Bookster)", ()
     expect(isDisabled(strategyTile)).toBe(false);
   });
 
-  it("Briefs stage tile is not locked — strategy is complete", () => {
+  // The tile that drafts briefs is the loop's Creative stage; it takes its
+  // label from navTree's LOOP_STAGES (stage key stays "briefs").
+  it("Creative (briefs) stage tile is not locked — strategy is complete", () => {
     selectAccount("bookster");
     renderOverview();
-    const briefsTile = screen.getByRole("button", { name: /^briefs$/i });
+    const briefsTile = screen.getByRole("button", { name: /^creative$/i });
     expect(isDisabled(briefsTile)).toBe(false);
   });
 
@@ -293,12 +295,12 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     expect(isDisabled(strategyTile)).toBe(true);
   });
 
-  it("Briefs stage tile is locked — strategy has not run", () => {
+  it("Creative (briefs) stage tile is locked — strategy has not run", () => {
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
     renderOverview(seed);
     // Briefs is locked when !strategyComplete && !briefsComplete && !briefsRunning
-    const briefsTile = screen.getByRole("button", { name: /^briefs$/i });
+    const briefsTile = screen.getByRole("button", { name: /^creative$/i });
     expect(isDisabled(briefsTile)).toBe(true);
   });
 
@@ -316,7 +318,7 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     renderOverview(seed);
     // Strategy and Briefs tiles are disabled — clicking them does nothing
     const strategyTile = screen.getByRole("button", { name: /^strategy$/i });
-    const briefsTile = screen.getByRole("button", { name: /^briefs$/i });
+    const briefsTile = screen.getByRole("button", { name: /^creative$/i });
     expect(isDisabled(strategyTile)).toBe(true);
     expect(isDisabled(briefsTile)).toBe(true);
   });

@@ -285,6 +285,30 @@ export interface LibraryCatalogScope {
   scale?: EvaluationScale | null;
   /** The scope's label for the results tiles ("Purchases", "All conversions"). */
   label?: string;
+  /**
+   * The result types the ACCOUNT's ads actually ran under (seed
+   * `result_events[].raw`, else the distinct types on its rows). The
+   * add-to-cart and checkout tiles exist only for an account that carries
+   * those events — as a result type here, or as a measured funnel column
+   * on the rows — never for every vertical as if every client sold goods.
+   */
+  events?: readonly string[];
+}
+
+/**
+ * Does this account carry a given funnel event? True when one of its result
+ * types classifies to the event, or when a row carries the event's measured
+ * column (a real 0 counts — Meta reports 0 when the column is present and
+ * the ad had no such events; null is absence).
+ */
+function accountCarriesEvent(
+  eventKey: "add_to_cart" | "initiate_checkout",
+  events: readonly string[] | undefined,
+  rows: readonly CellPerformanceRow[],
+): boolean {
+  if ((events ?? []).some((rt) => classifyResultEvent(rt).key === eventKey)) return true;
+  const column = eventKey === "add_to_cart" ? "adds_to_cart" : "checkouts_initiated";
+  return rows.some((r) => r[column] != null);
 }
 
 export function buildLibraryMetricCatalog(rows: CellPerformanceRow[], scopeInfo: LibraryCatalogScope = {}): MetricDef[] {
@@ -341,8 +365,13 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[], scopeInfo:
   // Still gated on singleEvent first: rows are per (cell, result event) and
   // the same physical funnel action appears on each of a cell's event rows,
   // so summing across events would double-count regardless of coverage.
-  const atc = singleEvent ? sumStrictWithCoverage(rows, (r) => r.adds_to_cart) : null;
-  const chk = singleEvent ? sumStrictWithCoverage(rows, (r) => r.checkouts_initiated) : null;
+  // Gate (G7): these tiles used to exist for every account, ATC and checkout
+  // being assumed as if every client sold physical products. They are built
+  // only when the account carries the event.
+  const carriesAtc = accountCarriesEvent("add_to_cart", scopeInfo.events, rows);
+  const carriesCheckout = accountCarriesEvent("initiate_checkout", scopeInfo.events, rows);
+  const atc = singleEvent && carriesAtc ? sumStrictWithCoverage(rows, (r) => r.adds_to_cart) : null;
+  const chk = singleEvent && carriesCheckout ? sumStrictWithCoverage(rows, (r) => r.checkouts_initiated) : null;
   const totalAtc = atc?.total ?? null;
   const totalChk = chk?.total ?? null;
   const hasAtcData = totalAtc != null;
@@ -404,10 +433,18 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[], scopeInfo:
     def("lib_link_ctr",        "Link CTR",            ctr,           ctr != null ? fmtPct(ctr) : "—",     multiEventSub ?? "link clicks ÷ impressions"),
     // ── Lower-funnel tiles ───────────────────────────────────────────
     def("lib_cvr",             "CVR",                 cvr,           cvr != null ? fmtPct(cvr) : "—",     "results ÷ link clicks"),
-    def("lib_atc_rate",        "ATC rate",            atcRate,       atcRate != null ? fmtPct(atcRate) : "—",  hasAtcData ? "adds-to-cart ÷ link clicks" : coverageSub(atc, "adds-to-cart")),
-    def("lib_checkout_rate",   "Checkout rate",       checkoutRate,  checkoutRate != null ? fmtPct(checkoutRate) : "—", hasChkData ? "checkouts ÷ link clicks" : coverageSub(chk, "checkouts initiated")),
-    def("lib_cost_per_atc",    "Cost / ATC",          costPerAtc,    costPerAtc != null ? fmtUSD(costPerAtc) : "—", hasAtcData ? "spend ÷ adds-to-cart" : coverageSub(atc, "adds-to-cart")),
-    def("lib_cost_per_checkout","Cost / Checkout",    costPerCheckout, costPerCheckout != null ? fmtUSD(costPerCheckout) : "—", hasChkData ? "spend ÷ checkouts initiated" : coverageSub(chk, "checkouts initiated")),
+    ...(carriesAtc
+      ? [
+          def("lib_atc_rate",     "ATC rate",   atcRate,    atcRate != null ? fmtPct(atcRate) : "—",       hasAtcData ? "adds-to-cart ÷ link clicks" : coverageSub(atc, "adds-to-cart")),
+          def("lib_cost_per_atc", "Cost / ATC", costPerAtc, costPerAtc != null ? fmtUSD(costPerAtc) : "—", hasAtcData ? "spend ÷ adds-to-cart" : coverageSub(atc, "adds-to-cart")),
+        ]
+      : []),
+    ...(carriesCheckout
+      ? [
+          def("lib_checkout_rate",     "Checkout rate",   checkoutRate,    checkoutRate != null ? fmtPct(checkoutRate) : "—",       hasChkData ? "checkouts ÷ link clicks" : coverageSub(chk, "checkouts initiated")),
+          def("lib_cost_per_checkout", "Cost / Checkout", costPerCheckout, costPerCheckout != null ? fmtUSD(costPerCheckout) : "—", hasChkData ? "spend ÷ checkouts initiated" : coverageSub(chk, "checkouts initiated")),
+        ]
+      : []),
   ];
 }
 

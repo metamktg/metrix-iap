@@ -17,6 +17,7 @@ import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { ConfidenceBadge, DetailReveal, MetricTile, deriveLabel } from "@/pages/metrix/shared";
 import { TYPE } from "@/pages/metrix/typography";
 import { fmtMetric } from "@/lib/normalize";
+import { classifyResultEvent } from "@/lib/resultEvents";
 import type {
   ConceptRollupRow, CreativeComponentFamily, CreativeComponents, CreativeInputSource,
 } from "@/lib/data/seedTypes";
@@ -43,10 +44,13 @@ const EVIDENCE_LABEL: Record<string, string> = { full: "Full", partial: "Partial
 export function CreativeComponentsPanel({
   components,
   rollup,
+  embedded = false,
 }: {
   components: CreativeComponents;
   /** Run-scoped concept rollup rows (the caller scopes them). */
   rollup: ConceptRollupRow[];
+  /** True when mounted inside a surface that already pads its content (the IAP Library's Ad copy tab). */
+  embedded?: boolean;
 }) {
   const families = (Object.keys(FAMILY_LABEL) as CreativeComponentFamily[]);
   const firstWithRows = families.find((f) => components.families[f].length > 0) ?? "headline";
@@ -54,9 +58,18 @@ export function CreativeComponentsPanel({
   const rows = components.families[family];
   const cov = components.coverage;
   const graded = rollup.filter((r) => r.evidence_grade != null);
+  // The result events the server's weighting ran over (its dominant intent
+  // class). Stated, because it is fixed at seed time and does not follow the
+  // page's result scope — a reader must not take a weight computed on
+  // purchases for one computed under the scope they chose.
+  const scope = components.scope;
+  const scopeLine = scope
+    ? `Weighted on ${scope.result_types.map((rt) => classifyResultEvent(rt).label).join(" + ") || "no placed event"}` +
+      (scope.excluded_result_types.length > 0 ? ` · not ${scope.excluded_result_types.map((rt) => classifyResultEvent(rt).label).join(", ")}` : "")
+    : null;
 
   return (
-    <div className="px-6 py-5 space-y-6" data-testid="creative-components-panel">
+    <div className={cn(embedded ? "space-y-6" : "px-6 py-5 space-y-6")} data-testid="creative-components-panel">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <MetricTile label="Ads with known copy" value={`${cov.ads_with_copy} of ${cov.ads_total}`} variant="primary" />
         <MetricTile label="Spend covered" value={fmtMetric("pct", cov.coverage * 100)} sub={`${fmtMetric("usd_total", cov.spend_with_copy)} of ${fmtMetric("usd_total", cov.spend_total)}`} />
@@ -65,6 +78,7 @@ export function CreativeComponentsPanel({
       </div>
       <p className={cn(TYPE.caption, "text-muted-foreground/75 -mt-3")} data-testid="creative-components-by-family">
         Ads carrying each family: headlines {fmtMetric("count", cov.by_family.headline)} · primary text {fmtMetric("count", cov.by_family.primary_text)} · descriptions {fmtMetric("count", cov.by_family.description)} · calls to action {fmtMetric("count", cov.by_family.cta_type)}
+        {scopeLine ? ` · ${scopeLine}` : ""}
       </p>
 
       <div>

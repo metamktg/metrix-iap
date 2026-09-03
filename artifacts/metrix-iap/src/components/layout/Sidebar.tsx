@@ -1,11 +1,8 @@
 import { useLocation } from "wouter";
-import { useState, useRef, useEffect, useId } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useId } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
-  ChevronDown,
-  Database,
-  PanelLeftClose,
-  PanelLeftOpen,
   LayoutDashboard,
   Radio,
   BarChart2,
@@ -21,17 +18,50 @@ import { NAV_GROUP_LABEL, navTree, sectionLandingRoute, visibleChildren } from "
 import { TYPE } from "@/pages/metrix/typography";
 import { useNavBadges } from "@/navigation/useNavBadges";
 import { useAuth } from "@/contexts/AuthContext";
-import { useDragResize } from "@/hooks/useDragResize";
+import { useIsCompactShell } from "@/lib/useMediaQuery";
+import { DUR_FAST, DUR_MED, EASE, motionOr, staggerDelay } from "@/lib/motion";
 import { AccountSwitcher } from "./AccountSwitcher";
 import type { NavSection, NavChild, NavIconName, NavGroup } from "@/navigation/navTree";
 
-// The sidebar never expands past this width by dragging — 216px is the
-// fixed "full" size; the slide handle can only shrink it down to the
-// collapsed rail. Expanding back to 216px happens via click, not drag.
-const EXPANDED_WIDTH = 216;
-const COLLAPSED_WIDTH = 56;
-// Drop below this width mid-drag and releasing snaps to the collapsed rail.
-const COLLAPSE_SNAP_WIDTH = 150;
+// ─── The sidebar is a rail and a map ───────────────────────────────────
+//
+// The rail is the only thing in the layout: 56px of icons, always there,
+// never collapsing or expanding, so the page keeps its width and the
+// reader keeps their place. The MAP is what the rail becomes when the
+// reader dwells on it: it opens rightwards OVER the page (never pushing
+// it) and draws the product as a flow chart — the six loop stages as
+// numbered nodes on one spine, the outputs and the workspace beneath, and
+// the pages of whichever node the pointer rests on branching out to the
+// right of it. Move to another node and the branch moves with you.
+//
+// There is no expand/collapse control and no width handle: a toggle you
+// have to find is a mode, and a mode is a thing to forget. Three ways in,
+// each doing one thing:
+//   · a pointer that rests on the rail for OPEN_DWELL_MS opens the map
+//     (a pass-through on the way to the page does not);
+//   · keyboard focus on a rail item opens it at once, Escape closes it and
+//     hands focus back to the rail;
+//   · on a touch screen (no hover) a tap on a rail icon opens the map on
+//     that section, a second tap on the same icon goes to its command
+//     center, a tap outside closes it. Inside the compact-shell drawer the
+//     map is simply always open — the drawer is the disclosure.
+//
+// Mechanics taken from the Watermelon references (docs/resources/watermelon):
+// tooltip-navbar's dwell-then-follow (one delay to open, none to move
+// between items once open) and layered-progressive-disclosure's arrival —
+// opacity + blur(4px) + an 8px travel, never a 50px one, on a surface the
+// reader is already reading. Nothing is a mode; nothing is remembered.
+
+export const RAIL_WIDTH = 56;
+const MAP_WIDTH = 332;
+/** How long a pointer rests on the rail before the map opens. */
+export const OPEN_DWELL_MS = 260;
+/** How long the map stays after the pointer leaves it, so a diagonal move to a branch does not close it. */
+export const CLOSE_GRACE_MS = 220;
+
+// Column geometry inside the map: the node column and where the branch starts.
+const NODE_COL_WIDTH = 156;
+const BRANCH_LEFT = NODE_COL_WIDTH + 14;
 
 // ─── Icon map ──────────────────────────────────────────────────────────
 
@@ -51,26 +81,6 @@ const ICONS: Record<NavIconName, React.ComponentType<{ className?: string }>> = 
 function NavIcon({ name, className }: { name: NavIconName; className?: string }) {
   const Icon = ICONS[name];
   return <Icon className={className} />;
-}
-
-// ─── Collapse state persistence ────────────────────────────────────────
-
-const STORAGE_KEY = "metrix_sidebar_collapsed";
-
-function loadCollapsed(): boolean {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === "1";
-  } catch {
-    return false; // default: expanded
-  }
-}
-
-function saveCollapsed(v: boolean) {
-  try {
-    localStorage.setItem(STORAGE_KEY, v ? "1" : "0");
-  } catch {
-    /* ignore */
-  }
 }
 
 // ─── Badge pill ────────────────────────────────────────────────────────
@@ -128,116 +138,85 @@ function navigateTo(href: string) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
-// ─── Child row (used in both expanded sidebar and hover flyout) ─────────
-
-function ChildRow({
-  child,
-  count,
-  onNavigate,
-}: {
-  child: NavChild;
-  count: number | null;
-  onNavigate?: () => void;
-}) {
-  const [location] = useLocation();
-  const active = isChildActive(child.to, location);
-
-  return (
-    <li className="relative">
-      {active && (
-        <span className="absolute left-0 top-[5px] bottom-[5px] w-0.5 bg-primary rounded-full" />
-      )}
-      <a
-        href={child.to}
-        onClick={(e) => {
-          navigate(child.to, e);
-          onNavigate?.();
-        }}
-        aria-current={active ? "page" : undefined}
-        title={child.purpose ? `${child.label} — ${child.purpose}` : undefined}
-        className={cn(
-          "flex items-center gap-1.5 pl-3 pr-2 min-h-8 py-1 rounded-r text-caption transition-[color,background-color,border-color,box-shadow,opacity,transform]",
-          active
-            ? "font-semibold text-foreground bg-primary/8"
-            : "text-foreground/65 hover:text-foreground hover:bg-primary/10"
-        )}
-      >
-        <span className="flex-1 min-w-0 leading-tight">
-          <span className="block truncate">{child.label}</span>
-          {/* The active page says what it proves — one fragment, only on the
-              row the reader is on, so the list stays a list. */}
-          {active && child.purpose && (
-            <span className={cn(TYPE.microLabel, "block normal-case tracking-normal font-normal text-muted-foreground/75 truncate mt-0.5")} data-testid="nav-child-purpose">
-              {child.purpose}
-            </span>
-          )}
-        </span>
-        {child.placeholder && !active && (
-          <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
-            Soon
-          </span>
-        )}
-        {!child.placeholder && child.dataSource && (
-          <Database className="w-2 h-2 shrink-0 text-muted-foreground/75 opacity-0 group-hover:opacity-100 transition-opacity" />
-        )}
-        {child.badgeKey && !child.placeholder && (
-          <NavBadge count={count} badgeKey={child.badgeKey} />
-        )}
-      </a>
-    </li>
+/** A pointer that cannot hover — the map opens by tap instead of dwell. */
+function useIsTouch(): boolean {
+  const [touch, setTouch] = useState(() =>
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+      ? window.matchMedia("(hover: none)").matches
+      : false,
   );
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(hover: none)");
+    const onChange = () => setTouch(mq.matches);
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+  return touch;
 }
-
-// ─── Collapsed icon item ────────────────────────────────────────────────
-// No flyout/hover behavior (Metrix v1 design handoff: "that was tried and
-// removed for being unreliable on a scrolling rail"). Clicking an
-// expandable section's icon reopens the full rail on that section instead;
-// clicking a leaf section's icon navigates directly, same as expanded mode.
 
 /** The rail's dividers mark the product's shape: after the account, after the loop, after the outputs. */
 function dividerAfter(section: NavSection, next: NavSection | undefined): boolean {
   return next != null && next.group !== section.group;
 }
 
-function CollapsedItem({
+// ─── Rail item ─────────────────────────────────────────────────────────
+// One icon per section. It is a link to the section's command center; the
+// map is what dwelling, focusing or (on touch) tapping it opens.
+
+function RailItem({
   section,
   badgeCounts,
-  onExpandToSection,
+  focused,
+  onIntent,
+  onActivate,
   showDivider,
+  itemRef,
 }: {
   section: NavSection;
   badgeCounts: Record<string, number | null>;
-  onExpandToSection: (sectionId: string) => void;
+  focused: boolean;
+  onIntent: (sectionId: string, via: "hover" | "focus") => void;
+  /** Returns true when the click was consumed (the map opened instead of navigating). */
+  onActivate: (section: NavSection) => boolean;
   showDivider: boolean;
+  itemRef: (el: HTMLAnchorElement | null) => void;
 }) {
   const [location] = useLocation();
   const active = isSectionActive(section, location);
   const landing = sectionLandingRoute(section) ?? section.to ?? "#";
   const badgeCount = section.badgeKey ? badgeCounts[section.badgeKey] ?? null : null;
-  const hasChildren = (section.children?.length ?? 0) > 0;
 
   return (
     <>
-      <li className="relative">
+      <li
+        className={cn("relative", section.loopStage != null && "mx-rail-spine")}
+        data-loop-stage={section.loopStage ?? undefined}
+      >
         <a
+          ref={itemRef}
           href={landing}
+          data-testid="rail-item"
+          data-section-id={section.id}
+          onPointerEnter={(e) => { if (e.pointerType !== "touch") onIntent(section.id, "hover"); }}
+          onFocus={() => onIntent(section.id, "focus")}
           onClick={(e) => {
-            if (hasChildren) {
-              e.preventDefault();
-              onExpandToSection(section.id);
-              return;
-            }
+            if (onActivate(section)) { e.preventDefault(); return; }
             navigate(landing, e);
           }}
           aria-current={active ? "page" : undefined}
           aria-label={section.label}
           title={`${section.label} · ${section.purpose}`}
           className={cn(
-            "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] relative overflow-hidden",
+            "relative flex items-center justify-center w-10 h-10 mx-auto rounded-lg overflow-hidden",
+            "transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
             active
               ? "bg-primary/20 text-interactive border border-primary/30"
-              : "text-foreground/55 hover:text-foreground/90 hover:bg-foreground/[0.07]",
-            section.placeholder && "opacity-50"
+              : focused
+                ? "bg-foreground/[0.07] text-foreground/90"
+                : "text-foreground/55 hover:text-foreground/90 hover:bg-foreground/[0.07]",
+            section.placeholder && "opacity-50",
           )}
         >
           {active && (
@@ -261,207 +240,214 @@ function CollapsedItem({
   );
 }
 
-// ─── Expandable section (expanded mode) ────────────────────────────────
-// open / onToggle are controlled by the parent Sidebar (accordion mode).
-//
-// Two controls, side by side, and each does one thing:
-//
-//   · the label is a LINK to the section's command center;
-//   · the chevron is a BUTTON that opens or closes the child list.
-//
-// It used to be one button that toggled on a single click and navigated on
-// a double click, with the first click held back for 220ms in case a second
-// arrived. That is why the menu felt clunky: every section click landed a
-// fifth of a second late, the navigation gesture existed only in a title
-// tooltip (invisible on touch, where double-tap is zoom), and a reader who
-// wanted the command center had no visible way to ask for it. A link and a
-// disclosure are the two things a sidebar section is; they now look like it.
+// ─── Map node ──────────────────────────────────────────────────────────
+// A section as a node in the flow chart: its stage numeral (or icon) on
+// the spine, its label, its badge. Resting the pointer on it moves the
+// branch; clicking it goes to the command center.
 
-function ExpandableSection({
+function MapNode({
   section,
   badgeCounts,
-  open,
-  onToggle,
-  onOpen,
+  focused,
+  onIntent,
+  nodeRef,
 }: {
   section: NavSection;
   badgeCounts: Record<string, number | null>;
-  open: boolean;
-  onToggle: () => void;
-  onOpen: () => void;
+  focused: boolean;
+  onIntent: (sectionId: string) => void;
+  nodeRef: (el: HTMLLIElement | null) => void;
 }) {
   const [location] = useLocation();
   const sectionActive = isSectionActive(section, location);
-  const landing = sectionLandingRoute(section) ?? "#";
+  const landing = sectionLandingRoute(section) ?? section.to ?? "#";
   const landingActive = isChildActive(landing, location);
-  const controlsId = useId();
-  const children = visibleChildren(section);
   const sectionBadge = section.badgeKey ? badgeCounts[section.badgeKey] ?? null : null;
 
   return (
-    <li data-loop-stage={section.loopStage ?? undefined} className={cn(section.loopStage != null && "mx-loop-spine")}>
-      <div
+    <li
+      ref={nodeRef}
+      data-loop-stage={section.loopStage ?? undefined}
+      data-testid="map-node"
+      data-section-id={section.id}
+      data-focused={focused || undefined}
+      className={cn("relative", section.loopStage != null && "mx-map-spine")}
+    >
+      <a
+        href={landing}
+        onPointerEnter={(e) => { if (e.pointerType !== "touch") onIntent(section.id); }}
+        onFocus={() => onIntent(section.id)}
+        onClick={(e) => navigate(landing, e)}
+        aria-current={landingActive ? "page" : sectionActive ? "true" : undefined}
+        title={`Open ${section.label}`}
         className={cn(
-          "relative flex items-stretch rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] select-none",
+          "pressable-lg relative flex items-center gap-2 pl-2 pr-2 h-9 rounded-lg text-caption select-none",
+          "transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
           landingActive
             ? "mx-nav-active font-medium"
-            : sectionActive
+            : focused
               ? "text-foreground bg-primary/[0.09] font-medium"
-              : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10",
+              : sectionActive
+                ? "text-foreground font-medium"
+                : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10",
           section.placeholder && "opacity-60",
         )}
       >
-        <a
-          href={landing}
-          onClick={(e) => {
-            navigate(landing, e);
-            onOpen();
-          }}
-          aria-current={landingActive ? "page" : undefined}
-          title={`Open ${section.label}`}
-          className="pressable-lg flex-1 min-w-0 flex items-center gap-2 pl-2.5 pr-1 h-9 rounded-l-lg text-body
-                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-        >
-          <NavIcon
-            name={section.icon}
-            className={cn(
-              "w-4 h-4 shrink-0",
-              landingActive ? "text-foreground" : sectionActive ? "text-interactive" : "text-muted-foreground/75"
-            )}
-          />
-          <span className="flex-1 text-left truncate">{section.label}</span>
-          {/* The loop stage — the product's shape made visible on every row of it. */}
-          {section.loopStage != null && (
-            <span
-              aria-hidden="true"
-              data-testid="nav-loop-stage"
-              title={`Stage ${section.loopStage} of 6 in the IAP loop`}
-              className={cn(
-                // Hollow, muted and never filled — a stage marker must not read as a
-                // count badge (NavBadge is the filled pill beside it).
-                "text-micro-num tabular-nums w-4 h-4 rounded-full border flex items-center justify-center shrink-0 bg-transparent",
-                sectionActive ? "border-primary/40 text-muted-foreground" : "border-border/50 text-muted-foreground/75",
-              )}
-            >
-              {section.loopStage}
-            </span>
-          )}
-          {section.placeholder && (
-            <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
-              Soon
-            </span>
-          )}
-          {section.badgeKey && !section.placeholder && (
-            <NavBadge count={sectionBadge} badgeKey={section.badgeKey} />
-          )}
-        </a>
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={controlsId}
-          aria-label={`${open ? "Collapse" : "Expand"} ${section.label} pages`}
-          onClick={onToggle}
-          className="pressable shrink-0 w-9 h-9 flex items-center justify-center rounded-r-lg
-                     hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-        >
-          <ChevronDown
-            aria-hidden="true"
-            className={cn(
-              "w-3.5 h-3.5 shrink-0 transition-transform duration-200",
-              open && "rotate-180",
-              landingActive ? "text-foreground/70" : "text-muted-foreground/75"
-            )}
-          />
-        </button>
-      </div>
-
-      {/* Animated child list — grid 0fr→1fr trick animates height:auto cleanly */}
-      <div
-        id={controlsId}
-        aria-hidden={!open}
-        // A closed list must be out of the tab order as well as out of
-        // sight: inert takes its links out of Tab, aria-hidden alone
-        // would not (the same fix AppShell's drawer needed).
-        inert={!open}
-        style={{
-          display: "grid",
-          gridTemplateRows: open ? "1fr" : "0fr",
-          transition: "grid-template-rows 220ms cubic-bezier(0.4,0,0.2,1)",
-        }}
-      >
-        <ul
-          aria-label={`${section.label} pages`}
-          className="overflow-hidden mt-0.5 ml-3 pl-0 border-l border-border/20 space-y-0.5 pb-1"
-        >
-          {/* What this module is for — the category it defines. One fragment,
-              revealed with the pages, so the closed header stays one line. */}
-          <li role="presentation" className={cn(TYPE.microLabel, "normal-case tracking-normal font-normal text-muted-foreground/75 pl-3 pr-2 pt-1 pb-0.5 leading-snug")} data-testid="nav-section-purpose">
-            {section.purpose}
-          </li>
-          {children.map(child => (
-            <ChildRow
-              key={child.id}
-              child={child}
-              count={child.badgeKey ? badgeCounts[child.badgeKey] ?? null : null}
-            />
-          ))}
-        </ul>
-      </div>
-    </li>
-  );
-}
-
-// ─── Leaf section (single direct link, expanded mode) ──────────────────
-
-function LeafSection({
-  section,
-  badgeCounts,
-}: {
-  section: NavSection;
-  badgeCounts: Record<string, number | null>;
-}) {
-  const [location] = useLocation();
-  const active = isSectionActive(section, location);
-  const to = section.to!;
-
-  return (
-    <li className="relative">
-      {active && (
-        <span className="absolute left-0 top-[6px] bottom-[6px] w-0.5 bg-primary rounded-full" />
-      )}
-      <a
-        href={to}
-        onClick={(e) => navigate(to, e)}
-        aria-current={active ? "page" : undefined}
-        className={cn(
-          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-body transition-[color,background-color,border-color,box-shadow,opacity,transform]",
-          active
-            ? "mx-nav-active font-medium"
-            : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10",
-          section.placeholder && "opacity-60"
-        )}
-      >
-        <NavIcon
-          name={section.icon}
+        {/* The node itself: the loop stage as a numeral on the spine, the
+            icon for everything outside the loop. */}
+        <span
+          aria-hidden="true"
+          data-testid={section.loopStage != null ? "nav-loop-stage" : undefined}
+          title={section.loopStage != null ? `Stage ${section.loopStage} of 6 in the IAP loop` : undefined}
           className={cn(
-            "w-4 h-4 shrink-0",
-            active ? "text-foreground" : "text-muted-foreground/75"
+            "relative z-[1] w-5 h-5 rounded-full border flex items-center justify-center shrink-0 text-micro-num tabular-nums",
+            landingActive || focused
+              ? "border-primary/60 bg-primary/15 text-interactive"
+              : sectionActive
+                ? "border-primary/40 bg-sidebar text-muted-foreground"
+                : "border-border/50 bg-sidebar text-muted-foreground/75",
           )}
-        />
-        <span className="flex-1">{section.label}</span>
+        >
+          {section.loopStage != null ? section.loopStage : <NavIcon name={section.icon} className="w-3 h-3" />}
+        </span>
+        <span className="flex-1 min-w-0 truncate">{section.label}</span>
         {section.placeholder && (
           <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
             Soon
           </span>
         )}
         {section.badgeKey && !section.placeholder && (
-          <NavBadge
-            count={badgeCounts[section.badgeKey] ?? null}
-            badgeKey={section.badgeKey}
+          <NavBadge count={sectionBadge} badgeKey={section.badgeKey} />
+        )}
+        {/* The connector stub from the node to its branch, drawn only on the focused node. */}
+        {focused && (
+          <span
+            aria-hidden="true"
+            data-testid="map-connector"
+            className="absolute top-1/2 -right-[14px] w-[14px] h-px bg-primary/50"
           />
         )}
       </a>
     </li>
+  );
+}
+
+// ─── Branch: the focused section's pages ───────────────────────────────
+
+function BranchRow({
+  child,
+  count,
+  index,
+  total,
+  reduced,
+}: {
+  child: NavChild;
+  count: number | null;
+  index: number;
+  total: number;
+  reduced: boolean | null;
+}) {
+  const [location] = useLocation();
+  const active = isChildActive(child.to, location);
+
+  return (
+    <motion.li
+      className="relative mx-map-branch-row"
+      initial={reduced ? false : { opacity: 0, x: -8, filter: "blur(4px)" }}
+      animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+      transition={motionOr(reduced, { duration: DUR_MED, ease: EASE, delay: staggerDelay(index, total) })}
+    >
+      <a
+        href={child.to}
+        onClick={(e) => navigate(child.to, e)}
+        aria-current={active ? "page" : undefined}
+        title={child.purpose ? `${child.label} — ${child.purpose}` : undefined}
+        className={cn(
+          "flex items-center gap-1.5 pl-3 pr-2 min-h-8 py-1 rounded-md text-caption",
+          "transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+          active
+            ? "font-semibold text-foreground bg-primary/10"
+            : "text-foreground/70 hover:text-foreground hover:bg-primary/10",
+        )}
+      >
+        <span className="flex-1 min-w-0 leading-tight">
+          <span className="block truncate">{child.label}</span>
+          {/* The active page says what it proves — one fragment, only on the
+              row the reader is on, so the list stays a list. */}
+          {active && child.purpose && (
+            <span className={cn(TYPE.microLabel, "block normal-case tracking-normal font-normal text-muted-foreground/75 truncate mt-0.5")} data-testid="nav-child-purpose">
+              {child.purpose}
+            </span>
+          )}
+        </span>
+        {child.placeholder && !active && (
+          <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
+            Soon
+          </span>
+        )}
+        {child.badgeKey && !child.placeholder && (
+          <NavBadge count={count} badgeKey={child.badgeKey} />
+        )}
+      </a>
+    </motion.li>
+  );
+}
+
+function Branch({
+  section,
+  badgeCounts,
+  top,
+  reduced,
+  branchRef,
+}: {
+  section: NavSection;
+  badgeCounts: Record<string, number | null>;
+  top: number;
+  reduced: boolean | null;
+  branchRef: (el: HTMLDivElement | null) => void;
+}) {
+  const children = visibleChildren(section);
+  const headingId = useId();
+  return (
+    <motion.div
+      ref={branchRef}
+      key={section.id}
+      data-testid="map-branch"
+      data-section-id={section.id}
+      role="group"
+      aria-labelledby={headingId}
+      className="absolute pr-2"
+      style={{ left: BRANCH_LEFT, right: 0, top }}
+      initial={reduced ? false : { opacity: 0, x: -8, filter: "blur(4px)" }}
+      animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+      exit={{ opacity: 0, x: -4, filter: "blur(2px)", transition: motionOr(reduced, { duration: DUR_FAST, ease: EASE }) }}
+      transition={motionOr(reduced, { duration: DUR_MED, ease: EASE })}
+    >
+      {/* What this module is for — the category it defines. The branch's own
+          heading, so the node row stays one line. */}
+      <div id={headingId} className="pl-3 pr-2 pb-1 min-h-9 flex flex-col justify-center" data-testid="nav-section-purpose">
+        <span className={cn(TYPE.microLabel, "text-interactive/80")}>
+          {section.loopStage != null ? `Stage ${section.loopStage} · ${section.label}` : section.label}
+        </span>
+        <span className={cn(TYPE.microLabel, "normal-case tracking-normal font-normal text-muted-foreground/75 leading-snug")}>
+          {section.purpose}
+        </span>
+      </div>
+      <ul aria-label={`${section.label} pages`} className="mx-map-branch space-y-0.5 pb-1">
+        {children.map((child, i) => (
+          <BranchRow
+            key={child.id}
+            child={child}
+            count={child.badgeKey ? badgeCounts[child.badgeKey] ?? null : null}
+            index={i}
+            total={children.length}
+            reduced={reduced}
+          />
+        ))}
+      </ul>
+    </motion.div>
   );
 }
 
@@ -471,48 +457,9 @@ export function Sidebar() {
   const [location] = useLocation();
   const badgeCounts = useNavBadges();
   const { user } = useAuth();
-  const [collapsed, setCollapsed] = useState(loadCollapsed);
-  // Live width while a drag is in progress — overrides the collapsed/expanded
-  // CSS width class so the rail visibly tracks the pointer. Cleared on
-  // release once we've committed to a collapsed/expanded state.
-  const [dragWidth, setDragWidth] = useState<number | null>(null);
-
-  function toggleCollapse() {
-    setCollapsed(v => {
-      saveCollapsed(!v);
-      return !v;
-    });
-  }
-
-  // Slide-to-collapse handle on the right edge. Dragging can only shrink the
-  // sidebar down toward the collapsed rail — it never grows past
-  // EXPANDED_WIDTH. A plain click (no drag) toggles collapsed/expanded, the
-  // same as clicking the explicit expand/collapse buttons.
-  const baseWidthRef = useRef(collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH);
-  const handlePointerDown = useDragResize(
-    (dx) => {
-      const next = Math.min(EXPANDED_WIDTH, Math.max(COLLAPSED_WIDTH, baseWidthRef.current + dx));
-      setDragWidth(next);
-    },
-    (wasDragged) => {
-      if (!wasDragged) {
-        toggleCollapse();
-      } else {
-        setDragWidth((finalWidth) => {
-          const shouldCollapse = (finalWidth ?? EXPANDED_WIDTH) < COLLAPSE_SNAP_WIDTH;
-          if (shouldCollapse !== collapsed) {
-            setCollapsed(shouldCollapse);
-            saveCollapsed(shouldCollapse);
-          }
-          return null;
-        });
-      }
-    }
-  );
-  const onHandlePointerDown = (e: React.PointerEvent) => {
-    baseWidthRef.current = collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
-    handlePointerDown(e);
-  };
+  const reduced = useReducedMotion();
+  const isTouch = useIsTouch();
+  const compact = useIsCompactShell();
 
   const isAdmin = user?.role === "admin";
   const visibleTree = isAdmin
@@ -523,105 +470,171 @@ export function Sidebar() {
           : section
       );
 
-  // ─── Accordion state ──────────────────────────────────────────────────
-  // Find the currently active section to open by default.
-  const activeSection = visibleTree.find(s => isSectionActive(s, location));
-  const [openSectionId, setOpenSectionId] = useState<string | null>(
-    activeSection?.id ?? null
-  );
+  const activeSection = visibleTree.find((s) => isSectionActive(s, location));
 
-  // When the user navigates (e.g. via topbar breadcrumb or link click),
-  // auto-open the section that contains the new active page.
+  // ─── Map state ─────────────────────────────────────────────────────
+  // `open` is the map; `focusId` is the node whose branch is drawn. Inside
+  // the compact-shell drawer the map is always open: the drawer is the
+  // disclosure, and a rail alone in a drawer would be a menu of hieroglyphs.
+  const [openState, setOpen] = useState(false);
+  const open = compact || openState;
+  const [focusId, setFocusId] = useState<string>(activeSection?.id ?? visibleTree[0]!.id);
+  const openedByRef = useRef<"hover" | "focus" | "tap" | null>(null);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const asideRef = useRef<HTMLElement>(null);
+  const railRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const nodeRefs = useRef<Record<string, HTMLLIElement | null>>({});
+  const mapNavRef = useRef<HTMLElement>(null);
+  const branchRef = useRef<HTMLDivElement | null>(null);
+  const [branchTop, setBranchTop] = useState(0);
+
+  const clearTimers = useCallback(() => {
+    if (openTimer.current) { clearTimeout(openTimer.current); openTimer.current = null; }
+    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+  }, []);
+
+  const openMap = useCallback((via: "hover" | "focus" | "tap") => {
+    clearTimers();
+    openedByRef.current = via;
+    setOpen(true);
+  }, [clearTimers]);
+
+  const closeMap = useCallback(() => {
+    clearTimers();
+    openedByRef.current = null;
+    setOpen(false);
+  }, [clearTimers]);
+
+  // When the route changes, the branch follows the page the reader is on.
   useEffect(() => {
-    const nowActive = visibleTree.find(s => isSectionActive(s, location));
-    if (nowActive) {
-      setOpenSectionId(nowActive.id);
-    }
+    const nowActive = visibleTree.find((s) => isSectionActive(s, location));
+    if (nowActive) setFocusId(nowActive.id);
+    // A navigation from inside the map is the reader leaving it.
+    if (openedByRef.current === "tap" || openedByRef.current === "focus") closeMap();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 
-  function handleSectionToggle(id: string) {
-    setOpenSectionId(prev => (prev === id ? null : id));
-  }
+  useEffect(() => () => clearTimers(), [clearTimers]);
 
-  // Collapsed rail: clicking an expandable section's icon reopens the full
-  // rail on that section (no flyout/hover).
-  function handleExpandToSection(id: string) {
-    setCollapsed(false);
-    saveCollapsed(false);
-    setOpenSectionId(id);
-  }
+  // A rail item under a mouse pointer: arm the dwell if the map is closed,
+  // or move the branch at once if it is open (tooltip-navbar's rule — one
+  // delay to open, none to travel).
+  const handleRailIntent = useCallback((sectionId: string, via: "hover" | "focus") => {
+    setFocusId(sectionId);
+    if (via === "focus") { openMap("focus"); return; }
+    if (openState) return;
+    if (openTimer.current) return;
+    openTimer.current = setTimeout(() => {
+      openTimer.current = null;
+      openMap("hover");
+    }, OPEN_DWELL_MS);
+  }, [openMap, openState]);
+
+  // Rail click. Touch, or a click that lands before the dwell has opened
+  // the map on this section: open the map here instead of navigating. A
+  // leaf section (no pages) always navigates.
+  const handleRailActivate = useCallback((section: NavSection): boolean => {
+    const hasPages = visibleChildren(section).length > 0;
+    if (!hasPages) return false;
+    if (isTouch && !(open && focusId === section.id)) {
+      setFocusId(section.id);
+      openMap("tap");
+      return true;
+    }
+    return false;
+  }, [isTouch, open, focusId, openMap]);
+
+  // Pointer leaves the whole sidebar (rail + map): close after the grace.
+  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === "touch") return;
+    if (openTimer.current) { clearTimeout(openTimer.current); openTimer.current = null; }
+    if (!openState || openedByRef.current !== "hover") return;
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      setOpen(false);
+      openedByRef.current = null;
+    }, CLOSE_GRACE_MS);
+  }, [openState]);
+
+  const handlePointerEnter = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === "touch") return;
+    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+  }, []);
+
+  // Focus leaves the sidebar: close a map that focus opened.
+  const handleBlur = useCallback((e: React.FocusEvent) => {
+    const next = e.relatedTarget as Node | null;
+    if (next && asideRef.current?.contains(next)) return;
+    if (openedByRef.current === "focus") closeMap();
+  }, [closeMap]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== "Escape" || !openState) return;
+    e.preventDefault();
+    closeMap();
+    railRefs.current[focusId]?.focus();
+  }, [openState, closeMap, focusId]);
+
+  // A tap outside closes a map a tap opened.
+  useEffect(() => {
+    if (!openState) return;
+    const onDown = (e: PointerEvent) => {
+      if (asideRef.current?.contains(e.target as Node)) return;
+      closeMap();
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [openState, closeMap]);
+
+  // The branch sits beside its node. Measured, then clamped so it never
+  // runs past the bottom of the map — a branch on the last node climbs up
+  // beside the nodes above it instead of falling off the panel.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const node = nodeRefs.current[focusId];
+    const nav = mapNavRef.current;
+    if (!node || !nav) return;
+    const nodeTop = node.offsetTop;
+    const branchHeight = branchRef.current?.offsetHeight ?? 0;
+    const available = nav.clientHeight;
+    const maxTop = Math.max(0, available - branchHeight - 8);
+    setBranchTop(branchHeight > 0 ? Math.min(nodeTop, maxTop) : nodeTop);
+  }, [open, focusId, visibleTree.length]);
+
+  const focusedSection = visibleTree.find((s) => s.id === focusId) ?? activeSection ?? visibleTree[0]!;
+  const mapId = useId();
 
   return (
     <aside
-      data-collapsed={collapsed}
-      className={cn(
-        "relative flex flex-col shrink-0 h-full overflow-hidden mx-sidebar",
-        dragWidth == null && "transition-[width] duration-200 ease-out",
-        dragWidth == null && (collapsed ? "w-[56px]" : "w-[216px]")
-      )}
-      style={dragWidth != null ? { width: dragWidth } : undefined}
+      ref={asideRef}
+      data-testid="workspace-sidebar"
+      data-map-open={open || undefined}
+      className={cn("relative flex shrink-0 h-full mx-sidebar z-30", compact && "shadow-none")}
+      style={{ width: RAIL_WIDTH }}
       aria-label="Workspace sidebar"
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
     >
-      {/* Logo row — collapse toggle lives here as a small icon button */}
-      <div className={cn(
-        "border-b border-border/40 shrink-0 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200",
-        collapsed
-          ? "px-0 pt-3 pb-2.5 flex flex-col items-center gap-2"
-          : "px-4 pt-4 pb-3"
-      )}>
-        {collapsed ? (
-          <>
-            <img
-              src={`${import.meta.env.BASE_URL}metrix-logo.png`}
-              alt="Metrix"
-              className="w-6 h-6 object-contain mx-logo-glow"
-            />
-            {/* Expand button beneath logo in collapsed mode */}
-            <button
-              onClick={toggleCollapse}
-              aria-label="Expand sidebar"
-              title="Expand sidebar"
-              className="pressable w-7 h-7 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
-            >
-              <PanelLeftOpen className="w-3.5 h-3.5" />
-            </button>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-2">
-              <img
-                src={`${import.meta.env.BASE_URL}metrix-logo.png`}
-                alt="Metrix"
-                className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
-              />
-              <span className="text-[16px] font-semibold tracking-tight text-foreground/90">metrix</span> {/* disclosure-ok: wordmark, sized to the 20px mark beside it, not a type role */}
-              {/* Collapse button — right-aligned in logo row */}
-              <button
-                onClick={toggleCollapse}
-                aria-label="Collapse sidebar"
-                title="Collapse sidebar"
-                className="pressable ml-auto w-6 h-6 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
-              >
-                <PanelLeftClose className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            {/* Account switcher — expanded mode, full-width row */}
-            <div className="mt-2.5 border-t border-border/30 pt-2.5">
-              <AccountSwitcher />
-            </div>
-          </>
-        )}
-      </div>
+      {/* ── The rail ── */}
+      <div className="flex flex-col h-full w-full">
+        <div className="border-b border-border/40 shrink-0 px-0 pt-3 pb-2.5 flex flex-col items-center gap-2">
+          <img
+            src={`${import.meta.env.BASE_URL}metrix-logo.png`}
+            alt="Metrix"
+            className="w-6 h-6 object-contain mx-logo-glow"
+          />
+        </div>
 
-      {/* Nav */}
-      <nav
-        className={cn("flex-1 overflow-y-auto py-2", collapsed ? "px-1" : "px-2")}
-        aria-label="Main workspace navigation"
-      >
-        {collapsed ? (
+        <nav
+          className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-1"
+          aria-label="Main workspace navigation"
+          aria-controls={open ? mapId : undefined}
+        >
           <ol className="space-y-1 list-none p-0 m-0">
-            {/* Compact account switcher at top of icon rail */}
             <li className="pb-0.5">
               <AccountSwitcher compact />
             </li>
@@ -629,143 +642,124 @@ export function Sidebar() {
               <span className="w-5 h-px bg-border/35 rounded-full" />
             </li>
             {visibleTree.map((section, idx) => (
-              <CollapsedItem
+              <RailItem
                 key={section.id}
                 section={section}
                 badgeCounts={badgeCounts}
-                onExpandToSection={handleExpandToSection}
+                focused={open && focusId === section.id}
+                onIntent={handleRailIntent}
+                onActivate={handleRailActivate}
                 showDivider={dividerAfter(section, visibleTree[idx + 1])}
+                itemRef={(el) => { railRefs.current[section.id] = el; }}
               />
             ))}
           </ol>
-        ) : (
-          <ol className="space-y-0.5 list-none p-0 m-0">
-            {visibleTree.map((section, idx) => [
-              // Group label where the product's shape changes: Account ·
-              // IAP loop · Outputs · Workspace. Presentation, not a control.
-              (idx === 0 || visibleTree[idx - 1]!.group !== section.group) ? (
-                <li key={`group-${section.group}`} role="presentation" className={cn("px-2.5 pb-1", idx === 0 ? "pt-1" : "pt-3")} data-testid="nav-group-label">
-                  <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{NAV_GROUP_LABEL[section.group as NavGroup]}</span>
-                </li>
-              ) : null,
-              section.children?.length ? (
-                <ExpandableSection
-                  key={section.id}
-                  section={section}
-                  badgeCounts={badgeCounts}
-                  open={openSectionId === section.id}
-                  onToggle={() => handleSectionToggle(section.id)}
-                  onOpen={() => setOpenSectionId(section.id)}
-                />
-              ) : (
-                <LeafSection
-                  key={section.id}
-                  section={section}
-                  badgeCounts={badgeCounts}
-                />
-              ),
-            ])}
-          </ol>
-        )}
-      </nav>
+        </nav>
 
-      {/* Slide-to-collapse handle — drag left to shrink toward the rail
-          (never past EXPANDED_WIDTH going the other way); click to toggle.
-
-          It announced itself as a resize handle and then did nothing for a
-          keyboard: role="separator" with an aria-label, an aria-orientation,
-          and a single onPointerDown. A control that tells a screen-reader
-          user it resizes the sidebar and then cannot be reached by Tab is
-          worse than an unlabelled one — it promises an affordance that is
-          not there.
-
-          This is the WAI-ARIA window-splitter pattern, which is what a
-          focusable separator actually is: it takes a tab stop, carries the
-          value it is separating on (aria-valuenow/min/max), and moves on the
-          arrow keys. Home and End jump to the two committed states, which is
-          what people want 95% of the time; Enter and Space toggle, matching
-          a plain click. */}
-      <div
-        role="separator"
-        tabIndex={0}
-        aria-orientation="vertical"
-        aria-label="Sidebar width"
-        aria-valuemin={COLLAPSED_WIDTH}
-        aria-valuemax={EXPANDED_WIDTH}
-        aria-valuenow={dragWidth ?? (collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH)}
-        aria-valuetext={collapsed ? "Collapsed" : "Expanded"}
-        title={collapsed ? "Click to expand" : "Drag to collapse"}
-        onPointerDown={onHandlePointerDown}
-        onKeyDown={(e) => {
-          const KEY_STEP = 24;
-          const current = dragWidth ?? (collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH);
-          const commit = (w: number) => {
-            const shouldCollapse = w < COLLAPSE_SNAP_WIDTH;
-            setDragWidth(null);
-            if (shouldCollapse !== collapsed) {
-              setCollapsed(shouldCollapse);
-              saveCollapsed(shouldCollapse);
-            }
-          };
-          if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-            e.preventDefault();
-            const next = Math.min(
-              EXPANDED_WIDTH,
-              Math.max(COLLAPSED_WIDTH, current + (e.key === "ArrowRight" ? KEY_STEP : -KEY_STEP)),
-            );
-            // Live width while stepping, so the rail tracks the keys the way
-            // it tracks a pointer; committed on release of the extremes.
-            setDragWidth(next);
-            if (next === EXPANDED_WIDTH || next === COLLAPSED_WIDTH) commit(next);
-          } else if (e.key === "Home") {
-            e.preventDefault();
-            commit(COLLAPSED_WIDTH);
-          } else if (e.key === "End") {
-            e.preventDefault();
-            commit(EXPANDED_WIDTH);
-          } else if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setDragWidth(null);
-            toggleCollapse();
-          }
-        }}
-        className={cn(
-          "absolute top-0 right-0 h-full w-1.5 -mr-0.5 z-10 cursor-col-resize group/handle",
-          "flex items-center justify-center",
-          "focus-visible:outline-none focus-visible:bg-primary/40",
-        )}
-      >
-        <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />
+        <div className="border-t border-border/40 shrink-0 py-3 flex flex-col items-center gap-2">
+          {user && (
+            <div
+              className="flex items-center justify-center"
+              data-testid="sidebar-user-footer"
+              title={`${user.email} · ${user.role === "admin" ? "Agency (internal)" : "Member"}`}
+            >
+              <span
+                aria-hidden="true"
+                className="flex items-center justify-center w-6 h-6 rounded-full shrink-0 bg-primary/15 border border-primary/25 text-interactive text-label font-bold leading-none"
+              >
+                {user.email.slice(0, 2).toUpperCase()}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Footer — signed-in user, data source badge + version */}
-      <div className={cn(
-        "border-t border-border/40 shrink-0",
-        collapsed ? "py-3 flex flex-col items-center gap-2" : "px-3 py-3 space-y-2"
-      )}>
-        {user && (
-          <div
-            className={cn("flex items-center gap-2 min-w-0", collapsed && "justify-center")}
-            data-testid="sidebar-user-footer"
-            title={user.email}
+      {/* ── The map ── */}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="map"
+            id={mapId}
+            data-testid="nav-map"
+            className="absolute top-0 left-full h-full z-40 mx-nav-map flex flex-col"
+            style={{ width: MAP_WIDTH }}
+            initial={reduced ? false : { opacity: 0, x: -8, filter: "blur(4px)" }}
+            animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, x: -6, filter: "blur(3px)", transition: motionOr(reduced, { duration: DUR_FAST, ease: EASE }) }}
+            transition={motionOr(reduced, { duration: DUR_MED, ease: EASE })}
           >
-            <span
-              aria-hidden="true"
-              className="flex items-center justify-center w-6 h-6 rounded-full shrink-0 bg-primary/15 border border-primary/25 text-interactive text-label font-bold leading-none"
+            <div className="border-b border-border/40 shrink-0 px-4 pt-3.5 pb-3">
+              <div className="flex items-center gap-2">
+                <img
+                  src={`${import.meta.env.BASE_URL}metrix-logo.png`}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
+                />
+                <span className="text-[16px] font-semibold tracking-tight text-foreground/90">metrix</span> {/* disclosure-ok: wordmark, sized to the 20px mark beside it, not a type role */}
+                <span className={cn(TYPE.microLabel, "ml-auto text-muted-foreground/75")}>Workspace map</span>
+              </div>
+              <div className="mt-2.5 border-t border-border/30 pt-2.5">
+                <AccountSwitcher />
+              </div>
+            </div>
+
+            <nav
+              ref={mapNavRef}
+              className="relative flex-1 overflow-y-auto overflow-x-hidden py-2 pl-2"
+              aria-label="Workspace map"
             >
-              {user.email.slice(0, 2).toUpperCase()}
-            </span>
-            {!collapsed && (
-              <div className="min-w-0">
-                <p className="text-caption font-medium text-foreground/85 truncate leading-tight">{user.email}</p>
-                <p className="text-label text-muted-foreground/75 leading-tight">
-                  {user.role === "admin" ? "Agency (internal)" : "Member"}
-                </p>
+              <ol className="list-none p-0 m-0 space-y-0.5" style={{ width: NODE_COL_WIDTH }}>
+                {visibleTree.map((section, idx) => [
+                  // Group label where the product's shape changes: Account ·
+                  // IAP loop · Outputs · Workspace. Presentation, not a control.
+                  (idx === 0 || visibleTree[idx - 1]!.group !== section.group) ? (
+                    <li key={`group-${section.group}`} role="presentation" className={cn("px-2 pb-1", idx === 0 ? "pt-1" : "pt-3")} data-testid="nav-group-label">
+                      <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{NAV_GROUP_LABEL[section.group as NavGroup]}</span>
+                    </li>
+                  ) : null,
+                  <MapNode
+                    key={section.id}
+                    section={section}
+                    badgeCounts={badgeCounts}
+                    focused={focusId === section.id}
+                    onIntent={(id) => setFocusId(id)}
+                    nodeRef={(el) => { nodeRefs.current[section.id] = el; }}
+                  />,
+                ])}
+              </ol>
+
+              <AnimatePresence initial={false}>
+                <Branch
+                  key={focusedSection.id}
+                  section={focusedSection}
+                  badgeCounts={badgeCounts}
+                  top={branchTop}
+                  reduced={reduced}
+                  branchRef={(el) => { if (el) branchRef.current = el; }}
+                />
+              </AnimatePresence>
+            </nav>
+
+            {user && (
+              <div className="border-t border-border/40 shrink-0 px-4 py-3 flex items-center gap-2 min-w-0" title={user.email}>
+                <span
+                  aria-hidden="true"
+                  className="flex items-center justify-center w-6 h-6 rounded-full shrink-0 bg-primary/15 border border-primary/25 text-interactive text-label font-bold leading-none"
+                >
+                  {user.email.slice(0, 2).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-caption font-medium text-foreground/85 truncate leading-tight">{user.email}</p>
+                  <p className="text-label text-muted-foreground/75 leading-tight">
+                    {user.role === "admin" ? "Agency (internal)" : "Member"}
+                  </p>
+                </div>
               </div>
             )}
-          </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </aside>
   );
 }
