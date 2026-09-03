@@ -56,6 +56,24 @@ const SEED_FIXTURE_EMPTY_DEMO = (() => {
   return JSON.stringify(seed);
 })();
 
+// A variant with every engagement input emptied — demographic, placement AND
+// device rows. Since the optional-input pass (master plan §3.1 G-3) the page
+// blanks only when all three are absent; a missing Demographics export alone
+// renders the placement/device breakdown with a note naming what is missing.
+const SEED_FIXTURE_NO_SIGNAL = (() => {
+  const seed = JSON.parse(SEED_FIXTURE_BODY);
+  for (const acct of seed.ad_accounts ?? []) {
+    const analysis = acct?.iap?.analysis;
+    if (analysis) {
+      analysis.demographic_registration_signal = [];
+      analysis.v3_placement_signal = [];
+      analysis.c4e_placement_signal = [];
+      analysis.device_delivery_signal = [];
+    }
+  }
+  return JSON.stringify(seed);
+})();
+
 // A variant of the fixture with demographic rows present but Reach uniformly
 // zeroed. Used to verify the Scatter view's division-by-zero (frequency /
 // unique-CTR) path renders the empty-scatter message instead of crashing.
@@ -163,7 +181,7 @@ async function mockApis(ctx: BrowserContext): Promise<void> {
  * Same as mockApis but serves the empty-demographic seed so the funnel renders
  * the PendingState branch instead of the full funnel content.
  */
-async function mockApisWithEmptyDemographic(ctx: BrowserContext): Promise<void> {
+async function mockApisWithEmptyDemographic(ctx: BrowserContext, seedBody: string = SEED_FIXTURE_EMPTY_DEMO): Promise<void> {
   const page = ctx.pages()[0]!;
 
   await page.route("**/api/metrix/auth/me", (route) =>
@@ -187,7 +205,7 @@ async function mockApisWithEmptyDemographic(ctx: BrowserContext): Promise<void> 
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: SEED_FIXTURE_EMPTY_DEMO,
+      body: seedBody,
     }),
   );
 
@@ -739,9 +757,11 @@ async function main() {
       },
     );
 
-    // ── Test 7: PendingState renders when demographic data is absent ─────────
+    // ── Test 7a: a missing Demographics export never blanks the page ─────────
+    // Placement and device rows are real engagement data; the page renders
+    // them in Breakdown mode and names the export that would add the funnel.
     await test(
-      'PendingState shows "No engagement data" when demographic rows are empty',
+      "Missing demographics: the breakdown renders from placement rows with a note, not a blank page",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -753,12 +773,51 @@ async function main() {
           await mockApisWithEmptyDemographic(ctx);
           await gotoFunnelEmpty(page);
 
+          const note = page.locator('[data-testid="funnel-no-demo-note"]').first();
+          await note.waitFor({ state: "visible", timeout: 10_000 });
+          console.log("       funnel-no-demo-note visible ✓");
+
+          const pending = await page.getByText("No engagement data").count();
+          assert(pending === 0, 'Expected no "No engagement data" pending state while placement rows exist');
+          console.log("       No pending state while placement rows exist ✓");
+
+          const segmentHeader = page.getByText("Segment", { exact: true }).first();
+          await segmentHeader.waitFor({ state: "visible", timeout: 10_000 });
+          const rows = await page.locator("table tbody tr").count();
+          assert(rows > 0, `Expected breakdown rows from placement data, got ${rows}`);
+          console.log(`       Breakdown: ${rows} row(s) from placement/device data ✓`);
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors, got: ${jsErrors.join("; ")}`,
+          );
+          console.log("       No JS errors ✓");
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 7b: PendingState only when every engagement input is absent ─────
+    await test(
+      'PendingState shows "No engagement data" only when demographic, placement and device rows are all empty',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        const jsErrors: string[] = [];
+        page.on("pageerror", (err) => jsErrors.push(err.message));
+        try {
+          await mockApisWithEmptyDemographic(ctx, SEED_FIXTURE_NO_SIGNAL);
+          await gotoFunnelEmpty(page);
+
           // The PendingState title must be visible.
           const pendingTitle = page.getByText("No engagement data").first();
           await pendingTitle.waitFor({ state: "visible", timeout: 10_000 });
           assert(
             await pendingTitle.isVisible(),
-            'Expected "No engagement data" pending state title to be visible when demographic rows are empty',
+            'Expected "No engagement data" pending state title to be visible when every engagement input is empty',
           );
           console.log('       "No engagement data" pending state visible ✓');
 
