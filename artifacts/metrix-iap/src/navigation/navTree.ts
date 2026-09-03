@@ -288,14 +288,17 @@ export const navTree: NavSection[] = [
         hidden: true,
       },
       {
-        // AI verdict panel. Kept off the menu until its producer runs for
-        // real accounts, but it is an Analysis page and must say so.
+        // Was hidden "until its producer runs for real accounts". Its
+        // producer is `intelligence.failure_patterns` and `concept_scores`,
+        // which every configured account carries — and since change log
+        // entry 10 the recommendations on it derive from those same rows.
+        // A page with real content, reachable only from one cross-link, is
+        // a page most readers never find. Owner decision, 2026-09-03.
         id: "analysis-findings",
         label: "Findings",
         purpose: "Verdicts and recommendations from the analysis",
         to: "/app/analyze/findings",
         dataSource: "intelligence, recommendation_cards",
-        hidden: true,
       },
     ],
   },
@@ -420,8 +423,12 @@ export const navTree: NavSection[] = [
         dataSource: "historical_matrix_4x4",
       },
       {
+        // Two pages carried the name "Creative Scan" (N-13). The Creative
+        // section's is the scan itself; this one checks a sprint's assets
+        // against the matrix before launch, which is what it is now called.
+        // Owner decision, 2026-09-03.
         id: "mst-creative-scan",
-        label: "Creative Scan",
+        label: "Sprint Asset Check",
         purpose: "Sprint assets validated before launch",
         to: "/app/mst/creative-scan",
         dataSource: "local_book2_library",

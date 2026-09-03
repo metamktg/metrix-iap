@@ -245,16 +245,31 @@ export function RecommendationDeck({
   cards,
   emptyLabel = "All recommendations reviewed",
   onSegments,
+  focusId,
 }: {
   scopeId: string;
   cards: DeckCard[];
   emptyLabel?: string;
   /** When provided, each card exposes an avatar × placement drill-down. */
   onSegments?: (card: DeckCard) => void;
+  /** A card to open on arrival — a manager recommendation links here with
+   *  `?focus=<id>` and used to land the reader on the deck's first card,
+   *  which is not the one they clicked (N-10). */
+  focusId?: string | null;
 }) {
   useDecisions();
   const [tab, setTab] = useState<TabId>("deck");
   const [detailId, setDetailId] = useState<string | null>(null);
+
+  // Open the linked card once, and only when it is really in this deck: a
+  // stale link leaves the deck as it was rather than opening nothing.
+  const focusedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focusId || focusedRef.current === focusId) return;
+    if (!cards.some((c) => c.id === focusId)) return;
+    focusedRef.current = focusId;
+    setDetailId(focusId);
+  }, [focusId, cards]);
   const deckRef = useRef<HTMLDivElement>(null);
 
   const decisionOf = (id: string) => getDecision(scopeId, id);

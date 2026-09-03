@@ -9,7 +9,7 @@ import { getAdAccount, getOptimizationLoop, getAnalysisData } from "@/lib/data/m
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
   ModuleHeader, ModuleScopeGate, StageNotRunState, MetricTile, CaveatNote,
-  CrossLink, ConnectionNudgeBanner,
+  CrossLink, ConnectionNudgeBanner, useFocusParam,
 } from "../shared";
 import { Lightbulb } from "lucide-react";
 import { useGetMetaConnection } from "@workspace/api-client-react";
@@ -32,6 +32,9 @@ function cellIdsForCard(card: RecommendationCard, knownCells: Set<string>): stri
 }
 
 export function RecommendationsView() {
+  // A manager recommendation links here with `?focus=<id>`; the deck opens
+  // that card rather than landing the reader on its first one (N-10).
+  const focus = useFocusParam();
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
@@ -97,6 +100,7 @@ export function RecommendationsView() {
               {cards.length ? (
                 <RecommendationDeck
                   scopeId={acct.id}
+                  focusId={focus}
                   cards={cards}
                   emptyLabel="All recommendations reviewed"
                   onSegments={analysis ? (card) => setSegmentCardId(card.id) : undefined}

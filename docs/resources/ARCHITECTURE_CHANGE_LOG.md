@@ -579,3 +579,37 @@ chart that will drift, and the two that were left were the two a demo actually o
 
 **Reach.** Chrome only. No data change; every figure these charts draw is the one it drew before.
 
+## 14. The wayfinding leftovers, and two owner decisions (2026-09-03, autonomous pass 6)
+
+**What.**
+
+- **A history row arrives already scoped (N-5).** "Open in Analysis Overview" left the reader to
+  find, in the run picker, the run they had just clicked. The link carries `?run=<id>` and
+  `usePersistedRunScope` applies it on arrival — once per account+run, only when the run list is
+  loaded and actually contains the id, and by writing into the SAME stored selection the picker
+  owns, so the picker still holds the scope afterwards and a later change is not fought by the
+  URL. A stale id is ignored rather than emptying the page.
+- **A linked recommendation opens (N-10).** A manager recommendation links to
+  `/app/listen/recommendations?focus=<id>` and landed the reader on the deck's first card.
+  `RecommendationDeck` takes a `focusId` and opens that card, once, and only when the deck really
+  contains it.
+- **Data Provenance ends somewhere.** The page closed with a wall of lineage and no way forward;
+  it now offers the analysis centre and the IAP Library — the two places a provenance read
+  continues.
+- **Owner decision: the MST "Creative Scan" is "Sprint Asset Check"** (N-13). Two pages carried
+  one name; the Creative section's page is the scan, and the MST one checks a sprint's assets
+  against the matrix before launch.
+- **Owner decision: Findings is a visible page** (N-6). It was hidden "until its producer runs for
+  real accounts" — but its producer is `intelligence.failure_patterns` and `concept_scores`, which
+  every configured account carries, and since entry 10 its recommendations derive from those rows.
+  A page with real content reachable only from one cross-link is a page most readers never find.
+
+**Where.** `lib/run-scope.ts`, `analysis/AnalysisHistoryView.tsx`,
+`components/deck/RecommendationDeck.tsx`, `listen/RecommendationsView.tsx`,
+`settings/DataProvenanceView.tsx`, `navigation/navTree.ts`, `mst/MstCommandCenter.tsx`,
+`lib/__tests__/run-scope-deeplink.test.tsx` (new, 5), and the sidebar test, which now derives
+"which children appear" from the tree instead of naming Findings as hidden.
+
+**Reach.** Chrome only. `?run=` is read by `usePersistedRunScope`, so every page using the picker
+accepts it; no other query contract changed.
+

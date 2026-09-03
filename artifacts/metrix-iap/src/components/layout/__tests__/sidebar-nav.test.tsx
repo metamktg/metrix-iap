@@ -332,12 +332,24 @@ describe("Sidebar section headers (expanded mode)", () => {
     expect(window.location.pathname).toBe(sectionLandingRoute(sectionByLabel("Strategy")));
   });
 
-  it("hidden nav children (funnel, findings) render no page on the branch", () => {
+  it("a hidden nav child renders no page on the branch, and a visible one does", () => {
     const { container } = renderExpanded();
     act(() => { sectionHeaderLink(container, "Analysis").focus(); });
     const list = branchPages("Analysis");
+    // Engagement Funnel stays hidden — it belongs to Analysis for crumbs and
+    // Back, but it is reached from the page that frames it.
     expect(within(list).queryByText("Engagement Funnel")).toBeNull();
-    expect(within(list).queryByText("Findings")).toBeNull();
+    // Findings was hidden too until the owner decided otherwise (2026-09-03):
+    // its producer runs for every configured account, so a page reachable
+    // only from one cross-link was a page most readers never found.
+    expect(within(list).getByText("Findings")).toBeTruthy();
+    // The tree is what decides, not this test: every non-hidden child of
+    // Analysis is on the branch and no hidden one is.
+    const analysis = sectionByLabel("Analysis");
+    for (const child of analysis.children ?? []) {
+      const found = within(list).queryByText(child.label);
+      expect(Boolean(found), `${child.label} (hidden: ${!!child.hidden})`).toBe(!child.hidden);
+    }
   });
 
   it("what a module or page is for is its tooltip, never a line in the sidebar or on the branch", () => {

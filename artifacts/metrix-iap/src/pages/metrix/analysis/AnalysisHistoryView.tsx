@@ -105,14 +105,19 @@ function RunDetail({ run }: { run: AnalysisRun }) {
           reduced-confidence headline can never drift between the two. */}
       {run.status === "success" && <CsvWarningsPanel run={run} compact />}
 
-      {/* A run row used to end here — a dead end. The run's outputs are read
-          on Analysis Overview, whose RunScopePicker scopes to any run; it
-          reads no query param and its store's key builder is private to
-          lib/run-scope.ts, so the link opens the page and the picker does
-          the scoping (audit §1.10). */}
+      {/* A run row used to end here — a dead end — and then it linked to
+          Analysis Overview and left the reader to find this run again in the
+          picker, which is the one thing they had just chosen. The link now
+          carries `?run=<id>`; usePersistedRunScope applies it on arrival into
+          the same stored selection the picker writes, so the picker still
+          owns the scope afterwards (N-5). */}
       {run.status === "success" && (
         <div className="pt-1">
-          <CrossLink to="/app/analysis/overview" label="Open in Analysis Overview" srNote="scope to this run with the run picker" />
+          <CrossLink
+            to={`/app/analysis/overview?run=${encodeURIComponent(run.id)}`}
+            label="Open in Analysis Overview"
+            srNote="scoped to this run"
+          />
         </div>
       )}
 
