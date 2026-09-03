@@ -34,7 +34,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { guessedCreativeImports } from "./manualImportUtils";
 import { ImportConfidenceReport } from "./ImportConfidenceReport";
-import { InfoTooltip, DetailReveal, DenseText } from "./shared";
+import { InfoTooltip, DetailReveal, DenseText, CaveatNote } from "./shared";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { ActionSlider } from "@/components/widgets/ActionSlider";
 import { RunProgress } from "@/components/widgets/RunProgress";
@@ -1049,14 +1049,21 @@ export function AnalysisControls({
   // by iOS privacy attribution limits (demographic exports only capture ~10-15% of spend).
   const hasSummary = stagedImports.some((imp) => imp.kind === "performance_ad_summary_csv");
 
-  // Hard-block: this component renders standalone on Account Settings /
-  // Analysis Command Center (outside the AddAccountDialog wizard, which
-  // already gates its own "Review" step on bothRequiredStaged). Without this
-  // check, a first-time user with zero CSVs staged could click "Run analysis"
-  // and only discover the requirement from the server's 422 afterward.
+  // Hard-block ONLY when nothing can run: this component renders standalone
+  // on Account Settings / Analysis Command Center (outside the
+  // AddAccountDialog wizard, which gates its own "Review" step the same
+  // way). The server's contract (analysisEngine.ts, spec §2a) is adaptive:
+  // no report class is mandatory, a run needs ONE delivery report carrying
+  // spend per ad — a demographic pivot, a placement pivot, OR an Ad Summary
+  // — and every other staged export only adds resolution. This used to
+  // require BOTH pivots, which refused runs the server would have accepted
+  // (owner principle: nothing prohibits data from being shown because an
+  // OPTIONAL input is missing). Without the remaining check, a first-time
+  // user with zero CSVs staged could click "Run analysis" and only discover
+  // the requirement from the server's 422 afterward.
   const hasDemoCsv = stagedImports.some((imp) => imp.kind === "performance_demo_csv");
   const hasPlacementCsv = stagedImports.some((imp) => imp.kind === "performance_placement_csv");
-  const missingRequiredCsv = !hasDemoCsv || !hasPlacementCsv;
+  const noDeliveryStaged = !hasDemoCsv && !hasPlacementCsv && !hasSummary;
 
   // BUG-08 — a run consumes the STAGED batch, so a successful run leaves its
   // files `processed` and the next run reports them missing. By design (reading
@@ -1073,7 +1080,21 @@ export function AnalysisControls({
     allImports.some((imp) => imp.kind === kind && imp.status === "processed");
   const canRestageDemo = !hasDemoCsv && restagableFor("performance_demo_csv");
   const canRestagePlacement = !hasPlacementCsv && restagableFor("performance_placement_csv");
-  const canRestageMissing = canRestageDemo || canRestagePlacement;
+  const canRestageSummary = !hasSummary && restagableFor("performance_ad_summary_csv");
+  const canRestageMissing = canRestageDemo || canRestagePlacement || canRestageSummary;
+  const restagableLabels = [canRestageDemo && "Demographics", canRestagePlacement && "Placement", canRestageSummary && "Ad Summary"]
+    .filter((x): x is string => Boolean(x));
+  const restagableSentence = restagableLabels.length > 1
+    ? `${restagableLabels.slice(0, -1).join(", ")} and ${restagableLabels[restagableLabels.length - 1]}`
+    : restagableLabels[0] ?? "";
+
+  // What each absent export ADDS — stated so the reader can decide whether
+  // it is worth fetching, never as a warning. Order is the slot order.
+  const absentOptionalExports: { label: string; adds: string }[] = [
+    ...(!hasDemoCsv ? [{ label: "Demographics export", adds: "age × gender breakdown for Audience and the Engagement Funnel" }] : []),
+    ...(!hasPlacementCsv ? [{ label: "Placements export", adds: "placement × platform breakdown for Placements" }] : []),
+    ...(!hasSummary ? [{ label: "Ad Summary export", adds: "the full per-ad spend ledger and the reconciliation control — pivots alone attribute only part of spend under iOS privacy limits" }] : []),
+  ];
 
   // Detect whether any required breakdown column is missing across staged CSVs.
   // When true, we soft-block the Run button with a warning (escape hatch kept).
@@ -1267,42 +1288,41 @@ export function AnalysisControls({
     </div>
   );
 
-  // Spend coverage notice — shown when the Ad Summary export is absent
-  const spendWarningBox = !hasSummary && !isRunning && (
-    <div className="rounded-lg border border-status-warning/25 bg-status-warning/[0.05] p-3 space-y-1">
-      <div className="flex items-start gap-2">
-        <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0 space-y-1">
-          <div className="text-caption font-semibold text-status-warning">Spend will be underreported without an Ad Summary export</div>
-          <p className="text-label text-status-warning/65 leading-relaxed">
-            Meta's demographic export only captures ~10–15% of actual spend — the rest is unattributable due to iOS
-            privacy limits. Upload an <strong className="text-status-warning/90">Ad Summary export</strong> (CSV or XLSX,
-            ad-level, no demographic/device breakdown) to unlock full spend totals.
-          </p>
-        </div>
-      </div>
+  // Optional-export note — a delivery report IS staged, so the run can go;
+  // this names what is absent and what each would add. It used to be an
+  // amber "Spend will be underreported" alert on every run without an Ad
+  // Summary, which read as a defect in a run the server accepts. Neutral
+  // caveat copy, no warning styling: a missing optional input is context,
+  // not a decision.
+  const optionalExportsNote = !noDeliveryStaged && absentOptionalExports.length > 0 && !isRunning && (
+    <div data-testid="optional-exports-note">
+      <CaveatNote
+        defaultExpanded
+        text={
+          `Not staged: ${absentOptionalExports.map((e) => `${e.label} (adds ${e.adds})`).join("; ")}. ` +
+          `The run proceeds on what is staged — each export adds resolution.` +
+          (canRestageMissing
+            ? ` A previously processed ${restagableSentence} export is already on this account — re-stage it from Import History below, or upload a new one from the setup screen.`
+            : "")
+        }
+      />
     </div>
   );
 
-  // Hard-block: at least one required report hasn't been staged yet
-  const missingCsvWarningBox = missingRequiredCsv && !isRunning && (
+  // Hard-block: nothing that carries spend per ad has been staged.
+  const missingCsvWarningBox = noDeliveryStaged && !isRunning && (
     <div className="rounded-lg border border-status-danger/35 bg-status-danger/[0.07] p-3">
       <div className="flex items-start gap-2">
         <AlertTriangle className="w-3.5 h-3.5 text-status-danger shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0 space-y-1">
           <div className="text-caption font-semibold text-status-danger">
-            Both reports are required before running analysis
+            A delivery report is required before running analysis
           </div>
           <p className="text-label text-status-danger/70 leading-relaxed">
-            Missing: {[!hasDemoCsv && "Demographics export", !hasPlacementCsv && "Placement export"]
-              .filter(Boolean)
-              .join(", ")}
-            .{" "}
+            Stage any one of: Demographics export, Placements export, Ad Summary export — each carries spend per ad, and the others add resolution.{" "}
             {canRestageMissing
-              ? `A previously processed ${[canRestageDemo && "Demographics", canRestagePlacement && "Placement"]
-                  .filter(Boolean)
-                  .join(" and ")} export is already on this account — re-stage it from Import History below, or upload a new one from the setup screen.`
-              : `Upload ${!hasDemoCsv && !hasPlacementCsv ? "them" : "it"} from this account's setup screen.`}
+              ? `A previously processed ${restagableSentence} export is already on this account — re-stage it from Import History below, or upload a new one from the setup screen.`
+              : "Upload one from this account's setup screen."}
           </p>
         </div>
       </div>
@@ -1342,7 +1362,7 @@ export function AnalysisControls({
             <span className="text-caption font-medium text-foreground">Date range to analyze</span>
           </div>
           {dateRangeGrid}
-          {spendWarningBox}
+          {optionalExportsNote}
           {missingCsvWarningBox}
         </>
       ) : (
@@ -1360,7 +1380,7 @@ export function AnalysisControls({
             </span>
           }
           labelClassName="text-caption font-medium text-foreground"
-          sections={[{ render: () => <div className="space-y-3">{dateRangeGrid}{spendWarningBox}{missingCsvWarningBox}</div> }]}
+          sections={[{ render: () => <div className="space-y-3">{dateRangeGrid}{optionalExportsNote}{missingCsvWarningBox}</div> }]}
           defaultOpen={detailsOpen}
         />
       )}
@@ -1376,7 +1396,7 @@ export function AnalysisControls({
       {error && <p className="text-caption text-status-danger">{error}</p>}
 
       {/* Soft-block warning when required breakdown columns are missing */}
-      {!missingRequiredCsv && hasRequiredMissing && !isRunning && !forceRunAcknowledged && (
+      {!noDeliveryStaged && hasRequiredMissing && !isRunning && !forceRunAcknowledged && (
         <div className="rounded-lg border border-status-danger/35 bg-status-danger/[0.07] p-3 space-y-2">
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-3.5 h-3.5 text-status-danger shrink-0 mt-0.5" />
@@ -1435,7 +1455,7 @@ export function AnalysisControls({
             consequence={replaceConsequence}
             busy={isRunning || startMutation.isPending}
             disabled={
-              missingRequiredCsv || (hasRequiredMissing && !forceRunAcknowledged)
+              noDeliveryStaged || (hasRequiredMissing && !forceRunAcknowledged)
             }
             onConfirm={() => handleRun()}
             data-testid="rerun-analysis-slider"
@@ -1446,7 +1466,7 @@ export function AnalysisControls({
             disabled={
               isRunning ||
               startMutation.isPending ||
-              missingRequiredCsv ||
+              noDeliveryStaged ||
               (hasRequiredMissing && !forceRunAcknowledged)
             }
             warning={hasRequiredMissing && forceRunAcknowledged}

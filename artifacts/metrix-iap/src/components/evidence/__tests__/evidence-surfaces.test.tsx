@@ -111,4 +111,20 @@ describe("ReconciliationPanel", () => {
     const { container } = render(<TooltipProvider><ReconciliationPanel reconciliation={null} /></TooltipProvider>);
     expect(container.querySelector('[data-testid="reconciliation-panel"]')).toBeNull();
   });
+
+  it("with a summary but no breakdown class reconciled, still names the control instead of vanishing", () => {
+    // An Ad Summary staged alone yields a summary (truth source found) with
+    // an empty breakdowns list. The panel used to return null here, which
+    // read as "reconciliation does not exist for this account" — the truth
+    // is that a control exists and nothing was reconciled against it.
+    const summaryOnly: ReconciliationData = { summary: { ...reconciliation.summary!, breakdowns: [] }, ledger: [] };
+    render(<TooltipProvider><ReconciliationPanel reconciliation={summaryOnly} /></TooltipProvider>);
+    const panel = screen.getByTestId("reconciliation-panel");
+    const line = within(panel).getByTestId("reconciliation-summary-line").textContent ?? "";
+    expect(line).toContain("no breakdown class reconciled");
+    expect(line).toContain("control: Ad Summary per Ad ID");
+    fireEvent.click(within(panel).getByRole("button", { expanded: false }));
+    expect(panel.textContent ?? "").toContain("nothing to reconcile against the control");
+    expect(within(panel).queryByTestId("reconciliation-account-row")).toBeNull();
+  });
 });

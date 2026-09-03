@@ -20,16 +20,16 @@ function status(overrides: Partial<StageStatusLike["analysis"]>): StageStatusLik
 }
 
 describe("buildLoopStages analysis-validated gating", () => {
-  it("unlocks Strategy and Reports when analysis is success AND validated", () => {
+  it("unlocks Strategy and Action when analysis is success AND validated", () => {
     const stages = buildLoopStages(status({}));
     expect(stages.find((s) => s.id === "strategy")!.status).not.toBe("locked");
-    expect(stages.find((s) => s.id === "reports")!.status).not.toBe("locked");
+    expect(stages.find((s) => s.id === "action")!.status).not.toBe("locked");
   });
 
-  it("keeps Strategy and Reports locked when analysis succeeded but is NOT validated", () => {
+  it("keeps Strategy and Action locked when analysis succeeded but is NOT validated", () => {
     const stages = buildLoopStages(status({ validated: false }));
     expect(stages.find((s) => s.id === "strategy")!.status).toBe("locked");
-    expect(stages.find((s) => s.id === "reports")!.status).toBe("locked");
+    expect(stages.find((s) => s.id === "action")!.status).toBe("locked");
   });
 
   it("keeps Strategy locked when analysis has not run", () => {

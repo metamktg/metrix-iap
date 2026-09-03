@@ -71,8 +71,8 @@ describe("buildLibraryMetricCatalog · lib_atc_rate · single event", () => {
     expect(catalog.find((m) => m.id === "lib_atc_rate")!.value).toBeCloseTo(15, 2);
   });
 
-  it("returns null ATC rate when no row has adds_to_cart data", () => {
-    const catalog = buildLibraryMetricCatalog([makeRow({ adds_to_cart: null })]);
+  it("returns null ATC rate when no row has adds_to_cart data (account carries the event)", () => {
+    const catalog = buildLibraryMetricCatalog([makeRow({ adds_to_cart: null })], { events: ["Adds to cart"] });
     expect(catalog.find((m) => m.id === "lib_atc_rate")!.value).toBeNull();
   });
 
@@ -106,7 +106,7 @@ describe("buildLibraryMetricCatalog · lib_atc_rate · single event", () => {
   });
 
   it("has a descriptive sub-label when data is absent", () => {
-    const catalog = buildLibraryMetricCatalog([makeRow({ adds_to_cart: null })]);
+    const catalog = buildLibraryMetricCatalog([makeRow({ adds_to_cart: null })], { events: ["Adds to cart"] });
     expect(catalog.find((m) => m.id === "lib_atc_rate")!.sub).toContain("no conversion");
   });
 });
@@ -154,8 +154,8 @@ describe("buildLibraryMetricCatalog · lib_checkout_rate", () => {
     expect(catalog.find((m) => m.id === "lib_checkout_rate")!.value).toBeCloseTo(8, 2);
   });
 
-  it("returns null checkout rate when no data present", () => {
-    const catalog = buildLibraryMetricCatalog([makeRow({ checkouts_initiated: null })]);
+  it("returns null checkout rate when no data present (account carries the event)", () => {
+    const catalog = buildLibraryMetricCatalog([makeRow({ checkouts_initiated: null })], { events: ["onb_initiate_checkout"] });
     expect(catalog.find((m) => m.id === "lib_checkout_rate")!.value).toBeNull();
   });
 
@@ -177,8 +177,8 @@ describe("buildLibraryMetricCatalog · lib_cost_per_atc", () => {
     expect(catalog.find((m) => m.id === "lib_cost_per_atc")!.value).toBeCloseTo(1000 / 60, 1);
   });
 
-  it("returns null cost per ATC when no adds_to_cart data", () => {
-    const catalog = buildLibraryMetricCatalog([makeRow({ adds_to_cart: null })]);
+  it("returns null cost per ATC when no adds_to_cart data (account carries the event)", () => {
+    const catalog = buildLibraryMetricCatalog([makeRow({ adds_to_cart: null })], { events: ["Adds to cart"] });
     expect(catalog.find((m) => m.id === "lib_cost_per_atc")!.value).toBeNull();
   });
 
@@ -200,8 +200,8 @@ describe("buildLibraryMetricCatalog · lib_cost_per_checkout", () => {
     expect(catalog.find((m) => m.id === "lib_cost_per_checkout")!.value).toBeCloseTo(1000 / 32, 1);
   });
 
-  it("returns null cost per checkout when no checkout data", () => {
-    const catalog = buildLibraryMetricCatalog([makeRow({ checkouts_initiated: null })]);
+  it("returns null cost per checkout when no checkout data (account carries the event)", () => {
+    const catalog = buildLibraryMetricCatalog([makeRow({ checkouts_initiated: null })], { events: ["onb_initiate_checkout"] });
     expect(catalog.find((m) => m.id === "lib_cost_per_checkout")!.value).toBeNull();
   });
 });
@@ -249,15 +249,41 @@ describe("buildLibraryMetricCatalog · fixture-derived C2B values (single event,
 
 // ─── All lower-funnel IDs are present in the catalog ──────────────────
 
-describe("buildLibraryMetricCatalog · lower-funnel IDs present", () => {
-  const LOWER_IDS = ["lib_cvr", "lib_atc_rate", "lib_checkout_rate", "lib_cost_per_atc", "lib_cost_per_checkout"];
+// G7: the ATC / checkout tiles used to exist for every account — an
+// ecommerce funnel assumed for every vertical. They exist only for an
+// account that carries the event: as a result type, or as a measured
+// funnel column on its rows.
+describe("buildLibraryMetricCatalog · lower-funnel IDs are gated on the events present", () => {
+  const ATC_IDS = ["lib_atc_rate", "lib_cost_per_atc"];
+  const CHK_IDS = ["lib_checkout_rate", "lib_cost_per_checkout"];
 
-  it("includes all lower-funnel metric IDs in the returned catalog", () => {
-    const catalog = buildLibraryMetricCatalog([makeRow()]);
+  it("includes every lower-funnel ID when the account's result events carry both steps", () => {
+    const catalog = buildLibraryMetricCatalog([makeRow()], { events: ["Website purchases", "Adds to cart", "onb_initiate_checkout"] });
     const ids = catalog.map((m) => m.id);
-    for (const id of LOWER_IDS) {
-      expect(ids).toContain(id);
-    }
+    for (const id of ["lib_cvr", ...ATC_IDS, ...CHK_IDS]) expect(ids).toContain(id);
+  });
+
+  it("omits the ATC and checkout tiles entirely for an account with neither event nor column", () => {
+    const ids = buildLibraryMetricCatalog([makeRow()], { events: ["Leads (form)"] }).map((m) => m.id);
+    expect(ids).toContain("lib_cvr");
+    for (const id of [...ATC_IDS, ...CHK_IDS]) expect(ids).not.toContain(id);
+  });
+
+  it("omits them with no account context at all when no row carries the column", () => {
+    const ids = buildLibraryMetricCatalog([makeRow()]).map((m) => m.id);
+    for (const id of [...ATC_IDS, ...CHK_IDS]) expect(ids).not.toContain(id);
+  });
+
+  it("a measured funnel column on any row is evidence the account carries that event (a real 0 counts, null does not)", () => {
+    const withAtc = buildLibraryMetricCatalog([makeRow({ adds_to_cart: 0 }), makeRow({ cell_id: "C3B", adds_to_cart: null })]).map((m) => m.id);
+    for (const id of ATC_IDS) expect(withAtc).toContain(id);
+    for (const id of CHK_IDS) expect(withAtc).not.toContain(id);
+  });
+
+  it("gates each step independently", () => {
+    const ids = buildLibraryMetricCatalog([makeRow()], { events: ["Website purchases", "Checkouts initiated"] }).map((m) => m.id);
+    for (const id of CHK_IDS) expect(ids).toContain(id);
+    for (const id of ATC_IDS) expect(ids).not.toContain(id);
   });
 });
 

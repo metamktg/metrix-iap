@@ -9,31 +9,46 @@
 //   • Tap the Info icon  → open / close the popover
 //   • Tap the tile body  → open KpiDrilldownModal (unchanged)
 // Desktop hover behaviour is fully preserved — no regression.
+//
+// The chart draws from chartTokens / chartChrome and nothing else. It used
+// to paint its bars `hsl(var(--interactive))` — a token that does not exist
+// (index.css defines `--color-interactive`), so the SVG fill resolved to
+// nothing and fell back to black over the navy card — with ticks at 9px, a
+// reference label at 8px, opacity stepped by RANK (the fifth concept was
+// visibly fainter for being fifth) and no tooltip. Every one of those is
+// now a shared token, so the next chart cannot re-invent them.
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { ArrowRight, Info } from "lucide-react";
 import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
-  Cell as RechartsCell,
   ReferenceLine,
   LabelList,
+  Tooltip,
 } from "recharts";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@workspace/command-deck/components/ui/hover-card";
 import { ChartContainer, type ChartConfig } from "@workspace/command-deck/components/ui/chart";
 import type { MetricDef } from "@/lib/data/metricsCatalog";
 import type { CellPerformanceRow } from "@/lib/data/seedTypes";
 import { topConceptsForMetric } from "@/lib/data/metricConceptUtils";
+import { AXIS, MARK, SERIES } from "@/components/charts/chartTokens";
+import { chartTooltipRenderer } from "@/components/charts/chartChrome";
+import { fmtNum, fmtUSD } from "@/pages/metrix/shared";
 
 // ── Chart config (single series) ────────────────────────────────────
+// One accent for a volume metric; the cost series colour for a cost metric,
+// so cost reads as a DIFFERENT MEASURE from volume without implying that
+// anything is wrong — never amber (the data-quality colour) and never a
+// verdict hue.
 
 const DEFAULT_CONFIG: ChartConfig = {
-  value: { label: "Value", color: "hsl(var(--interactive))" },
+  value: { label: "Value", color: SERIES.interactive },
 };
 const CPA_CONFIG: ChartConfig = {
-  value: { label: "CPA", color: "hsl(var(--chart-amber, 38 92% 50%))" },
+  value: { label: "Cost", color: SERIES.cost },
 };
 
 // ── Touch detection ──────────────────────────────────────────────────
@@ -50,6 +65,20 @@ function useIsTouch(): boolean {
   );
 }
 
+// ── Chart datum ──────────────────────────────────────────────────────
+
+interface ConceptBar {
+  /** Truncated for the axis; `fullName` is what the tooltip shows. */
+  name: string;
+  fullName: string;
+  value: number | null;
+  display: string;
+  spend: number;
+  results: number;
+}
+
+const AXIS_LABEL_MAX = 18;
+
 // ── Main component ───────────────────────────────────────────────────
 
 interface MetricHoverPopoverProps {
@@ -64,6 +93,9 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
   const isCpa = metric.id === "cpa_blended" || metric.id.startsWith("cost:");
   const isCtr = metric.id === "link_ctr";
   const isTouch = useIsTouch();
+  // A gradient id must be unique per mounted chart: two popovers on one
+  // page sharing an id would paint from whichever <defs> mounted last.
+  const gradientId = `metric-popover-fill-${useId().replace(/:/g, "")}`;
 
   // Controlled open state lets us:
   //   • keep Radix hover on desktop (onOpenChange fires on pointer-enter/leave)
@@ -82,17 +114,24 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
 
   const hasChart = concepts.length >= 2;
   const chartConfig = isCpa ? CPA_CONFIG : DEFAULT_CONFIG;
-  // A cost metric's bar is a magnitude, not a verdict and not a warning. It
-  // gets a second series hue so cost reads as a different measure from volume,
-  // without implying anything is wrong: amber here made every CPA hover look
-  // like a data-quality alert.
-  const barColor = isCpa ? "hsl(var(--chart-3))" : "hsl(var(--interactive))";
+  const barColor = isCpa ? SERIES.cost : SERIES.interactive;
 
-  // Truncate concept names for Y-axis
-  const chartData = concepts.map((c) => ({
-    name: c.name.length > 18 ? c.name.slice(0, 17) + "…" : c.name,
+  const chartData: ConceptBar[] = concepts.map((c) => ({
+    name: c.name.length > AXIS_LABEL_MAX ? c.name.slice(0, AXIS_LABEL_MAX - 1) + "…" : c.name,
+    fullName: c.name,
     value: c.value,
     display: c.metricDisplay,
+    spend: c.spend,
+    results: c.results,
+  }));
+
+  const renderTooltip = chartTooltipRenderer<ConceptBar>((d) => ({
+    title: d.fullName,
+    rows: [
+      { label: metric.label, value: d.display, swatch: barColor },
+      { label: "Spend", value: fmtUSD(d.spend, 0) },
+      { label: "Results", value: fmtNum(d.results) },
+    ],
   }));
 
   // ── Info icon click handler ──────────────────────────────────────
@@ -133,78 +172,106 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
         </div>
       </HoverCardTrigger>
 
+      {/* The surface (bg, blur, ring, elevation, radius) is the HoverCardContent
+          default now; this only sets the width and drops the padding so the
+          accent stripe can run edge to edge. */}
       <HoverCardContent
-        className="w-[300px] p-0 bg-popover/95 backdrop-blur-sm border border-border/60 elevation-floating overflow-hidden rounded-xl"
+        className="w-[320px] p-0 overflow-hidden"
         side="bottom"
         align="start"
         sideOffset={6}
       >
-        {/* Accent top stripe */}
-        <div className="h-[2px] w-full bg-gradient-to-r from-interactive/80 via-interactive/40 to-transparent" />
+        {/* Accent top stripe — the series colour, so a cost popover is keyed
+            to its bars before the reader gets to them. */}
+        <div
+          aria-hidden="true"
+          className="h-[2px] w-full"
+          style={{ background: `linear-gradient(to right, ${barColor}, transparent)` }}
+        />
 
-        {/* Header */}
-        <div className="px-3 pt-2.5 pb-2.5 border-b border-[hsl(var(--border-subtle))]">
+        {/* Header: eyebrow, big stat, caveat */}
+        <div className="px-3.5 pt-3 pb-3 border-b border-border-subtle">
           <div
-            className="text-micro uppercase text-muted-foreground/75 mb-1"
+            className="text-micro uppercase text-muted-foreground/75 mb-1.5"
             data-testid="metric-popover-header-label"
           >
             {metric.label}
           </div>
-          <div className="text-stat metric-num leading-none text-foreground">{metric.formatted}</div>
+          <div className="text-stat metric-num leading-none text-foreground tabular-nums">{metric.formatted}</div>
           {metric.sub && (
-            <div className="text-caption text-muted-foreground/75 mt-1 truncate tracking-wide">{metric.sub}</div>
+            <div className="text-caption text-muted-foreground/75 mt-1.5 truncate">{metric.sub}</div>
           )}
         </div>
 
         {/* Chart or stat fallback */}
-        <div className="px-3 py-3">
+        <div className="px-3.5 pt-3 pb-2.5">
           {hasChart ? (
             <>
-              <div className="text-micro uppercase text-interactive/70 mb-2">
-                Top concepts
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-micro uppercase text-muted-foreground/75">Top concepts</div>
+                <div className="flex items-center gap-1.5 text-micro uppercase text-muted-foreground/75">
+                  <span
+                    aria-hidden="true"
+                    className="w-2 h-2 rounded-[2px] shrink-0"
+                    style={{ backgroundColor: barColor }}
+                  />
+                  {isCpa ? "Cost" : metric.label}
+                  {/* The account's own value is the dashed line in the chart;
+                      it is named here, not on the line, where a label at the
+                      line's foot sat over the first row's axis text. */}
+                  {refValue != null && (
+                    <span className="normal-case tracking-normal tabular-nums text-muted-foreground/75">· avg {metric.formatted}</span>
+                  )}
+                </div>
               </div>
               <ChartContainer
                 config={chartConfig}
-                className="aspect-auto h-[135px] w-full"
+                className="aspect-auto h-[140px] w-full"
               >
                 <BarChart
                   layout="vertical"
                   data={chartData}
-                  margin={{ top: 0, right: 44, bottom: 0, left: 0 }}
-                  barSize={11}
+                  margin={{ top: 0, right: 52, bottom: 0, left: 0 }}
+                  barSize={MARK.barSize}
+                  barCategoryGap={MARK.gap * 2}
                 >
+                  <defs>
+                    {/* Token colour at two opacities — a flat entity colour
+                        with a little light on the data end. Nothing here
+                        varies by rank. */}
+                    <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor={barColor} stopOpacity={0.78} />
+                      <stop offset="100%" stopColor={barColor} stopOpacity={1} />
+                    </linearGradient>
+                  </defs>
                   <XAxis type="number" hide />
                   <YAxis
                     type="category"
                     dataKey="name"
-                    width={102}
-                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))", fontFamily: "inherit", opacity: 0.9 }}
+                    width={112}
+                    tick={AXIS.tick}
                     tickLine={false}
                     axisLine={false}
                   />
+                  <Tooltip
+                    cursor={AXIS.cursorFill}
+                    content={renderTooltip}
+                    wrapperStyle={{ outline: "none", zIndex: 1 }}
+                  />
                   {refValue != null && (
-                    <ReferenceLine
-                      x={refValue}
-                      stroke="hsl(var(--interactive))"
-                      strokeDasharray="3 3"
-                      strokeOpacity={0.35}
-                      label={{
-                        value: "avg",
-                        position: "insideTopRight",
-                        fontSize: 8,
-                        fill: "hsl(var(--interactive))",
-                        opacity: 0.55,
-                      }}
-                    />
+                    <ReferenceLine x={refValue} {...AXIS.reference} />
                   )}
-                  <Bar dataKey="value" radius={[0, 3, 3, 0]}>
-                    {chartData.map((_, i) => (
-                      <RechartsCell key={i} fill={barColor} fillOpacity={0.95 - i * 0.1} />
-                    ))}
+                  <Bar
+                    dataKey="value"
+                    fill={`url(#${gradientId})`}
+                    radius={[0, MARK.barRadius, MARK.barRadius, 0]}
+                    {...MARK.noAnimation}
+                  >
                     <LabelList
                       dataKey="display"
                       position="right"
-                      style={{ fontSize: 9, fill: "hsl(var(--foreground))", opacity: 0.9, fontFamily: "inherit", fontWeight: 500 }}
+                      className="tabular-nums"
+                      style={MARK.valueLabel}
                     />
                   </Bar>
                 </BarChart>
@@ -225,7 +292,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
         </div>
 
         {/* Footer */}
-        <div className="px-3 pb-3 border-t border-[hsl(var(--border-subtle))] pt-2">
+        <div className="px-3.5 pb-3 border-t border-border-subtle pt-2.5">
           <button
             onClick={onDiagnose}
             className="pressable inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"

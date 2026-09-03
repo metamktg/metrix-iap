@@ -20,8 +20,8 @@
 // through a subscription, and the record survives a route chunk remount.
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
-import { useLocation } from "wouter";
-import { resolveNavLocation, sectionLandingRoute } from "./navTree";
+import { useLocation, useSearch } from "wouter";
+import { navTree, resolveNavLocation, sectionLandingRoute, type NavSection } from "./navTree";
 
 const MAX = 50;
 /** Bottom → top; the last entry is the current location. */
@@ -73,6 +73,77 @@ export function NavHistoryTracker(): null {
   return null;
 }
 
+// ─── The ?from= origin ──────────────────────────────────────────────────
+//
+// Loop links carry their origin in the URL (`?from=<section id>` plus the
+// cell or hypothesis that started the hop) so a copied link still knows
+// where it came from — history does not survive a paste. The table below
+// turns that origin into a Back target: where to go, what the button says,
+// what the crumb reads. Keyed by navTree SECTION ID, so any section can be
+// an origin: Analysis and Strategy have a cell/hypothesis-aware hop, every
+// other section unwinds to its command center. Before this was a two-branch
+// `if` — a link from Creative or MST carried `from=creative` and produced
+// no crumb at all.
+
+export interface FromOrigin {
+  from: string | null;
+  fromCell: string | null;
+  fromHyp: string | null;
+}
+
+export interface FromTarget {
+  /** Where Back goes. */
+  to: string;
+  /** The Back button's label ("Back to cell C2B"). */
+  label: string;
+  /** The crumb's origin text ("Strategy Map · C2B"). */
+  crumb: string;
+}
+
+function parseFromOrigin(search: string): FromOrigin {
+  const p = new URLSearchParams(search);
+  return { from: p.get("from"), fromCell: p.get("fromCell"), fromHyp: p.get("fromHyp") };
+}
+
+type OriginResolver = (fp: FromOrigin, section: NavSection) => FromTarget;
+
+const ORIGIN_RESOLVERS: Record<string, OriginResolver> = {
+  analysis: (fp) =>
+    fp.fromCell
+      ? { to: `/app/analysis/library?focus=${fp.fromCell}`, label: `Back to cell ${fp.fromCell}`, crumb: `Analysis · ${fp.fromCell}` }
+      : { to: "/app/analysis/library", label: "Back to Analysis", crumb: "Analysis · IAP Library" },
+  strategy: (fp) => {
+    if (fp.fromHyp) {
+      return { to: `/app/strategy/hypotheses?focus=${fp.fromHyp}`, label: "Back to Hypothesis", crumb: `Strategy · ${fp.fromHyp}` };
+    }
+    // The chain unwinds one hop at a time. A brief reached from a strategy
+    // page that was itself reached from an analysis cell goes back to that
+    // strategy page WITH its analysis origin intact, so the next Back still
+    // lands on the cell. Dropping the cell here is how a reader ended up on
+    // a bare Strategy Map with no way back to the row that started it.
+    return fp.fromCell
+      ? { to: `/app/strategy/map?from=analysis&fromCell=${fp.fromCell}`, label: "Back to Strategy Map", crumb: `Strategy Map · ${fp.fromCell}` }
+      : { to: "/app/strategy/map", label: "Back to Strategy Map", crumb: "Strategy Map" };
+  },
+};
+
+/** Any other section: back to its command center, named by its label. */
+const genericOrigin: OriginResolver = (_fp, section) => {
+  const to = sectionLandingRoute(section) ?? section.to ?? "/";
+  return { to, label: `Back to ${section.label}`, crumb: section.label };
+};
+
+/**
+ * The Back target a `?from=` origin resolves to, or null when the param is
+ * absent or names no section (so a page without the param is unaffected).
+ */
+export function fromOriginTarget(fp: FromOrigin): FromTarget | null {
+  if (!fp.from) return null;
+  const section = navTree.find((s) => s.id === fp.from);
+  if (!section) return null;
+  return (ORIGIN_RESOLVERS[section.id] ?? genericOrigin)(fp, section);
+}
+
 /**
  * The structural parent of a location, for when there is no history to
  * walk: a page → its section's command center; a command center → the
@@ -97,13 +168,18 @@ export type BackTarget = {
 
 export function useBackTarget(): BackTarget | null {
   const [location, navigate] = useLocation();
+  const search = useSearch();
   const history = useNavigationHistory();
   const previous =
     history.length >= 2 && history[history.length - 1] === location
       ? history[history.length - 2]!
       : null;
+  // With nothing recorded behind this page, a `?from=` origin beats the
+  // structural parent: a deep-linked brief that says it came from cell C2B
+  // goes back to that cell, not to the Creative command center.
+  const origin = fromOriginTarget(parseFromOrigin(search));
   const parent = structuralParent(location);
-  const to = previous ?? parent;
+  const to = previous ?? origin?.to ?? parent;
   const viaHistory = previous != null;
   const go = useCallback(() => {
     if (viaHistory) window.history.back();

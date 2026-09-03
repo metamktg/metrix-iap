@@ -9,7 +9,7 @@
 // below states that honestly rather than fabricating a re-weighting run.
 
 import { useResultScope } from "@/hooks/useResultScope";
-import { scopeRollupRows } from "@/lib/result-scope";
+import { ResultScopeBar, LandedScopeNote } from "@/components/analysis/ResultScopeBar";
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -65,8 +65,14 @@ export function MstDirectionView() {
         const acct = account!;
         const strategy = getStrategyData(seed, adAccountId);
         const playbook = strategy?.scaling_playbook ?? null;
-        // Result scope: one event (or the allowed blend); pre-split rows kept.
-        const rollup = scopeRollupRows(getAnalysisData(seed, adAccountId)?.concept_rollup ?? [], resultScope.scope);
+        // Result scope: one event (or the allowed blend); pre-split rows
+        // (null result_type) are kept by inScope. Rows LAND where their data
+        // is before the reader chooses (useResultScope.landRows) — a rollup
+        // written under one event must not read as empty because the account
+        // default is another. The bar below makes the active scope visible.
+        const rollupLanding = resultScope.landRows(getAnalysisData(seed, adAccountId)?.concept_rollup ?? [], (r) => r.result_type);
+        const rollup = rollupLanding.rows;
+        const activeScope = rollupLanding.landed ?? resultScope.scope;
         const subtitle = "Scale / optimize / validate / avoid — this account's current playbook applied to every measured concept.";
 
         if (!playbook) {
@@ -117,6 +123,8 @@ export function MstDirectionView() {
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader section={SECTION} title="Direction" accountName={acct.name} subtitle={subtitle} table="scaling_playbook" />
+            <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
+            <LandedScopeNote landed={rollupLanding.landed} what="Direction" />
 
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Measured concepts" value={String(rollup.length)} />

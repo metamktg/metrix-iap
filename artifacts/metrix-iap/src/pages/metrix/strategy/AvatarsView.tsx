@@ -11,7 +11,8 @@
 
 import type { EvaluationScale } from "@/lib/resultEvents";
 import { useResultScope } from "@/hooks/useResultScope";
-import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
+import { ResultScopeBar, LandedScopeNote } from "@/components/analysis/ResultScopeBar";
+import { scopeRows as scopeRowsFn } from "@/lib/result-scope";
 import { TYPE } from "../typography";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -53,7 +54,7 @@ import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
 import {
   Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass,
-  ArrowUpRight, MapPin, Search, AlertTriangle,
+  ArrowUpRight, MapPin, Search, AlertTriangle, ChevronDown,
 } from "lucide-react";
 import type {
   MSTMatrixColumn, ICPProfile, PlacementRow, AnalysisData,
@@ -293,7 +294,29 @@ function ProfileDetailFold({
 }) {
   const [open, setOpen] = useState(false);
   const hasPlacements = placementRows.length > 0;
-  if (!hasPlacements && !hasCopy && !hasTheory) return null;
+  if (!hasPlacements && !hasCopy && !hasTheory) {
+    // Nothing behind the fold — but the fold does not vanish. A disclosure
+    // that disappears reads as "this profile has no detail section", when
+    // the truth is that three OPTIONAL inputs are absent. Name them, the
+    // way ModuleTabs' disabledReason names why a tab is closed.
+    const reason = "Profile detail needs at least one of: placement rows, a copy approach (message resonance, DNA or hypotheses), or ICP theory (demographic foundation, psychographics, behavioural signals, funnel entry) — none recorded for this profile yet.";
+    return (
+      <div>
+        <button
+          type="button"
+          disabled
+          aria-disabled="true"
+          title={reason}
+          data-testid={`profile-detail-disabled-${profile.profile_id}`}
+          className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/75 opacity-60 cursor-not-allowed"
+        >
+          Profile detail
+          <span className="text-label text-muted-foreground/75 normal-case">· needs placements, copy approach or ICP theory</span>
+          <ChevronDown className="w-3.5 h-3.5" aria-hidden />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -898,12 +921,18 @@ export function AvatarsView() {
   // scope's event(s) before any profile's CPA / CVR is summed, so a reach
   // campaign never ranks an avatar against a purchase one.
   const resultScope = useResultScope(account, adAccountId, analysis?.performance_by_cell.map((r) => r["Result type"]));
-  const { scopeRows } = resultScope;
-  const sortKeys = useMemo(() => sortKeysFor(resultScope.scope?.scale ?? null), [resultScope.scope]);
+  const { landRows } = resultScope;
+  // Cell rows land where THEIR data is before the reader has chosen
+  // (useResultScope.landRows); the demographic rows follow the same landed
+  // scope so a profile's CPA and its segment signal are one event. A stored
+  // choice is always honoured.
+  const cellLanding = useMemo(() => landRows(analysis?.performance_by_cell ?? [], (r) => r["Result type"]), [analysis, landRows]);
+  const activeScope = cellLanding.landed ?? resultScope.scope;
+  const sortKeys = useMemo(() => sortKeysFor(activeScope?.scale ?? null), [activeScope]);
   const sortBy: SortKey = sortKeys.includes(sortByRaw) ? sortByRaw : "spend";
 
-  const cellRows = useMemo(() => filterByRun(scopeRows(analysis?.performance_by_cell ?? [], (r) => r["Result type"])), [analysis, filterByRun, scopeRows]);
-  const scopedDemoRows = useMemo(() => filterByRun(scopeRows(analysis?.demographic_registration_signal ?? [], (r) => r["Result type"])), [analysis, filterByRun, scopeRows]);
+  const cellRows = useMemo(() => filterByRun(cellLanding.rows), [cellLanding, filterByRun]);
+  const scopedDemoRows = useMemo(() => filterByRun(scopeRowsFn(analysis?.demographic_registration_signal ?? [], activeScope, (r) => r["Result type"])), [analysis, filterByRun, activeScope]);
   const scopedAnalysis = useMemo(
     () => (analysis ? { ...analysis, performance_by_cell: cellRows, demographic_registration_signal: scopedDemoRows } : analysis),
     [analysis, cellRows, scopedDemoRows],
@@ -1135,7 +1164,8 @@ export function AvatarsView() {
                 />
               }
             />
-            <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
+            <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
+            <LandedScopeNote landed={cellLanding.landed} what="Avatars" />
 
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="ICP profiles" value={String(icpProfiles.length)} variant="primary" />

@@ -6,7 +6,7 @@
 // getting-started guide is static onboarding copy, not editorial content,
 // so it ships now.
 
-import { ModuleHeader, SectionCard, PendingState } from "./shared";
+import { ModuleHeader, SectionCard, PendingState, CrossLink } from "./shared";
 import { Sparkles, Newspaper, BookOpen, Plug, LineChart, Compass, FileText } from "lucide-react";
 
 const GUIDE_STEPS = [
@@ -20,7 +20,7 @@ export function OverviewUpdatesView() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <ModuleHeader
-        section="Overview · 01"
+        section="Account Overview · 01"
         title="Updates"
         subtitle="Platform changes, curated Meta platform news, and how to get started."
       />
@@ -37,6 +37,11 @@ export function OverviewUpdatesView() {
                 </div>
               </div>
             ))}
+          </div>
+          {/* The guide names the Analysis command center as step 2; the page
+              used to end without a way there. */}
+          <div className="mt-3">
+            <CrossLink to="/app/analysis" label="Next: Run analysis" srNote="opens the Analysis command center" />
           </div>
         </SectionCard>
 

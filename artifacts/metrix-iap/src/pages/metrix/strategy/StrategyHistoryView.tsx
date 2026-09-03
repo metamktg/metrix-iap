@@ -8,7 +8,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useGetLatestGenerationRun, getGetLatestGenerationRunQueryKey } from "@workspace/api-client-react";
-import { ModuleHeader, ModuleScopeGate, SectionCard, PendingState, CaveatNote } from "../shared";
+import { ModuleHeader, ModuleScopeGate, SectionCard, PendingState, CaveatNote, CrossLink } from "../shared";
 import { History, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 const SECTION = "Strategy · 04";
@@ -53,6 +53,13 @@ export function StrategyHistoryView() {
                 </dl>
                 {run.error_message && (
                   <p className="text-caption text-status-danger/90 mt-3">{run.error_message}</p>
+                )}
+                {/* The run's output is the strategy itself — link into it
+                    rather than ending the row here. */}
+                {run.status === "success" && (
+                  <div className="mt-3">
+                    <CrossLink to="/app/strategy/overview" label="Open the generated strategy" />
+                  </div>
                 )}
               </SectionCard>
             )}

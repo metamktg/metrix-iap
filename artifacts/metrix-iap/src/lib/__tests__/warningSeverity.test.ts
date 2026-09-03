@@ -60,6 +60,21 @@ describe("currency-suffix resolution is a notice, not an attention line", () => 
     ).toBe(true);
   });
 
+  it("files a Note:-prefixed moderate-confidence line (an OPTIONAL column) as a notice", () => {
+    // The parser prefixes "Note:" when the moderately-matched column is a
+    // non-required breakdown or a non-core metric — a wrong guess there
+    // cannot corrupt spend or results, so it is context, not a decision.
+    // The required/core form (no prefix) stays attention, asserted below.
+    const { attention, notices } = splitWarningsBySeverity([
+      'Note: Metric column "Post saves" mapped from "Post saves count" with moderate confidence (67%) — optional column, verify if you rely on it.',
+      'Metric column "Link clicks" mapped from "Link clicks count" with moderate confidence (67%) — please verify this is correct.',
+    ]);
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toContain("Post saves");
+    expect(attention).toHaveLength(1);
+    expect(attention[0]).toContain("Link clicks");
+  });
+
   it("still treats moderate-confidence inference as attention", () => {
     const { attention, notices } = splitWarningsBySeverity([
       'Metric column "CPM" auto-matched from "CPM x" (via currency match).',

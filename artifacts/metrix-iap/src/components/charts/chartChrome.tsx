@@ -69,6 +69,32 @@ export function ChartTooltip({
   );
 }
 
+/** What a recharts `<Tooltip content>` receives — the two fields we read. */
+interface RechartsTooltipProps {
+  active?: boolean;
+  payload?: ReadonlyArray<{ payload?: unknown }>;
+}
+
+/**
+ * A recharts `<Tooltip content={…}>` renderer over `ChartTooltip`.
+ *
+ * Every chart in the product hovers the same way: read the datum behind the
+ * pointer, turn it into a title and rows, draw the card. Five charts had
+ * written that loop by hand with five different cards. This is the loop;
+ * the caller writes only the datum → rows mapping. Return null from `build`
+ * to show nothing for a datum.
+ */
+export function chartTooltipRenderer<T>(
+  build: (datum: T) => { title: string; rows: TooltipRow[]; detail?: ReactNode } | null,
+) {
+  return function RenderChartTooltip({ active, payload }: RechartsTooltipProps) {
+    const datum = payload?.[0]?.payload as T | undefined;
+    if (!active || datum == null) return null;
+    const spec = build(datum);
+    return spec ? <ChartTooltip {...spec} /> : null;
+  };
+}
+
 export function ChartEmpty({ height, label }: { height: number; label: string }) {
   return (
     <div

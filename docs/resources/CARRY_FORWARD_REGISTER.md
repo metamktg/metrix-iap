@@ -652,7 +652,7 @@ toward the purchase it precedes and reach overlaps ThruPlays, so neither is ever
 the scope is a per-account session convenience, never a property of the account (cohort-reach
 rule unchanged). **Open:** report export and the deep-dive still print one blended cost with a
 caption; `creative-evidence.ts` synthesises a cell row stamped with the first ad's result type;
-the live DDL (result-event grain block) must be applied before the next run on any account.
+the live DDL (result-event grain block) was applied as Supabase migration `result_event_grain` on 2026-09-03 03:38Z, before the code reached the deployment (ship record below).
 
 **`[shipped]` One panel behaviour; the sidebar defines the category (2026-09-03).** Owner asks: hover
 panels and sliders collapsible, expandable, wider and consistent across every interface; the left
@@ -670,3 +670,30 @@ chars, no sentence) under the disclosure rulebook; a drag that used to snap the 
 stops at its minimum — the tray's own toggle closes it. **Open:** the sidebar keeps its own
 collapse key and handle (tests read them directly); a shared width preference for it is a later
 pass; `SegmentHoverPreview` and `MetricHoverPopover` keep fixed widths by design (hover cards).
+
+**Shipped to app.metrix.ad (2026-09-03, 04:07–04:23Z).** PR #185 (result events and intent classes;
+one panel behaviour; the category-defining sidebar; `7e38838`, `9eab136`, `7e1d60f`, `4db5541`,
+`bc79433`, `365a9f1`) merged by the owner as `ac2ad78` at 04:07Z while CI run 33713417742 was still
+running on the head; that run finished green at 04:14Z and the push run on `main` (33713890299,
+`ac2ad78`) at 04:19Z. The first CI run on the PR (33711829995, `bc79433`) failed in the hover-popover
+Playwright spec only: four tests still asserted the old "CPA (blended)" tile label and the old avatar
+restriction notice — the catalog names the tile "Cost per conversion (blended)" now and the avatar
+breakdown is scoped per event since demographic rows carry a result type — and `365a9f1` updated the
+spec (26/26 locally and on CI). The same spec is why the earlier `main` runs 33710752687 (`bf44115`,
+the owner's merge of PR #184 at 03:16Z) and 33712622604 (`123f6e6`) were red: identical failure, no
+other step. Live DDL first: migration `result_event_grain` (the `schema.sql` result-event grain
+block, verbatim) applied at 03:38Z; the five widened unique keys and the nullable columns were read
+back from `pg_constraint` / `information_schema`, and nothing new reached the deployment before it
+(the live entry bundle stayed `index-DRGHhOye.js` — the PR #183 build — until this publish; the
+three "Published your App" commits on `main` between are empty deployment markers). Workspace
+merged `origin/main` (HEAD `ac2ad78`, status clean, diff against `origin/main` empty, lockfile
+unchanged), deployment `329ef7e0` reached success, the live entry bundle `index-B2-v4UW_.js` and the
+`CreativeCard` chunk (`trroqeAw`) carry the md5s of the local production build of the same tree
+(`5de4e59d…`, `dc272afa…`), `/api/healthz` 200. Local evidence on the shipped tree: server CI list
+35 suites / 523; client 192 files / 2,408; scripts 121; fifteen gates; codegen drift; every one of the
+sixteen declared `smoke:metrix-iap-*` e2e smokes green (the hover-popover spec after `365a9f1`).
+Two smokes depend on `REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE` being set — unset, the spec asks
+Playwright for a headless shell that is not installed here — which is a runner precondition, not a
+test result. **Next run on any account moves it onto the result-event grain**; rows written before
+carry a null result type and read as "not split by event" everywhere.
+

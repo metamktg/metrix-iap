@@ -9,7 +9,7 @@
 // failure_patterns) with fallback to optimization_loop recommendation_cards.
 
 import { useResultScope } from "@/hooks/useResultScope";
-import { scopeRollupRows } from "@/lib/result-scope";
+import { ResultScopeBar, LandedScopeNote } from "@/components/analysis/ResultScopeBar";
 import { useMemo } from "react";
 import { normalizeMetricsInProse } from "@/lib/normalize";
 import { fmtDayRange } from "@/lib/normalize";
@@ -32,6 +32,12 @@ import {
 import { TYPE } from "../typography";
 import { AlertTriangle, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { scopeToRun } from "@/lib/run-supersede";
+
+// Same spelling as every other analysis page (EngagementFunnelView,
+// AnalysisDnaView …): ModuleHeader trims the stage numeral for the eyebrow
+// and navTree carries Analysis as loop stage 3. "Analyze" was this page's
+// own invention and matched no section anywhere else.
+const SECTION = "Analysis · 03";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -365,6 +371,16 @@ export function FindingsView() {
 
   const analysis = getAnalysisData(seed, accountId);
   const resultScope = useResultScope(getAdAccount(seed, accountId), accountId);
+  // Rollup rows land where THEIR data is before the reader chooses
+  // (useResultScope.landRows); pre-split rows (null result_type) are kept.
+  // The bar below the header makes the active scope visible on this page,
+  // which scoped its rows silently before.
+  const { landRows } = resultScope;
+  const rollupLanding = useMemo(
+    () => landRows(scopeToRun(analysis?.concept_rollup ?? [], analysis?.latest_analysis_run_id ?? null), (r) => r.result_type),
+    [analysis, landRows],
+  );
+  const activeScope = rollupLanding.landed ?? resultScope.scope;
   const conceptScores: ConceptScore[] = useMemo(() => {
     // Primary source: concept_intelligence (importer-authored). Manual
     // accounts never get those rows — but the manual analysis engine
@@ -374,7 +390,7 @@ export function FindingsView() {
     // work was persisted, serialized, and rendered nowhere.
     const raw: ConceptScore[] = (intel?.concept_scores?.length ?? 0) > 0
       ? intel!.concept_scores!
-      : scopeRollupRows(scopeToRun(analysis?.concept_rollup ?? [], analysis?.latest_analysis_run_id ?? null), resultScope.scope).map((r) => ({
+      : rollupLanding.rows.map((r) => ({
           book: r.book,
           concept_code: r.concept,
           mapped_in_library: r.mapped_in_library,
@@ -394,7 +410,7 @@ export function FindingsView() {
       if (b.cpa == null) return -1;
       return a.cpa - b.cpa;
     });
-  }, [intel, analysis, resultScope.scope]);
+  }, [intel, rollupLanding]);
 
   const failurePatterns: FailurePattern[] = intel?.failure_patterns ?? [];
 
@@ -451,20 +467,26 @@ export function FindingsView() {
   }
 
   // Show the panel when any meaningful data is present: intelligence summary,
-  // concept scores, OR fallback recommendation cards from the optimization loop.
+  // concept scores, failure patterns, OR fallback recommendation cards from
+  // the optimization loop. Failure patterns used to be left out of this
+  // test, so an account whose only intelligence was its failure patterns
+  // rendered the empty state with real rows behind it.
   const hasIntelligence = !!(
     conceptScores.length > 0 ||
     execSummary?.top_finding ||
+    failurePatterns.length > 0 ||
     topCard
   );
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <ModuleHeader
-        section="Analyze"
+        section={SECTION}
         title="Findings"
         subtitle="AI-generated verdict: concept tier rankings, performance lift vs baseline, and failure patterns."
       />
+      <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
+      <LandedScopeNote landed={rollupLanding.landed} what="Findings" />
 
       <div className="flex-1 overflow-y-auto">
         <div className="px-6 py-6 space-y-8 max-w-[1100px] w-full mx-auto">

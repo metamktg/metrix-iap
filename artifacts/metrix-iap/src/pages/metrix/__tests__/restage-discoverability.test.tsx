@@ -82,8 +82,14 @@ async function openWarnings() {
   await act(async () => { fireEvent.click(screen.getByText("Date range to analyze")); });
 }
 
+// The run gate is now the server's own contract: ONE delivery report
+// (Demographics, Placements or Ad Summary) is enough, the rest add
+// resolution. So the copy under test lives in two places — the hard block
+// when nothing is staged, and the neutral optional-exports note when a run
+// can already go — and the restage offer must appear in whichever one shows.
 const warningText = () =>
-  screen.getByText("Both reports are required before running analysis").parentElement?.textContent ?? "";
+  (screen.queryByText("A delivery report is required before running analysis")?.parentElement?.textContent ??
+    screen.queryByTestId("optional-exports-note")?.textContent) ?? "";
 
 beforeEach(() => {
   cleanup();
@@ -120,12 +126,16 @@ describe("BUG-08 — restage discoverability", () => {
 
   it("names only the report that is actually re-stageable", async () => {
     // Demographics is staged; only Placement is missing, and only Placement
-    // has a processed copy — the copy must not imply both.
+    // has a processed copy — the copy must not imply both. Since the gate
+    // moved to "any one delivery report", a staged Demographics export means
+    // the run is NOT blocked: the offer now lives in the optional-exports
+    // note rather than a blocking warning, and the block copy is absent.
     mockImports = [
       { id: "1", filename: "demo.csv", kind: "performance_demo_csv", status: "staged" },
       { id: "2", filename: "placements.xlsx", kind: "performance_placement_csv", status: "processed" },
     ];
     await openWarnings();
+    expect(screen.queryByText("A delivery report is required before running analysis")).toBeNull();
     const text = warningText();
     expect(text).toContain("Placement");
     expect(text).toContain("re-stage it from Import History");

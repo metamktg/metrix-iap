@@ -357,7 +357,7 @@ export function HypothesisQueueView() {
                     />
                     {detail.status === "ready_for_brief_builder" && (
                       <LoopAction
-                        to={`/app/creative?from=strategy&fromHyp=${detail.id}`}
+                        to={`/app/creative/builder?from=strategy&fromHyp=${detail.id}`}
                         label="Create Brief"
                         icon="brief"
                       />

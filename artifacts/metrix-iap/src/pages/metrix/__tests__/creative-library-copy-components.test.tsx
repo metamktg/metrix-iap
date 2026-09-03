@@ -111,8 +111,13 @@ describe("Creative Library — copy components", () => {
     expect(rows[0]!.textContent).toContain("1.13×");
     expect(screen.getByText("Performance export")).toBeTruthy();
     expect(screen.getByText("3 of 4")).toBeTruthy();
-    // The nudge is present: no visual creatives exist.
-    expect(screen.getByTestId("creative-source-nudge")).toBeTruthy();
+    // The nudge is present: no visual creatives exist — and exactly ONCE.
+    // It used to be rendered by each of the three page branches separately
+    // (three call sites for one suggestion); now there is a single site.
+    expect(screen.getAllByTestId("creative-source-nudge")).toHaveLength(1);
+    // The page scopes its rollup rows to the result scope, so the scope it
+    // is reading under is visible rather than silent.
+    expect(screen.getByTestId("result-scope-bar")).toBeTruthy();
   });
 
   it("with a scanned library, the components are one more tab", () => {

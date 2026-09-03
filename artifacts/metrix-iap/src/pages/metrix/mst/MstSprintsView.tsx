@@ -12,7 +12,7 @@
 // over canvas) — both open the same performance/creative pop-up.
 
 import { useResultScope } from "@/hooks/useResultScope";
-import { scopeRollupRows } from "@/lib/result-scope";
+import { ResultScopeBar, LandedScopeNote } from "@/components/analysis/ResultScopeBar";
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -296,8 +296,14 @@ export function MstSprintsView() {
         }
 
         const matrix = mst.historical_matrix_4x4;
-        // Result scope: one event (or the allowed blend); pre-split rows kept.
-        const rollup = scopeRollupRows(getAnalysisData(seed, adAccountId)?.concept_rollup ?? [], resultScope.scope);
+        // Result scope: one event (or the allowed blend); pre-split rows
+        // (null result_type) are kept by inScope. Rows LAND where their data
+        // is before the reader chooses (useResultScope.landRows) — a rollup
+        // written under one event must not read as empty because the account
+        // default is another. The bar below makes the active scope visible.
+        const rollupLanding = resultScope.landRows(getAnalysisData(seed, adAccountId)?.concept_rollup ?? [], (r) => r.result_type);
+        const rollup = rollupLanding.rows;
+        const activeScope = rollupLanding.landed ?? resultScope.scope;
         const columnIds = matrix.columns.map((c) => c.id);
         const book = matrixBookFor(rollup, columnIds);
         const playbook = getStrategyData(seed, adAccountId)?.scaling_playbook ?? null;
@@ -321,6 +327,8 @@ export function MstSprintsView() {
               subtitle="Historical 4×4 matrix · playbook tiers · concept-level performance"
               table="historical_matrix_4x4"
             />
+            <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
+            <LandedScopeNote landed={rollupLanding.landed} what="Sprints" />
             <div className="px-6 py-5 space-y-4">
               {/* Canvas status strip: Active tag + matrix name · window · cells mapped */}
               <div className="flex items-center justify-between gap-3 flex-wrap" data-testid="mst-status-strip">
