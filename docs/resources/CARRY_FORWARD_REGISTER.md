@@ -804,3 +804,12 @@ browser probe re-opened the branch on Escape through the section's own focus han
 sidebar-nav 31, layout suite 117, client suite 2,483, the eight static gates, the browser probe
 and screenshots in `shots-sidebar3/` (expanded branch, rail branch, phone drawer).
 
+**Shipped to app.metrix.ad (2026-09-03, 07:53–08:07Z).** PR #191 merged as `05eb66b` (CI green on
+the head `69f8190`; main's tree after the merge is the branch head's tree). Smokes on that head:
+all fifteen green. The workspace merged main without a change of its own (HEAD `bdb591c`, clean,
+diff against origin/main empty). Deployment `329ef7e0` verified against a local production build
+of main: all 130 files under `assets/` (entry `index-C3KzcR-B.js` and every chunk) carry the
+local md5s — 130 match, 0 differ, 0 missing; `/api/healthz` 200. The live sidebar is the
+collapsible one whose pages branch out beside it. The docs-only PR #190 (the second-pass ship
+record) merged as `d8f8ccd` in between.
+
