@@ -522,3 +522,35 @@ surface because neither feature is built; `OptimizationLoop.manager_overview_vis
 the evidence drill-down, not with this pass. `check:field-coverage` remains a worklist, not a
 verdict — it under-reports by design.
 
+## 12. The tile pattern reaches the pages whose subject it is (2026-09-03, autonomous pass 4)
+
+**What.** Task #38 — "apply the IAP Library tile pattern throughout" — on the two pages that
+carried the account's most interpretive content with no measured header:
+
+- **Creative DNA**, the page about variables, had no tiles at all: a reader arrived at gene loci
+  with no idea how much money the scope in front of them represents. It now carries a
+  configurable `KpiTileRow` built from the same landed, run-scoped variable rows the loci read,
+  and a tile opens the shared `KpiDrilldownModal` — whose dimensions include one per variable
+  family, so the page's own subject is one press away.
+- **Avatars** had four structural counts (profiles, pillars, segments, matrix avatars) and not one
+  figure about money. Those stay — they answer "how many", which no performance tile does — and a
+  labelled "Audience performance · this result scope" row sits under them, built from the same
+  scoped demographic rows the segment cards read.
+- **The variable drill-down's segment rows** carried the volume band as a signal tag and dropped
+  the per-segment evidence state the rollup already computed (only the header's worst-of survived).
+  Each row now carries its own `EvidenceChip`: two segments can share a volume band and rest on
+  different evidence — reconciled ad-grain rows in one, a name-keyed join in the other — and the
+  reader deciding which to fund needs that on the row. Rendered as a span, so it never nests a
+  control inside the row's button.
+
+**Why.** The tile pattern is how this product states a measured number with a way into its
+breakdown. A page that interprets variables or audiences without one asks the reader to trust an
+interpretation whose scale they cannot see.
+
+**Where.** `pages/metrix/analysis/AnalysisDnaView.tsx`, `pages/metrix/strategy/AvatarsView.tsx`,
+`components/creative/VariableDrilldownModal.tsx`,
+`pages/metrix/__tests__/tile-pattern-reach.test.tsx` (new, 4).
+
+**Reach.** Chrome only. The structural tiles, the run-scope narrowing test that reads the Message
+pillars tile, and every existing segment assertion are untouched.
+

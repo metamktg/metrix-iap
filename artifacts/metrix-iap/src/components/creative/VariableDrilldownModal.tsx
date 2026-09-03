@@ -269,6 +269,18 @@ export function VariableDrilldownModal({
                         <span className="w-[86px] shrink-0 hidden sm:flex justify-end">
                           <SignalTag signal={bandSignal(row)} testId="variable-segment-signal" />
                         </span>
+                        {/* The row's OWN evidence state, not just the header's
+                            worst-of. Two segments can carry the same volume
+                            band and rest on different evidence — reconciled
+                            ad-grain rows in one, a name-keyed join in the
+                            other — and the reader deciding which segment to
+                            fund needs that difference on the row. (A span, so
+                            it never nests a control inside this button.) */}
+                        {row.evidenceState && (
+                          <span className="shrink-0 hidden md:flex">
+                            <EvidenceChip state={row.evidenceState} testId="variable-segment-evidence" />
+                          </span>
+                        )}
                         <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75 group-hover:text-primary/80 group-hover:translate-x-0.5 transition-[color,background-color,border-color,box-shadow,opacity,transform] shrink-0" />
                       </button>
                     );
