@@ -476,6 +476,35 @@
     pointer-events: none;
   }
 
+  /* The branch connector: from the row the reader rested on in the sidebar
+     to the node beside it, ending in a dot — the pages hang off THAT row,
+     which is what makes the panel read as a branch and not a submenu. It
+     starts inside the overlap (the panel covers the sidebar's last 6px), so
+     the line is continuous from the row's edge. */
+  .mx-branch-connector {
+    position: absolute;
+    left: 0;
+    width: 12px;
+    height: 1px;
+    background: hsl(var(--primary) / 0.4);
+    pointer-events: none;
+  }
+  .mx-branch-connector::after {
+    content: "";
+    position: absolute;
+    right: -3px;
+    top: -2px;
+    width: 5px;
+    height: 5px;
+    border-radius: 9999px;
+    background: hsl(var(--primary) / 0.55);
+  }
+  /* The node: the section's label, set off from the pages below it. */
+  .mx-branch-node {
+    border-bottom: 1px solid hsl(var(--border) / 0.35);
+    margin: 0 4px 4px 4px;
+  }
+
   .mx-nav-active {
     color: hsl(var(--primary)) !important;
     background: hsl(var(--primary) / 0.12) !important;
