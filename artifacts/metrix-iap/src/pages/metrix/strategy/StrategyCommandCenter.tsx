@@ -16,6 +16,8 @@ import {
   useGenerationRun, GenerateButton, GenerationErrorNote, ProvenanceBadge, GenerationProgressBar,
 } from "@/components/generation/GenerationControls";
 import { Map, Users, MessageSquare, ListChecks, History, Compass, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
+import { deriveRecommendations, recommendationsForStage } from "@/lib/data/recommendations";
 
 const SECTION = "Strategy · 04";
 
@@ -60,6 +62,11 @@ export function StrategyCommandCenter() {
             <StageLoopHub stages={buildLoopStages(status)} current="strategy" />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
+              {/* Direction for this stage, from the account's own rows —
+                  each tile carries the number behind it and a link to the
+                  surface that proves it. Absent when this stage has none. */}
+              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 3); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="What the data says to do next" /> : null; })()}
+
               {/* Execution card: verb title + input-metric tiles + primary action —
                   canvas's Command Center Execution-card pattern. The tile grid stays
                   unconditional on real strategy data (as it always has), independent

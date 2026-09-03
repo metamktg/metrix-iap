@@ -27,6 +27,8 @@ import {
   CheckCircle2, XCircle, Loader2,
 } from "lucide-react";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
+import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
+import { deriveRecommendations, recommendationsForStage } from "@/lib/data/recommendations";
 
 const SECTION = "Creative · 05";
 
@@ -110,6 +112,11 @@ export function CreativeCommandCenter() {
             </div>
 
             <div className="px-6 py-5 space-y-4 max-w-4xl">
+              {/* Direction for this stage, from the account's own rows —
+                  each tile carries the number behind it and a link to the
+                  surface that proves it. Absent when this stage has none. */}
+              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 4); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="What the data says to do next" /> : null; })()}
+
               {/* Execution card: verb title + input-metric tiles + primary action —
                   canvas's Command Center Execution-card pattern (COMMAND["creative.cc"]
                   verb: "Generate briefs"). The tile grid stays unconditional on real

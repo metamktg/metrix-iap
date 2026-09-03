@@ -44,6 +44,8 @@ import {
 import type { MSTMatrixColumn, MSTMatrixCell, ICPProfile, AdRecord, CellPerformanceRow } from "@/lib/data/seedTypes";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
+import { deriveRecommendations, recommendationsForStage } from "@/lib/data/recommendations";
 
 const SECTION = "MST · 06";
 
@@ -582,6 +584,11 @@ export function MstCommandCenter() {
             <StageLoopHub stages={buildLoopStages(status)} current="mst" />
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
+              {/* Direction for this stage, from the account's own rows —
+                  each tile carries the number behind it and a link to the
+                  surface that proves it. Absent when this stage has none. */}
+              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 5); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="What the data says to do next" /> : null; })()}
+
               <PrerequisiteGate
                 met={status.mst.unlocked}
                 title="Generate briefs first"

@@ -422,3 +422,60 @@ reader did not choose. The register item was written without reading that commen
 **Reach.** Chrome only. No seed, schema, or route change. Other `MetricTile` callers are
 unchanged by default; `SegmentGridModal` keeps serving the per-cell and per-card grids.
 
+## 10. Recommendations derived from the rows, not waiting on a stage (2026-09-03, autonomous pass 2)
+
+**What.** `lib/data/recommendations.ts` derives a ranked, evidence-carrying recommendation set
+from the account JSON that exists, and emits the `DeckCard` shape the recommendation surfaces
+already consume. A new `RecommendationSlider` puts that set on the account overview and, filtered
+to the stage it belongs to, on the Analysis, Strategy, Creative and MST command centres.
+
+Sources, in the order the cards rank: `scaling_playbook.avoid_combinations` (the money being
+lost), `scale_now`, the budget reallocation note, `intelligence.failure_patterns`,
+`scaling_playbook.optimize` and `validate`, `strategy.active_hypotheses`, and critical
+`data_quality` anomalies. Concept references are parsed with the existing `parseHierarchyRef`
+and joined to run-scoped `concept_rollup` rows for the measured spend, results and cost per
+result. Ad-level failure patterns are grouped by the engine's own diagnosis — nineteen identical
+tiles on the validated account is noise, one card carrying the count and the summed spend is
+direction. A `data_quality` anomaly whose campaign a failure pattern already covers is dropped
+rather than stated twice.
+
+**Why.** Every recommendation surface in the product — the Next Best Action hero, the swipe deck,
+the Action Queue — reads `iap.optimization_loop.recommendation_cards`. That array is written only
+by the Optimization Loop stage, which is execute-on-command and has never run for any account in
+the deployment, so four surfaces rendered an empty state on accounts whose strategy map, findings
+and hypothesis queue were full of direction. Owner ask (2026-09-03): "continue surfacing and
+leveraging the json outputs … recommendation tile sliders, which we need to fill the schema of on
+the main account overview and command center pages".
+
+**The honesty rules it works under.** Nothing is invented: a card's numbers come from a row, and
+a reference the rollup cannot match says so in words rather than showing a zero. Every card names
+the JSON that produced it and links to the surface where the evidence lives. `confidence` carries
+the engine's own grade where one exists; a hypothesis reads "untested", which is its epistemic
+state rather than a fabricated score. A generated card, if the loop ever runs, leads and is not
+marked derived. Cost per result throughout — never ROAS, never purchases.
+
+**Where.** `lib/data/recommendations.ts` (new, pure), `components/deck/RecommendationSlider.tsx`
+(new), `pages/metrix/AdAccountOverview.tsx` (hero, deck and slider all read the derived set),
+`analysis/AnalysisCommandCenter.tsx`, `strategy/StrategyCommandCenter.tsx`,
+`creative/CreativeCommandCenter.tsx`, `mst/MstCommandCenter.tsx` (stage-filtered slider, rendered
+only when that stage has cards). The manager overview is unchanged: its own
+`recommendation_cards` are populated.
+
+**Proof.** `lib/data/__tests__/recommendations.test.ts` (11) recomputes the numbers from the
+fixture rather than restating the module's output, and pins the ranking, the no-number case, the
+dedupe, purity, and the generated-cards-win rule.
+`components/deck/__tests__/recommendation-slider.test.tsx` (6) covers provenance on every tile, the
+absent-number line, paging controls disabled rather than hidden, and the empty state speaking in
+the account's own words. Full client suite 2,508.
+
+**Reach.** Chrome only. No seed, schema or server change — the derivation is client-side over
+data the seed already ships. `ActionQueueView` and `listen/RecommendationsView` still read the raw
+loop array and stay empty until it runs; wiring them to the same derivation is listed for the next
+pass rather than done here, because both consume the raw snake_case seed shape and adapting them
+is a change to their contracts.
+
+**Locator note.** Three assertions in `loop-command-chain.test.tsx` matched the stage tile by the
+substring `/strategy/i`; the overview now also carries recommendation prose citing the strategy
+map, so they resolve by the tile's own test id instead. This is the `check:locator-ambiguity`
+class of failure in a place that gate does not reach (it covers `SectionCard` titles only).
+

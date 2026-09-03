@@ -244,7 +244,7 @@ five before anything else.
 
 | Surface | Lift |
 |---|---|
-| Account Overview | KPI hover chart on the theme (done); loop stepper from `LOOP_STAGES` (done); Next-best-action names the runnable stage and links to it; results-by-event table gains the intent-class column. |
+| Account Overview | KPI hover chart on the theme (done); loop stepper from `LOOP_STAGES` (done); Next-best-action names the runnable stage and links to it; results-by-event table gains the intent-class column. **Recommendations now derive from the account's own rows (change log entry 10)** — the hero, the deck and a new evidence-carrying slider are populated on every configured account instead of waiting on an Optimization Loop stage that has never run. |
 | Analysis command center | Run block first; reconciliation panel always states its control (done); Findings CrossLink (done); tab rail (done). |
 | IAP Library | Top performers by dominant event (done); intent + unplaced spend in the header (done); provenance on rows (done); **next:** variable-family multi-select filter (L-15), per-chip cost in the drawer (L-5), tile → "by variable family" dimension (L-4), coverage chip → reconciliation (L-11), URL-encoded sort (L-16). |
 | Creative DNA | Lands on its scope (done); family cards get the KpiTileRow header (#38); the drill-down modal's segment rows carry confidence + coverage badges. |

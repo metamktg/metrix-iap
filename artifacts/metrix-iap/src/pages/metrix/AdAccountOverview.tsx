@@ -17,6 +17,8 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import { NextBestActionCard } from "@/components/deck/NextBestActionCard";
+import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
+import { deriveRecommendations, toDeckCards } from "@/lib/data/recommendations";
 import {
   ModuleHeader, SectionCard, SectionInfoIcon, CaveatNote, DetailReveal, deriveLabel,
   UnconfiguredState, PendingState, CrossLink, fmtUSD, fmtNum, eventLabel, resultTerm,
@@ -46,21 +48,14 @@ export function AdAccountOverview() {
   const [, navigate] = useLocation();
   const account = getAdAccount(seed, adAccountId);
 
-  const optLoop = account?.iap?.optimization_loop ?? null;
-  const deckCards: DeckCard[] = useMemo(
-    () =>
-      (optLoop?.recommendation_cards ?? []).map((c) => ({
-        id: c.id,
-        title: c.title,
-        rationale: c.rationale,
-        recommendedAction: c.recommended_action,
-        impact: c.impact,
-        confidence: c.confidence,
-        scope: c.scope,
-        actionGroup: actionGroupForScope(c.scope),
-      })),
-    [optLoop]
-  );
+  // Recommendations come from `deriveRecommendations`, not straight off
+  // `optimization_loop.recommendation_cards`: that array is written only by
+  // the Optimization Loop stage, which has never run for any account, so the
+  // hero, the deck and the queue all rendered an empty state on an account
+  // whose strategy map, findings and hypothesis queue were full. The loop's
+  // own cards still lead when it HAS run.
+  const recommendations = useMemo(() => deriveRecommendations(account), [account]);
+  const deckCards: DeckCard[] = useMemo(() => toDeckCards(recommendations), [recommendations]);
 
   // ── Hooks hoisted above early returns (Rules of Hooks) ──────────────
   const isRefetching = useMetrixIsRefetching();
@@ -245,6 +240,14 @@ export function AdAccountOverview() {
             scopeId={account.id}
             cards={deckCards}
             stageNote={account.iap?.loop_status?.find((st) => st.stage === "optimization_loop")?.note ?? null}
+          />
+
+          {/* Every recommendation the account's own rows support, ranked by
+              the money each moves, each carrying its number and a link to
+              the surface that proves it. */}
+          <RecommendationSlider
+            recs={recommendations}
+            emptyNote={account.iap?.loop_status?.find((st) => st.stage === "optimization_loop")?.note ?? null}
           />
 
           {/* Account Totals — fixed 4-tile Nocturne hero row, each tile

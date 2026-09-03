@@ -26,6 +26,8 @@ import {
   LayoutDashboard, Library, Dna, Users, LayoutGrid, Wallet, History,
   CheckCircle2, XCircle, Loader2, FileJson, FileText,
 } from "lucide-react";
+import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
+import { deriveRecommendations, recommendationsForStage } from "@/lib/data/recommendations";
 
 const SECTION = "Analysis · 03";
 
@@ -118,6 +120,11 @@ export function AnalysisCommandCenter() {
             <CreativeNextStepNudge accountId={acct.id} />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
+              {/* Direction for this stage, from the account's own rows —
+                  each tile carries the number behind it and a link to the
+                  surface that proves it. Absent when this stage has none. */}
+              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 2); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="What the data says to do next" /> : null; })()}
+
               <SectionCard
                 title="Run analysis"
                 desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically."

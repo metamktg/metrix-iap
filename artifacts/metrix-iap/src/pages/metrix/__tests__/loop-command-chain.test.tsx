@@ -222,7 +222,10 @@ describe("LoopCommandChain — configured account with full data (Bookster)", ()
   it("Strategy stage tile is not locked — analysis is complete", () => {
     selectAccount("bookster");
     renderOverview();
-    const strategyTile = screen.getByRole("button", { name: /^strategy$/i });
+    // By test id, not by name: while running the tile's accessible name
+    // carries its status, and a /strategy/i substring now also matches the
+    // overview's recommendation tiles (whose prose cites the strategy map).
+    const strategyTile = screen.getByTestId("stage-tile-strategy");
     expect(isDisabled(strategyTile)).toBe(false);
   });
 
@@ -332,15 +335,16 @@ describe("LoopCommandChain — Strategy stage running", () => {
   //
   // Note: when isRunning, StageTile appends an elapsed-time "0:00" span inside
   // the button, so its accessible name becomes "Strategy0:00" rather than the
-  // idle "Strategy". Selectors in this group use /strategy/i without anchors
-  // to match both forms.
+  // idle "Strategy". This group used an unanchored /strategy/i to match both
+  // forms; the overview now also carries recommendation tiles whose prose
+  // cites the strategy map, so that substring resolved to two elements. The
+  // stage tile's own test id names exactly one thing under either state.
 
   it("Strategy tile is not disabled while running — running ≠ locked", () => {
     mockStrategyRunning = true;
     selectAccount("bookster");
     renderOverview();
-    // Name is "Strategy0:00" when running (elapsed timer is rendered inside the tile)
-    const strategyTile = screen.getByRole("button", { name: /strategy/i });
+    const strategyTile = screen.getByTestId("stage-tile-strategy");
     expect(isDisabled(strategyTile)).toBe(false);
   });
 
@@ -359,7 +363,7 @@ describe("LoopCommandChain — Strategy stage running", () => {
     selectAccount("bookster");
     renderOverview();
     // Click the Strategy tile to open the Command Hub
-    const strategyTile = screen.getByRole("button", { name: /strategy/i });
+    const strategyTile = screen.getByTestId("stage-tile-strategy");
     fireEvent.click(strategyTile);
     // The hub header renders the status label "Running" (amber badge)
     expect(screen.getByText("Running")).toBeTruthy();
@@ -369,7 +373,7 @@ describe("LoopCommandChain — Strategy stage running", () => {
     mockStrategyRunning = true;
     selectAccount("bookster");
     renderOverview();
-    const strategyTile = screen.getByRole("button", { name: /strategy/i });
+    const strategyTile = screen.getByTestId("stage-tile-strategy");
     fireEvent.click(strategyTile);
     // When running, the hub renders "Status" not "Actions" as the section label,
     // and the generate/regenerate button is not present.
