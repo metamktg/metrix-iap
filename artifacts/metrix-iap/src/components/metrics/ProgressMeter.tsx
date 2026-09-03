@@ -91,7 +91,7 @@ export function ProgressMeter({
         {Array.from({ length: segments }, (_, i) => (
           <span
             key={i}
-            className={`flex-1 rounded-full transition-[background-color] duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${
+            className={`flex-1 rounded-full transition-[background-color] duration-300 ease-[var(--ease-out)] ${
               i < on && fillClassName ? fillClassName : ""
             }`}
             style={
@@ -134,7 +134,7 @@ export function ProgressMeter({
     >
       {measurable && (
         <div
-          className={`h-full rounded-full transition-[width] duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${fillClassName ?? ""}`}
+          className={`h-full rounded-full transition-[width] duration-300 ease-[var(--ease-out)] ${fillClassName ?? ""}`}
           style={
             fillClassName
               ? { width: `${pct}%` }

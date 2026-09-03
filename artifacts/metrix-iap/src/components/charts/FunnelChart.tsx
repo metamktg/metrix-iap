@@ -110,7 +110,7 @@ export function FunnelChart({
               onClick={() => setBasis(id)}
               aria-pressed={basis === id}
               className={`h-10 px-2.5 rounded-lg text-caption active:scale-[0.96]
-                          transition-[background-color,color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                          transition-[background-color,color,scale] duration-150 ease-[var(--ease-out)]
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
                           ${basis === id ? "bg-primary/20 text-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
@@ -147,7 +147,7 @@ export function FunnelChart({
                 />
               ) : (
                 <div
-                  className="absolute inset-y-0 left-0 transition-[width] duration-300 ease-[cubic-bezier(0.2,0,0,1)]"
+                  className="absolute inset-y-0 left-0 transition-[width] duration-300 ease-[var(--ease-out)]"
                   style={{
                     width: `${Math.min(100, ((basis === "top" ? r.share : r.step ?? r.share) ?? 0) * 100)}%`,
                     background: fill,

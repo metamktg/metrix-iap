@@ -182,7 +182,7 @@ export function TrendChart({
                 // 40px minimum hit area on a 10px swatch, via padding rather
                 // than a bigger swatch.
                 className="flex items-center gap-1.5 -my-2 py-2 pr-1 rounded active:scale-[0.96]
-                           transition-[scale,opacity] duration-150 ease-[cubic-bezier(0.2,0,0,1)]"
+                           transition-[scale,opacity] duration-150 ease-[var(--ease-out)]"
                 onMouseEnter={() => setMuted(s.key)}
                 onMouseLeave={() => setMuted(null)}
                 onFocus={() => setMuted(s.key)}

@@ -456,7 +456,7 @@ function DemographicsTab({
               {/* Stacked bar */}
               <div className="h-4 rounded-md bg-foreground/[0.04] overflow-hidden">
                 <div
-                  className="h-full flex rounded-md overflow-hidden transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-500"
+                  className="h-full flex rounded-md overflow-hidden transition-[width] duration-[400ms] ease-[var(--ease-out)]"
                   style={{ width: `${barW}%` }}
                 >
                   <div

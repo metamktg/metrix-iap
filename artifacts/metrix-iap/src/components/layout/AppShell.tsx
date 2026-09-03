@@ -79,7 +79,7 @@ export function AppShell({ children }: AppShellProps) {
           )}
           <div
             className={`fixed inset-y-0 left-0 z-50 flex transition-transform duration-200
-                        ease-[cubic-bezier(0.2,0,0,1)] ${navOpen ? "translate-x-0" : "-translate-x-full"}`}
+                        ease-[var(--ease-out)] ${navOpen ? "translate-x-0" : "-translate-x-full"}`}
             // INERT, not just aria-hidden.
             //
             // aria-hidden hides a subtree from assistive tech and does
@@ -117,7 +117,7 @@ export function AppShell({ children }: AppShellProps) {
               aria-expanded={navOpen}
               className="pressable shrink-0 h-10 w-10 ml-2 inline-flex items-center justify-center rounded-lg
                          text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06]
-                         transition-[color,background-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                         transition-[color,background-color,scale] duration-150 ease-[var(--ease-out)]
                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Menu className="w-5 h-5" aria-hidden="true" />

@@ -93,7 +93,7 @@ export function GoalProgressCard({
     <div
       className="rounded-xl border border-border/40 bg-foreground/[0.02] p-3.5
                  transition-[border-color,background-color] duration-150
-                 ease-[cubic-bezier(0.2,0,0,1)] hover:border-border/70"
+                 ease-[var(--ease-out)] hover:border-border/70"
     >
       <div className="flex items-baseline gap-2 mb-1.5 min-w-0">
         <span className={`${HEADING.h6} truncate`} title={label}>{label}</span>
@@ -135,7 +135,7 @@ export function GoalProgressCard({
             aria-label={`${label}: ${format(value)} against a goal of ${format(goal)}`}
           >
             <div
-              className="h-full rounded-full transition-[width] duration-300 ease-[cubic-bezier(0.2,0,0,1)]"
+              className="h-full rounded-full transition-[width] duration-300 ease-[var(--ease-out)]"
               style={{
                 width: `${filled * 100}%`,
                 background:

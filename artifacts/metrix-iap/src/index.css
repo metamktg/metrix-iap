@@ -153,7 +153,24 @@
   --tray-closed: 46px;
   --topbar-h: 44px;
 
-  --mx-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* ── Easing ─────────────────────────────────────────────────────────
+   * One set, three curves, each for a stated job. Before this the app ran
+   * FOUR curves across 37 sites: --mx-ease said cubic-bezier(0.2,0.8,0.2,1)
+   * while 31 hardcoded call sites actually used var(--ease-out) —
+   * the token and the practice disagreed, so nothing was consistent and
+   * the token was documentation of a lie.
+   *
+   * The built-in CSS easings are too weak to read as intentional. These
+   * are the strong variants: --ease-out starts fast, which is what makes
+   * an entrance feel like the interface responded rather than thought
+   * about it. Never ease-in on UI — it delays the first frame, exactly
+   * where the eye is, so the same duration FEELS slower. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Kept as the alias every existing call site already reads. */
+  --mx-ease: var(--ease-out);
   --mx-fast: 140ms var(--mx-ease);
   --mx-med: 220ms var(--mx-ease);
 
@@ -248,8 +265,10 @@
     background: hsl(var(--primary) / 0.24);
     border-radius: 3px;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.38);
+  @media (hover: hover) {
+    ::-webkit-scrollbar-thumb:hover {
+      background: hsl(var(--primary) / 0.38);
+    }
   }
 }
 
@@ -284,7 +303,7 @@
      clobber the centering. The rule keys on role="alertdialog" being
      OPEN, so it can never fire from a popover or a lone dialog. */
   .mx-dialog-content {
-    transition: scale 200ms cubic-bezier(0.2, 0, 0, 1), filter 200ms cubic-bezier(0.2, 0, 0, 1);
+    transition: scale 200ms var(--ease-out), filter 200ms var(--ease-out);
   }
   body:has([role="alertdialog"][data-state="open"]) .mx-dialog-content {
     scale: 0.965;
@@ -344,10 +363,12 @@
     transition: border-color var(--mx-fast);
   }
 
-  .mx-card:hover,
-  .mx-card-hero:hover,
-  .mx-kpi-tile:hover {
-    border-color: var(--mx-border-medium);
+  @media (hover: hover) {
+    .mx-card:hover,
+    .mx-card-hero:hover,
+    .mx-kpi-tile:hover {
+      border-color: var(--mx-border-medium);
+    }
   }
 
   /* ── The module header band ──────────────────────────────────────
@@ -534,8 +555,10 @@
     background: transparent;
     transition: background var(--mx-fast);
   }
-  .mx-primary-btn:hover {
-    background: hsl(var(--primary) / 0.12);
+  @media (hover: hover) {
+    .mx-primary-btn:hover {
+      background: hsl(var(--primary) / 0.12);
+    }
   }
   .mx-primary-btn:active {
     background: hsl(var(--primary) / 0.22);
@@ -555,10 +578,12 @@
     background: transparent;
     transition: background var(--mx-fast), border-color var(--mx-fast), color var(--mx-fast);
   }
-  .mx-secondary-btn:hover {
-    border-color: var(--mx-edge-strong);
-    color: hsl(var(--foreground));
-    background: hsl(var(--foreground) / 0.05);
+  @media (hover: hover) {
+    .mx-secondary-btn:hover {
+      border-color: var(--mx-edge-strong);
+      color: hsl(var(--foreground));
+      background: hsl(var(--foreground) / 0.05);
+    }
   }
 
   .mx-logo-glow {
@@ -912,7 +937,7 @@
    * override further down this file. */
   .pressable,
   .pressable-lg {
-    transition: scale 150ms var(--mx-ease, cubic-bezier(0.2, 0, 0, 1));
+    transition: scale 150ms var(--mx-ease, var(--ease-out));
   }
   .pressable:active:not(:disabled)    { scale: 0.96; }
   .pressable-lg:active:not(:disabled) { scale: 0.99; }
@@ -999,14 +1024,25 @@
     z-index: 999;
   }
 
-  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  /* Press feedback is unconditional — a touch device needs it most. Only
+     the hover half is gated, because on touch :hover latches after a tap
+     and the element stays lit until something else is tapped. */
   .active-elevate:active:not(.no-default-active-elevate)::after {
     background-color: var(--elevate-1);
   }
 
-  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
   .active-elevate-2:active:not(.no-default-active-elevate)::after {
     background-color: var(--elevate-2);
+  }
+
+  @media (hover: hover) {
+    .hover-elevate:hover:not(.no-default-hover-elevate)::after {
+      background-color: var(--elevate-1);
+    }
+
+    .hover-elevate-2:hover:not(.no-default-hover-elevate)::after {
+      background-color: var(--elevate-2);
+    }
   }
 
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
@@ -1138,7 +1174,7 @@
    once, so the swap reads as one clean statement replacing the last.
    Gentle ease-out on entry keeps the settle smooth with no flicker. */
 .mx-boot-callout {
-  transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out);
   will-change: opacity, transform;
 }
 
@@ -1244,10 +1280,12 @@
     transparent, hsl(var(--foreground) / 0.08) 48px,
     hsl(var(--foreground) / 0.08) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
 }
-.nc-table tbody tr:hover {
-  background:
-    linear-gradient(hsl(var(--foreground) / 0.04), hsl(var(--foreground) / 0.04)) no-repeat 0 0 / 100% 100%,
-    linear-gradient(to right,
-      transparent, hsl(var(--foreground) / 0.08) 48px,
-      hsl(var(--foreground) / 0.08) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
+@media (hover: hover) {
+  .nc-table tbody tr:hover {
+    background:
+      linear-gradient(hsl(var(--foreground) / 0.04), hsl(var(--foreground) / 0.04)) no-repeat 0 0 / 100% 100%,
+      linear-gradient(to right,
+        transparent, hsl(var(--foreground) / 0.08) 48px,
+        hsl(var(--foreground) / 0.08) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
+  }
 }

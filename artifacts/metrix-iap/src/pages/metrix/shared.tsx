@@ -1314,7 +1314,7 @@ export function MetricTile({
         className={cn(
           "mx-kpi-tile p-4 text-left w-full group/tile relative",
           "hover:border-primary/40 hover:bg-primary/[0.04] active:scale-[0.98]",
-          "transition-[border-color,background-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+          "transition-[border-color,background-color,scale] duration-150 ease-[var(--ease-out)]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           isPrimary && "border-primary/35 bg-primary/[0.03]"
         )}
@@ -1332,7 +1332,7 @@ export function MetricTile({
               identical to the static variant beside it and gave the reader
               no reason to press it. It brightens on hover instead of
               materialising. */}
-          <div className="mt-2 text-micro uppercase tracking-wider text-interactive/80 group-hover/tile:text-interactive transition-[color] duration-150 ease-[cubic-bezier(0.2,0,0,1)]">
+          <div className="mt-2 text-micro uppercase tracking-wider text-interactive/80 group-hover/tile:text-interactive transition-[color] duration-150 ease-[var(--ease-out)]">
             {actionLabel} →
           </div>
         </div>
@@ -1341,7 +1341,7 @@ export function MetricTile({
   }
   return (
     <div className={cn(
-      "mx-kpi-tile p-4 relative transition-[border-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+      "mx-kpi-tile p-4 relative transition-[border-color] duration-150 ease-[var(--ease-out)]",
       // group-hover only fires inside an ancestor marked .group. Several
       // call sites have none, so the lift silently never happened there.
       // The tile's own :hover is in .mx-kpi-tile and always applies.
@@ -2065,7 +2065,7 @@ export function SectionCard({
         <ChevronDown
           className={cn(
             "w-3.5 h-3.5 shrink-0 text-muted-foreground/75",
-            "transition-transform duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+            "transition-transform duration-150 ease-[var(--ease-out)]",
             bodyVisible && "rotate-180"
           )}
           aria-hidden
@@ -2095,7 +2095,7 @@ export function SectionCard({
             className={cn(
               "min-w-0 flex items-center gap-1.5 h-10 pl-3.5 pr-1 text-left rounded-l-[inherit]",
               "hover:bg-foreground/[0.02] active:scale-[0.99]",
-              "transition-[background-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+              "transition-[background-color,scale] duration-150 ease-[var(--ease-out)]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             )}
           >

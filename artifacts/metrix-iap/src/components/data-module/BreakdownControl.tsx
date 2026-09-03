@@ -67,7 +67,7 @@ export function BreakdownControl<Row extends Record<string, unknown>>({
               aria-pressed={active}
               title={disabled ? `${o.reason} ${o.hint ?? ""}`.trim() : o.hint}
               className={`h-10 px-2.5 inline-flex items-center gap-1.5 rounded-lg text-caption shrink-0
-                          transition-[background-color,color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                          transition-[background-color,color,scale] duration-150 ease-[var(--ease-out)]
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
                           ${
                             disabled
