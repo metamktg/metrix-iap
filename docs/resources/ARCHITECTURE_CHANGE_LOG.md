@@ -325,3 +325,53 @@ disclosure-rulebook, optical-authority, unused-exports, locator-ambiguity.
 **Reach.** Chrome only. Routing, landing routes, `resolveNavLocation`, the palette, the tab
 bars and the Topbar are untouched; `metrix_sidebar_collapsed` is read again.
 
+## 8. The sidebar's pages are a branch beside it (2026-09-03, third pass)
+
+**What.** Entry 7's in-place disclosure is withdrawn: nothing in the sidebar expands, in
+either width. Every section is one link and a click on it is the navigation — Analysis goes to
+the Analysis command center at once, however long the pointer was there. Resting the pointer
+on a section for 700 ms (or focusing it, or on touch a first tap) slides its pages out to the
+RIGHT of the sidebar as a branch of a flow chart: a connector from the row the reader rested on
+to a node carrying the section (its loop numeral and label), and the pages hanging off one
+rule with an elbow each, arriving in sequence (blur + 8 px, staggered). Once a branch is out,
+moving to another section moves the branch at once (real pointer travel only); the branch is
+part of the sidebar, so moving into it does not fold it; leaving the sidebar, Escape, Left, or
+focus leaving fold it after a 260 ms grace (at once for Escape and focus), and focus returns to
+the section without re-opening it. Right arrow on a section walks into its branch; Up/Down walk
+the pages. The rail does exactly the same beside its icons — one panel for both widths,
+rendered at the aside level (outside the scrolling nav), at the section's height, clamped to the
+sidebar and pointing back at the row. On touch the first tap on a section with pages opens the
+branch and the tap after that navigates; a section with no pages navigates on the first tap.
+Tooltips unchanged; nothing written out.
+
+**Why.** Owner (2026-09-03, third pass): "when I said sidebar menu hover effect I didn't mean
+expand hover — I meant it has an animation that looks like a flow chart disclosing the sub-tabs
+to the right of the menu, so someone can hover the page Analysis for example and click it right
+away and go to the Analysis command center, whereas if they hovered for 0.7 seconds it discloses
+the sub-pages from a slide-out-to-the-right animated sub-page menu." Entry 7 had read
+"disclose" as an accordion; the accordion also shifted rows under a resting pointer, which is
+the layout-shift cascade its travel guard existed for — with the branch beside the sidebar,
+nothing in the sidebar moves.
+
+**Where.** `components/layout/Sidebar.tsx` (`SectionRow` replaces `ExpandableSection`;
+`NavFlyout` replaces `RailFlyout` and serves both widths; `TouchDisclosure`; `OPEN_DWELL_MS`
+700). `index.css`: `.mx-branch-connector`, `.mx-branch-node`, `.mx-map-branch-row` now on every
+page row. `components/layout/__tests__/sidebar-nav.test.tsx` (rewritten again).
+
+**Proof.** sidebar-nav (31): the header is one link and a quick click navigates before the dwell
+(the navigation cancels it); no page list in the nav even for the active section; a pass-through
+opens nothing, a 700 ms dwell opens the branch beside the sidebar (connector, node, pages;
+`left` past the sidebar; not inside the nav) and it follows the pointer; moving into the branch
+keeps it; leaving folds after the grace; focus opens, Escape folds and returns focus, blur
+folds; a page on the branch navigates; touch tap-once opens / tap-twice navigates; hidden
+children absent; purposes are titles only; the rail's branch sits beside 56 px. Browser probe
+(`shoot-sidebar3.mjs`): quick click → `/app/listen`, 0 branches after 700 ms more; dwell → the
+Strategy branch at left 210; move → MST; inside the branch it stays; leave → 0; focus Creative →
+Right → "Library", Down → "Brief Builder", Escape → 0 and focus on Creative; rail → the Analysis
+branch at left 50; phone tap 1 opens, tap 2 navigates; no console errors. Full client suite
+2,483; gates disclosure-rulebook, interaction, locator-ambiguity, unused-exports, token-colors,
+type-scale, optical-authority, stray-shell-output.
+
+**Reach.** Chrome only. Routing, landing routes, `resolveNavLocation`, the palette, the tab
+bars and the Topbar are untouched. The compact drawer renders the same branch to the right of
+the drawer over the backdrop.
