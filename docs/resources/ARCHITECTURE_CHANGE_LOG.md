@@ -184,3 +184,41 @@ disclosure gates green.
 
 **Reach.** Chrome only; no data path. A drag that used to snap the task tray shut now stops at
 the tray's minimum width — the tray's own toggle closes it.
+
+---
+
+## 2026-09-03 · The sidebar defines the category: groups, loop stages, purpose fragments in the tree
+
+**Change.** `navTree.ts` — the one tree the sidebar, breadcrumbs, Back and the command palette
+read — now carries three more facts per section: its `group` in the product's shape (Account ·
+IAP loop · Outputs · Workspace), its `loopStage` (1–6 for Listen → Analysis → Strategy →
+Creative → MST → Action) and a `purpose` fragment saying what the module is for; every child
+carries a `purpose` fragment saying what the page proves. The expanded sidebar renders the group
+labels between groups, a stage numeral on every loop section joined by one thin spine, the
+section's purpose at the top of its opened page list, and the active page's purpose under its
+row (only the active one — the list stays a list). The collapsed rail's dividers follow the
+groups and its icon titles carry the purpose. Nothing about routing, landing, hidden children,
+the link-plus-chevron split, `inert` lists or the resize handle changed.
+
+**Order.** Action is the loop's sixth stage and sat after Reports and Exports, so the loop
+broke in the middle of the sidebar. It now follows MST and is numbered 07; Reports and Exports
+become 08 and 09 (their page eyebrows follow), and two eyebrows that had drifted are corrected
+on the way ("MST · 07" on Cross-Map is 06; the Action queue's bare "Act" reads "Action · 07").
+Routes, landings and the command palette are untouched.
+
+**Why.** Owner ask (2026-09-03): the parent-to-subpage wayfinding should be more intuitive,
+category-defining, and convey what makes the interface different. The tree already encoded the
+IAP loop as ten numbered sections but said so only in a source comment; the one-line "what this
+page is for" copy existed on six command-center hub cards and nowhere a reader lands first.
+
+**Where.** `navigation/navTree.ts` (types, `NAV_GROUP_LABEL`, data), `components/layout/
+Sidebar.tsx`, `index.css` (`.mx-loop-spine`).
+
+**Proof.** `components/layout/__tests__/sidebar-nav.test.tsx` — every section has a group and
+a fragment purpose under 56 characters with no full stop; loop stages are exactly 1…6 in order;
+group labels render in order; six stage markers; opening a section reveals its purpose and only
+the active page shows its own. The existing 27 sidebar cases, the route crawl (which reads the
+tree as text) and the locator-ambiguity gate are unchanged.
+
+**Reach.** Chrome. The fragments are chrome under the disclosure rulebook (no sentences on the
+first layer); they never describe an account, only the module.

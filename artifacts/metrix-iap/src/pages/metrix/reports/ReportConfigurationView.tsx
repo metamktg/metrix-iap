@@ -22,7 +22,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 
-const SECTION = "Reports · 07";
+const SECTION = "Reports · 08";
 
 function OptionRow<T extends string>({
   options,

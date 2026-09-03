@@ -172,6 +172,8 @@ describe("navTree landing routes", () => {
       number: "00",
       label: "X",
       icon: "LayoutDashboard" as const,
+      group: "workspace" as const,
+      purpose: "A synthetic section",
       children: [{ id: "x-a", label: "A", to: "/app/x/a" }],
     };
     expect(sectionLandingRoute(synthetic)).toBe("/app/x/a");
@@ -438,5 +440,60 @@ describe("Inline account picker", () => {
     fireEvent.click(within(menu).getByText(configured.name));
     expect(screen.queryByText("Switch ad account")).toBeNull();
     expect(JSON.parse(localStorage.getItem(SESSION_KEY)!).adAccountId).toBe(configured.id);
+  });
+});
+
+// ─── Category definition (2026-09-03) ──────────────────────────────────
+// The tree carries what each module is for and where it sits in the IAP
+// loop; the sidebar renders the product's shape (Account · IAP loop ·
+// Outputs · Workspace), a loop stage on every loop section, and a purpose
+// fragment with each opened section and the active page.
+
+describe("navTree category definition", () => {
+  it("every section carries a group and a purpose fragment — chrome, never a sentence", () => {
+    for (const s of navTree) {
+      expect(["home", "loop", "output", "workspace"]).toContain(s.group);
+      expect(s.purpose.length).toBeGreaterThan(8);
+      expect(s.purpose.length).toBeLessThanOrEqual(56);
+      expect(s.purpose.endsWith(".")).toBe(false);
+      for (const c of s.children ?? []) {
+        expect(c.purpose, `${c.id} purpose`).toBeTruthy();
+        expect(c.purpose!.length).toBeLessThanOrEqual(56);
+      }
+    }
+  });
+
+  it("the loop sections carry stages 1…6 in tree order and nothing else does", () => {
+    const stages = navTree.filter((s) => s.group === "loop").map((s) => s.loopStage);
+    expect(stages).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(navTree.filter((s) => s.group !== "loop").every((s) => s.loopStage == null)).toBe(true);
+  });
+});
+
+describe("Sidebar category definition (expanded mode)", () => {
+  it("names the product's shape between groups, in order", () => {
+    renderExpanded();
+    const labels = screen.getAllByTestId("nav-group-label").map((el) => el.textContent);
+    expect(labels).toEqual(["Account", "IAP loop", "Outputs", "Workspace"]);
+  });
+
+  it("marks every loop section with its stage", () => {
+    renderExpanded();
+    expect(screen.getAllByTestId("nav-loop-stage").map((el) => el.textContent)).toEqual(["1", "2", "3", "4", "5", "6"]);
+  });
+
+  it("opening a section reveals what it is for, and the active page says what it proves", () => {
+    renderExpanded();
+    const nav = screen.getByLabelText("Main workspace navigation");
+    fireEvent.click(sectionHeaderLink(nav, "Analysis"));
+    const analysis = navTree.find((s) => s.id === "analysis")!;
+    // The purpose line lives inside the disclosure: visible once open.
+    const purposes = screen.getAllByTestId("nav-section-purpose").map((el) => el.textContent);
+    expect(purposes).toContain(analysis.purpose);
+    // Navigate to a child and its purpose appears on the active row only.
+    fireEvent.click(within(nav).getByRole("link", { name: /^IAP Library/ }));
+    const child = analysis.children!.find((c) => c.id === "analysis-library")!;
+    const shown = screen.getAllByTestId("nav-child-purpose").map((el) => el.textContent);
+    expect(shown).toEqual([child.purpose]);
   });
 });

@@ -11,7 +11,7 @@ import { ModuleHeader, ModuleScopeGate, SectionCard, PendingState, CrossLink } f
 import { FORMAT_LABEL } from "../reports/reportFormatLabels";
 import { FileText, Check } from "lucide-react";
 
-const SECTION = "Exports · 08";
+const SECTION = "Exports · 09";
 
 export function ExportsReportsView() {
   const seed = useMetrixSeed();

@@ -17,12 +17,13 @@ import {
   Zap,
   Settings2,
 } from "lucide-react";
-import { navTree, sectionLandingRoute, visibleChildren } from "@/navigation/navTree";
+import { NAV_GROUP_LABEL, navTree, sectionLandingRoute, visibleChildren } from "@/navigation/navTree";
+import { TYPE } from "@/pages/metrix/typography";
 import { useNavBadges } from "@/navigation/useNavBadges";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDragResize } from "@/hooks/useDragResize";
 import { AccountSwitcher } from "./AccountSwitcher";
-import type { NavSection, NavChild, NavIconName } from "@/navigation/navTree";
+import type { NavSection, NavChild, NavIconName, NavGroup } from "@/navigation/navTree";
 
 // The sidebar never expands past this width by dragging — 216px is the
 // fixed "full" size; the slide handle can only shrink it down to the
@@ -153,14 +154,24 @@ function ChildRow({
           onNavigate?.();
         }}
         aria-current={active ? "page" : undefined}
+        title={child.purpose ? `${child.label} — ${child.purpose}` : undefined}
         className={cn(
-          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-caption transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+          "flex items-center gap-1.5 pl-3 pr-2 min-h-8 py-1 rounded-r text-caption transition-[color,background-color,border-color,box-shadow,opacity,transform]",
           active
             ? "font-semibold text-foreground bg-primary/8"
             : "text-foreground/65 hover:text-foreground hover:bg-primary/10"
         )}
       >
-        <span className="flex-1 truncate leading-tight">{child.label}</span>
+        <span className="flex-1 min-w-0 leading-tight">
+          <span className="block truncate">{child.label}</span>
+          {/* The active page says what it proves — one fragment, only on the
+              row the reader is on, so the list stays a list. */}
+          {active && child.purpose && (
+            <span className={cn(TYPE.microLabel, "block normal-case tracking-normal font-normal text-muted-foreground/75 truncate mt-0.5")} data-testid="nav-child-purpose">
+              {child.purpose}
+            </span>
+          )}
+        </span>
         {child.placeholder && !active && (
           <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
             Soon
@@ -183,16 +194,21 @@ function ChildRow({
 // expandable section's icon reopens the full rail on that section instead;
 // clicking a leaf section's icon navigates directly, same as expanded mode.
 
-const COLLAPSED_DIVIDER_AFTER = new Set(["overview", "analysis", "mst", "exports"]);
+/** The rail's dividers mark the product's shape: after the account, after the loop, after the outputs. */
+function dividerAfter(section: NavSection, next: NavSection | undefined): boolean {
+  return next != null && next.group !== section.group;
+}
 
 function CollapsedItem({
   section,
   badgeCounts,
   onExpandToSection,
+  showDivider,
 }: {
   section: NavSection;
   badgeCounts: Record<string, number | null>;
   onExpandToSection: (sectionId: string) => void;
+  showDivider: boolean;
 }) {
   const [location] = useLocation();
   const active = isSectionActive(section, location);
@@ -215,7 +231,7 @@ function CollapsedItem({
           }}
           aria-current={active ? "page" : undefined}
           aria-label={section.label}
-          title={section.label}
+          title={`${section.label} · ${section.purpose}`}
           className={cn(
             "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] relative overflow-hidden",
             active
@@ -236,7 +252,7 @@ function CollapsedItem({
         </a>
       </li>
 
-      {COLLAPSED_DIVIDER_AFTER.has(section.id) && (
+      {showDivider && (
         <li aria-hidden="true" className="flex items-center justify-center py-0.5">
           <span className="w-5 h-px bg-border/35 rounded-full" />
         </li>
@@ -283,10 +299,10 @@ function ExpandableSection({
   const sectionBadge = section.badgeKey ? badgeCounts[section.badgeKey] ?? null : null;
 
   return (
-    <li>
+    <li data-loop-stage={section.loopStage ?? undefined} className={cn(section.loopStage != null && "mx-loop-spine")}>
       <div
         className={cn(
-          "flex items-stretch rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] select-none",
+          "relative flex items-stretch rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] select-none",
           landingActive
             ? "mx-nav-active font-medium"
             : sectionActive
@@ -314,6 +330,19 @@ function ExpandableSection({
             )}
           />
           <span className="flex-1 text-left truncate">{section.label}</span>
+          {/* The loop stage — the product's shape made visible on every row of it. */}
+          {section.loopStage != null && (
+            <span
+              aria-hidden="true"
+              data-testid="nav-loop-stage"
+              className={cn(
+                "text-micro-num tabular-nums w-4 h-4 rounded-full border flex items-center justify-center shrink-0",
+                sectionActive ? "border-primary/50 text-interactive" : "border-border/50 text-muted-foreground/75",
+              )}
+            >
+              {section.loopStage}
+            </span>
+          )}
           {section.placeholder && (
             <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
               Soon
@@ -361,6 +390,11 @@ function ExpandableSection({
           aria-label={`${section.label} pages`}
           className="overflow-hidden mt-0.5 ml-3 pl-0 border-l border-border/20 space-y-0.5 pb-1"
         >
+          {/* What this module is for — the category it defines. One fragment,
+              revealed with the pages, so the closed header stays one line. */}
+          <li role="presentation" className={cn(TYPE.microLabel, "normal-case tracking-normal font-normal text-muted-foreground/75 pl-3 pr-2 pt-1 pb-0.5 leading-snug")} data-testid="nav-section-purpose">
+            {section.purpose}
+          </li>
           {children.map(child => (
             <ChildRow
               key={child.id}
@@ -591,18 +625,26 @@ export function Sidebar() {
             <li aria-hidden="true" className="flex items-center justify-center py-0.5">
               <span className="w-5 h-px bg-border/35 rounded-full" />
             </li>
-            {visibleTree.map((section) => (
+            {visibleTree.map((section, idx) => (
               <CollapsedItem
                 key={section.id}
                 section={section}
                 badgeCounts={badgeCounts}
                 onExpandToSection={handleExpandToSection}
+                showDivider={dividerAfter(section, visibleTree[idx + 1])}
               />
             ))}
           </ol>
         ) : (
           <ol className="space-y-0.5 list-none p-0 m-0">
-            {visibleTree.map((section) =>
+            {visibleTree.map((section, idx) => [
+              // Group label where the product's shape changes: Account ·
+              // IAP loop · Outputs · Workspace. Presentation, not a control.
+              (idx === 0 || visibleTree[idx - 1]!.group !== section.group) ? (
+                <li key={`group-${section.group}`} role="presentation" className={cn("px-2.5 pb-1", idx === 0 ? "pt-1" : "pt-3")} data-testid="nav-group-label">
+                  <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{NAV_GROUP_LABEL[section.group as NavGroup]}</span>
+                </li>
+              ) : null,
               section.children?.length ? (
                 <ExpandableSection
                   key={section.id}
@@ -618,8 +660,8 @@ export function Sidebar() {
                   section={section}
                   badgeCounts={badgeCounts}
                 />
-              )
-            )}
+              ),
+            ])}
           </ol>
         )}
       </nav>

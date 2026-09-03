@@ -304,7 +304,7 @@ function QueueCard({
 // "Act section" comment) — reached only via the "Open full queue"
 // cross-link from Account Overview, so the eyebrow is the bare label.
 
-const SECTION = "Act";
+const SECTION = "Action · 07";
 
 // ─── Empty state ──────────────────────────────────────────────────────
 

@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from "@workspace/command-deck/components/ui/alert-dialog";
 
-const SECTION = "Reports · 07";
+const SECTION = "Reports · 08";
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });

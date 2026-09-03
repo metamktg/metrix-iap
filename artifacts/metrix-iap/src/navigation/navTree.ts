@@ -13,9 +13,9 @@
 //   4  Strategy    → Overview / Strategy Map / Avatars·ICP·PMF / Communications / Hypothesis Queue / History
 //   5  Creative    → Library / Brief Builder / Creative Scan / Import & Export
 //   6  MST         → Cross-Map / Sprints / Performance / Direction
-//   7  Reports     → Report Builder / Configuration / History
-//   8  Exports     → Analysis / Strategy JSON / Reports / Brief   (open to all during beta; advanced-tier gating is a post-beta consideration, not enforced today)
-//   9  Action      → Action Queue / Agent (Coming Soon)
+//   7  Action      → Action Queue / Agent (Coming Soon)   (the loop's sixth stage — beside MST so the loop reads as one shape)
+//   8  Reports     → Report Builder / Configuration / History
+//   9  Exports     → Analysis / Strategy JSON / Reports / Brief   (open to all during beta; advanced-tier gating is a post-beta consideration, not enforced today)
 //   10 Settings    → General / Users & Permissions / Security / Integrations / Billing
 
 export type NavBadgeKey =
@@ -37,10 +37,28 @@ export type NavIconName =
   | "Zap"
   | "Settings2";
 
+/**
+ * Where a section sits in the product's shape. The IAP loop (Listen →
+ * Analysis → Strategy → Creative → MST → Action) is the differentiation the
+ * sidebar exists to convey; Reports and Exports are what comes out of it;
+ * Settings is the workspace. Rendered as group labels and a connected loop
+ * spine in the expanded sidebar — never as a route or a filter.
+ */
+export type NavGroup = "home" | "loop" | "output" | "workspace";
+
+export const NAV_GROUP_LABEL: Record<NavGroup, string> = {
+  home: "Account",
+  loop: "IAP loop",
+  output: "Outputs",
+  workspace: "Workspace",
+};
+
 export type NavChild = {
   id: string;
   label: string;
   to: string;
+  /** One fragment saying what this page proves or does — chrome, ≤ 56 chars, never a sentence. */
+  purpose?: string;
   badgeKey?: NavBadgeKey;
   dataSource?: string;
   placeholder?: boolean;
@@ -59,6 +77,12 @@ export type NavSection = {
   number: string;
   label: string;
   icon: NavIconName;
+  /** Which part of the product shape this section belongs to (see NavGroup). */
+  group: NavGroup;
+  /** 1-based position in the IAP loop for `group: "loop"` sections; the spine connects them in order. */
+  loopStage?: number;
+  /** One fragment saying what this module is for — the category it defines. Chrome, ≤ 56 chars. */
+  purpose: string;
   // Leaf section: direct link, no expand/collapse
   to?: string;
   // Additional locations that should mark this section active.
@@ -131,6 +155,8 @@ export function resolveNavLocation(location: string): NavMatch | null {
 export const navTree: NavSection[] = [
   {
     id: "overview",
+    group: "home",
+    purpose: "Where this account stands, and the next runnable stage",
     number: "01",
     label: "Account Overview",
     icon: "LayoutDashboard",
@@ -141,6 +167,7 @@ export const navTree: NavSection[] = [
       {
         id: "overview-updates",
         label: "Updates",
+        purpose: "Platform and account updates",
         to: "/app/overview/updates",
         dataSource: "platform_updates",
       },
@@ -148,6 +175,9 @@ export const navTree: NavSection[] = [
   },
   {
     id: "listen",
+    group: "loop",
+    loopStage: 1,
+    purpose: "What the data is saying — alerts, signal, next moves",
     number: "02",
     label: "Listen",
     icon: "Radio",
@@ -156,12 +186,14 @@ export const navTree: NavSection[] = [
       {
         id: "listen-alerts",
         label: "Alerts",
+        purpose: "High-impact signals worth acting on now",
         to: "/app/listen/alerts",
         dataSource: "signal_cards, data_caveats",
       },
       {
         id: "listen-signal",
         label: "Signal",
+        purpose: "The full signal feed for this scope",
         to: "/app/listen/signal",
         badgeKey: "signals",
         dataSource: "signal_cards",
@@ -169,6 +201,7 @@ export const navTree: NavSection[] = [
       {
         id: "listen-recommendations",
         label: "Recommendations",
+        purpose: "Suggested next actions from what was heard",
         to: "/app/listen/recommendations",
         dataSource: "recommendation_cards",
       },
@@ -176,6 +209,9 @@ export const navTree: NavSection[] = [
   },
   {
     id: "analysis",
+    group: "loop",
+    loopStage: 2,
+    purpose: "Objective reads from subjective media, per result event",
     number: "03",
     label: "Analysis",
     icon: "BarChart2",
@@ -188,48 +224,56 @@ export const navTree: NavSection[] = [
         // back to or reach again on purpose. The menu now matches the rail.
         id: "analysis-overview",
         label: "Overview",
+        purpose: "Headline reads, trend and drill-in modules",
         to: "/app/analysis/overview",
         dataSource: "campaign_summary, v3_variable_performance",
       },
       {
         id: "analysis-performance",
         label: "Ad Performance",
+        purpose: "Ad tiers, lift and the buyer-intent funnel",
         to: "/app/analysis/performance",
         dataSource: "campaign_summary, performance_by_cell",
       },
       {
         id: "analysis-library",
         label: "IAP Library",
+        purpose: "Cell and variable performance, by result scope",
         to: "/app/analysis/library",
         dataSource: "performance_by_cell, v3_variable_performance",
       },
       {
         id: "analysis-dna",
         label: "Creative DNA",
+        purpose: "Per-variable lift and tested combinations",
         to: "/app/analysis/dna",
         dataSource: "v3_variable_performance, variable_combinations",
       },
       {
         id: "analysis-audience",
         label: "Audience",
+        purpose: "Who responded — segments, clusters, signal",
         to: "/app/analysis/audience",
         dataSource: "demographic_registration_signal",
       },
       {
         id: "analysis-placements",
         label: "Placements",
+        purpose: "Where delivery happened and what it produced",
         to: "/app/analysis/placements",
         dataSource: "v3_placement_signal, c4e_placement_signal",
       },
       {
         id: "analysis-budget",
         label: "Budget",
+        purpose: "Spend allocation by event, concept and placement",
         to: "/app/analysis/budget",
         dataSource: "campaign_summary, performance_by_cell",
       },
       {
         id: "analysis-history",
         label: "History",
+        purpose: "Every analysis run, its window and its files",
         to: "/app/analysis/history",
         dataSource: "manual_analysis_runs",
       },
@@ -238,6 +282,7 @@ export const navTree: NavSection[] = [
         // menu row — it is a drill-down of that page, not a peer of it.
         id: "analysis-funnel",
         label: "Engagement Funnel",
+        purpose: "Full engagement funnel for the selected reads",
         to: "/app/analysis/funnel",
         dataSource: "performance_by_cell",
         hidden: true,
@@ -247,6 +292,7 @@ export const navTree: NavSection[] = [
         // real accounts, but it is an Analysis page and must say so.
         id: "analysis-findings",
         label: "Findings",
+        purpose: "Verdicts and recommendations from the analysis",
         to: "/app/analyze/findings",
         dataSource: "intelligence, recommendation_cards",
         hidden: true,
@@ -255,6 +301,9 @@ export const navTree: NavSection[] = [
   },
   {
     id: "strategy",
+    group: "loop",
+    loopStage: 3,
+    purpose: "Pillars, profiles and hypotheses the analysis earned",
     number: "04",
     label: "Strategy",
     icon: "Compass",
@@ -263,36 +312,42 @@ export const navTree: NavSection[] = [
       {
         id: "strategy-overview",
         label: "Overview",
+        purpose: "The configurable strategy view",
         to: "/app/strategy/overview",
         dataSource: "message_pillars, active_hypotheses",
       },
       {
         id: "strategy-map",
         label: "Strategy Map",
+        purpose: "How pillars, source cells and hypotheses connect",
         to: "/app/strategy/map",
         dataSource: "message_pillars, performance_by_cell",
       },
       {
         id: "strategy-avatars",
         label: "Avatars / ICP / PMF",
+        purpose: "The customer profiles the matrix targets",
         to: "/app/strategy/avatars",
         dataSource: "historical_matrix_4x4, demographic_registration_signal",
       },
       {
         id: "strategy-communications",
         label: "Communications",
+        purpose: "Who is responding, to what, and why",
         to: "/app/strategy/communications",
         dataSource: "message_pillars, performance_by_cell",
       },
       {
         id: "strategy-hypotheses",
         label: "Hypothesis Queue",
+        purpose: "Active hypotheses and validation status",
         to: "/app/strategy/hypotheses",
         dataSource: "active_hypotheses, message_pillars",
       },
       {
         id: "strategy-history",
         label: "History",
+        purpose: "Past strategy generation runs",
         to: "/app/strategy/history",
         dataSource: "generation_runs",
       },
@@ -300,6 +355,9 @@ export const navTree: NavSection[] = [
   },
   {
     id: "creative",
+    group: "loop",
+    loopStage: 4,
+    purpose: "Briefs and assets built from the strategy, ready to run",
     number: "05",
     label: "Creative",
     icon: "FileText",
@@ -308,12 +366,14 @@ export const navTree: NavSection[] = [
       {
         id: "creative-library",
         label: "Library",
+        purpose: "The creative asset register",
         to: "/app/creative/library",
         dataSource: "local_book2_library, imported_creative_briefs",
       },
       {
         id: "creative-builder",
         label: "Brief Builder",
+        purpose: "Execution-ready briefs from the strategy",
         to: "/app/creative/builder",
         badgeKey: "briefs",
         dataSource: "draft_briefs",
@@ -321,12 +381,14 @@ export const navTree: NavSection[] = [
       {
         id: "creative-scan",
         label: "Creative Scan",
+        purpose: "Assets checked against the matrix rules",
         to: "/app/creative/scan",
         dataSource: "local_book2_library",
       },
       {
         id: "creative-import-export",
         label: "Import & Export",
+        purpose: "Stage exports and creatives, take briefs out",
         to: "/app/creative/import-export",
         dataSource: "manual_imports",
       },
@@ -334,6 +396,9 @@ export const navTree: NavSection[] = [
   },
   {
     id: "mst",
+    group: "loop",
+    loopStage: 5,
+    purpose: "The matrix sprint test: isolate what won and why",
     number: "06",
     label: "MST",
     icon: "Layers",
@@ -342,12 +407,14 @@ export const navTree: NavSection[] = [
       {
         id: "mst-cross-map",
         label: "Cross-Map",
+        purpose: "Planned cells crossmapped to observed performance",
         to: "/app/mst/cross-map",
         dataSource: "performance_by_cell, message_pillars, historical_matrix_4x4",
       },
       {
         id: "mst-sprints",
         label: "Sprints",
+        purpose: "The 4×4 test matrix for this account",
         to: "/app/mst/sprints",
         badgeKey: "mst",
         dataSource: "historical_matrix_4x4",
@@ -355,75 +422,17 @@ export const navTree: NavSection[] = [
       {
         id: "mst-creative-scan",
         label: "Creative Scan",
+        purpose: "Sprint assets validated before launch",
         to: "/app/mst/creative-scan",
         dataSource: "local_book2_library",
       },
       {
         id: "mst-direction",
         label: "Direction",
+        purpose: "Scale, optimize, validate, retire — next sprint",
         to: "/app/mst/direction",
         dataSource: "optimization_loop",
         placeholder: true,
-      },
-    ],
-  },
-  {
-    id: "reports",
-    number: "07",
-    label: "Reports",
-    icon: "FileBarChart",
-    landing: "/app/reports",
-    children: [
-      {
-        id: "reports-builder",
-        label: "Report Builder",
-        to: "/app/reports/builder",
-        dataSource: "report_sections",
-      },
-      {
-        id: "reports-configuration",
-        label: "Configuration",
-        to: "/app/reports/configuration",
-        dataSource: "report_builder defaults + workspace overrides",
-      },
-      {
-        id: "reports-history",
-        label: "History",
-        to: "/app/reports/history",
-        dataSource: "report_history",
-      },
-    ],
-  },
-  {
-    id: "exports",
-    number: "08",
-    label: "Exports",
-    icon: "Download",
-    landing: "/app/exports",
-    children: [
-      {
-        id: "exports-analysis",
-        label: "Analysis",
-        to: "/app/exports/analysis",
-        dataSource: "performance_by_cell, v3_variable_performance",
-      },
-      {
-        id: "exports-strategy",
-        label: "Strategy JSON",
-        to: "/app/exports/strategy",
-        dataSource: "message_pillars, active_hypotheses",
-      },
-      {
-        id: "exports-reports",
-        label: "Reports",
-        to: "/app/exports/reports",
-        dataSource: "export_formats, report_history",
-      },
-      {
-        id: "exports-brief",
-        label: "Brief",
-        to: "/app/exports/brief",
-        dataSource: "draft_briefs",
       },
     ],
   },
@@ -435,7 +444,10 @@ export const navTree: NavSection[] = [
     // reader who followed that button had no crumb, no highlight and no
     // way back except the browser.
     id: "action",
-    number: "09",
+    group: "loop",
+    loopStage: 6,
+    purpose: "Approve or dismiss what the loop recommends next",
+    number: "07",
     label: "Action",
     icon: "Zap",
     landing: "/app/act/queue",
@@ -443,12 +455,14 @@ export const navTree: NavSection[] = [
       {
         id: "action-queue",
         label: "Action Queue",
+        purpose: "Recommendations to approve into the tray or dismiss",
         to: "/app/act/queue",
         dataSource: "recommendation_cards, optimization_loop",
       },
       {
         id: "action-agent",
         label: "Agent",
+        purpose: "Autonomous execution — coming soon",
         to: "/app/action/agent",
         badgeKey: "agent",
         placeholder: true,
@@ -456,7 +470,80 @@ export const navTree: NavSection[] = [
     ],
   },
   {
+    id: "reports",
+    group: "output",
+    purpose: "Stakeholder-ready reads of the loop's evidence",
+    number: "08",
+    label: "Reports",
+    icon: "FileBarChart",
+    landing: "/app/reports",
+    children: [
+      {
+        id: "reports-builder",
+        label: "Report Builder",
+        purpose: "Compose a stakeholder report from the evidence",
+        to: "/app/reports/builder",
+        dataSource: "report_sections",
+      },
+      {
+        id: "reports-configuration",
+        label: "Configuration",
+        purpose: "Defaults and overrides for every report",
+        to: "/app/reports/configuration",
+        dataSource: "report_builder defaults + workspace overrides",
+      },
+      {
+        id: "reports-history",
+        label: "History",
+        purpose: "Generated reports, reproduced exactly",
+        to: "/app/reports/history",
+        dataSource: "report_history",
+      },
+    ],
+  },
+  {
+    id: "exports",
+    group: "output",
+    purpose: "Take the evidence out of Metrix, in its own shape",
+    number: "09",
+    label: "Exports",
+    icon: "Download",
+    landing: "/app/exports",
+    children: [
+      {
+        id: "exports-analysis",
+        label: "Analysis",
+        purpose: "Cell and variable rows as data",
+        to: "/app/exports/analysis",
+        dataSource: "performance_by_cell, v3_variable_performance",
+      },
+      {
+        id: "exports-strategy",
+        label: "Strategy JSON",
+        purpose: "Pillars and hypotheses as JSON",
+        to: "/app/exports/strategy",
+        dataSource: "message_pillars, active_hypotheses",
+      },
+      {
+        id: "exports-reports",
+        label: "Reports",
+        purpose: "Report files in their export formats",
+        to: "/app/exports/reports",
+        dataSource: "export_formats, report_history",
+      },
+      {
+        id: "exports-brief",
+        label: "Brief",
+        purpose: "Briefs, ready to hand off",
+        to: "/app/exports/brief",
+        dataSource: "draft_briefs",
+      },
+    ],
+  },
+  {
     id: "settings",
+    group: "workspace",
+    purpose: "Workspace, people, security, integrations",
     number: "10",
     label: "Settings",
     icon: "Settings2",
@@ -465,34 +552,40 @@ export const navTree: NavSection[] = [
       {
         id: "settings-general",
         label: "General",
+        purpose: "Account facts and derived objectives",
         to: "/app/settings/general",
       },
       {
         id: "settings-users",
         label: "Users & Permissions",
+        purpose: "People, roles and account grants",
         to: "/app/settings/users",
         dataSource: "workspace_settings",
       },
       {
         id: "settings-security",
         label: "Security",
+        purpose: "Sessions and passwords",
         to: "/app/settings/security",
       },
       {
         id: "settings-integrations",
         label: "Integrations",
+        purpose: "Meta connection and staged files",
         to: "/app/settings/integrations",
         dataSource: "manual_imports",
       },
       {
         id: "settings-billing",
         label: "Billing",
+        purpose: "Plan and invoices",
         to: "/app/settings/billing",
         dataSource: "workspace_settings",
       },
       {
         id: "settings-provenance",
         label: "Data Provenance",
+        purpose: "Where every number came from",
         to: "/app/settings/provenance",
         dataSource: "integrity_note",
       },

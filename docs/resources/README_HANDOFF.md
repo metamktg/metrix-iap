@@ -72,6 +72,11 @@ Unplaced; "All conversions" blends terminal outcomes only). A re-run moves an ac
 new grain. Open: report export and deep-dive print one blended cost; creative-evidence's
 synthesised cell row.
 
+**Panels and the sidebar (2026-09-03, later).** Change log entries 4–5; register §14. One
+persisted width and expand behaviour for every drawer and wide popover, one keyboard-operable
+resize handle; the nav tree carries group, loop stage and purpose, and the sidebar renders the
+product's shape from them (Action now sits beside MST as the loop's sixth stage).
+
 **Triple pass, shipped (2026-09-03).** Register §14, last entries. The live pass found that the
 reconciliation control was read from the file's period rather than the run window; `buildTruth` now
 takes the window and records every rejected control with its reason. The friction audit's fixes (24 px
