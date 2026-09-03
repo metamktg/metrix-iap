@@ -783,3 +783,12 @@ the three new optional-input caveats are collapsed by default. Proof: sidebar-na
 incl. the resting-pointer guard), sidebar-operability restored, the six design gates, a browser
 probe of the state sequence, screenshots of both modes and the phone drawer.
 
+**Shipped to app.metrix.ad (2026-09-03, 07:07–07:20Z).** PR #189 merged as `c85b55c` (CI green
+on the head `6c9f8b4`; the branch was restarted from `7b4836f`, so main's tree after the merge
+is the branch head's tree — `git diff 6c9f8b4 origin/main` empty). Smokes on that head: all
+fifteen green with the chromium executable set. The workspace merged main without a change of
+its own this time (HEAD `c338872`, clean, diff against origin/main empty). Deployment
+`329ef7e0` verified against a local production build of main: all 130 files under `assets/`
+(entry `index-I-x2lDLl.js` and every chunk) carry the local md5s — 130 match, 0 differ, 0
+missing; `/api/healthz` 200. The live sidebar is the collapsible one with pages on intent.
+
