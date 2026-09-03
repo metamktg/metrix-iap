@@ -358,6 +358,37 @@ export interface TruthSet {
   period: { start: string; end: string } | null;
   attribution_settings?: string[];
   result_types?: string[];
+  /** Candidates rejected for the run window (spec §6a: period is part of the compatibility key). */
+  rejected?: TruthRejection[];
+}
+
+export interface TruthRejection {
+  source: TruthSource;
+  label: string;
+  import_ids: string[];
+  reason: string;
+}
+
+/**
+ * Period compatibility of a candidate control with the run window. Daily
+ * sources are summed from rows already filtered to the window, so they
+ * always fit. A whole-period file (one reporting-start on every row) and a
+ * file's totals row carry the FILE's period, so they fit only when that
+ * period is the window: a totals row for 2026-08-03 → 09-02 is not a
+ * control for 2026-08-01 → 08-30, and using it understates coverage. When
+ * the file states no reporting end, only the start is checked and the run
+ * notes that the end could not be verified.
+ */
+function periodFit(grain: ReportGrain, window: { start: string; end: string } | undefined, kind: "daily" | "whole" | "totals"): { ok: boolean; reason: string | null; note: string | null } {
+  if (!window || kind === "daily") return { ok: true, reason: null, note: null };
+  const p = grain.period;
+  if (!p) return { ok: false, reason: `its reporting period could not be read; the run window is ${window.start} → ${window.end}`, note: null };
+  const endKnown = p.end > p.start || !grain.aggregate_shape;
+  const what = kind === "totals" ? "Meta's totals row" : "the whole-period Ad Summary";
+  if (p.start !== window.start || (endKnown && p.end !== window.end)) {
+    return { ok: false, reason: `${what} covers ${p.start} → ${endKnown ? p.end : "an unstated end"}; the run window is ${window.start} → ${window.end}`, note: null };
+  }
+  return { ok: true, reason: null, note: endKnown ? null : `[Truth] ${what} states no reporting end; its start matches the window (${window.start}) and the end is assumed to.` };
 }
 
 /**
@@ -407,12 +438,20 @@ function conflictsBetween(selected: Record<string, number>, alternative: TruthAl
  */
 export function buildTruth(
   reports: readonly ReportInput[],
-  opts: { instancesByName?: ReadonlyMap<string, readonly string[]> } = {},
+  opts: { instancesByName?: ReadonlyMap<string, readonly string[]>; window?: { start: string; end: string } } = {},
 ): TruthSet {
-  const wholeWithId = reports.filter((r) => r.grain.report_class === "ad_summary" && r.grain.ad_id_joinable);
+  const rejected: TruthRejection[] = [];
+  const notes: string[] = [];
+  const fits = (r: ReportInput, kind: "daily" | "whole" | "totals", label: string, source: TruthSource): boolean => {
+    const f = periodFit(r.grain, opts.window, kind);
+    if (f.note) notes.push(f.note);
+    if (!f.ok) rejected.push({ source, label, import_ids: [r.import_id], reason: f.reason! });
+    return f.ok;
+  };
+  const wholeWithId = reports.filter((r) => r.grain.report_class === "ad_summary" && r.grain.ad_id_joinable && fits(r, r.grain.aggregate_shape ? "whole" : "daily", "the whole-period Ad Summary (per Ad ID)", "ad_summary"));
   const dailyWithId = reports.filter((r) => r.grain.report_class === "time_series" && r.grain.ad_id_joinable);
-  const byName = reports.filter((r) => (r.grain.report_class === "ad_summary" || r.grain.report_class === "time_series") && !r.grain.ad_id_joinable);
-  const withTotals = reports.filter((r) => r.totals_row);
+  const byName = reports.filter((r) => (r.grain.report_class === "ad_summary" || r.grain.report_class === "time_series") && !r.grain.ad_id_joinable && fits(r, r.grain.aggregate_shape ? "whole" : "daily", "the name-keyed Ad Summary", "ad_summary"));
+  const withTotals = reports.filter((r) => r.totals_row && fits(r, "totals", "Meta's totals row", "totals_row"));
 
   const candidates: { key: string; label: string; reports: ReportInput[]; source: TruthSource; precedence: string }[] = [
     { key: "whole_id", label: "the whole-period Ad Summary (per Ad ID)", reports: wholeWithId, source: "ad_summary" as TruthSource, precedence: "whole-period Ad Summary keyed by Ad ID" },
@@ -471,10 +510,24 @@ export function buildTruth(
     }
   }
   if (!selected) {
-    return { source: "none", precedence: "no control source", alternatives: [], conflicts: [], import_ids: [], identity_kind: null, per_ad: new Map(), account: null, currency: null, account_ids: [], period: null };
+    return {
+      source: "none",
+      precedence: rejected.length > 0 ? "no compatible control source for this window" : "no control source",
+      alternatives: [],
+      conflicts: [...notes, ...rejected.map((r) => `[Truth] Rejected ${r.label}: ${r.reason}.`)],
+      import_ids: [],
+      identity_kind: null,
+      per_ad: new Map(),
+      account: null,
+      currency: null,
+      account_ids: [],
+      period: null,
+      rejected,
+    };
   }
   selected.alternatives = alternatives;
-  selected.conflicts = alternatives.flatMap((a) => conflictsBetween(selected!.account ?? {}, a));
+  selected.conflicts = [...notes, ...rejected.map((r) => `[Truth] Rejected ${r.label}: ${r.reason}.`), ...alternatives.flatMap((a) => conflictsBetween(selected!.account ?? {}, a))];
+  selected.rejected = rejected;
   return selected;
 }
 
@@ -634,7 +687,9 @@ export function buildLedger(args: {
 
   const noControlDetail =
     truth.source === "none"
-      ? "Stage an Ad Summary export (with the Ad ID column) to reconcile this breakdown."
+      ? truth.rejected && truth.rejected.length > 0
+        ? `${truth.rejected[0]!.reason[0]!.toUpperCase()}${truth.rejected[0]!.reason.slice(1)}. Export an Ad Summary (with the Ad ID column) for exactly this window, or with a Day breakdown, to reconcile.`
+        : "Stage an Ad Summary export (with the Ad ID column) to reconcile this breakdown."
       : truth.identity_kind === "ad_name"
       ? 'Add "Ad ID" to the Ad Summary export to reconcile per ad; ad names are reused across instances.'
       : null;

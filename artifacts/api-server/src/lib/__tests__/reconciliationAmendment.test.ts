@@ -211,3 +211,45 @@ describe("creative versions under one Ad ID", () => {
     expect(body[0]).toMatchObject({ date_start: "2026-08-01", date_end: "2026-08-30" });
   });
 });
+
+describe("period compatibility of the control (live finding 2026-09-03)", () => {
+  // The tester's run: a 30-day demographic pivot whose totals row covers the
+  // FILE's period, and a run window that is not that period. The ledger had
+  // used the totals row anyway and reported 28.54% where the same-window
+  // read was 59.3%.
+  const demo = report("demo", buildDemographicCsv({ grain: "reconciled", totalsRow: true }), "demographic");
+  const filePeriod = demo.grain.period!;
+
+  it("accepts the totals row when the window is the file's period", () => {
+    const truth = buildTruth([demo], { window: { start: filePeriod.start, end: filePeriod.end } });
+    expect(truth.source).toBe("totals_row");
+    expect(truth.rejected ?? []).toHaveLength(0);
+  });
+
+  it("rejects the totals row for a window inside the file's period, says why, and names the export that fixes it", () => {
+    const window = { start: filePeriod.start, end: filePeriod.start };
+    const truth = buildTruth([demo], { window });
+    expect(truth.source).toBe("none");
+    expect(truth.precedence).toContain("no compatible control source");
+    expect(truth.rejected).toHaveLength(1);
+    expect(truth.rejected![0]!.reason).toContain(`the run window is ${window.start} → ${window.end}`);
+    expect(truth.conflicts.join(" ")).toContain("[Truth] Rejected Meta's totals row");
+    const { observations } = buildObservations([demo]);
+    const { rows } = buildLedger({ observations, truth, reports: [demo] });
+    const account = rows.find((r) => r.scope === "account" && r.metric === "amount_spent")!;
+    expect(account.truth_value).toBeNull();
+    expect(account.evidence_state).toBe("unreconciled");
+    expect(account.compatibility_failures[0]!.kind).toBe("no_control_source");
+    expect(account.compatibility_failures[0]!.detail).toContain("for exactly this window, or with a Day breakdown");
+  });
+
+  it("rejects a whole-period Ad Summary whose period is not the window, but keeps a daily one", () => {
+    const whole = report("whole", buildAdSummaryCsv({ withAdId: true, daily: false }), "ad_summary");
+    const daily = report("daily", buildAdSummaryCsv({ withAdId: true, daily: true }), "ad_summary");
+    const window = { start: "2020-01-01", end: "2020-01-31" };
+    expect(buildTruth([whole], { window }).source).toBe("none");
+    expect(buildTruth([daily], { window }).source).toBe("ad_summary");
+    // Without a window (older callers) nothing is rejected.
+    expect(buildTruth([whole]).source).toBe("ad_summary");
+  });
+});

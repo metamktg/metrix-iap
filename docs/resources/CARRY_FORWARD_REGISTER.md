@@ -579,3 +579,19 @@ reads the new labels. Workspace merged main (`153daf4`, empty diff), deployment 
 live entry bundle `index-BEARo3NI.js` equals the local build of the same tree, the `CreativeCard`
 chunk md5 matches, healthz 200. The one live check still waiting on the owner: an analysis run on
 `manual_AHXANj6Vjozp` on this build, then `check:reconciliation-ledger`.
+
+**`[shipped]` Triple-pass validation, live finding: the control must share the run window (2026-09-03).**
+The tester ran analysis twice on the evidence-layer build (latest run `47505a6a`, window 2026-08-01
+→ 08-30). The ledger re-derives exactly from the raw rows (per-ad observed spend matches for every ad
+in every class), but its control was Meta's totals row from the 30-day demographic pivot — the
+FILE's period, not the window — so it reported 28.54% demographic coverage ($1,257.34 of $4,405.61)
+where the same-window daily-attributable read is 59.3% ($1,257.34 of $2,121.74). The whole-period
+Ad Summary (Jul 1 → Sep 2) had already been dropped by the window filter. Fix: `buildTruth` takes the
+run window and rejects whole-period sources and totals rows whose period is not the window
+(`periodFit`), records each rejection with its reason (`TruthSet.rejected`, `[Truth] Rejected …`
+run notes), and the ledger's `no_control_source` detail names the export that fixes it (an Ad Summary
+for exactly the window, or with a Day breakdown). Honest consequence for the tester's current files:
+`truth_source: none`, every breakdown `unreconciled` with that detail, and the surfaces show "not
+reconciled · control: no compatible control source for this window" while the daily-attributable
+coverage tag still gives the 59.3% context. A run over the pivot's own 30-day period reconciles
+against the totals row as before.
