@@ -952,23 +952,25 @@ export function AudienceView() {
                         <div className="flex items-center gap-2 min-w-0">
                           <span className={cn(TYPE.label, "uppercase tracking-widest text-muted-foreground/75")}>Coverage</span>
                           <EvidenceChip state={demoReconciliation.by_metric.find((m) => m.metric === "amount_spent")?.evidence_state ?? null} testId="audience-coverage-state" />
-                          <span className={cn(TYPE.caption, "text-muted-foreground/75 truncate")}>
+                          <span className={cn(TYPE.caption, "text-muted-foreground/75 min-w-0")}>
                             {demoReconciliation.ads_reconciled} of {demoReconciliation.ads_total} ads reconciled
                             {demoReconciliation.ads_missing_from_breakdown > 0 ? ` · ${demoReconciliation.ads_missing_from_breakdown} absent` : ""}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4 flex-wrap flex-1 min-w-0">
+                        {/* Phone: the strips take their own row and the reveal its own line,
+                            so nothing overlaps at 390 px (visual pass 2026-09-03). */}
+                        <div className="flex items-center gap-4 flex-wrap flex-1 min-w-0 basis-full sm:basis-auto">
                           {demoReconciliation.by_metric
                             .filter((m) => ["amount_spent", "impressions", "results", "link_clicks"].includes(m.metric))
                             .slice(0, 3)
                             .map((m) => (
-                              <CoverageStrip key={m.metric} coveragePct={m.coverage_pct} metricLabel={metricLabel(m.metric).toLowerCase()} testId={`coverage-${m.metric}`} className="w-40 shrink-0" />
+                              <CoverageStrip key={m.metric} coveragePct={m.coverage_pct} metricLabel={metricLabel(m.metric).toLowerCase()} testId={`coverage-${m.metric}`} className="flex-1 min-w-[140px] sm:w-40 sm:flex-none" />
                             ))}
                         </div>
                         <EvidenceExplainer
                           state={demoReconciliation.by_metric.find((m) => m.metric === "amount_spent")?.evidence_state ?? null}
                           coveragePct={demoReconciliation.by_metric.find((m) => m.metric === "amount_spent")?.coverage_pct ?? null}
-                          className="shrink-0"
+                          className="shrink-0 basis-full sm:basis-auto"
                         />
                       </div>
                     </div>

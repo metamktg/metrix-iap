@@ -595,3 +595,24 @@ for exactly the window, or with a Day breakdown). Honest consequence for the tes
 reconciled · control: no compatible control source for this window" while the daily-attributable
 coverage tag still gives the 59.3% context. A run over the pivot's own 30-day period reconciles
 against the totals row as before.
+
+**`[shipped]` Triple-pass e2e validation (2026-09-03).** Owner ask: full e2e triple pass, high
+confidence, no friction. **Automated:** all 18 Metrix IAP e2e smokes pass (login, forgot-password,
+register persistence, slider persistence, funnel filter, engagement funnel, section-info icons and
+tooltips, Avatars tooltips, ad-account overview, review queue, hover-popover, manual import, failure
+injection, route crawl 70 routes × 3 accounts, shared-layout morph, DOM validity 800 controls); full
+client vitest 190 files / 2,388 tests; api-server CI list 32 files / 490; all fifteen gates. A new
+friction audit (scratch harness, seed fixture, 2 accounts × 51 routes × 1440 and 390 px = 204 visits)
+measured: 0 console errors, 0 navigation errors, 0 nested buttons, 0 horizontal overflow, 0 stale
+copy from the retired warning states. What it found and what shipped: an amber border on every
+unmapped creative card in the IAP Library (69 on the manual account) → neutral border, the "Map
+creative" pill remains the affordance; controls under the 24 px AA target floor (14 px info icons,
+17 px sort headers, 20 px reveal triggers and card actions, the 21 px map pill, an unlabeled 14 px
+collapse chevron) → `hit-target-24` / 24 px hit areas and an accessible name; the Audience coverage
+row overlapping its reveal at 390 px → wraps. Left as designed: warning-tinted alert cards, "Act
+now" recommendations and data-quality notes (content, not chrome); honest "No … yet" empties.
+**Live:** healthz 200; the five evidence tables carry RLS with zero anon/authenticated grants; the
+tester's latest run (`47505a6a`) re-derives exactly from its raw rows (0 per-ad mismatches over 94
+ad × class rows) and exposed the period-compatibility defect fixed above. **Visual:** page-level
+screenshots at 1440 and 390 px of Audience (cluster + ranked), the segment drill-down, Avatars, the
+variable drill-down and the Creative dialog tabs, judged against the rulebook.
