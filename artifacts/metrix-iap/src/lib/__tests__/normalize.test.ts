@@ -33,6 +33,7 @@ import {
   compactIcpName,
   fmtDelta,
   humanizeEnum,
+  briefStatusLabel,
   normalizeMetricsInProse,
   isUsableName,
   usableName,
@@ -48,6 +49,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof normalize> = [
   "splitTitle",
   "fmtDelta",
   "humanizeEnum",
+  "briefStatusLabel",
   "parseHierarchyRef",
   "formatHierarchyRef",
   "extractVariableCodes",
@@ -388,6 +390,29 @@ describe("fmtDelta", () => {
     // value was not addressable as a single string — by a test, or by a
     // reader's find-in-page.
     expect(typeof fmtDelta(12.5)).toBe("string");
+  });
+});
+
+describe("briefStatusLabel — one map, because two drifted", () => {
+  // The Brief Builder and the Creative Command Center each kept a private
+  // STATUS_LABEL. When the engine grew `generated_high`, only the Builder
+  // was taught the humanizeEnum fallback; the Command Center — the page
+  // the sidebar lands on — printed GENERATED_HIGH in an uppercase chip.
+  // A second copy of a lookup is a second chance to miss the update.
+  it("names the statuses the seed writes", () => {
+    expect(briefStatusLabel("draft_from_seed")).toBe("Draft");
+    expect(briefStatusLabel("validation_draft_from_seed")).toBe("Validation draft");
+    expect(briefStatusLabel("control_refresh_from_seed")).toBe("Control refresh");
+  });
+
+  it("reads a status the map has never heard of, rather than shouting it", () => {
+    expect(briefStatusLabel("generated_high")).toBe("Generated · High");
+    expect(briefStatusLabel("some_future_state")).toBe("Some future state");
+  });
+
+  it("says nothing when there is no status", () => {
+    expect(briefStatusLabel(null)).toBe("");
+    expect(briefStatusLabel("  ")).toBe("");
   });
 });
 

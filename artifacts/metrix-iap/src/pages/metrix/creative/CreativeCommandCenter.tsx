@@ -27,16 +27,11 @@ import {
   CheckCircle2, XCircle, Loader2,
 } from "lucide-react";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
+import { briefStatusLabel } from "@/lib/normalize";
 import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
 import { deriveRecommendations, recommendationsForStage } from "@/lib/data/recommendations";
 
 const SECTION = "Creative · 05";
-
-const STATUS_LABEL: Record<string, string> = {
-  draft_from_seed: "Draft",
-  validation_draft_from_seed: "Validation draft",
-  control_refresh_from_seed: "Control refresh",
-};
 
 type FormatTab = "static" | "video" | "ugc";
 
@@ -231,8 +226,14 @@ export function CreativeCommandCenter() {
                         <span className="inline-flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/50 px-1.5 py-0.5 rounded leading-none">
                           <FileText className="w-2.5 h-2.5" /> {b.asset_type}
                         </span>
-                        <span className="text-label font-semibold uppercase tracking-wide text-status-warning border border-status-warning/30 bg-status-warning/20 px-1.5 py-0.5 rounded leading-none">
-                          {STATUS_LABEL[b.status] ?? b.status}
+                        {/* A brief's status is a stage, not a problem. Every one
+                            of these wore the amber warning tint, so "Generated ·
+                            High" — the best outcome the engine can report — was
+                            painted the same colour as a failure, and a page of
+                            them read as a page of warnings. Neutral chip, same
+                            as the Brief Builder's. */}
+                        <span className="text-label font-medium shrink-0 inline-flex border border-border/40 bg-foreground/[0.04] rounded-full px-2 py-0.5 text-foreground/70 leading-none">
+                          {briefStatusLabel(b.status)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 mb-2">

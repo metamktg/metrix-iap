@@ -613,3 +613,54 @@ chart that will drift, and the two that were left were the two a demo actually o
 **Reach.** Chrome only. `?run=` is read by `usePersistedRunScope`, so every page using the picker
 accepts it; no other query contract changed.
 
+
+---
+
+## 15. The friction gate, and a badge that called success a warning (2026-09-03, autonomous pass 7)
+
+**What.**
+
+- **`check:friction` is promoted from a scratch harness to a checked-in gate.** It walks every
+  route `navTree.ts` and `App.tsx` declare (51 today, legacy redirects excluded so a finding is
+  never filed against the wrong page) for two fixture accounts at 1440 and 390 px, and separates
+  two kinds of finding. **Defects**, never baselined, must stay at zero: an uncaught exception or
+  console error, horizontal overflow, a `<button>` nested in a `<button>`, and copy the
+  signal/coverage rework retired. **Ratchets**, held per route in
+  `scripts/src/check-friction.baseline.json`, count first-layer warning boxes, warning glyphs and
+  prose over the rulebook's 220 characters — a route may lower its count freely, and raising it
+  fails. No-data phrases are held as a SET per route rather than a count: "No creative scan yet"
+  on the Creative Scan page is the loop's honest empty state, while the same sentence on Analysis
+  Overview means a surface stopped reading a dataset its siblings still have, and only the phrase
+  and the route together can tell those apart.
+- **A brief's status stopped being painted as a problem.** Every status chip on the Creative
+  Command Center wore the amber warning tint, so `Generated · High` — the best outcome the
+  generation engine can report — was the same colour as a failure, and a page of briefs read as a
+  page of warnings. The chip is now the Brief Builder's neutral one. That page also fell through
+  to the RAW enum: its private `STATUS_LABEL` knew three statuses, the engine writes more, and
+  `GENERATED_HIGH` sat on screen in an uppercase chip. `humanizeEnum` had already been written for
+  exactly this bug and wired into the Builder only — because the lookup existed TWICE. There is
+  now one `briefStatusLabel` in `lib/normalize.ts` and no private copy. The same stale-map
+  fallback in `CreativeExpandDialog`'s QA chip reads through `humanizeEnum` too.
+- **The motion, focus and numeral sweep found nothing to fix, and that is the finding.** Reduced
+  motion is honoured globally (`index.css` zeroes `--transition-speed`, `--mx-fast`, `--mx-med`
+  and every animation/transition duration under `prefers-reduced-motion: reduce`) and by the three
+  components that animate in JS. `:focus-visible` paints a full-opacity 2px primary ring with a
+  contrast test already guarding the value. Every numeric table cell and tile figure across
+  nineteen data-heavy route visits already computes `font-variant-numeric: tabular-nums` —
+  measured, not assumed.
+
+**Where.** `scripts/src/check-friction.mjs` (new), `scripts/src/check-friction.baseline.json`
+(new), `scripts/package.json`, `lib/normalize.ts`, `lib/__tests__/normalize.test.ts`,
+`creative/CreativeCommandCenter.tsx`, `creative/CreativeBriefBuilderView.tsx`,
+`components/creative/CreativeExpandDialog.tsx`, and `tests/e2e/metrix-iap-ad-account-overview.spec.ts`.
+
+**What proves it.** The gate found the badge fix on its second run: 206 first-layer warning boxes
+across the app before, 160 after, with `/app/creative` reported below baseline. `normalize.test.ts`
+covers `briefStatusLabel` including a status no map has heard of. The tabular-numeral and
+reduced-motion results are browser measurements, not source reads.
+
+**Reach.** `check:friction` is NOT wired into `.replit`, for the same reason
+`check:accessible-names`, `check:chart-geometry` and `check:unexplained-dashes` are not: it needs a
+running dev server, and a validation that cannot run without one fails every validation sweep. It
+is an operator gate, run beside its three siblings. `briefStatusLabel` is display-only — no seed
+field, route or stored value changed.

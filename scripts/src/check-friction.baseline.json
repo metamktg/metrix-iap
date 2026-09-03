@@ -1,0 +1,328 @@
+{
+  "/app/account": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 2,
+    "noData": []
+  },
+  "/app/act/queue": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 12,
+    "noData": [
+      "No results on BOOK0_APP_MAY26_IOS_MST _V1 [iOS]",
+      "No results on BOOK2_LEAD_JUN26_QUIZ_V1",
+      "No results on BOOK2_LEAD_JUN26_QUIZ_V3"
+    ]
+  },
+  "/app/action/agent": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/analysis": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/analysis/audience": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/analysis/budget": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/analysis/dna": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/analysis/funnel": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": [
+      "No conversion data in this window",
+      "No intent data in this window"
+    ]
+  },
+  "/app/analysis/history": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/analysis/library": {
+    "warnBoxes": 4,
+    "warnIcons": 2,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/analysis/overview": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": [
+      "No data uploaded yet"
+    ]
+  },
+  "/app/analysis/performance": {
+    "warnBoxes": 16,
+    "warnIcons": 12,
+    "longProse": 6,
+    "noData": [
+      "No act now signals this run."
+    ]
+  },
+  "/app/analysis/placements": {
+    "warnBoxes": 8,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/analyze/findings": {
+    "warnBoxes": 2,
+    "warnIcons": 14,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/creative": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 2,
+    "noData": []
+  },
+  "/app/creative/builder": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/creative/import-export": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/creative/library": {
+    "warnBoxes": 2,
+    "warnIcons": 8,
+    "longProse": 0,
+    "noData": [
+      "No creative-scoped recommendations yet — these appear once the optimization loop has run for this account."
+    ]
+  },
+  "/app/creative/scan": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": [
+      "No results yet",
+      "No scan results yet — staged assets appear here, one row per asset, once the first scan runs."
+    ]
+  },
+  "/app/exports": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/exports/analysis": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/exports/brief": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/exports/reports": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/exports/strategy": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/listen": {
+    "warnBoxes": 0,
+    "warnIcons": 2,
+    "longProse": 0,
+    "noData": [
+      "No high-impact signals right now for this account."
+    ]
+  },
+  "/app/listen/alerts": {
+    "warnBoxes": 48,
+    "warnIcons": 4,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/listen/recommendations": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/listen/signal": {
+    "warnBoxes": 4,
+    "warnIcons": 4,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/mst": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/mst/creative-scan": {
+    "warnBoxes": 2,
+    "warnIcons": 6,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/mst/cross-map": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/mst/direction": {
+    "warnBoxes": 2,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/mst/sprints": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/overview/updates": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/reports": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/reports/builder": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 4,
+    "noData": [
+      "No data available for this section in the current analysis window."
+    ]
+  },
+  "/app/reports/configuration": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/reports/history": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/settings/billing": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/settings/general": {
+    "warnBoxes": 2,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/settings/integrations": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/settings/provenance": {
+    "warnBoxes": 16,
+    "warnIcons": 12,
+    "longProse": 12,
+    "noData": []
+  },
+  "/app/settings/security": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/settings/users": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/strategy": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/strategy/avatars": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 4,
+    "noData": []
+  },
+  "/app/strategy/communications": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/strategy/history": {
+    "warnBoxes": 4,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/strategy/hypotheses": {
+    "warnBoxes": 4,
+    "warnIcons": 18,
+    "longProse": 0,
+    "noData": []
+  },
+  "/app/strategy/map": {
+    "warnBoxes": 0,
+    "warnIcons": 0,
+    "longProse": 3,
+    "noData": []
+  },
+  "/app/strategy/overview": {
+    "warnBoxes": 2,
+    "warnIcons": 0,
+    "longProse": 0,
+    "noData": []
+  }
+}
