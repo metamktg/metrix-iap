@@ -455,9 +455,10 @@ async function main() {
         await mockApis(ctx);
         await createManualAccount(page);
 
-        // Stage the Demographics CSV first (alone) so we stay on Step 1 —
-        // auto-advance to Review only fires once BOTH required CSVs are
-        // staged, and the creative-mapping UI only exists on Step 1.
+        // Stage the Demographics CSV first. One delivery export is enough to
+        // review, but the panel never auto-advances on a file staged in this
+        // session — the reader stays on Step 1 for the second export and the
+        // creatives, and moves on by pressing Review.
         const demoPath = writeTempCsv("demo.csv", VALID_DEMO_CSV);
         await page.locator('input[type="file"][accept=".csv,.xlsx"]').setInputFiles([demoPath]);
         await page.locator("text=Demographics").first().waitFor({ state: "visible" });
@@ -483,10 +484,16 @@ async function main() {
         await page.locator("text=Mapped to: UGC_Testimonial_v1").waitFor({ state: "visible", timeout: 10_000 });
 
         // Stage the Placements CSV — auto-detected from Placement/Impression
-        // device headers. This completes both required slots, which
-        // auto-advances the panel straight to the Review step.
+        // device headers — then press Review: the panel stays on Step 1 until
+        // the reader says they are done staging.
         const placementPath = writeTempCsv("placement.csv", VALID_PLACEMENT_CSV);
         await page.locator('input[type="file"][accept=".csv,.xlsx"]').setInputFiles([placementPath]);
+        // The slot's own remove control is the staged signal (same as the
+        // XLSX test): it exists only once the file is staged in that slot.
+        await page.locator('[aria-label="Remove Placements file"]').waitFor({ state: "visible", timeout: 15_000 });
+        const reviewBtn = page.getByRole("button", { name: "Review", exact: true });
+        await reviewBtn.waitFor({ state: "visible", timeout: 10_000 });
+        await reviewBtn.click();
 
         await page.locator("text=STEP 2 OF 2 — REVIEW").waitFor({ state: "visible", timeout: 10_000 });
         await page.locator("text=Demographics — demo.csv").waitFor({ state: "visible" });
