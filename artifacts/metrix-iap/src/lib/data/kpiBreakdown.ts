@@ -67,7 +67,32 @@ function eventKeyOfMetric(metricId: string): string | null {
   return null;
 }
 
+/**
+ * The IAP Library's tiles carry `lib_*` ids for quantities the platform ids
+ * already name (buildLibraryMetricCatalog). Until a Library tile could only
+ * open an avatar × placement grid that aliased them locally, that was
+ * invisible; now a tile opens this breakdown, and an unaliased id would make
+ * every row read "n/a" for a metric the totals can compute. One map, here,
+ * rather than a copy per drill-down surface.
+ *
+ * `lib_cells` is deliberately absent: a count of creative cells is not
+ * derivable from a segment's totals, which is why that tile is not clickable.
+ */
+const LIBRARY_METRIC_ALIASES: Record<string, string> = {
+  lib_spend: "spend",
+  lib_cpa: "cpa_blended",
+};
+
 export function metricValueFromTotals(metricId: string, t: BreakdownTotals): number | null {
+  const alias = LIBRARY_METRIC_ALIASES[metricId];
+  if (alias) return metricValueFromTotals(alias, t);
+  // Results and the awareness rate have no plain platform id — the event-keyed
+  // forms (`result:`/`rate:`) carry an event this blended tile does not.
+  if (metricId === "lib_results") return t.results;
+  if (metricId === "lib_result_rate")
+    return t.results != null && t.impressions != null && t.impressions > 0 && t.results <= t.impressions
+      ? (t.results / t.impressions) * 100
+      : null;
   if (metricId.startsWith("result:")) return t.results;
   if (metricId.startsWith("cost:")) return t.spend != null && t.results != null && t.results > 0 ? t.spend / t.results : null;
   if (metricId.startsWith("rate:"))
@@ -103,6 +128,10 @@ export function metricValueFromTotals(metricId: string, t: BreakdownTotals): num
 
 export function formatBreakdownValue(metricId: string, v: number | null): string {
   if (v == null) return "n/a";
+  const alias = LIBRARY_METRIC_ALIASES[metricId];
+  if (alias) return formatBreakdownValue(alias, v);
+  if (metricId === "lib_results") return fmtNum(v);
+  if (metricId === "lib_result_rate") return fmtPct(v);
   if (metricId.startsWith("result:")) return fmtNum(v);
   if (metricId.startsWith("cost:")) return fmtUSD(v);
   if (metricId.startsWith("rate:")) return fmtPct(v);
@@ -120,7 +149,8 @@ export function formatBreakdownValue(metricId: string, v: number | null): string
 
 /** Lower is better for cost metrics — drives default sort direction. */
 export function lowerIsBetter(metricId: string): boolean {
-  return metricId === "cpc" || metricId === "cpm" || metricId === "cpa_blended";
+  const id = LIBRARY_METRIC_ALIASES[metricId] ?? metricId;
+  return id === "cpc" || id === "cpm" || id === "cpa_blended" || id.startsWith("cost:");
 }
 
 // ─── Breakdown row shape ──────────────────────────────────────────────

@@ -1288,12 +1288,18 @@ export function SkeletonTileRow({ count = 4 }: { count?: number }) {
 // single most important tile in a row group to establish visual authority.
 export function MetricTile({
   label, value, sub, onClick, variant = "default",
+  actionLabel = "Segment breakdown",
+  actionTitle = "Open segment breakdown for this metric",
 }: {
   label: React.ReactNode;
   value: string;
   sub?: string;
   onClick?: () => void;
   variant?: "primary" | "default";
+  /** What the press opens. Say the truth: a tile that opens every dimension
+   *  must not promise only segments (register L-4). */
+  actionLabel?: string;
+  actionTitle?: string;
 }) {
   const isPrimary = variant === "primary";
   const labelCls = isPrimary
@@ -1312,7 +1318,8 @@ export function MetricTile({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           isPrimary && "border-primary/35 bg-primary/[0.03]"
         )}
-        title="Open segment breakdown for this metric"
+        title={actionTitle}
+        data-testid="metric-tile"
       >
         {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
         <div className="relative z-10">
@@ -1326,7 +1333,7 @@ export function MetricTile({
               no reason to press it. It brightens on hover instead of
               materialising. */}
           <div className="mt-2 text-micro uppercase tracking-wider text-interactive/80 group-hover/tile:text-interactive transition-[color] duration-150 ease-[cubic-bezier(0.2,0,0,1)]">
-            Segment breakdown →
+            {actionLabel} →
           </div>
         </div>
       </button>
