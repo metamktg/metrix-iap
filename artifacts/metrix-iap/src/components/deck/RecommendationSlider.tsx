@@ -120,8 +120,11 @@ function Tile({ rec }: { rec: DerivedRecommendation }) {
       )}
 
       {/* First layer: one complete clause of the reason as the reveal's
-          label. The reason itself, the recommended action and the
-          provenance open on click. Never a paragraph on the face. */}
+          label; the reason, the recommended action and the provenance open
+          on click. Never a paragraph on the face (owner, 2026-09-03), and
+          not a CSS clamp either, which keeps the paragraph in the DOM where
+          the friction gate counts it. */}
+      {/* payload-ok: owner (2026-09-03), progressive disclosure: a first clause as the label, the full rationale one click away in the reveal */}
       <DetailReveal
         eyebrow="Why this action"
         label={deriveLabel(rec.rationale, 72)}

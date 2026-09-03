@@ -507,6 +507,7 @@ hovers, the KPI hover chart.
 | O3 | **The same recommendation list on four surfaces** (Account Overview, Analysis, Strategy, the Action Queue). Each is a stage filter of one list; a reader may read it as four lists. Option: the command-centre rails show only their stage's top three with a "See all N in the Action Queue" link. | `recommendationsForStage`, `RecommendationSlider` | Leave. |
 | O4 | **The section chevrons** in the sidebar (they read "expand", they mean "branch to the right on dwell"). Keep, or replace with a branch glyph. | `Sidebar.tsx` `SectionRow` | Keep. |
 | O5 | **The marketing claims on the login hero** ("+34% Avg. ROAS Increase", "$2.4M Wasted Spend Saved") mirror the marketing site's copy and name ROAS, which the product itself never reports. Out of this pass's scope (the marketing site owns the copy). | `LoginPage.tsx` `PROOF_POINTS`, `artifacts/marketing/src/content.ts` | Leave. |
+| O7 | **Two info affordances on one module.** Many modules render `desc` (an ⓘ beside the title) and a `SectionInfoIcon` in the `right` slot (a second ⓘ). One is enough; the e2e tooltip specs pin the right-slot one, so folding them is a spec change too. | `SectionCard` call sites | Leave. |
 | O6 | **`prototype` and `design:ux-copy`** are not installed in this environment; their steps were done by hand (§4.3, §2.3). If the owner wants the real skills run, install them and re-run those two steps only. | | Done by hand. |
 
 ---
@@ -524,12 +525,13 @@ layer, and want their disclosure back. This reverses D1 in §1.3.
 
 | Before | After | Where |
 |---|---|---|
-| Next Best Action: full title, full rationale paragraph on the face | Title clamped to two lines (full text in `title`); one clause of the rationale (`deriveLabel`, 120) on the face; the paragraph behind "Why this action" | `components/deck/NextBestActionCard.tsx` |
-| Recommendation tile: rationale paragraph on the face (this pass's D1) | One clause as the reveal's label; the reason, the action and the provenance open on click | `components/deck/RecommendationSlider.tsx` |
+| Next Best Action: full title, full rationale paragraph on the face | Title clamped to two lines (full text in `title`); one complete clause of the rationale (`deriveLabel`, 120, marked `payload-ok` with the owner's reason) on the face; the paragraph behind "Why this action". A CSS clamp was tried first and rejected: it keeps the paragraph in the DOM, where `check:friction` counts it as first-layer prose | `components/deck/NextBestActionCard.tsx` |
+| Recommendation tile: rationale paragraph on the face (this pass's D1) | One clause as the reveal's label (`deriveLabel`, 72, `payload-ok`); the reason, the action and the provenance open on click; a hypothesis tile shows no "no measured figure" line, because a target is not a measurement | `components/deck/RecommendationSlider.tsx` |
 | Hypothesis "Target": the first 24 characters of the criteria sentence | A figure or nothing: `hypothesisTarget()` reads the first CPA / CVR / CTR / "cost per X" target ("CPA ≤ $25", "CVR ≥ 15%"), else no metric row (a hypothesis has a target, not a measurement, so no "no measured figure" line either) | `lib/data/recommendations.ts` |
 
 The friction ratchets this pass had raised on `/app/account` and `/app/mst` (first-layer
-prose) come back down with it.
+prose) come back down with it; the final baseline is re-written on the final head and its
+diff against the pre-pass baseline is recorded in §7.3.
 
 **9.2 "Keep the module, tile and visualised-data titles outside the tile border: hierarchical
 authority directly above the module, left-aligned title, right-aligned filters, breakdown and
@@ -551,3 +553,72 @@ header is a control inside a card by design.
 **9.3 "Each UI module tile must be revised with the UI/UX skills."** The crawl was re-run on
 the new anatomy at both widths and every module's shot reviewed against the craft bar; the
 per-module findings and fixes follow in §9.4.
+
+**9.4 Per-module review on the new anatomy** (crawl 2: 51 routes × 2 widths, 0 errors,
+0 overflow, 0 empty, 0 unlabeled controls).
+
+| Module | Read on the shot | Change |
+|---|---|---|
+| Account Overview | Totals labels above the tiles; "Account Totals" head on the ground; the Next Best Action face is a title, one clause, chips and a reveal | none further |
+| Analysis Overview | KPI labels, the result-type donut's label, the Daily trend head (title left, metric chips right) and "Spend by month" all outside their tiles | donut and Daily trend hoisted |
+| Ad Performance | "Signals worth acting on" head with its info right; the tiers table and modules follow | none further |
+| IAP Library | Four MetricTiles with labels above; heights were uneven where one tile carried a sub line | tiles in a row share a height (`h-full` / `flex-1`) |
+| Strategy Overview | The narrow "Hypothesis status" column wrapped its title to two lines under `text-wrap: balance` and pushed its controls under it | module titles are one line (`whitespace-nowrap`), controls wrap first |
+| Avatars / ICP / PMF | ICP profiles with sort chips right, segments, top performers, audience signal: all heads on the ground | none further |
+| Creative Library | "Next moves" head; the concept grid is a tile grid by nature (a card per cell), untouched | none |
+| Report Builder | Audience and Sections heads above their rail tiles, the "9 of 9" count right-aligned | hoisted |
+| Listen, Exports, Action Queue | Verified in §2 shots; SignalDeck cards and export cards keep their card headers because the card IS the unit | none |
+| Popovers, drawers, the deep dive | Headers stay inside: a floating surface carries its own title by necessity | none |
+
+Open craft items found on the walk, recorded for the owner (not changed): several modules
+carry two info affordances (`desc` beside the title and a `SectionInfoIcon` in the `right`
+slot, both ⓘ); one is enough and the e2e tooltip specs pin the right-slot one (O7 in §8.2).
+
+### 7.3 The triple pass, on the final head
+
+Three full passes were run, each after the fixes the previous one produced; the third is the
+record. Every number below names its command.
+
+| Check | Command | Pass 1 (`a2ecf19`) | Pass 2 (`60decf0`) | Pass 3 (final head) |
+|---|---|---|---|---|
+| Typecheck | `pnpm run typecheck` | clean | clean | clean |
+| Client suite | `pnpm --filter @workspace/metrix-iap run test` | 208 / 208 files, 2,539 tests | 208 / 208, 2,539 | 208 / 208, 2,539; the two edits after that run (the first-clause reason, the titled metric tile) re-validated by typecheck and the 60-file / 746-test subset they touch |
+| Twenty static gates | `check:disclosure-rulebook` … `check:cohort-reach` | 20 / 20 | 20 / 20 | 20 / 20 (`payload-legibility` flagged the first-clause reason once; suppressed with the owner's reason on the line) |
+| Four browser gates | `check:friction`, `check:accessible-names`, `check:chart-geometry`, `check:unexplained-dashes` | friction ratchets raised by D1 | re-baselined | 4 / 4: friction re-baselined on the final head (161 warning boxes, 81 glyphs, 41 long prose blocks, 12 no-data phrases; the pre-pass file counted 53 prose blocks), `unexplained-dashes` clean at 684 dashes after the lifted metric label lost a null value its sibling (fixed with the tile's own title) |
+| Route crawl | `smoke:metrix-iap-route-crawl` (70 routes × 3 accounts) | PASS | PASS | PASS |
+| Sixteen e2e smokes | `smoke:login-page-layout` … `smoke:forgot-password` | 13 / 16 (three expectation strings carried the old em-dash copy) | 16 / 16 after aligning them | 16 / 16 |
+| Visual crawl | `shoot:routes`, 51 routes × 2 widths | 0 errors, 0 overflow, 0 empty, 7 unlabeled controls at 390 px | 0 / 0 / 0 / 0 | 0 / 0 / 0 / 0 |
+
+**The friction baseline's diff against the pre-pass file**, read line by line: two routes lower
+their warning counts (4 → 3; 4 → 2 and a glyph 2 → 1), one route's long prose goes 4 → 0, the
+two no-data phrases on Creative Library and Creative Scan change only their joiner (" — " to
+" · ", the same sentence), and `/app/exports` gains the four warning boxes the four hidden
+child pages carried (they still carry them; the boxes moved, the product total fell from 164
+to 161). No route raises a prose count. The owner's mid-course objection (§9.1) is what
+brought the two prose raises this pass had introduced back to zero.
+
+**The chromium note.** The e2e smokes launch Chromium through
+`REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE`; in this environment that is
+`/opt/pw-browsers/chromium`, and without it every smoke fails at launch before any test body
+runs. That is a runner fact, not a defect, and is why the first e2e attempt reported nothing.
+
+### 7.4 What changed, screen by screen
+
+| Screen | Change |
+|---|---|
+| Login | One call to action per panel ("See how Metrix works" in the hero; Request access and Create an account beside the form, each saying what it starts); a legible disabled primary; no em dashes |
+| Onboarding | The three step cards arrive in sequence (once) |
+| Account Overview | Run chain counts with the loop's numerals (icons for Data and Reports); Next Best Action is a title, one clause and a reveal; recommendation tiles say Retire / Scale / Optimize with a first clause and a reveal, a figure or nothing; "Account Totals" and every KPI label sit above their tiles |
+| Listen | The high-impact signals themselves, not a count |
+| Analysis command centre and every Analysis page | Module heads outside the tiles; the caveat strip shows whole sentences; KPI labels above tiles and wrapping at phone width; the result-type donut and the Daily trend follow the anatomy; the Library's metric tiles share a height |
+| Strategy command centre and pages | The generation gate says what it gates; module heads outside the tiles, one line each |
+| Creative, MST | Module heads outside the tiles; thumbnails carry an edge; hover zoom at 200 ms |
+| Action Queue | Grouped by verb with counts, two columns above 1280 px; engine reason codes read as sentences |
+| Reports | The section lands on the builder; the builder's rail cards carry their titles above the tiles; the preview takes the width |
+| Exports | One page, four export cards; the bundle card that counted them is gone |
+| Settings | Unchanged in structure; module heads follow the anatomy |
+| Everywhere | Toasts through Sonner; the page arrives with a fade; focus moves to the page on navigation and is named by its heading; no em dashes in UI copy; the tray overlays under 1024 px; the period control is a select under lg; icon-only toggles are named |
+
+**Libraries:** added none; Sonner mounted (already installed); removed `react-icons` and
+`@hookform/resolvers`. **Backend:** nothing changed; five items flagged in §8.1. **Open
+decisions:** seven in §8.2, with defaults.

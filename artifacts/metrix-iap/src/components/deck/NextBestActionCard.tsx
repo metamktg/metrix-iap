@@ -119,9 +119,12 @@ export function NextBestActionCard({ scopeId, cards, stageNote }: NextBestAction
           <p className={cn(TYPE.title, "text-foreground leading-snug mb-1 line-clamp-2")} title={card.title} data-testid="next-best-action-title">
             {card.title}
           </p>
-          {/* One clause of the reason on the face; the paragraph (success
-              criteria, isolates) opens behind "Why this action". A ten-line
-              rationale on the first layer is not a dashboard. */}
+          {/* One complete clause of the reason on the face; the paragraph
+              (success criteria, isolates) opens behind "Why this action".
+              A ten-line rationale on the first layer is not a dashboard,
+              and a CSS clamp would keep the paragraph in the DOM where the
+              friction gate counts it as first-layer prose. */}
+          {/* payload-ok: owner (2026-09-03), progressive disclosure: a first clause on the face, the full rationale one click away in the reveal below */}
           <p className={cn(TYPE.body, "text-foreground/75 leading-relaxed max-w-prose")} title={card.rationale} data-testid="next-best-action-rationale">
             {deriveLabel(card.rationale, 120)}
           </p>

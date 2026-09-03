@@ -1,8 +1,8 @@
 {
   "/app/account": {
-    "warnBoxes": 4,
+    "warnBoxes": 3,
     "warnIcons": 0,
-    "longProse": 6,
+    "longProse": 2,
     "noData": []
   },
   "/app/act/queue": {
@@ -61,8 +61,8 @@
     "noData": []
   },
   "/app/analysis/library": {
-    "warnBoxes": 4,
-    "warnIcons": 2,
+    "warnBoxes": 2,
+    "warnIcons": 1,
     "longProse": 0,
     "noData": []
   },
@@ -188,7 +188,7 @@
   "/app/mst": {
     "warnBoxes": 0,
     "warnIcons": 0,
-    "longProse": 4,
+    "longProse": 0,
     "noData": []
   },
   "/app/mst/creative-scan": {
@@ -292,7 +292,7 @@
   "/app/strategy/avatars": {
     "warnBoxes": 0,
     "warnIcons": 0,
-    "longProse": 4,
+    "longProse": 0,
     "noData": []
   },
   "/app/strategy/communications": {

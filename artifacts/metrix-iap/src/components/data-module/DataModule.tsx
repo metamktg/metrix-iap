@@ -128,7 +128,7 @@ export function DataModule({
             could see, and skipped a level in the document outline. Same role,
             same rank, same size. */}
         <div className="flex items-center gap-1.5 min-w-0">
-          <h2 id={titleId} className={cn(HEADING.h2, "min-w-0 truncate")}>
+          <h2 id={titleId} className={cn(HEADING.h2, "min-w-0 truncate whitespace-nowrap [text-wrap:nowrap]")} title={title}>
             {title}
           </h2>
           {info && <SectionInfoIcon tip={info} />}

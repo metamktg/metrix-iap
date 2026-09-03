@@ -1363,7 +1363,12 @@ export function MetricTile({
   return (
     <div className="flex flex-col gap-1.5 min-w-0 h-full">
       <div className={cn(labelCls, "mb-0 px-0.5")}>{label}</div>
-      <div className={cn(
+      {/* The tile names its metric: with the label lifted out of the tile,
+          a null value's dash lost the sibling that resolved it, and
+          check:unexplained-dashes reads a title within four ancestors. */}
+      <div
+        title={typeof label === "string" ? label : undefined}
+        className={cn(
         "mx-kpi-tile p-4 relative flex-1 transition-[border-color] duration-150 ease-[var(--mx-ease)]",
         isPrimary && "border-primary/35 bg-primary/[0.03]"
       )}>
@@ -2099,7 +2104,10 @@ export function SectionCard({
     <>
       {/* H2: the first real content heading under the page's H1
           (ModuleHeader) — see typography.ts's H1–H6 hierarchy doc. */}
-      <h2 className={cn(HEADING.h2, "truncate")}>{title}</h2>
+      {/* One line, always: the head row is a strip, and a title that wraps
+          pushes the module's controls under itself. `text-wrap: balance`
+          on the h2 role would otherwise reflow it. */}
+      <h2 className={cn(HEADING.h2, "truncate whitespace-nowrap [text-wrap:nowrap]")} title={title}>{title}</h2>
       {collapsible && (
         <ChevronDown
           className={cn(
