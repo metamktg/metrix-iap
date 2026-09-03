@@ -1322,24 +1322,28 @@ export function MetricTile({
     ? cn(TYPE.microLabel, "text-muted-foreground/75 mb-1.5 truncate")
     : cn(TYPE.microLabel, "text-muted-foreground/75 mb-2 truncate");
 
+  // The label sits ABOVE the tile, on the page ground (owner, 2026-09-03):
+  // the tile's border boxes the number, not its name.
   if (onClick) {
     return (
+      <div className="flex flex-col gap-1.5 min-w-0 h-full group/tile">
+        <div className={cn(labelCls, "mb-0 px-0.5 group-hover/tile:text-interactive/70 transition-colors")}>{label}</div>
       <button
         type="button"
         onClick={onClick}
         className={cn(
-          "mx-kpi-tile p-4 text-left w-full group/tile relative",
+          "mx-kpi-tile p-4 text-left w-full relative flex-1",
           "hover:border-primary/40 hover:bg-primary/[0.04] active:scale-[0.98]",
           "transition-[border-color,background-color,scale] duration-150 ease-[var(--mx-ease)]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           isPrimary && "border-primary/35 bg-primary/[0.03]"
         )}
         title={actionTitle}
+        aria-label={typeof label === "string" ? `${label}: ${value}` : undefined}
         data-testid="metric-tile"
       >
         {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
         <div className="relative z-10">
-          <div className={cn(labelCls, "group-hover/tile:text-interactive/70 transition-colors")}>{label}</div>
           <div className="text-bignum font-h1 font-bold text-foreground metric-num leading-none">{value}</div>
           {sub && <div className="text-caption text-muted-foreground/75 mt-2 leading-snug line-clamp-2">{sub}</div>}
           {/* Visible at rest, not only on hover. A touch device has no hover
@@ -1353,21 +1357,21 @@ export function MetricTile({
           </div>
         </div>
       </button>
+      </div>
     );
   }
   return (
-    <div className={cn(
-      "mx-kpi-tile p-4 relative transition-[border-color] duration-150 ease-[var(--mx-ease)]",
-      // group-hover only fires inside an ancestor marked .group. Several
-      // call sites have none, so the lift silently never happened there.
-      // The tile's own :hover is in .mx-kpi-tile and always applies.
-      isPrimary && "border-primary/35 bg-primary/[0.03]"
-    )}>
-      {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
-      <div className="relative z-10">
-        <div className={labelCls}>{label}</div>
-        <div className="text-bignum font-h1 font-bold text-foreground metric-num leading-none">{value}</div>
-        {sub && <div className="text-caption text-muted-foreground/75 mt-2 leading-snug line-clamp-2">{sub}</div>}
+    <div className="flex flex-col gap-1.5 min-w-0 h-full">
+      <div className={cn(labelCls, "mb-0 px-0.5")}>{label}</div>
+      <div className={cn(
+        "mx-kpi-tile p-4 relative flex-1 transition-[border-color] duration-150 ease-[var(--mx-ease)]",
+        isPrimary && "border-primary/35 bg-primary/[0.03]"
+      )}>
+        {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
+        <div className="relative z-10">
+          <div className="text-bignum font-h1 font-bold text-foreground metric-num leading-none">{value}</div>
+          {sub && <div className="text-caption text-muted-foreground/75 mt-2 leading-snug line-clamp-2">{sub}</div>}
+        </div>
       </div>
     </div>
   );
@@ -2110,13 +2114,14 @@ export function SectionCard({
   );
 
   return (
-    <section className="mx-card-hero">
-      {/* mx-module-header gives this row its own PLANE. Before, the header
-          and the data shared the card's ground with only a primary/10
-          hairline between them, so a module title competed with the numbers
-          it labelled instead of framing them. See the .mx-module-header
-          comment in index.css for the three-plane hierarchy. */}
-      <div className="mx-accent-bar mx-module-header relative flex items-center gap-2 pr-3.5">
+    <section className="mx-module" data-testid="section-card">
+      {/* The title row lives OUTSIDE the tile, above it (owner, 2026-09-03):
+          the module's authority is the heading, so it is not boxed in with
+          the data it labels. Title and its collapse control left, the
+          module's own controls (filters, breakdowns, metric selectors,
+          cross-links) right, in one row; the rounded, bordered tile below
+          holds only the data. See .mx-module-head in index.css. */}
+      <div className="mx-module-head relative flex items-center gap-2 flex-wrap">
         {collapsible ? (
           <button
             type="button"
@@ -2125,11 +2130,11 @@ export function SectionCard({
             aria-controls={bodyId}
             aria-label={`${bodyVisible ? "Collapse" : "Expand"} section: ${title}`}
             // h-10 is the hit-area floor. The old control was a p-0.5
-            // chevron — about 18px square, and the only part of the strip
+            // chevron, about 18px square, and the only part of the strip
             // a keyboard could reach.
             className={cn(
-              "min-w-0 flex items-center gap-1.5 h-10 pl-3.5 pr-1 text-left rounded-l-[inherit]",
-              "hover:bg-foreground/[0.02] active:scale-[0.99]",
+              "min-w-0 flex items-center gap-1.5 h-10 pl-1 pr-1.5 -ml-1 text-left rounded-md",
+              "hover:bg-foreground/[0.03] active:scale-[0.99]",
               "transition-[background-color,scale] duration-150 ease-[var(--mx-ease)]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             )}
@@ -2137,21 +2142,21 @@ export function SectionCard({
             {heading}
           </button>
         ) : (
-          <div className="min-w-0 flex items-center gap-1.5 h-10 pl-3.5 pr-1">{heading}</div>
+          <div className="min-w-0 flex items-center gap-1.5 h-10 pr-1">{heading}</div>
         )}
         {desc && <InfoTooltip content={desc} />}
-        <div className="ml-auto shrink-0 flex items-center gap-2">
+        <div className="ml-auto shrink-0 flex items-center gap-2 flex-wrap justify-end">
           {right}
           {table && <DataSourceBadge table={table} collapsible />}
         </div>
       </div>
       {/* The body arrives and leaves with the one reveal signature.
           RevealPanel's AnimatePresence has initial={false}, so a section
-          that mounts open (the default) renders instantly — only a user's
+          that mounts open (the default) renders instantly; only a user's
           own expand/collapse animates. This one wiring is what puts the
           motion system on every module section of every page. */}
       <RevealPanel open={bodyVisible}>
-        <div id={bodyId} className="relative p-3">
+        <div id={bodyId} className="mx-card-hero relative p-3">
           {children}
         </div>
       </RevealPanel>

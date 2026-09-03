@@ -84,19 +84,17 @@ export function TrendSection({ accountId, start, end }: TrendSectionProps) {
     );
 
   return (
-    <section className="px-6 pt-5" aria-label="Daily trend">
-      <div className="rounded-2xl border border-border/40 bg-foreground/[0.02] p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
-          <div>
+    <section className="px-6 pt-5 mx-module" aria-label="Daily trend">
+      {/* Head above the tile: title and its count left, the metric chips
+          right; the tile holds the chart alone. */}
+      <div className="mx-module-head flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-baseline gap-2 min-w-0">
             <h3 className="text-title font-bold text-foreground leading-snug">Daily trend</h3>
-            <p className={`${TYPE.label} mt-0.5`}>
+            <p className={`${TYPE.label}`}>
               {days.length > 0 ? `${days.length} days` : "Day-level view of the selected window"}
             </p>
           </div>
-          {/* Metric chips. Outer card is rounded-2xl (16px) with p-4 (16px),
-              so these inner controls sit at rounded-lg — concentric, not
-              the same radius as the surface holding them. */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 justify-end">
             {METRICS.map((m) => {
               const on = chosen.includes(m.key);
               return (
@@ -116,8 +114,8 @@ export function TrendSection({ accountId, start, end }: TrendSectionProps) {
               );
             })}
           </div>
-        </div>
-
+      </div>
+      <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
         {!enabled ? (
           <p className="text-body text-muted-foreground/75 py-6 text-center">
             Select a data window to see the daily trend.

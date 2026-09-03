@@ -440,3 +440,114 @@ filter only, uses the one curve, and has no `ease-in` anywhere.
 
 No known-issues list is shipped for accessibility. The one measurement that could not be taken
 from code, the rendered contrast of the new disabled fill, is taken in §7 from the browser.
+
+---
+
+## 7. Phase 6, self-review and the triple pass
+
+### 7.1 The motion this pass wrote, reviewed (`review-animations`)
+
+Every motion change is measured against the ten standards; the first review found one real
+defect and it is fixed below.
+
+| Before | After | Why |
+|---|---|---|
+| `animation: mx-route-in 180ms … both` (first draft) | `… backwards` | A kept `transform` (fill `both`) makes the page root the containing block for every `position: fixed` element inside it (seven pages carry one). The page's natural state is the `to` frame, so `backwards` ends on nothing new |
+| `.mx-step-enter > * { … both }` (first draft) | `… backwards` | Same rule; a kept `filter: blur(0)` also creates a containing block |
+| Thumbnail zoom 500 ms | 200 ms | Sub-300 ms on a tens-per-day hover |
+| Funnel fill 700 ms | 300 ms | Data being read does not move for style |
+| Two easing curves | `--mx-ease` everywhere | Cohesion |
+
+Verdict by tier: no feel-breaking regression (nothing animates a keyboard action or the
+palette; no `ease-in`; no `scale(0)`; nothing over 300 ms on UI); no missed simplification
+(the four opportunities were the only additions and each names its purpose); performance is
+transform, opacity and a 4 px blur only, keyframes confined to once-per-mount entrances that
+nothing retriggers; interruptibility is Sonner's transitions and framer's springs where it
+matters; origin is the trigger on every popover and tooltip (Radix `--transform-origin`) and
+centre on dialogs; reduced motion zeroes every duration through the global rule, which is this
+product's documented choice. **Approve**, with the fill-mode fix applied.
+
+What could not be judged from code: the feel of `mx-route-in` on a slow chunk (the spinner
+plays it, then the page plays it). Feel-check: navigate Analysis → Strategy → Creative at 6×
+slow motion in DevTools; if the double arrival reads as a stutter, drop the animation from the
+fallback by scoping the selector to `:not([data-testid="route-loading"])`.
+
+### 7.2 The re-sweep (`find-animation-opportunities`, on the finished build)
+
+Swept the same seams again. Feedback: every pressable carries `.pressable` (0.96) or
+`.pressable-lg` (0.99); the new select and variant picker inherit them. Teleporting state:
+the route swap and the onboarding steps were the two and are closed; tab switches inside a
+page use `TabRail` with a travelling pill (spring 460/34) already. Spatial story: toasts
+symmetric; popovers origin-aware; the sidebar branch arrives from its row. Group entrances:
+the Action Queue keeps its 100 ms stagger, the onboarding steps 40 ms. Gesture seams: springs
+with velocity, elastic bounds. Delight budget: spent once, on first run. **Nothing missed,
+nothing over-animated.** Rejected again on purpose: the palette, the sidebar, charts, table
+hovers, the KPI hover chart.
+
+---
+
+## 8. Backend flags and open decisions
+
+### 8.1 Backend, flagged and NOT changed
+
+| # | What the UI needs or exposes | Where it lives | What was done instead |
+|---|---|---|---|
+| B1 | **Self-registration versus the gated flow.** `POST /metrix/auth/register` (`api-server/src/routes/auth.ts:275`) lets any visitor create an account; `replit.md` says every sign-up goes through the request-access form and an admin approval. The login page offers both. A self-registered member lands in an empty workspace and can create manual accounts (`POST /api/metrix/accounts` grants the creator). | `auth.ts`, `LoginPage.tsx` | The copy now says what "Create an account" starts. Whether the endpoint should exist on the production login page is the owner's call. |
+| B2 | **The strategy gate's predicate.** Generation is gated on `status.analysis.validated`, a run-level fact the seed carries; an imported strategy is readable while the gate says a run is needed. Correct, and the copy now says so. If imported accounts should be able to generate without a manual run, that is a `verifyAnalysisRunCompleteness` decision, not a UI one. | `metrixSeedAssembly.ts`, `StrategyCommandCenter.tsx` | Copy only. |
+| B3 | **Reason codes.** `intelligence.failure_patterns[].diagnosis` arrives as `snake_case - explanation`. The client humanises it; the engine could write the sentence itself and keep the code in a separate field, which would let the client stop parsing. | `analysisEngine` | `humanizeDiagnosis` on the client. |
+| B4 | **Design-system scaffold dependencies.** `embla-carousel-react`, `react-resizable-panels`, `input-otp`, `react-day-picker`, `vaul` each back one `command-deck/ui` component the app never imports. Removing them is a design-system decision. | `artifacts/metrix-iap/package.json`, `command-deck` | Left; `react-icons` and `@hookform/resolvers` (no importer anywhere) removed. |
+| B5 | No new field or endpoint was needed by any UI change in this pass. | | |
+
+### 8.2 Open design decisions, waiting on the owner
+
+| # | Decision | Where to look | Default if no answer |
+|---|---|---|---|
+| O1 | **Recommendation tile direction.** A (verb first, shipped), B (number first) or C (sentence first). | `/design-lab.html`, first panel | A stays. |
+| O2 | **The Reports hub route.** `/app/reports` still renders (Build report tiles, run history, explore grid) but nothing links to it now that the section lands on the builder. Keep as a deep link, or delete the page and redirect to the builder. | `ReportsCommandCenter.tsx`, `navTree.ts` | Keep as a deep link. |
+| O3 | **The same recommendation list on four surfaces** (Account Overview, Analysis, Strategy, the Action Queue). Each is a stage filter of one list; a reader may read it as four lists. Option: the command-centre rails show only their stage's top three with a "See all N in the Action Queue" link. | `recommendationsForStage`, `RecommendationSlider` | Leave. |
+| O4 | **The section chevrons** in the sidebar (they read "expand", they mean "branch to the right on dwell"). Keep, or replace with a branch glyph. | `Sidebar.tsx` `SectionRow` | Keep. |
+| O5 | **The marketing claims on the login hero** ("+34% Avg. ROAS Increase", "$2.4M Wasted Spend Saved") mirror the marketing site's copy and name ROAS, which the product itself never reports. Out of this pass's scope (the marketing site owns the copy). | `LoginPage.tsx` `PROOF_POINTS`, `artifacts/marketing/src/content.ts` | Leave. |
+| O6 | **`prototype` and `design:ux-copy`** are not installed in this environment; their steps were done by hand (§4.3, §2.3). If the owner wants the real skills run, install them and re-run those two steps only. | | Done by hand. |
+
+---
+
+## 9. Mid-course owner directives (2026-09-03, during the pass)
+
+Two messages arrived while the triple pass was running, with a screenshot of the live build.
+
+**9.1 "We are severely regressing backwards in progressive disclosure. This is not a SaaS UI."**
+The screenshot: the Next Best Action card on a live account carrying a two-line bold
+hypothesis title and a ten-line paragraph of success criteria and isolates on the first layer;
+the tiles beneath it showing a "Target" of "C1A achieves cost per pu". Read: the "undisclosed
+items" the owner asked to restore are items that had been *un*-disclosed, dumped onto the first
+layer, and want their disclosure back. This reverses D1 in §1.3.
+
+| Before | After | Where |
+|---|---|---|
+| Next Best Action: full title, full rationale paragraph on the face | Title clamped to two lines (full text in `title`); one clause of the rationale (`deriveLabel`, 120) on the face; the paragraph behind "Why this action" | `components/deck/NextBestActionCard.tsx` |
+| Recommendation tile: rationale paragraph on the face (this pass's D1) | One clause as the reveal's label; the reason, the action and the provenance open on click | `components/deck/RecommendationSlider.tsx` |
+| Hypothesis "Target": the first 24 characters of the criteria sentence | A figure or nothing: `hypothesisTarget()` reads the first CPA / CVR / CTR / "cost per X" target ("CPA ≤ $25", "CVR ≥ 15%"), else no metric row (a hypothesis has a target, not a measurement, so no "no measured figure" line either) | `lib/data/recommendations.ts` |
+
+The friction ratchets this pass had raised on `/app/account` and `/app/mst` (first-layer
+prose) come back down with it.
+
+**9.2 "Keep the module, tile and visualised-data titles outside the tile border: hierarchical
+authority directly above the module, left-aligned title, right-aligned filters, breakdown and
+metric selectors, disclosed within columns."** Applied at the primitives, so every module
+follows:
+
+| Primitive | Before | After |
+|---|---|---|
+| `SectionCard` (every module) | Title in a header band inside the bordered card | `.mx-module`: a head row on the page ground (title + collapse control + info left, the `right` slot's controls right, wrapping), then the rounded bordered tile holding only the data |
+| `DataModule` (every visualisation) | Title and view switcher in a header band inside the card | The same head row above the tile: title + info left, actions + `ViewSwitcher` right |
+| `KpiTile` (every KPI) | Label, picker chevron, drill glyph and info inside the tile | Label row above the tile on the page ground; the tile holds the number, trend and sparkline |
+| `MetricTile` (command-centre tiles) | Label inside the tile | Label above the tile |
+
+The aria contract is unchanged: the head's button still reads "Collapse section: <title>" /
+"Expand section: <title>", the tile is still `aria-controls`'d by it, `DataModule` is still
+labelled by its title. The `.mx-module-header` band stays only for `LayeredDisclosure`, whose
+header is a control inside a card by design.
+
+**9.3 "Each UI module tile must be revised with the UI/UX skills."** The crawl was re-run on
+the new anatomy at both widths and every module's shot reviewed against the craft bar; the
+per-module findings and fixes follow in §9.4.

@@ -494,9 +494,9 @@ async function main() {
         await reviewBtn.waitFor({ state: "visible", timeout: 10_000 });
         await reviewBtn.click();
 
-        await page.locator("text=STEP 2 OF 2 — REVIEW").waitFor({ state: "visible", timeout: 10_000 });
-        await page.locator("text=Demographics — demo.csv").waitFor({ state: "visible" });
-        await page.locator("text=Placements — placement.csv").waitFor({ state: "visible" });
+        await page.locator("text=STEP 2 OF 2 · REVIEW").waitFor({ state: "visible", timeout: 10_000 });
+        await page.locator("text=Demographics · demo.csv").waitFor({ state: "visible" });
+        await page.locator("text=Placements · placement.csv").waitFor({ state: "visible" });
         await page.locator("text=All mapped").waitFor({ state: "visible" });
 
         // Pick a date range and run analysis.

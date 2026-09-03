@@ -244,7 +244,7 @@ function PlacementsList({ rows }: { rows: PlacementRow[] }) {
             <TooltipTrigger asChild>
               <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 cursor-default">
                 Account placements
-                <span className="sr-only"> (Account-level placement signal) no per-profile breakdown available.</span>
+                <span className="sr-only"> Account-level placement signal. No per-profile breakdown available.</span>
               </span>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-[240px]">

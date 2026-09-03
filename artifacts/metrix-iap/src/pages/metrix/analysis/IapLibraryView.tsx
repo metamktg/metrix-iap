@@ -41,8 +41,7 @@ import {
   MetricTile, CaveatNote, CrossLink, useFocusParam, useTabParam,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
   StaleFocusNotice, PILL_ACTIVE, PILL_INACTIVE,
-  SectionInfoIcon,
-} from "../shared";
+  SectionInfoIcon, InfoTooltip } from "../shared";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { RunScopePicker } from "@/components/analysis/RunSelector";
 import { BreakdownExplorer } from "@/components/analysis/BreakdownExplorer";
@@ -1077,12 +1076,10 @@ export function IapLibraryView() {
 
                     return (
                       <div className="space-y-4">
-                        <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
-                          <p className="text-label uppercase tracking-widest text-muted-foreground/75 mb-1">Text assets</p>
-                          <h3 className="text-title font-bold text-foreground mb-1">Meta ad copy, read against the same result</h3>
-                          <p className="text-caption text-muted-foreground/75 leading-relaxed">
-                            Primary text for every cell in scope, so a copy pattern can be judged next to what it actually cost.
-                          </p>
+                        <div className="mx-module-head flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                          <p className="text-label uppercase tracking-widest text-muted-foreground/75">Text assets</p>
+                          <h3 className="text-title font-bold text-foreground">Meta ad copy, read against the same result</h3>
+                          <InfoTooltip content="Primary text for every cell in scope, so a copy pattern can be judged next to what it actually cost." />
                         </div>
                         <div className="grid grid-cols-dashboard-4-xl gap-3">
                           {copyStats.map(({ row, stats }) => {

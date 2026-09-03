@@ -111,23 +111,21 @@ function Tile({ rec }: { rec: DerivedRecommendation }) {
           </span>
           <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{rec.metric.label}</span>
         </div>
-      ) : (
-        // No number is a fact about the rows, not a gap to paper over.
+      ) : kind === "test" ? null : (
+        // No number is a fact about the rows, not a gap to paper over. A
+        // hypothesis has a target, not a measurement, so it says nothing here.
         <div className={cn(TYPE.caption, "text-muted-foreground/75 leading-snug")} data-testid="recommendation-no-metric">
           No measured figure in this account's rows
         </div>
       )}
 
-      {/* The reason is the payload: it stays on the face, clamped, never
-          cut to a fragment behind an icon. The reveal keeps the full
-          sections and the provenance. */}
-      <p className={cn(TYPE.caption, "text-muted-foreground/85 leading-snug line-clamp-2")} data-testid="recommendation-rationale">
-        {rec.rationale}
-      </p>
+      {/* First layer: one complete clause of the reason as the reveal's
+          label. The reason itself, the recommended action and the
+          provenance open on click. Never a paragraph on the face. */}
       <DetailReveal
         eyebrow="Why this action"
-        label="Why this action"
-        labelClassName={cn(TYPE.caption, "text-interactive/90 leading-snug")}
+        label={deriveLabel(rec.rationale, 72)}
+        labelClassName={cn(TYPE.caption, "text-muted-foreground/75 leading-snug")}
         testId={`recommendation-why-${rec.id}`}
         sections={[
           { label: "What the rows say", text: rec.rationale },

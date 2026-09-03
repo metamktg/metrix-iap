@@ -2,7 +2,7 @@
   "/app/account": {
     "warnBoxes": 4,
     "warnIcons": 0,
-    "longProse": 2,
+    "longProse": 6,
     "noData": []
   },
   "/app/act/queue": {
@@ -117,7 +117,7 @@
     "warnIcons": 8,
     "longProse": 0,
     "noData": [
-      "No creative-scoped recommendations yet — these appear once the optimization loop has run for this account."
+      "No creative-scoped recommendations yet · these appear once the optimization loop has run for this account."
     ]
   },
   "/app/creative/scan": {
@@ -126,11 +126,11 @@
     "longProse": 0,
     "noData": [
       "No results yet",
-      "No scan results yet — staged assets appear here, one row per asset, once the first scan runs."
+      "No scan results yet · staged assets appear here, one row per asset, once the first scan runs."
     ]
   },
   "/app/exports": {
-    "warnBoxes": 0,
+    "warnBoxes": 4,
     "warnIcons": 0,
     "longProse": 0,
     "noData": []
@@ -188,7 +188,7 @@
   "/app/mst": {
     "warnBoxes": 0,
     "warnIcons": 0,
-    "longProse": 0,
+    "longProse": 4,
     "noData": []
   },
   "/app/mst/creative-scan": {

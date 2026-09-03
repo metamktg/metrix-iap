@@ -17,7 +17,7 @@ import { useCallback } from "react";
 import { Check, Zap } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
-import { DetailReveal } from "@/pages/metrix/shared";
+import { DetailReveal, deriveLabel } from "@/pages/metrix/shared";
 import { useDecisions, getDecision, setDecision } from "@/lib/data/decisionStore";
 import { addToTray } from "@/lib/data/trayStore";
 import { impactRank, type DeckCard } from "./RecommendationDeck";
@@ -116,11 +116,14 @@ export function NextBestActionCard({ scopeId, cards, stageNote }: NextBestAction
               Next best action
             </span>
           </div>
-          <p className={cn(TYPE.title, "text-foreground leading-snug mb-1")} data-testid="next-best-action-title">
+          <p className={cn(TYPE.title, "text-foreground leading-snug mb-1 line-clamp-2")} title={card.title} data-testid="next-best-action-title">
             {card.title}
           </p>
-          <p className={cn(TYPE.body, "text-foreground/75 leading-relaxed max-w-prose")}>
-            {card.rationale}
+          {/* One clause of the reason on the face; the paragraph (success
+              criteria, isolates) opens behind "Why this action". A ten-line
+              rationale on the first layer is not a dashboard. */}
+          <p className={cn(TYPE.body, "text-foreground/75 leading-relaxed max-w-prose")} title={card.rationale} data-testid="next-best-action-rationale">
+            {deriveLabel(card.rationale, 120)}
           </p>
           <div className="flex items-center gap-2 mt-2.5 flex-wrap">
             <HeroBadge

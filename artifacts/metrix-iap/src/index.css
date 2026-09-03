@@ -379,6 +379,25 @@
     border-bottom: 1px solid var(--mx-edge-strong);
   }
 
+  /* ── The module head, outside the tile (2026-09-03) ────────────────
+   * The band above was the answer while the title lived INSIDE the card.
+   * The owner's call is that the title's authority sits outside the tile:
+   * the heading row is on the page ground, directly above the rounded,
+   * bordered tile, title left and the module's controls right, and the
+   * tile holds only the data. No ground of its own, no rule under it: the
+   * tile's top edge is the boundary. The band stays for LayeredDisclosure,
+   * whose header is a control inside a card by design. */
+  .mx-module {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .mx-module-head {
+    min-height: 2.5rem;
+    padding-inline: 0.125rem;
+  }
+
   /* Active nav item — flat accent tint, no gradient or glow. */
   /* The IAP loop spine: loop sections in the expanded sidebar sit on one
      thin connector so the six stages read as one shape, not six rows.
@@ -1210,8 +1229,12 @@ main img {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* Fill mode `backwards`, never `both`: a kept `transform` would make the page
+ * root the containing block for every `position: fixed` element inside it.
+ * The page's natural state IS the `to` frame, so ending the animation snaps
+ * to nothing new. */
 [data-route-host] > *:first-child {
-  animation: mx-route-in 180ms var(--mx-ease) both;
+  animation: mx-route-in 180ms var(--mx-ease) backwards;
 }
 /* First-run onboarding: the three step cards arrive in sequence, 40 ms
  * apart, blur 4 px → 0 with the same rise. The one place a longer beat is
@@ -1220,7 +1243,7 @@ main img {
   from { opacity: 0; transform: translateY(6px); filter: blur(4px); }
   to   { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
-.mx-step-enter > * { animation: mx-step-in 220ms var(--mx-ease) both; }
+.mx-step-enter > * { animation: mx-step-in 220ms var(--mx-ease) backwards; }
 .mx-step-enter > *:nth-child(2) { animation-delay: 40ms; }
 .mx-step-enter > *:nth-child(3) { animation-delay: 80ms; }
 .mx-step-enter > *:nth-child(4) { animation-delay: 120ms; }

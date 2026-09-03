@@ -321,7 +321,7 @@ async function main() {
           );
           await assertTooltip(
             page,
-            "Deeper views of the same strategy from different angles — map, avatars, and hypothesis queue.",
+            "Deeper views of the same strategy from different angles. Map, avatars, and hypothesis queue.",
             "Go deeper · SectionInfoIcon",
           );
         } finally {
@@ -375,7 +375,7 @@ async function main() {
           );
           await assertTooltip(
             page,
-            "Validated message pillars from analysis — select one to trace its source cells and the hypotheses it feeds.",
+            "Validated message pillars from analysis. Select one to trace its source cells and the hypotheses it feeds.",
             "Strategy Map · Pillars SectionInfoIcon",
           );
         } finally {
@@ -455,7 +455,7 @@ async function main() {
           );
           await assertTooltip(
             page,
-            "Each pillar is a validated message direction backed by source cells — showing what creative angles work, who responds, and the strategic rationale behind them.",
+            "Each pillar is a validated message direction backed by source cells. Showing what creative angles work, who responds, and the strategic rationale behind them.",
             "Communications · Message pillars SectionInfoIcon",
           );
         } finally {

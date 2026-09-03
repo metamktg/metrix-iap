@@ -740,3 +740,29 @@ resolved to something the author never meant — the first cost nine tests in on
 others broken behind a fail-fast run. Both times the failure message described the assertion, not
 the locator, which is what makes the class expensive to diagnose. A locator should name a control
 structurally; the words inside it belong to the product and will change.
+
+## 18. The UI/UX overhaul: one loop shape, one vocabulary, no em dashes, Sonner (2026-09-03)
+
+**What.** The six-phase overhaul recorded in `METRIX_UI_UX_OVERHAUL_2026-09.md`. The
+architectural pieces: (1) the toast layer is Sonner behind the unchanged `useToast` API
+(`command-deck/hooks/use-toast.tsx` forwards; the Radix reducer and `ui/toaster.tsx` are
+gone); (2) the run chain on Account Overview counts with the loop's own numerals and draws
+Data and Reports as icons (`LoopCommandChain` `stageNumber: number | null`); (3) engine
+diagnosis codes pass through `humanizeDiagnosis` before a reader sees them; (4) the four
+Exports pages render as cards on the Exports page (`ExportsCards.tsx`), their nav rows hidden,
+routes kept; Reports lands on the builder; Listen renders its high-impact signals; (5) the
+route host moves focus to the page on navigation and names it by the arriving heading;
+(6) the copy carries no em dashes (1,076 replacements by rule; the data-path delimiter kept);
+(7) a visual crawler (`shoot:routes`) that every screen claim in the record cites.
+
+**Why.** Owner (2026-09-03): restore the visual regressions and the undisclosed items, then
+run the end-to-end overhaul prompt autonomously with a triple validation pass; keep the
+palette; no em dashes; clarity over novelty; flag backend changes rather than make them.
+
+**Where.** Listed file by file in the record's §2.2, §4.4, §5 and §6.
+
+**Proof.** The record's §7: typecheck, the client suite, the twenty static gates, the four
+browser gates, the sixteen e2e smokes, and the crawl at both widths, all on the same head.
+
+**Reach.** Client and the shared design-system hook. No server, schema or integration change;
+the backend items are flagged in the record's §8.

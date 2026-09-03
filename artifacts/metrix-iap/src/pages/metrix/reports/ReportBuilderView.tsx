@@ -10,7 +10,7 @@ import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, serializeReportModel, parseReportModel, type ReportBlock, type ReportModel } from "@/lib/reportExport";
-import { ModuleHeader, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink, fmtUSD, fmtNum, fmtPct } from "../shared";
+import { ModuleHeader, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink, fmtUSD, fmtNum, fmtPct, InfoTooltip } from "../shared";
 import { TYPE } from "../typography";
 import { useDateRange, formatIsoRange, isoMin, isoMax, type IsoRange } from "@/contexts/DateRangeContext";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -370,9 +370,12 @@ export function ReportBuilderView() {
                   {/* ── Left rail: audience · sections · window · generate ── */}
                   <div className="space-y-4 min-w-0">
                     {/* Audience — the canvas's density/branding selector */}
-                    <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
-                      <div className="text-cardtitle font-semibold text-foreground mb-0.5">Audience</div>
-                      <p className={cn(TYPE.caption, "text-muted-foreground/75 mb-2.5")}>Sets branding and delivery density</p>
+                    <div className="mx-module">
+                      <div className="mx-module-head flex items-center gap-2">
+                        <div className="text-cardtitle font-semibold text-foreground">Audience</div>
+                        <InfoTooltip content="Sets branding and delivery density" />
+                      </div>
+                      <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       <div className="flex flex-col gap-1.5">
                         {([
                           { id: "internal" as Mode, Icon: Building2, label: "Internal ops", desc: "Full Metrix branding · internal density" },
@@ -397,15 +400,18 @@ export function ReportBuilderView() {
                         ))}
                       </div>
                     </div>
+                    </div>
 
                     {/* Sections — the canvas's checklist card */}
-                    <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
-                      <div className="flex items-baseline justify-between gap-2 mb-2">
+                    <div className="mx-module">
+                      <div className="mx-module-head flex items-center justify-between gap-2">
                         <div className="text-cardtitle font-semibold text-foreground">Sections</div>
                         <span className={cn(TYPE.label, "text-muted-foreground/75 tabular-nums")}>
                           {rb.report_sections.length - excludedSections.size} of {rb.report_sections.length}
                         </span>
                       </div>
+                    </div>
+                      <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       <div className="flex flex-col">
                         {rb.report_sections.map((s) => {
                           const included = !excludedSections.has(s);

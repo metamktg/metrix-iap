@@ -234,17 +234,11 @@ export function KpiTile({
   const isPrimary = variant === "primary";
 
   return (
-    <div
-      data-testid="kpi-tile"
-      className={cn(
-        "mx-kpi-tile p-4 relative flex flex-col gap-1",
-        isPrimary && "border-primary/35 bg-primary/[0.03]",
-      )}
-    >
-      {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
-
-      {/* Label row: dropdown trigger + drill affordance + optional info hover */}
-      <div className="flex items-center justify-between gap-1.5 min-w-0">
+    <div data-testid="kpi-tile" className="flex flex-col gap-1.5 min-w-0 h-full">
+      {/* Label row ABOVE the tile (owner, 2026-09-03): the metric picker,
+          the drill affordance and the info hover sit on the page ground,
+          left-aligned; the bordered tile below holds the number. */}
+      <div className="flex items-center justify-between gap-1.5 min-w-0 px-0.5">
         <button
           ref={triggerRef}
           type="button"
@@ -275,7 +269,14 @@ export function KpiTile({
         </span>
       </div>
 
-      {/* Value — label + value only; no inline sub-text */}
+      <div
+        className={cn(
+          "mx-kpi-tile p-4 relative flex flex-col gap-1 flex-1",
+          isPrimary && "border-primary/35 bg-primary/[0.03]",
+        )}
+      >
+      {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
+      {/* Value only inside the tile; no inline sub-text */}
       {onClick ? (
         <button type="button" data-testid="kpi-tile-body" onClick={onClick} className="pressable-lg text-left hover:opacity-75 transition-opacity w-fit">
           <KpiValue formatted={m.formatted} isRefetching={isRefetching} />
@@ -319,6 +320,8 @@ export function KpiTile({
           />
         </svg>
       )}
+
+      </div>
 
       {pickerOpen && (
         <KpiMetricDropdown

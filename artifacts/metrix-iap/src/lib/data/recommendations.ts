@@ -125,6 +125,21 @@ function scopeOf(label: string): string {
  * `deriveRecommendations` is pure: same account in, same cards out, in the
  * same order. Nothing here reads the clock or the DOM.
  */
+/**
+ * A hypothesis card's figure: the first CPA / CVR / CTR / "cost per X" target
+ * the success criteria state, as "CPA ≤ $25" or "CVR ≥ 15%". Null when the
+ * criteria carry no such figure. It used to be the first 24 characters of
+ * the sentence, which rendered as "C1A achieves cost per pu".
+ */
+function hypothesisTarget(criteria: string | null): { label: string; value: string } | null {
+  if (!criteria) return null;
+  const m = criteria.match(/\b(CPA|CVR|CTR|cost per [a-z]+)\s*(≤|<=|≥|>=|<|>|=|of|at|under|below|above)?\s*(\$\s?[\d][\d.,]*|[\d][\d.,]*\s?%)/i);
+  if (!m) return null;
+  const name = /^cost per/i.test(m[1]) ? m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() : m[1].toUpperCase();
+  const op = ({ "<=": "≤", ">=": "≥", of: "", at: "", under: "≤", below: "≤", above: "≥" } as Record<string, string>)[m[2]?.toLowerCase() ?? ""] ?? (m[2] ?? "");
+  return { label: "Target", value: [name, op, m[3].replace(/\s+/g, "")].filter(Boolean).join(" ") };
+}
+
 export function deriveRecommendations(account: AdAccount | null | undefined): DerivedRecommendation[] {
   const iap = account?.iap;
   if (!iap) return [];
@@ -328,7 +343,7 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
       actionGroup: "Test actions",
       href: "/app/strategy/hypotheses",
       hrefLabel: "Open the hypothesis queue",
-      metric: criteria ? { label: "Target", value: criteria.replace(/^.*?(CPA[^,]*|CVR[^,]*).*$/i, "$1").slice(0, 24) } : null,
+      metric: hypothesisTarget(criteria),
       source: "strategy.active_hypotheses",
       stage: 5,
       derived: true,

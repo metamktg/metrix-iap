@@ -1044,10 +1044,12 @@ export function AnalysisOverview() {
                     </div>
                     {/* Right: result type donut — inline with tiles */}
                     {resultTypePie.length > 0 && (
-                      <div className="w-[196px] shrink-0 rounded-xl border border-border/40 bg-foreground/[0.02] p-3 flex flex-col">
-                        <div className={cn(TYPE.title, "mb-1.5")}>
+                      <div className="w-[196px] shrink-0 flex flex-col gap-1.5">
+                        {/* Title above the tile, like every module. */}
+                        <div className={cn(TYPE.microLabel, "text-muted-foreground/75 px-0.5")}>
                           By result type
                         </div>
+                        <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-3 flex flex-col">
                         <SharePieChart
                           data={resultTypePie}
                           unit="usd"
@@ -1056,6 +1058,7 @@ export function AnalysisOverview() {
                         />
                         <div className="mt-1.5 flex justify-end">
                           <CrossLink to="/app/analysis/library" label="Library →" />
+                        </div>
                         </div>
                       </div>
                     )}
