@@ -20,7 +20,7 @@ import { useQueries } from "@tanstack/react-query";
 import {
   ArrowDown, ArrowUp, BarChart3, Info, Table2,
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Cell as RechartsCell, LabelList } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, LabelList, Tooltip } from "recharts";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@workspace/command-deck/components/ui/dialog";
@@ -41,8 +41,13 @@ import {
 import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
 import { useDeepDive } from "@/contexts/DeepDiveContext";
 import { buildSegmentModule, findDimension } from "@/lib/data/deepDive";
+import { AXIS, MARK, SERIES } from "@/components/charts/chartTokens";
+import { chartTooltipRenderer } from "@/components/charts/chartChrome";
 
-const CHART_CONFIG: ChartConfig = { value: { label: "Value", color: "hsl(var(--interactive))" } };
+// One measure, one series, the interactive accent. `SERIES.interactive` is
+// a bare `var(--color-interactive)` — this used to be `hsl(var(--interactive))`,
+// a token that does not exist, which painted the bars black.
+const CHART_CONFIG: ChartConfig = { value: { label: "Value", color: SERIES.interactive } };
 
 // ─── Small controls ───────────────────────────────────────────────────
 
@@ -109,36 +114,67 @@ function SortToggle({ dir, onChange }: { dir: "asc" | "desc"; onChange: (d: "asc
 
 // ─── Ranked bar chart ─────────────────────────────────────────────────
 
-function BreakdownBars({ rows }: { rows: BreakdownRow[] }) {
+interface BreakdownBarDatum {
+  /** Truncated for the axis; `label` is what the tooltip shows. */
+  name: string;
+  label: string;
+  value: number;
+  display: string;
+  spend: number | null;
+  results: number | null;
+}
+
+const renderBreakdownTooltip = (metricLabel: string) =>
+  chartTooltipRenderer<BreakdownBarDatum>((d) => ({
+    title: d.label,
+    rows: [
+      { label: metricLabel, value: d.display, swatch: SERIES.interactive },
+      { label: "Spend", value: d.spend != null ? fmtUSD(d.spend, 0) : "n/a" },
+      { label: "Results", value: d.results != null ? fmtNum(d.results) : "n/a" },
+    ],
+  }));
+
+function BreakdownBars({ rows, metricLabel }: { rows: BreakdownRow[]; metricLabel: string }) {
   const charted = rows.filter((r) => r.value != null).slice(0, 12);
-  const data = charted.map((r) => ({
+  const data: BreakdownBarDatum[] = charted.map((r) => ({
     name: r.label.length > 22 ? r.label.slice(0, 21) + "…" : r.label,
+    label: r.label,
     value: r.value as number,
     display: r.formatted,
+    spend: r.spend,
+    results: r.results,
   }));
   if (data.length === 0) return null;
   const h = Math.min(Math.max(data.length * 30 + 16, 90), 340);
   return (
     <ChartContainer config={CHART_CONFIG} className="aspect-auto w-full" style={{ height: h }}>
-      <BarChart layout="vertical" data={data} margin={{ top: 0, right: 56, bottom: 0, left: 0 }} barSize={12}>
+      <BarChart
+        layout="vertical"
+        data={data}
+        margin={{ top: 0, right: 60, bottom: 0, left: 0 }}
+        barSize={MARK.barSize}
+        barCategoryGap={MARK.gap * 2}
+      >
         <XAxis type="number" hide />
         <YAxis
           type="category"
           dataKey="name"
           width={140}
-          tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontFamily: "inherit", opacity: 0.9 }}
+          tick={AXIS.tick}
           tickLine={false}
           axisLine={false}
         />
-        <Bar dataKey="value" radius={[0, 3, 3, 0]}>
-          {data.map((_, i) => (
-            <RechartsCell key={i} fill="hsl(var(--interactive))" fillOpacity={Math.max(0.95 - i * 0.06, 0.35)} />
-          ))}
-          <LabelList
-            dataKey="display"
-            position="right"
-            style={{ fontSize: 10, fill: "hsl(var(--foreground))", opacity: 0.9, fontFamily: "inherit", fontWeight: 500 }}
-          />
+        <Tooltip cursor={AXIS.cursorFill} content={renderBreakdownTooltip(metricLabel)} wrapperStyle={{ outline: "none" }} />
+        {/* One flat entity colour. Opacity used to step down by rank, so the
+            twelfth segment was fainter for being twelfth — the reader took
+            that as a smaller value than the bar's length said. */}
+        <Bar
+          dataKey="value"
+          fill={SERIES.interactive}
+          radius={[0, MARK.barRadius, MARK.barRadius, 0]}
+          {...MARK.noAnimation}
+        >
+          <LabelList dataKey="display" position="right" className="tabular-nums" style={MARK.valueLabel} />
         </Bar>
       </BarChart>
     </ChartContainer>
@@ -504,7 +540,7 @@ export function KpiDrilldownModal({
             />
           ) : (
             <div className="space-y-3">
-              {view === "chart" && <BreakdownBars rows={rows} />}
+              {view === "chart" && <BreakdownBars rows={rows} metricLabel={metric.label} />}
               {view === "table" && (
                 <BreakdownTable
                   rows={rows}

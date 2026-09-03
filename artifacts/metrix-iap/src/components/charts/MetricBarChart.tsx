@@ -14,7 +14,7 @@ import {
   BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList,
 } from "recharts";
 import { AXIS, MARK, NEUTRAL_VAR, seriesColor } from "./chartTokens";
-import { ChartTooltip, ChartEmpty, ChartSkeleton } from "./chartChrome";
+import { chartTooltipRenderer, ChartEmpty, ChartSkeleton } from "./chartChrome";
 
 export interface BarDatum {
   /** Stable identity. Colour follows this, never the sort position. */
@@ -110,25 +110,20 @@ export function MetricBarChart({
               tickLine={false}
             />
             <Tooltip
-              cursor={{ fill: "hsl(var(--muted-foreground))", fillOpacity: 0.06 }}
-              content={({ active, payload }) => {
-                const d = payload?.[0]?.payload as BarDatum | undefined;
-                if (!active || !d) return null;
-                return (
-                  <ChartTooltip
-                    title={d.label}
-                    rows={[{ label: measureLabel, value: format(d.value!), swatch: fill }]}
-                    detail={d.detail}
-                  />
-                );
-              }}
+              cursor={AXIS.cursorFill}
+              content={chartTooltipRenderer<BarDatum>((d) => ({
+                title: d.label,
+                rows: [{ label: measureLabel, value: format(d.value!), swatch: fill }],
+                detail: d.detail,
+              }))}
+              wrapperStyle={{ outline: "none" }}
             />
             <Bar
               dataKey="value"
               // Rounded data-end only; the baseline end stays square so the
               // bar reads as anchored rather than floating.
               radius={[0, MARK.barRadius, MARK.barRadius, 0]}
-              isAnimationActive={false}
+              {...MARK.noAnimation}
               onMouseEnter={(_, i) => setHovered(rows[i]?.key ?? null)}
               onMouseLeave={() => setHovered(null)}
             >
@@ -147,7 +142,7 @@ export function MetricBarChart({
                   position="right"
                   formatter={(v: number) => format(v)}
                   className="tabular-nums"
-                  style={{ fill: "hsl(var(--foreground))", fontSize: 11 }}
+                  style={MARK.valueLabel}
                 />
               )}
             </Bar>

@@ -18,7 +18,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, BarChart3, ChartPie, Filter, Info } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Cell as RechartsCell, LabelList, PieChart, Pie } from "recharts";
+import { Cell as RechartsCell, PieChart, Pie, Tooltip } from "recharts";
 import { ChartContainer, type ChartConfig } from "@workspace/command-deck/components/ui/chart";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
@@ -26,6 +26,8 @@ import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
 import type { AnalysisData, CellPerformanceRow } from "@/lib/data/seedTypes";
 import type { MetricDef } from "@/lib/data/metricsCatalog";
 import { RankedBars } from "@/components/charts/RankedBars";
+import { MARK, SERIES } from "@/components/charts/chartTokens";
+import { chartTooltipRenderer } from "@/components/charts/chartChrome";
 import {
   buildAccountBreakdown, listBreakdownDimensions, dimensionMetricRestriction,
   sortBreakdownRows, lowerIsBetter,
@@ -35,7 +37,10 @@ import { useDeepDive } from "@/contexts/DeepDiveContext";
 import { buildSegmentModule } from "@/lib/data/deepDive";
 import { SegmentHoverPreview } from "./SegmentHoverPreview";
 
-const CHART_CONFIG: ChartConfig = { value: { label: "Value", color: "hsl(var(--interactive))" } };
+// `SERIES.interactive` is a bare `var(--color-interactive)`. This was
+// `hsl(var(--interactive))` — a token that does not exist — so every slice
+// and bar painted black.
+const CHART_CONFIG: ChartConfig = { value: { label: "Value", color: SERIES.interactive } };
 
 type ChartForm = "bar" | "donut" | "funnel";
 
@@ -123,6 +128,14 @@ function DonutShare({ rows }: { rows: BreakdownRow[] }) {
   ];
   if (data.length === 0) return null;
   const total = data.reduce((s, d) => s + d.value, 0);
+  const sliceOpacity = (i: number) => Math.max(0.95 - i * 0.1, 0.25);
+  const renderTooltip = chartTooltipRenderer<(typeof data)[number]>((d) => ({
+    title: d.name,
+    rows: [
+      { label: "Share", value: total > 0 ? `${((d.value / total) * 100).toFixed(1)}%` : "n/a", swatch: SERIES.interactive },
+      ...(d.display ? [{ label: "Value", value: d.display }] : []),
+    ],
+  }));
   return (
     <div className="flex items-center gap-5 flex-wrap">
       <ChartContainer config={CHART_CONFIG} className="aspect-square w-[180px] shrink-0">
@@ -140,11 +153,16 @@ function DonutShare({ rows }: { rows: BreakdownRow[] }) {
             paddingAngle={2}
             stroke="hsl(var(--surface-deep))"
             strokeWidth={2}
+            {...MARK.noAnimation}
           >
+            {/* One hue stepped by magnitude — the slices are sorted, so the
+                step tracks the value, and the legend below repeats the same
+                step beside the name. Identity never rides on the fill. */}
             {data.map((_, i) => (
-              <RechartsCell key={i} fill="hsl(var(--interactive))" fillOpacity={Math.max(0.95 - i * 0.1, 0.25)} />
+              <RechartsCell key={i} fill={SERIES.interactive} fillOpacity={sliceOpacity(i)} />
             ))}
           </Pie>
+          <Tooltip content={renderTooltip} wrapperStyle={{ outline: "none" }} />
         </PieChart>
       </ChartContainer>
       {/* Direct-label list — identity never rides on the fill alone. */}
@@ -153,8 +171,8 @@ function DonutShare({ rows }: { rows: BreakdownRow[] }) {
           <li key={d.name} className="flex items-center gap-2 min-w-0">
             <span
               aria-hidden
-              className="w-2.5 h-2.5 rounded-sm shrink-0 bg-[hsl(var(--interactive))]"
-              style={{ opacity: Math.max(0.95 - i * 0.1, 0.25) }}
+              className="w-2.5 h-2.5 rounded-sm shrink-0 bg-interactive"
+              style={{ opacity: sliceOpacity(i) }}
             />
             <span className={cn(TYPE.body, "truncate min-w-0 text-foreground/85")}>{d.name}</span>
             <span className={cn(TYPE.body, "tabular-nums ml-auto shrink-0 text-foreground/70")}>
@@ -182,7 +200,7 @@ function FunnelRanking({ rows }: { rows: BreakdownRow[] }) {
             </span>
             <div className="flex-1 flex justify-center">
               <div
-                className="h-5 rounded-[3px] bg-[hsl(var(--interactive))] flex items-center justify-center min-w-0"
+                className="h-5 rounded-[3px] bg-interactive flex items-center justify-center min-w-0"
                 style={{ width: `${pct}%`, opacity: Math.max(0.95 - i * 0.06, 0.35) }}
               />
             </div>

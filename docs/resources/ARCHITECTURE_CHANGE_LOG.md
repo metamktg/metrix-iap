@@ -229,3 +229,53 @@ tree as text) and the locator-ambiguity gate are unchanged.
 
 **Reach.** Chrome. The fragments are chrome under the disclosure rulebook (no sentences on the
 first layer); they never describe an account, only the module.
+
+---
+
+## 6. The sidebar is a rail and a map (2026-09-03, later still)
+
+**What.** The expanded/collapsed sidebar (216 ↔ 56 px, a collapse toggle, a drag handle, a
+persisted collapsed key, an accordion of section headers) is replaced by a 56 px icon RAIL that is
+always in the layout and a MAP that opens over the page when the reader dwells on the rail.
+The map draws the product as a flow chart: every section is a node — the six IAP loop stages
+numbered on one spine, Account above, Outputs and Workspace below with group labels between —
+and the pages of the focused node branch beside it with an elbow each, headed by the stage and
+the module's purpose fragment. Resting on another node moves the branch; the active page's
+purpose shows on its row only.
+
+**Interaction model.** Three ways in, each one thing: a pointer that rests on the rail for
+260 ms opens the map (a pass-through does not); keyboard focus on a rail item opens it at once,
+Escape closes it and hands focus back to the rail; on a touch screen a tap on a rail icon opens
+the map on that section and a second tap goes to its command center; a tap or click outside
+closes it; leaving the sidebar closes a pointer-opened map after a 220 ms grace. Inside the
+compact-shell drawer (< 1024 px) the map is always open — the drawer is the disclosure.
+Nothing is a mode and nothing is remembered. Rail items and map nodes are links to the
+section's command center; branch rows are links to pages; hidden children render no row.
+
+**Why.** Owner (2026-09-03): the expanded sidebar "is reprehensible compared to before";
+no expand/collapse — on a dwell it should "expand rightwards and look like a flow chart" with
+the Watermelon animation and aesthetic. Also the standing complaint that a 216 px rail beside a
+dense page is a permanent tax on width.
+
+**Mechanics taken.** `tooltip-navbar` — one delay to open, none to travel between items once
+open; `layered-progressive-disclosure` — arrival as opacity + blur(4px) + an 8 px travel, never
+50 px, on a surface the reader is already reading; `morphing-sidebar-controls` — the map is a
+plane the rail becomes, not a wider rail.
+
+**Where.** `components/layout/Sidebar.tsx` (rewritten), `index.css` (`.mx-nav-map`,
+`.mx-rail-spine`, `.mx-map-spine`, `.mx-map-branch`), `components/layout/__tests__/
+sidebar-nav.test.tsx` (rewritten), `sidebar-operability.test.tsx` deleted (the resize handle it
+pinned no longer exists). `AppShell` is unchanged: the compact drawer still wraps the sidebar.
+
+**Proof.** 25 cases: the rail is 56 px with one link per section and no toggle or handle;
+a pass-through does not open the map and a dwell does (fake timers); leaving closes after the
+grace; focus opens at once and Escape returns focus; the map is `absolute`, the rail keeps its
+width; touch tap opens then navigates; group labels in order; ten nodes with stages 1…6 on the
+spine; the focused node's branch, heading and single connector; hidden children absent; the
+branch follows the pointer; node and row links navigate; the Soon pill. Gates: interaction,
+token-colors, disclosure-rulebook, optical-authority, type-scale all pass. Visual pass at 1440
+and 390 px with no console errors.
+
+**Reach.** Chrome only. Routing, landing routes, `resolveNavLocation`, the palette, the tab
+bars and the Topbar are untouched; the `metrix_sidebar_collapsed` key is no longer read (a
+stale value is harmless).
