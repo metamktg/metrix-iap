@@ -463,12 +463,11 @@ async function main() {
         await page.locator('input[type="file"][accept=".csv,.xlsx"]').setInputFiles([demoPath]);
         await page.locator("text=Demographics").first().waitFor({ state: "visible" });
         // Slot auto-detected purely from the file's own headers (Gender/Age) —
-        // its check mark appears without the user picking a slot.
-        await page.waitForFunction(
-          () => document.body.innerText.includes("Placements *"),
-          undefined,
-          { timeout: 10_000 },
-        );
+        // its remove control appears without the user picking a slot. (The
+        // old wait read the "Placements *" required marker, which now clears
+        // the moment any one delivery export is staged — a race that passed
+        // locally and timed out on CI.)
+        await page.locator('[aria-label="Remove Demographics file"]').waitFor({ state: "visible", timeout: 15_000 });
 
         // Stage a creative asset and correct its ad-name mapping via free text
         // (no ads registry exists yet on a brand-new manual account).
