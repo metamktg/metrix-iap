@@ -10,11 +10,10 @@
 //
 // Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-build
 //
-// The artifact's vite.config.ts requires PORT and BASE_PATH at config-load
-// time (they are normally supplied by the workflow). This script supplies
-// safe values so the build runs from a clean shell. PORT is only used for
-// dev/preview server config and does not affect build output; BASE_PATH is
-// set to "/" to match the artifact's registered preview path.
+// The artifact's vite.config.ts uses the registered service's port/base-path
+// as defaults, so this smoke deliberately builds once without either runtime
+// variable. That is the same clean-shell condition that previously failed
+// before Vite could start.
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { spawnGroup, killGroup } from "./lib/process-group.js";
@@ -32,6 +31,8 @@ const appDir = path.join(repoRoot, "artifacts/metrix-iap");
 const indexHtml = path.join(appDir, "dist/public/index.html");
 
 const BASE_PATH = "/";
+const COMPOSITE_BASE_URL =
+  process.env["METRIX_IAP_COMPOSITE_BASE_URL"] ?? "http://localhost:80";
 
 function fail(message: string, extra?: string): never {
   console.error(`\nFAIL  ${message}`);
@@ -96,12 +97,9 @@ async function runSmoke() {
     fail("Metrix IAP typecheck failed", String(err?.message ?? err));
   });
 
-  const buildEnv: NodeJS.ProcessEnv = {
-    ...process.env,
-    NODE_ENV: "production",
-    PORT: process.env["PORT"] ?? "5173",
-    BASE_PATH,
-  };
+  const buildEnv: NodeJS.ProcessEnv = { ...process.env, NODE_ENV: "production" };
+  delete buildEnv["PORT"];
+  delete buildEnv["BASE_PATH"];
 
   await runStep(
     "Building @workspace/metrix-iap for production",
@@ -191,8 +189,15 @@ async function runSmoke() {
     killGroup(previewServer);
   }
 
+  await assertCompositeRouting().catch((err) => {
+    fail(
+      `Managed composite routing check failed at ${COMPOSITE_BASE_URL}`,
+      String(err?.message ?? err),
+    );
+  });
+
   console.log(
-    `\nPASS  Metrix IAP production build succeeded — login, create-account, forgot-password, reset-password, and change-password forms visible in preview`,
+    `\nPASS  Metrix IAP production build and managed routing checks passed — pre-auth forms, deep links, and /api responses verified`,
   );
   process.exit(0);
 }
@@ -499,9 +504,12 @@ async function assertLoginFormVisible(port: string): Promise<void> {
     console.log(
       `Navigating to http://localhost:${port}/ to check login form...`,
     );
-    await page.goto(`http://localhost:${port}/`, {
+    const rootResponse = await page.goto(`http://localhost:${port}/`, {
       waitUntil: "domcontentloaded",
     });
+    if (rootResponse?.status() !== 200) {
+      throw new Error(`Root URL returned HTTP ${rootResponse?.status() ?? "no response"}`);
+    }
 
     await page
       .locator('[data-testid="form-login"]')
@@ -509,10 +517,81 @@ async function assertLoginFormVisible(port: string): Promise<void> {
 
     console.log("  ✓  [data-testid=\"form-login\"] is visible in production build");
 
+    const deepLinkResponse = await page.goto(`http://localhost:${port}/app/analysis`, {
+      waitUntil: "domcontentloaded",
+    });
+    if (deepLinkResponse?.status() !== 200) {
+      throw new Error(
+        `Direct SPA route /app/analysis returned HTTP ${deepLinkResponse?.status() ?? "no response"}`,
+      );
+    }
+
+    await page
+      .locator('[data-testid="form-login"]')
+      .waitFor({ state: "visible", timeout: 20_000 });
+
+    console.log("  ✓  direct /app/analysis URL returned the SPA entry point");
+
     await ctx.close();
   } finally {
     await browser.close();
   }
+}
+
+// The web artifact owns "/" while the separately registered API artifact owns
+// "/api". This check runs through the application router (not either service's
+// local port), which catches a route-ordering regression that would otherwise
+// return the SPA HTML for API requests.
+async function assertCompositeRouting(): Promise<void> {
+  const healthUrl = new URL("/api/healthz", COMPOSITE_BASE_URL);
+  const authUrl = new URL("/api/metrix/auth/me", COMPOSITE_BASE_URL);
+
+  const healthResponse = await fetch(healthUrl, {
+    signal: AbortSignal.timeout(10_000),
+    headers: { accept: "application/json" },
+  });
+  const healthContentType = healthResponse.headers.get("content-type") ?? "";
+  const healthBody = await healthResponse.text();
+
+  if (healthResponse.status !== 200 || !healthContentType.includes("json")) {
+    throw new Error(
+      `GET ${healthUrl.pathname} returned HTTP ${healthResponse.status} ` +
+        `${healthContentType || "without content type"}: ${healthBody.slice(0, 300)}`,
+    );
+  }
+
+  let health: unknown;
+  try {
+    health = JSON.parse(healthBody);
+  } catch {
+    throw new Error(`GET ${healthUrl.pathname} returned invalid JSON: ${healthBody.slice(0, 300)}`);
+  }
+
+  if (
+    !health ||
+    typeof health !== "object" ||
+    !("status" in health) ||
+    health.status !== "ok"
+  ) {
+    throw new Error(`GET ${healthUrl.pathname} returned unexpected JSON: ${healthBody.slice(0, 300)}`);
+  }
+
+  const authResponse = await fetch(authUrl, {
+    signal: AbortSignal.timeout(10_000),
+    headers: { accept: "application/json" },
+  });
+  const authContentType = authResponse.headers.get("content-type") ?? "";
+  const authBody = await authResponse.text();
+
+  if (authResponse.status !== 401 || !authContentType.includes("json")) {
+    throw new Error(
+      `GET ${authUrl.pathname} returned HTTP ${authResponse.status} ` +
+        `${authContentType || "without content type"}: ${authBody.slice(0, 300)}`,
+    );
+  }
+
+  console.log(`  ✓  ${healthUrl.pathname} → 200 JSON {"status":"ok"}`);
+  console.log(`  ✓  ${authUrl.pathname} → 401 JSON unauthenticated response`);
 }
 
 main().catch((err) => {

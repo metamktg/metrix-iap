@@ -4,25 +4,23 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
+// The managed artifact workflow supplies both values, but Vite also loads this
+// config for local builds, smoke checks, and static production builds where
+// those workflow-only variables are not present. Keep the defaults aligned
+// with the registered service so a clean `pnpm run build` is a valid path.
+const DEFAULT_PORT = 19673;
+const rawPort = process.env.PORT ?? String(DEFAULT_PORT);
 const port = Number(rawPort);
 
-if (Number.isNaN(port) || port <= 0) {
+if (!Number.isInteger(port) || port <= 0 || port > 65_535) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH;
+const basePath = process.env.BASE_PATH ?? "/";
 
-if (!basePath) {
+if (!basePath.startsWith("/") || basePath.includes("?") || basePath.includes("#")) {
   throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
+    `Invalid BASE_PATH value: "${basePath}". Expected an absolute URL path.`,
   );
 }
 
