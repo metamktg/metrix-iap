@@ -335,9 +335,12 @@ function ExpandableSection({
             <span
               aria-hidden="true"
               data-testid="nav-loop-stage"
+              title={`Stage ${section.loopStage} of 6 in the IAP loop`}
               className={cn(
-                "text-micro-num tabular-nums w-4 h-4 rounded-full border flex items-center justify-center shrink-0",
-                sectionActive ? "border-primary/50 text-interactive" : "border-border/50 text-muted-foreground/75",
+                // Hollow, muted and never filled — a stage marker must not read as a
+                // count badge (NavBadge is the filled pill beside it).
+                "text-micro-num tabular-nums w-4 h-4 rounded-full border flex items-center justify-center shrink-0 bg-transparent",
+                sectionActive ? "border-primary/40 text-muted-foreground" : "border-border/50 text-muted-foreground/75",
               )}
             >
               {section.loopStage}

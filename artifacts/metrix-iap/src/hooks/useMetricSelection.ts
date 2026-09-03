@@ -47,7 +47,13 @@ export function useMetricSelection(availableIds: string[]) {
   useEffect(() => {
     setSelected((prev) => {
       const filtered = prev.filter((id) => availableIds.includes(id));
-      return filtered.length === prev.length ? prev : filtered;
+      if (filtered.length === prev.length) return prev;
+      // A slot the catalog just withdrew (a cost tile under an awareness
+      // scope, say) is refilled from the defaults that ARE available, so
+      // a scope change never leaves the row short; a reader's own toggle
+      // still removes a tile for good.
+      const backfill = DEFAULT_METRIC_IDS.filter((id) => availableIds.includes(id) && !filtered.includes(id));
+      return [...filtered, ...backfill].slice(0, Math.max(prev.length, filtered.length));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableIds.join(",")]);
@@ -135,7 +141,13 @@ export function useTileSelection(
   useEffect(() => {
     setSelected((prev) => {
       const filtered = prev.filter((id) => availableIds.includes(id));
-      return filtered.length === prev.length ? prev : filtered;
+      if (filtered.length === prev.length) return prev;
+      // A slot the catalog just withdrew (a cost tile under an awareness
+      // scope, say) is refilled from the defaults that ARE available, so
+      // a scope change never leaves the row short; a reader's own toggle
+      // still removes a tile for good.
+      const backfill = defaultIds.filter((id) => availableIds.includes(id) && !filtered.includes(id));
+      return [...filtered, ...backfill].slice(0, Math.max(prev.length, filtered.length));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableIds.join(",")]);

@@ -132,6 +132,13 @@ with no result-type field at all predate the split and are kept under every scop
 demographic rows by event now that they carry one, and blends `results` for the blended cost the
 same way the catalog does — terminal conversion events only.
 
+**Rankings under a communication scope.** The Audience rank metrics, header tiles and
+positioning map, and the MST and Avatars sort options, drop cost per result and the conversion
+rates when the scope is an awareness event and lead with the event's own rate, CPM and
+click-through instead (the map's cost axis becomes CPM). A cost sort chosen under a conversion
+scope falls back to spend when the reader switches scope. A tile slot the catalog withdraws on
+a scope change is refilled from the defaults that remain, so a row never comes up short.
+
 **Where it reads.** IAP Library (grid, cards, tiers, tiles, filters), Budget, Analysis Overview
 (tiles, top cells, variable table, rollup, demographics), Creative DNA, Audience, Avatars, MST
 Command Center, Concept Map, the variable drill-down (header rows, scale, tag) and, through the

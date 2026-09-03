@@ -9,6 +9,7 @@
 // second, so it belongs on the MST overview rather than duplicated onto
 // the Strategy/Avatars ICP page.
 
+import type { EvaluationScale } from "@/lib/resultEvents";
 import { useResultScope } from "@/hooks/useResultScope";
 import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
@@ -60,6 +61,11 @@ type SortKey = "spend" | "cpa" | "cvr" | "cpm" | "confidence";
 const SORT_LABEL: Record<SortKey, string> = {
   spend: "Spend", cpa: "CPA", cvr: "Link CVR", cpm: "CPM", confidence: "Confidence",
 };
+/** Under a communication scope an avatar is never sorted on cost per result or a conversion rate. */
+const COST_SCALE_SORTS: readonly SortKey[] = ["cpa", "cvr"];
+function sortKeysFor(scale: EvaluationScale | null): SortKey[] {
+  return (Object.keys(SORT_LABEL) as SortKey[]).filter((k) => scale !== "communication" || !COST_SCALE_SORTS.includes(k));
+}
 /** "asc" = lower is better (cost metrics), "desc" = higher is better — drives the sort-pill arrow. */
 const SORT_DIRECTION: Record<SortKey, "asc" | "desc"> = {
   spend: "desc", cpa: "asc", cvr: "desc", cpm: "asc", confidence: "desc",
@@ -302,11 +308,11 @@ function AvatarTile({
 
 // ─── Sort bar ─────────────────────────────────────────────────────────
 
-function AvatarSortBar({ sortBy, onSort }: { sortBy: SortKey; onSort: (k: SortKey) => void }) {
+function AvatarSortBar({ sortBy, onSort, keys }: { sortBy: SortKey; onSort: (k: SortKey) => void; keys: SortKey[] }) {
   return (
     <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Sort avatars">
       <span className="text-label font-semibold text-muted-foreground/75 normal-case tracking-normal">Sort</span>
-      {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => {
+      {keys.map((k) => {
         const active = sortBy === k;
         return (
           <button
@@ -431,7 +437,7 @@ export function MstCommandCenter() {
   const status = useStageStatus(account?.id ?? null);
   const [, navigate] = useLocation();
 
-  const [sortBy, setSortBy] = useState<SortKey>("spend");
+  const [sortByRaw, setSortBy] = useState<SortKey>("spend");
   const [detail, setDetail] = useState<{ column: MSTMatrixColumn; cells: MSTMatrixCell[] } | null>(null);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
   const avatarRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -459,6 +465,10 @@ export function MstCommandCenter() {
   // summed over the scope's event(s) only.
   const resultScope = useResultScope(account, adAccountId, analysis?.performance_by_cell.map((r) => r["Result type"]));
   const { scopeRows } = resultScope;
+  const sortKeys = useMemo(() => sortKeysFor(resultScope.scope?.scale ?? null), [resultScope.scope]);
+  // A cost sort chosen under a conversion scope falls back to spend when the
+  // reader switches to an awareness event — never a cost per ThruPlay.
+  const sortBy: SortKey = sortKeys.includes(sortByRaw) ? sortByRaw : "spend";
   const cellRows = useMemo(() => filterByRun(scopeRows(analysis?.performance_by_cell ?? [], (r) => r["Result type"])), [analysis, filterByRun, scopeRows]);
   const scopedAnalysis = useMemo(
     () => (analysis ? { ...analysis, performance_by_cell: cellRows } : analysis),
@@ -587,7 +597,7 @@ export function MstCommandCenter() {
                         <SectionCard
                           title="Matrix avatars"
                           desc={`Sorted by ${SORT_LABEL[sortBy]} · tap any card for detail`}
-                          right={<><SectionInfoIcon tip="Audience avatars from the MST matrix, each with its measured performance, creative DNA, and linked ICP profiles." /><AvatarSortBar sortBy={sortBy} onSort={setSortBy} /></>}
+                          right={<><SectionInfoIcon tip="Audience avatars from the MST matrix, each with its measured performance, creative DNA, and linked ICP profiles." /><AvatarSortBar sortBy={sortBy} onSort={setSortBy} keys={sortKeys} /></>}
                         >
                           <FoldedGrid
                             items={sortedColumns}

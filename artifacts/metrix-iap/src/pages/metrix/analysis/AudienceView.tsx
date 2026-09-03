@@ -23,6 +23,7 @@
 // ShareOfSpendCard, GroupDetailCard) over the common AudienceGroup<T> shape
 // from audience-clusters.ts, so the same honesty rules apply to both.
 
+import type { EvaluationScale } from "@/lib/resultEvents";
 import { useResultScope } from "@/hooks/useResultScope";
 import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import { useMemo, useState, useCallback } from "react";
@@ -126,11 +127,21 @@ const QUADRANT_COLOR: Record<PositioningQuadrant, string> = {
   avoid:    VERDICT.bad,
 };
 
-function buildRankMetrics(resultPlural: string): RankMetric<SegmentEntry>[] {
-  return [
+/** Metric ids that are a cost-per-result verdict or a conversion-funnel read — never offered under a communication scope. */
+const COST_SCALE_IDS = new Set(["cpa", "cvr", "atcRate", "costPerAtc", "checkoutRate"]);
+
+/** An awareness event's own rate: results ÷ impressions, percent. */
+function resultRatePct(e: { totals: { results: number | null; impressions: number | null } }): number | null {
+  const { results, impressions } = e.totals;
+  return results != null && impressions != null && impressions > 0 && results <= impressions ? (results / impressions) * 100 : null;
+}
+
+function buildRankMetrics(resultPlural: string, scale: EvaluationScale | null = "cost_per_result"): RankMetric<SegmentEntry>[] {
+  const all: RankMetric<SegmentEntry>[] = [
     { id: "results",     label: resultPlural,  direction: "desc", value: (e) => e.totals.results,     format: fmtNum },
     { id: "spend",       label: "Spend",        direction: "desc", value: (e) => e.totals.spend,       format: (v) => fmtUSD(v, 0) },
     { id: "cpa",         label: "CPA",          direction: "asc",  value: (e) => e.derived.cpa,        format: fmtUSD },
+    { id: "resultRate",  label: "Result rate",  direction: "desc", value: (e) => resultRatePct(e),     format: fmtPct },
     { id: "ctr",         label: "Link CTR",     direction: "desc", value: (e) => e.derived.ctr,        format: fmtPct },
     { id: "impressions", label: "Impressions",  direction: "desc", value: (e) => e.totals.impressions, format: fmtNum },
     { id: "cvr",         label: "CVR",          direction: "desc", value: (e) => e.derived.cvr,        format: fmtPct },
@@ -139,6 +150,9 @@ function buildRankMetrics(resultPlural: string): RankMetric<SegmentEntry>[] {
     { id: "costPerAtc",  label: "Cost per ATC",     direction: "asc",  value: (e) => e.derived.costPerAddToCart, format: fmtUSD },
     { id: "checkoutRate", label: "Checkout rate",   direction: "desc", value: (e) => e.derived.checkoutRate,    format: fmtPct },
   ];
+  // Communication scale (owner direction 2026-09-03): an awareness event is
+  // never ranked on cost per result or a conversion rate; its own rate is.
+  return scale === "communication" ? all.filter((m) => !COST_SCALE_IDS.has(m.id)) : all.filter((m) => m.id !== "resultRate");
 }
 
 /**
@@ -152,11 +166,14 @@ function buildResolvedAudienceMetrics(
   totals: SegmentRawTotals,
   derived: SegmentDerivedMetrics,
   resultPlural: string,
+  scale: EvaluationScale | null = "cost_per_result",
 ): ResolvedMetricOption[] {
-  return [
+  const rate = resultRatePct({ totals });
+  const all: ResolvedMetricOption[] = [
     { id: "results",      label: resultPlural,       formatted: fmtNum(totals.results ?? 0) },
     { id: "spend",        label: "Spend",             formatted: fmtUSD(totals.spend ?? 0, 0) },
     { id: "cpa",          label: "CPA",               formatted: derived.cpa != null ? fmtUSD(derived.cpa) : "—" },
+    { id: "resultRate",   label: "Result rate",       formatted: rate != null ? fmtPct(rate) : "—" },
     { id: "ctr",          label: "Link CTR",          formatted: derived.ctr != null ? fmtPct(derived.ctr) : "—" },
     { id: "impressions",  label: "Impressions",       formatted: fmtNum(totals.impressions ?? 0) },
     { id: "cvr",          label: "CVR",               formatted: derived.cvr != null ? fmtPct(derived.cvr) : "—" },
@@ -165,14 +182,23 @@ function buildResolvedAudienceMetrics(
     { id: "costPerAtc",   label: "Cost per ATC",      formatted: derived.costPerAddToCart != null ? fmtUSD(derived.costPerAddToCart) : "—" },
     { id: "checkoutRate", label: "Checkout rate",     formatted: derived.checkoutRate != null ? fmtPct(derived.checkoutRate) : "—" },
   ];
+  return scale === "communication" ? all.filter((m) => !COST_SCALE_IDS.has(m.id)) : all.filter((m) => m.id !== "resultRate");
 }
 
-const AUDIENCE_RANK_GROUPS: MetricGroup[] = [
-  { label: "Performance", ids: ["results", "spend", "cpa"] },
-  { label: "Traffic",     ids: ["ctr", "impressions"] },
-  { label: "Engagement",  ids: ["cvr", "cpm"] },
-  { label: "Downstream intent", ids: ["atcRate", "costPerAtc", "checkoutRate"] },
-];
+function audienceRankGroups(scale: EvaluationScale | null): MetricGroup[] {
+  if (scale === "communication") {
+    return [
+      { label: "Communication", ids: ["results", "resultRate", "spend"] },
+      { label: "Reach",         ids: ["impressions", "cpm", "ctr"] },
+    ];
+  }
+  return [
+    { label: "Performance", ids: ["results", "spend", "cpa"] },
+    { label: "Traffic",     ids: ["ctr", "impressions"] },
+    { label: "Engagement",  ids: ["cvr", "cpm"] },
+    { label: "Downstream intent", ids: ["atcRate", "costPerAtc", "checkoutRate"] },
+  ];
+}
 
 // ── Segment-by toggle ────────────────────────────────────────────────
 
@@ -239,21 +265,27 @@ export interface GroupingEmptyHint {
 
 function PositioningMapCard({
   groups, resultPlural, groupNoun, emptyHint,
+  scale,
 }: {
   groups: AudienceGroup<SegmentEntry>[];
   resultPlural: string;
   groupNoun: string;
   emptyHint?: GroupingEmptyHint;
+  scale: EvaluationScale | null;
 }) {
-  const plotted = groups.filter((g) => g.derived.cpa != null && g.totals.results != null);
+  // Under a communication scope the cost axis is CPM — what an awareness
+  // event is judged on — never cost per result.
+  const costOf = (g: AudienceGroup<SegmentEntry>): number | null => (scale === "communication" ? g.derived.cpm : g.derived.cpa);
+  const costLabel = scale === "communication" ? "CPM" : "Cost per result";
+  const plotted = groups.filter((g) => costOf(g) != null && g.totals.results != null);
 
-  const medianCpa = numMedian(plotted.map((g) => g.derived.cpa!));
+  const medianCpa = numMedian(plotted.map((g) => costOf(g)!));
   const medianResults = numMedian(plotted.map((g) => g.totals.results!));
   const totalSpend = plotted.reduce((n, g) => n + (g.totals.spend ?? 0), 0);
 
   type Point = { x: number; y: number; spendShare: number; group: AudienceGroup<SegmentEntry> };
   const plotData: Point[] = plotted.map((g) => ({
-    x: g.derived.cpa!,
+    x: costOf(g)!,
     y: g.totals.results!,
     spendShare: totalSpend > 0 ? (g.totals.spend ?? 0) / totalSpend : 0,
     group: g,
@@ -294,7 +326,7 @@ function PositioningMapCard({
         <p className={cn(TYPE.title, "text-foreground mb-2")}>{pt.group.label}</p>
         <div className={cn("space-y-1", TYPE.caption, "text-muted-foreground")}>
           <div className="flex justify-between gap-3">
-            <span>Cost per result</span>
+            <span>{costLabel}</span>
             <span className="tabular-nums text-foreground/80">{fmtUSD(pt.x)}</span>
           </div>
           <div className="flex justify-between gap-3">
@@ -319,8 +351,8 @@ function PositioningMapCard({
   return (
     <SectionCard
       title="Positioning map"
-      desc={`Cost per result vs. ${resultPlural.toLowerCase()} · bubble size = spend`}
-      right={<SectionInfoIcon tip={`Each bubble is one real ${groupNoun}. X = cost per result, Y = ${resultPlural.toLowerCase()}, bubble size = spend. Quadrant cutoffs are the real median across plotted ${groupNoun}s.`} />}
+      desc={`${costLabel} vs. ${resultPlural.toLowerCase()} · bubble size = spend`}
+      right={<SectionInfoIcon tip={`Each bubble is one real ${groupNoun}. X = ${costLabel.toLowerCase()}, Y = ${resultPlural.toLowerCase()}, bubble size = spend. Quadrant cutoffs are the real median across plotted ${groupNoun}s.`} />}
     >
       {plotData.length === 0 ? (
         emptyHint ? (
@@ -371,7 +403,7 @@ function PositioningMapCard({
                 axisLine={{ stroke: "hsl(var(--foreground) / 0.08)" }}
                 tickLine={false}
                 label={{
-                  value: "Cost per result →",
+                  value: `${costLabel} →`,
                   position: "insideBottom",
                   offset: -30,
                   fill: "hsl(var(--muted-foreground))",
@@ -608,13 +640,14 @@ function GroupDetailCard({
 // ── Ranked List tab — preserved from the prior full per-segment view ────
 
 function RankedListTab({
-  ranked, activeMetric, onSelect, onSelectMetric, rankMetrics, resultPlural, medianCpa,
+  ranked, activeMetric, onSelect, onSelectMetric, rankMetrics, rankGroups, resultPlural, medianCpa,
 }: {
   ranked: SegmentEntry[];
   activeMetric: RankMetric<SegmentEntry>;
   onSelect: (seg: SegmentId) => void;
   onSelectMetric: (id: string) => void;
   rankMetrics: RankMetric<SegmentEntry>[];
+  rankGroups: MetricGroup[];
   resultPlural: string;
   medianCpa: number;
 }) {
@@ -625,7 +658,7 @@ function RankedListTab({
     <SectionCard
       title="Segment performance"
       desc="All cells · re-rank by KPI · click a segment for drivers"
-      right={<><SectionInfoIcon tip="Ranks each age–gender pocket by the active KPI so you can spot which segments are driving results and which need attention." /><RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} groups={AUDIENCE_RANK_GROUPS} /></>}
+      right={<><SectionInfoIcon tip="Ranks each age–gender pocket by the active KPI so you can spot which segments are driving results and which need attention." /><RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} groups={rankGroups} /></>}
     >
       <div className="space-y-2">
         {fold.visible.map((e, idx) => {
@@ -848,7 +881,9 @@ export function AudienceView() {
     ? resultTerm(account)
     : { singular: "result", plural: "results", Plural: "Results" };
 
-  const rankMetrics = useMemo(() => buildRankMetrics(term.Plural), [term.Plural]);
+  const scale = resultScope.scope?.scale ?? null;
+  const rankMetrics = useMemo(() => buildRankMetrics(term.Plural, scale), [term.Plural, scale]);
+  const rankGroups = useMemo(() => audienceRankGroups(scale), [scale]);
   const { activeId, select } = useRankMetric(RANK_KEY, rankMetrics.map((m) => m.id), "results");
   const activeMetric = rankMetrics.find((m) => m.id === activeId) ?? rankMetrics[0];
   const ranked = useMemo(() => sortByRankMetric(entries, activeMetric), [entries, activeMetric]);
@@ -870,7 +905,7 @@ export function AudienceView() {
   const accountTotals = useMemo(() => computeSegmentTotals(scopedRows), [scopedRows]);
   const accountDerived = useMemo(() => deriveSegmentMetrics(accountTotals), [accountTotals]);
   const accountWideMetrics = useMemo(
-    () => buildResolvedAudienceMetrics(accountTotals, accountDerived, term.Plural),
+    () => buildResolvedAudienceMetrics(accountTotals, accountDerived, term.Plural, scale),
     [accountTotals, accountDerived, term.Plural]
   );
   const tileIds = accountWideMetrics.map((m) => m.id);
@@ -1044,13 +1079,13 @@ export function AudienceView() {
                       <MetricTile label="Segments" value={fmtNum(entries.length)} />
                       <MetricPickerTile
                         options={accountWideMetrics}
-                        groups={AUDIENCE_RANK_GROUPS}
+                        groups={rankGroups}
                         activeId={tile1Id}
                         onSelect={selectTile1}
                       />
                       <MetricPickerTile
                         options={accountWideMetrics}
-                        groups={AUDIENCE_RANK_GROUPS}
+                        groups={rankGroups}
                         activeId={tile2Id}
                         onSelect={selectTile2}
                       />
@@ -1084,13 +1119,14 @@ export function AudienceView() {
                         onSelect={setSelectedSeg}
                         onSelectMetric={select}
                         rankMetrics={rankMetrics}
+                          rankGroups={rankGroups}
                         resultPlural={term.Plural}
                         medianCpa={medianCpa}
                       />
                     ) : (
                       <>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                          <PositioningMapCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} emptyHint={groupingEmptyHint} />
+                          <PositioningMapCard scale={scale} groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} emptyHint={groupingEmptyHint} />
                           <ShareOfSpendCard groups={activeGroups} resultPlural={term.Plural} groupNoun={groupNoun} emptyHint={groupingEmptyHint} />
                         </div>
                         <GroupDetailCard

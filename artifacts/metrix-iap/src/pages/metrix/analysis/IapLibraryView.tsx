@@ -189,13 +189,15 @@ export function IapLibraryView() {
     [libCells, mst]
   );
 
-  const tileCatalog = useMemo(() => buildLibraryMetricCatalog(libCells, { scale: activeScope?.scale ?? null, label: activeScope?.label }), [libCells]);
+  const tileCatalog = useMemo(() => buildLibraryMetricCatalog(libCells, { scale: activeScope?.scale ?? null, label: activeScope?.label }), [libCells, activeScope]);
   const tileCatalogIds = useMemo(() => tileCatalog.map((m) => m.id), [tileCatalog]);
   const {
     selected: savedTileIds, toggle: toggleTile, move: moveTile, reset: resetTiles,
   } = useTileSelection(tileCatalogIds, {
     storageKey: LIBRARY_METRIC_STORAGE_KEY,
-    defaultIds: LIBRARY_DEFAULT_METRIC_IDS,
+    // Under a communication scope there is no cost tile to default to; the
+    // awareness event's own rate and CPM take that slot.
+    defaultIds: activeScope?.scale === "communication" ? [...LIBRARY_DEFAULT_METRIC_IDS.filter((id) => id !== "lib_cpa"), "lib_result_rate", "lib_cpm"] : LIBRARY_DEFAULT_METRIC_IDS,
   });
 
   // When a named funnel stage is active, override tile IDs with the stage's preset.
