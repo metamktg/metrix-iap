@@ -108,6 +108,7 @@
   "artifacts/metrix-iap/src/pages/metrix/analysis/EngagementFunnelView.tsx::accountHasVideoCreative": "test-only",
   "artifacts/metrix-iap/src/pages/metrix/analysis/EngagementFunnelView.tsx::buildDeviceRows": "unreferenced",
   "artifacts/metrix-iap/src/pages/metrix/analysis/EngagementFunnelView.tsx::buildPlacementRows": "test-only",
+  "artifacts/metrix-iap/src/pages/metrix/analysis/FindingsView.tsx::liftLabel": "test-only",
   "artifacts/metrix-iap/src/pages/metrix/analysis/IapLibraryView.tsx::intentSummaryFragments": "test-only",
   "artifacts/metrix-iap/src/pages/metrix/analysis/tables.tsx::MagnitudeCell": "unreferenced",
   "artifacts/metrix-iap/src/pages/metrix/analysis/tables.tsx::SortableTh": "test-only",

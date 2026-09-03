@@ -28,7 +28,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAccount } from "@/contexts/AccountContext";
 import { readSeedProvenance, sourceFileCoverage } from "@/lib/data/provenance";
 import type { AccountProvenance, RegistryFamily } from "@/lib/data/provenance";
-import { ModuleHeader, SectionCard, CaveatNote, PendingState, DenseText } from "../shared";
+import { ModuleHeader, SectionCard, CaveatNote, PendingState, DenseText, CrossLink } from "../shared";
 import { TYPE, HEADING } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { FileSearch, AlertTriangle, CheckCircle2, FileText, Minus } from "lucide-react";
@@ -307,6 +307,14 @@ export function DataProvenanceView() {
           {prov.accounts.map((a) => (
             <AccountChain key={a.id} a={a} />
           ))}
+          {/* A page that ends in a wall of lineage and no way forward is a
+              dead end (N-5). Provenance is read for one of two reasons —
+              checking what an analysis rests on, or finding what is missing —
+              and both continue on the analysis centre. */}
+          <div className="flex items-center gap-3 flex-wrap pt-1">
+            <CrossLink to="/app/analysis" label="Open the analysis centre" srNote="run or re-run analysis for an account" />
+            <CrossLink to="/app/analysis/library" label="Read the IAP Library" srNote="the rows this provenance describes" />
+          </div>
         </div>
       )}
     </div>

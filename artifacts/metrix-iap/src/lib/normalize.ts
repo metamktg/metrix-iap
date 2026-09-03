@@ -214,6 +214,29 @@ export function humanizeEnum(value: string | null | undefined): string {
   return cap(parts.join(" ").toLowerCase());
 }
 
+/**
+ * Display form of a creative brief's `status`.
+ *
+ * WHY THIS IS NOT A MAP IN A PAGE
+ * It was, twice. The Brief Builder and the Creative Command Center each
+ * kept their own `STATUS_LABEL`, and when the generation engine grew
+ * `generated_high` / `generated_medium` only one of them was taught the
+ * `humanizeEnum` fallback. The Command Center — the page the sidebar
+ * actually lands on — went on printing GENERATED_HIGH in an uppercase
+ * chip. Two copies of a lookup do not stay equal; one copy cannot drift.
+ */
+export function briefStatusLabel(status: string | null | undefined): string {
+  const raw = (status ?? "").trim();
+  const known: Record<string, string> = {
+    draft_from_seed: "Draft",
+    validation_draft_from_seed: "Validation draft",
+    control_refresh_from_seed: "Control refresh",
+    generated_p1: "Generated · P1",
+    generated_p2: "Generated · P2",
+  };
+  return known[raw] ?? humanizeEnum(raw);
+}
+
 // ─── ICP names ────────────────────────────────────────────────────────
 
 /**

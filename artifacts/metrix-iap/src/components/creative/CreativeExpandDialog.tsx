@@ -14,6 +14,7 @@ import { Upload, ImageOff, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
+import { humanizeEnum } from "@/lib/normalize";
 import type { CreativeCardData } from "./CreativeCard";
 import { FunnelStepsChart, buildFunnelSteps, describeFunnelChain, funnelStepLabel } from "./FunnelStepsChart";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -282,7 +283,7 @@ function OverviewTab({ data, perfRows }: { data: CreativeCardData; perfRows: Cel
                   QA_STATUS_STYLE[data.qaMappingStatus] ?? "bg-muted text-muted-foreground/75 border-border/40",
                 )}
               >
-                {QA_STATUS_LABEL[data.qaMappingStatus] ?? data.qaMappingStatus}
+                {QA_STATUS_LABEL[data.qaMappingStatus] ?? humanizeEnum(data.qaMappingStatus)}
               </span>
             )}
             {data.mappingConfidence && (

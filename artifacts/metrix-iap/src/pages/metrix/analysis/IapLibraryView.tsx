@@ -108,7 +108,16 @@ const VARIABLE_FIELDS: { key: keyof CellPerformanceRow; label: string }[] = [
 export function intentSummaryFragments(summary: SeedIntentSummary | null | undefined): string[] {
   if (!summary) return [];
   const out: string[] = [];
-  if (summary.dominant_intent) out.push(`${INTENT_CLASSES[summary.dominant_intent].label}-led`);
+  if (summary.dominant_intent) {
+    // The class's own share of spend, stated by the seed over the account's
+    // full flight — the same grain as this header. "Conversion-led" alone
+    // does not say whether that is 91% of the money or 34% of it.
+    const dom = summary.classes.find((c) => c.intent_class === summary.dominant_intent);
+    const share = dom && dom.spend_share_pct > 0
+      ? ` · ${dom.spend_share_pct < 1 ? "<1" : Math.round(dom.spend_share_pct)}% of spend`
+      : "";
+    out.push(`${INTENT_CLASSES[summary.dominant_intent].label}-led${share}`);
+  }
   if (summary.total_spend > 0 && summary.unplaced_spend > 0) {
     const pct = (summary.unplaced_spend / summary.total_spend) * 100;
     out.push(`${pct < 1 ? "<1" : Math.round(pct)}% spend unplaced`);

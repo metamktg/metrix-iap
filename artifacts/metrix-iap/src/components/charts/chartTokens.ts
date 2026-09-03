@@ -284,6 +284,9 @@ export function divergingLegend(): { label: string; fill: string }[] {
 export const VERDICT = {
   good: "hsl(var(--status-success))",
   neutral: "hsl(var(--muted-foreground))",
+  /** Between good and bad: partial coverage, a middling tier. Not a warning
+   *  banner's amber by accident — the same status role, used as a MARK. */
+  partial: "hsl(var(--status-warning))",
   bad: "hsl(var(--status-danger))",
   unmeasured: "hsl(var(--muted-foreground) / 0.35)",
 } as const;

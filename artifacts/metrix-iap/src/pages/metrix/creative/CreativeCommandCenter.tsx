@@ -27,14 +27,11 @@ import {
   CheckCircle2, XCircle, Loader2,
 } from "lucide-react";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
+import { briefStatusLabel } from "@/lib/normalize";
+import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
+import { deriveRecommendations, recommendationsForStage } from "@/lib/data/recommendations";
 
 const SECTION = "Creative · 05";
-
-const STATUS_LABEL: Record<string, string> = {
-  draft_from_seed: "Draft",
-  validation_draft_from_seed: "Validation draft",
-  control_refresh_from_seed: "Control refresh",
-};
 
 type FormatTab = "static" | "video" | "ugc";
 
@@ -68,9 +65,21 @@ export function CreativeCommandCenter() {
     <ModuleScopeGate section={SECTION} title="Creative" account={account}>
       {() => {
         const acct = account!;
-        const strategyOk = status.strategy.status === "success";
         const briefs = bb?.draft_briefs ?? [];
         const strategy = getStrategyData(seed, adAccountId);
+        // The prerequisite for generating briefs is PILLARS, not a run.
+        // `status.strategy` reports the latest in-app strategy GENERATION
+        // RUN, and an account whose strategy arrived through the importer
+        // has never had one — so this page told bookster "this account
+        // doesn't have a completed strategy run yet" directly beneath a
+        // tile reading "Pillars covered 3 of 3" and above a list of its
+        // sixteen briefs. The server never agreed: storedPillars() in
+        // generationEngine.ts takes "the CURRENT generated set if one
+        // exists, else the imported set", so the generation the gate was
+        // blocking would have worked. Ask for the input the generator
+        // actually consumes.
+        const strategyOk =
+          status.strategy.status === "success" || (strategy?.message_pillars.length ?? 0) > 0;
         const pillarOf = (id: string) => strategy?.message_pillars.find((p) => p.id === id);
         const byFormat = (f: FormatTab) => briefs.filter((b) => formatOf(b.asset_type) === f);
         const shown = byFormat(tab);
@@ -109,7 +118,17 @@ export function CreativeCommandCenter() {
               <CreativeSourceNudge account={acct} />
             </div>
 
-            <div className="px-6 py-5 space-y-4 max-w-4xl">
+            {/* One column width across all four command centres (MST's, the
+                widest content, sets it): a reader walking Listen → Analysis →
+                Strategy → Creative → MST saw the content column jump between
+                three widths, and the same "Execution card" pattern render
+                2-across on one stage and 4-across on the next. */}
+            <div className="px-6 py-5 space-y-4 max-w-5xl">
+              {/* Direction for this stage, from the account's own rows —
+                  each tile carries the number behind it and a link to the
+                  surface that proves it. Absent when this stage has none. */}
+              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 4); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="What the data says to do next" /> : null; })()}
+
               {/* Execution card: verb title + input-metric tiles + primary action —
                   canvas's Command Center Execution-card pattern (COMMAND["creative.cc"]
                   verb: "Generate briefs"). The tile grid stays unconditional on real
@@ -128,7 +147,7 @@ export function CreativeCommandCenter() {
                 <PrerequisiteGate
                   met={strategyOk}
                   title="Generate strategy first"
-                  message="Briefs are generated from strategy message pillars — this account doesn't have a completed strategy run yet."
+                  message="Briefs are generated from strategy message pillars, and this account has none yet — imported or generated, either works."
                   ctaLabel="Go to Strategy"
                   ctaTo={withFrom("/app/strategy", fp)}
                 >
@@ -205,7 +224,7 @@ export function CreativeCommandCenter() {
                   title={`No ${tab === "ugc" ? "UGC" : tab} briefs yet`}
                   message={
                     !strategyOk
-                      ? "Briefs are generated from strategy message pillars — this account doesn't have a completed strategy run yet."
+                      ? "Briefs are generated from strategy message pillars, and this account has none yet."
                       : tab === "static"
                         ? "No draft briefs for this account yet — generate a set from its strategy pillars."
                         : `No source-backed ${tab === "ugc" ? "UGC" : "video"} briefs exist for this account yet. Briefs are only generated from validated strategy — nothing is fabricated.`
@@ -224,8 +243,14 @@ export function CreativeCommandCenter() {
                         <span className="inline-flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/50 px-1.5 py-0.5 rounded leading-none">
                           <FileText className="w-2.5 h-2.5" /> {b.asset_type}
                         </span>
-                        <span className="text-label font-semibold uppercase tracking-wide text-status-warning border border-status-warning/30 bg-status-warning/20 px-1.5 py-0.5 rounded leading-none">
-                          {STATUS_LABEL[b.status] ?? b.status}
+                        {/* A brief's status is a stage, not a problem. Every one
+                            of these wore the amber warning tint, so "Generated ·
+                            High" — the best outcome the engine can report — was
+                            painted the same colour as a failure, and a page of
+                            them read as a page of warnings. Neutral chip, same
+                            as the Brief Builder's. */}
+                        <span className="text-label font-medium shrink-0 inline-flex border border-border/40 bg-foreground/[0.04] rounded-full px-2 py-0.5 text-foreground/70 leading-none">
+                          {briefStatusLabel(b.status)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 mb-2">
