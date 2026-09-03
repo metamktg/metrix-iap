@@ -35,6 +35,7 @@ const seed = JSON.parse(
 
 // The bookster account has 4 signal_cards with at least one high-impact signal.
 // Verify the precondition so a stale fixture doesn't silently make these tests vacuous.
+const booksterFull = (seed.ad_accounts as AdAccount[]).find((a) => a.id === "bookster")!;
 const booksterAccount = (seed.ad_accounts as { id: string; listen?: { signal_cards?: unknown[] } }[])
   .find((a) => a.id === "bookster");
 if (!booksterAccount?.listen?.signal_cards?.length) {
@@ -85,6 +86,8 @@ import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { AlertsView } from "../AlertsView";
 import { SignalView } from "../SignalView";
 import { RecommendationsView } from "../RecommendationsView";
+import { deriveRecommendations } from "@/lib/data/recommendations";
+import type { AdAccount } from "@/lib/data/seedTypes";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -296,28 +299,41 @@ describe("RecommendationsView — disconnected", () => {
     expect(screen.getAllByText(/^recommendations$/i).length).toBeGreaterThan(0);
   });
 
-  // These two used to assert the "High impact" and "Auto-applied" metric
-  // tiles. Those tiles now render only when there are recommendations to
-  // count: the fixture has none (optimization_loop is null for every
-  // account), and a row reading 0 / 0 / — / 0 claims this account was
-  // measured and came back empty, directly above a panel saying the stage
-  // never ran. The two statements contradict each other and the tiles are
-  // the false one.
+  // These two used to assert that the view showed the stage-not-run state:
+  // the Optimization Loop has never run for any account, so
+  // `optimization_loop.recommendation_cards` was empty everywhere and a tile
+  // row reading 0 / 0 / — / 0 would have claimed a measurement that never
+  // happened.
   //
-  // What this file actually protects is connection-INDEPENDENCE — that the
-  // view renders its content whether or not Meta is connected, rather than
-  // hiding behind the old gate. The tiles were the instrument, not the
-  // subject, so the same protection is asserted here against the content
-  // the view really renders when empty.
-  it("renders its content when Meta is disconnected — the stage state, with the real reason", () => {
+  // Recommendations are now DERIVED from the rows the account does carry
+  // (change log entry 10), so this account has real ones and the tiles count
+  // something true. The subject of this file is unchanged — the view renders
+  // its content whether or not Meta is connected — and the honesty rule is
+  // unchanged too: the tiles appear only when there is something to count.
+  it("renders its content when Meta is disconnected — real recommendations, not a gate", () => {
     render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
-    expect(screen.getByText(/^no recommendations$/i)).toBeTruthy();
-    expect(screen.getByText("loop_status → optimization_loop")).toBeTruthy();
+    const derived = deriveRecommendations(booksterFull);
+    expect(derived.length).toBeGreaterThan(0);
+    // The count tile states the number the derivation produced (the same
+    // number appears on the deck's own counter, so this asserts presence
+    // rather than uniqueness).
+    expect(screen.getAllByText(String(derived.length)).length).toBeGreaterThan(0);
+    // And the stage-not-run panel is gone, because the stage is no longer
+    // what these cards depend on.
+    expect(screen.queryByText(/^no recommendations$/i)).toBeNull();
   });
 
-  it("does not present an unrun stage as a measured zero", () => {
+  it("counts only what it can measure — the tiles never state a zero for an unrun stage", () => {
     render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
-    expect(screen.queryByText(/auto-applied/i)).toBeNull();
+    // "Auto-applied 0" is a policy statement (nothing is ever auto-applied),
+    // and it renders beside real counts — never as the only content of an
+    // account that was never measured.
+    const derived = deriveRecommendations(booksterFull);
+    if (derived.length === 0) {
+      expect(screen.queryByText(/auto-applied/i)).toBeNull();
+    } else {
+      expect(screen.getByText(/manual implementation only/i)).toBeTruthy();
+    }
   });
 
   it("shows ConnectionNudgeBanner when Meta is disconnected", () => {

@@ -15,6 +15,7 @@ import { Lightbulb } from "lucide-react";
 import { useGetMetaConnection } from "@workspace/api-client-react";
 import { SegmentGridModal } from "@/components/creative/SegmentGridModal";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
+import { deriveRecommendations, toLoopCards } from "@/lib/data/recommendations";
 
 const SECTION = "Listen · 02";
 
@@ -44,7 +45,10 @@ export function RecommendationsView() {
         const acct = account!;
         const loop = getOptimizationLoop(seed, adAccountId);
         const analysis = getAnalysisData(seed, adAccountId);
-        const rawCards = loop?.recommendation_cards ?? [];
+        // Same derivation the overview and the queue read: the loop's cards
+        // when it has run, the account's own rows when it has not. `loop` is
+        // still read for its action policy, which is the stage's own words.
+        const rawCards = toLoopCards(deriveRecommendations(acct), acct.id);
         const knownCells = new Set((analysis?.performance_by_cell ?? []).map((r) => r.cell_id));
         const cards: DeckCard[] = rawCards.map((c) => ({
           id: c.id,

@@ -31,7 +31,7 @@
 //    from the rows' own result events.
 
 import type { DeckCard } from "@/components/deck/RecommendationDeck";
-import type { AdAccount, ConceptRollupRow } from "./seedTypes";
+import type { AdAccount, ConceptRollupRow, RecommendationCard, SeedImpact } from "./seedTypes";
 import { scopeToRun } from "@/lib/run-supersede";
 import { parseHierarchyRef } from "@/lib/normalize";
 import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
@@ -411,4 +411,24 @@ export function toDeckCards(recs: DerivedRecommendation[]): DeckCard[] {
  */
 export function recommendationsForStage(recs: DerivedRecommendation[], stage: number): DerivedRecommendation[] {
   return recs.filter((r) => r.stage === stage);
+}
+
+/**
+ * The seed's own `RecommendationCard` shape, for surfaces that consume the
+ * raw loop array (the Action Queue, the Listen recommendations view). The
+ * derivation's source lands in `source_path`, which the shape already has —
+ * so a card in the queue can still say where it came from.
+ */
+export function toLoopCards(recs: DerivedRecommendation[], accountId: string): RecommendationCard[] {
+  return recs.map((r) => ({
+    id: r.id,
+    account_id: accountId,
+    scope: r.scope,
+    title: r.title,
+    rationale: r.rationale,
+    impact: r.impact as SeedImpact,
+    confidence: r.confidence,
+    source_path: r.source,
+    recommended_action: r.recommendedAction,
+  }));
 }

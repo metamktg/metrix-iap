@@ -32,6 +32,7 @@ import {
   AlertTriangle,
   RotateCcw,
 } from "lucide-react";
+import { deriveRecommendations, toLoopCards } from "@/lib/data/recommendations";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 // Impact ranking (for sorting cards highest-impact first) comes from the
@@ -340,14 +341,16 @@ export function ActionQueueView() {
   const account = getAdAccount(seed, adAccountId);
   const [tab, setTab] = useState<QueueTab>("pending");
 
-  const optLoop = account?.iap?.optimization_loop ?? null;
-
+  // The loop's cards when it has run, and the account's own rows when it has
+  // not — `deriveRecommendations` emits the same shape, so the queue works on
+  // an account whose Optimization Loop stage has never been executed (which
+  // is every account today). `source_path` carries which JSON produced each.
   const allCards = useMemo(
     () =>
-      [...(optLoop?.recommendation_cards ?? [])].sort(
+      toLoopCards(deriveRecommendations(account), account?.id ?? "").sort(
         (a, b) => impactRank(String(b.impact)) - impactRank(String(a.impact))
       ),
-    [optLoop]
+    [account]
   );
 
   const pendingCards = allCards.filter((c) => getDecision(adAccountId ?? "", c.id) === "pending");
