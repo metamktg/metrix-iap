@@ -380,6 +380,31 @@
   }
 
   /* Active nav item — flat accent tint, no gradient or glow. */
+  /* The IAP loop spine: loop sections in the expanded sidebar sit on one
+     thin connector so the six stages read as one shape, not six rows.
+     Drawn behind the icon column; the first and last stage stop at the
+     row's middle so the line has ends. */
+  .mx-loop-spine {
+    position: relative;
+  }
+  .mx-loop-spine::before {
+    content: "";
+    position: absolute;
+    left: 17px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: hsl(var(--primary) / 0.22);
+    pointer-events: none;
+  }
+  .mx-loop-spine[data-loop-stage="1"]::before {
+    top: 18px;
+  }
+  .mx-loop-spine[data-loop-stage="6"]::before {
+    bottom: auto;
+    height: 18px;
+  }
+
   .mx-nav-active {
     color: hsl(var(--primary)) !important;
     background: hsl(var(--primary) / 0.12) !important;

@@ -26,7 +26,7 @@ import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { Link } from "wouter";
 import { FORMAT_LABEL } from "./reportFormatLabels";
 
-const SECTION = "Reports · 07";
+const SECTION = "Reports · 08";
 
 type Tab = "preview" | "branding";
 type Mode = "internal" | "client";

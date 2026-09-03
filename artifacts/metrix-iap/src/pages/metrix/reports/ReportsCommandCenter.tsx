@@ -16,7 +16,7 @@ import {
 } from "../shared";
 import { FileBarChart, Settings2, History, FileText, Sparkles } from "lucide-react";
 
-const SECTION = "Reports · 07";
+const SECTION = "Reports · 08";
 
 const CHILDREN = [
   { to: "/app/reports/builder", label: "Report Builder", Icon: FileText, desc: "White-label and curate a report for a specific meeting objective.", lineage: "report_builder.report_sections[]" },

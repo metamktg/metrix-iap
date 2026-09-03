@@ -653,3 +653,20 @@ the scope is a per-account session convenience, never a property of the account 
 rule unchanged). **Open:** report export and the deep-dive still print one blended cost with a
 caption; `creative-evidence.ts` synthesises a cell row stamped with the first ad's result type;
 the live DDL (result-event grain block) must be applied before the next run on any account.
+
+**`[shipped]` One panel behaviour; the sidebar defines the category (2026-09-03).** Owner asks: hover
+panels and sliders collapsible, expandable, wider and consistent across every interface; the left
+sidebar's parent → subpage wayfinding more intuitive, category-defining, conveying what makes the
+interface different. Change log entries 4–5. Panels: `lib/panel-prefs.ts` (width + expanded per
+panel kind per viewer, bounds-validated) and `components/ui/ResizeHandle.tsx` (the WAI-ARIA window
+splitter the sidebar already used — arrows, Home/End, Enter, pointer) now shared by the deep-dive
+drawer, the info drawer and the task tray; drawers gained expand/restore; `DetailReveal` a
+compact/wide toggle. The tray's handle used to carry the separator role and no keyboard path.
+Sidebar: `navTree.ts` carries `group`, `loopStage` and `purpose` per section and `purpose` per
+child; the expanded sidebar renders Account · IAP loop · Outputs · Workspace, a stage numeral on
+one spine, the opened section's purpose and the active page's purpose; Action moved beside MST as
+stage 6 (Action 07, Reports 08, Exports 09). **Decisions:** purposes are chrome fragments (≤ 56
+chars, no sentence) under the disclosure rulebook; a drag that used to snap the tray shut now
+stops at its minimum — the tray's own toggle closes it. **Open:** the sidebar keeps its own
+collapse key and handle (tests read them directly); a shared width preference for it is a later
+pass; `SegmentHoverPreview` and `MetricHoverPopover` keep fixed widths by design (hover cards).

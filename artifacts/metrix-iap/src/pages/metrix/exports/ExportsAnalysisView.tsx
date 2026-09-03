@@ -11,7 +11,7 @@ import { ModuleHeader, ModuleScopeGate, PendingState } from "../shared";
 import { DataLimitedCaveat, JsonExportCard } from "./exportsShared";
 import { BarChart3 } from "lucide-react";
 
-const SECTION = "Exports · 08";
+const SECTION = "Exports · 09";
 
 export function ExportsAnalysisView() {
   const seed = useMetrixSeed();

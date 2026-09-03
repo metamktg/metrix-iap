@@ -9,6 +9,7 @@
 // variants), profile theory, and the avatar back-links (now a cross-page
 // deep link into MST via ?focus=).
 
+import type { EvaluationScale } from "@/lib/resultEvents";
 import { useResultScope } from "@/hooks/useResultScope";
 import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import { TYPE } from "../typography";
@@ -70,6 +71,11 @@ type SortKey = "spend" | "cpa" | "cvr" | "confidence";
 const SORT_LABEL: Record<SortKey, string> = {
   spend: "Spend", cpa: "CPA", cvr: "Link CVR", confidence: "Confidence",
 };
+/** Under a communication scope a profile is never sorted on cost per result or a conversion rate. */
+const COST_SCALE_SORTS: readonly SortKey[] = ["cpa", "cvr"];
+function sortKeysFor(scale: EvaluationScale | null): SortKey[] {
+  return (Object.keys(SORT_LABEL) as SortKey[]).filter((k) => scale !== "communication" || !COST_SCALE_SORTS.includes(k));
+}
 
 // ─── Run-scoped per-ICP performance ────────────────────────────────────
 // An ICP's precomputed performance_data isn't itself run-scoped — it's
@@ -152,18 +158,19 @@ interface ScopedProfilePerf {
 // ─── Sort / search bar ─────────────────────────────────────────────────
 
 function ProfileSortBar({
-  sortBy, onSort, search, onSearch,
+  sortBy, onSort, search, onSearch, keys,
 }: {
   sortBy: SortKey;
   onSort: (k: SortKey) => void;
   search: string;
   onSearch: (q: string) => void;
+  keys: SortKey[];
 }) {
   return (
     <div className="flex items-center gap-3 flex-wrap">
       <div className="flex items-center gap-1.5" role="group" aria-label="Sort profiles">
         <span className="text-label font-semibold text-muted-foreground/75 normal-case tracking-normal">Sort</span>
-        {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => {
+        {keys.map((k) => {
           const active = sortBy === k;
           return (
             <button
@@ -850,7 +857,7 @@ export function AvatarsView() {
   const account = getAdAccount(seed, adAccountId);
   const [, navigate] = useLocation();
 
-  const [sortBy, setSortBy] = useState<SortKey>("spend");
+  const [sortByRaw, setSortBy] = useState<SortKey>("spend");
   const [searchQuery, setSearchQuery] = useState("");
   const [audienceSegment, setAudienceSegment] = useState<SegmentId | null>(null);
 
@@ -892,6 +899,8 @@ export function AvatarsView() {
   // campaign never ranks an avatar against a purchase one.
   const resultScope = useResultScope(account, adAccountId, analysis?.performance_by_cell.map((r) => r["Result type"]));
   const { scopeRows } = resultScope;
+  const sortKeys = useMemo(() => sortKeysFor(resultScope.scope?.scale ?? null), [resultScope.scope]);
+  const sortBy: SortKey = sortKeys.includes(sortByRaw) ? sortByRaw : "spend";
 
   const cellRows = useMemo(() => filterByRun(scopeRows(analysis?.performance_by_cell ?? [], (r) => r["Result type"])), [analysis, filterByRun, scopeRows]);
   const scopedDemoRows = useMemo(() => filterByRun(scopeRows(analysis?.demographic_registration_signal ?? [], (r) => r["Result type"])), [analysis, filterByRun, scopeRows]);
@@ -1139,7 +1148,7 @@ export function AvatarsView() {
               {focusStale && <StaleFocusNotice label="ICP profile" />}
 
               {icpProfiles.length > 0 && (
-                <SectionCard title="ICP profiles" desc="Strategy-map customer profiles · real performance" right={<ProfileSortBar sortBy={sortBy} onSort={setSortBy} search={searchQuery} onSearch={setSearchQuery} />}>
+                <SectionCard title="ICP profiles" desc="Strategy-map customer profiles · real performance" right={<ProfileSortBar sortBy={sortBy} onSort={setSortBy} keys={sortKeys} search={searchQuery} onSearch={setSearchQuery} />}>
                   {filteredProfiles.length === 0 ? (
                     <p className={cn(TYPE.body, "text-muted-foreground/75 py-6 text-center")}>No profiles match "{searchQuery}"</p>
                   ) : (
