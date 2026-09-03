@@ -479,3 +479,46 @@ substring `/strategy/i`; the overview now also carries recommendation prose citi
 map, so they resolve by the tile's own test id instead. This is the `check:locator-ambiguity`
 class of failure in a place that gate does not reach (it covers `SectionCard` titles only).
 
+## 11. Three fields the seed shipped and nothing showed (2026-09-03, autonomous pass 3)
+
+**What.** `check:field-coverage` lists fields the seed computes, ships, and no surface reads.
+Three of them changed how a number should be weighed, so their absence was not cosmetic:
+
+- **`spend_share_pct`** (per result event and per intent class). The Library header said
+  "Conversion-led" without saying whether that is 91% of the money or 34% of it; it now names the
+  dominant class's share, read from the seed, whose grain (account-wide) matches that header's.
+  The results-by-event table on the account overview gains a Share column computed from the rows
+  the table itself shows — that table is windowed by the date preset, and putting the seed's
+  full-flight percentage beside a windowed dollar figure would be two grains in one row.
+- **`lift_basis`** (`concept_rollup`). "23% above baseline" means opposite things depending on
+  whether the engine compared cost per result or link CTR. The Findings concept card now names
+  the basis when the row carries one, and reads as it always did when it does not.
+- **the per-event intent class** on the results-by-event table, joined from the seed's
+  `result_events`. An event's class is a property of the event rather than of the window, so that
+  join is safe under any date preset.
+
+Also in this pass: `ActionQueueView` and `listen/RecommendationsView` read the same derivation
+entry 10 introduced, through `toLoopCards`, which adapts it to the seed's own
+`RecommendationCard` shape (the derivation's source lands in `source_path`, a field that shape
+already has). Both surfaces were empty on every account for the same reason the hero was.
+
+**Why.** Owner: "ensure all modules are fully populated with available authority data to maximise
+ad confidence". A field that is computed, stored, shipped and never read is authority data the
+reader is paying for and not getting.
+
+**Where.** `pages/metrix/AdAccountOverview.tsx` (Share column, intent chip),
+`analysis/IapLibraryView.tsx` (`intentSummaryFragments`), `analysis/FindingsView.tsx`
+(`liftLabel` takes a basis), `act/ActionQueueView.tsx`, `listen/RecommendationsView.tsx`,
+`lib/data/recommendations.ts` (`toLoopCards`), and
+`pages/metrix/__tests__/authority-data-surfacing.test.tsx` (new, 8).
+
+**Reach.** Chrome only. No seed or server change: every field read here was already shipped.
+
+**Still unread, with the reason.** `WorkspaceBilling` (7 fields) and `AppDefaults` (5) have no
+surface because neither feature is built; `OptimizationLoop.manager_overview_visibility` and
+`dismiss_policy` are behaviour config the client does not honour yet;
+`CreativeAssetRow.content_hash` / `normalized_value`, `VariableEvidenceRow.source_ref` /
+`asset_key` and `SegmentDims.asset_*` are reconciliation internals whose surfacing belongs with
+the evidence drill-down, not with this pass. `check:field-coverage` remains a worklist, not a
+verdict — it under-reports by design.
+
