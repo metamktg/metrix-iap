@@ -83,10 +83,10 @@ export function CreativeComponentsPanel({
 
       <div>
         <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
-          <TabRail<CreativeComponentFamily>
+          <TabRail
             label="Component family"
             active={family}
-            onChange={setFamily}
+            onChange={(id) => setFamily(id as CreativeComponentFamily)}
             tabs={families.map((f) => ({
               id: f,
               label: FAMILY_LABEL[f],
