@@ -15,7 +15,6 @@
   "artifacts/metrix-iap/src/components/layout/DateRangePicker.tsx::DateRangePicker": "test-only",
   "artifacts/metrix-iap/src/components/layout/Sidebar.tsx::CLOSE_GRACE_MS": "test-only",
   "artifacts/metrix-iap/src/components/layout/Sidebar.tsx::OPEN_DWELL_MS": "test-only",
-  "artifacts/metrix-iap/src/components/layout/Sidebar.tsx::RAIL_WIDTH": "test-only",
   "artifacts/metrix-iap/src/components/layout/TaskTray.tsx::computeTrayCount": "test-only",
   "artifacts/metrix-iap/src/components/layout/Topbar.tsx::AccountMenu": "test-only",
   "artifacts/metrix-iap/src/components/metrics/KpiTile.tsx::KpiInfoHover": "unreferenced",

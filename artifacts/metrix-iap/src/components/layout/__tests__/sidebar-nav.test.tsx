@@ -1,7 +1,8 @@
 // ─── Sidebar navigation + inline account picker regression tests ──────
-// Covers: navTree data integrity, the rail (always 56px, never a mode),
-// the workspace map it opens on dwell / focus / tap (the flow chart of
-// the product, one branch at a time), and the inline ad account picker.
+// Covers: navTree data integrity, the expanded sidebar (a section header is
+// ONE link; its pages open on intent — a dwell or focus — never on a click),
+// the collapsed rail (icons that navigate, with a page flyout on intent),
+// the collapse toggle, and the inline ad account picker.
 
 import { withUnconfiguredAccount } from "@/test-fixtures/unconfigured";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -32,11 +33,12 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
-import { Sidebar, OPEN_DWELL_MS, CLOSE_GRACE_MS, RAIL_WIDTH } from "../Sidebar";
+import { Sidebar, OPEN_DWELL_MS, CLOSE_GRACE_MS } from "../Sidebar";
 import { AdPerformanceView } from "@/pages/metrix/analysis/AdPerformanceView";
 import { navTree, sectionLandingRoute } from "@/navigation/navTree";
 
 const SESSION_KEY = "metrix_active_account_v1";
+const SIDEBAR_KEY = "metrix_sidebar_collapsed";
 
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
@@ -53,6 +55,53 @@ function renderWithProviders(ui: React.ReactElement) {
   );
 }
 
+/** Render sidebar in expanded state (default on fresh load). */
+function renderExpanded() {
+  localStorage.removeItem(SIDEBAR_KEY);
+  return renderWithProviders(<Sidebar />);
+}
+
+/** Render sidebar already in collapsed/icon-only state. */
+function renderCollapsed() {
+  localStorage.setItem(SIDEBAR_KEY, "1");
+  return renderWithProviders(<Sidebar />);
+}
+
+function sectionByLabel(label: string) {
+  const s = navTree.find((x) => x.label === label);
+  if (!s) throw new Error(`no section labelled ${label}`);
+  return s;
+}
+
+/** The expanded-mode section header: one link, carrying aria-expanded for its page list. */
+function sectionHeaderLink(container: HTMLElement, label: string): HTMLElement {
+  const id = sectionByLabel(label).id;
+  const li = within(container).getAllByTestId("nav-section").find((e) => e.getAttribute("data-section-id") === id);
+  if (!li) throw new Error(`No section header found for "${label}"`);
+  return li.querySelector(":scope > a")!;
+}
+
+function pageList(container: HTMLElement, label: string): HTMLElement {
+  return within(container).getByRole("list", { name: `${label} pages`, hidden: true });
+}
+
+/** The child list is animated via a CSS grid wrapper (0fr → 1fr); the wrapper carries aria-hidden when closed. */
+function isExpanded(listEl: HTMLElement): boolean {
+  return listEl.parentElement?.getAttribute("aria-hidden") !== "true";
+}
+
+function railItem(label: string): HTMLAnchorElement {
+  const id = sectionByLabel(label).id;
+  const el = screen.getAllByTestId("rail-item").find((e) => e.getAttribute("data-section-id") === id);
+  if (!el) throw new Error(`no rail item for ${label}`);
+  return el as HTMLAnchorElement;
+}
+
+function flyoutFor(label: string): HTMLElement | null {
+  const id = sectionByLabel(label).id;
+  return screen.queryAllByTestId("rail-flyout").find((e) => e.getAttribute("data-section-id") === id) ?? null;
+}
+
 /** Open a Radix dropdown trigger (needs pointerdown in jsdom). */
 function openDropdown(trigger: Element) {
   fireEvent.pointerDown(
@@ -66,6 +115,7 @@ beforeEach(() => {
   cleanup();
   sessionStorage.clear();
   localStorage.clear();
+  localStorage.removeItem(SIDEBAR_KEY);
   window.history.replaceState({}, "", "/");
 });
 
@@ -137,249 +187,226 @@ describe("navTree landing routes", () => {
 // ─── Expanded sidebar (default on load) ───────────────────────────────
 
 
-// ─── The rail and the map ───────────────────────────────────────────────
-// The rail is 56px of icons and never a mode: nothing collapses, nothing
-// expands in the layout, nothing is remembered. The MAP is what dwelling on
-// the rail opens — rightwards, over the page — and it draws the product as
-// a flow chart: numbered loop nodes on one spine, the focused node's pages
-// branching beside it. Focus opens it at once; Escape closes it and hands
-// focus back; on touch a tap opens it and a second tap goes through.
+// ─── Expanded mode: one link per section, pages on intent ────────────────
 
-function renderSidebar() {
-  return renderWithProviders(<Sidebar />);
-}
-
-function sectionByLabel(label: string) {
-  const s = navTree.find((x) => x.label === label);
-  if (!s) throw new Error(`no section labelled ${label}`);
-  return s;
-}
-
-function railItem(label: string): HTMLAnchorElement {
-  const id = sectionByLabel(label).id;
-  const el = screen.getAllByTestId("rail-item").find((e) => e.getAttribute("data-section-id") === id);
-  if (!el) throw new Error(`no rail item for ${label}`);
-  return el as HTMLAnchorElement;
-}
-
-function aside(): HTMLElement {
-  return screen.getByTestId("workspace-sidebar");
-}
-
-function mapIsOpen(): boolean {
-  return aside().getAttribute("data-map-open") === "true";
-}
-
-/** The branch drawn for a section, if the map currently shows it. */
-function branchFor(label: string): HTMLElement | null {
-  const id = sectionByLabel(label).id;
-  return (
-    screen.queryAllByTestId("map-branch").find((e) => e.getAttribute("data-section-id") === id) ?? null
-  );
-}
-
-/** A touch pointer: hover is unavailable, so the map opens by tap. */
-function pretendTouch() {
-  const original = window.matchMedia;
-  window.matchMedia = ((query: string) => ({
-    matches: query === "(hover: none)",
-    media: query,
-    onchange: null,
-    addListener() {},
-    removeListener() {},
-    addEventListener() {},
-    removeEventListener() {},
-    dispatchEvent() { return false; },
-  })) as unknown as typeof window.matchMedia;
-  return () => { window.matchMedia = original; };
-}
-
-describe("Sidebar rail", () => {
-  it("is 56px of one link per visible section, with no expand/collapse control and no width handle", () => {
-    renderSidebar();
-    expect(aside().style.width).toBe(`${RAIL_WIDTH}px`);
-    expect(screen.getAllByTestId("rail-item")).toHaveLength(navTree.length);
-    for (const s of navTree) expect(railItem(s.label).getAttribute("aria-label")).toBe(s.label);
-    expect(screen.queryByLabelText(/collapse sidebar/i)).toBeNull();
-    expect(screen.queryByLabelText(/expand sidebar/i)).toBeNull();
-    expect(screen.queryByRole("separator", { name: /sidebar width/i })).toBeNull();
-    expect(mapIsOpen()).toBe(false);
-    expect(screen.queryByTestId("nav-map")).toBeNull();
+describe("Sidebar section headers (expanded mode)", () => {
+  it("sidebar is expanded by default — shows section labels and the collapse button", () => {
+    const { container } = renderExpanded();
+    expect(within(container).getByText("Analysis")).toBeTruthy();
+    expect(within(container).getByLabelText("Collapse sidebar")).toBeTruthy();
   });
 
-  it("a rail item is a real link to the section's command center and navigates on click", () => {
-    renderSidebar();
+  it("the section header is ONE link to the command center — no chevron button", () => {
+    const { container } = renderExpanded();
     const analysis = sectionByLabel("Analysis");
-    const item = railItem("Analysis");
-    expect(item.getAttribute("href")).toBe(sectionLandingRoute(analysis));
-    fireEvent.click(item);
-    expect(window.location.pathname).toBe(sectionLandingRoute(analysis));
+    const link = sectionHeaderLink(container, "Analysis");
+    expect(link.tagName).toBe("A");
+    expect(link.getAttribute("href")).toBe(sectionLandingRoute(analysis));
+    expect(within(container).queryByLabelText(/Expand Analysis pages|Collapse Analysis pages/)).toBeNull();
+    expect(container.querySelectorAll("nav button").length).toBe(0);
   });
 
-  it("carries aria-current for the section the reader is on, from its command center or any child", () => {
+  it("clicking a section label navigates to its command center", () => {
+    const { container } = renderExpanded();
+    fireEvent.click(sectionHeaderLink(container, "Listen"));
+    expect(window.location.pathname).toBe(sectionLandingRoute(sectionByLabel("Listen")));
+  });
+
+  it("the section the reader is on has its pages open; the others are closed and inert", () => {
     const analysis = sectionByLabel("Analysis");
     window.history.replaceState({}, "", analysis.children![1]!.to);
-    renderSidebar();
-    expect(railItem("Analysis").getAttribute("aria-current")).toBe("page");
-    expect(railItem("Strategy").getAttribute("aria-current")).toBeNull();
+    const { container } = renderExpanded();
+    expect(isExpanded(pageList(container, "Analysis"))).toBe(true);
+    expect(sectionHeaderLink(container, "Analysis").getAttribute("aria-expanded")).toBe("true");
+    const strategy = pageList(container, "Strategy");
+    expect(isExpanded(strategy)).toBe(false);
+    expect(strategy.parentElement?.hasAttribute("inert")).toBe(true);
   });
 
-  it("marks the loop sections on one spine and the others not", () => {
-    renderSidebar();
-    for (const s of navTree) {
-      const li = railItem(s.label).closest("li")!;
-      expect(li.classList.contains("mx-rail-spine")).toBe(s.loopStage != null);
-    }
-  });
-});
-
-describe("Sidebar map — opening and closing", () => {
-  it("a pointer passing over the rail does not open the map; one that rests on it does", () => {
+  it("a pointer passing over a section opens nothing; one that rests on it opens its pages, and the list follows the pointer", () => {
     vi.useFakeTimers();
     try {
-      renderSidebar();
-      fireEvent.pointerEnter(railItem("Analysis"));
+      window.history.replaceState({}, "", sectionLandingRoute(sectionByLabel("Analysis"))!);
+      const { container } = renderExpanded();
+      fireEvent.pointerEnter(sectionHeaderLink(container, "Strategy").closest("li")!, { clientX: 40, clientY: 300 });
       act(() => { vi.advanceTimersByTime(OPEN_DWELL_MS - 40); });
-      expect(mapIsOpen()).toBe(false);
+      expect(isExpanded(pageList(container, "Strategy"))).toBe(false);
       act(() => { vi.advanceTimersByTime(60); });
-      expect(mapIsOpen()).toBe(true);
-      expect(screen.getByTestId("nav-map")).toBeTruthy();
-      expect(branchFor("Analysis")).toBeTruthy();
+      expect(isExpanded(pageList(container, "Strategy"))).toBe(true);
+      expect(isExpanded(pageList(container, "Analysis"))).toBe(false);
+      // A row that lands under a RESTING pointer (the list above collapsed
+      // and the layout shifted) must not open: no travel, no follow.
+      fireEvent.pointerEnter(sectionHeaderLink(container, "Exports").closest("li")!, { clientX: 40, clientY: 300 });
+      expect(isExpanded(pageList(container, "Exports"))).toBe(false);
+      expect(isExpanded(pageList(container, "Strategy"))).toBe(true);
+      // Once open by intent, MOVING to another section moves the list at once.
+      fireEvent.pointerEnter(sectionHeaderLink(container, "Creative").closest("li")!, { clientX: 40, clientY: 340 });
+      expect(isExpanded(pageList(container, "Creative"))).toBe(true);
+      expect(isExpanded(pageList(container, "Strategy"))).toBe(false);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it("leaving the sidebar closes a map the pointer opened, after a short grace", () => {
+  it("leaving the sidebar returns the list to the section the reader is on, after a short grace", () => {
     vi.useFakeTimers();
     try {
-      renderSidebar();
-      fireEvent.pointerEnter(railItem("Strategy"));
+      window.history.replaceState({}, "", sectionLandingRoute(sectionByLabel("Analysis"))!);
+      const { container } = renderExpanded();
+      fireEvent.pointerEnter(sectionHeaderLink(container, "MST").closest("li")!, { clientX: 40, clientY: 420 });
       act(() => { vi.advanceTimersByTime(OPEN_DWELL_MS + 10); });
-      expect(mapIsOpen()).toBe(true);
-      fireEvent.pointerLeave(aside());
+      expect(isExpanded(pageList(container, "MST"))).toBe(true);
+      fireEvent.pointerLeave(screen.getByTestId("workspace-sidebar"));
       act(() => { vi.advanceTimersByTime(CLOSE_GRACE_MS - 40); });
-      expect(mapIsOpen()).toBe(true);
+      expect(isExpanded(pageList(container, "MST"))).toBe(true);
       act(() => { vi.advanceTimersByTime(60); });
-      expect(mapIsOpen()).toBe(false);
+      expect(isExpanded(pageList(container, "MST"))).toBe(false);
+      expect(isExpanded(pageList(container, "Analysis"))).toBe(true);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it("keyboard focus on a rail item opens the map at once; Escape closes it and hands focus back", () => {
-    renderSidebar();
-    const item = railItem("Creative");
-    act(() => { item.focus(); });
-    expect(mapIsOpen()).toBe(true);
-    expect(branchFor("Creative")).toBeTruthy();
-    fireEvent.keyDown(screen.getByTestId("nav-map"), { key: "Escape" });
-    expect(mapIsOpen()).toBe(false);
-    expect(document.activeElement).toBe(item);
+  it("keyboard focus on a section opens its pages at once; Escape returns to the active section", () => {
+    window.history.replaceState({}, "", sectionLandingRoute(sectionByLabel("Analysis"))!);
+    const { container } = renderExpanded();
+    const link = sectionHeaderLink(container, "Creative");
+    act(() => { link.focus(); });
+    expect(isExpanded(pageList(container, "Creative"))).toBe(true);
+    expect(isExpanded(pageList(container, "Analysis"))).toBe(false);
+    fireEvent.keyDown(link, { key: "Escape" });
+    expect(isExpanded(pageList(container, "Creative"))).toBe(false);
+    expect(isExpanded(pageList(container, "Analysis"))).toBe(true);
   });
 
-  it("the map is drawn over the page, not in the layout: the rail keeps its width while it is open", () => {
-    renderSidebar();
-    act(() => { railItem("MST").focus(); });
-    expect(aside().style.width).toBe(`${RAIL_WIDTH}px`);
-    expect(screen.getByTestId("nav-map").classList.contains("absolute")).toBe(true);
-  });
-
-  it("on touch, a tap on a rail item opens the map on that section instead of navigating; the next tap goes through", () => {
-    const restore = pretendTouch();
-    try {
-      renderSidebar();
-      const analysis = sectionByLabel("Analysis");
-      fireEvent.click(railItem("Analysis"));
-      expect(window.location.pathname).toBe("/");
-      expect(mapIsOpen()).toBe(true);
-      expect(branchFor("Analysis")).toBeTruthy();
-      fireEvent.click(railItem("Analysis"));
-      expect(window.location.pathname).toBe(sectionLandingRoute(analysis));
-    } finally {
-      restore();
-    }
-  });
-});
-
-describe("Sidebar map — the flow chart", () => {
-  function openOn(label: string) {
-    renderSidebar();
-    act(() => { railItem(label).focus(); });
-    return screen.getByTestId("nav-map");
-  }
-
-  it("names the product's shape between groups, in order", () => {
-    openOn("Analysis");
-    expect(screen.getAllByTestId("nav-group-label").map((e) => e.textContent)).toEqual([
-      "Account", "IAP loop", "Outputs", "Workspace",
-    ]);
-  });
-
-  it("draws every section as a node, the loop stages numbered 1…6 on the spine", () => {
-    const map = openOn("Analysis");
-    expect(within(map).getAllByTestId("map-node")).toHaveLength(navTree.length);
-    expect(within(map).getAllByTestId("nav-loop-stage").map((e) => e.textContent)).toEqual(["1", "2", "3", "4", "5", "6"]);
-    for (const s of navTree) {
-      const node = within(map).getAllByTestId("map-node").find((e) => e.getAttribute("data-section-id") === s.id)!;
-      expect(node.classList.contains("mx-map-spine")).toBe(s.loopStage != null);
-    }
-  });
-
-  it("the focused node's pages branch beside it, headed by what the module is for; the connector is drawn on that node only", () => {
-    const map = openOn("Analysis");
+  it("child links navigate on click", () => {
     const analysis = sectionByLabel("Analysis");
-    const branch = branchFor("Analysis")!;
-    expect(within(branch).getByTestId("nav-section-purpose").textContent).toContain(analysis.purpose);
-    const list = within(branch).getByRole("list", { name: "Analysis pages" });
-    const labels = within(list).getAllByRole("link").map((a) => a.textContent);
-    for (const c of analysis.children!.filter((c) => !c.hidden)) expect(labels.join("|")).toContain(c.label);
-    expect(within(map).getAllByTestId("map-connector")).toHaveLength(1);
-    expect(within(map).getByTestId("map-connector").closest("[data-section-id]")!.getAttribute("data-section-id")).toBe(analysis.id);
+    window.history.replaceState({}, "", sectionLandingRoute(analysis)!);
+    const { container } = renderExpanded();
+    const page = analysis.children!.find((c) => !c.hidden)!;
+    fireEvent.click(within(pageList(container, "Analysis")).getByText(page.label));
+    expect(window.location.pathname).toBe(page.to);
   });
 
-  it("hidden nav children (funnel, findings) render no branch row", () => {
-    openOn("Analysis");
-    const list = within(branchFor("Analysis")!).getByRole("list", { name: "Analysis pages" });
+  it("hidden nav children (funnel, findings) render no menu row", () => {
+    const analysis = sectionByLabel("Analysis");
+    window.history.replaceState({}, "", sectionLandingRoute(analysis)!);
+    const { container } = renderExpanded();
+    const list = pageList(container, "Analysis");
     expect(within(list).queryByText("Engagement Funnel")).toBeNull();
     expect(within(list).queryByText("Findings")).toBeNull();
   });
 
-  it("resting on another node moves the branch to it", () => {
-    const map = openOn("Analysis");
-    const strategyNode = within(map).getAllByTestId("map-node").find((e) => e.getAttribute("data-section-id") === sectionByLabel("Strategy").id)!;
-    fireEvent.pointerEnter(within(strategyNode).getByRole("link"));
-    expect(branchFor("Strategy")).toBeTruthy();
-    expect(within(branchFor("Strategy")!).getByRole("list", { name: "Strategy pages" })).toBeTruthy();
-  });
-
-  it("a node is a link to its command center; a branch row is a link to its page — each navigates on click", () => {
-    const map = openOn("Listen");
-    const listen = sectionByLabel("Listen");
-    const node = within(map).getAllByTestId("map-node").find((e) => e.getAttribute("data-section-id") === listen.id)!;
-    const nodeLink = within(node).getByRole("link");
-    expect(nodeLink.getAttribute("href")).toBe(sectionLandingRoute(listen));
-    const firstPage = listen.children!.find((c) => !c.hidden)!;
-    const row = within(branchFor("Listen")!).getByRole("link", { name: new RegExp(`^${firstPage.label}`) });
-    fireEvent.click(row);
-    expect(window.location.pathname).toBe(firstPage.to);
-  });
-
-  it("the active page says what it proves, on its row only", () => {
+  it("what a module or page is for is its tooltip, never a line in the sidebar", () => {
     const analysis = sectionByLabel("Analysis");
-    const page = analysis.children!.find((c) => !c.hidden && c.purpose)!;
-    window.history.replaceState({}, "", page.to);
-    openOn("Analysis");
-    const purposes = within(branchFor("Analysis")!).getAllByTestId("nav-child-purpose");
-    expect(purposes).toHaveLength(1);
-    expect(purposes[0]!.textContent).toBe(page.purpose);
+    window.history.replaceState({}, "", analysis.children![1]!.to);
+    const { container } = renderExpanded();
+    expect(sectionHeaderLink(container, "Analysis").getAttribute("title")).toContain(analysis.purpose);
+    const page = analysis.children![1]!;
+    const row = within(pageList(container, "Analysis")).getByText(page.label).closest("a")!;
+    expect(row.getAttribute("title")).toContain(page.purpose!);
+    expect(within(container).queryByText(analysis.purpose)).toBeNull();
+    expect(within(container).queryByText(page.purpose!)).toBeNull();
+    expect(within(container).queryByTestId("nav-section-purpose")).toBeNull();
+    expect(within(container).queryByTestId("nav-child-purpose")).toBeNull();
   });
 
-  it("shows the Soon pill for the agent and the real queue under Action", () => {
-    openOn("Action");
-    const list = within(branchFor("Action")!).getByRole("list", { name: "Action pages" });
-    expect(within(list).getByText("Action Queue")).toBeTruthy();
-    expect(within(list).getByText("Soon")).toBeTruthy();
+  it("section link carries aria-current when its command center is active", () => {
+    const analysis = sectionByLabel("Analysis");
+    window.history.replaceState({}, "", sectionLandingRoute(analysis)!);
+    const { container } = renderExpanded();
+    expect(sectionHeaderLink(container, "Analysis").getAttribute("aria-current")).toBe("page");
+  });
+});
+
+// ─── Expand / collapse ────────────────────────────────────────────────────
+
+describe("Sidebar expand/collapse toggle", () => {
+  it("collapse button collapses to the 56px icon rail", () => {
+    const { container } = renderExpanded();
+    fireEvent.click(within(container).getByLabelText("Collapse sidebar"));
+    const aside = screen.getByTestId("workspace-sidebar");
+    expect(aside.getAttribute("data-collapsed")).toBe("true");
+    expect(aside.className).toContain("w-[56px]");
+    expect(within(container).queryByText("Account Overview")).toBeNull();
+  });
+
+  it("expand button restores the full sidebar", () => {
+    const { container } = renderCollapsed();
+    fireEvent.click(within(container).getByLabelText("Expand sidebar"));
+    expect(screen.getByTestId("workspace-sidebar").getAttribute("data-collapsed")).toBe("false");
+    expect(within(container).getByText("Account Overview")).toBeTruthy();
+  });
+
+  it("persists collapsed state to localStorage", () => {
+    const { container } = renderExpanded();
+    fireEvent.click(within(container).getByLabelText("Collapse sidebar"));
+    expect(localStorage.getItem(SIDEBAR_KEY)).toBe("1");
+    fireEvent.click(within(container).getByLabelText("Expand sidebar"));
+    expect(localStorage.getItem(SIDEBAR_KEY)).toBe("0");
+  });
+});
+
+// ─── Collapsed rail: icons that navigate, pages on intent ────────────────
+
+describe("Sidebar collapsed icon rail", () => {
+  it("renders one link per visible section, each a link to its command center", () => {
+    renderCollapsed();
+    expect(screen.getAllByTestId("rail-item")).toHaveLength(navTree.length);
+    for (const s of navTree) {
+      expect(railItem(s.label).getAttribute("aria-label")).toBe(s.label);
+      expect(railItem(s.label).getAttribute("href")).toBe(sectionLandingRoute(s) ?? s.to ?? "#");
+      expect(railItem(s.label).getAttribute("title")).toContain(s.purpose);
+    }
+  });
+
+  it("clicking an icon navigates to the command center", () => {
+    renderCollapsed();
+    fireEvent.click(railItem("Analysis"));
+    expect(window.location.pathname).toBe(sectionLandingRoute(sectionByLabel("Analysis")));
+  });
+
+  it("resting on an icon opens a flyout of its pages; leaving the sidebar closes it after the grace", () => {
+    vi.useFakeTimers();
+    try {
+      renderCollapsed();
+      expect(flyoutFor("Analysis")).toBeNull();
+      fireEvent.pointerEnter(railItem("Analysis").closest("li")!);
+      act(() => { vi.advanceTimersByTime(OPEN_DWELL_MS + 10); });
+      const flyout = flyoutFor("Analysis")!;
+      expect(flyout).toBeTruthy();
+      expect(within(flyout).getByText("Ad Performance")).toBeTruthy();
+      expect(within(flyout).queryByText(sectionByLabel("Analysis").purpose)).toBeNull();
+      fireEvent.pointerLeave(screen.getByTestId("workspace-sidebar"));
+      act(() => { vi.advanceTimersByTime(CLOSE_GRACE_MS + 10); });
+      expect(railItem("Analysis").getAttribute("aria-expanded")).toBe("false");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("focusing an icon opens its flyout at once; a flyout page link navigates", () => {
+    renderCollapsed();
+    act(() => { railItem("Listen").focus(); });
+    const flyout = flyoutFor("Listen")!;
+    expect(flyout).toBeTruthy();
+    const page = sectionByLabel("Listen").children!.find((c) => !c.hidden)!;
+    fireEvent.click(within(flyout).getByText(page.label));
+    expect(window.location.pathname).toBe(page.to);
+  });
+
+  it("section icon carries aria-current when section route is active", () => {
+    window.history.replaceState({}, "", sectionLandingRoute(sectionByLabel("Strategy"))!);
+    renderCollapsed();
+    expect(railItem("Strategy").getAttribute("aria-current")).toBe("page");
+  });
+
+  it("the Action flyout shows the real queue and the Soon pill for the agent", () => {
+    renderCollapsed();
+    act(() => { railItem("Action").focus(); });
+    const flyout = flyoutFor("Action")!;
+    expect(within(flyout).getByText("Action Queue")).toBeTruthy();
+    expect(within(flyout).getByText("Soon")).toBeTruthy();
   });
 });
 
@@ -452,3 +479,16 @@ describe("navTree category definition", () => {
   });
 });
 
+describe("Sidebar category definition (expanded mode)", () => {
+  it("names the product's shape between groups, in order", () => {
+    renderExpanded();
+    expect(screen.getAllByTestId("nav-group-label").map((e) => e.textContent)).toEqual([
+      "Account", "IAP loop", "Outputs", "Workspace",
+    ]);
+  });
+
+  it("marks every loop section with its stage", () => {
+    renderExpanded();
+    expect(screen.getAllByTestId("nav-loop-stage").map((e) => e.textContent)).toEqual(["1", "2", "3", "4", "5", "6"]);
+  });
+});

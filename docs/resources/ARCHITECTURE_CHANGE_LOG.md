@@ -279,3 +279,49 @@ and 390 px with no console errors.
 **Reach.** Chrome only. Routing, landing routes, `resolveNavLocation`, the palette, the tab
 bars and the Topbar are untouched; the `metrix_sidebar_collapsed` key is no longer read (a
 stale value is harmless).
+
+---
+
+## 7. The sidebar collapses again; its pages disclose on intent (2026-09-03, second pass)
+
+**What.** Entry 6's rail-and-map is withdrawn. The sidebar is a collapsible / expandable
+navigation again — 216 px with labels or a 56 px icon rail, toggled by the logo-row button or
+the keyboard-operable resize handle, remembered per browser — and keeps the one thing worth
+keeping from the map: a section's pages disclose on INTENT, never on a click. Resting the
+pointer on a section for 180 ms (or focusing it) slides its page list open in place and closes
+the other; the label stays a plain link to the command center (no chevron button, no second
+tap); once a list is open by intent, moving to another section moves the list at once; leaving
+the sidebar returns it to the section the reader is on after a 260 ms grace, and Escape does the
+same. In the rail, the same dwell or focus opens a flyout of the section's pages beside its icon,
+and the icon itself is a link to the command center — the rail can navigate. Nothing about a
+module or page is written in the sidebar: what it is for is its tooltip (`title` on every section
+and page), never a line under the label. Loop numerals on one spine and group labels stay —
+structure, not prose.
+
+**Why.** Owner (2026-09-03, second pass): "not a fan of the current menu implementation";
+prefers a collapsible / expandable side navigation "with a more user-friendly way to disclose
+the loop sub-tabs without adding friction or extra clicks"; and the tooltips had been removed
+while "the formerly disclosed text is now permanently surfaced on the main interface" — restore
+the previous interaction pattern. In the same pass the sentence-style notes this session added
+(the landing-scope note, the three optional-input caveats) went back behind the existing
+disclosure patterns: the landing note is a tag with its reason in the title, the caveats are
+collapsed by default.
+
+**Where.** `components/layout/Sidebar.tsx` (rewritten from the pre-map version),
+`components/analysis/ResultScopeBar.tsx` (`LandedScopeNote`), the three `CaveatNote` sites,
+`components/layout/__tests__/sidebar-nav.test.tsx` (rewritten), `sidebar-operability.test.tsx`
+(restored). `.mx-nav-map` / `.mx-map-branch` / `.mx-rail-spine` in `index.css` now dress the
+rail flyout.
+
+**Proof.** sidebar-nav: the header is one link with no chevron button and no button in the
+nav; the active section's list is open and the others inert; a pass-through opens nothing and a
+dwell does (fake timers); the list follows the pointer; leaving returns to the active section
+after the grace; focus opens at once and Escape returns; child links navigate; hidden children
+absent; purposes are titles and never text in the sidebar; collapse/expand/persist; the rail's
+links navigate, its flyout opens on dwell and on focus, closes after the grace, shows no purpose
+text. sidebar-operability: the splitter's keyboard contract. Gates: interaction, token-colors,
+disclosure-rulebook, optical-authority, unused-exports, locator-ambiguity.
+
+**Reach.** Chrome only. Routing, landing routes, `resolveNavLocation`, the palette, the tab
+bars and the Topbar are untouched; `metrix_sidebar_collapsed` is read again.
+

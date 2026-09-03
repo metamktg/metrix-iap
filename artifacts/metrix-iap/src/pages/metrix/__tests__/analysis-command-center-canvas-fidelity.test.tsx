@@ -208,7 +208,12 @@ describe("AnalysisCommandCenter — execution card is honest pre-run readiness",
     await act(async () => { renderCC(); });
     await act(async () => { fireEvent.click(screen.getByText("Date range to analyze")); });
     expect(screen.queryByText("A delivery report is required before running analysis")).toBeNull();
-    const note = screen.getByTestId("optional-exports-note").textContent ?? "";
+    // The note is a CaveatNote collapsed to a preview by default (the
+    // previous disclosure pattern); the full text is one click away.
+    const noteEl = screen.getByTestId("optional-exports-note");
+    const toggle = noteEl.querySelector("button");
+    if (toggle && toggle.getAttribute("aria-expanded") !== "true") fireEvent.click(toggle);
+    const note = noteEl.textContent ?? "";
     expect(note).toContain("Demographics export");
     expect(note).toContain("Placements export");
     expect(note).not.toContain("Ad Summary export");

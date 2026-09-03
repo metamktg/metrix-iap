@@ -3,6 +3,9 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback, useId } from
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
+  ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen,
   LayoutDashboard,
   Radio,
   BarChart2,
@@ -18,50 +21,54 @@ import { NAV_GROUP_LABEL, navTree, sectionLandingRoute, visibleChildren } from "
 import { TYPE } from "@/pages/metrix/typography";
 import { useNavBadges } from "@/navigation/useNavBadges";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIsCompactShell } from "@/lib/useMediaQuery";
+import { useDragResize } from "@/hooks/useDragResize";
 import { DUR_FAST, DUR_MED, EASE, motionOr, staggerDelay } from "@/lib/motion";
 import { AccountSwitcher } from "./AccountSwitcher";
 import type { NavSection, NavChild, NavIconName, NavGroup } from "@/navigation/navTree";
 
-// ─── The sidebar is a rail and a map ───────────────────────────────────
+// ─── A collapsible sidebar whose pages disclose on intent ─────────────
 //
-// The rail is the only thing in the layout: 56px of icons, always there,
-// never collapsing or expanding, so the page keeps its width and the
-// reader keeps their place. The MAP is what the rail becomes when the
-// reader dwells on it: it opens rightwards OVER the page (never pushing
-// it) and draws the product as a flow chart — the six loop stages as
-// numbered nodes on one spine, the outputs and the workspace beneath, and
-// the pages of whichever node the pointer rests on branching out to the
-// right of it. Move to another node and the branch moves with you.
+// Two widths, one control: the sidebar is expanded (216px, labels) or a
+// collapsed rail (56px, icons), toggled by the button in the logo row or by
+// the resize handle on its edge, and remembered per browser. That part is
+// the sidebar every reader already knows.
 //
-// There is no expand/collapse control and no width handle: a toggle you
-// have to find is a mode, and a mode is a thing to forget. Three ways in,
-// each doing one thing:
-//   · a pointer that rests on the rail for OPEN_DWELL_MS opens the map
-//     (a pass-through on the way to the page does not);
-//   · keyboard focus on a rail item opens it at once, Escape closes it and
-//     hands focus back to the rail;
-//   · on a touch screen (no hover) a tap on a rail icon opens the map on
-//     that section, a second tap on the same icon goes to its command
-//     center, a tap outside closes it. Inside the compact-shell drawer the
-//     map is simply always open — the drawer is the disclosure.
+// What is different is how a section's PAGES appear. There is no chevron to
+// click and no second tap: resting the pointer on a section for a moment
+// (or focusing it from the keyboard) opens its page list in place — the
+// section under the pointer slides open, the one that was open slides shut
+// — and the label itself is still a plain link to the section's command
+// center. Leave the sidebar and, after a short grace, the list returns to
+// the section the reader is actually on. In the collapsed rail the same
+// dwell opens the section's pages as a flyout beside its icon; the icon is
+// a link to the command center, so the rail can navigate.
 //
-// Mechanics taken from the Watermelon references (docs/resources/watermelon):
-// tooltip-navbar's dwell-then-follow (one delay to open, none to move
-// between items once open) and layered-progressive-disclosure's arrival —
-// opacity + blur(4px) + an 8px travel, never a 50px one, on a surface the
-// reader is already reading. Nothing is a mode; nothing is remembered.
+// Nothing about a section is written out in the sidebar: what a module is
+// for lives in its tooltip (the title on every section and page), never as
+// a line under the label. The six loop stages keep their numerals on one
+// spine, and the groups keep their labels — those are structure, not prose.
+//
+// Owner direction (2026-09-03, second pass): a collapsible / expandable
+// side navigation, with a more user-friendly way to disclose the loop's
+// sub-tabs without extra clicks; tooltips back; no disclosed text surfaced
+// on the main interface.
+//
+// Mechanics from the Watermelon references (docs/resources/watermelon):
+// tooltip-navbar's dwell-then-follow (one delay to open, none to travel once
+// open) and layered-progressive-disclosure's arrival (blur + 8px, never 50).
 
-export const RAIL_WIDTH = 56;
-const MAP_WIDTH = 332;
-/** How long a pointer rests on the rail before the map opens. */
-export const OPEN_DWELL_MS = 260;
-/** How long the map stays after the pointer leaves it, so a diagonal move to a branch does not close it. */
-export const CLOSE_GRACE_MS = 220;
-
-// Column geometry inside the map: the node column and where the branch starts.
-const NODE_COL_WIDTH = 156;
-const BRANCH_LEFT = NODE_COL_WIDTH + 14;
+// The sidebar never expands past this width by dragging — 216px is the
+// fixed "full" size; the slide handle can only shrink it down to the
+// collapsed rail. Expanding back to 216px happens via click, not drag.
+const EXPANDED_WIDTH = 216;
+const COLLAPSED_WIDTH = 56;
+// Drop below this width mid-drag and releasing snaps to the collapsed rail.
+const COLLAPSE_SNAP_WIDTH = 150;
+/** How long a pointer rests on a section before its pages open. */
+export const OPEN_DWELL_MS = 180;
+/** How long an intent-opened list stays after the pointer leaves the sidebar. */
+export const CLOSE_GRACE_MS = 260;
+const FLYOUT_WIDTH = 224;
 
 // ─── Icon map ──────────────────────────────────────────────────────────
 
@@ -81,6 +88,26 @@ const ICONS: Record<NavIconName, React.ComponentType<{ className?: string }>> = 
 function NavIcon({ name, className }: { name: NavIconName; className?: string }) {
   const Icon = ICONS[name];
   return <Icon className={className} />;
+}
+
+// ─── Collapse state persistence ────────────────────────────────────────
+
+const STORAGE_KEY = "metrix_sidebar_collapsed";
+
+function loadCollapsed(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false; // default: expanded
+  }
+}
+
+function saveCollapsed(v: boolean) {
+  try {
+    localStorage.setItem(STORAGE_KEY, v ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
 }
 
 // ─── Badge pill ────────────────────────────────────────────────────────
@@ -138,85 +165,141 @@ function navigateTo(href: string) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
-/** A pointer that cannot hover — the map opens by tap instead of dwell. */
-function useIsTouch(): boolean {
-  const [touch, setTouch] = useState(() =>
-    typeof window !== "undefined" && typeof window.matchMedia === "function"
-      ? window.matchMedia("(hover: none)").matches
-      : false,
-  );
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
-    const mq = window.matchMedia("(hover: none)");
-    const onChange = () => setTouch(mq.matches);
-    mq.addEventListener?.("change", onChange);
-    return () => mq.removeEventListener?.("change", onChange);
-  }, []);
-  return touch;
+/** A pointer that reports itself as touch has no hover; everything else (mouse, pen, jsdom's undefined) does. */
+function hovers(e: { pointerType?: string }): boolean {
+  return e.pointerType !== "touch";
 }
+
+type PointerPoint = { x: number; y: number };
+const pointAt = (e: { clientX: number; clientY: number }): PointerPoint => ({ x: e.clientX, y: e.clientY });
+/** Movement below this is a layout shift under a resting pointer, not the reader travelling. */
+const FOLLOW_MIN_TRAVEL_PX = 4;
 
 /** The rail's dividers mark the product's shape: after the account, after the loop, after the outputs. */
 function dividerAfter(section: NavSection, next: NavSection | undefined): boolean {
   return next != null && next.group !== section.group;
 }
 
-// ─── Rail item ─────────────────────────────────────────────────────────
-// One icon per section. It is a link to the section's command center; the
-// map is what dwelling, focusing or (on touch) tapping it opens.
+// ─── Child row (expanded list and rail flyout) ──────────────────────────
 
-function RailItem({
+function ChildRow({
+  child,
+  count,
+  index,
+  total,
+  reduced,
+  onNavigate,
+}: {
+  child: NavChild;
+  count: number | null;
+  index: number;
+  total: number;
+  reduced: boolean | null;
+  onNavigate?: () => void;
+}) {
+  const [location] = useLocation();
+  const active = isChildActive(child.to, location);
+
+  return (
+    <motion.li
+      className="relative"
+      initial={reduced ? false : { opacity: 0, x: -8, filter: "blur(4px)" }}
+      animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+      transition={motionOr(reduced, { duration: DUR_MED, ease: EASE, delay: staggerDelay(index, total) })}
+    >
+      {active && (
+        <span className="absolute left-0 top-[5px] bottom-[5px] w-0.5 bg-primary rounded-full" />
+      )}
+      <a
+        href={child.to}
+        onClick={(e) => {
+          navigate(child.to, e);
+          onNavigate?.();
+        }}
+        aria-current={active ? "page" : undefined}
+        // What the page proves is a tooltip, never a line under the label.
+        title={child.purpose ? `${child.label} — ${child.purpose}` : child.label}
+        className={cn(
+          "flex items-center gap-1.5 pl-3 pr-2 min-h-8 py-1 rounded-r text-caption transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+          active
+            ? "font-semibold text-foreground bg-primary/8"
+            : "text-foreground/65 hover:text-foreground hover:bg-primary/10"
+        )}
+      >
+        <span className="flex-1 min-w-0 truncate leading-tight">{child.label}</span>
+        {child.placeholder && !active && (
+          <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
+            Soon
+          </span>
+        )}
+        {child.badgeKey && !child.placeholder && (
+          <NavBadge count={count} badgeKey={child.badgeKey} />
+        )}
+      </a>
+    </motion.li>
+  );
+}
+
+// ─── Collapsed icon item ────────────────────────────────────────────────
+// The icon is a link to the command center. Its pages open as a flyout on
+// intent — rendered by the Sidebar beside the rail, outside the scrolling
+// nav (which would clip anything wider than 56px), at this item's height.
+
+function CollapsedItem({
   section,
   badgeCounts,
-  focused,
+  open,
+  flyoutId,
   onIntent,
-  onActivate,
+  onLeave,
   showDivider,
   itemRef,
 }: {
   section: NavSection;
   badgeCounts: Record<string, number | null>;
-  focused: boolean;
-  onIntent: (sectionId: string, via: "hover" | "focus") => void;
-  /** Returns true when the click was consumed (the map opened instead of navigating). */
-  onActivate: (section: NavSection) => boolean;
+  open: boolean;
+  flyoutId: string;
+  onIntent: (sectionId: string, via: "hover" | "focus", at?: PointerPoint) => void;
+  onLeave: () => void;
   showDivider: boolean;
-  itemRef: (el: HTMLAnchorElement | null) => void;
+  itemRef: (el: HTMLLIElement | null) => void;
 }) {
   const [location] = useLocation();
   const active = isSectionActive(section, location);
   const landing = sectionLandingRoute(section) ?? section.to ?? "#";
   const badgeCount = section.badgeKey ? badgeCounts[section.badgeKey] ?? null : null;
+  const hasPages = visibleChildren(section).length > 0;
 
   return (
     <>
       <li
+        ref={itemRef}
         className={cn("relative", section.loopStage != null && "mx-rail-spine")}
         data-loop-stage={section.loopStage ?? undefined}
+        onPointerEnter={(e) => { if (hovers(e)) onIntent(section.id, "hover", pointAt(e)); }}
+        onPointerLeave={(e) => { if (hovers(e)) onLeave(); }}
       >
         <a
-          ref={itemRef}
           href={landing}
           data-testid="rail-item"
           data-section-id={section.id}
-          onPointerEnter={(e) => { if (e.pointerType !== "touch") onIntent(section.id, "hover"); }}
           onFocus={() => onIntent(section.id, "focus")}
-          onClick={(e) => {
-            if (onActivate(section)) { e.preventDefault(); return; }
-            navigate(landing, e);
-          }}
+          onClick={(e) => navigate(landing, e)}
           aria-current={active ? "page" : undefined}
           aria-label={section.label}
+          aria-controls={hasPages ? flyoutId : undefined}
+          aria-expanded={hasPages ? open : undefined}
           title={`${section.label} · ${section.purpose}`}
           className={cn(
-            "relative flex items-center justify-center w-10 h-10 mx-auto rounded-lg overflow-hidden",
-            "transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+            "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] relative overflow-hidden",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
             active
               ? "bg-primary/20 text-interactive border border-primary/30"
-              : focused
+              : open
                 ? "bg-foreground/[0.07] text-foreground/90"
                 : "text-foreground/55 hover:text-foreground/90 hover:bg-foreground/[0.07]",
-            section.placeholder && "opacity-50",
+            section.placeholder && "opacity-50"
           )}
         >
           {active && (
@@ -240,204 +323,49 @@ function RailItem({
   );
 }
 
-// ─── Map node ──────────────────────────────────────────────────────────
-// A section as a node in the flow chart: its stage numeral (or icon) on
-// the spine, its label, its badge. Resting the pointer on it moves the
-// branch; clicking it goes to the command center.
+// ─── Rail flyout: the intent section's pages, beside its icon ────────────
 
-function MapNode({
-  section,
-  badgeCounts,
-  focused,
-  onIntent,
-  nodeRef,
-}: {
-  section: NavSection;
-  badgeCounts: Record<string, number | null>;
-  focused: boolean;
-  onIntent: (sectionId: string) => void;
-  nodeRef: (el: HTMLLIElement | null) => void;
-}) {
-  const [location] = useLocation();
-  const sectionActive = isSectionActive(section, location);
-  const landing = sectionLandingRoute(section) ?? section.to ?? "#";
-  const landingActive = isChildActive(landing, location);
-  const sectionBadge = section.badgeKey ? badgeCounts[section.badgeKey] ?? null : null;
-
-  return (
-    <li
-      ref={nodeRef}
-      data-loop-stage={section.loopStage ?? undefined}
-      data-testid="map-node"
-      data-section-id={section.id}
-      data-focused={focused || undefined}
-      className={cn("relative", section.loopStage != null && "mx-map-spine")}
-    >
-      <a
-        href={landing}
-        onPointerEnter={(e) => { if (e.pointerType !== "touch") onIntent(section.id); }}
-        onFocus={() => onIntent(section.id)}
-        onClick={(e) => navigate(landing, e)}
-        aria-current={landingActive ? "page" : sectionActive ? "true" : undefined}
-        title={`Open ${section.label}`}
-        className={cn(
-          "pressable-lg relative flex items-center gap-2 pl-2 pr-2 h-9 rounded-lg text-caption select-none",
-          "transition-[color,background-color,border-color,box-shadow,opacity,transform]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-          landingActive
-            ? "mx-nav-active font-medium"
-            : focused
-              ? "text-foreground bg-primary/[0.09] font-medium"
-              : sectionActive
-                ? "text-foreground font-medium"
-                : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10",
-          section.placeholder && "opacity-60",
-        )}
-      >
-        {/* The node itself: the loop stage as a numeral on the spine, the
-            icon for everything outside the loop. */}
-        <span
-          aria-hidden="true"
-          data-testid={section.loopStage != null ? "nav-loop-stage" : undefined}
-          title={section.loopStage != null ? `Stage ${section.loopStage} of 6 in the IAP loop` : undefined}
-          className={cn(
-            "relative z-[1] w-5 h-5 rounded-full border flex items-center justify-center shrink-0 text-micro-num tabular-nums",
-            landingActive || focused
-              ? "border-primary/60 bg-primary/15 text-interactive"
-              : sectionActive
-                ? "border-primary/40 bg-sidebar text-muted-foreground"
-                : "border-border/50 bg-sidebar text-muted-foreground/75",
-          )}
-        >
-          {section.loopStage != null ? section.loopStage : <NavIcon name={section.icon} className="w-3 h-3" />}
-        </span>
-        <span className="flex-1 min-w-0 truncate">{section.label}</span>
-        {section.placeholder && (
-          <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
-            Soon
-          </span>
-        )}
-        {section.badgeKey && !section.placeholder && (
-          <NavBadge count={sectionBadge} badgeKey={section.badgeKey} />
-        )}
-        {/* The connector stub from the node to its branch, drawn only on the focused node. */}
-        {focused && (
-          <span
-            aria-hidden="true"
-            data-testid="map-connector"
-            className="absolute top-1/2 -right-[14px] w-[14px] h-px bg-primary/50"
-          />
-        )}
-      </a>
-    </li>
-  );
-}
-
-// ─── Branch: the focused section's pages ───────────────────────────────
-
-function BranchRow({
-  child,
-  count,
-  index,
-  total,
-  reduced,
-}: {
-  child: NavChild;
-  count: number | null;
-  index: number;
-  total: number;
-  reduced: boolean | null;
-}) {
-  const [location] = useLocation();
-  const active = isChildActive(child.to, location);
-
-  return (
-    <motion.li
-      className="relative mx-map-branch-row"
-      initial={reduced ? false : { opacity: 0, x: -8, filter: "blur(4px)" }}
-      animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-      transition={motionOr(reduced, { duration: DUR_MED, ease: EASE, delay: staggerDelay(index, total) })}
-    >
-      <a
-        href={child.to}
-        onClick={(e) => navigate(child.to, e)}
-        aria-current={active ? "page" : undefined}
-        title={child.purpose ? `${child.label} — ${child.purpose}` : undefined}
-        className={cn(
-          "flex items-center gap-1.5 pl-3 pr-2 min-h-8 py-1 rounded-md text-caption",
-          "transition-[color,background-color,border-color,box-shadow,opacity,transform]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-          active
-            ? "font-semibold text-foreground bg-primary/10"
-            : "text-foreground/70 hover:text-foreground hover:bg-primary/10",
-        )}
-      >
-        <span className="flex-1 min-w-0 leading-tight">
-          <span className="block truncate">{child.label}</span>
-          {/* The active page says what it proves — one fragment, only on the
-              row the reader is on, so the list stays a list. */}
-          {active && child.purpose && (
-            <span className={cn(TYPE.microLabel, "block normal-case tracking-normal font-normal text-muted-foreground/75 truncate mt-0.5")} data-testid="nav-child-purpose">
-              {child.purpose}
-            </span>
-          )}
-        </span>
-        {child.placeholder && !active && (
-          <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
-            Soon
-          </span>
-        )}
-        {child.badgeKey && !child.placeholder && (
-          <NavBadge count={count} badgeKey={child.badgeKey} />
-        )}
-      </a>
-    </motion.li>
-  );
-}
-
-function Branch({
+function RailFlyout({
   section,
   badgeCounts,
   top,
+  flyoutId,
   reduced,
-  branchRef,
+  flyoutRef,
 }: {
   section: NavSection;
   badgeCounts: Record<string, number | null>;
   top: number;
+  flyoutId: string;
   reduced: boolean | null;
-  branchRef: (el: HTMLDivElement | null) => void;
+  flyoutRef: (el: HTMLDivElement | null) => void;
 }) {
   const children = visibleChildren(section);
-  const headingId = useId();
   return (
     <motion.div
-      ref={branchRef}
+      ref={flyoutRef}
       key={section.id}
-      data-testid="map-branch"
-      data-section-id={section.id}
+      id={flyoutId}
       role="group"
-      aria-labelledby={headingId}
-      className="absolute pr-2"
-      style={{ left: BRANCH_LEFT, right: 0, top }}
+      aria-label={`${section.label} pages`}
+      data-testid="rail-flyout"
+      data-section-id={section.id}
+      className="absolute z-40 mx-nav-map rounded-lg py-1.5 pl-1 pr-1.5"
+      style={{ left: COLLAPSED_WIDTH - 6, top, width: FLYOUT_WIDTH }}
       initial={reduced ? false : { opacity: 0, x: -8, filter: "blur(4px)" }}
       animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
       exit={{ opacity: 0, x: -4, filter: "blur(2px)", transition: motionOr(reduced, { duration: DUR_FAST, ease: EASE }) }}
       transition={motionOr(reduced, { duration: DUR_MED, ease: EASE })}
     >
-      {/* What this module is for — the category it defines. The branch's own
-          heading, so the node row stays one line. */}
-      <div id={headingId} className="pl-3 pr-2 pb-1 min-h-9 flex flex-col justify-center" data-testid="nav-section-purpose">
-        <span className={cn(TYPE.microLabel, "text-interactive/80")}>
-          {section.loopStage != null ? `Stage ${section.loopStage} · ${section.label}` : section.label}
-        </span>
-        <span className={cn(TYPE.microLabel, "normal-case tracking-normal font-normal text-muted-foreground/75 leading-snug")}>
-          {section.purpose}
-        </span>
+      <div className={cn(TYPE.microLabel, "px-3 pt-1 pb-1.5 text-muted-foreground/75 flex items-center gap-1.5")} title={section.purpose}>
+        {section.loopStage != null && (
+          <span aria-hidden="true" className="w-4 h-4 rounded-full border border-border/50 text-micro-num tabular-nums flex items-center justify-center normal-case">{section.loopStage}</span>
+        )}
+        <span className="truncate">{section.label}</span>
       </div>
-      <ul aria-label={`${section.label} pages`} className="mx-map-branch space-y-0.5 pb-1">
+      <ul className="mx-map-branch space-y-0.5">
         {children.map((child, i) => (
-          <BranchRow
+          <ChildRow
             key={child.id}
             child={child}
             count={child.badgeKey ? badgeCounts[child.badgeKey] ?? null : null}
@@ -451,6 +379,194 @@ function Branch({
   );
 }
 
+// ─── Expandable section (expanded mode) ────────────────────────────────
+// The header is ONE control: a link to the section's command center. Its
+// page list opens on intent (dwell or focus), never on a click — a click is
+// the navigation. The chevron is a glyph that says "pages", not a button.
+
+function ExpandableSection({
+  section,
+  badgeCounts,
+  open,
+  onIntent,
+  reduced,
+}: {
+  section: NavSection;
+  badgeCounts: Record<string, number | null>;
+  open: boolean;
+  onIntent: (sectionId: string, via: "hover" | "focus", at?: PointerPoint) => void;
+  reduced: boolean | null;
+}) {
+  const [location] = useLocation();
+  const sectionActive = isSectionActive(section, location);
+  const landing = sectionLandingRoute(section) ?? "#";
+  const landingActive = isChildActive(landing, location);
+  const controlsId = useId();
+  const children = visibleChildren(section);
+  const sectionBadge = section.badgeKey ? badgeCounts[section.badgeKey] ?? null : null;
+
+  return (
+    <li
+      data-loop-stage={section.loopStage ?? undefined}
+      data-section-id={section.id}
+      data-testid="nav-section"
+      data-open={open || undefined}
+      className={cn(section.loopStage != null && "mx-loop-spine")}
+      onPointerEnter={(e) => { if (hovers(e)) onIntent(section.id, "hover", pointAt(e)); }}
+    >
+      <a
+        href={landing}
+        onClick={(e) => navigate(landing, e)}
+        onFocus={() => onIntent(section.id, "focus")}
+        aria-current={landingActive ? "page" : undefined}
+        aria-expanded={open}
+        aria-controls={controlsId}
+        // What this module is for is its tooltip — the sidebar shows labels only.
+        title={`${section.label} · ${section.purpose}`}
+        className={cn(
+          "pressable-lg relative flex items-center gap-2 pl-2.5 pr-2 h-9 rounded-lg text-body select-none",
+          "transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+          landingActive
+            ? "mx-nav-active font-medium"
+            : sectionActive
+              ? "text-foreground bg-primary/[0.09] font-medium"
+              : open
+                ? "text-foreground bg-primary/[0.06]"
+                : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10",
+          section.placeholder && "opacity-60",
+        )}
+      >
+        <NavIcon
+          name={section.icon}
+          className={cn(
+            "w-4 h-4 shrink-0",
+            landingActive ? "text-foreground" : sectionActive ? "text-interactive" : "text-muted-foreground/75"
+          )}
+        />
+        <span className="flex-1 text-left truncate">{section.label}</span>
+        {/* The loop stage — the product's shape made visible on every row of it. */}
+        {section.loopStage != null && (
+          <span
+            aria-hidden="true"
+            data-testid="nav-loop-stage"
+            className={cn(
+              // Hollow, muted and never filled — a stage marker must not read as a
+              // count badge (NavBadge is the filled pill beside it).
+              "text-micro-num tabular-nums w-4 h-4 rounded-full border flex items-center justify-center shrink-0 bg-transparent",
+              sectionActive ? "border-primary/40 text-muted-foreground" : "border-border/50 text-muted-foreground/75",
+            )}
+          >
+            {section.loopStage}
+          </span>
+        )}
+        {section.placeholder && (
+          <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
+            Soon
+          </span>
+        )}
+        {section.badgeKey && !section.placeholder && (
+          <NavBadge count={sectionBadge} badgeKey={section.badgeKey} />
+        )}
+        <ChevronDown
+          aria-hidden="true"
+          className={cn(
+            "w-3.5 h-3.5 shrink-0 transition-transform duration-200 text-muted-foreground/75",
+            open && "rotate-180",
+          )}
+        />
+      </a>
+
+      {/* Animated child list — grid 0fr→1fr trick animates height:auto cleanly */}
+      <div
+        id={controlsId}
+        aria-hidden={!open}
+        // A closed list must be out of the tab order as well as out of
+        // sight: inert takes its links out of Tab, aria-hidden alone
+        // would not (the same fix AppShell's drawer needed).
+        inert={!open}
+        style={{
+          display: "grid",
+          gridTemplateRows: open ? "1fr" : "0fr",
+          transition: reduced ? undefined : "grid-template-rows 220ms cubic-bezier(0.4,0,0.2,1)",
+        }}
+      >
+        <ul
+          aria-label={`${section.label} pages`}
+          className="overflow-hidden mt-0.5 ml-3 pl-0 border-l border-border/20 space-y-0.5 pb-1"
+        >
+          {open && children.map((child, i) => (
+            <ChildRow
+              key={child.id}
+              child={child}
+              count={child.badgeKey ? badgeCounts[child.badgeKey] ?? null : null}
+              index={i}
+              total={children.length}
+              reduced={reduced}
+            />
+          ))}
+        </ul>
+      </div>
+    </li>
+  );
+}
+
+// ─── Leaf section (single direct link, expanded mode) ──────────────────
+
+function LeafSection({
+  section,
+  badgeCounts,
+}: {
+  section: NavSection;
+  badgeCounts: Record<string, number | null>;
+}) {
+  const [location] = useLocation();
+  const active = isSectionActive(section, location);
+  const to = section.to!;
+
+  return (
+    <li className="relative">
+      {active && (
+        <span className="absolute left-0 top-[6px] bottom-[6px] w-0.5 bg-primary rounded-full" />
+      )}
+      <a
+        href={to}
+        onClick={(e) => navigate(to, e)}
+        aria-current={active ? "page" : undefined}
+        title={`${section.label} · ${section.purpose}`}
+        className={cn(
+          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-body transition-[color,background-color,border-color,box-shadow,opacity,transform]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+          active
+            ? "mx-nav-active font-medium"
+            : "text-foreground/70 font-normal hover:text-foreground hover:bg-primary/10",
+          section.placeholder && "opacity-60"
+        )}
+      >
+        <NavIcon
+          name={section.icon}
+          className={cn(
+            "w-4 h-4 shrink-0",
+            active ? "text-foreground" : "text-muted-foreground/75"
+          )}
+        />
+        <span className="flex-1">{section.label}</span>
+        {section.placeholder && (
+          <span className="text-micro font-semibold uppercase text-muted-foreground/75 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
+            Soon
+          </span>
+        )}
+        {section.badgeKey && !section.placeholder && (
+          <NavBadge
+            count={badgeCounts[section.badgeKey] ?? null}
+            badgeKey={section.badgeKey}
+          />
+        )}
+      </a>
+    </li>
+  );
+}
+
 // ─── Sidebar ───────────────────────────────────────────────────────────
 
 export function Sidebar() {
@@ -458,8 +574,48 @@ export function Sidebar() {
   const badgeCounts = useNavBadges();
   const { user } = useAuth();
   const reduced = useReducedMotion();
-  const isTouch = useIsTouch();
-  const compact = useIsCompactShell();
+  const [collapsed, setCollapsed] = useState(loadCollapsed);
+  // Live width while a drag is in progress — overrides the collapsed/expanded
+  // CSS width class so the rail visibly tracks the pointer. Cleared on
+  // release once we've committed to a collapsed/expanded state.
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
+
+  function toggleCollapse() {
+    setCollapsed(v => {
+      saveCollapsed(!v);
+      return !v;
+    });
+  }
+
+  // Slide-to-collapse handle on the right edge. Dragging can only shrink the
+  // sidebar down toward the collapsed rail — it never grows past
+  // EXPANDED_WIDTH. A plain click (no drag) toggles collapsed/expanded, the
+  // same as clicking the explicit expand/collapse buttons.
+  const baseWidthRef = useRef(collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH);
+  const handlePointerDown = useDragResize(
+    (dx) => {
+      const next = Math.min(EXPANDED_WIDTH, Math.max(COLLAPSED_WIDTH, baseWidthRef.current + dx));
+      setDragWidth(next);
+    },
+    (wasDragged) => {
+      if (!wasDragged) {
+        toggleCollapse();
+      } else {
+        setDragWidth((finalWidth) => {
+          const shouldCollapse = (finalWidth ?? EXPANDED_WIDTH) < COLLAPSE_SNAP_WIDTH;
+          if (shouldCollapse !== collapsed) {
+            setCollapsed(shouldCollapse);
+            saveCollapsed(shouldCollapse);
+          }
+          return null;
+        });
+      }
+    }
+  );
+  const onHandlePointerDown = (e: React.PointerEvent) => {
+    baseWidthRef.current = collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
+    handlePointerDown(e);
+  };
 
   const isAdmin = user?.role === "admin";
   const visibleTree = isAdmin
@@ -470,171 +626,201 @@ export function Sidebar() {
           : section
       );
 
+  // ─── Disclosure state ────────────────────────────────────────────────
+  // The open list is the section under intent (a dwell or focus), else the
+  // section the reader is on. Nothing is remembered between visits: the
+  // route is the memory.
   const activeSection = visibleTree.find((s) => isSectionActive(s, location));
-
-  // ─── Map state ─────────────────────────────────────────────────────
-  // `open` is the map; `focusId` is the node whose branch is drawn. Inside
-  // the compact-shell drawer the map is always open: the drawer is the
-  // disclosure, and a rail alone in a drawer would be a menu of hieroglyphs.
-  const [openState, setOpen] = useState(false);
-  const open = compact || openState;
-  const [focusId, setFocusId] = useState<string>(activeSection?.id ?? visibleTree[0]!.id);
-  const openedByRef = useRef<"hover" | "focus" | "tap" | null>(null);
-  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [intentId, setIntentId] = useState<string | null>(null);
+  const intentViaRef = useRef<"hover" | "focus" | null>(null);
+  const dwellTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const graceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const asideRef = useRef<HTMLElement>(null);
-  const railRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
-  const nodeRefs = useRef<Record<string, HTMLLIElement | null>>({});
-  const mapNavRef = useRef<HTMLElement>(null);
-  const branchRef = useRef<HTMLDivElement | null>(null);
-  const [branchTop, setBranchTop] = useState(0);
+  const railRefs = useRef<Record<string, HTMLLIElement | null>>({});
+  const flyoutRef = useRef<HTMLDivElement | null>(null);
+  const [flyoutTop, setFlyoutTop] = useState(0);
+  const flyoutId = useId();
 
   const clearTimers = useCallback(() => {
-    if (openTimer.current) { clearTimeout(openTimer.current); openTimer.current = null; }
-    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+    if (dwellTimer.current) { clearTimeout(dwellTimer.current); dwellTimer.current = null; }
+    if (graceTimer.current) { clearTimeout(graceTimer.current); graceTimer.current = null; }
   }, []);
-
-  const openMap = useCallback((via: "hover" | "focus" | "tap") => {
-    clearTimers();
-    openedByRef.current = via;
-    setOpen(true);
-  }, [clearTimers]);
-
-  const closeMap = useCallback(() => {
-    clearTimers();
-    openedByRef.current = null;
-    setOpen(false);
-  }, [clearTimers]);
-
-  // When the route changes, the branch follows the page the reader is on.
-  useEffect(() => {
-    const nowActive = visibleTree.find((s) => isSectionActive(s, location));
-    if (nowActive) setFocusId(nowActive.id);
-    // A navigation from inside the map is the reader leaving it.
-    if (openedByRef.current === "tap" || openedByRef.current === "focus") closeMap();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location]);
-
   useEffect(() => () => clearTimers(), [clearTimers]);
 
-  // A rail item under a mouse pointer: arm the dwell if the map is closed,
-  // or move the branch at once if it is open (tooltip-navbar's rule — one
-  // delay to open, none to travel).
-  const handleRailIntent = useCallback((sectionId: string, via: "hover" | "focus") => {
-    setFocusId(sectionId);
-    if (via === "focus") { openMap("focus"); return; }
-    if (openState) return;
-    if (openTimer.current) return;
-    openTimer.current = setTimeout(() => {
-      openTimer.current = null;
-      openMap("hover");
-    }, OPEN_DWELL_MS);
-  }, [openMap, openState]);
+  // A navigation ends the intent: the list follows the new route.
+  useEffect(() => {
+    clearTimers();
+    setIntentId(null);
+    intentViaRef.current = null;
+  }, [location, clearTimers]);
 
-  // Rail click. Touch, or a click that lands before the dwell has opened
-  // the map on this section: open the map here instead of navigating. A
-  // leaf section (no pages) always navigates.
-  const handleRailActivate = useCallback((section: NavSection): boolean => {
-    const hasPages = visibleChildren(section).length > 0;
-    if (!hasPages) return false;
-    if (isTouch && !(open && focusId === section.id)) {
-      setFocusId(section.id);
-      openMap("tap");
-      return true;
+  // Dwell, then follow: the first section waits OPEN_DWELL_MS (a pass-through
+  // on the way to the page opens nothing); once a list is open by intent,
+  // moving to another section moves the list at once. Focus opens at once.
+  //
+  // "Moving" means the pointer travelled. When a list opens, the list above
+  // it collapses and the rows shift under a pointer that has not moved;
+  // Chromium then dispatches a pointerenter for whichever row landed under
+  // it, and without this guard that row opened too — hover Strategy under an
+  // open Analysis and Exports opened instead. A follow needs real travel
+  // since the last open.
+  const openedAtRef = useRef<PointerPoint | null>(null);
+  const handleIntent = useCallback((sectionId: string, via: "hover" | "focus", at?: PointerPoint) => {
+    if (graceTimer.current) { clearTimeout(graceTimer.current); graceTimer.current = null; }
+    if (via === "focus") {
+      if (dwellTimer.current) { clearTimeout(dwellTimer.current); dwellTimer.current = null; }
+      intentViaRef.current = "focus";
+      setIntentId(sectionId);
+      return;
     }
-    return false;
-  }, [isTouch, open, focusId, openMap]);
-
-  // Pointer leaves the whole sidebar (rail + map): close after the grace.
-  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
-    if (e.pointerType === "touch") return;
-    if (openTimer.current) { clearTimeout(openTimer.current); openTimer.current = null; }
-    if (!openState || openedByRef.current !== "hover") return;
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    closeTimer.current = setTimeout(() => {
-      closeTimer.current = null;
-      setOpen(false);
-      openedByRef.current = null;
-    }, CLOSE_GRACE_MS);
-  }, [openState]);
-
-  const handlePointerEnter = useCallback((e: React.PointerEvent) => {
-    if (e.pointerType === "touch") return;
-    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+    if (intentViaRef.current === "hover") {
+      const from = openedAtRef.current;
+      const travelled = !from || !at || Math.hypot(at.x - from.x, at.y - from.y) >= FOLLOW_MIN_TRAVEL_PX;
+      if (!travelled) return;
+      openedAtRef.current = at ?? null;
+      setIntentId(sectionId);
+      return;
+    }
+    if (dwellTimer.current) clearTimeout(dwellTimer.current);
+    dwellTimer.current = setTimeout(() => {
+      dwellTimer.current = null;
+      intentViaRef.current = "hover";
+      openedAtRef.current = at ?? null;
+      setIntentId(sectionId);
+    }, OPEN_DWELL_MS);
   }, []);
 
-  // Focus leaves the sidebar: close a map that focus opened.
+  // Leaving the sidebar: a pending dwell is cancelled; an intent-opened list
+  // returns to the active section after the grace.
+  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
+    if (!hovers(e)) return;
+    if (dwellTimer.current) { clearTimeout(dwellTimer.current); dwellTimer.current = null; }
+    if (intentViaRef.current !== "hover") return;
+    if (graceTimer.current) clearTimeout(graceTimer.current);
+    graceTimer.current = setTimeout(() => {
+      graceTimer.current = null;
+      intentViaRef.current = null;
+      setIntentId(null);
+    }, CLOSE_GRACE_MS);
+  }, []);
+
+  // In the rail, leaving an item (not the whole sidebar) also starts the
+  // grace, so the flyout survives the diagonal move into it.
+  const handleRailItemLeave = useCallback(() => {
+    if (dwellTimer.current) { clearTimeout(dwellTimer.current); dwellTimer.current = null; }
+  }, []);
+
+  // Focus leaving the sidebar closes a focus-opened list.
   const handleBlur = useCallback((e: React.FocusEvent) => {
     const next = e.relatedTarget as Node | null;
     if (next && asideRef.current?.contains(next)) return;
-    if (openedByRef.current === "focus") closeMap();
-  }, [closeMap]);
+    if (intentViaRef.current === "focus") {
+      intentViaRef.current = null;
+      setIntentId(null);
+    }
+  }, []);
 
+  // Escape returns the list to the section the reader is on.
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key !== "Escape" || !openState) return;
+    if (e.key !== "Escape" || intentId == null) return;
     e.preventDefault();
-    closeMap();
-    railRefs.current[focusId]?.focus();
-  }, [openState, closeMap, focusId]);
+    clearTimers();
+    intentViaRef.current = null;
+    setIntentId(null);
+  }, [intentId, clearTimers]);
 
-  // A tap outside closes a map a tap opened.
-  useEffect(() => {
-    if (!openState) return;
-    const onDown = (e: PointerEvent) => {
-      if (asideRef.current?.contains(e.target as Node)) return;
-      closeMap();
-    };
-    document.addEventListener("pointerdown", onDown);
-    return () => document.removeEventListener("pointerdown", onDown);
-  }, [openState, closeMap]);
+  const openSectionId = intentId ?? activeSection?.id ?? null;
+  const flyoutSection = collapsed && intentId ? visibleTree.find((s) => s.id === intentId) ?? null : null;
 
-  // The branch sits beside its node. Measured, then clamped so it never
-  // runs past the bottom of the map — a branch on the last node climbs up
-  // beside the nodes above it instead of falling off the panel.
+  // The flyout sits at its icon's height, clamped so it never runs past the
+  // bottom of the sidebar; measured after it renders (its height is its own).
   useLayoutEffect(() => {
-    if (!open) return;
-    const node = nodeRefs.current[focusId];
-    const nav = mapNavRef.current;
-    if (!node || !nav) return;
-    const nodeTop = node.offsetTop;
-    const branchHeight = branchRef.current?.offsetHeight ?? 0;
-    const available = nav.clientHeight;
-    const maxTop = Math.max(0, available - branchHeight - 8);
-    setBranchTop(branchHeight > 0 ? Math.min(nodeTop, maxTop) : nodeTop);
-  }, [open, focusId, visibleTree.length]);
-
-  const focusedSection = visibleTree.find((s) => s.id === focusId) ?? activeSection ?? visibleTree[0]!;
-  const mapId = useId();
+    if (!flyoutSection) return;
+    const li = railRefs.current[flyoutSection.id];
+    const aside = asideRef.current;
+    if (!li || !aside) return;
+    const asideRect = aside.getBoundingClientRect();
+    const itemTop = li.getBoundingClientRect().top - asideRect.top;
+    const height = flyoutRef.current?.offsetHeight ?? 0;
+    const maxTop = Math.max(0, asideRect.height - height - 8);
+    setFlyoutTop(height > 0 ? Math.min(itemTop, maxTop) : itemTop);
+  }, [flyoutSection]);
 
   return (
     <aside
       ref={asideRef}
+      data-collapsed={collapsed}
       data-testid="workspace-sidebar"
-      data-map-open={open || undefined}
-      className={cn("relative flex shrink-0 h-full mx-sidebar z-30", compact && "shadow-none")}
-      style={{ width: RAIL_WIDTH }}
+      className={cn(
+        "relative flex flex-col shrink-0 h-full mx-sidebar z-30",
+        dragWidth == null && "transition-[width] duration-200 ease-out",
+        dragWidth == null && (collapsed ? "w-[56px]" : "w-[216px]")
+      )}
+      style={dragWidth != null ? { width: dragWidth } : undefined}
       aria-label="Workspace sidebar"
-      onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
     >
-      {/* ── The rail ── */}
-      <div className="flex flex-col h-full w-full">
-        <div className="border-b border-border/40 shrink-0 px-0 pt-3 pb-2.5 flex flex-col items-center gap-2">
-          <img
-            src={`${import.meta.env.BASE_URL}metrix-logo.png`}
-            alt="Metrix"
-            className="w-6 h-6 object-contain mx-logo-glow"
-          />
-        </div>
+      {/* Logo row — collapse toggle lives here as a small icon button */}
+      <div className={cn(
+        "border-b border-border/40 shrink-0 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200",
+        collapsed
+          ? "px-0 pt-3 pb-2.5 flex flex-col items-center gap-2"
+          : "px-4 pt-4 pb-3"
+      )}>
+        {collapsed ? (
+          <>
+            <img
+              src={`${import.meta.env.BASE_URL}metrix-logo.png`}
+              alt="Metrix"
+              className="w-6 h-6 object-contain mx-logo-glow"
+            />
+            {/* Expand button beneath logo in collapsed mode */}
+            <button
+              onClick={toggleCollapse}
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+              className="pressable w-7 h-7 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
+            >
+              <PanelLeftOpen className="w-3.5 h-3.5" />
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <img
+                src={`${import.meta.env.BASE_URL}metrix-logo.png`}
+                alt="Metrix"
+                className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
+              />
+              <span className="text-[16px] font-semibold tracking-tight text-foreground/90">metrix</span> {/* disclosure-ok: wordmark, sized to the 20px mark beside it, not a type role */}
+              {/* Collapse button — right-aligned in logo row */}
+              <button
+                onClick={toggleCollapse}
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+                className="pressable ml-auto w-6 h-6 flex items-center justify-center rounded text-muted-foreground/75 hover:text-muted-foreground hover:bg-foreground/[0.05] transition-colors"
+              >
+                <PanelLeftClose className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {/* Account switcher — expanded mode, full-width row */}
+            <div className="mt-2.5 border-t border-border/30 pt-2.5">
+              <AccountSwitcher />
+            </div>
+          </>
+        )}
+      </div>
 
-        <nav
-          className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-1"
-          aria-label="Main workspace navigation"
-          aria-controls={open ? mapId : undefined}
-        >
+      {/* Nav */}
+      <nav
+        className={cn("flex-1 overflow-y-auto py-2", collapsed ? "px-1 overflow-x-visible" : "px-2")}
+        aria-label="Main workspace navigation"
+      >
+        {collapsed ? (
           <ol className="space-y-1 list-none p-0 m-0">
+            {/* Compact account switcher at top of icon rail */}
             <li className="pb-0.5">
               <AccountSwitcher compact />
             </li>
@@ -642,124 +828,152 @@ export function Sidebar() {
               <span className="w-5 h-px bg-border/35 rounded-full" />
             </li>
             {visibleTree.map((section, idx) => (
-              <RailItem
+              <CollapsedItem
                 key={section.id}
                 section={section}
                 badgeCounts={badgeCounts}
-                focused={open && focusId === section.id}
-                onIntent={handleRailIntent}
-                onActivate={handleRailActivate}
+                open={intentId === section.id}
+                flyoutId={flyoutId}
+                onIntent={handleIntent}
+                onLeave={handleRailItemLeave}
                 showDivider={dividerAfter(section, visibleTree[idx + 1])}
                 itemRef={(el) => { railRefs.current[section.id] = el; }}
               />
             ))}
           </ol>
-        </nav>
-
-        <div className="border-t border-border/40 shrink-0 py-3 flex flex-col items-center gap-2">
-          {user && (
-            <div
-              className="flex items-center justify-center"
-              data-testid="sidebar-user-footer"
-              title={`${user.email} · ${user.role === "admin" ? "Agency (internal)" : "Member"}`}
-            >
-              <span
-                aria-hidden="true"
-                className="flex items-center justify-center w-6 h-6 rounded-full shrink-0 bg-primary/15 border border-primary/25 text-interactive text-label font-bold leading-none"
-              >
-                {user.email.slice(0, 2).toUpperCase()}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── The map ── */}
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="map"
-            id={mapId}
-            data-testid="nav-map"
-            className="absolute top-0 left-full h-full z-40 mx-nav-map flex flex-col"
-            style={{ width: MAP_WIDTH }}
-            initial={reduced ? false : { opacity: 0, x: -8, filter: "blur(4px)" }}
-            animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, x: -6, filter: "blur(3px)", transition: motionOr(reduced, { duration: DUR_FAST, ease: EASE }) }}
-            transition={motionOr(reduced, { duration: DUR_MED, ease: EASE })}
-          >
-            <div className="border-b border-border/40 shrink-0 px-4 pt-3.5 pb-3">
-              <div className="flex items-center gap-2">
-                <img
-                  src={`${import.meta.env.BASE_URL}metrix-logo.png`}
-                  alt=""
-                  aria-hidden="true"
-                  className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
-                />
-                <span className="text-[16px] font-semibold tracking-tight text-foreground/90">metrix</span> {/* disclosure-ok: wordmark, sized to the 20px mark beside it, not a type role */}
-                <span className={cn(TYPE.microLabel, "ml-auto text-muted-foreground/75")}>Workspace map</span>
-              </div>
-              <div className="mt-2.5 border-t border-border/30 pt-2.5">
-                <AccountSwitcher />
-              </div>
-            </div>
-
-            <nav
-              ref={mapNavRef}
-              className="relative flex-1 overflow-y-auto overflow-x-hidden py-2 pl-2"
-              aria-label="Workspace map"
-            >
-              <ol className="list-none p-0 m-0 space-y-0.5" style={{ width: NODE_COL_WIDTH }}>
-                {visibleTree.map((section, idx) => [
-                  // Group label where the product's shape changes: Account ·
-                  // IAP loop · Outputs · Workspace. Presentation, not a control.
-                  (idx === 0 || visibleTree[idx - 1]!.group !== section.group) ? (
-                    <li key={`group-${section.group}`} role="presentation" className={cn("px-2 pb-1", idx === 0 ? "pt-1" : "pt-3")} data-testid="nav-group-label">
-                      <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{NAV_GROUP_LABEL[section.group as NavGroup]}</span>
-                    </li>
-                  ) : null,
-                  <MapNode
-                    key={section.id}
-                    section={section}
-                    badgeCounts={badgeCounts}
-                    focused={focusId === section.id}
-                    onIntent={(id) => setFocusId(id)}
-                    nodeRef={(el) => { nodeRefs.current[section.id] = el; }}
-                  />,
-                ])}
-              </ol>
-
-              <AnimatePresence initial={false}>
-                <Branch
-                  key={focusedSection.id}
-                  section={focusedSection}
+        ) : (
+          <ol className="space-y-0.5 list-none p-0 m-0">
+            {visibleTree.map((section, idx) => [
+              // Group label where the product's shape changes: Account ·
+              // IAP loop · Outputs · Workspace. Presentation, not a control.
+              (idx === 0 || visibleTree[idx - 1]!.group !== section.group) ? (
+                <li key={`group-${section.group}`} role="presentation" className={cn("px-2.5 pb-1", idx === 0 ? "pt-1" : "pt-3")} data-testid="nav-group-label">
+                  <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{NAV_GROUP_LABEL[section.group as NavGroup]}</span>
+                </li>
+              ) : null,
+              section.children?.length ? (
+                <ExpandableSection
+                  key={section.id}
+                  section={section}
                   badgeCounts={badgeCounts}
-                  top={branchTop}
+                  open={openSectionId === section.id}
+                  onIntent={handleIntent}
                   reduced={reduced}
-                  branchRef={(el) => { if (el) branchRef.current = el; }}
                 />
-              </AnimatePresence>
-            </nav>
+              ) : (
+                <LeafSection
+                  key={section.id}
+                  section={section}
+                  badgeCounts={badgeCounts}
+                />
+              ),
+            ])}
+          </ol>
+        )}
+      </nav>
 
-            {user && (
-              <div className="border-t border-border/40 shrink-0 px-4 py-3 flex items-center gap-2 min-w-0" title={user.email}>
-                <span
-                  aria-hidden="true"
-                  className="flex items-center justify-center w-6 h-6 rounded-full shrink-0 bg-primary/15 border border-primary/25 text-interactive text-label font-bold leading-none"
-                >
-                  {user.email.slice(0, 2).toUpperCase()}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-caption font-medium text-foreground/85 truncate leading-tight">{user.email}</p>
-                  <p className="text-label text-muted-foreground/75 leading-tight">
-                    {user.role === "admin" ? "Agency (internal)" : "Member"}
-                  </p>
-                </div>
-              </div>
-            )}
-          </motion.div>
+      {/* The rail's page flyout — beside the rail, outside the scrolling nav. */}
+      <AnimatePresence initial={false}>
+        {flyoutSection && visibleChildren(flyoutSection).length > 0 && (
+          <RailFlyout
+            key={flyoutSection.id}
+            section={flyoutSection}
+            badgeCounts={badgeCounts}
+            top={flyoutTop}
+            flyoutId={flyoutId}
+            reduced={reduced}
+            flyoutRef={(el) => { if (el) flyoutRef.current = el; }}
+          />
         )}
       </AnimatePresence>
+
+      {/* Slide-to-collapse handle — drag left to shrink toward the rail
+          (never past EXPANDED_WIDTH going the other way); click to toggle.
+          This is the WAI-ARIA window-splitter pattern: a focusable separator
+          that carries the value it is separating on (aria-valuenow/min/max)
+          and moves on the arrow keys. Home and End jump to the two committed
+          states; Enter and Space toggle, matching a plain click. */}
+      <div
+        role="separator"
+        tabIndex={0}
+        aria-orientation="vertical"
+        aria-label="Sidebar width"
+        aria-valuemin={COLLAPSED_WIDTH}
+        aria-valuemax={EXPANDED_WIDTH}
+        aria-valuenow={dragWidth ?? (collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH)}
+        aria-valuetext={collapsed ? "Collapsed" : "Expanded"}
+        title={collapsed ? "Click to expand" : "Drag to collapse"}
+        onPointerDown={onHandlePointerDown}
+        onKeyDown={(e) => {
+          const KEY_STEP = 24;
+          const current = dragWidth ?? (collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH);
+          const commit = (w: number) => {
+            const shouldCollapse = w < COLLAPSE_SNAP_WIDTH;
+            setDragWidth(null);
+            if (shouldCollapse !== collapsed) {
+              setCollapsed(shouldCollapse);
+              saveCollapsed(shouldCollapse);
+            }
+          };
+          if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+            e.preventDefault();
+            const next = Math.min(
+              EXPANDED_WIDTH,
+              Math.max(COLLAPSED_WIDTH, current + (e.key === "ArrowRight" ? KEY_STEP : -KEY_STEP)),
+            );
+            // Live width while stepping, so the rail tracks the keys the way
+            // it tracks a pointer; committed on release of the extremes.
+            setDragWidth(next);
+            if (next === EXPANDED_WIDTH || next === COLLAPSED_WIDTH) commit(next);
+          } else if (e.key === "Home") {
+            e.preventDefault();
+            commit(COLLAPSED_WIDTH);
+          } else if (e.key === "End") {
+            e.preventDefault();
+            commit(EXPANDED_WIDTH);
+          } else if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setDragWidth(null);
+            toggleCollapse();
+          }
+        }}
+        className={cn(
+          "absolute top-0 right-0 h-full w-1.5 -mr-0.5 z-10 cursor-col-resize group/handle",
+          "flex items-center justify-center",
+          "focus-visible:outline-none focus-visible:bg-primary/40",
+        )}
+      >
+        <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />
+      </div>
+
+      {/* Footer — signed-in user */}
+      <div className={cn(
+        "border-t border-border/40 shrink-0",
+        collapsed ? "py-3 flex flex-col items-center gap-2" : "px-3 py-3 space-y-2"
+      )}>
+        {user && (
+          <div
+            className={cn("flex items-center gap-2 min-w-0", collapsed && "justify-center")}
+            data-testid="sidebar-user-footer"
+            title={`${user.email} · ${user.role === "admin" ? "Agency (internal)" : "Member"}`}
+          >
+            <span
+              aria-hidden="true"
+              className="flex items-center justify-center w-6 h-6 rounded-full shrink-0 bg-primary/15 border border-primary/25 text-interactive text-label font-bold leading-none"
+            >
+              {user.email.slice(0, 2).toUpperCase()}
+            </span>
+            {!collapsed && (
+              <div className="min-w-0">
+                <p className="text-caption font-medium text-foreground/85 truncate leading-tight">{user.email}</p>
+                <p className="text-label text-muted-foreground/75 leading-tight">
+                  {user.role === "admin" ? "Agency (internal)" : "Member"}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </aside>
   );
 }
