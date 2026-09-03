@@ -56,7 +56,7 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 /** The card's kind, read off the derived id (`derived:<kind>:…`). */
-export function recommendationKind(rec: DerivedRecommendation): string {
+function recommendationKind(rec: DerivedRecommendation): string {
   if (!rec.derived) return "generated";
   return rec.id.split(":")[1] ?? "";
 }
@@ -95,7 +95,7 @@ function Tile({ rec }: { rec: DerivedRecommendation }) {
         )}
         {/* Provenance is never decoration: the tile says which part of the
             account's JSON produced it, on hover and to assistive tech. */}
-        <span className="ml-auto text-micro text-muted-foreground/60 truncate max-w-[96px]" title={`Source · ${rec.source}`}>
+        <span className="ml-auto text-micro text-muted-foreground/75 truncate max-w-[96px]" title={`Source · ${rec.source}`}>
           {rec.source.split(".")[0]}
         </span>
       </div>
@@ -106,14 +106,14 @@ function Tile({ rec }: { rec: DerivedRecommendation }) {
 
       {rec.metric ? (
         <div className="flex items-baseline gap-1.5" data-testid="recommendation-metric">
-          <span className="text-title font-semibold text-foreground metric-num tabular-nums leading-none">
+          <span className="text-title text-foreground metric-num tabular-nums leading-none">
             {rec.metric.value}
           </span>
           <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{rec.metric.label}</span>
         </div>
       ) : (
         // No number is a fact about the rows, not a gap to paper over.
-        <div className={cn(TYPE.caption, "text-muted-foreground/60 leading-snug")} data-testid="recommendation-no-metric">
+        <div className={cn(TYPE.caption, "text-muted-foreground/75 leading-snug")} data-testid="recommendation-no-metric">
           No measured figure in this account's rows
         </div>
       )}
@@ -197,7 +197,7 @@ export function RecommendationSlider({
       <div className="flex items-center gap-2">
         <Zap className="w-3.5 h-3.5 text-interactive/70 shrink-0" />
         <span className={cn(TYPE.label, "uppercase tracking-widest text-muted-foreground/75")}>{title}</span>
-        <span className={cn(TYPE.microLabel, "text-muted-foreground/60 tabular-nums")} data-testid="recommendation-count">
+        <span className={cn(TYPE.microLabel, "text-muted-foreground/75 tabular-nums")} data-testid="recommendation-count">
           {recs.length}
         </span>
         <div className="ml-auto flex items-center gap-1">
