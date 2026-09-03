@@ -33,7 +33,7 @@
 import type { DeckCard } from "@/components/deck/RecommendationDeck";
 import type { AdAccount, ConceptRollupRow, RecommendationCard, SeedImpact } from "./seedTypes";
 import { scopeToRun } from "@/lib/run-supersede";
-import { parseHierarchyRef } from "@/lib/normalize";
+import { parseHierarchyRef, humanizeDiagnosis } from "@/lib/normalize";
 import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
 
 export interface DerivedRecommendation extends DeckCard {
@@ -170,7 +170,7 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
       scope: scopeOf(label),
       actionGroup: "Budget actions",
       href: "/app/strategy/map",
-      hrefLabel: "See the scaling playbook",
+      hrefLabel: "Why the playbook retires it",
       metric: metricFor(ev),
       source: "strategy.scaling_playbook.avoid_combinations",
       stage: 3,
@@ -232,10 +232,10 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
     out.push({
       id: `derived:investigate:${investigateIdx++}`,
       title: campaign ? `No results on ${campaign}` : placement ? `Reach without result · ${placement}` : "Spend with no recorded result",
-      rationale: diagnosis || "The account recorded spend against this segment and no results.",
+      rationale: diagnosis ? humanizeDiagnosis(diagnosis) : "The account recorded spend against this segment and no results.",
       recommendedAction: diagnosis.startsWith("traffic_quality")
         ? `Exclude ${subject} from the delivery mix and re-read the remaining placements.`
-        : "Confirm the conversion is being recorded before concluding the creative failed — a broken signal and a failed creative look identical here.",
+        : "Confirm the conversion is being recorded before concluding the creative failed. A broken signal and a failed creative look identical here.",
       impact: "high",
       confidence: diagnosis.includes("validation_required") ? "validation required" : "recorded",
       scope: segment,
@@ -253,10 +253,10 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
       id: `derived:investigate:ads:${diagnosis || "unstated"}`,
       title: `${g.count} ad${g.count === 1 ? "" : "s"} spent with no recorded result`,
       rationale: diagnosis
-        ? `${diagnosis} — summed across ${g.count} ad${g.count === 1 ? "" : "s"}.`
+        ? `${humanizeDiagnosis(diagnosis)}. Summed across ${g.count} ad${g.count === 1 ? "" : "s"}.`
         : `Recorded across ${g.count} ad${g.count === 1 ? "" : "s"} with no stated diagnosis.`,
       recommendedAction:
-        "Check the conversion signal for these ads before retiring their creative — engagement without a recorded result is the tracking signature, not a creative verdict.",
+        "Check the conversion signal for these ads before retiring their creative. Engagement without a recorded result is the tracking signature, not a creative verdict.",
       impact: "high",
       confidence: diagnosis.includes("validation_required") ? "validation required" : "recorded",
       scope: "creative",
@@ -294,7 +294,7 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
     out.push({
       id: `derived:validate:${i}`,
       title: label,
-      rationale: "Named for validation by the strategy map — not yet measured at a volume that would settle it.",
+      rationale: "Named for validation by the strategy map. Not yet measured at a volume that would settle it.",
       recommendedAction: "Fund this as a test cell with enough volume to reach a read.",
       impact: "medium",
       confidence: "unvalidated",

@@ -43,8 +43,21 @@ function actionVerb(recommended_action: string): { label: string; cls: string } 
   const a = recommended_action.toLowerCase();
   if (a.includes("scale")) return { label: "Scale", cls: "bg-status-success/10 text-status-success border-status-success/25" };
   if (a.includes("pause") || a.includes("kill") || a.includes("stop"))
-    return { label: "Kill", cls: "bg-status-danger/10 text-status-danger border-status-danger/25" };
-  return { label: "Fix", cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
+    return { label: "Retire", cls: "bg-status-danger/10 text-status-danger border-status-danger/25" };
+  return { label: "Optimize", cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
+}
+
+/** The queue's groups, in the loop's order. A card's index in the flat list keeps its stagger slot. */
+function groupByVerb(cards: RecommendationCard[]): { label: string; cls: string; cards: { card: RecommendationCard; index: number }[] }[] {
+  const order = ["Retire", "Scale", "Optimize"];
+  const groups = new Map<string, { label: string; cls: string; cards: { card: RecommendationCard; index: number }[] }>();
+  cards.forEach((card, index) => {
+    const verb = actionVerb(card.recommended_action);
+    const g = groups.get(verb.label) ?? { label: verb.label, cls: verb.cls, cards: [] };
+    g.cards.push({ card, index });
+    groups.set(verb.label, g);
+  });
+  return [...groups.values()].sort((a, b) => order.indexOf(a.label) - order.indexOf(b.label));
 }
 
 function scopeToActionGroup(scope: string): string {
@@ -390,9 +403,9 @@ export function ActionQueueView() {
         section={SECTION}
         title="Action Queue"
         accountName={account.name}
-        subtitle="Recommendation cards from the optimization loop, sorted by impact — approve into the Task Tray or dismiss."
+        subtitle="Recommendation cards from the optimization loop, sorted by impact. Approve into the Task Tray or dismiss."
       />
-      <div className="px-6 py-6 space-y-5 max-w-[860px] w-full mx-auto">
+      <div className="px-6 py-6 space-y-5 max-w-[1120px] w-full mx-auto">
 
         {/* ── Descriptive line ────────────────────────────────────────── */}
         {/* The empty half of this line said recommendations "appear here
@@ -430,24 +443,38 @@ export function ActionQueueView() {
         ) : visibleCards.length === 0 ? (
           <AllCaughtUp />
         ) : (
-          <div className="space-y-3">
-            {/* Staggered arrival on tab entry (cards are disjoint across
-                tabs, so a tab switch remounts and replays it). Departure on
-                approve/dismiss stays instant by design: the card's landing
-                tab counts up in the same paint, and a delayed unmount would
-                leave a decided card lingering in the pending list. */}
-            {visibleCards.map((card, i) => (
-              <motion.div
-                key={card.id}
-                initial={reduced ? false : { opacity: 0, y: -6, filter: "blur(4px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                transition={{
-                  ...motionOr(reduced, { duration: DUR_MED, ease: EASE }),
-                  delay: reduced ? 0 : staggerDelay(i, visibleCards.length),
-                }}
-              >
-                <QueueCard card={card} adAccountId={adAccountId ?? ""} />
-              </motion.div>
+          <div className="space-y-6">
+            {/* Grouped by the verb the card asks for, in the loop's order
+                (retire, scale, optimize), each group a two-column grid above
+                xl: twenty-three cards in one 860 px column was a 5,000 px
+                scroll with nothing to scan by. Staggered arrival on tab
+                entry (cards are disjoint across tabs, so a tab switch
+                remounts and replays it). Departure on approve/dismiss stays
+                instant by design: the card's landing tab counts up in the
+                same paint, and a delayed unmount would leave a decided card
+                lingering in the pending list. */}
+            {groupByVerb(visibleCards).map((group) => (
+              <section key={group.label} aria-label={`${group.label} (${group.cards.length})`} data-testid="queue-group">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <span className={cn("inline-flex text-label font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none", group.cls)}>{group.label}</span>
+                  <span className="text-caption text-muted-foreground/75 tabular-nums">{group.cards.length}</span>
+                </div>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-start">
+                  {group.cards.map(({ card, index }) => (
+                    <motion.div
+                      key={card.id}
+                      initial={reduced ? false : { opacity: 0, y: -6, filter: "blur(4px)" }}
+                      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                      transition={{
+                        ...motionOr(reduced, { duration: DUR_MED, ease: EASE }),
+                        delay: reduced ? 0 : staggerDelay(index, visibleCards.length),
+                      }}
+                    >
+                      <QueueCard card={card} adAccountId={adAccountId ?? ""} />
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}

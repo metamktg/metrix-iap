@@ -116,7 +116,7 @@ function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
         data-testid="panel-temp-password"
       >
         <div className="text-caption text-status-warning">
-          Email could not be sent — share this temporary password with {outcome.email} manually:
+          Email could not be sent. Share this temporary password with {outcome.email} manually:
         </div>
         <div className="flex items-center gap-2">
           <code className="text-body text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded">
@@ -208,7 +208,7 @@ function EmailStatusBanner() {
         <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
         <div className="text-caption text-muted-foreground">
           Email delivery is configured (sending as <span className="text-foreground">{from}</span>).
-          {" "}Environment: <span className="text-foreground">{environment}</span> — approvals create
+          {" "}Environment: <span className="text-foreground">{environment}</span>, approvals create
           accounts in this environment only.
         </div>
       </div>
@@ -224,21 +224,21 @@ function EmailStatusBanner() {
       <div className="text-caption text-muted-foreground space-y-0.5">
         {mode === "missing_key" ? (
           <div>
-            <span className="text-status-warning font-medium">Email delivery is disabled</span> — no
+            <span className="text-status-warning font-medium">Email delivery is disabled</span>, no
             email API key is set. Temporary passwords and reset links will be shown here for you
             to share manually.
           </div>
         ) : (
           <div>
             <span className="text-status-warning font-medium">Email delivery is in sandbox mode</span>
-            {" "}— the sandbox sender ({from}) only delivers to the email account owner's inbox.
+            {" "}, the sandbox sender ({from}) only delivers to the email account owner's inbox.
             Emails to anyone else will fail, and their credentials will be shown here instead.
             To fix: verify a domain at resend.com/domains and set REQUEST_ACCESS_FROM_EMAIL to a
             sender on that domain.
           </div>
         )}
         <div>
-          Environment: <span className="text-foreground">{environment}</span> — approvals create
+          Environment: <span className="text-foreground">{environment}</span>, approvals create
           accounts in this environment only. Approving here does <span className="text-foreground">not</span>{" "}
           create the account in {environment === "development" ? "production" : "development"}.
         </div>
@@ -291,7 +291,7 @@ function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email:
       data-testid="panel-user-action-fallback"
     >
       <div className="text-caption text-status-warning">
-        Email could not be sent — share this {noun} with {email} manually
+        Email could not be sent, share this {noun} with {email} manually
         {outcome.kind === "reset_link" ? " (expires in 1 hour)" : ""}:
       </div>
       {outcome.value && (
@@ -620,7 +620,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
             ) : outcome.temp_password ? (
               <div className="space-y-1 rounded-md border border-status-warning/25 bg-status-warning/5 p-2">
                 <div className="text-caption text-status-warning">
-                  Email could not be sent — share this temporary password with {outcome.email} manually:
+                  Email could not be sent. Share this temporary password with {outcome.email} manually:
                 </div>
                 <div className="flex items-center gap-2">
                   <code className="text-body text-foreground bg-foreground/[0.05] px-1.5 py-0.5 rounded">
@@ -1099,7 +1099,7 @@ function UsersSection() {
         </div>
       ) : list.length === 0 ? (
         <div className="text-caption text-muted-foreground/75 py-4">
-          No provisioned users yet — use "Add user" or approve a request to create the first
+          No provisioned users yet · use "Add user" or approve a request to create the first
           account.
         </div>
       ) : (

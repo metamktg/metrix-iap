@@ -138,7 +138,7 @@ export function DemographicHeatGrid({
                   {s.age} · {s.gender}
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className={cn(TYPE.caption, "tabular-nums text-muted-foreground")}>{measureValue(s, measure) === null ? "—" : format(measureValue(s, measure)!)}</span>
+                  <span className={cn(TYPE.caption, "tabular-nums text-muted-foreground")}>{measureValue(s, measure) === null ? "–" : format(measureValue(s, measure)!)}</span>
                   <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground/75 transition-transform", isOpen && "rotate-180")} aria-hidden />
                 </span>
               </button>
@@ -147,9 +147,9 @@ export function DemographicHeatGrid({
                   {[
                     { label: "Spend", value: fmtMetric("usd_total", s.spend) },
                     { label: resultLabel, value: fmtMetric("count", s.results) },
-                    { label: "Cost per result", value: s.results > 0 ? fmtMetric("usd_unit", s.spend / s.results) : "—" },
+                    { label: "Cost per result", value: s.results > 0 ? fmtMetric("usd_unit", s.spend / s.results) : "–" },
                     { label: "Impressions", value: fmtMetric("count", s.impressions) },
-                    { label: "Link CTR", value: s.impressions > 0 ? fmtMetric("pct", (s.link_clicks / s.impressions) * 100) : "—" },
+                    { label: "Link CTR", value: s.impressions > 0 ? fmtMetric("pct", (s.link_clicks / s.impressions) * 100) : "–" },
                     { label: "Reach", value: s.reach_exact && s.reach !== null ? fmtMetric("count", s.reach) : "not additive" },
                   ].map((item) => (
                     <div key={item.label} className="rounded-lg border border-border/40 bg-foreground/[0.02] px-3 py-2">

@@ -110,13 +110,13 @@ export function VariableStack({
                   // thing standing between a marginal read and an attribution.
                   title={
                     read
-                      ? `${read.label} — measured across every creative carrying ${code}, not this stack's own result`
+                      ? `${read.label} · measured across every creative carrying ${code}, not this stack's own result`
                       : code
                         ? "No measurement for this variable in the current window."
                         : undefined
                   }
                 >
-                  {read?.value ?? (code ? "—" : "")}
+                  {read?.value ?? (code ? "–" : "")}
                 </span>
               )}
             </>
@@ -131,7 +131,7 @@ export function VariableStack({
                   aria-label={`${family.label}: ${resolveVariableLabel(code)}`}
                   className="w-full min-h-10 flex items-center gap-2 text-left rounded-lg
                              hover:bg-foreground/[0.04] active:scale-[0.99]
-                             transition-[background-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                             transition-[background-color,scale] duration-150 ease-[var(--mx-ease)]
                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {inner}

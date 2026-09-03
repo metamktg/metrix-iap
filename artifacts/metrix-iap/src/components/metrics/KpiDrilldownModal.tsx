@@ -103,7 +103,7 @@ function SortToggle({ dir, onChange }: { dir: "asc" | "desc"; onChange: (d: "asc
     <button
       type="button"
       onClick={() => onChange(dir === "desc" ? "asc" : "desc")}
-      aria-label={dir === "desc" ? "Sorted descending — switch to ascending" : "Sorted ascending — switch to descending"}
+      aria-label={dir === "desc" ? "Sorted descending · switch to ascending" : "Sorted ascending · switch to descending"}
       className="pressable inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/50 text-caption text-foreground/75 hover:text-foreground transition-colors"
     >
       {dir === "desc" ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />}
@@ -457,7 +457,7 @@ export function KpiDrilldownModal({
           <DialogTitle className={DIALOG.title}>{metric.label}</DialogTitle>
           <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
             {scope === "manager"
-              ? "The selected metric per configured ad account. Blended ratios are computed from summed numerators and denominators — never averaged."
+              ? "The selected metric per configured ad account. Blended ratios are computed from summed numerators and denominators. Never averaged."
               : "Segmented view of this metric across the account's analysis dimensions."}
           </DialogDescription>
           {/* Window / run indicator */}
@@ -494,7 +494,7 @@ export function KpiDrilldownModal({
         {scope === "manager" && !overlapOn && (
           <NoticeNote>
             <span data-testid="window-coverage-disclosure">
-              Window coverage: connected accounts report over different date windows — each row is valued over its
+              Window coverage: connected accounts report over different date windows. Each row is valued over its
               own window (shown per row). Cross-account totals blend these windows; ratio metrics are summed
               numerators ÷ summed denominators. Use the overlap toggle to restrict every account to the shared range.
             </span>
@@ -534,8 +534,8 @@ export function KpiDrilldownModal({
                 scope === "manager"
                   ? "No configured account can compute this metric over the selected window."
                   : scopeNarrowed
-                    ? "No rows can be honestly scoped to the active window/run/preset selection for this breakdown — switch back to all data for the full segment view. Values that can't be honestly computed show as n/a, never zero."
-                    : "No rows back this metric for the selected breakdown in the current import — values that can't be honestly computed show as n/a, never zero."
+                    ? "No rows can be honestly scoped to the active window/run/preset selection for this breakdown. Switch back to all data for the full segment view. Values that can't be honestly computed show as n/a, never zero."
+                    : "No rows back this metric for the selected breakdown in the current import. Values that can't be honestly computed show as n/a, never zero."
               }
             />
           ) : (
@@ -565,7 +565,7 @@ export function KpiDrilldownModal({
                 <NoticeNote>
                   {rows.filter((r) => r.value == null).map((r) => (
                     <span key={r.key} className="block">
-                      <span className="font-medium text-foreground/70">{r.label}</span> — {r.note ?? "n/a for this metric."}
+                      <span className="font-medium text-foreground/70">{r.label}</span>–{r.note ?? "n/a for this metric."}
                     </span>
                   ))}
                 </NoticeNote>

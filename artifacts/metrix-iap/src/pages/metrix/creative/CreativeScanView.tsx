@@ -53,8 +53,8 @@ export function CreativeScanView() {
               <div className="grid grid-cols-dashboard-4 gap-3" data-testid="scan-stats">
                 <MetricTile label="Assets scanned" value="0" sub="Scan not yet run" />
                 <MetricTile label="Library assets" value={fmtNum(libraryCount)} sub="Awaiting first scan" />
-                <MetricTile label="Blocking" value="—" sub="No results yet" />
-                <MetricTile label="Requires" value="Scan engine" sub="Automated pass planned — not yet built" />
+                <MetricTile label="Blocking" value="–" sub="No results yet" />
+                <MetricTile label="Requires" value="Scan engine" sub="Automated pass planned · not yet built" />
               </div>
 
               {/* Pre-launch check grid shell: shows what the scan checks;
@@ -75,12 +75,12 @@ export function CreativeScanView() {
                 <div className="flex items-center gap-2.5 rounded-lg border border-border/30 bg-foreground/[0.015] px-4 py-5 mt-1">
                   <ScanSearch className="w-4 h-4 text-muted-foreground/75 shrink-0" />
                   <p className={cn(TYPE.body, "text-muted-foreground/75")}>
-                    No scan results yet — staged assets appear here, one row per asset, once the first scan runs.
+                    No scan results yet · staged assets appear here, one row per asset, once the first scan runs.
                   </p>
                 </div>
               </SectionCard>
 
-              <CaveatNote text="An automated IAP-variable confidence pass against a suggested brief is planned but not yet built — today this page stages files and maps them to ad names." />
+              <CaveatNote text="An automated IAP-variable confidence pass against a suggested brief is planned but not yet built. Today this page stages files and maps them to ad names." />
 
               <SectionCard title="Upload & map">
                 <CreativeLibraryPanel accountId={acct.id} availableAdNames={availableAdNames} />

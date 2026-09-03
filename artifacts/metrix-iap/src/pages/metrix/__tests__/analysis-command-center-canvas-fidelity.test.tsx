@@ -110,7 +110,7 @@ afterEach(() => {
   cleanup();
 });
 
-describe("AnalysisCommandCenter — header control cluster", () => {
+describe("AnalysisCommandCenter · header control cluster", () => {
   it("renders the real date-range pills and an Export button that navigates to /app/exports/analysis", async () => {
     await act(async () => { renderCC(); });
     expect(screen.getByRole("group", { name: "Date range" })).toBeTruthy();
@@ -134,7 +134,7 @@ describe("AnalysisCommandCenter — header control cluster", () => {
   });
 });
 
-describe("AnalysisCommandCenter — execution card is honest pre-run readiness", () => {
+describe("AnalysisCommandCenter · execution card is honest pre-run readiness", () => {
   // Objectives moved OFF the tile row deliberately (owner decision,
   // 2026-08-29): they belong to this run, so they stay on the card, but as a
   // long text value at stat size they outranked the three real run
@@ -165,7 +165,7 @@ describe("AnalysisCommandCenter — execution card is honest pre-run readiness",
     expect(screen.getByText("30 days")).toBeTruthy();
   });
 
-  it("never shows a leftover analysis-derived tile — tile count reflects staged imports, not stale prior-run rows", async () => {
+  it("never shows a leftover analysis-derived tile. Tile count reflects staged imports, not stale prior-run rows", async () => {
     mockImports = [];
     await act(async () => { renderCC(); });
     // Zero staged imports is an honest "0", not blank or a stale number.
@@ -231,7 +231,7 @@ describe("AnalysisCommandCenter — execution card is honest pre-run readiness",
   });
 });
 
-describe("AnalysisCommandCenter — Manual import card", () => {
+describe("AnalysisCommandCenter · Manual import card", () => {
   it("shows an honest empty state when nothing is staged", async () => {
     mockImports = [];
     await act(async () => { renderCC(); });
@@ -265,7 +265,7 @@ describe("AnalysisCommandCenter — Manual import card", () => {
   });
 });
 
-describe("AnalysisCommandCenter — Run history card", () => {
+describe("AnalysisCommandCenter · Run history card", () => {
   it("shows an honest empty state when no runs exist yet", async () => {
     mockRuns = [];
     await act(async () => { renderCC(); });

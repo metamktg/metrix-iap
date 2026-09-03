@@ -46,7 +46,7 @@ describe("normal scale (bigger is bigger)", () => {
   });
 });
 
-describe("inverted scale (lower is better — CPA, CPC, CPM)", () => {
+describe("inverted scale (lower is better. CPA, CPC, CPM)", () => {
   it("gives the BEST value the longest bar", () => {
     // THE DEFECT THIS EXISTS TO PREVENT. Scale CPA as value/max and the
     // worst performer gets the longest bar. Everything scanning the column

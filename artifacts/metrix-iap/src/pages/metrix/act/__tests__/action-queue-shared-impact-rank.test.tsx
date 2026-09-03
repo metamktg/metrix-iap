@@ -169,7 +169,7 @@ describe("shared impact rank source (RecommendationDeck)", () => {
   });
 });
 
-describe("ActionQueueView — renders the pending queue in shared-impact-rank order", () => {
+describe("ActionQueueView · renders the pending queue in shared-impact-rank order", () => {
   it("orders cards high, medium, low, setup regardless of input order", () => {
     render(<ActionQueueView />, { wrapper: makeWrapper() });
 
@@ -186,7 +186,7 @@ describe("ActionQueueView — renders the pending queue in shared-impact-rank or
   });
 });
 
-describe("NextBestActionCard — picks the shared-impact-rank top card", () => {
+describe("NextBestActionCard · picks the shared-impact-rank top card", () => {
   const cards: DeckCard[] = IMPACT_TIERS.map((impact, i) => ({
     id: `deck-rank-test-${impact}`,
     title: `Deck card ${i} (${impact})`,

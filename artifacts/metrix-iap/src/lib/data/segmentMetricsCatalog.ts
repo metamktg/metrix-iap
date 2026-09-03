@@ -47,7 +47,7 @@ export const DEFAULT_SEGMENT_METRIC_IDS: string[] = [
   "link_clicks",
 ];
 
-const fmtRatio = (n: number | null) => (n == null ? "—" : n.toFixed(2));
+const fmtRatio = (n: number | null) => (n == null ? "–" : n.toFixed(2));
 
 interface CatalogRowSpec {
   id: string;
@@ -98,7 +98,7 @@ export const UNSUPPORTED_SEGMENT_METRICS: Array<{ id: string; label: string; for
 ];
 
 const NOT_IN_DATA_REASON =
-  "Not available in current data — the demographic export doesn't carry this column. It lights up automatically if a future import includes it.";
+  "Not available in current data. The demographic export doesn't carry this column. It lights up automatically if a future import includes it.";
 
 export function buildSegmentMetricCatalog(
   totals: SegmentRawTotals,
@@ -115,7 +115,7 @@ export function buildSegmentMetricCatalog(
         label: row.label,
         availability: "unavailable" as const,
         value: null,
-        formatted: "—",
+        formatted: "–",
         direction: row.direction,
         unavailableReason: why
           ? `No ${why} data in this segment's rows.`
@@ -135,7 +135,7 @@ export function buildSegmentMetricCatalog(
         label: m.label,
         availability: "unavailable",
         value: null,
-        formatted: "—",
+        formatted: "–",
         direction: "neutral",
         unavailableReason: NOT_IN_DATA_REASON,
       });

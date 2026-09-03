@@ -33,7 +33,7 @@ beforeEach(() => resetNavigationHistory());
 afterEach(() => cleanup());
 
 describe("Back", () => {
-  it("is absent on the overview — there is nothing above home", () => {
+  it("is absent on the overview. There is nothing above home", () => {
     at("/");
     expect(screen.queryByTestId("topbar-back")).toBeNull();
   });

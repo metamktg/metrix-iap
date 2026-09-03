@@ -193,7 +193,7 @@ beforeEach(() => {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-describe("LoopCommandChain — configured account with full data (Bookster)", () => {
+describe("LoopCommandChain · configured account with full data (Bookster)", () => {
   it("renders the IAP Loop command chain", () => {
     selectAccount("bookster");
     renderOverview();
@@ -219,7 +219,7 @@ describe("LoopCommandChain — configured account with full data (Bookster)", ()
     expect(isDisabled(analysisTile)).toBe(false);
   });
 
-  it("Strategy stage tile is not locked — analysis is complete", () => {
+  it("Strategy stage tile is not locked. Analysis is complete", () => {
     selectAccount("bookster");
     renderOverview();
     // By test id, not by name: while running the tile's accessible name
@@ -231,7 +231,7 @@ describe("LoopCommandChain — configured account with full data (Bookster)", ()
 
   // The tile that drafts briefs is the loop's Creative stage; it takes its
   // label from navTree's LOOP_STAGES (stage key stays "briefs").
-  it("Creative (briefs) stage tile is not locked — strategy is complete", () => {
+  it("Creative (briefs) stage tile is not locked. Strategy is complete", () => {
     selectAccount("bookster");
     renderOverview();
     const briefsTile = screen.getByRole("button", { name: /^creative$/i });
@@ -246,7 +246,7 @@ describe("LoopCommandChain — configured account with full data (Bookster)", ()
   });
 });
 
-describe("LoopCommandChain — configured account with no analysis run yet", () => {
+describe("LoopCommandChain · configured account with no analysis run yet", () => {
   it("renders the IAP Loop command chain (not an early-return state)", () => {
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
@@ -270,7 +270,7 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     }
   });
 
-  it("Data stage tile is not locked — data is the entry point", () => {
+  it("Data stage tile is not locked. Data is the entry point", () => {
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
     renderOverview(seed);
@@ -278,7 +278,7 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     expect(isDisabled(dataTile)).toBe(false);
   });
 
-  it("Analysis stage tile is NOT locked — Data is complete for a live Meta account", () => {
+  it("Analysis stage tile is NOT locked. Data is complete for a live Meta account", () => {
     // isLiveMeta=true (platform "Meta Ads") → dataComplete=true → Analysis
     // becomes the "next" step, not locked. Locked = disabled only when
     // !dataComplete && !analysisComplete && !analysisRunning.
@@ -289,7 +289,7 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     expect(isDisabled(analysisTile)).toBe(false);
   });
 
-  it("Strategy stage tile is locked — analysis has not run", () => {
+  it("Strategy stage tile is locked. Analysis has not run", () => {
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
     renderOverview(seed);
@@ -298,7 +298,7 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     expect(isDisabled(strategyTile)).toBe(true);
   });
 
-  it("Creative (briefs) stage tile is locked — strategy has not run", () => {
+  it("Creative (briefs) stage tile is locked. Strategy has not run", () => {
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
     renderOverview(seed);
@@ -307,7 +307,7 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     expect(isDisabled(briefsTile)).toBe(true);
   });
 
-  it("does not show the unconfigured state — the account is configured", () => {
+  it("does not show the unconfigured state. The account is configured", () => {
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
     const { container } = renderOverview(seed);
@@ -327,7 +327,7 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
   });
 });
 
-describe("LoopCommandChain — Strategy stage running", () => {
+describe("LoopCommandChain · Strategy stage running", () => {
   // When a strategy generation run is in flight, useGenerationRun returns
   // isRunning: true for kind === "strategy".  The tile must not be disabled
   // (running ≠ locked), the tile carries data-state="running", and opening
@@ -340,7 +340,7 @@ describe("LoopCommandChain — Strategy stage running", () => {
   // cites the strategy map, so that substring resolved to two elements. The
   // stage tile's own test id names exactly one thing under either state.
 
-  it("Strategy tile is not disabled while running — running ≠ locked", () => {
+  it("Strategy tile is not disabled while running, running ≠ locked", () => {
     mockStrategyRunning = true;
     selectAccount("bookster");
     renderOverview();
@@ -383,7 +383,7 @@ describe("LoopCommandChain — Strategy stage running", () => {
   });
 });
 
-describe("LoopCommandChain — Analysis stage running", () => {
+describe("LoopCommandChain · Analysis stage running", () => {
   // When an analysis run is in flight, useGetLatestAnalysisRun returns
   // { run: { status: "running" } }.  The Analysis tile must not be disabled
   // (analysis is never locked), the tile carries data-state="running", and
@@ -424,7 +424,7 @@ describe("LoopCommandChain — Analysis stage running", () => {
   });
 });
 
-describe("LoopCommandChain — Analysis stage failed", () => {
+describe("LoopCommandChain · Analysis stage failed", () => {
   // A run that ended in "error" must be visibly distinct from both "running"
   // and "not started yet" — the bug this guards against left a failed run
   // looking identical to an untouched stage once it settled.
@@ -438,7 +438,7 @@ describe("LoopCommandChain — Analysis stage failed", () => {
     expect(container.textContent).toContain("Failed");
   });
 
-  it("Analysis tile is not disabled while failed — user can reopen it", () => {
+  it("Analysis tile is not disabled while failed. User can reopen it", () => {
     mockAnalysisRunStatus = "error";
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
@@ -453,7 +453,7 @@ describe("LoopCommandChain — Analysis stage failed", () => {
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
     const { container } = renderOverview(seed);
-    expect(container.textContent).toContain("Analysis failed — not running");
+    expect(container.textContent).toContain("Analysis failed · not running");
     expect(container.textContent).toContain("Could not parse the uploaded file.");
     expect(screen.getByText(/Review & retry/i)).toBeTruthy();
   });
@@ -464,11 +464,11 @@ describe("LoopCommandChain — Analysis stage failed", () => {
     mockAnalysisRunStatus = "error";
     selectAccount("bookster");
     const { container } = renderOverview();
-    expect(container.textContent).not.toContain("Analysis failed — not running");
+    expect(container.textContent).not.toContain("Analysis failed · not running");
   });
 });
 
-describe("LoopCommandChain — Strategy stage failed", () => {
+describe("LoopCommandChain · Strategy stage failed", () => {
   it("Strategy tile shows Failed and strip surfaces the error, not silently reverting to Next", () => {
     // Bookster already has strategy data (strategyComplete = true), which
     // would suppress the failed strip (superseded by success) — use a fresh
@@ -478,12 +478,12 @@ describe("LoopCommandChain — Strategy stage failed", () => {
     selectAccount("fresh_account");
     const { container } = renderOverview(seed);
     expect(container.textContent).toContain("Failed");
-    expect(container.textContent).toContain("Strategy failed — not running");
+    expect(container.textContent).toContain("Strategy failed · not running");
     expect(container.textContent).toContain("The engine could not generate message pillars.");
   });
 });
 
-describe("LoopCommandChain — hooks-violation guard (hoisted useState/useMemo)", () => {
+describe("LoopCommandChain · hooks-violation guard (hoisted useState/useMemo)", () => {
   // These two tests confirm that the hoisted useState/useMemo fix in
   // AdAccountOverview (above the early-return guards) does not violate the
   // Rules of Hooks under the jsdom test harness.
@@ -509,7 +509,7 @@ describe("LoopCommandChain — hooks-violation guard (hoisted useState/useMemo)"
     expect(screen.queryByText("IAP Loop")).toBeNull();
   });
 
-  it("renders the IAP Loop for a configured account — confirming hoisted hooks don't violate", () => {
+  it("renders the IAP Loop for a configured account. Confirming hoisted hooks don't violate", () => {
     // The hoisted useState/useMemo in AdAccountOverview (above the early-return
     // guards) must execute unconditionally even when the component takes an
     // early-return path on another account. This test confirms no React

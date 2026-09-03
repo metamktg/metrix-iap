@@ -17,7 +17,7 @@ const SHAPES: DataShape[] = [
   "icp_profiles", "daily_series",
 ];
 
-describe("viewSupport — the §02 table", () => {
+describe("viewSupport · the §02 table", () => {
   it("matches the master plan for every shape it names", () => {
     // Breakdown is here because the rows carry book2_concept_name and
     // funnel_stage_variable — see the note in viewSupport.
@@ -44,7 +44,7 @@ describe("viewSupport — the §02 table", () => {
   });
 });
 
-describe("viewSupport — the exclusions that prevent fabrication", () => {
+describe("viewSupport · the exclusions that prevent fabrication", () => {
   it("refuses a trend over window totals, which would invent a trajectory", () => {
     for (const shape of ["v3_variable_performance", "v3_placement_signal", "demographic_registration_signal"] as DataShape[]) {
       expect(viewsFor(shape)).not.toContain("trend");
@@ -86,7 +86,7 @@ describe("viewSupport — the exclusions that prevent fabrication", () => {
   });
 });
 
-describe("viewSupport — several shapes on one surface", () => {
+describe("viewSupport · several shapes on one surface", () => {
   it("unions rather than intersects, so no shape loses a view it can back", () => {
     const got = viewsForAny(["v3_placement_signal", "daily_series"]);
     expect(got).toContain("trend");      // only daily_series backs this
@@ -104,7 +104,7 @@ describe("viewSupport — several shapes on one surface", () => {
   });
 });
 
-describe("viewSupport — the donut rule", () => {
+describe("viewSupport · the donut rule", () => {
   it("allows a pie only up to five slices", () => {
     expect(canRenderAsPie(2)).toBe(true);
     expect(canRenderAsPie(MAX_PIE_SLICES)).toBe(true);

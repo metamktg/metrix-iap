@@ -104,7 +104,7 @@ export function DataModule({
     // correctness problem for the reader, not a crash for the user.
     console.warn(
       `DataModule "${title}" was given an empty scope. Every number under it ` +
-        `is unattributed — state at minimum the metric it is measuring.`,
+        `is unattributed · state at minimum the metric it is measuring.`,
     );
   }
 

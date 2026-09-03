@@ -244,11 +244,11 @@ function PlacementsList({ rows }: { rows: PlacementRow[] }) {
             <TooltipTrigger asChild>
               <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75 cursor-default">
                 Account placements
-                <span className="sr-only"> — Account-level placement signal — no per-profile breakdown available.</span>
+                <span className="sr-only"> (Account-level placement signal) no per-profile breakdown available.</span>
               </span>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-[240px]">
-              <p className="text-caption leading-relaxed">Account-level placement signal — no per-profile breakdown available.</p>
+              <p className="text-caption leading-relaxed">Account-level placement signal · no per-profile breakdown available.</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -302,7 +302,7 @@ function ProfileDetailFold({
     // that disappears reads as "this profile has no detail section", when
     // the truth is that three OPTIONAL inputs are absent. Name them, the
     // way ModuleTabs' disabledReason names why a tab is closed.
-    const reason = "Profile detail needs at least one of: placement rows, a copy approach (message resonance, DNA or hypotheses), or ICP theory (demographic foundation, psychographics, behavioural signals, funnel entry) — none recorded for this profile yet.";
+    const reason = "Profile detail needs at least one of: placement rows, a copy approach (message resonance, DNA or hypotheses), or ICP theory (demographic foundation, psychographics, behavioural signals, funnel entry). None recorded for this profile yet.";
     return (
       <div>
         <button
@@ -502,7 +502,7 @@ function IcpProfileCard({
                 {perf.scoped && !perf.confidenceRecomputed && (
                   <span
                     className={cn(TYPE.label, "text-muted-foreground/75 normal-case")}
-                    title="A run scope is active. Spend/CPA/Link CVR above are honestly re-derived for this scope, but this confidence grade is this profile's all-time grade — it wasn't re-derived for the scoped numbers."
+                    title="A run scope is active. Spend/CPA/Link CVR above are honestly re-derived for this scope, but this confidence grade is this profile's all-time grade. It wasn't re-derived for the scoped numbers."
                   >
                     all-time
                   </span>
@@ -512,7 +512,7 @@ function IcpProfileCard({
             {perf.allTimeFallback && (
               <p
                 className={cn(TYPE.label, "text-muted-foreground/75 normal-case mb-1.5")}
-                title="A run scope is active, but this profile has no matched avatar columns (or no cell-level rows) within it, so every figure below — Spend, CPA, Link CVR, and confidence — is this profile's all-time data, not scoped to the current run."
+                title="A run scope is active, but this profile has no matched avatar columns (or no cell-level rows) within it, so every figure below (Spend, CPA, Link CVR, and confidence) is this profile's all-time data, not scoped to the current run."
               >
                 All-time figures · no matched avatars in this scope
               </p>
@@ -520,11 +520,11 @@ function IcpProfileCard({
             <StatGrid
               cols={3}
               cells={[
-                { label: "Spend", value: perf.spend != null ? fmtUSD(perf.spend, 0) : "—",
+                { label: "Spend", value: perf.spend != null ? fmtUSD(perf.spend, 0) : "–",
                   unavailableReason: "no performance rows matched this profile's creative cells in the current scope" },
-                { label: "CPA", value: perf.cpa != null ? fmtUSD(perf.cpa) : "—", valueClassName: cpaColor(perf.cpa ?? null),
+                { label: "CPA", value: perf.cpa != null ? fmtUSD(perf.cpa) : "–", valueClassName: cpaColor(perf.cpa ?? null),
                   unavailableReason: perf.cpaReason },
-                { label: "Link CVR", value: perf.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—", valueClassName: cvrColor(perf.cvr_link_pct ?? null),
+                { label: "Link CVR", value: perf.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "–", valueClassName: cvrColor(perf.cvr_link_pct ?? null),
                   unavailableReason: perf.cvrReason },
               ]}
             />
@@ -631,9 +631,9 @@ function AudienceSegmentTile({
             { label: "Spend", value: fmtUSD(totals.spend!, 0) },
             // The catalog owns these strings — the same ones the drill-down
             // modal and the Audience stat rows show for the same segment.
-            { label: "CPA", value: derived.cpa != null ? fmtUSD(derived.cpa) : "—",
+            { label: "CPA", value: derived.cpa != null ? fmtUSD(derived.cpa) : "–",
               unavailableReason: segmentMetricReason(totals, derived, "cpa") },
-            { label: "Link CVR", value: derived.cvr != null ? fmtPct(derived.cvr) : "—",
+            { label: "Link CVR", value: derived.cvr != null ? fmtPct(derived.cvr) : "–",
               unavailableReason: segmentMetricReason(totals, derived, "cvr") },
           ]}
         />
@@ -653,7 +653,7 @@ function AudienceSegmentTile({
             className={cn(TYPE.label, "text-muted-foreground/75 normal-case cursor-default")}
             title={variableUnavailableReason ?? "No variable attribution is computable for this segment."}
           >
-            —
+            –
           </span>
         )}
       </div>
@@ -750,7 +750,7 @@ function DimensionRanking({
                   </td>
                   <td className="text-right tabular-nums text-foreground/70">{fmtUSD(r.spend, 0)}</td>
                   <td className="text-right tabular-nums text-foreground/70">{fmtNum(r.results)} {resultNoun}</td>
-                  <td className="text-right font-semibold tabular-nums text-foreground/85">{r.cpa != null ? fmtUSD(r.cpa) : "—"}</td>
+                  <td className="text-right font-semibold tabular-nums text-foreground/85">{r.cpa != null ? fmtUSD(r.cpa) : "–"}</td>
                 </tr>
               ))}
             </tbody>
@@ -835,7 +835,7 @@ const COVERAGE_STYLE: Record<CoverageLevel, string> = {
   tested: "bg-accent/10 border-accent/25 text-foreground/80",
   untested: "border-border/25 text-muted-foreground/75",
 };
-const COVERAGE_LABEL: Record<CoverageLevel, string> = { proven: "Proven", tested: "Tested", untested: "—" };
+const COVERAGE_LABEL: Record<CoverageLevel, string> = { proven: "Proven", tested: "Tested", untested: "–" };
 
 function CoverageMatrix({ rows, profiles }: { rows: { pillar: MessagePillar; cells: CoverageLevel[] }[]; profiles: ICPProfile[] }) {
   if (rows.length === 0 || profiles.length === 0) return null;

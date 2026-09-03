@@ -51,7 +51,7 @@ function renderCardWithChip(onCardClick: () => void) {
 describe("ConceptChip inside a clickable card", () => {
   beforeEach(() => cleanup());
 
-  it("renders as a non-button element — no nested buttons in the DOM", () => {
+  it("renders as a non-button element. No nested buttons in the DOM", () => {
     const { container, getByLabelText } = renderCardWithChip(() => {});
     expect(container.querySelectorAll("button button").length).toBe(0);
     const chip = getByLabelText(/^Concept C2B/);
@@ -103,7 +103,7 @@ describe("ConceptChip inside a clickable card", () => {
   });
 });
 
-describe("tokenizeConceptCodes — case-insensitive cell code matching", () => {
+describe("tokenizeConceptCodes · case-insensitive cell code matching", () => {
   const registry: Record<string, ConceptDescriptorEntry> = {
     C2B: { code: "C2B", descriptor: "Social Proof", book: null, what: "Testimonial", why: null, source_cells: ["C2B"] },
     C4A: { code: "C4A", descriptor: "Demo", book: null, what: "Product demo", why: null, source_cells: ["C4A"] },

@@ -34,7 +34,7 @@ function Probe() {
   );
 }
 
-describe("DateRangeContext — stale persisted window fallback", () => {
+describe("DateRangeContext · stale persisted window fallback", () => {
   beforeEach(() => {
     cleanup();
     sessionStorage.clear();

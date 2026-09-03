@@ -97,7 +97,7 @@ interface Intelligence {
 // ─── Helpers ──────────────────────────────────────────────────────────
 
 function tierBadge(tier: string | undefined): { label: string; cls: string } {
-  if (!tier) return { label: "—", cls: "bg-muted/40 text-muted-foreground/75 border-border/30" };
+  if (!tier) return { label: "–", cls: "bg-muted/40 text-muted-foreground/75 border-border/30" };
   const t = tier.toLowerCase();
   if (t.includes("1") || t.includes("scale") || t.includes("winner"))
     return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-status-success/10 text-status-success border-status-success/25" };
@@ -267,19 +267,19 @@ function ConceptCard({ score }: { score: ConceptScore }) {
               score.cpa != null ? "text-interactive" : "text-muted-foreground",
             )}
           >
-            {score.cpa != null ? fmtUSD(score.cpa, score.cpa < 100 ? 2 : 0) : "—"}
+            {score.cpa != null ? fmtUSD(score.cpa, score.cpa < 100 ? 2 : 0) : "–"}
           </div>
         </div>
         <div>
           <div className="text-label uppercase tracking-widest text-muted-foreground/75 font-semibold mb-0.5">Spend</div>
           <div className="text-title font-bold tabular-nums text-foreground/70 leading-none">
-            {score.spend != null ? fmtMetric("usd_total", score.spend) : "—"}
+            {score.spend != null ? fmtMetric("usd_total", score.spend) : "–"}
           </div>
         </div>
         <div>
           <div className="text-label uppercase tracking-widest text-muted-foreground/75 font-semibold mb-0.5">Results</div>
           <div className="text-title font-bold tabular-nums text-foreground/70 leading-none">
-            {score.results != null ? fmtNum(score.results) : "—"}
+            {score.results != null ? fmtNum(score.results) : "–"}
           </div>
         </div>
       </div>
@@ -523,7 +523,7 @@ export function FindingsView() {
                     <span
                       className="text-display font-semibold tabular-nums leading-none text-interactive"
                     >
-                      {execSummary.total_spend != null ? fmtMetric("usd_total", execSummary.total_spend) : "—"}
+                      {execSummary.total_spend != null ? fmtMetric("usd_total", execSummary.total_spend) : "–"}
                     </span>
                   </div>
                   <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-foreground/[0.02] px-4 py-3">
@@ -531,7 +531,7 @@ export function FindingsView() {
                     <span
                       className="text-display font-semibold tabular-nums leading-none text-interactive"
                     >
-                      {execSummary.total_results != null ? fmtNum(execSummary.total_results) : "—"}
+                      {execSummary.total_results != null ? fmtNum(execSummary.total_results) : "–"}
                     </span>
                   </div>
                   {execSummary.blended_cpa_by_book && Object.entries(execSummary.blended_cpa_by_book).slice(0, 2).map(([book, cpa]) => (

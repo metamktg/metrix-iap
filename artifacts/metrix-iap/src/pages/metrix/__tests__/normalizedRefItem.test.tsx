@@ -24,7 +24,7 @@ afterEach(cleanup);
 
 // ─── Branch 1: parsed, no annotation — chip text directly visible ─────
 
-describe("NormalizedRefItem — parsed, no annotation", () => {
+describe("NormalizedRefItem · parsed, no annotation", () => {
   it('renders "B0 · C2" chip for "BOOK0 Concept C2"', () => {
     render(<NormalizedRefItem text="BOOK0 Concept C2" eyebrow="Reference" />);
     expect(screen.getByText("B0 · C2")).toBeTruthy();
@@ -61,7 +61,7 @@ describe("NormalizedRefItem — parsed, no annotation", () => {
 
 // ─── Branch 2: parsed, with annotation — chips visible in button label ─
 
-describe("NormalizedRefItem — parsed, with annotation (DetailReveal)", () => {
+describe("NormalizedRefItem · parsed, with annotation (DetailReveal)", () => {
   it('shows "B0 · C2" chip label when annotation is present in parenthetical', () => {
     // "(esp. Row B)" is parsed as annotation, not a row suffix
     render(<NormalizedRefItem text="BOOK0 Concept C2 (esp. Row B)" eyebrow="Reference" />);
@@ -83,7 +83,7 @@ describe("NormalizedRefItem — parsed, with annotation (DetailReveal)", () => {
 
 // ─── Branch 3: fallback path — plain-text label must be visible ───────
 
-describe("NormalizedRefItem — fallback path (unparseable strings)", () => {
+describe("NormalizedRefItem · fallback path (unparseable strings)", () => {
   it("renders raw text for a short plain string (≤40 chars)", () => {
     const text = "Short plain finding";
     render(<NormalizedRefItem text={text} eyebrow="Finding" />);

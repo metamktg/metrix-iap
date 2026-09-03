@@ -154,7 +154,7 @@ beforeEach(() => {
 
 // ── Strategy — idle state ──────────────────────────────────────────────────
 
-describe("CommandHub Strategy stage — idle (strategyRunning = false)", () => {
+describe("CommandHub Strategy stage · idle (strategyRunning = false)", () => {
   it("Build Strategy button is present and enabled in the idle state", () => {
     renderChain();
     const tile = getStageTile(document.body, "Strategy");
@@ -178,7 +178,7 @@ describe("CommandHub Strategy stage — idle (strategyRunning = false)", () => {
 
 // ── Strategy — running: button must be disabled ────────────────────────────
 
-describe("CommandHub Strategy stage — strategyRunning = true", () => {
+describe("CommandHub Strategy stage · strategyRunning = true", () => {
   it("Build Strategy button is disabled while strategy is running", () => {
     mockGenState.strategyRunning = true;
     renderChain();
@@ -208,7 +208,7 @@ describe("CommandHub Strategy stage — strategyRunning = true", () => {
     expect(screen.getAllByText(/loading analysis evidence/i).length).toBeGreaterThan(0);
   });
 
-  it("Strategy tile itself is NOT disabled while running — running ≠ locked", () => {
+  it("Strategy tile itself is NOT disabled while running, running ≠ locked", () => {
     mockGenState.strategyRunning = true;
     renderChain();
     const tile = getStageTile(document.body, "Strategy");
@@ -219,7 +219,7 @@ describe("CommandHub Strategy stage — strategyRunning = true", () => {
 
 // ── Briefs — idle state ────────────────────────────────────────────────────
 
-describe("CommandHub Briefs stage — idle (briefsRunning = false)", () => {
+describe("CommandHub Briefs stage · idle (briefsRunning = false)", () => {
   it("Draft Briefs button is present and enabled in the idle state", () => {
     renderChain();
     const tile = getStageTile(document.body, "Briefs");
@@ -241,7 +241,7 @@ describe("CommandHub Briefs stage — idle (briefsRunning = false)", () => {
 
 // ── Briefs — running: button must be disabled ──────────────────────────────
 
-describe("CommandHub Briefs stage — briefsRunning = true", () => {
+describe("CommandHub Briefs stage · briefsRunning = true", () => {
   it("Draft Briefs button is disabled while briefs are running", () => {
     mockGenState.briefsRunning = true;
     renderChain();
@@ -271,7 +271,7 @@ describe("CommandHub Briefs stage — briefsRunning = true", () => {
     expect(screen.getAllByText(/loading strategy context/i).length).toBeGreaterThan(0);
   });
 
-  it("Briefs tile itself is NOT disabled while running — running ≠ locked", () => {
+  it("Briefs tile itself is NOT disabled while running, running ≠ locked", () => {
     mockGenState.briefsRunning = true;
     renderChain();
     const tile = getStageTile(document.body, "Briefs");
@@ -294,7 +294,7 @@ describe("CommandHub Briefs stage — briefsRunning = true", () => {
 
 // ── Analysis — idle state ──────────────────────────────────────────────────
 
-describe("CommandHub Analysis stage — idle (analysisRunning = false)", () => {
+describe("CommandHub Analysis stage · idle (analysisRunning = false)", () => {
   it("Run Analysis button is present and enabled in the idle state", () => {
     renderChain();
     const tile = getStageTile(document.body, "Analysis");
@@ -318,7 +318,7 @@ describe("CommandHub Analysis stage — idle (analysisRunning = false)", () => {
 
 // ── Analysis — running: button must be absent ──────────────────────────────
 
-describe("CommandHub Analysis stage — analysisRunning = true", () => {
+describe("CommandHub Analysis stage · analysisRunning = true", () => {
   it("Run Analysis button is absent while analysis is running", () => {
     // When analysisRunning is true the Actions() function returns only the
     // progress view — no button is rendered at all for the analysis stage.
@@ -351,7 +351,7 @@ describe("CommandHub Analysis stage — analysisRunning = true", () => {
     expect(screen.getAllByText(/parsing performance data/i).length).toBeGreaterThan(0);
   });
 
-  it("Analysis tile itself is NOT disabled while running — running ≠ locked", () => {
+  it("Analysis tile itself is NOT disabled while running, running ≠ locked", () => {
     mockGenState.analysisRunning = true;
     renderChain();
     const tile = getStageTile(document.body, "Analysis");

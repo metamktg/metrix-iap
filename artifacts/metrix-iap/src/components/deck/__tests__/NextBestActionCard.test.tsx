@@ -109,7 +109,7 @@ describe("NextBestActionCard", () => {
 
     expect(screen.getByTestId("next-best-action-empty")).toBeTruthy();
     expect(
-      screen.getByText("All recommendations have been reviewed — nothing pending right now."),
+      screen.getByText("All recommendations have been reviewed. Nothing pending right now."),
     ).toBeTruthy();
   });
 });

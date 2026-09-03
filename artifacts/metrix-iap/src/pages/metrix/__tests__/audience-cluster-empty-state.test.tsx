@@ -92,7 +92,7 @@ function renderAudience() {
  */
 function selectClusterMode() {
   const control = screen.queryAllByText(/cluster/i).find((el) => el.closest("button"));
-  if (!control) throw new Error("Cluster mode control not found — this test can no longer reach the state it covers");
+  if (!control) throw new Error("Cluster mode control not found. This test can no longer reach the state it covers");
   fireEvent.click(control.closest("button")!);
 }
 
@@ -103,7 +103,7 @@ beforeEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-describe("AudienceView — cluster empty state tells the truth", () => {
+describe("AudienceView · cluster empty state tells the truth", () => {
   it("never claims there is no spend when spend exists", () => {
     renderAudience();
     selectClusterMode();
@@ -122,7 +122,7 @@ describe("AudienceView — cluster empty state tells the truth", () => {
   it("says the spend itself is real, since that is what the old copy denied", () => {
     renderAudience();
     selectClusterMode();
-    expect(document.body.textContent ?? "").toContain("the spend itself is real");
+    expect(document.body.textContent ?? "").toContain("The spend itself is real");
   });
 
   it("offers the view that does work, and switching to it renders groups", () => {

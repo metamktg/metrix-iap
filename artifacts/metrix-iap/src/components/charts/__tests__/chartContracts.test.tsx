@@ -13,7 +13,7 @@ import { TrendChart } from "../TrendChart";
 
 afterEach(cleanup);
 
-describe("chartTokens — colour follows the entity, not its rank", () => {
+describe("chartTokens · colour follows the entity, not its rank", () => {
   it("keeps an entity's colour when the set is filtered", () => {
     const all = assignSeriesColors(["reels", "feed", "stories", "search"]);
     // "stories" is 3rd here and would be 1st in a filtered view; the point of
@@ -36,7 +36,7 @@ describe("chartTokens — colour follows the entity, not its rank", () => {
   });
 });
 
-describe("MetricBarChart — an unmeasured value is not a zero-length bar", () => {
+describe("MetricBarChart · an unmeasured value is not a zero-length bar", () => {
   const data = [
     { key: "a", label: "Reels", value: 900 },
     { key: "b", label: "Feed", value: 400 },
@@ -78,7 +78,7 @@ describe("MetricBarChart — an unmeasured value is not a zero-length bar", () =
   });
 });
 
-describe("TrendChart — gaps are named, not bridged", () => {
+describe("TrendChart · gaps are named, not bridged", () => {
   const days = ["2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04"];
 
   it("reports days the account had no data for", () => {

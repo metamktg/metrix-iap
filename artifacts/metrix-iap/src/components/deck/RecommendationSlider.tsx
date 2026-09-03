@@ -45,7 +45,7 @@ const KIND_STYLE: Record<string, string> = {
 };
 
 const KIND_LABEL: Record<string, string> = {
-  avoid: "Stop",
+  avoid: "Retire",
   scale: "Scale",
   budget: "Budget",
   investigate: "Investigate",
@@ -118,10 +118,16 @@ function Tile({ rec }: { rec: DerivedRecommendation }) {
         </div>
       )}
 
+      {/* The reason is the payload: it stays on the face, clamped, never
+          cut to a fragment behind an icon. The reveal keeps the full
+          sections and the provenance. */}
+      <p className={cn(TYPE.caption, "text-muted-foreground/85 leading-snug line-clamp-2")} data-testid="recommendation-rationale">
+        {rec.rationale}
+      </p>
       <DetailReveal
         eyebrow="Why this action"
-        label={deriveLabel(rec.rationale, 52)}
-        labelClassName={cn(TYPE.caption, "text-muted-foreground/75 leading-snug")}
+        label="Why this action"
+        labelClassName={cn(TYPE.caption, "text-interactive/90 leading-snug")}
         testId={`recommendation-why-${rec.id}`}
         sections={[
           { label: "What the rows say", text: rec.rationale },
@@ -182,7 +188,7 @@ export function RecommendationSlider({
           <span className={cn(TYPE.label, "uppercase tracking-widest text-muted-foreground/75")}>{title}</span>
         </div>
         <p className={cn(TYPE.body, "text-muted-foreground/75 leading-relaxed")}>
-          {emptyNote ?? "This account has no strategy, findings or hypotheses yet — run the analysis to produce them."}
+          {emptyNote ?? "This account has no strategy, findings or hypotheses yet. Run the analysis to produce them."}
         </p>
       </div>
     );

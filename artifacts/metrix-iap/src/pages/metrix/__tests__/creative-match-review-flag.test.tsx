@@ -181,19 +181,19 @@ describe("creative match review flag", () => {
     // applied without the review flag, this assertion fails.
     const guessRow = within(rowFor("holiday_v3_1080x1080.mp4"));
     expect(guessRow.getByText(/ad(s)? selected/i)).toBeTruthy();
-    expect(guessRow.getByText("Best guess — please review")).toBeTruthy();
+    expect(guessRow.getByText("Best guess · please review")).toBeTruthy();
 
     // Confident fuzzy match: normal (non-review) similarity badge.
     const fuzzyRow = within(rowFor("Summer_Sale_v2.mp4"));
     expect(fuzzyRow.getByText(/ad(s)? selected/i)).toBeTruthy();
     expect(fuzzyRow.getByText("Matched by filename similarity")).toBeTruthy();
-    expect(fuzzyRow.queryByText("Best guess — please review")).toBeNull();
+    expect(fuzzyRow.queryByText("Best guess · please review")).toBeNull();
 
     // ID-code match: "Matched by ID code" badge.
     const idRow = within(rowFor("CR1234_final.mp4"));
     expect(idRow.getByText(/ad(s)? selected/i)).toBeTruthy();
     expect(idRow.getByText("Matched by ID code")).toBeTruthy();
-    expect(idRow.queryByText("Best guess — please review")).toBeNull();
+    expect(idRow.queryByText("Best guess · please review")).toBeNull();
   });
 
   it("fails if a guessed mapping is applied without the review badge", async () => {
@@ -214,6 +214,6 @@ describe("creative match review flag", () => {
     });
 
     // … and that signal must surface as the visible review badge.
-    expect(screen.getByText("Best guess — please review")).toBeTruthy();
+    expect(screen.getByText("Best guess · please review")).toBeTruthy();
   });
 });

@@ -37,7 +37,7 @@ describe("ranking a cost metric", () => {
     expect(labelOrder()[0]).toBe("Testimonial problem-hook");
   });
 
-  it("would put the most expensive first under the default order — the trap", () => {
+  it("would put the most expensive first under the default order. The trap", () => {
     // Not an endorsement: this asserts the default behaves as documented, so
     // that a caller who forgets order="asc" on a cost metric is getting a
     // knowable result rather than an accidental one.
@@ -63,7 +63,7 @@ describe("a gap is not a zero", () => {
 
   it("renders a dash for an unmeasured row, not a number", () => {
     render(<RankedBars data={MIXED} format={usd} measureLabel="Spend" />);
-    expect(screen.getByText("—")).toBeTruthy();
+    expect(screen.getByText("–")).toBeTruthy();
   });
 
   it("renders a measured zero as a formatted zero", () => {

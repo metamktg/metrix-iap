@@ -132,7 +132,7 @@ export function SignalDeck({
               key={c.id}
               className={`flex flex-col rounded-xl border ${tone.ring} ${tone.tint} p-3.5
                           transition-[border-color,background-color,transform] duration-150
-                          ease-[cubic-bezier(0.2,0,0,1)] hover:border-primary/40`}
+                          ease-[var(--mx-ease)] hover:border-primary/40`}
             >
               {/* Eyebrow: priority (or the raw impact when unranked) + scope */}
               <div className="flex items-center gap-1.5 mb-2 min-w-0">
@@ -228,7 +228,7 @@ export function SignalDeck({
                     className="ml-auto h-10 px-2.5 -my-1 inline-flex items-center gap-1 rounded-lg
                                text-caption font-body font-medium text-interactive
                                hover:bg-primary/10 active:scale-[0.96]
-                               transition-[background-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                               transition-[background-color,scale] duration-150 ease-[var(--mx-ease)]
                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label={`${actionLabel}: ${heading}`}
                   >
@@ -256,7 +256,7 @@ export function SignalDeck({
           type="button"
           onClick={() => setExpanded(true)}
           className={`mt-3 h-10 px-3 -ml-3 ${TYPE.body} text-muted-foreground hover:text-foreground
-                      active:scale-[0.96] transition-[color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]`}
+                      active:scale-[0.96] transition-[color,scale] duration-150 ease-[var(--mx-ease)]`}
         >
           Show all <span className="tabular-nums">{ordered.length}</span>
         </button>

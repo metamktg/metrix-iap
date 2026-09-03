@@ -71,7 +71,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
               <CopyConfirmButton value={account.meta_ad_account_id} className="shrink-0" />
             </div>
           ) : (
-            <span className="text-body text-muted-foreground/75">—</span>
+            <span className="text-body text-muted-foreground/75">–</span>
           )}
         </div>
 
@@ -79,7 +79,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="text-label text-muted-foreground/75 w-40 shrink-0">Source status</div>
           <span className="text-body text-foreground/80">
-            {account.source_status ?? "—"}
+            {account.source_status ?? "–"}
           </span>
         </div>
       </div>
@@ -93,7 +93,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
               data-testid="live-connection-note-integrations"
             >
               <Wifi className="w-4 h-4 shrink-0" />
-              <span>Live connection active — manage in agency settings</span>
+              <span>Live connection active · manage in agency settings</span>
             </div>
           ) : (
             <button

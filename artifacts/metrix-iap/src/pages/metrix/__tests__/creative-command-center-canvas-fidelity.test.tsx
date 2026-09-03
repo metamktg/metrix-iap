@@ -106,14 +106,14 @@ afterEach(() => {
   cleanup();
 });
 
-describe("CreativeCommandCenter — Execution card matches the canvas verb", () => {
+describe("CreativeCommandCenter · Execution card matches the canvas verb", () => {
   it("titles the execution card 'Generate briefs' (COMMAND['creative.cc'].verb)", async () => {
     await act(async () => { renderCreative(); });
     expect(screen.getByText("Generate briefs")).toBeTruthy();
   });
 });
 
-describe("CreativeCommandCenter — Run history card", () => {
+describe("CreativeCommandCenter · Run history card", () => {
   it("shows an honest empty state when no generation run exists yet", async () => {
     mockGenRunData = null;
     await act(async () => { renderCreative(); });
@@ -151,7 +151,7 @@ describe("CreativeCommandCenter — Run history card", () => {
   });
 });
 
-describe("CreativeCommandCenter — hub grid includes Brief builder", () => {
+describe("CreativeCommandCenter · hub grid includes Brief builder", () => {
   it("links to /app/creative/builder alongside Library, Creative Scan, and Import & Export", async () => {
     await act(async () => { renderCreative(); });
     expect(screen.getByText("Brief builder")).toBeTruthy();

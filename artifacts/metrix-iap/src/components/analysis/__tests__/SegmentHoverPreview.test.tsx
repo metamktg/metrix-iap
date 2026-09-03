@@ -61,7 +61,7 @@ describe("SegmentHoverPreview", () => {
     expect(values).not.toContain("Cost / result");
   });
 
-  it("omits cost per result at zero results — never divides into a fabricated number", () => {
+  it("omits cost per result at zero results. Never divides into a fabricated number", () => {
     renderPreview(row({ results: 0 }));
     expect(screen.getByTestId("segment-preview-values").textContent).not.toContain("Cost / result");
   });

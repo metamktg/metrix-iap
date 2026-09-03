@@ -196,11 +196,11 @@ describe("Prime tile suppressed when every segment lacks the active metric", () 
     restoreRealSeed();
   });
 
-  it("Prime tile shows '—' when all segments have null CPA", () => {
+  it("Prime tile shows ', ' when all segments have null CPA", () => {
     renderAudience();
     const primeTileLabel = screen.getByText(/Prime · CPA/i);
     const tileRoot = primeTileLabel.closest("div")!.parentElement!;
-    expect(within(tileRoot as HTMLElement).getByText("—")).toBeTruthy();
+    expect(within(tileRoot as HTMLElement).getByText("–")).toBeTruthy();
   });
 
   it("Prime tile resolves again once at least one segment has CPA data", () => {

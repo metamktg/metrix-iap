@@ -71,7 +71,7 @@ describe("creative scan canvas zero state (Bookster)", () => {
     expect(within(stats).getByText("Library assets")).toBeTruthy();
     expect(within(stats).getByText("15")).toBeTruthy();
     // Blocking has no results yet — an em dash, never a fabricated count.
-    expect(within(stats).getByText("—")).toBeTruthy();
+    expect(within(stats).getByText("–")).toBeTruthy();
     expect(within(stats).getByText(/Automated pass planned/)).toBeTruthy();
   });
 

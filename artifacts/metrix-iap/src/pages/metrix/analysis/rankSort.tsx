@@ -306,7 +306,7 @@ export function KpiStat({
   /** Why this stat has no value. Ignored when a real value is present. */
   unavailableReason?: string;
 }) {
-  const isAbsent = value === "—" || value === "n/a";
+  const isAbsent = value === "–" || value === "n/a";
   const reason = isAbsent ? unavailableReason : undefined;
   return (
     <div className="min-w-0">

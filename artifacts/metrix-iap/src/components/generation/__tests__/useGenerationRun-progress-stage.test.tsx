@@ -68,7 +68,7 @@ function runningRun(overrides: Record<string, unknown> = {}) {
 
 // ── Real server progress (progress_pct > 0) ────────────────────────────────
 
-describe("useGenerationRun — real server progress (progress_pct > 0)", () => {
+describe("useGenerationRun · real server progress (progress_pct > 0)", () => {
   it("progressPercent equals the server value when progress_pct is non-zero", () => {
     mockGetLatestGenerationRun.mockReturnValue(
       runningRun({ progress_pct: 60, progress_stage: "Persisting pillars…" }),
@@ -127,7 +127,7 @@ describe("useGenerationRun — real server progress (progress_pct > 0)", () => {
 
 // ── Time-estimate fallback (progress_pct = 0 / null) ─────────────────────
 
-describe("useGenerationRun — time-estimate fallback when progress_pct is 0", () => {
+describe("useGenerationRun · time-estimate fallback when progress_pct is 0", () => {
   it("progressStage is null when progress_pct is 0 (caller uses PHASE_LABELS)", () => {
     mockGetLatestGenerationRun.mockReturnValue(
       runningRun({ progress_pct: 0, progress_stage: "" }),
@@ -142,7 +142,7 @@ describe("useGenerationRun — time-estimate fallback when progress_pct is 0", (
     expect(result.current.progressStage).toBeNull();
   });
 
-  it("progressStage is null when progress_pct is null (legacy run — columns not yet migrated)", () => {
+  it("progressStage is null when progress_pct is null (legacy run. Columns not yet migrated)", () => {
     mockGetLatestGenerationRun.mockReturnValue(
       runningRun({ progress_pct: null, progress_stage: null }),
     );
@@ -204,7 +204,7 @@ describe("useGenerationRun — time-estimate fallback when progress_pct is 0", (
 
 // ── Polling cycle: pct 0 → 60 mid-run ────────────────────────────────────
 
-describe("useGenerationRun — polling cycle: progress_pct transitions 0 → 60", () => {
+describe("useGenerationRun · polling cycle: progress_pct transitions 0 → 60", () => {
   it("switches from fallback to server value when progress_pct becomes non-zero", () => {
     const now = 1_700_000_000_000;
     vi.setSystemTime(now);

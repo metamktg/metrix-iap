@@ -117,7 +117,7 @@ describe("creative dialog joins evidence through mapped Ad IDs", () => {
     open();
     clickTab("Placements");
     expect(screen.getByTestId("placement-drill")).toBeTruthy();
-    expect(screen.queryByText(/account-level — not scoped/)).toBeNull();
+    expect(screen.queryByText(/account-level. Not scoped/)).toBeNull();
   });
 
   it("Funnel is built from the Ad Summary truth of the mapped Ad IDs and says so", () => {

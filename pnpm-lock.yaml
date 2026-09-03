@@ -652,9 +652,6 @@ importers:
         specifier: ^5.5.4
         version: 5.5.4
     devDependencies:
-      '@hookform/resolvers':
-        specifier: ^3.10.0
-        version: 3.10.0(react-hook-form@7.80.0(react@19.1.0))
       '@radix-ui/react-accordion':
         specifier: ^1.2.4
         version: 1.2.14(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -838,9 +835,6 @@ importers:
       react-hook-form:
         specifier: ^7.55.0
         version: 7.80.0(react@19.1.0)
-      react-icons:
-        specifier: ^5.4.0
-        version: 5.7.0(react@19.1.0)
       react-resizable-panels:
         specifier: ^2.1.7
         version: 2.1.9(react-dom@19.1.0(react@19.1.0))(react@19.1.0)

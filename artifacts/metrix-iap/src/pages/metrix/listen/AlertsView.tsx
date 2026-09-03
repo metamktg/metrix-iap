@@ -69,7 +69,7 @@ export function AlertsView() {
                 label={
                   <span className="inline-flex items-center gap-1">
                     Active alerts
-                    <InfoTooltip content="Alerts never auto-apply changes — all suggestions require a manual action to implement." />
+                    <InfoTooltip content="Alerts never auto-apply changes · all suggestions require a manual action to implement." />
                   </span>
                 }
                 value={String(total)}
@@ -128,7 +128,7 @@ export function AlertsView() {
                         {qualityFlags.map((f, i) => (
                           <CaveatNote
                             key={`${f.kind}-${i}`}
-                            text={`${flagHeadline(f)} — ${flagBody(f)}`}
+                            text={`${flagHeadline(f)} · ${flagBody(f)}`}
                             source="iap.data_quality"
                           />
                         ))}

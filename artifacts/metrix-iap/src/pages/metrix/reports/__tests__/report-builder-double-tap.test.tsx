@@ -109,7 +109,7 @@ beforeEach(() => {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-describe("ReportBuilderView — Generate Report double-tap guard", () => {
+describe("ReportBuilderView · Generate Report double-tap guard", () => {
   it("renders the Generate report button for the bookster account", () => {
     selectBookster();
     renderView();

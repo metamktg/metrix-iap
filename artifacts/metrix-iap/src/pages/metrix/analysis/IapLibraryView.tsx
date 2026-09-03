@@ -549,13 +549,13 @@ export function IapLibraryView() {
                         sub={m.sub}
                         onClick={isSegmentable ? () => { setTileSegmentMetric(m); setDrilldownMetricId(m.id); } : undefined}
                         actionLabel="Full breakdown"
-                        actionTitle="Open the full breakdown — by concept, variable family, avatar segment or placement"
+                        actionTitle="Open the full breakdown · by concept, variable family, avatar segment or placement"
                       />
                     );
                   })}
                   {tileIds.length === 0 && (
                     <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/75 border border-dashed border-border/40 rounded-lg px-3 py-4 text-center">
-                      No metrics selected — use "Customize" to add tiles.
+                      No metrics selected · use "Customize" to add tiles.
                     </div>
                   )}
                 </div>
@@ -666,7 +666,7 @@ export function IapLibraryView() {
                           <p className="text-caption font-medium text-status-warning/90">
                             {unmappedCellIds.size} creative {unmappedCellIds.size === 1 ? "cell" : "cells"} not fully mapped to IAP library
                           </p>
-                          <p className="text-label text-muted-foreground/75">Missing library entry — assets may be incomplete.</p>
+                          <p className="text-label text-muted-foreground/75">Missing library entry · assets may be incomplete.</p>
                         </div>
                         <button
                           onClick={() => setCreativeLibraryOpen(true)}
@@ -921,7 +921,7 @@ export function IapLibraryView() {
                           {creativeOnlyCellIds.length > 0 && (
                             <div className="space-y-3 pt-2 border-t border-border/15">
                               <p className="text-label uppercase tracking-widest text-muted-foreground/75">
-                                Creative assets — no performance data yet ({creativeOnlyCellIds.length})
+                                Creative assets · no performance data yet ({creativeOnlyCellIds.length})
                               </p>
                               <div className="grid grid-cols-dashboard-5-xl gap-3">
                                 {creativeOnlyCellIds.map((cellId) => (
@@ -1047,10 +1047,10 @@ export function IapLibraryView() {
                       if (lvl) conceptConfidence.set(r.concept, lvl);
                     }
                     const ungradedReason = (row: CellPerformanceRow, st: CreativeCardStats): string | null => {
-                      if (rankOf(st) == null) return communication ? "No link CTR measured for this cell" : "No cost per result — no results behind this cell";
-                      if (!communication && (st.results ?? 0) <= 0) return "No results — a cost per result needs at least one";
+                      if (rankOf(st) == null) return communication ? "No link CTR measured for this cell" : "No cost per result · no results behind this cell";
+                      if (!communication && (st.results ?? 0) <= 0) return "No results · a cost per result needs at least one";
                       const lvl = conceptConfidence.get(conceptForCell(row.cell_id) ?? row.concept_variable ?? "");
-                      if (lvl && /insufficient/.test(lvl)) return "Concept confidence insufficient — too little volume to rank";
+                      if (lvl && /insufficient/.test(lvl)) return "Concept confidence insufficient · too little volume to rank";
                       return null;
                     };
                     const eligible = copyStats.filter(({ row, stats }) => ungradedReason(row, stats) == null);
@@ -1065,7 +1065,7 @@ export function IapLibraryView() {
                     const tierFor = (row: CellPerformanceRow, st: CreativeCardStats): { label: string; cls: string; reason: string | null } => {
                       const reason = ungradedReason(row, st);
                       if (reason) return { label: "Unranked", cls: UNRANKED_CLS, reason };
-                      if (ranked.length < SAMPLE_FLOOR) return { label: "Unranked", cls: UNRANKED_CLS, reason: `${ranked.length} rankable cell${ranked.length === 1 ? "" : "s"} in this selection — a percentile needs at least ${SAMPLE_FLOOR}` };
+                      if (ranked.length < SAMPLE_FLOOR) return { label: "Unranked", cls: UNRANKED_CLS, reason: `${ranked.length} rankable cell${ranked.length === 1 ? "" : "s"} in this selection. A percentile needs at least ${SAMPLE_FLOOR}` };
                       const v = rankOf(st)!;
                       const best = communication ? v >= p25 : v <= p25;
                       const worst = communication ? v <= p75 : v >= p75;
@@ -1113,7 +1113,7 @@ export function IapLibraryView() {
                                     {ctx?.angleLabel ? ` · ${ctx.angleLabel}` : ""}
                                   </span>
                                   <span className="tabular-nums shrink-0">
-                                    {communication ? fmtPct(stats.ctrPct) : stats.cpa != null ? fmtUSD(stats.cpa) : "—"} · {stats.results != null ? fmtNum(stats.results) : "—"}
+                                    {communication ? fmtPct(stats.ctrPct) : stats.cpa != null ? fmtUSD(stats.cpa) : "–"} · {stats.results != null ? fmtNum(stats.results) : "–"}
                                   </span>
                                 </div>
                               </button>
@@ -1266,9 +1266,9 @@ export function IapLibraryView() {
                                   <div className={cn(TYPE.microLabel, "leading-none mb-0.5")}>Results</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtNum(f.results)}</div>
                                 </div>
-                                <div title={f.scale === "communication" ? "Awareness event — read on communication signals, never on cost per result" : undefined}>
+                                <div title={f.scale === "communication" ? "Awareness event · read on communication signals, never on cost per result" : undefined}>
                                   <div className={cn(TYPE.microLabel, "leading-none mb-0.5")}>CPA</div>
-                                  <div className="text-caption font-semibold text-foreground/80">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
+                                  <div className="text-caption font-semibold text-foreground/80">{f.cpa != null ? fmtUSD(f.cpa) : "–"}</div>
                                 </div>
                               </div>
                               {f.top && (
@@ -1356,7 +1356,7 @@ export function IapLibraryView() {
                   <div className="grid grid-cols-2 gap-3">
                     <MetricTile label="Spend"    value={fmtUSD(detail["Amount spent (USD)"], 0)} />
                     <MetricTile label="Results"  value={fmtNum(detail.Results)} sub={eventLabel(detail["Result type"])} />
-                    <MetricTile variant="primary" label="CPA" value={detail.CPA_result != null ? fmtUSD(detail.CPA_result) : "—"} />
+                    <MetricTile variant="primary" label="CPA" value={detail.CPA_result != null ? fmtUSD(detail.CPA_result) : "–"} />
                     <MetricTile label="Link CTR" value={fmtPct(detail.CTR_link_pct)} />
                   </div>
                   {/* Secondary delivery stats — derived from this row, dashes when absent */}
@@ -1369,10 +1369,10 @@ export function IapLibraryView() {
                       const stats: { label: string; value: string }[] = [
                         { label: "Reach", value: fmtNum(reach) },
                         { label: "Impressions", value: fmtNum(imps) },
-                        { label: "Frequency", value: reach > 0 ? (imps / reach).toFixed(2) : "—" },
+                        { label: "Frequency", value: reach > 0 ? (imps / reach).toFixed(2) : "–" },
                         { label: "Link clicks", value: fmtNum(linkClicks) },
-                        { label: "CPM", value: imps > 0 ? fmtUSD((spend / imps) * 1000) : "—" },
-                        { label: "CPC (link)", value: linkClicks > 0 ? fmtUSD(spend / linkClicks) : "—" },
+                        { label: "CPM", value: imps > 0 ? fmtUSD((spend / imps) * 1000) : "–" },
+                        { label: "CPC (link)", value: linkClicks > 0 ? fmtUSD(spend / linkClicks) : "–" },
                       ];
                       return stats.map((s) => (
                         <div key={s.label}>
@@ -1382,7 +1382,7 @@ export function IapLibraryView() {
                       ));
                     })()}
                   </div>
-                  <DrawerField label="Variable stack — tap a chip to drill down">
+                  <DrawerField label="Variable stack · tap a chip to drill down">
                     {/* Each chip carries what the variable COST under the
                         active scope, read off v3_variable_performance rather
                         than recomputed here (register L-5). A bare code says
@@ -1405,7 +1405,7 @@ export function IapLibraryView() {
                           <button
                             key={key + c}
                             onClick={() => setVariableCode(c)}
-                            title={[`${label} — open variable drill-down`, note && `${note}${perf?.event ? ` · ${eventLabel(perf.event)}` : ""}`].filter(Boolean).join(" · ")}
+                            title={[`${label} · open variable drill-down`, note && `${note}${perf?.event ? ` · ${eventLabel(perf.event)}` : ""}`].filter(Boolean).join(" · ")}
                             data-testid={`chip-drawer-variable-${c}`}
                             className="rounded transition-transform hover:scale-[1.04] active:scale-[0.97] inline-flex items-center gap-1"
                           >
@@ -1435,7 +1435,7 @@ export function IapLibraryView() {
                         ? scopeRollupRows(a.concept_rollup ?? [], activeScope).filter((r) => r.concept === concept)
                         : [];
                       if (rows.length === 0) {
-                        return <span className="text-caption text-muted-foreground/75">No run attribution — this cell's rows carry no run-tagged rollup</span>;
+                        return <span className="text-caption text-muted-foreground/75">No run attribution · this cell's rows carry no run-tagged rollup</span>;
                       }
                       return (
                         <ul className="space-y-1" data-testid="cell-provenance">

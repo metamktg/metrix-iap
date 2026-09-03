@@ -80,7 +80,7 @@ describe("matrixBookFor", () => {
     expect(matrixBookFor(rollup, cols)).toBe("BOOK0");
   });
 
-  it("returns null on a tie or no match — never guesses", () => {
+  it("returns null on a tie or no match. Never guesses", () => {
     expect(matrixBookFor([rollupRow("BOOK0", "C1"), rollupRow("BOOK2", "C2")], cols)).toBeNull();
     expect(matrixBookFor([rollupRow("BOOK0", "C9")], cols)).toBeNull();
     expect(matrixBookFor([], cols)).toBeNull();
@@ -92,7 +92,7 @@ describe("MST sprints canvas composition (Bookster)", () => {
     renderFor("bookster");
     const strip = screen.getByTestId("mst-status-strip");
     expect(within(strip).getByText("Active")).toBeTruthy();
-    expect(within(strip).getByText(/Historical matrix — BOOK0/)).toBeTruthy();
+    expect(within(strip).getByText(/Historical matrix · BOOK0/)).toBeTruthy();
     expect(within(strip).getByText("Cells mapped")).toBeTruthy();
     expect(within(strip).getByText("16 / 16")).toBeTruthy();
   });
@@ -160,7 +160,7 @@ describe("MST sprints canvas composition (Bookster)", () => {
 
 // ─── Result scope is visible, and rows land where their data is ───────────
 
-describe("MstSprintsView — result scope", () => {
+describe("MstSprintsView · result scope", () => {
   it("renders the scope bar (the page scoped its rollup silently before)", () => {
     renderFor("bookster");
     expect(screen.getByTestId("result-scope-bar")).toBeTruthy();

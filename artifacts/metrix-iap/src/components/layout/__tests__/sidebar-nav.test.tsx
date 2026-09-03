@@ -197,13 +197,13 @@ describe("navTree landing routes", () => {
 // ─── Expanded mode: one link per section, pages on intent ────────────────
 
 describe("Sidebar section headers (expanded mode)", () => {
-  it("sidebar is expanded by default — shows section labels and the collapse button", () => {
+  it("sidebar is expanded by default. Shows section labels and the collapse button", () => {
     const { container } = renderExpanded();
     expect(within(container).getByText("Analysis")).toBeTruthy();
     expect(within(container).getByLabelText("Collapse sidebar")).toBeTruthy();
   });
 
-  it("the section header is ONE link to the command center — no chevron button", () => {
+  it("the section header is ONE link to the command center. No chevron button", () => {
     const { container } = renderExpanded();
     const analysis = sectionByLabel("Analysis");
     const link = sectionHeaderLink(container, "Analysis");
@@ -213,7 +213,7 @@ describe("Sidebar section headers (expanded mode)", () => {
     expect(container.querySelectorAll("nav button").length).toBe(0);
   });
 
-  it("clicking a section label navigates to its command center at once — a hover never has to finish first", () => {
+  it("clicking a section label navigates to its command center at once. A hover never has to finish first", () => {
     vi.useFakeTimers();
     try {
       const { container } = renderExpanded();
@@ -518,7 +518,7 @@ describe("Inline account picker", () => {
 // fragment with each opened section and the active page.
 
 describe("navTree category definition", () => {
-  it("every section carries a group and a purpose fragment — chrome, never a sentence", () => {
+  it("every section carries a group and a purpose fragment. Chrome, never a sentence", () => {
     for (const s of navTree) {
       expect(["home", "loop", "output", "workspace"]).toContain(s.group);
       expect(s.purpose.length).toBeGreaterThan(8);

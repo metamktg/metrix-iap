@@ -22,7 +22,7 @@ function row(overrides: Partial<DemographicRow>): DemographicRow {
   };
 }
 
-describe("segment metric catalog — downstream funnel metrics", () => {
+describe("segment metric catalog · downstream funnel metrics", () => {
   it("no longer lists adds-to-cart / checkouts-initiated as structurally unsupported", () => {
     const ids = UNSUPPORTED_SEGMENT_METRICS.map((m) => m.id);
     expect(ids).not.toContain("atc");

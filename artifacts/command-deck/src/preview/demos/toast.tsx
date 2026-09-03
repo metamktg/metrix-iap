@@ -1,6 +1,5 @@
 import { Button } from '../../components/ui/button';
-import { ToastAction } from '../../components/ui/toast';
-import { Toaster } from '../../components/ui/toaster';
+import { Toaster } from '../../components/ui/sonner';
 import { toast } from '../../hooks/use-toast';
 import { Row } from '../parts';
 
@@ -25,7 +24,7 @@ export function ToastDemo() {
               variant: 'destructive',
               title: 'Upload failed',
               description: 'The file could not be uploaded.',
-              action: <ToastAction altText="Retry upload">Retry</ToastAction>,
+              action: { label: 'Retry', onClick: () => undefined },
             })
           }
         >

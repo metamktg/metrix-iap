@@ -262,7 +262,7 @@ export function HypothesisQueueView() {
                   <SectionCard
                     title="Message pillars"
                     desc="The proven messages hypotheses build on"
-                    right={<SectionInfoIcon tip="Message pillars are the validated themes from analysis. Each shows its source cells, variable stack, and — behind the details fold — funnel, execution, placement, and scaling guidance." />}
+                    right={<SectionInfoIcon tip="Message pillars are the validated themes from analysis. Each shows its source cells, variable stack, and (behind the details fold) funnel, execution, placement, and scaling guidance." />}
                   >
                   <div className="space-y-3">
                     {pillars.map((p) => {
@@ -275,12 +275,12 @@ export function HypothesisQueueView() {
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <span className="inline-flex">
-                                      <CrossLink to={`/app/analysis/library?focus=${c}`} label={c} srNote={`source matrix cell — opens it in the IAP Library`} />
+                                      <CrossLink to={`/app/analysis/library?focus=${c}`} label={c} srNote={`source matrix cell · opens it in the IAP Library`} />
                                     </span>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="max-w-[240px]">
                                     <p className="text-caption leading-relaxed">
-                                      Source matrix cell <span className="">{c}</span> — opens it in the IAP Library.
+                                      Source matrix cell <span className="">{c}</span>, opens it in the IAP Library.
                                     </p>
                                   </TooltipContent>
                                 </Tooltip>

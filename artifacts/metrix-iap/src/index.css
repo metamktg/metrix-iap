@@ -284,7 +284,7 @@
      clobber the centering. The rule keys on role="alertdialog" being
      OPEN, so it can never fire from a popover or a lone dialog. */
   .mx-dialog-content {
-    transition: scale 200ms cubic-bezier(0.2, 0, 0, 1), filter 200ms cubic-bezier(0.2, 0, 0, 1);
+    transition: scale 200ms var(--mx-ease), filter 200ms var(--mx-ease);
   }
   body:has([role="alertdialog"][data-state="open"]) .mx-dialog-content {
     scale: 0.965;
@@ -912,7 +912,7 @@
    * override further down this file. */
   .pressable,
   .pressable-lg {
-    transition: scale 150ms var(--mx-ease, cubic-bezier(0.2, 0, 0, 1));
+    transition: scale 150ms var(--mx-ease);
   }
   .pressable:active:not(:disabled)    { scale: 0.96; }
   .pressable-lg:active:not(:disabled) { scale: 0.99; }
@@ -1188,6 +1188,43 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Media edge ─────────────────────────────────────────────────────────
+ * Every image in the page gets a 1 px foreground edge at 10 %: on the dark
+ * ground a creative thumbnail otherwise floats with no boundary, and on a
+ * light theme a white-bordered asset merges with the card. The foreground
+ * token flips with the theme, so the edge is always the ink colour, never a
+ * tinted neutral that reads as dirt. Inset so it never grows the box. */
+main img {
+  outline: 1px solid hsl(var(--foreground) / 0.1);
+  outline-offset: -1px;
+}
+
+/* ── Route arrival ──────────────────────────────────────────────────────
+ * A navigation used to hard-cut from the spinner to the page. The page now
+ * arrives: opacity 0 → 1 with a 4 px rise over 180 ms on the strong
+ * ease-out, transform and opacity only, once per mount. A query change on
+ * the same page does not remount, so it does not replay. Reduced motion
+ * zeroes it through the global rule above. */
+@keyframes mx-route-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+[data-route-host] > *:first-child {
+  animation: mx-route-in 180ms var(--mx-ease) both;
+}
+/* First-run onboarding: the three step cards arrive in sequence, 40 ms
+ * apart, blur 4 px → 0 with the same rise. The one place a longer beat is
+ * allowed (a reader sees it once). */
+@keyframes mx-step-in {
+  from { opacity: 0; transform: translateY(6px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.mx-step-enter > * { animation: mx-step-in 220ms var(--mx-ease) both; }
+.mx-step-enter > *:nth-child(2) { animation-delay: 40ms; }
+.mx-step-enter > *:nth-child(3) { animation-delay: 80ms; }
+.mx-step-enter > *:nth-child(4) { animation-delay: 120ms; }
+.mx-step-enter > *:nth-child(n+5) { animation-delay: 160ms; }
 
 /* ── Nocturne canvas table (Metrix v1 design handoff) ─────────────────
  * The canvas's `.table` primitive translated to app tokens: uppercase dim

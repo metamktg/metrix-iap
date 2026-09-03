@@ -83,7 +83,7 @@ beforeEach(() => {
   window.history.replaceState({}, "", "/app/overview");
 });
 
-describe("Results by event — share of spend", () => {
+describe("Results by event · share of spend", () => {
   it("states each event's share of the spend the table itself shows", () => {
     renderOverview();
     const table = [...document.querySelectorAll("table")].find((t) =>
@@ -119,7 +119,7 @@ describe("Results by event — share of spend", () => {
   });
 });
 
-describe("intentSummaryFragments — the dominant class's share", () => {
+describe("intentSummaryFragments · the dominant class's share", () => {
   const summary: SeedIntentSummary = {
     classes: [
       { intent_class: "conversion", scale: "cost_per_result", spend: 9100, results: 500, impressions: 1, link_clicks: 1, ads: 4, events: ["purchase"], spend_share_pct: 91 },
@@ -150,13 +150,13 @@ describe("intentSummaryFragments — the dominant class's share", () => {
   });
 });
 
-describe("liftLabel — what the lift is measured against", () => {
+describe("liftLabel · what the lift is measured against", () => {
   it("names cost per result when that is the basis", () => {
     expect(liftLabel(0.23, "cpa")).toBe("23% above cost per result baseline");
     expect(liftLabel(-0.23, "cpa")).toBe("23% below cost per result baseline");
   });
 
-  it("names link CTR when that is the basis — the same words mean the opposite thing", () => {
+  it("names link CTR when that is the basis. The same words mean the opposite thing", () => {
     expect(liftLabel(0.23, "link_ctr")).toBe("23% above link CTR baseline");
   });
 

@@ -26,7 +26,7 @@ export interface FunnelStep {
 }
 
 function fmtNum(n: number | null): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return Math.round(n).toLocaleString("en-US");
 }
 
@@ -58,7 +58,7 @@ export function FunnelStepsChart({ steps }: { steps: FunnelStep[] }) {
                   </span>
                 ) : (
                   <span className="text-caption text-muted-foreground/75">
-                    — no rate
+                    , no rate
                   </span>
                 )}
               </div>
@@ -91,7 +91,7 @@ export function FunnelStepsChart({ steps }: { steps: FunnelStep[] }) {
               <div className="h-1.5 rounded-full bg-foreground/[0.04] overflow-hidden">
                 <div
                   className={cn(
-                    "h-full rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-700",
+                    "h-full rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300",
                     hasData ? "bg-primary/50" : "bg-muted/20"
                   )}
                   style={{ width: hasData ? `${barW}%` : "0%" }}

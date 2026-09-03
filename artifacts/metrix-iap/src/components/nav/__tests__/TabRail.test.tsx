@@ -23,7 +23,7 @@ function setup(active: "pending" | "approved" | "dismissed" = "pending") {
   return { onChange };
 }
 
-describe("TabRail — it is a tablist", () => {
+describe("TabRail · it is a tablist", () => {
   it("announces itself as a tablist with a name", () => {
     setup();
     expect(screen.getByRole("tablist", { name: "Queue status" })).toBeTruthy();
@@ -43,7 +43,7 @@ describe("TabRail — it is a tablist", () => {
   });
 });
 
-describe("TabRail — arrow keys move between tabs", () => {
+describe("TabRail · arrow keys move between tabs", () => {
   it("moves right", async () => {
     const u = userEvent.setup();
     const { onChange } = setup("pending");
@@ -71,7 +71,7 @@ describe("TabRail — arrow keys move between tabs", () => {
   });
 });
 
-describe("TabRail — counts and disabled tabs", () => {
+describe("TabRail · counts and disabled tabs", () => {
   it("renders a zero count, which is a real answer", () => {
     setup();
     expect(screen.getByRole("tab", { name: /In Tray/ }).textContent).toContain("0");

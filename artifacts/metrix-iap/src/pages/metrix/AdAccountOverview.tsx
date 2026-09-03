@@ -365,7 +365,7 @@ export function AdAccountOverview() {
                         <td className="text-right tabular-nums text-foreground/85">{fmtNum(e.results)}</td>
                         <td className="text-right tabular-nums text-muted-foreground/75">{fmtUSD(e.spend, 0)}</td>
                         <td className="text-right tabular-nums text-muted-foreground/75" title="Share of the spend shown in this table">
-                          {share != null ? `${share < 1 ? "<1" : Math.round(share)}%` : "—"}
+                          {share != null ? `${share < 1 ? "<1" : Math.round(share)}%` : "–"}
                         </td>
                         <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/75")}>
                           {cpa != null ? fmtUSD(cpa) : "n/a"}
@@ -466,7 +466,7 @@ export function AdAccountOverview() {
             right={
               <>
                 <CrossLink to="/app/act/queue" label="Open full queue" />
-                <SectionInfoIcon tip="AI-generated recommendations to approve or dismiss — never applied automatically." />
+                <SectionInfoIcon tip="AI-generated recommendations to approve or dismiss. Never applied automatically." />
               </>
             }
           >

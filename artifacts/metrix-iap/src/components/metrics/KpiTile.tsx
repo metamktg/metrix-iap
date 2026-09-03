@@ -89,7 +89,7 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
     >
       <span className="text-caption truncate">{m.label}</span>
       <span className="text-caption tabular-nums text-muted-foreground/75 shrink-0">
-        {m.value != null ? m.formatted : "—"}
+        {m.value != null ? m.formatted : "–"}
       </span>
     </button>
   );
@@ -182,7 +182,7 @@ export interface KpiTileTrend {
 function unavailableNote(m: MetricDef): string {
   return m.isResultEvent
     ? "No rows in the current selection carry this result event, so there is nothing to total. This is an absence of data, not a value of zero."
-    : "Not measured in the current selection — no row carries this field over the active scope. This is an absence of data, not a value of zero.";
+    : "Not measured in the current selection. No row carries this field over the active scope. This is an absence of data, not a value of zero.";
 }
 
 export interface KpiTileProps {
@@ -256,7 +256,7 @@ export function KpiTile({
           {/* Nocturne card-kicker: accent-tinted uppercase label */}
           <span className={cn(
             TYPE.label,
-            "font-semibold uppercase tracking-[0.14em] truncate transition-colors",
+            "font-semibold uppercase tracking-[0.14em] transition-colors sm:truncate max-sm:line-clamp-2 max-sm:leading-tight",
             pickerOpen ? "text-interactive" : "text-interactive/75 group-hover/lbl:text-interactive",
           )}>
             {m.label}

@@ -166,19 +166,15 @@ export function LoginPage() {
               </div>
             </div>
 
-            {/* CTAs */}
+            {/* One call to action on this panel. The sign-up path (Request
+                access) lives beside the form, so the hero does not repeat
+                it under a second name. */}
             <div className="flex items-center gap-3">
-              <a
-                href="/waitlist/#request-access"
-                className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 shadow-md shadow-primary/25 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
-              >
-                Request Demo Access <ArrowRight className="w-3.5 h-3.5" />
-              </a>
               <a
                 href="/waitlist/"
                 className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl border border-border/40 text-body text-muted-foreground hover:text-foreground hover:border-border/60 transition-[color,background-color,border-color,box-shadow,opacity,transform]"
               >
-                See More <ArrowRight className="w-3.5 h-3.5" />
+                See how Metrix works <ArrowRight className="w-3.5 h-3.5" />
               </a>
             </div>
           </div>
@@ -208,10 +204,10 @@ export function LoginPage() {
               Performance intelligence for marketers who need to move faster.
             </p>
             <a
-              href="/waitlist/#request-access"
+              href="/waitlist/"
               className="inline-flex items-center gap-1.5 text-body font-semibold text-interactive hover:opacity-75 transition-opacity"
             >
-              Request Demo Access <ArrowRight className="w-3.5 h-3.5" />
+              See how Metrix works <ArrowRight className="w-3.5 h-3.5" />
             </a>
           </div>
 
@@ -224,7 +220,7 @@ export function LoginPage() {
                 Sign in
               </h2>
               <p className="text-body text-muted-foreground mt-1.5">
-                Welcome back — enter your credentials below.
+                Welcome back · enter your credentials below.
               </p>
             </div>
 
@@ -293,7 +289,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoggingIn || !email.trim() || !password}
-                className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 active:scale-[0.99] shadow-md shadow-primary/25 transition-[color,background-color,border-color,box-shadow,opacity,transform] disabled:opacity-35 disabled:pointer-events-none flex items-center justify-center gap-2 mt-1"
+                className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-body font-semibold hover:bg-primary/90 active:scale-[0.99] shadow-md shadow-primary/25 transition-[color,background-color,border-color,box-shadow,opacity,transform] disabled:bg-primary/45 disabled:text-primary-foreground/90 disabled:shadow-none disabled:pointer-events-none flex items-center justify-center gap-2 mt-1"
                 data-testid="button-login"
               >
                 {isLoggingIn ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -323,8 +319,11 @@ export function LoginPage() {
                 className="pressable-lg w-full h-10 rounded-xl border border-border/40 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 hover:border-border/60 transition-[color,background-color,border-color,box-shadow,opacity,transform] flex items-center justify-center"
                 data-testid="button-create-account"
               >
-                Create Account
+                Create an account
               </button>
+              <p className="text-caption text-muted-foreground/75 text-center leading-relaxed px-3">
+                Starts an empty workspace you can load with your own Meta exports. Agency accounts are granted by an admin.
+              </p>
             </div>
 
             {/* Marketing link — desktop only */}

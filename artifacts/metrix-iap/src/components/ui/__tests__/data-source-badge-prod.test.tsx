@@ -17,7 +17,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("DataSourceBadge — production discloses no schema", () => {
+describe("DataSourceBadge · production discloses no schema", () => {
   it("renders nothing at all in a production build", () => {
     vi.stubEnv("PROD", true);
     const { container } = render(<DataSourceBadge table="user_sessions, app_config" />);
@@ -36,7 +36,7 @@ describe("DataSourceBadge — production discloses no schema", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("hides its Settings toggle in production — no control for an absent feature", () => {
+  it("hides its Settings toggle in production. No control for an absent feature", () => {
     vi.stubEnv("PROD", true);
     const { container } = render(<DataSourceBadgeToggle />);
     expect(container.innerHTML).toBe("");

@@ -90,7 +90,7 @@ export function RecommendationsView() {
               <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                 <MetricTile label="Recommendations" value={String(cards.length)} />
                 <MetricTile label="High impact" value={String(highCount)} />
-                <MetricTile label="Scopes" value={String(scopes.length)} sub={scopes.join(" · ") || "—"} />
+                <MetricTile label="Scopes" value={String(scopes.length)} sub={scopes.join(" · ") || "–"} />
                 <MetricTile label="Auto-applied" value="0" sub="manual implementation only" />
               </div>
             )}

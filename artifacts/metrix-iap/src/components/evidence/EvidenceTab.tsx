@@ -124,7 +124,7 @@ export function EvidenceTab({
         <EvidenceChip state={v.relationship} testId="variable-evidence" />
       </span>
     ),
-    content: v.segments.length > 0 ? <SegmentRows rows={v.segments} /> : <p className={cn(TYPE.caption, "text-muted-foreground/75")}>No segment rows for this variable yet — run analysis after the deconstruction was filed.</p>,
+    content: v.segments.length > 0 ? <SegmentRows rows={v.segments} /> : <p className={cn(TYPE.caption, "text-muted-foreground/75")}>No segment rows for this variable yet. Run analysis after the deconstruction was filed.</p>,
   }));
 
   return (

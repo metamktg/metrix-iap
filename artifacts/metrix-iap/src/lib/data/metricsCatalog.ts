@@ -172,10 +172,10 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
     : blendEvents.reduce((n, e) => n + (e.spend ?? 0), 0);
   const cpaBlended = blendSpend != null && totalResults != null && totalResults > 0 ? blendSpend / totalResults : null;
   const blendSub = blendEvents.length > 1
-    ? `spend ÷ results across ${blendEvents.map((e) => e.label.toLowerCase()).join(" + ")} — terminal conversion events only`
+    ? `spend ÷ results across ${blendEvents.map((e) => e.label.toLowerCase()).join(" + ")} · terminal conversion events only`
     : blendEvents.length === 1
-      ? `spend ÷ ${blendLabel} — the account's one terminal conversion event`
-      : "no terminal conversion event in this source — awareness and traffic events are never blended into a cost per result";
+      ? `spend ÷ ${blendLabel} · the account's one terminal conversion event`
+      : "no terminal conversion event in this source. Awareness and traffic events are never blended into a cost per result";
   // For multi-event accounts, delivery totals (reach, clicks) are cross-event
   // sums that may over-count — flag them with a small caveat sub-label.
   const deliverySub = source.isMultiEvent ? "est. across events" : undefined;
@@ -205,11 +205,11 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
     { id: "link_clicks", label: "Link clicks", value: source.linkClicks, formatted: fmtNum(source.linkClicks), isResultEvent: false },
     { id: "link_ctr", label: "Link CTR", value: source.linkCtrPct, formatted: fmtPct(source.linkCtrPct), isResultEvent: false },
     { id: "ctr_all", label: "CTR (all)", value: ctrAll, formatted: fmtPct(ctrAll), isResultEvent: false, sub: "clicks (all) ÷ impressions", hideWhenNull: true },
-    { id: "cpc", label: "CPC", value: cpc, formatted: cpc != null ? fmtUSD(cpc) : "—", isResultEvent: false, sub: "spend ÷ link clicks", hideWhenNull: true },
-    { id: "cpm", label: "CPM", value: cpm, formatted: cpm != null ? fmtUSD(cpm) : "—", isResultEvent: false, sub: "spend ÷ impressions × 1,000", hideWhenNull: true },
+    { id: "cpc", label: "CPC", value: cpc, formatted: cpc != null ? fmtUSD(cpc) : "–", isResultEvent: false, sub: "spend ÷ link clicks", hideWhenNull: true },
+    { id: "cpm", label: "CPM", value: cpm, formatted: cpm != null ? fmtUSD(cpm) : "–", isResultEvent: false, sub: "spend ÷ impressions × 1,000", hideWhenNull: true },
     { id: "results_blended", label: blendEvents.length > 1 ? "Conversions (blended)" : "Conversions", value: totalResults, formatted: fmtNum(totalResults), isResultEvent: false, sub: blendEvents.length > 0 ? blendEvents.map((e) => e.label).join(" + ") : blendSub, hideWhenNull: true },
-    { id: "cpa_blended", label: blendEvents.length > 1 ? "Cost per conversion (blended)" : "Cost per conversion", value: cpaBlended, formatted: cpaBlended != null ? fmtUSD(cpaBlended) : "—", isResultEvent: false, sub: blendSub, hideWhenNull: blendEvents.length === 0 },
-    { id: "cvr", label: "CVR", value: cvr, formatted: cvr != null ? fmtPct(cvr) : "—", isResultEvent: false, sub: `${blendLabel} ÷ link clicks`, hideWhenNull: true },
+    { id: "cpa_blended", label: blendEvents.length > 1 ? "Cost per conversion (blended)" : "Cost per conversion", value: cpaBlended, formatted: cpaBlended != null ? fmtUSD(cpaBlended) : "–", isResultEvent: false, sub: blendSub, hideWhenNull: blendEvents.length === 0 },
+    { id: "cvr", label: "CVR", value: cvr, formatted: cvr != null ? fmtPct(cvr) : "–", isResultEvent: false, sub: `${blendLabel} ÷ link clicks`, hideWhenNull: true },
   ];
 
   // ── Per-objective cost metrics — one "Cost per X" per real event type ──
@@ -236,10 +236,10 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
         id: resultRateMetricId(e.key),
         label: `${c.noun.charAt(0).toUpperCase() + c.noun.slice(1)} rate`,
         value: rate,
-        formatted: rate != null ? fmtPct(rate) : "—",
+        formatted: rate != null ? fmtPct(rate) : "–",
         isResultEvent: true,
         eventKey: e.key,
-        sub: `${e.label.toLowerCase()} ÷ impressions — an awareness event is read on communication signals, never cost per result`,
+        sub: `${e.label.toLowerCase()} ÷ impressions. An awareness event is read on communication signals, never cost per result`,
         hideWhenNull: true,
       });
       continue;
@@ -249,7 +249,7 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
       id: resultCostMetricId(e.key),
       label: costPerResultLabel(e.key),
       value: costPerResult,
-      formatted: costPerResult != null ? fmtUSD(costPerResult) : "—",
+      formatted: costPerResult != null ? fmtUSD(costPerResult) : "–",
       isResultEvent: true,
       eventKey: e.key,
       sub: `spend ÷ ${e.label.toLowerCase()}`,
@@ -405,7 +405,7 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[], scopeInfo:
   const coverageSub = (c: StrictSum | null, denominator: string): string => {
     if (!singleEvent) return noConvSub;
     if (c == null || c.covered === 0) return noConvSub;
-    return `not summed — only ${c.covered} of ${c.contributing} cells in this selection carry ${denominator}`;
+    return `not summed. Only ${c.covered} of ${c.contributing} cells in this selection carry ${denominator}`;
   };
 
   const def = (id: string, label: string, value: number | null, formatted: string, sub?: string): MetricDef => ({
@@ -414,9 +414,9 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[], scopeInfo:
 
   const communicationTiles: MetricDef[] = communication
     ? [
-        def("lib_result_rate", "Result rate", resultRate, resultRate != null ? fmtPct(resultRate) : "—", "results ÷ impressions — the awareness event's own rate"),
-        def("lib_cpm", "CPM", cpm, cpm != null ? fmtUSD(cpm) : "—", multiEventSub ?? "spend ÷ impressions × 1,000"),
-        def("lib_frequency", "Frequency", frequency, frequency != null ? frequency.toFixed(2) : "—", multiEventSub ?? "impressions ÷ reach"),
+        def("lib_result_rate", "Result rate", resultRate, resultRate != null ? fmtPct(resultRate) : "–", "results ÷ impressions · the awareness event's own rate"),
+        def("lib_cpm", "CPM", cpm, cpm != null ? fmtUSD(cpm) : "–", multiEventSub ?? "spend ÷ impressions × 1,000"),
+        def("lib_frequency", "Frequency", frequency, frequency != null ? frequency.toFixed(2) : "–", multiEventSub ?? "impressions ÷ reach"),
       ]
     : [];
 
@@ -424,25 +424,25 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[], scopeInfo:
     def("lib_cells",           "Creative cells",      uniqueCells,   fmtNum(uniqueCells)),
     def("lib_spend",           "Spend (selected)",    spend,         fmtUSD(spend, 0)),
     def("lib_results",         resultsLabel,          results,       fmtNum(results), communication ? "awareness event · communication scale" : undefined),
-    ...(communication ? [] : [def("lib_cpa", "Avg CPA", cpa, cpa != null ? fmtUSD(cpa) : "—", "spend ÷ results across the scope")]),
+    ...(communication ? [] : [def("lib_cpa", "Avg CPA", cpa, cpa != null ? fmtUSD(cpa) : "–", "spend ÷ results across the scope")]),
     ...communicationTiles,
     def("lib_impressions",     "Impressions",         impressions,   fmtNum(impressions),                  multiEventSub),
     def("lib_reach",           "Reach",               reach,         fmtNum(reach),                        multiEventSub),
     def("lib_link_clicks",     "Link clicks",         linkClicks,    fmtNum(linkClicks),                   multiEventSub),
     def("lib_clicks_all",      "Clicks (all)",        clicksAll,     fmtNum(clicksAll),                    multiEventSub),
-    def("lib_link_ctr",        "Link CTR",            ctr,           ctr != null ? fmtPct(ctr) : "—",     multiEventSub ?? "link clicks ÷ impressions"),
+    def("lib_link_ctr",        "Link CTR",            ctr,           ctr != null ? fmtPct(ctr) : "–",     multiEventSub ?? "link clicks ÷ impressions"),
     // ── Lower-funnel tiles ───────────────────────────────────────────
-    def("lib_cvr",             "CVR",                 cvr,           cvr != null ? fmtPct(cvr) : "—",     "results ÷ link clicks"),
+    def("lib_cvr",             "CVR",                 cvr,           cvr != null ? fmtPct(cvr) : "–",     "results ÷ link clicks"),
     ...(carriesAtc
       ? [
-          def("lib_atc_rate",     "ATC rate",   atcRate,    atcRate != null ? fmtPct(atcRate) : "—",       hasAtcData ? "adds-to-cart ÷ link clicks" : coverageSub(atc, "adds-to-cart")),
-          def("lib_cost_per_atc", "Cost / ATC", costPerAtc, costPerAtc != null ? fmtUSD(costPerAtc) : "—", hasAtcData ? "spend ÷ adds-to-cart" : coverageSub(atc, "adds-to-cart")),
+          def("lib_atc_rate",     "ATC rate",   atcRate,    atcRate != null ? fmtPct(atcRate) : "–",       hasAtcData ? "adds-to-cart ÷ link clicks" : coverageSub(atc, "adds-to-cart")),
+          def("lib_cost_per_atc", "Cost / ATC", costPerAtc, costPerAtc != null ? fmtUSD(costPerAtc) : "–", hasAtcData ? "spend ÷ adds-to-cart" : coverageSub(atc, "adds-to-cart")),
         ]
       : []),
     ...(carriesCheckout
       ? [
-          def("lib_checkout_rate",     "Checkout rate",   checkoutRate,    checkoutRate != null ? fmtPct(checkoutRate) : "—",       hasChkData ? "checkouts ÷ link clicks" : coverageSub(chk, "checkouts initiated")),
-          def("lib_cost_per_checkout", "Cost / Checkout", costPerCheckout, costPerCheckout != null ? fmtUSD(costPerCheckout) : "—", hasChkData ? "spend ÷ checkouts initiated" : coverageSub(chk, "checkouts initiated")),
+          def("lib_checkout_rate",     "Checkout rate",   checkoutRate,    checkoutRate != null ? fmtPct(checkoutRate) : "–",       hasChkData ? "checkouts ÷ link clicks" : coverageSub(chk, "checkouts initiated")),
+          def("lib_cost_per_checkout", "Cost / Checkout", costPerCheckout, costPerCheckout != null ? fmtUSD(costPerCheckout) : "–", hasChkData ? "spend ÷ checkouts initiated" : coverageSub(chk, "checkouts initiated")),
         ]
       : []),
   ];

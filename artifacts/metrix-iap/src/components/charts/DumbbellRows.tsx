@@ -179,7 +179,7 @@ export function DumbbellRows({
                   className={cn(TYPE.label, "tabular-nums w-12 text-right font-medium")}
                   style={{ color: stroke }}
                 >
-                  {measured ? `${gap > 0 ? "+" : ""}${gap}pts` : "—"}
+                  {measured ? `${gap > 0 ? "+" : ""}${gap}pts` : "–"}
                 </span>
               </div>
             </div>

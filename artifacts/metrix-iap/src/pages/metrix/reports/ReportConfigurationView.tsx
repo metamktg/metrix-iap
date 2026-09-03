@@ -208,7 +208,7 @@ export function ReportConfigurationView() {
               </>
             )}
 
-            <CaveatNote text="Scheduled sends are configuration only in this build — no delivery pipeline is connected yet, so nothing is emailed. Settings persist and will drive delivery once sending ships." />
+            <CaveatNote text="Scheduled sends are configuration only in this build. No delivery pipeline is connected yet, so nothing is emailed. Settings persist and will drive delivery once sending ships." />
           </div>
         </SectionCard>
 

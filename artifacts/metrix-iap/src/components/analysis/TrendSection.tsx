@@ -106,7 +106,7 @@ export function TrendSection({ accountId, start, end }: TrendSectionProps) {
                   onClick={() => toggle(m.key)}
                   aria-pressed={on}
                   className={`h-10 px-3 rounded-lg text-caption active:scale-[0.96]
-                              transition-[background-color,color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                              transition-[background-color,color,scale] duration-150 ease-[var(--mx-ease)]
                               ${on
                                 ? "bg-primary/18 text-foreground"
                                 : "bg-input/30 text-muted-foreground hover:text-foreground"}`}

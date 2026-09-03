@@ -53,7 +53,7 @@ const CHILDREN = [
   { to: "/app/mst/cross-map", label: "Cross-Map", Icon: Network, desc: "Concepts mapped to strategy pillars, and planned cells crossmapped to observed performance.", lineage: "mst.local_book2_library[] · performance_by_cell[]" },
   { to: "/app/mst/sprints", label: "Sprints", Icon: Grid3x3, desc: "The 4×4 test matrix for this account.", lineage: "mst.historical_matrix_4x4 · concept_rollup[]" },
   { to: "/app/mst/creative-scan", label: "Sprint Asset Check", Icon: Library, desc: "Scanned local creative library: message system, variable stack, and mapping confidence per concept.", lineage: "mst.local_book2_library[]" },
-  { to: "/app/mst/direction", label: "Direction", Icon: Compass, desc: "The Optimization Loop — next-sprint priorities.", lineage: "optimization_loop" },
+  { to: "/app/mst/direction", label: "Direction", Icon: Compass, desc: "The Optimization Loop · next-sprint priorities.", lineage: "optimization_loop" },
 ];
 
 // ─── Sort ──────────────────────────────────────────────────────────────
@@ -246,9 +246,9 @@ function AvatarTile({
             cols={4}
             cells={[
               { label: "Spend", value: fmtUSD(perf.spend, 0), valueClassName: sortBy === "spend" ? activeCls : undefined },
-              { label: "CPA", value: perf.cpa != null ? fmtUSD(perf.cpa) : "—", valueClassName: sortBy === "cpa" ? activeCls : undefined },
-              { label: "Link CVR", value: perf.cvr != null ? fmtPct(perf.cvr) : "—", valueClassName: sortBy === "cvr" ? activeCls : undefined },
-              { label: "CPM", value: perf.cpm != null ? fmtUSD(perf.cpm) : "—", valueClassName: sortBy === "cpm" ? activeCls : undefined },
+              { label: "CPA", value: perf.cpa != null ? fmtUSD(perf.cpa) : "–", valueClassName: sortBy === "cpa" ? activeCls : undefined },
+              { label: "Link CVR", value: perf.cvr != null ? fmtPct(perf.cvr) : "–", valueClassName: sortBy === "cvr" ? activeCls : undefined },
+              { label: "CPM", value: perf.cpm != null ? fmtUSD(perf.cpm) : "–", valueClassName: sortBy === "cpm" ? activeCls : undefined },
             ]}
           />
         </div>
@@ -384,12 +384,12 @@ function DrawerAdList({
                       <TooltipTrigger asChild>
                         <span className="text-label border border-border/30 px-1 py-0.5 rounded text-muted-foreground/75 cursor-default">
                           {ad.cell}
-                          <span className="sr-only">{` — matrix cell${ad.concept ? ` for ${ad.concept}` : ""}`}</span>
+                          <span className="sr-only">{`, matrix cell${ad.concept ? ` for ${ad.concept}` : ""}`}</span>
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[240px]">
                         <p className="text-caption leading-relaxed">
-                          Matrix cell <span className="">{ad.cell}</span>{ad.concept ? ` — ${ad.concept}` : ""}
+                          Matrix cell <span className="">{ad.cell}</span>{ad.concept ? ` · ${ad.concept}` : ""}
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -592,7 +592,7 @@ export function MstCommandCenter() {
               <PrerequisiteGate
                 met={status.mst.unlocked}
                 title="Generate briefs first"
-                message="MST reads matrix cells briefed for this account — this account doesn't have any generated briefs yet."
+                message="MST reads matrix cells briefed for this account. This account doesn't have any generated briefs yet."
                 ctaLabel="Go to Creative"
                 ctaTo={withFrom("/app/creative", fp)}
               >
@@ -603,7 +603,7 @@ export function MstCommandCenter() {
                         <div className="grid grid-cols-dashboard-4 gap-3">
                           <MetricTile label="Avatars" value={String(matrix.columns.length)} variant="primary" />
                           <MetricTile label="Message angles" value={String(matrix.cells.length)} sub="matrix cells" />
-                          <MetricTile label="Top spend share" value={maxSpend > 0 ? fmtUSD(maxSpend, 0) : "—"} sub="leading avatar" />
+                          <MetricTile label="Top spend share" value={maxSpend > 0 ? fmtUSD(maxSpend, 0) : "–"} sub="leading avatar" />
                           <MetricTile label="ICP profiles" value={String(icpProfiles.length)} sub="strategy map" />
                         </div>
 
@@ -695,12 +695,12 @@ export function MstCommandCenter() {
                   const dna = dnaByColumn.get(detail.column.id);
                   if (!dna) return null;
                   return (
-                    <DrawerField label="Variable resonance — ranked by results">
+                    <DrawerField label="Variable resonance · ranked by results">
                       {dna.variables.length > 0 ? (
                         <>
                           <p className="text-label text-muted-foreground/75 leading-relaxed mb-1.5">
                             Aggregated from {dna.measuredCellIds.length} measured angle{dna.measuredCellIds.length === 1 ? "" : "s"} ({dna.measuredCellIds.join(", ")})
-                            {dna.extensionCellIds.length > 0 ? ` — ${dna.extensionCellIds.length} beyond the planned grid` : ""}.
+                            {dna.extensionCellIds.length > 0 ? ` · ${dna.extensionCellIds.length} beyond the planned grid` : ""}.
                             Planned angles without data are excluded. Variables share angles; rows overlap and are not additive.
                           </p>
                           <div data-testid={`drawer-dna-${detail.column.id}`}>
@@ -711,7 +711,7 @@ export function MstCommandCenter() {
                         </>
                       ) : (
                         <p className="text-caption text-muted-foreground/75">
-                          No measured variable resonance yet — none of this avatar's angles have performance data.
+                          No measured variable resonance yet. None of this avatar's angles have performance data.
                         </p>
                       )}
                     </DrawerField>

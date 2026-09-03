@@ -50,7 +50,7 @@ describe("spansMultipleRuns", () => {
   it("is true for two", () => {
     expect(spansMultipleRuns([row("r1", 1), row("r2", 1)])).toBe(true);
   });
-  it("is false for untagged-only rows — nothing to disambiguate", () => {
+  it("is false for untagged-only rows. Nothing to disambiguate", () => {
     expect(spansMultipleRuns([row(null, 1), row(null, 1)])).toBe(false);
   });
 });

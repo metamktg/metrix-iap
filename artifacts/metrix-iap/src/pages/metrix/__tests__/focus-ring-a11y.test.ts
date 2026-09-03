@@ -75,7 +75,7 @@ const ringOnCardLum = relativeLuminance(...ringOnCard);
 
 // ─── Token parsing sanity ────────────────────────────────────────────────────
 
-describe("Global :focus-visible ring — design token parsing", () => {
+describe("Global :focus-visible ring · design token parsing", () => {
   it("--primary is parseable from the stylesheet", () => {
     const [h, s, l] = parseCssHslToken(extractCssVar(cssSource, "--primary"));
     expect(h).toBeGreaterThanOrEqual(0);
@@ -195,7 +195,7 @@ const loopChainSource = readFileSync(loopChainPath, "utf-8");
 function parseStageTileRingAlpha(source: string): number {
   if (!source.includes("focus-visible:ring-primary")) {
     throw new Error(
-      'Could not find "focus-visible:ring-primary" in LoopCommandChain.tsx — ' +
+      'Could not find "focus-visible:ring-primary" in LoopCommandChain.tsx, ' +
       "the StageTile focus-ring class may have been removed or renamed.",
     );
   }
@@ -213,7 +213,7 @@ const STAGE_TILE_RING_ALPHA = parseStageTileRingAlpha(loopChainSource);
 const stageTileRingRgb = alphaComposite(primaryRgb, bgRgb, STAGE_TILE_RING_ALPHA);
 const stageTileRingLum = relativeLuminance(...stageTileRingRgb);
 
-describe("StageTile focus ring contrast — LoopCommandChain (WCAG 2.1 SC 1.4.11)", () => {
+describe("StageTile focus ring contrast, LoopCommandChain (WCAG 2.1 SC 1.4.11)", () => {
   it("focus-visible:ring-primary class is present in StageTile", () => {
     expect(loopChainSource).toContain("focus-visible:ring-primary");
   });
@@ -259,7 +259,7 @@ const accountSwitcherOpacities = parseFocusRingOpacities(
   "AccountSwitcher.tsx",
 );
 
-describe("AccountSwitcher focus ring contrast — sidebar buttons (WCAG 2.1 SC 1.4.11)", () => {
+describe("AccountSwitcher focus ring contrast, sidebar buttons (WCAG 2.1 SC 1.4.11)", () => {
   it("focus-visible:ring-primary class is present in AccountSwitcher", () => {
     expect(accountSwitcherSource).toContain("focus-visible:ring-primary");
   });
@@ -297,7 +297,7 @@ const inlinePickerOpacities = parseFocusRingOpacities(
   "InlineAccountPicker.tsx",
 );
 
-describe("InlineAccountPicker focus ring contrast — account picker button (WCAG 2.1 SC 1.4.11)", () => {
+describe("InlineAccountPicker focus ring contrast, account picker button (WCAG 2.1 SC 1.4.11)", () => {
   it("focus-visible:ring-primary class is present in InlineAccountPicker", () => {
     expect(inlinePickerSource).toContain("focus-visible:ring-primary");
   });
@@ -333,7 +333,7 @@ const creativeCardOpacities = parseFocusRingOpacities(
   "CreativeCard.tsx",
 );
 
-describe("CreativeCard focus ring contrast — creative grid tile (WCAG 2.1 SC 1.4.11)", () => {
+describe("CreativeCard focus ring contrast, creative grid tile (WCAG 2.1 SC 1.4.11)", () => {
   it("focus-visible:ring-primary class is present in CreativeCard", () => {
     expect(creativeCardSource).toContain("focus-visible:ring-primary");
   });
@@ -371,7 +371,7 @@ const creativeExpandOpacities = parseFocusRingOpacities(
   "CreativeExpandDialog.tsx",
 );
 
-describe("CreativeExpandDialog focus ring contrast — age-band buttons (WCAG 2.1 SC 1.4.11)", () => {
+describe("CreativeExpandDialog focus ring contrast, age-band buttons (WCAG 2.1 SC 1.4.11)", () => {
   it("focus-visible:ring-primary class is present in CreativeExpandDialog", () => {
     expect(creativeExpandSource).toContain("focus-visible:ring-primary");
   });

@@ -156,7 +156,7 @@ beforeEach(() => {
 
 // ── Running strip — server progress label ─────────────────────────────────
 
-describe("LoopCommandChain running strip — real server stage label", () => {
+describe("LoopCommandChain running strip · real server stage label", () => {
   it("shows the server-provided stage string when strategy progress_pct > 0", () => {
     mockRunState.kind          = "strategy";
     mockRunState.isRunning     = true;
@@ -199,7 +199,7 @@ describe("LoopCommandChain running strip — real server stage label", () => {
 
 // ── Running strip — fallback label when pct = 0 ───────────────────────────
 
-describe("LoopCommandChain running strip — PHASE_LABELS fallback when progress_pct = 0", () => {
+describe("LoopCommandChain running strip · PHASE_LABELS fallback when progress_pct = 0", () => {
   it("shows the PHASE_LABELS[strategy][0] fallback when progress_pct is 0", () => {
     mockRunState.kind          = "strategy";
     mockRunState.isRunning     = true;
@@ -244,7 +244,7 @@ describe("LoopCommandChain running strip — PHASE_LABELS fallback when progress
 
 // ── Polling cycle: label updates when progress_pct transitions 0 → 60 ────
 
-describe("LoopCommandChain running strip — polling transition 0 → 60", () => {
+describe("LoopCommandChain running strip · polling transition 0 → 60", () => {
   it("label updates from fallback to server stage when progress_pct transitions 0 → 60", () => {
     // Phase 1: run just started, no server progress yet
     mockRunState.kind          = "strategy";
@@ -279,7 +279,7 @@ describe("LoopCommandChain running strip — polling transition 0 → 60", () =>
 
 // ── CommandHub Actions panel — server stage label ─────────────────────────
 
-describe("CommandHub Actions — server stage label while strategy is running", () => {
+describe("CommandHub Actions · server stage label while strategy is running", () => {
   it("shows server stage string in the Actions progress panel when progress_pct > 0", () => {
     mockRunState.kind          = "strategy";
     mockRunState.isRunning     = true;
@@ -339,7 +339,7 @@ function openBriefsHub(): HTMLElement {
   return overlay!;
 }
 
-describe("Briefs CommandHub — briefs progressStage threading (hub-scoped)", () => {
+describe("Briefs CommandHub · briefs progressStage threading (hub-scoped)", () => {
   it("shows the server briefs progress_stage inside the hub bar when set", () => {
     mockRunState.kind          = "briefs";
     mockRunState.isRunning     = true;

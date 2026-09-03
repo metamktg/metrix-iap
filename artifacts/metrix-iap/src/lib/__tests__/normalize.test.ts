@@ -37,6 +37,7 @@ import {
   normalizeMetricsInProse,
   isUsableName,
   usableName,
+  humanizeDiagnosis,
 } from "../normalize";
 
 // ─── 1. Export-set equality ───────────────────────────────────────────
@@ -59,7 +60,26 @@ const RUNTIME_EXPORTS: Array<keyof typeof normalize> = [
   "fmtDay",
   "fmtDayRange",
   "normalizeConfidence",
+  "humanizeDiagnosis",
 ];
+
+describe("humanizeDiagnosis", () => {
+  it("leads with the explanation and keeps the code as its parenthetical", () => {
+    expect(humanizeDiagnosis("validation_required - confirm MMP/pixel before concluding creative failure"))
+      .toBe("Confirm MMP/pixel before concluding creative failure (validation required)");
+    expect(humanizeDiagnosis("traffic_quality - reach without qualified action"))
+      .toBe("Reach without qualified action (traffic quality)");
+  });
+  it("spells out a bare code", () => {
+    expect(humanizeDiagnosis("traffic_quality_or_message_mismatch")).toBe("Traffic quality or message mismatch");
+    expect(humanizeDiagnosis("cpm_device_divergence")).toBe("Cpm device divergence");
+  });
+  it("passes prose through untouched and empties to an empty string", () => {
+    expect(humanizeDiagnosis("The account recorded spend and no results.")).toBe("The account recorded spend and no results.");
+    expect(humanizeDiagnosis("")).toBe("");
+    expect(humanizeDiagnosis(null)).toBe("");
+  });
+});
 
 describe("normalize.ts exports — set equality", () => {
   it("exports the expected set of runtime names (no missing, no extras)", () => {
@@ -234,8 +254,8 @@ describe("fmtMetric", () => {
   });
 
   it("null → em dash", () => {
-    expect(fmtMetric("usd_unit", null)).toBe("—");
-    expect(fmtMetric("pct", undefined)).toBe("—");
+    expect(fmtMetric("usd_unit", null)).toBe("–");
+    expect(fmtMetric("pct", undefined)).toBe("–");
   });
 });
 
@@ -283,7 +303,7 @@ describe("normalizeConfidence", () => {
 
   it("handles empty", () => {
     expect(normalizeConfidence("").level).toBe("unknown");
-    expect(normalizeConfidence(null).label).toBe("—");
+    expect(normalizeConfidence(null).label).toBe("–");
   });
 });
 

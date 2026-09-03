@@ -147,7 +147,7 @@ function RegistrySection({ registry, unbacked }: { registry: RegistryFamily[]; u
     >
       {unbacked > 0 && (
         <CaveatNote
-          text={`${unbacked} of ${registry.length} variable families have no registry definition behind them. Codes from those families still appear on creative and strategy surfaces — they are named in the source material, but nothing in the client library defines what they mean.`}
+          text={`${unbacked} of ${registry.length} variable families have no registry definition behind them. Codes from those families still appear on creative and strategy surfaces. They are named in the source material, but nothing in the client library defines what they mean.`}
         />
       )}
       <ul className="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-2">
@@ -209,10 +209,10 @@ function StageTable({ stages }: { stages: AccountProvenance["stages"] }) {
                 )}
               </td>
               <td className={cn(TYPE.caption, "py-2 pr-3 text-foreground/70 whitespace-nowrap tabular-nums")}>
-                {s.window ?? "—"}
+                {s.window ?? "–"}
               </td>
               <td className={cn(TYPE.caption, "py-2 text-foreground/70 whitespace-nowrap tabular-nums")}>
-                {s.generatedAt ? s.generatedAt.slice(0, 10) : "—"}
+                {s.generatedAt ? s.generatedAt.slice(0, 10) : "–"}
               </td>
             </tr>
           ))}

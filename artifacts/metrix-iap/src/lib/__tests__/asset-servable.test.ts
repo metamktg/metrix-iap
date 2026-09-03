@@ -43,7 +43,7 @@ describe("primaryAdForCell prefers an asset that exists", () => {
     expect(picked?.ad_name).toBe("withid");
   });
 
-  it("returns the unservable row when it is the only one — it is still the cell's identity", () => {
+  it("returns the unservable row when it is the only one. It is still the cell's identity", () => {
     // Dropping it entirely would lose the ad name and the Ads Manager link.
     const picked = primaryAdForCell(
       [ad({ ad_name: "ghost", creative_asset_url: "/a.jpg", meta_ad_id: "1", asset_servable: false })],

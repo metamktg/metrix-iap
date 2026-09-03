@@ -142,7 +142,7 @@ function GeneLociCard({
   return (
     <SectionCard
       title="Gene loci"
-      desc="Isolated effect of each measured variable, ranked by spend — each locus is a variable the platform can brief against."
+      desc="Isolated effect of each measured variable, ranked by spend. Each locus is a variable the platform can brief against."
       table="analysis.v3_variable_performance"
       right={
         <SectionInfoIcon tip="Lift is each variable's result rate (results ÷ link clicks) against the account's spend-weighted average across every measured variable. Click a row for the full drill-down." />
@@ -261,7 +261,7 @@ export function AnalysisDnaView() {
                   title="No creative DNA signal"
                   message={
                     runRows.length > 0
-                      ? `${runRows.length} variable row${runRows.length === 1 ? "" : "s"} exist under other result events — switch the result scope above to read them.`
+                      ? `${runRows.length} variable row${runRows.length === 1 ? "" : "s"} exist under other result events. Switch the result scope above to read them.`
                       : "Gene loci and formula sequences appear once variable-level performance or tested combinations exist for this account."
                   }
                   icon={Dna}
@@ -277,7 +277,7 @@ export function AnalysisDnaView() {
                 section={SECTION}
                 title="Creative DNA"
                 accountName={account!.name}
-                subtitle="Per-variable lift and tested combinations — the account's isolated creative signal."
+                subtitle="Per-variable lift and tested combinations. The account's isolated creative signal."
                 tabs="analysis"
               />
               <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
@@ -299,7 +299,7 @@ export function AnalysisDnaView() {
                 {combinations.length > 0 && (
                   <SectionCard
                     title="Formula sequences"
-                    desc="Each sequence is a stack of variables as it would brief, read left to right — the account's real tested combinations."
+                    desc="Each sequence is a stack of variables as it would brief, read left to right. The account's real tested combinations."
                     table="strategy.variable_combinations"
                     right={<CrossLink to="/app/strategy/map" label="Open in Strategy Map" />}
                   >
@@ -312,9 +312,9 @@ export function AnalysisDnaView() {
                     fabricating a formula sentence or stat tiles. */}
                 <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border/25 bg-foreground/[0.015] px-3.5 py-2.5">
                   <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
-                    <span className="font-semibold text-muted-foreground/85">Golden formula — </span>
+                    <span className="font-semibold text-muted-foreground/85">Golden formula · </span>
                     {optimizationLoop?.note ??
-                      "Not yet computed for this account — requires the Optimization Loop stage to run."}
+                      "Not yet computed for this account. Requires the Optimization Loop stage to run."}
                   </p>
                   <CrossLink to="/app/mst/direction" label="Open MST · Direction" />
                 </div>

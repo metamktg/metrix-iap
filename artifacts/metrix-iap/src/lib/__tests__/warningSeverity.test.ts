@@ -7,10 +7,10 @@ import { splitWarningsBySeverity, isInformationalWarning, hasReducedConfidence }
 describe("splitWarningsBySeverity", () => {
   it("classifies current-format lines", () => {
     const { attention, notices } = splitWarningsBySeverity([
-      '12 column(s) arrived under known alternate or spreadsheet-altered names and were matched automatically (e.g. "CPM _x_" → "CPM (x)") — no action needed; the full mapping is in the column report below.',
+      '12 column(s) arrived under known alternate or spreadsheet-altered names and were matched automatically (e.g. "CPM _x_" → "CPM (x)"). No action needed; the full mapping is in the column report below.',
       "Note: optional breakdown columns not present in this export (treated as blank): Campaign ID.",
       '⚠ "Ad ID" could not be read reliably from this file: 500 of 500 row(s) stored it in scientific notation…',
-      'Column "Ad set ID" mapped from "Ad set data" with moderate confidence (50%) — please verify this is correct.',
+      'Column "Ad set ID" mapped from "Ad set data" with moderate confidence (50%). Please verify this is correct.',
       "[Coverage] Demographic rows carry $802.16 of spend (2.9% of the $28,129.5 daily-attributable total)…",
       "[Re-run] Replaced 3195 previously ingested row(s)…",
     ]);
@@ -28,9 +28,9 @@ describe("splitWarningsBySeverity", () => {
 
   it("keeps every decision-bearing line as attention", () => {
     for (const w of [
-      '[Demographics "f.csv"] Metric column "Amount spent ({ACCOUNT_CURRENCY})" mapped from "Amount spent _USD_" with moderate confidence (67%) — please verify this is correct.',
-      '[Demographics "f.csv"] The "Day" column used M/D/YYYY dates (typically a spreadsheet round-trip artifact) — 500 row(s) were normalized to YYYY-MM-DD.',
-      '[Placements "f.xlsx"] Column "Ad ID" appears more than once in the header row — only the first occurrence is used.',
+      '[Demographics "f.csv"] Metric column "Amount spent ({ACCOUNT_CURRENCY})" mapped from "Amount spent _USD_" with moderate confidence (67%). Please verify this is correct.',
+      '[Demographics "f.csv"] The "Day" column used M/D/YYYY dates (typically a spreadsheet round-trip artifact). 500 row(s) were normalized to YYYY-MM-DD.',
+      '[Placements "f.xlsx"] Column "Ad ID" appears more than once in the header row. Only the first occurrence is used.',
       "[Result type] 2377 ad/day row(s) had no result type in any export…",
       "[Duplicate data] 500 row(s) in Demographics \"f.csv\" are exact duplicates…",
       "Reconciliation check failed: Demographics rows carry $200 of spend…",
@@ -66,8 +66,8 @@ describe("currency-suffix resolution is a notice, not an attention line", () => 
     // cannot corrupt spend or results, so it is context, not a decision.
     // The required/core form (no prefix) stays attention, asserted below.
     const { attention, notices } = splitWarningsBySeverity([
-      'Note: Metric column "Post saves" mapped from "Post saves count" with moderate confidence (67%) — optional column, verify if you rely on it.',
-      'Metric column "Link clicks" mapped from "Link clicks count" with moderate confidence (67%) — please verify this is correct.',
+      'Note: Metric column "Post saves" mapped from "Post saves count" with moderate confidence (67%). Optional column, verify if you rely on it.',
+      'Metric column "Link clicks" mapped from "Link clicks count" with moderate confidence (67%). Please verify this is correct.',
     ]);
     expect(notices).toHaveLength(1);
     expect(notices[0]).toContain("Post saves");
@@ -78,11 +78,11 @@ describe("currency-suffix resolution is a notice, not an attention line", () => 
   it("still treats moderate-confidence inference as attention", () => {
     const { attention, notices } = splitWarningsBySeverity([
       'Metric column "CPM" auto-matched from "CPM x" (via currency match).',
-      'Metric column "CPM" mapped from "Cost per mille" with moderate confidence (67%) — please verify this is correct.',
+      'Metric column "CPM" mapped from "Cost per mille" with moderate confidence (67%). Please verify this is correct.',
     ]);
     expect(notices).toHaveLength(1);
     expect(attention).toHaveLength(1);
-    expect(attention[0]).toContain("please verify");
+    expect(attention[0]).toContain("Please verify");
   });
 });
 
@@ -98,7 +98,7 @@ describe("currency-suffix resolution is a notice, not an attention line", () => 
 describe("hasReducedConfidence", () => {
   // Verbatim from iapCsvParser's core-metric branch.
   const PRODUCER_LINE =
-    "⚠ Reduced confidence: core metric columns are missing and will be null — " +
+    "⚠ Reduced confidence: core metric columns are missing and will be null, " +
     "Impressions, Reach. Key analysis metrics (efficiency scores, CTR, CPM calculations) will be incomplete.";
 
   it("recognises the message the parser actually emits", () => {
@@ -106,12 +106,12 @@ describe("hasReducedConfidence", () => {
   });
 
   it("still recognises it if the headline half is reworded", () => {
-    expect(hasReducedConfidence(["Note: core metric columns are missing and will be null — Reach."])).toBe(true);
+    expect(hasReducedConfidence(["Note: core metric columns are missing and will be null, Reach."])).toBe(true);
   });
 
   it("does not fire on routine mapping notices", () => {
     expect(hasReducedConfidence([
-      "Note: \"Date\" matched automatically to \"Day\" (via alias match) — no action needed.",
+      "Note: \"Date\" matched automatically to \"Day\" (via alias match) · no action needed.",
       "Note: supplementary metric columns not found (will be null): Frequency.",
     ])).toBe(false);
   });

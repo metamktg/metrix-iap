@@ -142,7 +142,7 @@ export function ExpandableMediaCard({
             // The 1.04 hover lift lives on an inner element so it composes
             // with the layout transform instead of overwriting it.
           >
-            <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04]">
+            <div className="absolute inset-0 transition-transform duration-200 group-hover:scale-[1.04]">
               {media}
             </div>
           </motion.div>

@@ -141,7 +141,7 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
         <SetupChecklist step={step} visited={visited} onJump={setStep} />
 
         {step === "welcome" && (
-          <div className="max-w-md mx-auto text-center space-y-5">
+          <div className="mx-step-enter max-w-md mx-auto text-center space-y-5">
             <IconTile icon={Compass} />
             <div className="space-y-1.5">
               <h2 className={HEADING.h2}>Welcome to {managerName}</h2>
@@ -153,7 +153,7 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
               <div className="flex items-start gap-2.5">
                 <LayoutGrid className="w-4 h-4 text-interactive shrink-0 mt-0.5" />
                 <p className={cn(TYPE.caption, "text-foreground/80")}>
-                  <span className="font-medium text-foreground">Manager Suite</span> — the page
+                  <span className="font-medium text-foreground">Manager Suite</span>. The page
                   you're on now. It rolls up blended performance across every ad account you
                   connect. Nothing here is editable directly; it's a read-only summary.
                 </p>
@@ -161,7 +161,7 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
               <div className="flex items-start gap-2.5">
                 <Boxes className="w-4 h-4 text-interactive shrink-0 mt-0.5" />
                 <p className={cn(TYPE.caption, "text-foreground/80")}>
-                  <span className="font-medium text-foreground">Ad accounts</span> — each one
+                  <span className="font-medium text-foreground">Ad accounts</span>. Each one
                   holds its own creatives, imported data, and the full IAP Loop (Analysis →
                   Strategy → Briefs → MST → Optimization). This is where the real work happens.
                 </p>
@@ -170,7 +170,7 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
                 <Plug className="w-4 h-4 text-interactive shrink-0 mt-0.5" />
                 <p className={cn(TYPE.caption, "text-foreground/80")}>
                   You'll link <span className="font-medium text-foreground">one ad account</span>{" "}
-                  to get started — via manual CSV upload today, live Meta connection when it
+                  to get started · via manual CSV upload today, live Meta connection when it
                   ships. You can add more from here anytime.
                 </p>
               </div>
@@ -185,13 +185,13 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
         )}
 
         {step === "prepare" && (
-          <div className="space-y-5">
+          <div className="mx-step-enter space-y-5">
             <div className="text-center space-y-1.5">
               <IconTile icon={FileSpreadsheet} />
               <h2 className={HEADING.h2}>What you'll need from Meta</h2>
               <p className={cn(TYPE.body, "text-muted-foreground/80 max-w-lg mx-auto")}>
                 Uploading manual reports needs two exports pulled from Meta Ads Manager first.
-                Live Meta connection (once available) will need nothing prepared — you'll
+                Live Meta connection (once available) will need nothing prepared, you'll
                 authorize read-only access instead.
               </p>
             </div>
@@ -233,7 +233,7 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
               <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
               <p className={cn(TYPE.caption, "text-status-warning/90")}>
                 Meta's demographic/placement exports undercount spend due to iOS privacy limits.
-                The Ad Summary CSV above is optional but recommended — it carries full, accurate
+                The Ad Summary CSV above is optional but recommended. It carries full, accurate
                 spend totals.
               </p>
             </div>
@@ -241,8 +241,8 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
             <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-3 flex items-start gap-2.5">
               <Images className="w-3.5 h-3.5 text-interactive shrink-0 mt-0.5" />
               <p className={cn(TYPE.caption, "text-foreground/75")}>
-                You'll also upload your creative files (images/videos) individually — no ZIP
-                files — and map each one to its ad name. That happens right after the CSVs, in
+                You'll also upload your creative files (images/videos) individually. No ZIP
+                files. And map each one to its ad name. That happens right after the CSVs, in
                 the account's setup screen.
               </p>
             </div>
@@ -259,7 +259,7 @@ export function OnboardingWizard({ managerName }: { managerName: string }) {
         )}
 
         {step === "link" && (
-          <div className="max-w-md mx-auto text-center space-y-5">
+          <div className="mx-step-enter max-w-md mx-auto text-center space-y-5">
             <IconTile icon={Plug} />
             <div className="space-y-1.5">
               <h2 className={HEADING.h2}>Link your first ad account</h2>

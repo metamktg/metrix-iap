@@ -199,7 +199,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                                     : "text-muted-foreground/75",
                             )}
                           >
-                            {bucket ? BUCKET_LABEL[bucket] : "—"}
+                            {bucket ? BUCKET_LABEL[bucket] : "–"}
                           </span>
                           <span className={cn(TYPE.label, "font-medium", isScale ? "text-interactive" : "text-muted-foreground/75")}>
                             {perf?.confidence ?? ""}
@@ -207,7 +207,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick, activeTier = 
                         </div>
                       </>
                     ) : (
-                      <div className="text-caption text-muted-foreground/75">—</div>
+                      <div className="text-caption text-muted-foreground/75">–</div>
                     )}
                   </div>
                 );
@@ -235,7 +235,7 @@ function TopConceptsTable({ rollup, book }: { rollup: ConceptRollupRow[]; book: 
       title="Top performing concepts"
       desc={`${book} · ranked by cost per result`}
       table="concept_rollup"
-      right={<SectionInfoIcon tip="The matrix book's measured concepts ranked cheapest-first, with each concept's link-CVR lift against the book's average. Only source-backed rollup rows appear — no per-cell performance is invented." />}
+      right={<SectionInfoIcon tip="The matrix book's measured concepts ranked cheapest-first, with each concept's link-CVR lift against the book's average. Only source-backed rollup rows appear. No per-cell performance is invented." />}
     >
       <div className="overflow-x-auto">
         <table className="nc-table" data-testid="mst-top-concepts">
@@ -257,9 +257,9 @@ function TopConceptsTable({ rollup, book }: { rollup: ConceptRollupRow[]; book: 
                   <td className="font-medium text-foreground/90">{r.book} · {r.concept}</td>
                   <td className="text-right tabular-nums text-foreground/85">{fmtUSD(r.cpa!)}</td>
                   <td className={cn("text-right tabular-nums", lift == null ? "text-muted-foreground/75" : lift >= 0 ? "text-status-success" : "text-status-danger")}>
-                    {lift == null ? "—" : `${lift >= 0 ? "+" : ""}${fmtPct(lift)}`}
+                    {lift == null ? "–" : `${lift >= 0 ? "+" : ""}${fmtPct(lift)}`}
                   </td>
-                  <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : <span className={cn(TYPE.label, "text-muted-foreground/75")}>—</span>}</td>
+                  <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : <span className={cn(TYPE.label, "text-muted-foreground/75")}>–</span>}</td>
                 </tr>
               );
             })}
@@ -337,7 +337,7 @@ export function MstSprintsView() {
                     Active
                   </span>
                   <span className={cn(TYPE.body, "text-foreground/80")}>
-                    Historical matrix{book ? ` — ${book}` : ""}
+                    Historical matrix{book ? ` · ${book}` : ""}
                   </span>
                 </div>
                 <div className="flex gap-6">
@@ -374,7 +374,7 @@ export function MstSprintsView() {
                   />
                   {tierFilter !== "all" && (
                     <span className="text-caption text-muted-foreground/75">
-                      Other columns dim — click a cell for its detail regardless of tier
+                      Other columns dim · click a cell for its detail regardless of tier
                     </span>
                   )}
                 </div>

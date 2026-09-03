@@ -48,14 +48,14 @@ const varRow = (runId: string | null, over: Partial<VariablePerformanceRow> = {}
 const RANGE = { start: "2026-06-01", end: "2026-06-30" };
 const dates = (r: ConceptRollupRow) => ({ start: r.date_start, end: r.date_end });
 
-describe("concept_rollup — scoping to the latest run", () => {
+describe("concept_rollup · scoping to the latest run", () => {
   it("reports the account's real spend when three runs have measured the same month", () => {
     // The account spent $1,000 in June. Runs 1, 2 and 3 each measured it.
     const rows = [conceptRow("r1"), conceptRow("r2"), conceptRow("r3")];
     expect(sumInRange(scopeToRun(rows, "r3"), RANGE, dates, (r) => r.spend)).toBe(1000);
   });
 
-  it("still sums unscoped rows — the summing function is not the thing that was wrong", () => {
+  it("still sums unscoped rows · the summing function is not the thing that was wrong", () => {
     const rows = [conceptRow("r1"), conceptRow("r2"), conceptRow("r3")];
     expect(sumInRange(rows, RANGE, dates, (r) => r.spend)).toBe(3000);
   });
@@ -74,7 +74,7 @@ describe("concept_rollup — scoping to the latest run", () => {
   });
 });
 
-describe("v3_variable_performance — scoping to the latest run", () => {
+describe("v3_variable_performance · scoping to the latest run", () => {
   it("carries a run id now, which is what makes scoping possible at all", () => {
     // The seed used to emit the stored payload verbatim; it never carried
     // one, so no consumer could scope however carefully it was written.
@@ -87,7 +87,7 @@ describe("v3_variable_performance — scoping to the latest run", () => {
     expect(fam!.results).toBe(50);
   });
 
-  it("still doubles when no run is given — the default is unchanged for untagged rows", () => {
+  it("still doubles when no run is given. The default is unchanged for untagged rows", () => {
     const [fam] = rollupDnaFamilies([varRow(null), varRow(null)]);
     expect(fam!.spend).toBe(2000);
   });

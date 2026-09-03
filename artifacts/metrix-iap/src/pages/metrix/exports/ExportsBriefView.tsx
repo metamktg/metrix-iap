@@ -29,7 +29,7 @@ export function ExportsBriefView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Brief" accountName={acct.name} />
-              <PendingState title="No briefs yet" message="Build a brief first — there's nothing to export yet." icon={FileStack} />
+              <PendingState title="No briefs yet" message="Build a brief first · there's nothing to export yet." icon={FileStack} />
             </div>
           );
         }

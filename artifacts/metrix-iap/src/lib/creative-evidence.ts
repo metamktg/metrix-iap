@@ -139,10 +139,10 @@ export const EVIDENCE_MEANING: Record<EvidenceState, string> = {
   observed_reconciled: "The breakdown's rows reconcile to the control source within 1%.",
   observed_partial: "The breakdown's rows cover less than 99% of the control source. The remainder is unattributed by this breakdown, never allocated.",
   modelled: "Reconstructed by the balancing tier from trusted margins. Never presented as observed.",
-  overcounted: "The breakdown's rows exceed the control source by more than 1% — a duplicate or overlapping export is the usual cause.",
+  overcounted: "The breakdown's rows exceed the control source by more than 1%. A duplicate or overlapping export is the usual cause.",
   unreconciled: "No compatible control source at this scope. Stage an Ad Summary export with the Ad ID column to reconcile.",
   incompatible: "The report failed a compatibility check (currency, account or period) against the control source and was not blended.",
-  unavailable: "This metric cannot exist at this grain — reach and unique counts are valid only where Meta returned them.",
+  unavailable: "This metric cannot exist at this grain. Reach and unique counts are valid only where Meta returned them.",
 };
 
 export type EvidenceTone = "success" | "warning" | "danger" | "muted" | "primary";

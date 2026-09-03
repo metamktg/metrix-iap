@@ -97,7 +97,7 @@ export function NextBestActionCard({ scopeId, cards, stageNote }: NextBestAction
         <p className={cn(TYPE.body, "text-muted-foreground/75 leading-relaxed")}>
           {cards.length === 0
             ? stageNote ?? "No recommendations have been generated for this account yet."
-            : "All recommendations have been reviewed — nothing pending right now."}
+            : "All recommendations have been reviewed. Nothing pending right now."}
         </p>
       </div>
     );

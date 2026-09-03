@@ -63,7 +63,7 @@ describe("resolveObjectivesMetaList", () => {
     expect(list[1]!.terminalMetricLabel).not.toBe("cost per result");
   });
 
-  it("unknown values are dropped — only known objectives appear", () => {
+  it("unknown values are dropped · only known objectives appear", () => {
     const list = resolveObjectivesMetaList(["bogus", "app"]);
     expect(list).toHaveLength(1);
     expect(list[0]).toEqual(resolveCohortMeta("app"));
@@ -85,7 +85,7 @@ describe("jsonExport envelope objectives", () => {
     expect(env.objectives).toEqual(["ecommerce", "app"]);
   });
 
-  it("empty list when none configured — no fabricated default", () => {
+  it("empty list when none configured. No fabricated default", () => {
     expect(buildExportEnvelope(account(), { rows: [] }).objectives).toEqual([]);
   });
 });

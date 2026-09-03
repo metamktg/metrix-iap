@@ -39,7 +39,7 @@ export function ExportsReportsView() {
               section={SECTION}
               title="Reports"
               accountName={acct.name}
-              subtitle="Reports already export as real files — download them from Report History."
+              subtitle="Reports already export as real files. Download them from Report History."
               table="export_formats, report_history"
             />
             <div className="px-6 py-5 space-y-4 max-w-3xl">

@@ -276,7 +276,7 @@ function usd(n: number, digits: number): string {
 
 /** Compact count: 12,437 → "12.4K"; 1,240,000 → "1.2M". Only ≥ 10,000. */
 export function fmtCount(n: number | null | undefined, opts?: { compact?: boolean }): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   const r = Math.round(n);
   if (opts?.compact && Math.abs(r) >= 10_000) {
     const abs = Math.abs(r);
@@ -292,7 +292,7 @@ export function fmtCount(n: number | null | undefined, opts?: { compact?: boolea
  * KIND, the table picks the precision — no per-call-site digit choices.
  */
 export function fmtMetric(kind: MetricKind, n: number | null | undefined): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   switch (kind) {
     case "usd_unit":
       return usd(n, Math.abs(n) < 1000 ? 2 : 0);
@@ -350,7 +350,7 @@ const LEVEL_LABEL: Record<ConfidenceLevel, string> = {
   medium: "Medium",
   low: "Low",
   directional: "Directional",
-  unknown: "—",
+  unknown: "–",
 };
 
 export function normalizeConfidence(value: string | null | undefined): NormalizedConfidence {
@@ -555,4 +555,29 @@ export function isUsableName(value: string | null | undefined): boolean {
  */
 export function usableName(value: string | null | undefined): string | null {
   return isUsableName(value) ? (value ?? "").trim() : null;
+}
+
+/**
+ * Turn an engine diagnosis code into a sentence a reader can act on.
+ *
+ * The engine writes `snake_case_code` or `snake_case_code - explanation`
+ * ("validation_required - confirm MMP/pixel before concluding creative
+ * failure", "traffic_quality_or_message_mismatch"). Those strings were
+ * reaching the first layer of recommendation cards verbatim. The
+ * explanation, when there is one, is the sentence; the code becomes its
+ * parenthetical so the engine's own word is never lost. Without an
+ * explanation the code itself is spelled out. Never invents wording that
+ * is not in the input.
+ */
+export function humanizeDiagnosis(raw: string | null | undefined): string {
+  const t = (raw ?? "").trim();
+  if (!t) return "";
+  const m = t.match(/^([a-z0-9]+(?:_[a-z0-9]+)*)\s*(?:[-:]\s*(.+))?$/i);
+  if (!m) return t;
+  const code = m[1].replace(/_/g, " ").trim();
+  const codeLabel = code.charAt(0).toUpperCase() + code.slice(1);
+  const explanation = (m[2] ?? "").trim();
+  if (!explanation) return codeLabel;
+  const sentence = explanation.charAt(0).toUpperCase() + explanation.slice(1).replace(/[.]+$/, "");
+  return `${sentence} (${code})`;
 }

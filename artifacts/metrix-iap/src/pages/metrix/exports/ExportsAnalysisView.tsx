@@ -28,7 +28,7 @@ export function ExportsAnalysisView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Analysis" accountName={acct.name} />
-              <PendingState title="No analysis data yet" message="Run analysis first — there's nothing to export yet." icon={BarChart3} />
+              <PendingState title="No analysis data yet" message="Run analysis first · there's nothing to export yet." icon={BarChart3} />
             </div>
           );
         }

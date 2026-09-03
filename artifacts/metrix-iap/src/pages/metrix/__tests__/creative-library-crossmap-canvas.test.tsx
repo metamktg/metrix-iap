@@ -83,7 +83,7 @@ describe("creative library cross-map tab (Bookster)", () => {
 
     // At least one untested concept × stage cell renders an honest em
     // dash rather than a fabricated cost figure.
-    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("–").length).toBeGreaterThan(0);
   });
 
   it("keeps the concept-library and variable-library tabs' own content intact", () => {

@@ -369,7 +369,7 @@ export function DeconstructionReviewQueue({ accountId }: { accountId: string | n
           data-testid="review-queue-empty"
           className="rounded-lg border border-border/40 bg-foreground/[0.02] p-6 text-center text-caption text-muted-foreground/80"
         >
-          Nothing needs review — new classifications land here when a deconstruction run grades a
+          Nothing needs review · new classifications land here when a deconstruction run grades a
           creative below 80% confidence.
         </div>
       ) : (

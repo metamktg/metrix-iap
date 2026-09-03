@@ -13,7 +13,7 @@ import type { AdAccount, AnalysisData, CellPerformanceRow } from "../seedTypes";
 
 const T = (o: Partial<typeof EMPTY_TOTALS>) => ({ ...EMPTY_TOTALS, ...o });
 
-describe("metricValueFromTotals — ratio math + null guards", () => {
+describe("metricValueFromTotals · ratio math + null guards", () => {
   it("computes CTR from summed numerator/denominator", () => {
     expect(metricValueFromTotals("link_ctr", T({ linkClicks: 50, impressions: 1000 }))).toBeCloseTo(5);
   });
@@ -75,7 +75,7 @@ describe("buildManagerBreakdown", () => {
     expect(rows[1].windowLabel).toBe("2026-02-01 → 2026-05-31");
   });
 
-  it("per-account CTR is that account's own numerator/denominator — not an average", () => {
+  it("per-account CTR is that account's own numerator/denominator. Not an average", () => {
     const rows = buildManagerBreakdown([a, b], "link_ctr");
     expect(rows[0].value).toBeCloseTo(5); // 500/10000
     expect(rows[1].value).toBeCloseTo(1); // 50/5000
@@ -187,7 +187,7 @@ describe("tracking-basis separation", () => {
     expect(rows[0].value).toBe(90);
     expect(rows[0].spend).toBeNull(); // no delivery data on this basis
   });
-  it("per-event results scope to cells, concepts, variables and (since the result-event grain) demographics — never placements", () => {
+  it("per-event results scope to cells, concepts, variables and (since the result-event grain) demographics. Never placements", () => {
     expect(dimensionMetricRestriction("avatar", "result:registrations")).toBeNull();
     expect(dimensionMetricRestriction("cell", "result:registrations")).toBeNull();
     expect(dimensionMetricRestriction("placement", "result:registrations")).toBeTruthy();

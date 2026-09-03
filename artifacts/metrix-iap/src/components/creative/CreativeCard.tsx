@@ -74,11 +74,11 @@ export interface CreativeCardData {
 // ─── Formatting ───────────────────────────────────────────────────────
 
 function usd(n: number | null | undefined, digits = 2): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 function num(n: number | null | undefined): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return Math.round(n).toLocaleString("en-US");
 }
 
@@ -283,7 +283,7 @@ export function CreativeCard({
        */}
       <div
         role="group"
-        aria-label={`Creative ${data.conceptCode} — ${data.title}`}
+        aria-label={`Creative ${data.conceptCode} · ${data.title}`}
         onClick={(e) => {
           if (suppressRef.current) { suppressRef.current = false; return; }
           // Only open if the click landed on a non-interactive area.
@@ -327,7 +327,7 @@ export function CreativeCard({
            */}
           <motion.div layoutId={`creative-media-${data.conceptCode}`} className="absolute inset-0">
             {/* Asset or placeholder (pointer-events-none so clicks bubble to root) */}
-            <div className="absolute inset-0 transition-transform duration-500 will-change-transform group-hover:scale-[1.04] pointer-events-none">
+            <div className="absolute inset-0 transition-transform duration-200 will-change-transform group-hover:scale-[1.04] pointer-events-none">
               <CreativeVisual data={data} />
             </div>
           </motion.div>

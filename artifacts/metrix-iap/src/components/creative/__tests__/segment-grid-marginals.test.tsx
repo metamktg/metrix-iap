@@ -79,7 +79,7 @@ describe("avatar × placement modal", () => {
       .queryAllByRole("row")
       .filter(
         (row) =>
-          Array.from(row.querySelectorAll("td")).filter((td) => td.textContent?.trim() === "—").length >= 2,
+          Array.from(row.querySelectorAll("td")).filter((td) => td.textContent?.trim() === "–").length >= 2,
       );
     expect(dashy, "the empty avatar × placement interior is back").toHaveLength(0);
   });

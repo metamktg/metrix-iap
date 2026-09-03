@@ -136,7 +136,7 @@ export function CreativeLibraryView() {
         }
 
         if (!hasLibrary || !mst) {
-          const noLibrary = "Scan creatives to populate this — the copy components below come from the performance export";
+          const noLibrary = "Scan creatives to populate this. The copy components below come from the performance export";
           return page(
             <ModuleHeader
               section={SECTION}
@@ -227,7 +227,7 @@ export function CreativeLibraryView() {
               >
                 {creativeActions.length === 0 ? (
                   <p className="text-caption text-muted-foreground/75">
-                    No creative-scoped recommendations yet — these appear once the optimization loop has run for this account.
+                    No creative-scoped recommendations yet · these appear once the optimization loop has run for this account.
                   </p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
@@ -369,7 +369,7 @@ export function CreativeLibraryView() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-1.5">
                       <p className="text-body text-muted-foreground/80">Cost per result by concept and funnel stage. Tap a tested cell to open its creative; tap an untested cell to queue a test.</p>
-                      <InfoTooltip content="Aggregated from performance_by_cell for every asset mapped to a concept. Empty cells have no measured spend at that stage yet — click one to file a real Task Tray item." />
+                      <InfoTooltip content="Aggregated from performance_by_cell for every asset mapped to a concept. Empty cells have no measured spend at that stage yet. Click one to file a real Task Tray item." />
                     </div>
                     <div className="overflow-x-auto">
                       <div
@@ -398,7 +398,7 @@ export function CreativeLibraryView() {
                                         id: queueId,
                                         kind: "custom",
                                         title: `Test ${concept} on ${s}`,
-                                        sub: "Queued from the Creative Library cross-map — no measured spend yet.",
+                                        sub: "Queued from the Creative Library cross-map. No measured spend yet.",
                                         href: "/app/creative/library",
                                       });
                                   };
@@ -410,10 +410,10 @@ export function CreativeLibraryView() {
                                   disabled={cell.tested && !cell.cellId}
                                   title={
                                     cell.tested
-                                      ? `${fmtMetric("usd_total", cell.spend)} spend · ${cell.results} results — click to open the creative`
+                                      ? `${fmtMetric("usd_total", cell.spend)} spend · ${cell.results} results. Click to open the creative`
                                       : queued
-                                      ? "Queued in Task Tray — click to remove"
-                                      : `Untested — click to queue "Test ${concept} on ${s}"`
+                                      ? "Queued in Task Tray · click to remove"
+                                      : `Untested · click to queue "Test ${concept} on ${s}"`
                                   }
                                   className={`rounded-md border py-1.5 text-center text-body tabular-nums transition-colors ${
                                     cell.tested
@@ -428,7 +428,7 @@ export function CreativeLibraryView() {
                                   ) : queued ? (
                                     <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Queued</span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1"><ClipboardList className="w-3 h-3 opacity-50" /> —</span>
+                                    <span className="inline-flex items-center gap-1"><ClipboardList className="w-3 h-3 opacity-50" />–</span>
                                   )}
                                 </button>
                               );

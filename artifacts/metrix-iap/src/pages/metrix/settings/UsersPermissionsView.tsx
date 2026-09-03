@@ -192,7 +192,7 @@ function AddMemberDialog({
           }
           if (result.email_sent === false && result.temp_password) {
             setSuccessNotice(
-              `Account created. Email delivery failed — share this temporary password manually: ${result.temp_password}`,
+              `Account created. Email delivery failed. Share this temporary password manually: ${result.temp_password}`,
             );
             return;
           }
@@ -220,7 +220,7 @@ function AddMemberDialog({
           </div>
           <DialogTitle className={DIALOG.title}>Add member</DialogTitle>
           <DialogDescription className="text-body leading-relaxed">
-            Set permissions and account access, then send the invite — the account is provisioned
+            Set permissions and account access, then send the invite. The account is provisioned
             immediately with a temp password.
           </DialogDescription>
         </DialogHeader>
@@ -775,7 +775,7 @@ function MemberActionsCell({
           className="text-label text-status-warning/90 w-full"
           data-testid={`text-temp-password-${email}`}
         >
-          Email didn't send — temp password: {tempPassword}
+          Email didn't send · temp password: {tempPassword}
         </span>
       )}
       {resent && !tempPassword && !error && (
@@ -956,7 +956,7 @@ function TeamAccessViewInner() {
                   <span className="text-label text-muted-foreground/75 text-right w-24">
                     {m.lastActive
                       ? new Date(m.lastActive).toLocaleDateString(undefined, { month: "short", day: "numeric" })
-                      : "—"}
+                      : "–"}
                   </span>
                 </div>
                 {!m.isAdmin && (
@@ -990,7 +990,7 @@ function TeamAccessViewInner() {
                   className="px-3 py-2.5 text-caption text-status-warning/90 bg-status-warning/[0.05]"
                   data-testid="text-invites-load-error"
                 >
-                  Couldn't load pending invites — this list may be incomplete. Refresh to try again.
+                  Couldn't load pending invites. This list may be incomplete. Refresh to try again.
                 </div>
               )}
               {pendingInvites.map((inv) => (
@@ -1022,7 +1022,7 @@ function TeamAccessViewInner() {
             />
           </div>
           <div className="mt-2.5">
-            <CaveatNote text="Data isolation still applies per ad account regardless of role — no member sees cross-account analysis." />
+            <CaveatNote text="Data isolation still applies per ad account regardless of role. No member sees cross-account analysis." />
           </div>
         </SectionCard>
       </div>

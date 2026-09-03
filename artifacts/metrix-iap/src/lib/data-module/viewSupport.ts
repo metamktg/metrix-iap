@@ -68,7 +68,7 @@ const SUPPORT: Record<DataShape, ShapeSpec> = {
     views: ["trend", "compare", "breakdown", "table"],
     why: {
       funnel: "Cell rows carry spend and results, not funnel stage counts.",
-      map: "The Map view is the 4×4 matrix itself — use historical_matrix_4x4.",
+      map: "The Map view is the 4×4 matrix itself. Use historical_matrix_4x4.",
     },
   },
   concept_rollup: {
@@ -76,30 +76,30 @@ const SUPPORT: Record<DataShape, ShapeSpec> = {
     why: {
       breakdown: "Concept rollups are already aggregated; there is no second dimension left.",
       funnel: "Concept rollups carry spend and results, not funnel stage counts.",
-      map: "The Map view is the 4×4 matrix itself — use historical_matrix_4x4.",
+      map: "The Map view is the 4×4 matrix itself. Use historical_matrix_4x4.",
     },
   },
   v3_variable_performance: {
     views: ["compare", "breakdown", "table"],
     why: {
-      trend: "Variable rows are window totals, not a day series — a line here would invent a trajectory.",
+      trend: "Variable rows are window totals, not a day series. A line here would invent a trajectory.",
       funnel: "Variable rows carry spend and results, not funnel stage counts.",
-      map: "Variables are a ranked list, not a grid — there is no row and column to place them on.",
+      map: "Variables are a ranked list, not a grid. There is no row and column to place them on.",
     },
   },
   top_checkout_variables: {
     views: ["compare", "breakdown", "table"],
     why: {
-      trend: "These are totals for one window, not a day series — a line would invent a trajectory.",
+      trend: "These are totals for one window, not a day series. A line would invent a trajectory.",
       funnel: "These are variables ranked by checkout, not the checkout funnel itself.",
-      map: "Variables are a ranked list, not a grid — there is no row and column to place them on.",
+      map: "Variables are a ranked list, not a grid. There is no row and column to place them on.",
     },
   },
   demographic_registration_signal: {
     views: ["breakdown", "map", "table"],
     why: {
       trend: "Demographic rows are window totals, not a day series.",
-      compare: "Age × gender is two dimensions — Breakdown and Map both keep them; a single ranked bar flattens one away.",
+      compare: "Age × gender is two dimensions. Breakdown and Map both keep them; a single ranked bar flattens one away.",
       funnel: "Present only when the export carried the downstream columns; the Funnel view reads conversion_tracking_signal.",
     },
   },
@@ -108,15 +108,15 @@ const SUPPORT: Record<DataShape, ShapeSpec> = {
     why: {
       trend: "Placement rows are window totals, not a day series.",
       funnel: "Placement rows carry spend and results per placement, not funnel stage counts.",
-      map: "Placement is a flat list — a Map needs two axes to place a value on, and this has one.",
+      map: "Placement is a flat list. A Map needs two axes to place a value on, and this has one.",
     },
   },
   device_delivery_signal: {
     views: ["compare", "breakdown", "table"],
     why: {
-      trend: "Device rows cover one window, not a day series — a line would invent a trajectory.",
+      trend: "Device rows cover one window, not a day series. A line would invent a trajectory.",
       funnel: "Delivery rows measure spend and impressions per device, not funnel stage counts.",
-      map: "Device is a flat list — a Map needs two axes to place a value on, and this has one.",
+      map: "Device is a flat list. A Map needs two axes to place a value on, and this has one.",
     },
   },
   conversion_tracking_signal: {
@@ -124,7 +124,7 @@ const SUPPORT: Record<DataShape, ShapeSpec> = {
     why: {
       trend: "Each row covers one attributed window, not a day series to plot along.",
       compare: "Spend is not attributable under this tracking basis, so there is no measure to rank by.",
-      breakdown: "The device / platform / placement split IS the shape — the Funnel view already splits by it.",
+      breakdown: "The device / platform / placement split IS the shape. The Funnel view already splits by it.",
       map: "There is no row and column here to place a value on.",
     },
   },
@@ -142,16 +142,16 @@ const SUPPORT: Record<DataShape, ShapeSpec> = {
     why: {
       trend: "Profiles describe who an audience is; they carry no dates to plot along.",
       compare: "Profiles are positions, not a single ranked measure.",
-      breakdown: "Positioning already IS the two-axis read — the Map view is that breakdown.",
+      breakdown: "Positioning already IS the two-axis read. The Map view is that breakdown.",
       funnel: "Profiles carry no funnel stage counts to lay out as a funnel.",
     },
   },
   daily_series: {
     views: ["trend", "table"],
     why: {
-      compare: "A day series ranked as bars is just a worse trend line — days have an order.",
+      compare: "A day series ranked as bars is just a worse trend line. Days have an order.",
       breakdown: "The daily rollup has no second dimension left.",
-      funnel: "Daily rollups carry no stage counts — the Funnel view reads conversion_tracking_signal.",
+      funnel: "Daily rollups carry no stage counts. The Funnel view reads conversion_tracking_signal.",
       map: "There is no row and column here to place a value on.",
     },
   },

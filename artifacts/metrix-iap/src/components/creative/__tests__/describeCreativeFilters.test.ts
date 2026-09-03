@@ -42,7 +42,7 @@ describe("describeCreativeFilters", () => {
     expect(describeCreativeFilters(state({ conceptNames: ["a", "b", "c"] }))[0]).toBe("3 concepts");
   });
 
-  it("reports every active filter — one phrase each, none swallowed", () => {
+  it("reports every active filter · one phrase each, none swallowed", () => {
     const all = describeCreativeFilters(
       state({ minSpendUsd: 25, tier: "bottom25", conceptNames: ["a", "b"] }),
     );

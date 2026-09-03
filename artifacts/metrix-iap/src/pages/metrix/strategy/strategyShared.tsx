@@ -139,7 +139,7 @@ export function VariableStackChips({ stack, maxVisible = 4 }: { stack: Record<st
           )}
         >
           {resolveVariableLabel(code)}
-          <span className="sr-only">{` — ${familyLabel(family)} (${code})`}</span>
+          <span className="sr-only">{` · ${familyLabel(family)} (${code})`}</span>
         </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] space-y-0.5 text-left">
@@ -506,7 +506,7 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
                   c.cpa == null && "border-b border-dotted border-muted-foreground/40 cursor-help",
                 )}
                 {...(c.cpa == null
-                  ? { title: "CPA: this variable combination was recorded without a measured cost per result — it has not been run with enough results behind it to carry one." }
+                  ? { title: "CPA: this variable combination was recorded without a measured cost per result. It has not been run with enough results behind it to carry one." }
                   : {})}
               >
                 {fmtMetric("usd_unit", c.cpa)}
@@ -520,7 +520,7 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
                   c.cvr_pct == null && "border-b border-dotted border-muted-foreground/40 cursor-help",
                 )}
                 {...(c.cvr_pct == null
-                  ? { title: "CVR: this variable combination was recorded without a measured conversion rate — it has not been run with enough link clicks behind it to carry one." }
+                  ? { title: "CVR: this variable combination was recorded without a measured conversion rate. It has not been run with enough link clicks behind it to carry one." }
                   : {})}
               >
                 {fmtMetric("pct", c.cvr_pct)}
@@ -678,7 +678,7 @@ export function StatGrid({ cells, cols }: { cells: StatCell[]; cols?: number }) 
         // also renders inside button-cards, where the rulebook forbids a
         // nested interactive element, and one mechanism that is correct in
         // both places beats two that disagree.
-        const absent = c.value === "—" || c.value === "n/a";
+        const absent = c.value === "–" || c.value === "n/a";
         const reason = absent ? c.unavailableReason : undefined;
         return (
           <div key={i} className="bg-card px-2 py-1.5 text-center min-w-0">

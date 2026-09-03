@@ -110,7 +110,7 @@ export function FunnelChart({
               onClick={() => setBasis(id)}
               aria-pressed={basis === id}
               className={`h-10 px-2.5 rounded-lg text-caption active:scale-[0.96]
-                          transition-[background-color,color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                          transition-[background-color,color,scale] duration-150 ease-[var(--mx-ease)]
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
                           ${basis === id ? "bg-primary/20 text-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
@@ -147,7 +147,7 @@ export function FunnelChart({
                 />
               ) : (
                 <div
-                  className="absolute inset-y-0 left-0 transition-[width] duration-300 ease-[cubic-bezier(0.2,0,0,1)]"
+                  className="absolute inset-y-0 left-0 transition-[width] duration-300 ease-[var(--mx-ease)]"
                   style={{
                     width: `${Math.min(100, ((basis === "top" ? r.share : r.step ?? r.share) ?? 0) * 100)}%`,
                     background: fill,
@@ -157,7 +157,7 @@ export function FunnelChart({
               )}
               <div className="absolute inset-0 flex items-center justify-between px-2.5 pointer-events-none">
                 <span className="text-caption font-medium text-foreground tabular-nums">
-                  {r.isGap ? "—" : format(r.value!)}
+                  {r.isGap ? "–" : format(r.value!)}
                 </span>
                 <span className="text-label text-foreground/70 tabular-nums">
                   {r.share != null ? `${pct(r.share * 100)} of top` : ""}
@@ -174,7 +174,7 @@ export function FunnelChart({
                   sections={[{
                     text:
                       `This export did not carry a ${r.label.toLowerCase()} column. That is not the ` +
-                      `same as a count of zero — nothing in this data says whether anyone reached ` +
+                      `same as a count of zero. Nothing in this data says whether anyone reached ` +
                       `this stage, so the row is drawn as a gap rather than an empty bar.`,
                   }]}
                 />
@@ -193,7 +193,7 @@ export function FunnelChart({
                   {pct(r.step * 100)}
                 </span>
               ) : (
-                <span className="text-caption text-muted-foreground/75">—</span>
+                <span className="text-caption text-muted-foreground/75">–</span>
               )}
             </span>
           </li>

@@ -44,7 +44,7 @@ describe("the two tables agree", () => {
   });
 });
 
-describe("distinctCount — a null is not a category", () => {
+describe("distinctCount · a null is not a category", () => {
   const rows = [
     { Placement: "Feed", Gender: "male" },
     { Placement: "Reels", Gender: null },
@@ -67,7 +67,7 @@ describe("distinctCount — a null is not a category", () => {
   });
 });
 
-describe("whyNotDimension — the reason is about THESE rows", () => {
+describe("whyNotDimension · the reason is about THESE rows", () => {
   it("refuses a dimension the rows do not carry", () => {
     expect(whyNotDimension(0)).toContain("no value");
   });

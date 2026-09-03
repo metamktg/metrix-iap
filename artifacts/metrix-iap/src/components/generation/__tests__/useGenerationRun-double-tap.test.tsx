@@ -45,7 +45,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe("useGenerationRun — double-tap guard", () => {
+describe("useGenerationRun · double-tap guard", () => {
   it("isRunning is false before start() is called", () => {
     const { result } = renderHook(
       () => useGenerationRun("acc-1", "strategy"),
@@ -68,7 +68,7 @@ describe("useGenerationRun — double-tap guard", () => {
     expect(mockMutate).toHaveBeenCalledTimes(1);
   });
 
-  it("a rapid second start() call is dropped — mutation fires only once", () => {
+  it("a rapid second start() call is dropped. Mutation fires only once", () => {
     const { result } = renderHook(
       () => useGenerationRun("acc-1", "strategy"),
       { wrapper },

@@ -161,7 +161,7 @@ export function VariableDrilldownModal({
             </DialogTitle>
             <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
               Header totals are the import's own variable-level rows. Ads and segments join through the ads that carry this
-              variable, Ad ID first — nothing estimated.
+              variable, Ad ID first. Nothing estimated.
             </DialogDescription>
           </DialogHeader>
 
@@ -173,7 +173,7 @@ export function VariableDrilldownModal({
               </div>
             ) : (
               <p className={cn(TYPE.caption, "text-muted-foreground/75 leading-relaxed")}>
-                No variable-level performance row for this code in the current metric selection — the sections below still
+                No variable-level performance row for this code in the current metric selection. The sections below still
                 show which creatives carried it.
               </p>
             )}
@@ -234,7 +234,7 @@ export function VariableDrilldownModal({
             {/* ── Segment performance ── */}
             <div className="space-y-1.5">
               <p className="text-label uppercase tracking-widest text-muted-foreground/75">
-                Segment performance{data.segments.source ? ` — ${SEGMENT_SOURCE_LABEL[data.segments.source]}` : ""}
+                Segment performance{data.segments.source ? ` · ${SEGMENT_SOURCE_LABEL[data.segments.source]}` : ""}
               </p>
               {data.segments.available ? (
                 <div className="rounded-xl border border-border/40 overflow-hidden divide-y divide-border/20" data-testid="variable-segments">
@@ -261,10 +261,10 @@ export function VariableDrilldownModal({
                           className="flex-1"
                         />
                         <span className="text-label tabular-nums text-muted-foreground/75 w-16 text-right shrink-0">
-                          {totals.spend != null ? fmtUSD(totals.spend, 0) : "—"}
+                          {totals.spend != null ? fmtUSD(totals.spend, 0) : "–"}
                         </span>
                         <span className="text-label tabular-nums text-foreground/80 w-20 text-right shrink-0">
-                          {derived.cpa != null ? `${fmtUSD(derived.cpa)} CPA` : "— CPA"}
+                          {derived.cpa != null ? `${fmtUSD(derived.cpa)} CPA` : ", CPA"}
                         </span>
                         <span className="w-[86px] shrink-0 hidden sm:flex justify-end">
                           <SignalTag signal={bandSignal(row)} testId="variable-segment-signal" />
@@ -295,7 +295,7 @@ export function VariableDrilldownModal({
 
             {/* ── Placements for the carrier ads ── */}
             <div className="space-y-1.5">
-              <p className="text-label uppercase tracking-widest text-muted-foreground/75">Placements — the carrier ads' own rows</p>
+              <p className="text-label uppercase tracking-widest text-muted-foreground/75">Placements · the carrier ads' own rows</p>
               {data.placementRows.length > 0 ? (
                 <PlacementDrill rows={data.placementRows} resultLabel={data.totals?.resultTypes[0] ? eventLabel(data.totals.resultTypes[0]) : "results"} />
               ) : (

@@ -61,7 +61,7 @@ describe("breakdown dimension keys exist on the real seed rows", () => {
         expect(
           present,
           `"${d.key}" appears on no ${shape} row. distinctCount would return 0 for every ` +
-            `account, so the option would disable itself with "these rows carry no value" — ` +
+            `account, so the option would disable itself with "these rows carry no value", ` +
             `indistinguishable from real data with one value. Row keys: ` +
             `${Object.keys(rows[0]!).join(", ")}`,
         ).toBe(true);

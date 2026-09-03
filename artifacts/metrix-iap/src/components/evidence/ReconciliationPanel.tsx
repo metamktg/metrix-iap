@@ -25,7 +25,7 @@ const BREAKDOWN_LABEL: Record<BreakdownKind, string> = {
   demographic_placement: "Demo × placement",
 };
 
-const fmtValue = (metric: string, n: number | null): string => (n === null ? "—" : metric === "amount_spent" || /value/.test(metric) ? fmtMetric("usd_total", n) : fmtMetric("count", n));
+const fmtValue = (metric: string, n: number | null): string => (n === null ? "–" : metric === "amount_spent" || /value/.test(metric) ? fmtMetric("usd_total", n) : fmtMetric("count", n));
 
 export function ReconciliationPanel({ reconciliation, defaultOpen = false, className }: { reconciliation: ReconciliationData | null | undefined; defaultOpen?: boolean; className?: string }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -101,7 +101,7 @@ export function ReconciliationPanel({ reconciliation, defaultOpen = false, class
                 <span className={cn(TYPE.caption, "tabular-nums text-muted-foreground")}>
                   {fmtValue(activeMetric!, table.account.observed_value)} observed · {fmtValue(activeMetric!, table.account.truth_value)} control ·{" "}
                   <span className={table.account.residual !== null && table.account.residual < 0 ? "text-status-danger" : ""}>
-                    {table.account.residual === null ? "—" : `${table.account.residual < 0 ? "−" : ""}${fmtValue(activeMetric!, Math.abs(table.account.residual))}`} unattributed
+                    {table.account.residual === null ? "–" : `${table.account.residual < 0 ? "−" : ""}${fmtValue(activeMetric!, Math.abs(table.account.residual))}`} unattributed
                   </span>
                 </span>
               </div>
@@ -156,10 +156,10 @@ export function ReconciliationPanel({ reconciliation, defaultOpen = false, class
                           size="sm"
                           fillClassName={r.coverage_pct !== null && r.coverage_pct >= 99 ? "bg-status-success/60" : "bg-primary/50"}
                         />
-                        <div className={cn(TYPE.microLabel, "text-muted-foreground/75 normal-case tracking-normal tabular-nums")}>{r.coverage_pct === null ? "—" : `${r.coverage_pct}%`}</div>
+                        <div className={cn(TYPE.microLabel, "text-muted-foreground/75 normal-case tracking-normal tabular-nums")}>{r.coverage_pct === null ? "–" : `${r.coverage_pct}%`}</div>
                       </td>
                       <td className={cn("py-2 pr-3 text-right tabular-nums", TYPE.caption, r.residual !== null && r.residual < 0 && "text-status-danger")}>
-                        {r.residual === null ? "—" : `${r.residual < 0 ? "−" : ""}${fmtValue(activeMetric!, Math.abs(r.residual))}`}
+                        {r.residual === null ? "–" : `${r.residual < 0 ? "−" : ""}${fmtValue(activeMetric!, Math.abs(r.residual))}`}
                       </td>
                       <td className="py-2">
                         <EvidenceChip state={r.evidence_state} testId="reconciliation-ad-state" />

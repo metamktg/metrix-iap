@@ -40,12 +40,12 @@ function isCommunicationRow(r: { "Result type": string; intent_class?: string | 
   if (r.intent_class === "conversion" || r.intent_class === "consideration") return false;
   return classifyResultEvent(r["Result type"]).scale === "communication";
 }
-const COMMUNICATION_CPA_TIP = "Awareness event — read on communication signals (CPM, link CTR, frequency), never on cost per result";
+const COMMUNICATION_CPA_TIP = "Awareness event · read on communication signals (CPM, link CTR, frequency), never on cost per result";
 
 /** "Jun 1 – Jun 30" for a run-tagged row's window, else the run id's first segment. */
 function runWindowLabel(r: { manual_analysis_run_id?: string | null; date_start?: string | null; date_end?: string | null }): string {
   if (r.date_start && r.date_end) return fmtDayRange(r.date_start, r.date_end);
-  return r.manual_analysis_run_id ? r.manual_analysis_run_id.split("-")[0]! : "—";
+  return r.manual_analysis_run_id ? r.manual_analysis_run_id.split("-")[0]! : "–";
 }
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
@@ -116,7 +116,7 @@ export function useColumnSort<Row>(rows: Row[], accessors: ColumnAccessors<Row>)
 const INVERTED_BAR_TIP =
   "The bar under each CPA is INVERTED: lower is better, so the cheapest CPA draws " +
   "the longest bar and the most expensive draws the shortest. Bars on the other " +
-  "columns read the usual way — longer is more. A cell with no bar was not measured.";
+  "columns read the usual way. Longer is more. A cell with no bar was not measured.";
 
 export function SortableTh({
   children,
@@ -155,7 +155,7 @@ export function SortableTh({
         <button
           onClick={() => onToggle(sortKey)}
           data-testid={`sort-${sortKey}`}
-          title={active ? (sort!.dir === "asc" ? "Sorted ascending — click for descending" : "Sorted descending — click for ascending") : "Click to sort"}
+          title={active ? (sort!.dir === "asc" ? "Sorted ascending · click for descending" : "Sorted descending · click for ascending") : "Click to sort"}
           aria-label={`Sort by ${String(children)}${active ? (sort!.dir === "asc" ? ", currently ascending" : ", currently descending") : ""}`}
           className={cn(
             "pressable hit-target-24 inline-flex items-center gap-0.5 text-label uppercase tracking-widest font-semibold transition-colors",
@@ -384,11 +384,11 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
         <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
         <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
         {isCommunicationRow(r) ? (
-          <Td right><span title={COMMUNICATION_CPA_TIP}>—</span></Td>
+          <Td right><span title={COMMUNICATION_CPA_TIP}>–</span></Td>
         ) : (
           <MagnitudeCell
             value={r.CPA_result}
-            display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+            display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "–"}
             scale={cpaScale}
             label="CPA"
           />
@@ -520,7 +520,7 @@ export function VariableTable({
     const runId = r.manual_analysis_run_id ?? null;
     const runTitle = runId
       ? `Run ${runId}${r.date_start && r.date_end ? ` · ${r.date_start} – ${r.date_end}` : ""}`
-      : "Untagged — measured before runs were recorded";
+      : "Untagged · measured before runs were recorded";
     return (
       <tr
         key={r.variable_id + r["Result type"] + i}
@@ -555,11 +555,11 @@ export function VariableTable({
         <Td right>{fmtNum(r.unique_ads)}</Td>
         <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
         {isCommunicationRow(r) ? (
-          <Td right><span title={COMMUNICATION_CPA_TIP}>—</span></Td>
+          <Td right><span title={COMMUNICATION_CPA_TIP}>–</span></Td>
         ) : (
           <MagnitudeCell
             value={r.CPA_result}
-            display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+            display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "–"}
             scale={cpaScale}
             label="CPA"
           />
@@ -568,7 +568,7 @@ export function VariableTable({
           <Td right>
             {seg?.adjusted_rate != null ? (
               <span title={`Raw rate ${fmtPct(seg.raw_rate)} · adjusted for ${fmtPct(seg.observed_coverage_pct, 0)} observed coverage`}>{fmtPct(seg.adjusted_rate)}</span>
-            ) : "—"}
+            ) : "–"}
           </Td>
         )}
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
@@ -581,10 +581,10 @@ export function VariableTable({
                 data-testid="variable-evidence-cell"
               >
                 <ConfidenceBadge value={seg.confidence.replace(/_/g, " ")} />
-                <span className="text-label tabular-nums text-muted-foreground/75">{seg.observed_coverage_pct != null ? fmtPct(seg.observed_coverage_pct, 0) : "—"}</span>
+                <span className="text-label tabular-nums text-muted-foreground/75">{seg.observed_coverage_pct != null ? fmtPct(seg.observed_coverage_pct, 0) : "–"}</span>
               </span>
             ) : (
-              <span className="text-label text-muted-foreground/75" title="No evidence row for this variable under this result type">—</span>
+              <span className="text-label text-muted-foreground/75" title="No evidence row for this variable under this result type">–</span>
             )}
           </Td>
         )}
@@ -716,7 +716,7 @@ export function DemographicTable({
                 <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
                 <MagnitudeCell
                   value={r.CPA_result}
-                  display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+                  display={r.CPA_result != null ? fmtUSD(r.CPA_result) : "–"}
                   scale={cpaScale}
                   label="CPA"
                 />
@@ -766,7 +766,7 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
             <Td className="capitalize">{r.Platform}</Td>
             <MagnitudeCell value={r["Amount spent (USD)"]} display={fmtUSD(r["Amount spent (USD)"])} scale={spendScale} label="Spend" />
             <MagnitudeCell value={r.Results} display={fmtNum(r.Results)} scale={resultScale} label="Results" />
-            <MagnitudeCell value={r.CPA} display={r.CPA != null ? fmtUSD(r.CPA) : "—"} scale={cpaScale} label="CPA" />
+            <MagnitudeCell value={r.CPA} display={r.CPA != null ? fmtUSD(r.CPA) : "–"} scale={cpaScale} label="CPA" />
           </tr>
         ))}
       </tbody>
@@ -813,11 +813,11 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
         {sorted.map((r, i) => (
           <tr key={r.label + i}>
             <Td className="font-medium text-foreground capitalize">{r.label}</Td>
-            <MagnitudeCell value={r.link_clicks} display={r.link_clicks != null ? fmtNum(r.link_clicks) : "—"} scale={clickScale} label="Link clicks" />
-            <MagnitudeCell value={r.adds_to_cart} display={r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"} scale={cartScale} label="Adds to cart" />
-            <MagnitudeCell value={r.checkouts_initiated} display={r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"} scale={checkoutScale} label="Checkouts initiated" />
-            <MagnitudeCell value={r.purchases} display={r.purchases != null ? fmtNum(r.purchases) : "—"} scale={purchaseScale} label="Purchases" />
-            <Td>{r.confidence ? <span className="text-label uppercase tracking-wider text-muted-foreground/75">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
+            <MagnitudeCell value={r.link_clicks} display={r.link_clicks != null ? fmtNum(r.link_clicks) : "–"} scale={clickScale} label="Link clicks" />
+            <MagnitudeCell value={r.adds_to_cart} display={r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "–"} scale={cartScale} label="Adds to cart" />
+            <MagnitudeCell value={r.checkouts_initiated} display={r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "–"} scale={checkoutScale} label="Checkouts initiated" />
+            <MagnitudeCell value={r.purchases} display={r.purchases != null ? fmtNum(r.purchases) : "–"} scale={purchaseScale} label="Purchases" />
+            <Td>{r.confidence ? <span className="text-label uppercase tracking-wider text-muted-foreground/75">{r.confidence.replace(/_/g, " ")}</span> : "–"}</Td>
           </tr>
         ))}
       </tbody>
