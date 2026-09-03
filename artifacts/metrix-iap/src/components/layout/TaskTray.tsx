@@ -3,6 +3,7 @@
 // Sections priority-ordered: Analysis → Approved Actions → Ready to Brief →
 // Briefs Pending → Top Signals → Quick Jump.
 
+import { ResizeHandle } from "@/components/ui/ResizeHandle";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
@@ -15,7 +16,6 @@ import {
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useAccount } from "@/contexts/AccountContext";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
-import { useDragResize } from "@/hooks/useDragResize";
 import {
   useTrayItems,
   getOpenTrayItems,
@@ -620,37 +620,10 @@ export function TaskTray() {
   // pure, and closing the tray / persisting the width are side effects.
   const dragWidthRef = useRef<number | null>(null);
 
-  // Drag handle on the tray's left edge. Dragging left (negative dx) grows
-  // the tray toward TRAY_MAX_WIDTH; dragging right shrinks it, and
-  // releasing below TRAY_COLLAPSE_SNAP_WIDTH snaps the tray shut — mirroring
-  // the sidebar's clamp/snap-to-collapse behaviour.
-  const handlePointerDown = useDragResize(
-    (dx) => {
-      const next = Math.min(
-        TRAY_MAX_WIDTH,
-        Math.max(TRAY_COLLAPSE_SNAP_WIDTH - 40, baseWidthRef.current - dx)
-      );
-      dragWidthRef.current = next;
-      setDragWidth(next);
-    },
-    (wasDragged) => {
-      if (!wasDragged) return;
-      const fw = dragWidthRef.current ?? width;
-      dragWidthRef.current = null;
-      if (fw < TRAY_COLLAPSE_SNAP_WIDTH) {
-        close();
-      } else {
-        const clamped = Math.min(TRAY_MAX_WIDTH, Math.max(TRAY_MIN_WIDTH, fw));
-        setWidth(clamped);
-        saveTrayWidth(clamped);
-      }
-      setDragWidth(null);
-    }
-  );
-  const onHandlePointerDown = (e: React.PointerEvent) => {
-    baseWidthRef.current = width;
-    handlePointerDown(e);
-  };
+  // Resizing is the shared ResizeHandle below (lib/panel-prefs bounds);
+  // releasing under TRAY_COLLAPSE_SNAP_WIDTH no longer snaps the tray shut —
+  // the minimum is the narrowest useful width, and the tray's own toggle
+  // closes it.
 
   const isAdAccountView = selectedAccountType === "ad_account" && !!activeAdAccountId;
 
@@ -696,16 +669,35 @@ export function TaskTray() {
           TRAY_COLLAPSE_SNAP_WIDTH snaps the tray shut. Only present while
           the tray is open — there's nothing to resize when collapsed. */}
       {open && (
-        <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Task tray resize handle"
-          title="Drag to resize"
-          onPointerDown={onHandlePointerDown}
-          className="absolute top-0 left-0 h-full w-1.5 -ml-0.5 z-10 cursor-col-resize group/handle flex items-center justify-center"
-        >
-          <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />
-        </div>
+        // The shared window-splitter: keyboard-operable (arrows step, Home
+        // narrowest, End widest, Enter toggles the expanded width) as well
+        // as draggable. It used to carry the separator role and only a
+        // pointer handler — the promise of a resize with no keyboard path.
+        <ResizeHandle
+          label="Task tray width"
+          width={dragWidth ?? width}
+          bounds={{ min: TRAY_MIN_WIDTH, max: TRAY_MAX_WIDTH, default: TRAY_DEFAULT_WIDTH }}
+          edge="left"
+          onWidth={(w) => {
+            dragWidthRef.current = w;
+            setDragWidth(w);
+          }}
+          onCommit={(wasDragged) => {
+            if (!wasDragged) return;
+            const fw = dragWidthRef.current ?? width;
+            dragWidthRef.current = null;
+            const clamped = Math.min(TRAY_MAX_WIDTH, Math.max(TRAY_MIN_WIDTH, fw));
+            setWidth(clamped);
+            saveTrayWidth(clamped);
+            setDragWidth(null);
+          }}
+          onToggle={() => {
+            const next = width >= TRAY_MAX_WIDTH ? TRAY_DEFAULT_WIDTH : TRAY_MAX_WIDTH;
+            setWidth(next);
+            saveTrayWidth(next);
+          }}
+          testId="task-tray-resize"
+        />
       )}
       {!open ? (
         // ── Minimized strip ────────────────────────────────────────────

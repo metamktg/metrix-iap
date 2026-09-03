@@ -8,6 +8,9 @@
 // notes/title attributes; ranked rows are plain <button>s (no nested
 // popovers). Colors come from DS tokens / --mx-* aliases exclusively.
 
+import { ResizeHandle } from "@/components/ui/ResizeHandle";
+import { usePanelSize } from "@/lib/panel-prefs";
+import { useIsCompactShell } from "@/lib/useMediaQuery";
 import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ChevronRight, X } from "lucide-react";
@@ -236,10 +239,17 @@ function Block({ block, onDrill }: { block: DeepDiveBlock; onDrill: (row: DeepDi
 
 // ─── Panel ────────────────────────────────────────────────────────────
 
+/** Deep-dive drawer bounds: the previous fixed 560px is the default; 760px was its cap. */
+const DEEP_DIVE_BOUNDS = { min: 400, max: 760, default: 560 } as const;
+
 export function DeepDivePanel() {
   const { stack, push, pop, jumpTo, close } = useDeepDive();
   const panelRef = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
+  // Width and expanded state persist per viewer (lib/panel-prefs), shared
+  // with every other slide-over so they all resize and expand the same way.
+  const size = usePanelSize("deep-dive", DEEP_DIVE_BOUNDS);
+  const compact = useIsCompactShell();
   const open = stack.length > 0;
   const current = stack[stack.length - 1];
 
@@ -279,8 +289,20 @@ export function DeepDivePanel() {
       initial={reduced ? false : { x: 32, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={motionOr(reduced, { duration: DUR_MED, ease: EASE })}
-      className="fixed inset-y-0 right-0 z-50 w-full sm:w-[560px] max-w-[760px] flex flex-col bg-surface-deep border-l border-[var(--mx-edge-strong)] shadow-[0_0_60px_hsl(0 0% 0% / 0.5)] focus-visible:outline-none"
+      style={compact ? undefined : { width: size.width }}
+      className="fixed inset-y-0 right-0 z-50 w-full max-w-full flex flex-col bg-surface-deep border-l border-[var(--mx-edge-strong)] shadow-[0_0_60px_hsl(0 0% 0% / 0.5)] focus-visible:outline-none"
     >
+      {!compact && (
+        <ResizeHandle
+          label="Deep dive width"
+          width={size.width}
+          bounds={DEEP_DIVE_BOUNDS}
+          edge="left"
+          onWidth={size.setWidth}
+          onToggle={size.toggleExpanded}
+          testId="deep-dive-resize"
+        />
+      )}
       {/* ── Header: breadcrumbs + controls ─────────────────────────── */}
       <div className="shrink-0 px-4 pt-3 pb-2.5 border-b border-[var(--mx-edge-soft)] space-y-1.5">
         <div className="flex items-center gap-1.5 min-w-0">

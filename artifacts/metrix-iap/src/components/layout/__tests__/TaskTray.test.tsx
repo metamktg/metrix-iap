@@ -491,7 +491,7 @@ describe("TaskTray: minimised strip (closed state)", () => {
 const WIDTH_KEY = "metrix_tray_width";
 
 function getResizeHandle(): HTMLElement {
-  return screen.getByLabelText("Task tray resize handle");
+  return screen.getByLabelText("Task tray width");
 }
 
 function drag(handle: HTMLElement, dx: number) {
@@ -507,18 +507,18 @@ describe("TaskTray: drag-to-resize", () => {
 
   it("renders a resize handle only while open", () => {
     renderTray();
-    expect(screen.getByLabelText("Task tray resize handle")).toBeTruthy();
+    expect(screen.getByLabelText("Task tray width")).toBeTruthy();
   });
 
   it("does not render a resize handle when closed", () => {
     mockUseTaskTray.mockReturnValue(closedTrayCtx());
     renderTray();
-    expect(screen.queryByLabelText("Task tray resize handle")).toBeNull();
+    expect(screen.queryByLabelText("Task tray width")).toBeNull();
   });
 
   it("dragging the handle left grows the tray and persists the new width", () => {
     renderTray();
-    const panel = screen.getByLabelText("Task tray resize handle").parentElement as HTMLElement;
+    const panel = screen.getByLabelText("Task tray width").parentElement as HTMLElement;
     const startWidth = panel.style.width;
     // Handle sits on the left edge — dragging left (negative dx) grows the
     // tray toward the max width.
@@ -537,13 +537,32 @@ describe("TaskTray: drag-to-resize", () => {
     expect(stored).toBeGreaterThanOrEqual(200); // never below the collapse-snap floor
   });
 
-  it("dragging far enough toward the closed edge snaps the tray shut", () => {
+  it("dragging far toward the closed edge stops at the minimum width and never closes the tray", () => {
+    // The shared ResizeHandle (2026-09-03) clamps to the panel's bounds:
+    // the narrowest useful width is the floor, and the tray's own toggle is
+    // what closes it — a resize gesture no longer snaps it shut.
     const trayCtx = openTrayCtx();
     mockUseTaskTray.mockReturnValue(trayCtx);
     renderTray();
-    // Drag well past the collapse-snap threshold (default 308 - 300 = 8px, far below 200).
     drag(getResizeHandle(), 300);
-    expect(trayCtx.close).toHaveBeenCalled();
+    expect(trayCtx.close).not.toHaveBeenCalled();
+    expect(localStorage.getItem("metrix_tray_width")).toBe("260");
+  });
+
+  it("is keyboard-operable: arrows step the width, End expands, Home narrows, Enter toggles", () => {
+    const trayCtx = openTrayCtx();
+    mockUseTaskTray.mockReturnValue(trayCtx);
+    renderTray();
+    const handle = getResizeHandle();
+    expect(handle.getAttribute("tabindex")).toBe("0");
+    fireEvent.keyDown(handle, { key: "ArrowLeft" }); // toward growth on a left-edge handle
+    expect(localStorage.getItem("metrix_tray_width")).toBe(String(308 + 24));
+    fireEvent.keyDown(handle, { key: "End" });
+    expect(localStorage.getItem("metrix_tray_width")).toBe("480");
+    fireEvent.keyDown(handle, { key: "Home" });
+    expect(localStorage.getItem("metrix_tray_width")).toBe("260");
+    fireEvent.keyDown(handle, { key: "Enter" });
+    expect(localStorage.getItem("metrix_tray_width")).toBe("480");
   });
 
   it("a plain click on the handle (no drag) does not resize or close", () => {
@@ -560,14 +579,14 @@ describe("TaskTray: drag-to-resize", () => {
   it("restores a previously persisted width on mount", () => {
     localStorage.setItem(WIDTH_KEY, "400");
     renderTray();
-    const panel = screen.getByLabelText("Task tray resize handle").parentElement as HTMLElement;
+    const panel = screen.getByLabelText("Task tray width").parentElement as HTMLElement;
     expect(panel.style.width).toBe("400px");
   });
 
   it("ignores a corrupt/out-of-range stored width and falls back to the default", () => {
     localStorage.setItem(WIDTH_KEY, "99999");
     renderTray();
-    const panel = screen.getByLabelText("Task tray resize handle").parentElement as HTMLElement;
+    const panel = screen.getByLabelText("Task tray width").parentElement as HTMLElement;
     expect(panel.style.width).toBe("308px");
   });
 });
