@@ -709,3 +709,34 @@ still says which of the two it was. Browser screenshots at 1440 and 390 px confi
 **Reach.** Client gate predicates only. No endpoint, seed field or generation contract changed —
 and the MST gate needed nothing, because `mst.unlocked` was already `briefsCount > 0`, a fact
 about data rather than about a run.
+
+---
+
+## 17. A locator that named a control by the words in it (2026-09-03, autonomous pass 7)
+
+**What.** `smoke:metrix-iap-hover-popover` failed one of its 26 tests after the recommendation
+slider shipped, and the failure named the wrong thing: "waiting for `Diagnose full breakdown` to
+be visible". The popover was fine. `openDrilldown()` found its tile with
+`page.locator("button").filter({ hasText: tileLabel }).first()`, and the slider had arrived
+carrying a recommendation titled "traffic_quality - reach without qualified action" — which
+contains "Reach", comes earlier in the DOM, and sits scrolled off inside the horizontal rail. The
+hover landed on a control 1,300 px off-screen, so no popover opened.
+
+Five tile locators used that form. All five now scope to `[data-testid="kpi-tile"]`, which is the
+tile and nothing else. `check:locator-ambiguity` learned the pattern: it flags
+`locator("<tag>").filter({ hasText: … })` where the text is a string literal, an identifier, or
+an unanchored regex, and exempts an ANCHORED regex (`/^Segment$/`) because `^` is exactly what
+`exact: true` buys elsewhere. Ten existing call sites use the anchored form and are correct; the
+gate passes at 0 findings.
+
+**Where.** `tests/e2e/metrix-iap-hover-popover.spec.ts`, `scripts/src/check-locator-ambiguity.ts`,
+`replit.md`.
+
+**Reach.** Test infrastructure. The gate's new rule reads `tests/e2e/*.spec.ts` only, adds no
+runtime dependency, and runs in the same second as the rest of it.
+
+**Why it matters beyond one spec.** This is the second time a locator matched by substring and
+resolved to something the author never meant — the first cost nine tests in one file and left
+others broken behind a fail-fast run. Both times the failure message described the assertion, not
+the locator, which is what makes the class expensive to diagnose. A locator should name a control
+structurally; the words inside it belong to the product and will change.

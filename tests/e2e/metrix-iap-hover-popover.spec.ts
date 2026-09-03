@@ -175,8 +175,14 @@ async function openDrilldown(
     .getByText("Account Totals", { exact: false })
     .waitFor({ state: "visible", timeout: 20_000 });
 
+  // Scoped to the tile itself, not to "any button whose text contains the
+  // label". The unscoped locator resolved to the recommendation slider's
+  // "why" button — "traffic_quality - reach without qualified action"
+  // contains "Reach", comes first in DOM order, and sits off-screen inside
+  // the horizontal rail, so the hover landed on nothing and the popover
+  // never opened. A tile is a [data-testid="kpi-tile"]; nothing else is.
   const tileBtn = page
-    .locator("button")
+    .locator('[data-testid="kpi-tile"]')
     .filter({ hasText: tileLabel })
     .first();
   await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
@@ -245,11 +251,12 @@ async function main() {
               .getByText("Account Totals", { exact: false })
               .waitFor({ state: "visible", timeout: 20_000 });
 
-            // Find the tile button that contains this metric label.
-            // Using a button locator avoids matching the same text that later
-            // appears in the popover header.
+            // Scoped to the tile, not to any button carrying the label: the
+            // popover header repeats it, and so can a recommendation title
+            // in the slider above (see openDrilldown). A tile is a
+            // [data-testid="kpi-tile"]; nothing else is.
             const tileBtn = page
-              .locator("button")
+              .locator('[data-testid="kpi-tile"]')
               .filter({ hasText: label })
               .first();
             await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
@@ -346,9 +353,8 @@ async function main() {
             .getByText("Account Totals", { exact: false })
             .waitFor({ state: "visible", timeout: 20_000 });
 
-          // Find the CPA tile button.
           const tileBtn = page
-            .locator("button")
+            .locator('[data-testid="kpi-tile"]')
             .filter({ hasText: "Cost per conversion (blended)" })
             .first();
           await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
@@ -422,9 +428,8 @@ async function main() {
             .getByText("Account Totals", { exact: false })
             .waitFor({ state: "visible", timeout: 20_000 });
 
-          // Find the result-event tile button.
           const tileBtn = page
-            .locator("button")
+            .locator('[data-testid="kpi-tile"]')
             .filter({ hasText: "Mobile app installs" })
             .first();
           await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
@@ -574,7 +579,7 @@ async function main() {
 
           // "Link CTR" is a default tile — no localStorage override needed.
           const tileBtn = page
-            .locator("button")
+            .locator('[data-testid="kpi-tile"]')
             .filter({ hasText: "Link CTR" })
             .first();
           await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
@@ -713,7 +718,7 @@ async function main() {
             .waitFor({ state: "visible", timeout: 20_000 });
 
           const tileBtn = page
-            .locator("button")
+            .locator('[data-testid="kpi-tile"]')
             .filter({ hasText: "Cost per conversion (blended)" })
             .first();
           await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
