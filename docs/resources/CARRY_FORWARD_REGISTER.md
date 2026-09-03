@@ -768,3 +768,18 @@ the owner's PR #186 (an in-flight snapshot of this pass, its CI red for the hove
 of the time) and a Replit-generated mockup under `artifacts/mockup-sandbox` — neither reaches
 the client bundle.
 
+**Second pass on the sidebar (2026-09-03, later).** Owner: "not a fan of the current menu
+implementation" — a collapsible / expandable side navigation, with a friction-free way to
+disclose the loop's sub-tabs; tooltips back; the text this pass surfaced inline put back behind
+the previous disclosure patterns. Change log entry 7: the rail-and-map is withdrawn; the
+sidebar collapses and expands again (toggle, keyboard splitter, remembered), and a section's
+pages open on INTENT — a 180 ms dwell or focus — never on a click; the label stays a link; the
+list follows real pointer travel only (a row that lands under a resting pointer after the layout
+shifts is ignored — the first browser probe opened Exports when Strategy was hovered under an
+open Analysis, because Chromium re-dispatches pointerenter after a layout shift); leaving returns
+to the active section after 260 ms; the rail gets the same flyout on dwell / focus and its icons
+navigate. Purposes are tooltips only. `LandedScopeNote` is a tag with its reason in the title;
+the three new optional-input caveats are collapsed by default. Proof: sidebar-nav (25 cases,
+incl. the resting-pointer guard), sidebar-operability restored, the six design gates, a browser
+probe of the state sequence, screenshots of both modes and the phone drawer.
+

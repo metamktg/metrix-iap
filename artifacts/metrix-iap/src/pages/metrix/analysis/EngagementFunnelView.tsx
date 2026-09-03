@@ -811,7 +811,6 @@ export function EngagementFunnelView() {
             {!hasDemo ? (
               <div className="px-6 pt-5" data-testid="funnel-no-demo-note">
                 <CaveatNote
-                  defaultExpanded
                   text="The funnel, the account engagement tiles and the audience breakdown read the Demographics export, which is not staged for this account. The placement and device breakdowns below read the Placement and Device exports."
                 />
               </div>

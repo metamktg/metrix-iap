@@ -88,8 +88,19 @@ async function openWarnings() {
 // when nothing is staged, and the neutral optional-exports note when a run
 // can already go — and the restage offer must appear in whichever one shows.
 const warningText = () =>
-  (screen.queryByText("A delivery report is required before running analysis")?.parentElement?.textContent ??
-    screen.queryByTestId("optional-exports-note")?.textContent) ?? "";
+  screen.queryByText("A delivery report is required before running analysis")?.parentElement?.textContent ??
+  expandedNoteText() ??
+  "";
+
+// The optional-exports note is a CaveatNote collapsed to a preview by
+// default (the previous disclosure pattern); the full text is one click away.
+function expandedNoteText(): string | undefined {
+  const note = screen.queryByTestId("optional-exports-note");
+  if (!note) return undefined;
+  const toggle = note.querySelector("button");
+  if (toggle && toggle.getAttribute("aria-expanded") !== "true") fireEvent.click(toggle);
+  return note.textContent ?? undefined;
+}
 
 beforeEach(() => {
   cleanup();
