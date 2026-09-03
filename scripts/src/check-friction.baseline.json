@@ -1,6 +1,6 @@
 {
   "/app/account": {
-    "warnBoxes": 3,
+    "warnBoxes": 4,
     "warnIcons": 0,
     "longProse": 2,
     "noData": []
@@ -61,8 +61,8 @@
     "noData": []
   },
   "/app/analysis/library": {
-    "warnBoxes": 2,
-    "warnIcons": 1,
+    "warnBoxes": 4,
+    "warnIcons": 2,
     "longProse": 0,
     "noData": []
   },
@@ -292,7 +292,7 @@
   "/app/strategy/avatars": {
     "warnBoxes": 0,
     "warnIcons": 0,
-    "longProse": 0,
+    "longProse": 4,
     "noData": []
   },
   "/app/strategy/communications": {

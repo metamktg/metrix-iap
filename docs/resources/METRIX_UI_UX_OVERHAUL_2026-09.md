@@ -584,18 +584,23 @@ record. Every number below names its command.
 | Typecheck | `pnpm run typecheck` | clean | clean | clean |
 | Client suite | `pnpm --filter @workspace/metrix-iap run test` | 208 / 208 files, 2,539 tests | 208 / 208, 2,539 | 208 / 208, 2,539; the two edits after that run (the first-clause reason, the titled metric tile) re-validated by typecheck and the 60-file / 746-test subset they touch |
 | Twenty static gates | `check:disclosure-rulebook` … `check:cohort-reach` | 20 / 20 | 20 / 20 | 20 / 20 (`payload-legibility` flagged the first-clause reason once; suppressed with the owner's reason on the line) |
-| Four browser gates | `check:friction`, `check:accessible-names`, `check:chart-geometry`, `check:unexplained-dashes` | friction ratchets raised by D1 | re-baselined | 4 / 4: friction re-baselined on the final head (161 warning boxes, 81 glyphs, 41 long prose blocks, 12 no-data phrases; the pre-pass file counted 53 prose blocks), `unexplained-dashes` clean at 684 dashes after the lifted metric label lost a null value its sibling (fixed with the tile's own title) |
+| Four browser gates | `check:friction`, `check:accessible-names`, `check:chart-geometry`, `check:unexplained-dashes` | friction ratchets raised by D1 | re-baselined | 4 / 4: friction re-baselined on the final head (164 warning boxes, 82 glyphs, 45 long prose blocks, 12 no-data phrases), `unexplained-dashes` clean at 684 dashes after the lifted metric label lost a null value its sibling (fixed with the tile's own title) |
 | Route crawl | `smoke:metrix-iap-route-crawl` (70 routes × 3 accounts) | PASS | PASS | PASS |
 | Sixteen e2e smokes | `smoke:login-page-layout` … `smoke:forgot-password` | 13 / 16 (three expectation strings carried the old em-dash copy) | 16 / 16 after aligning them | 16 / 16 |
 | Visual crawl | `shoot:routes`, 51 routes × 2 widths | 0 errors, 0 overflow, 0 empty, 7 unlabeled controls at 390 px | 0 / 0 / 0 / 0 | 0 / 0 / 0 / 0 |
 
-**The friction baseline's diff against the pre-pass file**, read line by line: two routes lower
-their warning counts (4 → 3; 4 → 2 and a glyph 2 → 1), one route's long prose goes 4 → 0, the
-two no-data phrases on Creative Library and Creative Scan change only their joiner (" — " to
+**The friction baseline's diff against the pre-pass file**, read line by line: the two
+no-data phrases on Creative Library and Creative Scan change only their joiner (" — " to
 " · ", the same sentence), and `/app/exports` gains the four warning boxes the four hidden
-child pages carried (they still carry them; the boxes moved, the product total fell from 164
-to 161). No route raises a prose count. The owner's mid-course objection (§9.1) is what
-brought the two prose raises this pass had introduced back to zero.
+child pages carried (they still carry them; the boxes moved). Every other route keeps its
+pre-pass counts. No route raises a prose count: the owner's mid-course objection (§9.1) is
+what brought the two prose raises this pass had introduced back to zero.
+
+A measurement lesson worth keeping: the `--write-baseline` run taken while the route crawl and
+the smokes were running in parallel under-counted four routes (a card rail and an ICP quote
+rendered after the gate's settle window), and a quiet read-only run then reported them as
+raises. The baseline was set from the quiet run, which matches the pre-pass file exactly on
+those routes. Write the friction baseline on an idle machine.
 
 **The chromium note.** The e2e smokes launch Chromium through
 `REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE`; in this environment that is
