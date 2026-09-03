@@ -9,6 +9,8 @@
 // variants), profile theory, and the avatar back-links (now a cross-page
 // deep link into MST via ?focus=).
 
+import { useResultScope } from "@/hooks/useResultScope";
+import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import { TYPE } from "../typography";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -885,9 +887,14 @@ export function AvatarsView() {
     "strategy-avatars", adAccountId, analysisRunsData?.runs,
   );
   const { filterByRun } = useCellRunScope(analysis, runSelection);
+  // One result scope for every analysis surface: rows are filtered to the
+  // scope's event(s) before any profile's CPA / CVR is summed, so a reach
+  // campaign never ranks an avatar against a purchase one.
+  const resultScope = useResultScope(account, adAccountId, analysis?.performance_by_cell.map((r) => r["Result type"]));
+  const { scopeRows } = resultScope;
 
-  const cellRows = useMemo(() => filterByRun(analysis?.performance_by_cell ?? []), [analysis, filterByRun]);
-  const scopedDemoRows = useMemo(() => filterByRun(analysis?.demographic_registration_signal ?? []), [analysis, filterByRun]);
+  const cellRows = useMemo(() => filterByRun(scopeRows(analysis?.performance_by_cell ?? [], (r) => r["Result type"])), [analysis, filterByRun, scopeRows]);
+  const scopedDemoRows = useMemo(() => filterByRun(scopeRows(analysis?.demographic_registration_signal ?? [], (r) => r["Result type"])), [analysis, filterByRun, scopeRows]);
   const scopedAnalysis = useMemo(
     () => (analysis ? { ...analysis, performance_by_cell: cellRows, demographic_registration_signal: scopedDemoRows } : analysis),
     [analysis, cellRows, scopedDemoRows],
@@ -1119,6 +1126,7 @@ export function AvatarsView() {
                 />
               }
             />
+            <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
 
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="ICP profiles" value={String(icpProfiles.length)} variant="primary" />

@@ -1,6 +1,6 @@
 // ─── Concept family grouping and KPI blending ─────────────────────────
 // Pure computation layer for the Library "Group by concept" view.
-// Cells filtered by the MetricSelectionBar are passed in; grouping and
+// Cells already filtered to the page's result scope are passed in; grouping and
 // blending never invent data — only cells with real performance rows
 // contribute to the aggregates.
 //

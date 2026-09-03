@@ -37,13 +37,23 @@ const seed = JSON.parse(JSON.stringify(baseSeed));
 const bookster = seed.ad_accounts.find((a: { id: string }) => a.id === "bookster");
 const rollup: Array<{ concept: string; manual_analysis_run_id: string | null }> =
   bookster.iap.analysis.concept_rollup ?? [];
-const cellRowsRaw: Array<{
+const cellRowsAll: Array<{
   cell_id: string;
+  "Result type": string;
   "Amount spent (USD)": number;
   Results: number;
   Impressions: number;
   "Link clicks": number;
 }> = bookster.iap.analysis.performance_by_cell;
+// The view reads its cells under the account's landing result scope
+// (owner direction 2026-09-03: one event, or the allowed blend of terminal
+// conversions — never every event summed together), so the expected sums
+// are computed over the same rows the page lands on.
+const landingScope = (() => {
+  const built = buildResultScopes(eventInputsFromAccount(bookster as unknown as Parameters<typeof eventInputsFromAccount>[0]));
+  return resolveScope(built.scopes, defaultScopeId(built.groups, cellRowsAll.map((r) => r["Result type"])));
+})();
+const cellRowsRaw = scopeRows(cellRowsAll, landingScope, (r) => r["Result type"]);
 const concepts = [...new Set(rollup.map((r) => r.concept))];
 const RUN_1_CONCEPT = concepts.find(
   (c) =>
@@ -120,6 +130,7 @@ import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 import { MstCommandCenter } from "../mst/MstCommandCenter";
 import { fmtUSD, fmtPct } from "../shared";
+import { buildResultScopes, defaultScopeId, eventInputsFromAccount, resolveScope, scopeRows } from "@/lib/result-scope";
 import type { AnalysisRun } from "@workspace/api-client-react";
 
 const ACCOUNT_KEY = "metrix_active_account_v1";

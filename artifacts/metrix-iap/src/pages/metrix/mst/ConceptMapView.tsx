@@ -5,6 +5,8 @@
 // dive, chaining into individual cells) and cross-links into the
 // Hypothesis Queue and Brief Builder.
 
+import { useResultScope } from "@/hooks/useResultScope";
+import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -64,6 +66,7 @@ export function ConceptMapView({
   const deepDive = useDeepDive();
   const [linkFilter, setLinkFilter] = useState<LinkFilter>("all");
   const [segmentsFor, setSegmentsFor] = useState<{ cellIds: string[]; title: string } | null>(null);
+  const resultScope = useResultScope(account, adAccountId, getAnalysisData(seed, adAccountId)?.performance_by_cell.map((r) => r["Result type"]));
   const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
   const controlled = runScope !== undefined && onRunScopeChange !== undefined;
   // When controlled, the parent owns persistence — the local hook is inert
@@ -97,8 +100,9 @@ export function ConceptMapView({
           );
         }
 
-        // Only cells whose concept was produced by the selected analysis run(s).
-        const rowsInRange = filterByRun(a.performance_by_cell);
+        // Only cells whose concept was produced by the selected analysis run(s),
+        // inside the result scope (one event or the allowed blend).
+        const rowsInRange = filterByRun(resultScope.scopeRows(a.performance_by_cell, (r) => r["Result type"]));
 
         const groupsMap = new Map<string, ConceptGroup>();
         for (const r of rowsInRange) {
@@ -168,6 +172,10 @@ export function ConceptMapView({
                   <RunScopePicker runs={analysisRunsData!.runs} value={runSelection} onChange={setRunSelection} />
                 </div>
               )
+            )}
+
+            {renderHeader && (
+              <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
             )}
 
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">

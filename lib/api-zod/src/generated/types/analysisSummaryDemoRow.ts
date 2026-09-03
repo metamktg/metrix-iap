@@ -9,6 +9,10 @@
 export interface AnalysisSummaryDemoRow {
   age: string;
   gender: string;
+  /** Result-event grain (2026-09-03): the Meta result type these totals were summed under — one row per (age, gender, event). "unknown" for rows written before the engine split by event. Awareness and purchase-intent events are never blended into one row. */
+  result_type: string;
+  /** awareness | consideration | conversion, derived from result_type; null when the event cannot be placed. */
+  intent_class: string | null;
   spend: number | null;
   /** Impressions for this age/gender cell. Nullable because rows ingested before demographic_performance carried the column have no measurement — null means not measured, never zero. Without it there is no demographic CTR or CPM, which is why the column was backfilled. */
   impressions: number | null;

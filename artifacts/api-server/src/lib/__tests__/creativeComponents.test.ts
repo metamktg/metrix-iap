@@ -140,6 +140,39 @@ describe("weightCreativeComponents", () => {
     expect(w2.baseline.cost_per_result).toBeNull();
   });
 
+  it("scopes result math to the dominant intent class: a reach campaign never inflates results or deflates cost per purchase", () => {
+    const w4 = weightCreativeComponents(
+      [
+        { ad_name: "P1", headline: "Fast delivery", source: "performance_export" },
+        { ad_name: "R1", headline: "Fast delivery", source: "performance_export" },
+      ],
+      [
+        { ad_name: "P1", spend: 300, results: 30, impressions: 10000, link_clicks: 200, result_type: "Website purchases" },
+        { ad_name: "R1", spend: 100, results: 40000, impressions: 40000, link_clicks: 100, result_type: "Reach" },
+      ],
+    );
+    expect(w4.scope.intent_class).toBe("conversion");
+    expect(w4.scope.result_types).toEqual(["Website purchases"]);
+    expect(w4.scope.excluded_result_types).toEqual(["Reach"]);
+    const fast = w4.families.headline[0]!;
+    expect(fast.ads).toBe(2); // delivery covers both ads
+    expect(fast.spend).toBe(400);
+    expect(fast.results).toBe(30); // the 40,000 people reached are not results on this scale
+    expect(fast.cost_per_result).toBe(10); // $300 of purchase spend ÷ 30, not $400 ÷ 40,030
+    expect(fast.result_types.sort()).toEqual(["Reach", "Website purchases"]);
+    expect(w4.baseline.cost_per_result).toBe(10);
+  });
+
+  it("with only unplaced events every event counts, as before", () => {
+    const w5 = weightCreativeComponents(
+      [{ ad_name: "U", headline: "Unknown", source: "performance_export" }],
+      [{ ad_name: "U", spend: 50, results: 5, impressions: 1000, link_clicks: 5, result_type: "unknown" }],
+    );
+    expect(w5.scope.intent_class).toBeNull();
+    expect(w5.families.headline[0]!.results).toBe(5);
+    expect(w5.families.headline[0]!.cost_per_result).toBe(10);
+  });
+
   it("no inputs at all yields empty families and zero coverage, not a throw", () => {
     const w3 = weightCreativeComponents([], metrics);
     expect(w3.families.headline).toEqual([]);

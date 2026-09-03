@@ -92,6 +92,7 @@
 //   Codeless sentences fall back to deriveLabel. Inside <button> queue cards:
 //   <HypothesisCodeChipsRow> + a line-clamp-1 caption, drawer keeps prose.
 
+import { usePanelSize } from "@/lib/panel-prefs";
 import { useState, useCallback, useId, useRef, useLayoutEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { SPRING_SNAPPY } from "@/lib/motion";
@@ -102,7 +103,7 @@ import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { useListManualImports } from "@workspace/api-client-react";
 import { navTree, visibleChildren } from "@/navigation/navTree";
-import { Plug, FileUp, Clock, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Venus, Mars, AlignLeft, Download } from "lucide-react";
+import { Plug, FileUp, Clock, Info, ArrowRight, ArrowLeftRight, CheckCircle2, CalendarRange, Maximize2, Minimize2, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Venus, Mars, AlignLeft, Download } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
@@ -839,6 +840,9 @@ export function deriveLabel(text: string | null | undefined, max = 60): string {
 // Escape, and viewport collision). Not for use inside <button> cards —
 // nested buttons are invalid HTML; clamp + drawer there instead.
 
+/** DetailReveal widths: compact (the long-standing 380px) or wide. */
+const DETAIL_REVEAL_BOUNDS = { min: 380, max: 560, default: 380 } as const;
+
 export interface DetailSection {
   /** Small uppercase section label inside the popover. */
   label?: string;
@@ -875,6 +879,11 @@ export function DetailReveal({
   defaultOpen?: boolean;
 }) {
   const content = sections.filter((s) => (s.text ?? "").trim() || s.render);
+  // Every reveal on the page shares one width preference (compact 380 or
+  // wide 560), persisted per viewer — the owner's ask that panels be
+  // expandable and consistent across every surface, without a drag handle
+  // on a popover.
+  const size = usePanelSize("detail-reveal", DETAIL_REVEAL_BOUNDS);
   if (content.length === 0) {
     return <span className={cn(labelClassName ?? TYPE.body, "block min-w-0", className)}>{label}</span>;
   }
@@ -903,11 +912,23 @@ export function DetailReveal({
       <PopoverContent
         align={align}
         collisionPadding={12}
-        className="w-[380px] max-w-[min(90vw,420px)] max-h-[min(60vh,480px)] overflow-y-auto p-4 space-y-3"
+        style={{ width: size.width }}
+        className="max-w-[min(90vw,600px)] max-h-[min(60vh,480px)] overflow-y-auto p-4 space-y-3"
       >
-        {eyebrow && (
-          <div className="text-label font-semibold uppercase text-muted-foreground/80">{eyebrow}</div>
-        )}
+        <div className="flex items-start justify-between gap-2">
+          {eyebrow ? <div className={cn(TYPE.label, "text-muted-foreground/75")}>{eyebrow}</div> : <span />}
+          <button
+            type="button"
+            onClick={size.toggleExpanded}
+            aria-pressed={size.expanded}
+            aria-label={size.expanded ? "Compact panel" : "Wide panel"}
+            title={size.expanded ? "Compact" : "Wide"}
+            data-testid="detail-reveal-size"
+            className="pressable hit-target-24 inline-flex items-center justify-center w-6 h-6 -mt-1 -mr-1 rounded text-muted-foreground/75 hover:text-foreground hover:bg-foreground/[0.06] transition-colors shrink-0"
+          >
+            {size.expanded ? <Minimize2 className="w-3.5 h-3.5" aria-hidden /> : <Maximize2 className="w-3.5 h-3.5" aria-hidden />}
+          </button>
+        </div>
         {content.map((s, i) => (
           <div key={i} className="space-y-1">
             {s.label && (
@@ -1720,43 +1741,6 @@ export function SegmentedToggle<T extends string>({
   );
 }
 
-// ─── Metric selection bar ─────────────────────────────────────────────
-// Result-event metric selection used to filter Analysis views.
-
-export function MetricSelectionBar({
-  events,
-  isSelected,
-  onToggle,
-}: {
-  events: string[];
-  isSelected: (event: string) => boolean;
-  onToggle: (event: string) => void;
-}) {
-  return (
-    <div className="flex items-center gap-2 flex-wrap px-6 py-2.5 border-b border-border/30 bg-foreground/[0.01]">
-      <span className="text-caption uppercase tracking-widest text-muted-foreground/75">
-        Metric selection
-      </span>
-      {events.map((e) => {
-        const on = isSelected(e);
-        return (
-          <button
-            key={e}
-            onClick={() => onToggle(e)}
-            aria-pressed={on}
-            className={cn(
-              "pressable inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-body font-medium transition-colors",
-              on ? PILL_ACTIVE : PILL_INACTIVE
-            )}
-          >
-            {on ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-            {eventLabel(e)}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─── Date preset bar ─────────────────────────────────────────────────
 // Pill selector for 7d · 14d · 28d · 90d · All time, placed below the

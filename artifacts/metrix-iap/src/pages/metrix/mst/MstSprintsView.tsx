@@ -11,6 +11,8 @@
 // indicators. The whole cell stays clickable too (real-app addition
 // over canvas) — both open the same performance/creative pop-up.
 
+import { useResultScope } from "@/hooks/useResultScope";
+import { scopeRollupRows } from "@/lib/result-scope";
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -274,6 +276,7 @@ export function MstSprintsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const resultScope = useResultScope(account, adAccountId);
   const deepDive = useDeepDive();
   const [segmentsFor, setSegmentsFor] = useState<{ cellId: string; title: string } | null>(null);
   const [tierFilter, setTierFilter] = useState<ScalingBucket | "all">("all");
@@ -293,7 +296,8 @@ export function MstSprintsView() {
         }
 
         const matrix = mst.historical_matrix_4x4;
-        const rollup = getAnalysisData(seed, adAccountId)?.concept_rollup ?? [];
+        // Result scope: one event (or the allowed blend); pre-split rows kept.
+        const rollup = scopeRollupRows(getAnalysisData(seed, adAccountId)?.concept_rollup ?? [], resultScope.scope);
         const columnIds = matrix.columns.map((c) => c.id);
         const book = matrixBookFor(rollup, columnIds);
         const playbook = getStrategyData(seed, adAccountId)?.scaling_playbook ?? null;

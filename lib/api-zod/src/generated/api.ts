@@ -631,7 +631,8 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
   "spend": zod.number(),
   "impressions": zod.number(),
   "link_clicks": zod.number(),
-  "results": zod.number()
+  "results": zod.number().describe('Sum across every event — read results_by_event before treating it as one thing.'),
+  "results_by_event": zod.record(zod.string(), zod.number()).describe('Results per Meta result type for the day, so a reader can scope to one event or one intent class.')
 }).describe('One calendar day of additive ad_performance totals inside the active window — feeds sparklines and daily trend reads.')).describe('Per-day additive totals inside the active window, ascending by date.'),
   "prior_totals": zod.object({
   "total_spend_usd": zod.number(),
@@ -654,6 +655,8 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
   "demographic_rows": zod.array(zod.object({
   "age": zod.string(),
   "gender": zod.string(),
+  "result_type": zod.string().describe('Result-event grain (2026-09-03): the Meta result type these totals were summed under — one row per (age, gender, event). \"unknown\" for rows written before the engine split by event. Awareness and purchase-intent events are never blended into one row.'),
+  "intent_class": zod.string().nullable().describe('awareness | consideration | conversion, derived from result_type; null when the event cannot be placed.'),
   "spend": zod.number().nullable(),
   "impressions": zod.number().nullable().describe('Impressions for this age\/gender cell. Nullable because rows ingested before demographic_performance carried the column have no measurement — null means not measured, never zero. Without it there is no demographic CTR or CPM, which is why the column was backfilled.'),
   "results": zod.number().nullable(),
@@ -665,6 +668,8 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
 })),
   "placement_rows": zod.array(zod.object({
   "placement": zod.string(),
+  "result_type": zod.string().describe('Result-event grain: the Meta result type these totals were summed under — one row per (placement, event).'),
+  "intent_class": zod.string().nullable().describe('awareness | consideration | conversion, derived from result_type; null when unplaced.'),
   "spend": zod.number(),
   "impressions": zod.number(),
   "link_clicks": zod.number(),
@@ -673,6 +678,8 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
   "concept_rows": zod.array(zod.object({
   "concept": zod.string(),
   "book": zod.string().nullable(),
+  "result_type": zod.string().describe('Result-event grain: the Meta result type these totals were summed under — one row per (book, concept, event).'),
+  "intent_class": zod.string().nullable().describe('awareness | consideration | conversion, derived from result_type; null when unplaced.'),
   "spend": zod.number(),
   "results": zod.number(),
   "link_clicks": zod.number()
@@ -742,7 +749,8 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
   "spend": zod.number(),
   "impressions": zod.number(),
   "link_clicks": zod.number(),
-  "results": zod.number()
+  "results": zod.number().describe('Sum across every event — read results_by_event before treating it as one thing.'),
+  "results_by_event": zod.record(zod.string(), zod.number()).describe('Results per Meta result type for the day, so a reader can scope to one event or one intent class.')
 }).describe('One calendar day of additive ad_performance totals inside the active window — feeds sparklines and daily trend reads.')).describe('Per-day additive totals inside the active window, ascending by date.'),
   "prior_totals": zod.object({
   "total_spend_usd": zod.number(),
@@ -765,6 +773,8 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
   "demographic_rows": zod.array(zod.object({
   "age": zod.string(),
   "gender": zod.string(),
+  "result_type": zod.string().describe('Result-event grain (2026-09-03): the Meta result type these totals were summed under — one row per (age, gender, event). \"unknown\" for rows written before the engine split by event. Awareness and purchase-intent events are never blended into one row.'),
+  "intent_class": zod.string().nullable().describe('awareness | consideration | conversion, derived from result_type; null when the event cannot be placed.'),
   "spend": zod.number().nullable(),
   "impressions": zod.number().nullable().describe('Impressions for this age\/gender cell. Nullable because rows ingested before demographic_performance carried the column have no measurement — null means not measured, never zero. Without it there is no demographic CTR or CPM, which is why the column was backfilled.'),
   "results": zod.number().nullable(),
@@ -776,6 +786,8 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
 })),
   "placement_rows": zod.array(zod.object({
   "placement": zod.string(),
+  "result_type": zod.string().describe('Result-event grain: the Meta result type these totals were summed under — one row per (placement, event).'),
+  "intent_class": zod.string().nullable().describe('awareness | consideration | conversion, derived from result_type; null when unplaced.'),
   "spend": zod.number(),
   "impressions": zod.number(),
   "link_clicks": zod.number(),
@@ -784,6 +796,8 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
   "concept_rows": zod.array(zod.object({
   "concept": zod.string(),
   "book": zod.string().nullable(),
+  "result_type": zod.string().describe('Result-event grain: the Meta result type these totals were summed under — one row per (book, concept, event).'),
+  "intent_class": zod.string().nullable().describe('awareness | consideration | conversion, derived from result_type; null when unplaced.'),
   "spend": zod.number(),
   "results": zod.number(),
   "link_clicks": zod.number()
@@ -908,7 +922,8 @@ export const GetAnalysisSummaryResponse = zod.object({
   "spend": zod.number(),
   "impressions": zod.number(),
   "link_clicks": zod.number(),
-  "results": zod.number()
+  "results": zod.number().describe('Sum across every event — read results_by_event before treating it as one thing.'),
+  "results_by_event": zod.record(zod.string(), zod.number()).describe('Results per Meta result type for the day, so a reader can scope to one event or one intent class.')
 }).describe('One calendar day of additive ad_performance totals inside the active window — feeds sparklines and daily trend reads.')).describe('Per-day additive totals inside the active window, ascending by date.'),
   "prior_totals": zod.object({
   "total_spend_usd": zod.number(),
@@ -931,6 +946,8 @@ export const GetAnalysisSummaryResponse = zod.object({
   "demographic_rows": zod.array(zod.object({
   "age": zod.string(),
   "gender": zod.string(),
+  "result_type": zod.string().describe('Result-event grain (2026-09-03): the Meta result type these totals were summed under — one row per (age, gender, event). \"unknown\" for rows written before the engine split by event. Awareness and purchase-intent events are never blended into one row.'),
+  "intent_class": zod.string().nullable().describe('awareness | consideration | conversion, derived from result_type; null when the event cannot be placed.'),
   "spend": zod.number().nullable(),
   "impressions": zod.number().nullable().describe('Impressions for this age\/gender cell. Nullable because rows ingested before demographic_performance carried the column have no measurement — null means not measured, never zero. Without it there is no demographic CTR or CPM, which is why the column was backfilled.'),
   "results": zod.number().nullable(),
@@ -942,6 +959,8 @@ export const GetAnalysisSummaryResponse = zod.object({
 })),
   "placement_rows": zod.array(zod.object({
   "placement": zod.string(),
+  "result_type": zod.string().describe('Result-event grain: the Meta result type these totals were summed under — one row per (placement, event).'),
+  "intent_class": zod.string().nullable().describe('awareness | consideration | conversion, derived from result_type; null when unplaced.'),
   "spend": zod.number(),
   "impressions": zod.number(),
   "link_clicks": zod.number(),
@@ -950,6 +969,8 @@ export const GetAnalysisSummaryResponse = zod.object({
   "concept_rows": zod.array(zod.object({
   "concept": zod.string(),
   "book": zod.string().nullable(),
+  "result_type": zod.string().describe('Result-event grain: the Meta result type these totals were summed under — one row per (book, concept, event).'),
+  "intent_class": zod.string().nullable().describe('awareness | consideration | conversion, derived from result_type; null when unplaced.'),
   "spend": zod.number(),
   "results": zod.number(),
   "link_clicks": zod.number()

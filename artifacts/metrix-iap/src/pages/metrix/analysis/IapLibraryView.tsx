@@ -21,7 +21,9 @@ import {
   getAdAccount, getAnalysisData, getStrategyData, getCampaignSummary,
   getCreativeLinkContext, getMST,
 } from "@/lib/data/metrixSeedAdapter";
-import { useMetricSelection } from "@/lib/metric-selection";
+import { useResultScope } from "@/hooks/useResultScope";
+import { collapseCellRows, scopeSubtitle } from "@/lib/result-scope";
+import { ResultScopeBar, ResultScopeTag } from "@/components/analysis/ResultScopeBar";
 import { useTileSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import {
@@ -31,7 +33,7 @@ import {
 } from "@/lib/data/metricsCatalog";
 import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState, FlowCrumb, LoopAction, useFromParam,
-  MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam, useTabParam,
+  MetricTile, CaveatNote, CrossLink, useFocusParam, useTabParam,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
   StaleFocusNotice, PILL_ACTIVE, PILL_INACTIVE,
   SectionInfoIcon,
@@ -164,19 +166,19 @@ export function IapLibraryView() {
     [optLoop]
   );
 
-  const allEvents = useMemo(
-    () => Object.keys(summary?.bottom_line_totals ?? {}),
-    [summary]
-  );
-  const { selected, toggle, isSelected } = useMetricSelection(adAccountId ?? "none", allEvents);
+  // ── Result scope (one lens for every analysis surface) ──────────────
+  // Rows are filtered to the scope's event(s) BEFORE any sum or sort, so a
+  // ThruPlay row never ranks beside a purchase (owner direction 2026-09-03).
+  const resultScope = useResultScope(account, adAccountId, a?.performance_by_cell.map((r) => r["Result type"]));
+  const { scope: activeScope, selectedTypes: selected, scopeRows: scopeRowsFn } = resultScope;
   const { filterByRun } = useCellRunScope(a, runSelection);
 
   // ── Customizable KPI tile row (library-scoped catalog + selection) ───
-  // Built from the same metric- and run-filtered rows the grid uses so
+  // Built from the same scope- and run-filtered rows the grid uses so
   // the tiles always agree with what's below them.
   const libCells = useMemo(
-    () => filterByRun((a?.performance_by_cell ?? []).filter((r) => selected.includes(r["Result type"]))),
-    [a, selected, filterByRun]
+    () => filterByRun(scopeRowsFn(a?.performance_by_cell ?? [], (r) => r["Result type"])),
+    [a, scopeRowsFn, filterByRun]
   );
 
   // ── Concept family groups (for "Group by concept" toggle) ────────────
@@ -187,7 +189,7 @@ export function IapLibraryView() {
     [libCells, mst]
   );
 
-  const tileCatalog = useMemo(() => buildLibraryMetricCatalog(libCells), [libCells]);
+  const tileCatalog = useMemo(() => buildLibraryMetricCatalog(libCells, { scale: activeScope?.scale ?? null, label: activeScope?.label }), [libCells]);
   const tileCatalogIds = useMemo(() => tileCatalog.map((m) => m.id), [tileCatalog]);
   const {
     selected: savedTileIds, toggle: toggleTile, move: moveTile, reset: resetTiles,
@@ -264,14 +266,18 @@ export function IapLibraryView() {
             );
           }
 
-          const filterRows = <T extends { "Result type": string }>(rows: T[]) =>
-            rows.filter((r) => selected.includes(r["Result type"]));
+          const filterRows = <T extends { "Result type"?: string }>(rows: T[]) =>
+            scopeRowsFn(rows, (r) => r["Result type"]);
 
           // Metric selection first, then the analysis-run scope
           const cells        = filterByRun(filterRows(a.performance_by_cell));
-          const variables    = filterRows(a.v3_variable_performance);
+          // Variable rows land where THEIR data is before a choice is made
+          // (legacy imports stamped every variable row with one event); once
+          // the reader chooses, an empty tab is an honest empty.
+          const variableLanding = resultScope.landRows(a.v3_variable_performance, (r) => r["Result type"]);
+          const variables    = variableLanding.rows;
           const topCells     = filterByRun(filterRows(a.top_checkout_cells));
-          const topVariables = filterRows(a.top_checkout_variables);
+          const topVariables = variableLanding.landed ? scopeRowsFn(a.top_checkout_variables, (r) => r["Result type"]) : filterRows(a.top_checkout_variables);
 
           // Ad copy tab: real cells that carry a mapped MST library primary
           // message. Real text only — cells without a library mapping (or
@@ -299,11 +305,12 @@ export function IapLibraryView() {
           const pillarsForCell = (cellId: string) =>
             (strategy?.message_pillars ?? []).filter((p) => p.source_cells.includes(cellId));
 
-          // Card grid helpers — deduplicate by cell_id (multiple result types
-          // produce multiple rows per cell) and aggregate stats across the
-          // metric-filtered selection for the card stat strip.
+          // Card grid helpers — one row per cell inside the scope (a blended
+          // scope sums its terminal events per cell; an event scope already
+          // has one row per cell), and card stats read the same rows.
+          const scopedCellRows = collapseCellRows(cells, activeScope);
           const cardCtx = {
-            perfRows: a.performance_by_cell,
+            perfRows: scopedCellRows,
             mst,
             ...getCreativeLinkContext(seed, adAccountId),
           };
@@ -325,26 +332,21 @@ export function IapLibraryView() {
           })();
 
           function aggStatsForCell(cellId: string, source: CellPerformanceRow[]): CreativeCardStats {
-            const rows    = source.filter((r) => r.cell_id === cellId);
-            const spend   = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
-            const results = rows.reduce((s, r) => s + r.Results, 0);
-            const primary = rows[0];
+            const collapsed = collapseCellRows(source.filter((r) => r.cell_id === cellId), activeScope)[0];
+            if (!collapsed) return { spend: 0, results: 0, cpa: null, ctrPct: null, resultLabel: activeScope?.label ?? "" };
             return {
-              spend,
-              results,
-              cpa:         results > 0 ? spend / results : null,
-              ctrPct:      primary?.CTR_link_pct ?? null,
-              resultLabel: rows.length === 1 ? eventLabel(primary!["Result type"]) : `${rows.length} events`,
+              spend:       collapsed["Amount spent (USD)"],
+              results:     collapsed.Results,
+              cpa:         activeScope?.scale === "communication" ? null : collapsed.CPA_result,
+              ctrPct:      collapsed.CTR_link_pct,
+              resultLabel: activeScope?.kind === "blended" ? activeScope.label : eventLabel(collapsed["Result type"]),
             };
           }
 
+          // One row per cell inside the scope — the rows the sort, the tier
+          // percentiles and the pagination read. Never "the first row".
           function uniqueCellRows(source: CellPerformanceRow[]): CellPerformanceRow[] {
-            const seen = new Set<string>();
-            return source.filter((r) => {
-              if (seen.has(r.cell_id)) return false;
-              seen.add(r.cell_id);
-              return true;
-            });
+            return collapseCellRows(source, activeScope);
           }
 
           return (
@@ -353,7 +355,7 @@ export function IapLibraryView() {
                 section={SECTION}
                 title="IAP Library"
                 accountName={acct.name}
-                subtitle="Cell & variable performance · by metric selection"
+                subtitle={`Cell & variable performance · ${scopeSubtitle(activeScope) || "by result scope"}`}
                 tabs="analysis"
                 right={
                   <RunScopePicker
@@ -366,7 +368,7 @@ export function IapLibraryView() {
               {focus && !a.performance_by_cell.some((r) => r.cell_id === focus) && (
                 <StaleFocusNotice label="creative cell" />
               )}
-              <MetricSelectionBar events={allEvents} isSelected={isSelected} onToggle={toggle} />
+              <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
 
               {/* ── Funnel stage selector ── */}
               <div className="px-6 pt-3 pb-1 flex items-center gap-2">
@@ -1255,6 +1257,7 @@ export function IapLibraryView() {
                 analysis={a}
                 variableRows={variables}
                 selectedResultTypes={selected}
+                resultScope={activeScope}
               />
 
               {/* ── Segment drill-down from a card's Demographics tab ── */}
@@ -1262,7 +1265,7 @@ export function IapLibraryView() {
                 open={cardSegment != null}
                 onClose={() => setCardSegment(null)}
                 segment={cardSegment?.segment ?? null}
-                analysis={a}
+                analysis={{ ...a, performance_by_cell: cells, demographic_registration_signal: filterRows(a.demographic_registration_signal) }}
                 cellIds={cardSegment?.cellIds ?? null}
                 kicker={cardSegment ? `Creative cell · ${cardSegment.cellIds[0]}` : undefined}
               />

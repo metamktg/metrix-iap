@@ -54,7 +54,10 @@ business-model logic, and are deliberately exempt from the cohort-awareness repa
 
 ### `docs/specs/`
 
-Implementation specifications, written before the code and kept in agreement with it. The first is
+Implementation specifications, written before the code and kept in agreement with it.
+`result-events-and-intent-classes.md` is the contract for result events, intent classes and the
+one result scope the analysis surfaces read (awareness is never weighted against a purchase-intent
+event; blending is terminal conversions only). The first is
 `iap-multi-report-reconciliation.md` — the reconciliation-first evidence layer (report classes and
 grains, ad/asset identity, source authority, the ledger, evidence states, the IAP deconstruction
 integration, UI behaviour, the modelled-tier contract). Its §0 records where the code disproved the
@@ -69,6 +72,9 @@ Two files there are live working records rather than history, and are the entry 
 session picking up phase work:
 
 - `README_HANDOFF.md` — the reading order, and where each phase actually stands.
+- `ARCHITECTURE_CHANGE_LOG.md` — one entry per architectural change, append-only: what changed,
+  why, where it lives, what proves it, how far it reaches. Read it before touching a module it
+  names; add an entry when you change the architecture.
 - `CARRY_FORWARD_REGISTER.md` — the E6 register, reconciled against live code. Every item
   carries a verdict (`[shipped]` / `[open]` / `[decision]`) established by reading the file it
   names. Update an item's status in place as you work it; never drop one silently.

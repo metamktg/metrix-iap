@@ -6,10 +6,11 @@ import { useMemo, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
-import { useMetricSelection } from "@/lib/metric-selection";
+import { useResultScope } from "@/hooks/useResultScope";
+import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
-  CaveatNote, CrossLink, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, eventLabel,
+  CaveatNote, CrossLink, SectionCard, fmtUSD, fmtNum, eventLabel,
   SkeletonTileRow, DatePresetBar, type ViewPreset, SectionInfoIcon,
   useShowMore, ShowMoreButton, SegmentedToggle,
 } from "../shared";
@@ -218,11 +219,9 @@ export function BudgetView() {
   });
 
   const summary = getCampaignSummary(seed, adAccountId);
-  const allEvents = useMemo(
-    () => Object.keys(summary?.bottom_line_totals ?? {}),
-    [summary]
-  );
-  const { selected, toggle, isSelected } = useMetricSelection(adAccountId ?? "none", allEvents);
+  // One result scope for every analysis surface (lib/result-scope.ts).
+  const resultScope = useResultScope(account, adAccountId);
+  const { selectedTypes: selected, inScope } = resultScope;
 
   return (
     <ModuleScopeGate section={SECTION} title="Budget" account={account}>
@@ -253,13 +252,19 @@ export function BudgetView() {
           .map((e) => ({ event: e, totals: activeBlt[e] }))
           .filter((r) => r.totals != null);
 
-        // Spend by concept: when a preset is active use API concept rows (total spend
-        // across all result types — event filter not applicable at daily grain level).
-        // When "all", use performance_by_cell filtered by selected event types.
+        // Spend by concept, inside the result scope: API concept rows now
+        // carry result_type (one row per event), so a window read scopes the
+        // same way the all-time seed rows do.
         const conceptRows: [string, number][] = preset !== "all" && presetData
-          ? presetData.concept_rows
-              .map((r) => [`${r.book ?? ""} ${r.concept}`.trim(), r.spend] as [string, number])
-              .sort((x, y) => y[1] - x[1])
+          ? (() => {
+              const conceptSpend = new Map<string, number>();
+              for (const r of presetData.concept_rows) {
+                if (!inScope(r.result_type)) continue;
+                const key = `${r.book ?? ""} ${r.concept}`.trim();
+                conceptSpend.set(key, (conceptSpend.get(key) ?? 0) + r.spend);
+              }
+              return Array.from(conceptSpend.entries()).sort((x, y) => y[1] - x[1]);
+            })()
           : (() => {
               const conceptSpend = new Map<string, number>();
               for (const r of a?.performance_by_cell ?? []) {
@@ -276,10 +281,10 @@ export function BudgetView() {
               section={SECTION}
               title="Budget"
               accountName={acct.name}
-              subtitle="Spend allocation · by metric selection"
+              subtitle="Spend allocation · by result scope"
               tabs="analysis"
             />
-            <MetricSelectionBar events={allEvents} isSelected={isSelected} onToggle={toggle} />
+            <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
             <DatePresetBar
               value={preset}
               onChange={setPreset}

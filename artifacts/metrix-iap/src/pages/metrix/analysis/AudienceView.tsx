@@ -23,6 +23,8 @@
 // ShareOfSpendCard, GroupDetailCard) over the common AudienceGroup<T> shape
 // from audience-clusters.ts, so the same honesty rules apply to both.
 
+import { useResultScope } from "@/hooks/useResultScope";
+import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import { useMemo, useState, useCallback } from "react";
 import { DumbbellRows } from "@/components/charts/DumbbellRows";
 import { VERDICT, divergingFill } from "@/components/charts/chartTokens";
@@ -741,6 +743,11 @@ export function AudienceView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
+  // One result scope for every analysis surface (lib/result-scope.ts):
+  // demographic rows are (age × gender × event) and are filtered to the
+  // scope BEFORE any segment total is summed.
+  const resultScope = useResultScope(account, adAccountId, analysis?.demographic_registration_signal?.map((r) => r["Result type"]));
+  const scopeDemo = resultScope.scopeRows;
   const [selectedSeg, setSelectedSeg] = useState<SegmentId | null>(null);
   const [mode, setMode] = useState<SegmentByMode>(() => {
     try {
@@ -791,7 +798,7 @@ export function AudienceView() {
   // When a preset is active and data has loaded, use the API rows; otherwise seed rows.
   const activeDemoRows = useMemo(() => {
     if (preset !== "all" && presetData) return adaptApiDemoRows(presetData.demographic_rows);
-    return analysis?.demographic_registration_signal ?? [];
+    return scopeDemo(analysis?.demographic_registration_signal ?? [], (r) => r["Result type"]);
   }, [preset, presetData, analysis]);
 
   const unfilteredRows = useMemo(
@@ -907,7 +914,7 @@ export function AudienceView() {
       <ModuleScopeGate section={SECTION} title="Audience" account={account}>
         {() => {
           const acct = account!;
-          const rows = analysis?.demographic_registration_signal ?? [];
+          const rows = scopeDemo(analysis?.demographic_registration_signal ?? [], (r) => r["Result type"]);
 
           if (rows.length === 0) {
             return (
@@ -932,6 +939,7 @@ export function AudienceView() {
                 subtitle={`${clusterGroups.length} real behavioral cluster${clusterGroups.length !== 1 ? "s" : ""}, derived from the demographic breakdown — not declared targeting.`}
                 tabs="analysis"
               />
+              <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
               <>
                   <DatePresetBar
                     value={preset}

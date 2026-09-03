@@ -19,6 +19,8 @@
 // spend file a real "Test <concept> on <stage>" Task Tray item instead of
 // a fabricated interaction.
 
+import { useResultScope } from "@/hooks/useResultScope";
+import { scopeRollupRows } from "@/lib/result-scope";
 import { Fragment, useState } from "react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { HEADING } from "../typography";
@@ -72,6 +74,7 @@ export function CreativeLibraryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const resultScope = useResultScope(account, adAccountId);
   const [tab, setTab] = useState<string>("library");
   const [variableCode, setVariableCode] = useState<string | null>(null);
   const [openCellId, setOpenCellId] = useState<string | null>(null);
@@ -92,7 +95,7 @@ export function CreativeLibraryView() {
         const components = getCreativeComponents(seed, adAccountId);
         const hasComponents = Boolean(components && components.coverage.ads_with_copy > 0);
         const hasLibrary = Boolean(mst && mst.status === "active" && mst.local_book2_library?.length);
-        const rollupScoped = scopeToRun(a?.concept_rollup ?? [], a?.latest_analysis_run_id ?? null);
+        const rollupScoped = scopeRollupRows(scopeToRun(a?.concept_rollup ?? [], a?.latest_analysis_run_id ?? null), resultScope.scope);
         const componentCount = components
           ? Object.values(components.families).reduce((n, rows) => n + rows.length, 0)
           : 0;

@@ -187,9 +187,12 @@ describe("tracking-basis separation", () => {
     expect(rows[0].value).toBe(90);
     expect(rows[0].spend).toBeNull(); // no delivery data on this basis
   });
-  it("per-event results can't scope to demographic/placement dimensions", () => {
-    expect(dimensionMetricRestriction("avatar", "result:registrations")).toBeTruthy();
+  it("per-event results scope to cells, concepts, variables and (since the result-event grain) demographics — never placements", () => {
+    expect(dimensionMetricRestriction("avatar", "result:registrations")).toBeNull();
     expect(dimensionMetricRestriction("cell", "result:registrations")).toBeNull();
+    expect(dimensionMetricRestriction("placement", "result:registrations")).toBeTruthy();
+    expect(dimensionMetricRestriction("placement", "cost:registrations")).toBeTruthy();
+    expect(dimensionMetricRestriction("placement", "rate:ThruPlays")).toBeTruthy();
   });
 });
 

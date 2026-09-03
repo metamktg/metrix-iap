@@ -8,6 +8,10 @@
 
 export interface AnalysisSummaryPlacementRow {
   placement: string;
+  /** Result-event grain: the Meta result type these totals were summed under — one row per (placement, event). */
+  result_type: string;
+  /** awareness | consideration | conversion, derived from result_type; null when unplaced. */
+  intent_class: string | null;
   spend: number;
   impressions: number;
   link_clicks: number;

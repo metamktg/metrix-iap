@@ -249,10 +249,13 @@ describe("KpiTile — a null value is never unexplainable", () => {
   });
 
   it("keeps a metric's own note as the explanation when it has one", async () => {
-    const { container } = render(<KpiTile metricId="cpa_blended" catalog={nullCatalog} onSelect={() => {}} />);
+    // cpa_blended hides itself when the source has no terminal conversion
+    // event (nothing honest to blend), so the note is read on a source that has one.
+    const blendCatalog = buildMetricCatalog({ ...NULL_SOURCE, resultEvents: [{ key: "Website purchases", label: "Purchases", results: null, spend: null }] });
+    const { container } = render(<KpiTile metricId="cpa_blended" catalog={blendCatalog} onSelect={() => {}} />);
     fireEvent.focus(within(container).getByTestId("kpi-tile-info"));
     await waitFor(() => {
-      expect(screen.getAllByText("spend ÷ all results").length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/spend ÷ purchases/).length).toBeGreaterThan(0);
     });
     // The generic note does not pile on top of a real one.
     expect(screen.queryAllByText(/not a value of zero/i).length).toBe(0);

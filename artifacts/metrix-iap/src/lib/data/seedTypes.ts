@@ -129,6 +129,8 @@ export interface DemographicRow {
   "Ad name": string;
   Age: string;
   Gender: string;
+  /** Result-event grain (2026-09-03): one row per (age, gender, event). Absent on rows written before the split. */
+  "Result type"?: string;
   "Amount spent (USD)": number;
   Reach: number;
   Impressions: number;
@@ -150,6 +152,8 @@ export interface DemographicRow {
 export interface PlacementRow {
   Placement: string;
   Platform: string;
+  /** Result-event grain (2026-09-03): one row per (placement, platform, event). Absent on rows written before the split. */
+  "Result type"?: string;
   "Amount spent (USD)": number;
   Impressions: number;
   "Link clicks": number;
@@ -205,6 +209,14 @@ export interface DeviceDeliveryRow {
 export interface ConceptRollupRow {
   book: string;
   concept: string;
+  /** Result-event grain (2026-09-03): the Meta result type this row was summed under — one row per
+   *  (book, concept, event, run). Null on rows written before the engine split by event ("not split"). */
+  result_type?: string | null;
+  /** awareness | consideration | conversion, derived from result_type; null when unplaced or pre-split. */
+  intent_class?: IntentClass | null;
+  /** "cpa" for cost-per-result classes, "link_ctr" for awareness rows — what performance_lift_vs_baseline compares. */
+  lift_basis?: "cpa" | "link_ctr" | string | null;
+  impressions?: number | null;
   date_start: string;
   date_end: string;
   /** Which analysis run produced this concept's rollup row. Null for
@@ -910,6 +922,8 @@ export interface CreativeCoverage {
 
 export interface CreativeComponents {
   baseline: { spend: number; results: number; cost_per_result: number | null };
+  /** The result events the RESULT math ran over (dominant intent class); absent on seeds built before 2026-09-03. */
+  scope?: { intent_class: IntentClass | null; result_types: string[]; excluded_result_types: string[] };
   families: Record<CreativeComponentFamily, CreativeComponentWeight[]>;
   coverage: CreativeCoverage;
 }
@@ -957,6 +971,47 @@ export interface AdAccountOverviewState {
 }
 
 /** Objective vocabulary (same four keys as the internal cohort registry). */
+export type IntentClass = "awareness" | "consideration" | "conversion";
+
+export interface SeedResultEvent {
+  /** Meta's own string, the key of bottom_line_totals. */
+  raw: string;
+  event_key: string;
+  label: string;
+  intent_class: IntentClass | null;
+  scale: "communication" | "cost_per_result" | null;
+  spend: number;
+  results: number;
+  impressions: number;
+  reach: number;
+  link_clicks: number;
+  clicks_all: number;
+  /** Distinct ads (Meta ad id, else name) optimised towards this event. */
+  ads: number;
+  cost_per_result: number | null;
+  spend_share_pct: number;
+}
+
+export interface SeedIntentClassSummary {
+  intent_class: IntentClass;
+  scale: "communication" | "cost_per_result";
+  spend: number;
+  results: number;
+  impressions: number;
+  link_clicks: number;
+  ads: number;
+  events: string[];
+  spend_share_pct: number;
+}
+
+export interface SeedIntentSummary {
+  classes: SeedIntentClassSummary[];
+  /** The class carrying the most spend (conversion → consideration → awareness on a tie); null when no row could be placed. */
+  dominant_intent: IntentClass | null;
+  unplaced_spend: number;
+  total_spend: number;
+}
+
 export type ObjectiveKey = "ecommerce" | "lead_gen" | "service" | "app";
 export interface AdAccount {
   id: string;
@@ -973,6 +1028,15 @@ export interface AdAccount {
    * runs; unconfigured objectives are surfaced as non-blocking flags.
    */
   objectives?: ObjectiveKey[];
+  /**
+   * Result events and intent classes, DERIVED from the account's ad rows by
+   * seed assembly (owner direction 2026-09-03): what the ads were optimised
+   * towards, each on its own scale. Read-time context for KPI catalogs and
+   * rankings — never a property an operator sets. Absent on the honest
+   * pending shape.
+   */
+  result_events?: SeedResultEvent[];
+  intent_summary?: SeedIntentSummary;
   /** Ad-level registry (ad_name → cell/concept + nullable meta_ad_id / creative_asset_url). */
   ads?: AdRecord[];
   overview_state?: AdAccountOverviewState;

@@ -853,6 +853,10 @@ export interface AnalysisSummaryTotals {
 export interface AnalysisSummaryDemoRow {
   age: string;
   gender: string;
+  /** Result-event grain (2026-09-03): the Meta result type these totals were summed under — one row per (age, gender, event). "unknown" for rows written before the engine split by event. Awareness and purchase-intent events are never blended into one row. */
+  result_type: string;
+  /** awareness | consideration | conversion, derived from result_type; null when the event cannot be placed. */
+  intent_class: string | null;
   spend: number | null;
   /** Impressions for this age/gender cell. Nullable because rows ingested before demographic_performance carried the column have no measurement — null means not measured, never zero. Without it there is no demographic CTR or CPM, which is why the column was backfilled. */
   impressions: number | null;
@@ -866,6 +870,10 @@ export interface AnalysisSummaryDemoRow {
 
 export interface AnalysisSummaryPlacementRow {
   placement: string;
+  /** Result-event grain: the Meta result type these totals were summed under — one row per (placement, event). */
+  result_type: string;
+  /** awareness | consideration | conversion, derived from result_type; null when unplaced. */
+  intent_class: string | null;
   spend: number;
   impressions: number;
   link_clicks: number;
@@ -875,10 +883,19 @@ export interface AnalysisSummaryPlacementRow {
 export interface AnalysisSummaryConceptRow {
   concept: string;
   book: string | null;
+  /** Result-event grain: the Meta result type these totals were summed under — one row per (book, concept, event). */
+  result_type: string;
+  /** awareness | consideration | conversion, derived from result_type; null when unplaced. */
+  intent_class: string | null;
   spend: number;
   results: number;
   link_clicks: number;
 }
+
+/**
+ * Results per Meta result type for the day, so a reader can scope to one event or one intent class.
+ */
+export type AnalysisSummaryDayRowResultsByEvent = {[key: string]: number};
 
 /**
  * One calendar day of additive ad_performance totals inside the active window — feeds sparklines and daily trend reads.
@@ -889,7 +906,10 @@ export interface AnalysisSummaryDayRow {
   spend: number;
   impressions: number;
   link_clicks: number;
+  /** Sum across every event — read results_by_event before treating it as one thing. */
   results: number;
+  /** Results per Meta result type for the day, so a reader can scope to one event or one intent class. */
+  results_by_event: AnalysisSummaryDayRowResultsByEvent;
 }
 
 export type ReportClassCoverageReportClass = typeof ReportClassCoverageReportClass[keyof typeof ReportClassCoverageReportClass];

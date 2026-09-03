@@ -1802,3 +1802,109 @@ revoke all on ad_performance_event_totals    from anon, authenticated;
 revoke all on ad_performance_account_summary from anon, authenticated;
 revoke all on ad_performance_ad_totals       from anon, authenticated;
 -- <<< AD_PERFORMANCE_AGGREGATE_VIEWS_END
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Result-event grain (2026-09-03, owner direction: awareness and
+-- purchase-intent events are never weighted against each other).
+--
+-- Every aggregate the engine writes now carries the Meta "Result type" it
+-- was summed over, so a row's cost per result is one event's cost and a
+-- concept's tier is judged against a same-event baseline. Before this the
+-- rollups keyed on dimension + date only, summed purchases + leads +
+-- ThruPlays into one `results` and stamped the first result type seen.
+-- Additive: new columns are nullable (pre-migration rows read null = "not
+-- split by event", and must always be kept), unique keys widen to include
+-- result_type so one dimension may carry one row per event per run.
+-- intent_class (awareness | consideration | conversion) is DERIVED from
+-- the result type by resultEvents.ts — never configured, never a property
+-- of the account.
+-- ─────────────────────────────────────────────────────────────────────
+alter table concept_performance add column if not exists result_type text;
+alter table concept_performance add column if not exists intent_class text;
+alter table concept_performance add column if not exists impressions bigint;
+alter table concept_performance add column if not exists lift_basis text;  -- cpa | link_ctr (awareness rows)
+alter table demographic_performance add column if not exists result_type text;
+alter table demographic_performance add column if not exists intent_class text;
+alter table placement_performance add column if not exists result_type text;
+alter table placement_performance add column if not exists intent_class text;
+alter table platform_performance add column if not exists result_type text;
+alter table platform_performance add column if not exists intent_class text;
+alter table device_performance add column if not exists result_type text;
+alter table device_performance add column if not exists intent_class text;
+alter table demographic_signal add column if not exists result_type text;
+alter table placement_signal add column if not exists result_type text;
+alter table variable_performance add column if not exists intent_class text;
+
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname from pg_constraint
+    where conrelid = 'concept_performance'::regclass and contype = 'u'
+  loop
+    execute format('alter table concept_performance drop constraint %I', cname);
+  end loop;
+  alter table concept_performance
+    add constraint concept_performance_account_book_concept_type_run_key
+    unique (account_id, book, concept, result_type, manual_analysis_run_id);
+end $$;
+
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname from pg_constraint
+    where conrelid = 'demographic_performance'::regclass and contype = 'u'
+  loop
+    execute format('alter table demographic_performance drop constraint %I', cname);
+  end loop;
+  alter table demographic_performance
+    add constraint demographic_performance_account_gender_age_type_window_key
+    unique (account_id, gender, age, result_type, date_start, date_end);
+end $$;
+
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname from pg_constraint
+    where conrelid = 'placement_performance'::regclass and contype = 'u'
+  loop
+    execute format('alter table placement_performance drop constraint %I', cname);
+  end loop;
+  alter table placement_performance
+    add constraint placement_performance_account_placement_type_window_key
+    unique (account_id, placement, result_type, date_start, date_end);
+end $$;
+
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname from pg_constraint
+    where conrelid = 'platform_performance'::regclass and contype = 'u'
+  loop
+    execute format('alter table platform_performance drop constraint %I', cname);
+  end loop;
+  alter table platform_performance
+    add constraint platform_performance_account_platform_type_window_key
+    unique (account_id, platform, result_type, date_start, date_end);
+end $$;
+
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname from pg_constraint
+    where conrelid = 'device_performance'::regclass and contype = 'u'
+  loop
+    execute format('alter table device_performance drop constraint %I', cname);
+  end loop;
+  alter table device_performance
+    add constraint device_performance_account_device_kind_type_window_key
+    unique (account_id, device, device_kind, result_type, date_start, date_end);
+end $$;
+
+create index if not exists concept_performance_type_idx on concept_performance (account_id, result_type);
+create index if not exists demographic_performance_type_idx on demographic_performance (account_id, result_type);
+create index if not exists placement_performance_type_idx on placement_performance (account_id, result_type);

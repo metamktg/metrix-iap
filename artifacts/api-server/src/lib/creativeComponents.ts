@@ -40,6 +40,8 @@
 // means "as efficient as the copy we can see", not a claim about ads whose
 // copy is unknown.
 
+import { classifyResultEvent, INTENT_CLASS_ORDER, type IntentClass } from "./resultEvents";
+
 export type CreativeInputSource = "performance_export" | "uploaded_asset" | "meta_api";
 
 /**
@@ -228,8 +230,24 @@ export interface CreativeCoverage {
   sources: CreativeInputSource[];
 }
 
+/**
+ * The result events the RESULT math ran over. Delivery (spend, impressions,
+ * clicks) is event-agnostic and always covers every ad; results, cost per
+ * result, result share and the efficiency index are summed only over the
+ * account's dominant intent class (most spend; conversion → consideration →
+ * awareness on a tie), so a reach campaign's ThruPlays never inflate a
+ * headline's "results" or deflate its cost per purchase. Null intent means
+ * no event could be placed and every event counted, as before.
+ */
+export interface CreativeComponentScope {
+  intent_class: IntentClass | null;
+  result_types: string[];
+  excluded_result_types: string[];
+}
+
 export interface CreativeComponentWeighting {
   baseline: { spend: number; results: number; cost_per_result: number | null };
+  scope: CreativeComponentScope;
   families: Record<CreativeComponentFamily, ComponentWeight[]>;
   coverage: CreativeCoverage;
 }
@@ -268,24 +286,50 @@ export function weightCreativeComponents(
     metricByKey.set(key, cur);
   }
 
+  // Result scope: the dominant intent class by spend across every ad with
+  // metrics. An ad is in scope when the event it ran under belongs to it.
+  const spendByClass = new Map<IntentClass, number>();
+  const typesByClass = new Map<IntentClass | null, Set<string>>();
+  for (const m of metricByKey.values()) {
+    for (const rt of m.result_types) {
+      const intent = classifyResultEvent(rt).intent;
+      (typesByClass.get(intent) ?? typesByClass.set(intent, new Set()).get(intent)!).add(rt);
+      if (intent) spendByClass.set(intent, (spendByClass.get(intent) ?? 0) + m.spend);
+    }
+  }
+  const dominant: IntentClass | null =
+    [...spendByClass.entries()].sort((a, b) => b[1] - a[1] || INTENT_CLASS_ORDER.indexOf(a[0]) - INTENT_CLASS_ORDER.indexOf(b[0]))[0]?.[0] ?? null;
+  const scopeTypes = dominant ? typesByClass.get(dominant)! : new Set([...typesByClass.values()].flatMap((s) => [...s]));
+  const inScope = (m: { result_types: Set<string> }): boolean =>
+    dominant === null || m.result_types.size === 0 || [...m.result_types].some((rt) => scopeTypes.has(rt));
+  const scope: CreativeComponentScope = {
+    intent_class: dominant,
+    result_types: [...scopeTypes].sort(),
+    excluded_result_types: [...typesByClass.entries()].filter(([k]) => dominant !== null && k !== dominant).flatMap(([, s]) => [...s]).sort(),
+  };
+
   const byFamily: Record<CreativeComponentFamily, number> = { headline: 0, primary_text: 0, description: 0, cta_type: 0 };
   const sources = new Set<CreativeInputSource>();
-  let adsWithCopy = 0, spendWithCopy = 0, resultsWithCopy = 0, spendTotal = 0;
+  let adsWithCopy = 0, spendWithCopy = 0, resultsWithCopy = 0, spendTotal = 0, scopedSpendWithCopy = 0;
   for (const [key, m] of metricByKey) {
     spendTotal += m.spend;
     const input = inputByKey.get(key);
     if (!input) continue;
     adsWithCopy += 1;
     spendWithCopy += m.spend;
-    resultsWithCopy += m.results;
+    if (inScope(m)) {
+      scopedSpendWithCopy += m.spend;
+      resultsWithCopy += m.results;
+    }
     sources.add(input.source);
     for (const f of COMPONENT_FAMILIES) if (input[f]) byFamily[f] += 1;
   }
-  const baselineCpr = resultsWithCopy > 0 ? spendWithCopy / resultsWithCopy : null;
+  const baselineCpr = resultsWithCopy > 0 ? scopedSpendWithCopy / resultsWithCopy : null;
 
   const families = {} as Record<CreativeComponentFamily, ComponentWeight[]>;
   for (const family of COMPONENT_FAMILIES) {
     const agg = new Map<string, ComponentWeight>();
+    const scopedSpend = new Map<string, number>();
     for (const [key, m] of metricByKey) {
       const input = inputByKey.get(key);
       const value = input?.[family];
@@ -299,9 +343,12 @@ export function weightCreativeComponents(
       row.ads += 1;
       row.ad_names.push(m.ad_name);
       row.spend += m.spend;
-      row.results += m.results;
       row.impressions += m.impressions;
       row.link_clicks += m.link_clicks;
+      if (inScope(m)) {
+        row.results += m.results;
+        scopedSpend.set(k, (scopedSpend.get(k) ?? 0) + m.spend);
+      }
       for (const rt of m.result_types) if (!row.result_types.includes(rt)) row.result_types.push(rt);
       agg.set(k, row);
     }
@@ -309,7 +356,8 @@ export function weightCreativeComponents(
     let maxRaw = 0;
     const raws = new Map<ComponentWeight, number>();
     for (const r of rows) {
-      r.cost_per_result = r.results > 0 ? round(r.spend / r.results) : null;
+      const spendInScope = scopedSpend.get(normKey(r.value)) ?? 0;
+      r.cost_per_result = r.results > 0 ? round(spendInScope / r.results) : null;
       r.ctr_link_pct = r.impressions > 0 ? round((r.link_clicks / r.impressions) * 100) : null;
       r.spend_share = spendWithCopy > 0 ? round(r.spend / spendWithCopy) : 0;
       r.result_share = resultsWithCopy > 0 ? round(r.results / resultsWithCopy) : 0;
@@ -333,6 +381,7 @@ export function weightCreativeComponents(
 
   return {
     baseline: { spend: round(spendWithCopy, 2), results: round(resultsWithCopy, 2), cost_per_result: baselineCpr === null ? null : round(baselineCpr) },
+    scope,
     families,
     coverage: {
       ads_total: metricByKey.size,

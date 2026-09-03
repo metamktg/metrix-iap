@@ -4730,6 +4730,17 @@ components:
       properties:
         age: { type: string }
         gender: { type: string }
+        result_type:
+          type: string
+          description: >-
+            Result-event grain (2026-09-03): the Meta result type these totals
+            were summed under — one row per (age, gender, event). "unknown"
+            for rows written before the engine split by event. Awareness and
+            purchase-intent events are never blended into one row.
+        intent_class:
+          type: string
+          nullable: true
+          description: awareness | consideration | conversion, derived from result_type; null when the event cannot be placed.
         spend: { type: number, nullable: true }
         impressions:
           type: number
@@ -4746,16 +4757,18 @@ components:
         checkouts_initiated: { type: number, nullable: true }
         purchases: { type: number, nullable: true }
         adds_to_cart_value: { type: number, nullable: true }
-      required: [age, gender, spend, impressions, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value]
+      required: [age, gender, result_type, intent_class, spend, impressions, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value]
     AnalysisSummaryPlacementRow:
       type: object
       properties:
         placement: { type: string }
+        result_type: { type: string, description: "Result-event grain: the Meta result type these totals were summed under — one row per (placement, event)." }
+        intent_class: { type: string, nullable: true, description: "awareness | consideration | conversion, derived from result_type; null when unplaced." }
         spend: { type: number }
         impressions: { type: number }
         link_clicks: { type: number }
         results: { type: number }
-      required: [placement, spend, impressions, link_clicks, results]
+      required: [placement, result_type, intent_class, spend, impressions, link_clicks, results]
     AnalysisSummaryConceptRow:
       type: object
       properties:
@@ -4763,10 +4776,12 @@ components:
         book:
           type: string
           nullable: true
+        result_type: { type: string, description: "Result-event grain: the Meta result type these totals were summed under — one row per (book, concept, event)." }
+        intent_class: { type: string, nullable: true, description: "awareness | consideration | conversion, derived from result_type; null when unplaced." }
         spend: { type: number }
         results: { type: number }
         link_clicks: { type: number }
-      required: [concept, book, spend, results, link_clicks]
+      required: [concept, book, result_type, intent_class, spend, results, link_clicks]
     AnalysisSummaryDayRow:
       type: object
       description: One calendar day of additive ad_performance totals inside the active window — feeds sparklines and daily trend reads.
@@ -4775,8 +4790,12 @@ components:
         spend: { type: number }
         impressions: { type: number }
         link_clicks: { type: number }
-        results: { type: number }
-      required: [date, spend, impressions, link_clicks, results]
+        results: { type: number, description: "Sum across every event — read results_by_event before treating it as one thing." }
+        results_by_event:
+          type: object
+          description: Results per Meta result type for the day, so a reader can scope to one event or one intent class.
+          additionalProperties: { type: number }
+      required: [date, spend, impressions, link_clicks, results, results_by_event]
     ReportClassCoverage:
       type: object
       description: Join coverage measured for one report class (upload slot) at analysis time — how much of the account's daily-attributable activity this class's rows represent.
@@ -4878,7 +4897,7 @@ components:
           description: Number of ad_performance rows in this window
     DailySeriesPoint:
       type: object
-      required: [day, spend, impressions, reach, clicks_all, link_clicks, results, cpa, ctr_link_pct, cvr_link_pct, ads]
+      required: [day, spend, impressions, reach, clicks_all, link_clicks, results, cpa, ctr_link_pct, cvr_link_pct, ads, results_by_event]
       properties:
         day:
           type: string
