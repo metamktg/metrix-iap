@@ -162,20 +162,20 @@ Status: **fixed** (this pass) · **carried** (planned in §4/§5 with the reason
 | N-2 | Action never offered as a next step | fixed |
 | N-3 | `App.tsx` group comments and the audit doc contradict the tree numbering | fixed |
 | N-4 | Eyebrows disagree with tree labels on four pages | fixed |
-| N-5 | Six pages with no onward action (histories, Findings, Updates, Provenance, Exports) | fixed for histories/Updates/Findings; Exports are download surfaces by design (decision); Provenance carried |
+| N-5 | Six pages with no onward action (histories, Findings, Updates, Provenance, Exports) | fixed for histories (Analysis history → Overview; Strategy history → generated strategy), Updates and Findings; Exports are download surfaces by design (decision); Provenance carried. Pre-selecting the run from a history row needs `lib/run-scope.ts` to accept a query param (carried, §4) |
 | N-6 | Findings reachable only via a legacy redirect | fixed (CrossLink from the Analysis hub; stays hidden in the tree) |
 | N-7 | `?from=` chain dies at the Creative command center | fixed |
 | N-8 | `backUrl` knows two origins | fixed (table over the tree) |
 | N-9 | Structural Back drops query state | fixed |
-| N-10 | Manager recommendations lose the recommendation on open | fixed |
+| N-10 | Manager recommendations lose the recommendation on open | fixed (lands on `/app/listen/recommendations?focus=<id>`); RecommendationsView reading `?focus=` to scroll/highlight is carried (§4 Listen) |
 | N-11 | "Draft a brief" has two destinations | fixed |
 | N-12 | Checklist "Run analysis" lands on Settings | fixed |
 | N-13 | Two pages named "Creative Scan" | carried — needs an owner decision on the MST one's name (§7) |
 | N-14 | "Start re-run" lands on Settings | fixed |
-| N-15 | Nudges stack | fixed |
-| N-16 | Command Hub hides five real pages | fixed (routes from `visibleChildren`) |
+| N-15 | Nudges stack | fixed (one nudge slot per command center, next-step first); CreativeLibraryView renders its source nudge once |
+| N-16 | Command Hub hides five real pages | fixed (routes from `visibleChildren`); the chain keeps Data as the leading step and Reports as the output tile — Listen/MST/Action have nothing to run there (decision) |
 | N-17 | Data hub links disabled when needed | fixed |
-| N-18 | Tab rails on two sections only | fixed where the command center takes it cleanly; the rest carried |
+| N-18 | Tab rails on two sections only | decision: `SectionTabBar` accepts any section, but command centers carry the loop hub + Explore grid, so a rail there would duplicate the grid; child pages carry `tabs=` (unchanged) |
 | N-19 | `/app/analysis/overview` in the legacy block | fixed |
 | N-20 | Collapsed rail could not navigate | fixed by §2.1 (rail items are links) |
 
