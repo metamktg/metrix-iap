@@ -120,7 +120,7 @@ function SpendFloorInput({
       {value != null && (
         <button
           onClick={() => { setRaw(""); onChange(null); }}
-          className="pressable text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
+          className="pressable hit-target-24 text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
           aria-label="Clear spend floor"
         >
           <X className="w-3 h-3" />

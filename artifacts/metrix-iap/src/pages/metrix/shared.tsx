@@ -131,7 +131,7 @@ export function SectionInfoIcon({ tip }: { tip: string }) {
           <span
             role="img"
             aria-label="Section info"
-            className="inline-flex items-center justify-center shrink-0 cursor-default text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
+            className="inline-flex items-center justify-center shrink-0 h-6 w-6 -m-[6px] cursor-default text-muted-foreground/75 hover:text-muted-foreground/75 transition-colors"
           >
             <Info className="w-3 h-3" />
           </span>

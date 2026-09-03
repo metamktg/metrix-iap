@@ -341,7 +341,7 @@ export function CreativeCard({
                 onUploadCreatives?.();
               }}
               title="Map this creative to an IAP library entry"
-              className="pressable absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-status-warning/20 border border-status-warning/35 text-status-warning text-micro-num font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm hover:bg-status-warning/30 transition-colors"
+              className="pressable absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-status-warning/20 border border-status-warning/35 text-status-warning text-micro-num font-semibold px-2 py-1 rounded-full backdrop-blur-sm hover:bg-status-warning/30 transition-colors"
             >
               <span className="w-1 h-1 rounded-full bg-status-warning shrink-0" />
               Map creative
