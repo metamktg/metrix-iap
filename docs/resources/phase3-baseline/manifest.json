@@ -1,0 +1,1399 @@
+{
+  "captured_at": "2026-09-03T17:52:00.844Z",
+  "commit": "835ce9da61d6f5e09029c9a66d55f9dd4008d9a0",
+  "routes": 51,
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440
+    },
+    {
+      "name": "tablet",
+      "width": 768
+    },
+    {
+      "name": "mobile",
+      "width": 375
+    }
+  ],
+  "shots": [
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/account",
+      "slug": "account",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/act/queue",
+      "slug": "act_queue",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/action/agent",
+      "slug": "action_agent",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/analysis",
+      "slug": "analysis",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/analysis/audience",
+      "slug": "analysis_audience",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/analysis/budget",
+      "slug": "analysis_budget",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/analysis/dna",
+      "slug": "analysis_dna",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/analysis/funnel",
+      "slug": "analysis_funnel",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/analysis/history",
+      "slug": "analysis_history",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/analysis/library",
+      "slug": "analysis_library",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/analysis/overview",
+      "slug": "analysis_overview",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/analysis/performance",
+      "slug": "analysis_performance",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/analysis/placements",
+      "slug": "analysis_placements",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/analyze/findings",
+      "slug": "analyze_findings",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/creative",
+      "slug": "creative",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/creative/builder",
+      "slug": "creative_builder",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/creative/import-export",
+      "slug": "creative_import-export",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/creative/library",
+      "slug": "creative_library",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/creative/scan",
+      "slug": "creative_scan",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/exports",
+      "slug": "exports",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/exports/analysis",
+      "slug": "exports_analysis",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/exports/brief",
+      "slug": "exports_brief",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/exports/reports",
+      "slug": "exports_reports",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/exports/strategy",
+      "slug": "exports_strategy",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/listen",
+      "slug": "listen",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/listen/alerts",
+      "slug": "listen_alerts",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/listen/recommendations",
+      "slug": "listen_recommendations",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/listen/signal",
+      "slug": "listen_signal",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/mst",
+      "slug": "mst",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/mst/creative-scan",
+      "slug": "mst_creative-scan",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/mst/cross-map",
+      "slug": "mst_cross-map",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/mst/direction",
+      "slug": "mst_direction",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/mst/sprints",
+      "slug": "mst_sprints",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/overview/updates",
+      "slug": "overview_updates",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/reports",
+      "slug": "reports",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/reports/builder",
+      "slug": "reports_builder",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/reports/configuration",
+      "slug": "reports_configuration",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/reports/history",
+      "slug": "reports_history",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/settings/billing",
+      "slug": "settings_billing",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/settings/general",
+      "slug": "settings_general",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/settings/integrations",
+      "slug": "settings_integrations",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/settings/provenance",
+      "slug": "settings_provenance",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/settings/security",
+      "slug": "settings_security",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/settings/users",
+      "slug": "settings_users",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/strategy",
+      "slug": "strategy",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/strategy/avatars",
+      "slug": "strategy_avatars",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/strategy/communications",
+      "slug": "strategy_communications",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/strategy/history",
+      "slug": "strategy_history",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/strategy/hypotheses",
+      "slug": "strategy_hypotheses",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/strategy/map",
+      "slug": "strategy_map",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "route": "/app/strategy/overview",
+      "slug": "strategy_overview",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/account",
+      "slug": "account",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/act/queue",
+      "slug": "act_queue",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/action/agent",
+      "slug": "action_agent",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/analysis",
+      "slug": "analysis",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/analysis/audience",
+      "slug": "analysis_audience",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/analysis/budget",
+      "slug": "analysis_budget",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/analysis/dna",
+      "slug": "analysis_dna",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/analysis/funnel",
+      "slug": "analysis_funnel",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/analysis/history",
+      "slug": "analysis_history",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/analysis/library",
+      "slug": "analysis_library",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/analysis/overview",
+      "slug": "analysis_overview",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/analysis/performance",
+      "slug": "analysis_performance",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/analysis/placements",
+      "slug": "analysis_placements",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/analyze/findings",
+      "slug": "analyze_findings",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/creative",
+      "slug": "creative",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/creative/builder",
+      "slug": "creative_builder",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/creative/import-export",
+      "slug": "creative_import-export",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/creative/library",
+      "slug": "creative_library",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/creative/scan",
+      "slug": "creative_scan",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/exports",
+      "slug": "exports",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/exports/analysis",
+      "slug": "exports_analysis",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/exports/brief",
+      "slug": "exports_brief",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/exports/reports",
+      "slug": "exports_reports",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/exports/strategy",
+      "slug": "exports_strategy",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/listen",
+      "slug": "listen",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/listen/alerts",
+      "slug": "listen_alerts",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/listen/recommendations",
+      "slug": "listen_recommendations",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/listen/signal",
+      "slug": "listen_signal",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/mst",
+      "slug": "mst",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/mst/creative-scan",
+      "slug": "mst_creative-scan",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/mst/cross-map",
+      "slug": "mst_cross-map",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/mst/direction",
+      "slug": "mst_direction",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/mst/sprints",
+      "slug": "mst_sprints",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/overview/updates",
+      "slug": "overview_updates",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/reports",
+      "slug": "reports",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/reports/builder",
+      "slug": "reports_builder",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/reports/configuration",
+      "slug": "reports_configuration",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/reports/history",
+      "slug": "reports_history",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/settings/billing",
+      "slug": "settings_billing",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/settings/general",
+      "slug": "settings_general",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/settings/integrations",
+      "slug": "settings_integrations",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/settings/provenance",
+      "slug": "settings_provenance",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/settings/security",
+      "slug": "settings_security",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/settings/users",
+      "slug": "settings_users",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/strategy",
+      "slug": "strategy",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/strategy/avatars",
+      "slug": "strategy_avatars",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/strategy/communications",
+      "slug": "strategy_communications",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/strategy/history",
+      "slug": "strategy_history",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/strategy/hypotheses",
+      "slug": "strategy_hypotheses",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/strategy/map",
+      "slug": "strategy_map",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "route": "/app/strategy/overview",
+      "slug": "strategy_overview",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/account",
+      "slug": "account",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/act/queue",
+      "slug": "act_queue",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/action/agent",
+      "slug": "action_agent",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/analysis",
+      "slug": "analysis",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/analysis/audience",
+      "slug": "analysis_audience",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/analysis/budget",
+      "slug": "analysis_budget",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/analysis/dna",
+      "slug": "analysis_dna",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/analysis/funnel",
+      "slug": "analysis_funnel",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/analysis/history",
+      "slug": "analysis_history",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/analysis/library",
+      "slug": "analysis_library",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/analysis/overview",
+      "slug": "analysis_overview",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/analysis/performance",
+      "slug": "analysis_performance",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/analysis/placements",
+      "slug": "analysis_placements",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/analyze/findings",
+      "slug": "analyze_findings",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/creative",
+      "slug": "creative",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/creative/builder",
+      "slug": "creative_builder",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/creative/import-export",
+      "slug": "creative_import-export",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/creative/library",
+      "slug": "creative_library",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/creative/scan",
+      "slug": "creative_scan",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/exports",
+      "slug": "exports",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/exports/analysis",
+      "slug": "exports_analysis",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/exports/brief",
+      "slug": "exports_brief",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/exports/reports",
+      "slug": "exports_reports",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/exports/strategy",
+      "slug": "exports_strategy",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/listen",
+      "slug": "listen",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/listen/alerts",
+      "slug": "listen_alerts",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/listen/recommendations",
+      "slug": "listen_recommendations",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/listen/signal",
+      "slug": "listen_signal",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/mst",
+      "slug": "mst",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/mst/creative-scan",
+      "slug": "mst_creative-scan",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/mst/cross-map",
+      "slug": "mst_cross-map",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/mst/direction",
+      "slug": "mst_direction",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/mst/sprints",
+      "slug": "mst_sprints",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/overview/updates",
+      "slug": "overview_updates",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/reports",
+      "slug": "reports",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/reports/builder",
+      "slug": "reports_builder",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/reports/configuration",
+      "slug": "reports_configuration",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/reports/history",
+      "slug": "reports_history",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/settings/billing",
+      "slug": "settings_billing",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/settings/general",
+      "slug": "settings_general",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/settings/integrations",
+      "slug": "settings_integrations",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/settings/provenance",
+      "slug": "settings_provenance",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/settings/security",
+      "slug": "settings_security",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/settings/users",
+      "slug": "settings_users",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/strategy",
+      "slug": "strategy",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/strategy/avatars",
+      "slug": "strategy_avatars",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/strategy/communications",
+      "slug": "strategy_communications",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/strategy/history",
+      "slug": "strategy_history",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/strategy/hypotheses",
+      "slug": "strategy_hypotheses",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/strategy/map",
+      "slug": "strategy_map",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    },
+    {
+      "viewport": "mobile",
+      "width": 375,
+      "route": "/app/strategy/overview",
+      "slug": "strategy_overview",
+      "ok": true,
+      "err": "",
+      "consoleErrors": []
+    }
+  ],
+  "routes_with_errors": 0
+}
