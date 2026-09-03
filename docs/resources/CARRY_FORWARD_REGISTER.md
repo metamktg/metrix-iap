@@ -616,3 +616,13 @@ tester's latest run (`47505a6a`) re-derives exactly from its raw rows (0 per-ad 
 ad × class rows) and exposed the period-compatibility defect fixed above. **Visual:** page-level
 screenshots at 1440 and 390 px of Audience (cluster + ranked), the segment drill-down, Avatars, the
 variable drill-down and the Creative dialog tabs, judged against the rulebook.
+
+**Shipped to app.metrix.ad (2026-09-03, ~02:00Z).** PR #183 (triple-pass validation: the control must
+share the run window; friction-audit fixes) merged as `61d0e4e` on CI run 33705125157 (green on
+`7fa37e3`). Workspace merged `main` (`e7a94c8`, `origin/main` an ancestor, diff against it empty, lockfile
+unchanged), deployment `329ef7e0` reached success, live entry bundle `index-DRGHhOye.js` equals the
+local build of the same tree, the `CreativeCard` chunk md5 (`7154def8…`) matches, `/api/healthz` 200.
+The live health path is `/api/healthz`; the bare `/healthz` the earlier ship records name returns 404
+through the deployment proxy, so those records should be read as the prefixed path. Still waiting on
+the owner: an Ad Summary export for exactly the run window (or with a Day breakdown) so the tester
+account gains a compatible control under the period rule.
