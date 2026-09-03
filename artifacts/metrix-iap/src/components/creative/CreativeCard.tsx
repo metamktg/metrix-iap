@@ -298,9 +298,10 @@ export function CreativeCard({
           "transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200 flex flex-col cursor-pointer",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
           "hover:shadow-lg hover:shadow-background/60",
-          unmapped
-            ? "border-status-warning/30 hover:border-status-warning/50"
-            : "border-foreground/[0.09] hover:border-primary/30",
+          // An unmapped card carries its "Map creative" pill as the affordance;
+          // an amber border on every unmapped card turned a grid of 69 into a
+          // wall of warnings (friction audit 2026-09-03).
+          "border-foreground/[0.09] hover:border-primary/30",
           className
         )}
       >
@@ -367,7 +368,7 @@ export function CreativeCard({
               type="button"
               onClick={(e) => { e.stopPropagation(); openDialog(); }}
               title="Expand creative"
-              className="pressable flex items-center gap-1 text-caption font-medium text-foreground/80 hover:text-foreground transition-colors"
+              className="pressable hit-target-24 flex items-center gap-1 text-caption font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               <Maximize2 className="w-3.5 h-3.5" />
               Expand
@@ -378,7 +379,7 @@ export function CreativeCard({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onUploadCreative(data.conceptCode); }}
                   title={data.assetUrl ? "Replace creative" : "Upload creative"}
-                  className="pressable flex items-center gap-1 text-caption font-medium text-foreground/70 hover:text-foreground transition-colors"
+                  className="pressable hit-target-24 flex items-center gap-1 text-caption font-medium text-foreground/70 hover:text-foreground transition-colors"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   {data.assetUrl ? "Replace" : "Upload"}
