@@ -751,3 +751,20 @@ Scan" rename (owner); Findings visible-or-folded (owner); the four tables the se
 `top_performers_event`); a `check:token-colors` rule for undefined `hsl(var(--x))` tokens;
 `check:friction` from the scratch audit script.
 
+**Shipped to app.metrix.ad (2026-09-03, 05:57–06:20Z).** PR #187 merged as `bb90d34` (CI green on
+the PR head). Smokes on that head: all fifteen green with the chromium executable set
+(engagement-funnel and manual-import specs updated to the optional-input contract). Demo-path
+visual pass at 1440 / 390 px over fifteen routes: no overflow, no page or console error;
+friction audit 306 visits, 0 navigation errors, 0 nested buttons, 0 overflow. Main's own CI
+run (402) then failed on ONE race in the manual-import spec — the "Placements *" required
+marker clears as soon as any delivery export is staged — fixed in PR #188 (spec only). The
+workspace, before building, made its own two-line change: the explicit JSX generic
+`<TabRail<CreativeComponentFamily>` is a parser error under the Replit dev server's metadata
+injection and the Creative Library's lazy module failed to load; adopted in main (`6269a9b`,
+PR #188) so main and the deployment share one tree. Deployment `329ef7e0` verified: entry
+bundle `index-D3hDNtqW.js` and the CreativeCard and CreativeComponentsPanel chunks carry the
+md5s of the local production build; `/api/healthz` 200. Also on main since the previous ship:
+the owner's PR #186 (an in-flight snapshot of this pass, its CI red for the hover-popover spec
+of the time) and a Replit-generated mockup under `artifacts/mockup-sandbox` — neither reaches
+the client bundle.
+
