@@ -4,12 +4,14 @@
 //   1. "Account Totals" SectionCard header is present (not a bare h2).
 //   2. At least one SectionInfoIcon (info icon) is visible.
 //   3. Zero-result event rows are dimmed (opacity-40) in the canvas table.
-//   4. No stray Next Best Action hero card renders when no recommendation cards exist.
+//   4. The Next Best Action hero names a recommendation the slider also carries
+//      — one derivation feeds both, so the hero cannot be a separate unbacked surface.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot; bookster is a
-// configured account with zero-result event rows and no recommendation cards,
-// making it ideal for all four assertions.
+// configured account with zero-result event rows and no stored
+// optimization_loop.recommendation_cards, making it ideal for all four
+// assertions.
 //
 // Run: tsx tests/e2e/metrix-iap-ad-account-overview.spec.ts
 //   or via: pnpm --filter @workspace/scripts run smoke:metrix-iap-ad-account-overview
@@ -204,8 +206,8 @@ async function main() {
       }
     });
 
-    // ── Test 4: no stray Next Best Action hero when nothing is pending ───
-    await test("Next Best Action hero does not render when no recommendation cards exist", async () => {
+    // ── Test 4: the hero and the slider are one derivation ──────────────
+    await test("Next Best Action hero names a recommendation the account's own rows produced", async () => {
       const ctx = await browser.newContext({
         viewport: { width: 1440, height: 900 },
       });
@@ -214,17 +216,51 @@ async function main() {
         await mockApis(ctx);
         await gotoOverview(page);
 
-        // bookster has no optimization_loop recommendation_cards, so
-        // NextBestActionCard must never show a stale or fabricated
-        // recommendation — it renders the honest dashed empty-state
-        // (data-testid="next-best-action-empty") instead of the hero card.
+        // WHAT THIS GUARDS, AND WHY IT CHANGED.
+        // The original assertion was "bookster stores no
+        // optimization_loop.recommendation_cards, therefore no hero" — a
+        // proxy for the real rule, which is that the hero must never show
+        // a recommendation nothing produced. The stored cards are still
+        // null for every account; recommendations are now DERIVED from the
+        // account's own rows, so the premise "no cards means no hero" is
+        // false while the rule it stood for is unchanged. Assert the rule
+        // directly: whatever the hero names, the slider carries too,
+        // because both read one derivation. A fabricated hero would name
+        // something the slider has never heard of.
         const hero = page.locator('[data-testid="next-best-action-card"]');
-        const count = await hero.count();
+        const empty = page.locator('[data-testid="next-best-action-empty"]');
+        const heroCount = await hero.count();
+        const emptyCount = await empty.count();
         assert(
-          count === 0,
-          `Expected no Next Best Action hero card, found ${count}. It should render nothing when no recommendations are pending.`,
+          heroCount + emptyCount === 1,
+          `Expected exactly one of the hero card or its empty state, found ${heroCount} hero(s) and ${emptyCount} empty state(s).`,
         );
-        console.log(`       Next Best Action hero correctly absent with no pending recommendations`);
+
+        const tileTitles = await page
+          .locator('[data-testid="recommendation-tile"] h4')
+          .evaluateAll((els) => els.map((e) => (e.getAttribute("title") ?? e.textContent ?? "").trim()));
+
+        if (heroCount === 0) {
+          // An account that derives nothing shows the honest empty state —
+          // and then the slider must be empty too, or the two disagree.
+          assert(
+            tileTitles.length === 0,
+            `The hero rendered its empty state while the slider showed ${tileTitles.length} recommendation(s). One derivation, two answers.`,
+          );
+          console.log("       no recommendations derived; hero and slider agree on empty");
+          return;
+        }
+
+        const heroTitle = (await page.locator('[data-testid="next-best-action-title"]').innerText()).trim();
+        assert(
+          tileTitles.length > 0,
+          `The hero named "${heroTitle}" while the slider showed nothing. The hero is reading a source the slider is not.`,
+        );
+        assert(
+          tileTitles.includes(heroTitle),
+          `The hero named "${heroTitle}", which is not among the ${tileTitles.length} recommendation(s) the slider carries: ${tileTitles.slice(0, 4).join(" | ")}`,
+        );
+        console.log(`       hero "${heroTitle.slice(0, 48)}" is one of the ${tileTitles.length} derived recommendation(s)`);
       } finally {
         await ctx.close();
       }
