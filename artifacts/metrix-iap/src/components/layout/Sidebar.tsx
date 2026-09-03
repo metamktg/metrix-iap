@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback, useId } from
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
-  ChevronDown,
+  ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
   LayoutDashboard,
@@ -26,32 +26,34 @@ import { DUR_FAST, DUR_MED, EASE, motionOr, staggerDelay } from "@/lib/motion";
 import { AccountSwitcher } from "./AccountSwitcher";
 import type { NavSection, NavChild, NavIconName, NavGroup } from "@/navigation/navTree";
 
-// ─── A collapsible sidebar whose pages disclose on intent ─────────────
+// ─── A collapsible sidebar whose pages branch out beside it ────────────
 //
 // Two widths, one control: the sidebar is expanded (216px, labels) or a
 // collapsed rail (56px, icons), toggled by the button in the logo row or by
 // the resize handle on its edge, and remembered per browser. That part is
 // the sidebar every reader already knows.
 //
-// What is different is how a section's PAGES appear. There is no chevron to
-// click and no second tap: resting the pointer on a section for a moment
-// (or focusing it from the keyboard) opens its page list in place — the
-// section under the pointer slides open, the one that was open slides shut
-// — and the label itself is still a plain link to the section's command
-// center. Leave the sidebar and, after a short grace, the list returns to
-// the section the reader is actually on. In the collapsed rail the same
-// dwell opens the section's pages as a flyout beside its icon; the icon is
-// a link to the command center, so the rail can navigate.
+// What is different is how a section's PAGES appear. Nothing in the sidebar
+// expands, in either width: every section is one link, and a click on it is
+// the navigation — Analysis goes to the Analysis command center at once. Rest
+// the pointer on a section instead (about 0.7 s), or focus it from the
+// keyboard, and its pages slide out to the RIGHT of the sidebar as a branch
+// of a flow chart: a connector from the section's row to a node carrying the
+// section, and the pages hanging off one rule with an elbow each. Once a
+// branch is out, moving to another section moves the branch at once; leave
+// the sidebar (or press Escape) and it folds away after a short grace. The
+// collapsed rail does exactly the same beside its icons.
 //
 // Nothing about a section is written out in the sidebar: what a module is
 // for lives in its tooltip (the title on every section and page), never as
 // a line under the label. The six loop stages keep their numerals on one
 // spine, and the groups keep their labels — those are structure, not prose.
 //
-// Owner direction (2026-09-03, second pass): a collapsible / expandable
-// side navigation, with a more user-friendly way to disclose the loop's
-// sub-tabs without extra clicks; tooltips back; no disclosed text surfaced
-// on the main interface.
+// Owner direction (2026-09-03, third pass): "it has an animation that looks
+// like a flow chart disclosing the sub-tabs to the right of the menu, so
+// someone can hover Analysis and click it right away and go to the Analysis
+// command center, whereas if they hovered for 0.7 seconds it discloses the
+// sub-pages as a slide-out-to-the-right animated sub-page menu."
 //
 // Mechanics from the Watermelon references (docs/resources/watermelon):
 // tooltip-navbar's dwell-then-follow (one delay to open, none to travel once
@@ -64,11 +66,14 @@ const EXPANDED_WIDTH = 216;
 const COLLAPSED_WIDTH = 56;
 // Drop below this width mid-drag and releasing snaps to the collapsed rail.
 const COLLAPSE_SNAP_WIDTH = 150;
-/** How long a pointer rests on a section before its pages open. */
-export const OPEN_DWELL_MS = 180;
-/** How long an intent-opened list stays after the pointer leaves the sidebar. */
+/** How long a pointer rests on a section before its branch slides out (a pass-through opens nothing). */
+export const OPEN_DWELL_MS = 700;
+/** How long a branch stays after the pointer leaves the sidebar. */
 export const CLOSE_GRACE_MS = 260;
-const FLYOUT_WIDTH = 224;
+/** The branch panel's width, in both sidebar widths. */
+const FLYOUT_WIDTH = 232;
+/** The branch overlaps the sidebar's edge by this much so the pointer never crosses a gap. */
+const FLYOUT_OVERLAP = 6;
 
 // ─── Icon map ──────────────────────────────────────────────────────────
 
@@ -180,7 +185,7 @@ function dividerAfter(section: NavSection, next: NavSection | undefined): boolea
   return next != null && next.group !== section.group;
 }
 
-// ─── Child row (expanded list and rail flyout) ──────────────────────────
+// ─── Child row (a page on the branch) ───────────────────────────────────
 
 function ChildRow({
   child,
@@ -202,7 +207,7 @@ function ChildRow({
 
   return (
     <motion.li
-      className="relative"
+      className="relative mx-map-branch-row"
       initial={reduced ? false : { opacity: 0, x: -8, filter: "blur(4px)" }}
       animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
       transition={motionOr(reduced, { duration: DUR_MED, ease: EASE, delay: staggerDelay(index, total) })}
@@ -242,9 +247,10 @@ function ChildRow({
 }
 
 // ─── Collapsed icon item ────────────────────────────────────────────────
-// The icon is a link to the command center. Its pages open as a flyout on
-// intent — rendered by the Sidebar beside the rail, outside the scrolling
-// nav (which would clip anything wider than 56px), at this item's height.
+// The icon is a link to the command center. Its pages branch out beside it
+// on intent — rendered by the Sidebar at the aside level, outside the
+// scrolling nav (which would clip anything wider than 56px), at this
+// item's height.
 
 function CollapsedItem({
   section,
@@ -253,6 +259,8 @@ function CollapsedItem({
   flyoutId,
   onIntent,
   onLeave,
+  onEnterBranch,
+  touch,
   showDivider,
   itemRef,
 }: {
@@ -262,6 +270,8 @@ function CollapsedItem({
   flyoutId: string;
   onIntent: (sectionId: string, via: "hover" | "focus", at?: PointerPoint) => void;
   onLeave: () => void;
+  onEnterBranch: (sectionId: string) => void;
+  touch: TouchDisclosure;
   showDivider: boolean;
   itemRef: (el: HTMLLIElement | null) => void;
 }) {
@@ -285,7 +295,9 @@ function CollapsedItem({
           data-testid="rail-item"
           data-section-id={section.id}
           onFocus={() => onIntent(section.id, "focus")}
-          onClick={(e) => navigate(landing, e)}
+          onPointerDown={(e) => touch.pointerDown(e, section.id, hasPages && !open)}
+          onClick={(e) => { if (touch.consumeClick(e, section.id)) return; navigate(landing, e); }}
+          onKeyDown={(e) => { if (e.key === "ArrowRight" && hasPages) { e.preventDefault(); onEnterBranch(section.id); } }}
           aria-current={active ? "page" : undefined}
           aria-label={section.label}
           aria-controls={hasPages ? flyoutId : undefined}
@@ -323,43 +335,85 @@ function CollapsedItem({
   );
 }
 
-// ─── Rail flyout: the intent section's pages, beside its icon ────────────
+// ─── Touch: a section with pages opens its branch on the first tap ───────
+// A touch pointer has no hover and no dwell. The first tap on a section
+// that has pages opens its branch (the tap focuses the link, and focus
+// opens at once) and is NOT a navigation; a tap on an open section, or on
+// a section with no pages, navigates as any link does. Mouse and pen never
+// enter this path — for them a click is always the navigation.
 
-function RailFlyout({
+type TouchDisclosure = {
+  pointerDown: (e: React.PointerEvent, sectionId: string, opensBranch: boolean) => void;
+  consumeClick: (e: React.MouseEvent, sectionId: string) => boolean;
+};
+
+// ─── The branch: the intent section's pages, beside the sidebar ──────────
+// One panel for both widths, rendered at the aside level (outside the
+// scrolling nav) at the section's own height: a connector from the row the
+// reader rested on, the section as a node, and the pages hanging off one
+// rule with an elbow each — the loop drawn as a flow chart, one branch at
+// a time. It slides in from the sidebar's edge (x −12, blur 4 → 0) and the
+// pages arrive in sequence.
+
+function NavFlyout({
   section,
   badgeCounts,
+  left,
   top,
+  anchorY,
   flyoutId,
   reduced,
   flyoutRef,
+  onEscape,
 }: {
   section: NavSection;
   badgeCounts: Record<string, number | null>;
+  left: number;
   top: number;
+  anchorY: number;
   flyoutId: string;
   reduced: boolean | null;
   flyoutRef: (el: HTMLDivElement | null) => void;
+  onEscape: () => void;
 }) {
   const children = visibleChildren(section);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  // Arrow keys walk the branch; Left or Escape folds it and returns focus.
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const links = Array.from(panelRef.current?.querySelectorAll<HTMLAnchorElement>("a[href]") ?? []);
+    const i = links.indexOf(document.activeElement as HTMLAnchorElement);
+    if (e.key === "ArrowDown" && links.length) { e.preventDefault(); links[(i + 1) % links.length]?.focus(); }
+    else if (e.key === "ArrowUp" && links.length) { e.preventDefault(); links[(i - 1 + links.length) % links.length]?.focus(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); onEscape(); }
+  };
+
   return (
     <motion.div
-      ref={flyoutRef}
+      ref={(el) => { panelRef.current = el; flyoutRef(el); }}
       key={section.id}
       id={flyoutId}
       role="group"
       aria-label={`${section.label} pages`}
-      data-testid="rail-flyout"
+      data-testid="nav-flyout"
       data-section-id={section.id}
       className="absolute z-40 mx-nav-map rounded-lg py-1.5 pl-1 pr-1.5"
-      style={{ left: COLLAPSED_WIDTH - 6, top, width: FLYOUT_WIDTH }}
-      initial={reduced ? false : { opacity: 0, x: -8, filter: "blur(4px)" }}
+      style={{ left, top, width: FLYOUT_WIDTH }}
+      initial={reduced ? false : { opacity: 0, x: -12, filter: "blur(4px)" }}
       animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-      exit={{ opacity: 0, x: -4, filter: "blur(2px)", transition: motionOr(reduced, { duration: DUR_FAST, ease: EASE }) }}
+      exit={{ opacity: 0, x: -6, filter: "blur(2px)", transition: motionOr(reduced, { duration: DUR_FAST, ease: EASE }) }}
       transition={motionOr(reduced, { duration: DUR_MED, ease: EASE })}
+      onKeyDown={onKeyDown}
     >
-      <div className={cn(TYPE.microLabel, "px-3 pt-1 pb-1.5 text-muted-foreground/75 flex items-center gap-1.5")} title={section.purpose}>
+      {/* The connector: from the row the reader rested on to the node. */}
+      <span aria-hidden="true" data-testid="nav-flyout-connector" className="mx-branch-connector" style={{ top: anchorY }} />
+      <div
+        data-testid="nav-flyout-node"
+        className={cn(TYPE.microLabel, "mx-branch-node px-3 pt-1 pb-1.5 text-muted-foreground/75 flex items-center gap-1.5")}
+        title={section.purpose}
+      >
         {section.loopStage != null && (
-          <span aria-hidden="true" className="w-4 h-4 rounded-full border border-border/50 text-micro-num tabular-nums flex items-center justify-center normal-case">{section.loopStage}</span>
+          <span aria-hidden="true" className="w-4 h-4 rounded-full border border-primary/40 text-micro-num tabular-nums flex items-center justify-center normal-case">{section.loopStage}</span>
         )}
         <span className="truncate">{section.label}</span>
       </div>
@@ -379,48 +433,57 @@ function RailFlyout({
   );
 }
 
-// ─── Expandable section (expanded mode) ────────────────────────────────
-// The header is ONE control: a link to the section's command center. Its
-// page list opens on intent (dwell or focus), never on a click — a click is
-// the navigation. The chevron is a glyph that says "pages", not a button.
+// ─── Section row (expanded mode) ────────────────────────────────────────
+// ONE control: a link to the section's command center. Nothing under it
+// ever expands — its pages are the branch the Sidebar renders beside the
+// sidebar on intent (dwell or focus), never on a click; a click is the
+// navigation. The chevron is a glyph that says "pages branch from here",
+// not a button; it nudges right while the branch is out.
 
-function ExpandableSection({
+function SectionRow({
   section,
   badgeCounts,
   open,
+  flyoutId,
   onIntent,
-  reduced,
+  onEnterBranch,
+  touch,
+  itemRef,
 }: {
   section: NavSection;
   badgeCounts: Record<string, number | null>;
   open: boolean;
+  flyoutId: string;
   onIntent: (sectionId: string, via: "hover" | "focus", at?: PointerPoint) => void;
-  reduced: boolean | null;
+  onEnterBranch: (sectionId: string) => void;
+  touch: TouchDisclosure;
+  itemRef: (el: HTMLLIElement | null) => void;
 }) {
   const [location] = useLocation();
   const sectionActive = isSectionActive(section, location);
   const landing = sectionLandingRoute(section) ?? "#";
   const landingActive = isChildActive(landing, location);
-  const controlsId = useId();
-  const children = visibleChildren(section);
   const sectionBadge = section.badgeKey ? badgeCounts[section.badgeKey] ?? null : null;
 
   return (
     <li
+      ref={itemRef}
       data-loop-stage={section.loopStage ?? undefined}
       data-section-id={section.id}
       data-testid="nav-section"
       data-open={open || undefined}
-      className={cn(section.loopStage != null && "mx-loop-spine")}
+      className={cn("relative", section.loopStage != null && "mx-loop-spine")}
       onPointerEnter={(e) => { if (hovers(e)) onIntent(section.id, "hover", pointAt(e)); }}
     >
       <a
         href={landing}
-        onClick={(e) => navigate(landing, e)}
+        onPointerDown={(e) => touch.pointerDown(e, section.id, !open)}
+        onClick={(e) => { if (touch.consumeClick(e, section.id)) return; navigate(landing, e); }}
         onFocus={() => onIntent(section.id, "focus")}
+        onKeyDown={(e) => { if (e.key === "ArrowRight") { e.preventDefault(); onEnterBranch(section.id); } }}
         aria-current={landingActive ? "page" : undefined}
         aria-expanded={open}
-        aria-controls={controlsId}
+        aria-controls={flyoutId}
         // What this module is for is its tooltip — the sidebar shows labels only.
         title={`${section.label} · ${section.purpose}`}
         className={cn(
@@ -468,45 +531,14 @@ function ExpandableSection({
         {section.badgeKey && !section.placeholder && (
           <NavBadge count={sectionBadge} badgeKey={section.badgeKey} />
         )}
-        <ChevronDown
+        <ChevronRight
           aria-hidden="true"
           className={cn(
-            "w-3.5 h-3.5 shrink-0 transition-transform duration-200 text-muted-foreground/75",
-            open && "rotate-180",
+            "w-3.5 h-3.5 shrink-0 transition-[transform,color] duration-200",
+            open ? "translate-x-0.5 text-interactive" : "text-muted-foreground/75",
           )}
         />
       </a>
-
-      {/* Animated child list — grid 0fr→1fr trick animates height:auto cleanly */}
-      <div
-        id={controlsId}
-        aria-hidden={!open}
-        // A closed list must be out of the tab order as well as out of
-        // sight: inert takes its links out of Tab, aria-hidden alone
-        // would not (the same fix AppShell's drawer needed).
-        inert={!open}
-        style={{
-          display: "grid",
-          gridTemplateRows: open ? "1fr" : "0fr",
-          transition: reduced ? undefined : "grid-template-rows 220ms cubic-bezier(0.4,0,0.2,1)",
-        }}
-      >
-        <ul
-          aria-label={`${section.label} pages`}
-          className="overflow-hidden mt-0.5 ml-3 pl-0 border-l border-border/20 space-y-0.5 pb-1"
-        >
-          {open && children.map((child, i) => (
-            <ChildRow
-              key={child.id}
-              child={child}
-              count={child.badgeKey ? badgeCounts[child.badgeKey] ?? null : null}
-              index={i}
-              total={children.length}
-              reduced={reduced}
-            />
-          ))}
-        </ul>
-      </div>
     </li>
   );
 }
@@ -516,16 +548,18 @@ function ExpandableSection({
 function LeafSection({
   section,
   badgeCounts,
+  onPass,
 }: {
   section: NavSection;
   badgeCounts: Record<string, number | null>;
+  onPass: () => void;
 }) {
   const [location] = useLocation();
   const active = isSectionActive(section, location);
   const to = section.to!;
 
   return (
-    <li className="relative">
+    <li className="relative" onPointerEnter={(e) => { if (hovers(e)) onPass(); }}>
       {active && (
         <span className="absolute left-0 top-[6px] bottom-[6px] w-0.5 bg-primary rounded-full" />
       )}
@@ -627,18 +661,17 @@ export function Sidebar() {
       );
 
   // ─── Disclosure state ────────────────────────────────────────────────
-  // The open list is the section under intent (a dwell or focus), else the
-  // section the reader is on. Nothing is remembered between visits: the
-  // route is the memory.
-  const activeSection = visibleTree.find((s) => isSectionActive(s, location));
+  // The branch that is out is the section under intent (a dwell, a focus,
+  // or a first tap), or nothing. Nothing is remembered between visits and
+  // nothing is open by default: the sidebar at rest is sections only.
   const [intentId, setIntentId] = useState<string | null>(null);
   const intentViaRef = useRef<"hover" | "focus" | null>(null);
   const dwellTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const graceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const asideRef = useRef<HTMLElement>(null);
-  const railRefs = useRef<Record<string, HTMLLIElement | null>>({});
+  const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const flyoutRef = useRef<HTMLDivElement | null>(null);
-  const [flyoutTop, setFlyoutTop] = useState(0);
+  const [flyoutPos, setFlyoutPos] = useState({ top: 0, anchorY: 14 });
   const flyoutId = useId();
 
   const clearTimers = useCallback(() => {
@@ -647,7 +680,7 @@ export function Sidebar() {
   }, []);
   useEffect(() => () => clearTimers(), [clearTimers]);
 
-  // A navigation ends the intent: the list follows the new route.
+  // A navigation ends the intent: the branch folds away with the old page.
   useEffect(() => {
     clearTimers();
     setIntentId(null);
@@ -655,17 +688,23 @@ export function Sidebar() {
   }, [location, clearTimers]);
 
   // Dwell, then follow: the first section waits OPEN_DWELL_MS (a pass-through
-  // on the way to the page opens nothing); once a list is open by intent,
-  // moving to another section moves the list at once. Focus opens at once.
+  // on the way to the page opens nothing); once a branch is out by intent,
+  // moving to another section moves the branch at once. Focus opens at once.
   //
-  // "Moving" means the pointer travelled. When a list opens, the list above
-  // it collapses and the rows shift under a pointer that has not moved;
-  // Chromium then dispatches a pointerenter for whichever row landed under
-  // it, and without this guard that row opened too — hover Strategy under an
-  // open Analysis and Exports opened instead. A follow needs real travel
-  // since the last open.
+  // "Moving" means the pointer travelled: Chromium re-dispatches pointerenter
+  // for whatever lands under a resting pointer after any layout change (the
+  // accordion this replaced shifted rows under the pointer; a resize or a
+  // badge arriving still can), so a follow needs real travel since the last
+  // open.
   const openedAtRef = useRef<PointerPoint | null>(null);
+  // Focus handed back to a section by a fold (Escape, Left) must not re-open
+  // the branch it just folded: that one focus is not an intent.
+  const returningFocusRef = useRef<string | null>(null);
   const handleIntent = useCallback((sectionId: string, via: "hover" | "focus", at?: PointerPoint) => {
+    if (via === "focus" && returningFocusRef.current === sectionId) {
+      returningFocusRef.current = null;
+      return;
+    }
     if (graceTimer.current) { clearTimeout(graceTimer.current); graceTimer.current = null; }
     if (via === "focus") {
       if (dwellTimer.current) { clearTimeout(dwellTimer.current); dwellTimer.current = null; }
@@ -690,8 +729,9 @@ export function Sidebar() {
     }, OPEN_DWELL_MS);
   }, []);
 
-  // Leaving the sidebar: a pending dwell is cancelled; an intent-opened list
-  // returns to the active section after the grace.
+  // Leaving the sidebar (the branch is part of it, so moving into the branch
+  // is not leaving): a pending dwell is cancelled; a hover-opened branch
+  // folds after the grace.
   const handlePointerLeave = useCallback((e: React.PointerEvent) => {
     if (!hovers(e)) return;
     if (dwellTimer.current) { clearTimeout(dwellTimer.current); dwellTimer.current = null; }
@@ -704,13 +744,23 @@ export function Sidebar() {
     }, CLOSE_GRACE_MS);
   }, []);
 
-  // In the rail, leaving an item (not the whole sidebar) also starts the
-  // grace, so the flyout survives the diagonal move into it.
+  // Leaving an item (not the whole sidebar) only cancels a pending dwell, so
+  // an open branch survives the diagonal move into it.
   const handleRailItemLeave = useCallback(() => {
     if (dwellTimer.current) { clearTimeout(dwellTimer.current); dwellTimer.current = null; }
   }, []);
 
-  // Focus leaving the sidebar closes a focus-opened list.
+  // Passing onto a section with no pages: cancel the dwell, and fold a
+  // hover branch — there is nothing to follow to.
+  const handlePassLeaf = useCallback(() => {
+    if (dwellTimer.current) { clearTimeout(dwellTimer.current); dwellTimer.current = null; }
+    if (intentViaRef.current === "hover") {
+      intentViaRef.current = null;
+      setIntentId(null);
+    }
+  }, []);
+
+  // Focus leaving the sidebar closes a focus-opened branch.
   const handleBlur = useCallback((e: React.FocusEvent) => {
     const next = e.relatedTarget as Node | null;
     if (next && asideRef.current?.contains(next)) return;
@@ -720,31 +770,77 @@ export function Sidebar() {
     }
   }, []);
 
-  // Escape returns the list to the section the reader is on.
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key !== "Escape" || intentId == null) return;
-    e.preventDefault();
+  // Escape folds the branch; focus returns to the section it branched from.
+  const foldBranch = useCallback(() => {
+    const id = intentId;
     clearTimers();
     intentViaRef.current = null;
     setIntentId(null);
+    const link = id ? rowRefs.current[id]?.querySelector<HTMLAnchorElement>("a[href]") : null;
+    if (link && document.activeElement !== link) {
+      returningFocusRef.current = id;
+      link.focus();
+      returningFocusRef.current = null;
+    }
   }, [intentId, clearTimers]);
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== "Escape" || intentId == null) return;
+    e.preventDefault();
+    foldBranch();
+  }, [intentId, foldBranch]);
 
-  const openSectionId = intentId ?? activeSection?.id ?? null;
-  const flyoutSection = collapsed && intentId ? visibleTree.find((s) => s.id === intentId) ?? null : null;
+  // Right arrow on a section walks into its branch (opening it first).
+  const handleEnterBranch = useCallback((sectionId: string) => {
+    intentViaRef.current = "focus";
+    setIntentId(sectionId);
+    requestAnimationFrame(() => {
+      flyoutRef.current?.querySelector<HTMLAnchorElement>("a[href]")?.focus();
+    });
+  }, []);
 
-  // The flyout sits at its icon's height, clamped so it never runs past the
-  // bottom of the sidebar; measured after it renders (its height is its own).
+  // Touch: the first tap on a section with pages opens its branch and is not
+  // a navigation (the tap's focus opens it); the tap after that navigates.
+  const touchOpenRef = useRef<string | null>(null);
+  const touch: TouchDisclosure = {
+    pointerDown: (e, sectionId, opensBranch) => {
+      touchOpenRef.current = !hovers(e) && opensBranch ? sectionId : null;
+    },
+    consumeClick: (e, sectionId) => {
+      if (touchOpenRef.current !== sectionId) return false;
+      touchOpenRef.current = null;
+      e.preventDefault();
+      intentViaRef.current = "focus";
+      setIntentId(sectionId);
+      return true;
+    },
+  };
+
+  const flyoutSection = intentId ? visibleTree.find((s) => s.id === intentId) ?? null : null;
+  const sidebarWidth = dragWidth ?? (collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH);
+
+  // The branch sits at its section's height — its node level with the row —
+  // clamped so it never runs past the bottom of the sidebar; the connector
+  // then points back at the row wherever the panel ended up. Measured after
+  // it renders (its height is its own).
   useLayoutEffect(() => {
     if (!flyoutSection) return;
-    const li = railRefs.current[flyoutSection.id];
+    const li = rowRefs.current[flyoutSection.id];
     const aside = asideRef.current;
     if (!li || !aside) return;
     const asideRect = aside.getBoundingClientRect();
-    const itemTop = li.getBoundingClientRect().top - asideRect.top;
+    const itemRect = li.getBoundingClientRect();
+    const itemTop = itemRect.top - asideRect.top;
+    const itemCenter = itemTop + itemRect.height / 2;
     const height = flyoutRef.current?.offsetHeight ?? 0;
     const maxTop = Math.max(0, asideRect.height - height - 8);
-    setFlyoutTop(height > 0 ? Math.min(itemTop, maxTop) : itemTop);
-  }, [flyoutSection]);
+    const top = height > 0 ? Math.min(itemTop, maxTop) : itemTop;
+    const anchorY = Math.max(8, itemCenter - top);
+    // Same numbers, same state: a fresh object here would re-run this effect
+    // (the non-admin tree is rebuilt per render, so the section is not a
+    // stable identity) and loop.
+    setFlyoutPos((prev) => (prev.top === top && prev.anchorY === anchorY ? prev : { top, anchorY }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flyoutSection?.id, collapsed]);
 
   return (
     <aside
@@ -836,8 +932,10 @@ export function Sidebar() {
                 flyoutId={flyoutId}
                 onIntent={handleIntent}
                 onLeave={handleRailItemLeave}
+                onEnterBranch={handleEnterBranch}
+                touch={touch}
                 showDivider={dividerAfter(section, visibleTree[idx + 1])}
-                itemRef={(el) => { railRefs.current[section.id] = el; }}
+                itemRef={(el) => { rowRefs.current[section.id] = el; }}
               />
             ))}
           </ol>
@@ -852,19 +950,23 @@ export function Sidebar() {
                 </li>
               ) : null,
               section.children?.length ? (
-                <ExpandableSection
+                <SectionRow
                   key={section.id}
                   section={section}
                   badgeCounts={badgeCounts}
-                  open={openSectionId === section.id}
+                  open={intentId === section.id}
+                  flyoutId={flyoutId}
                   onIntent={handleIntent}
-                  reduced={reduced}
+                  onEnterBranch={handleEnterBranch}
+                  touch={touch}
+                  itemRef={(el) => { rowRefs.current[section.id] = el; }}
                 />
               ) : (
                 <LeafSection
                   key={section.id}
                   section={section}
                   badgeCounts={badgeCounts}
+                  onPass={handlePassLeaf}
                 />
               ),
             ])}
@@ -872,17 +974,20 @@ export function Sidebar() {
         )}
       </nav>
 
-      {/* The rail's page flyout — beside the rail, outside the scrolling nav. */}
+      {/* The branch — beside the sidebar in either width, outside the scrolling nav. */}
       <AnimatePresence initial={false}>
         {flyoutSection && visibleChildren(flyoutSection).length > 0 && (
-          <RailFlyout
+          <NavFlyout
             key={flyoutSection.id}
             section={flyoutSection}
             badgeCounts={badgeCounts}
-            top={flyoutTop}
+            left={sidebarWidth - FLYOUT_OVERLAP}
+            top={flyoutPos.top}
+            anchorY={flyoutPos.anchorY}
             flyoutId={flyoutId}
             reduced={reduced}
             flyoutRef={(el) => { if (el) flyoutRef.current = el; }}
+            onEscape={foldBranch}
           />
         )}
       </AnimatePresence>

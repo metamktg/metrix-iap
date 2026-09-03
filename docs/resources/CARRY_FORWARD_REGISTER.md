@@ -792,3 +792,15 @@ its own this time (HEAD `c338872`, clean, diff against origin/main empty). Deplo
 (entry `index-I-x2lDLl.js` and every chunk) carry the local md5s — 130 match, 0 differ, 0
 missing; `/api/healthz` 200. The live sidebar is the collapsible one with pages on intent.
 
+**Third pass on the sidebar (2026-09-03, later).** Owner: "when I said sidebar menu hover effect
+I didn't mean expand hover" — the pages should disclose as a flow-chart branch to the RIGHT of
+the menu on a ~0.7 s hover, while a click on the section goes straight to its command center.
+Change log entry 8: the in-place accordion is withdrawn; nothing in the sidebar expands in either
+width; a 700 ms dwell / focus / first touch-tap slides `NavFlyout` out beside the sidebar
+(connector from the row, section node, pages off one rule with elbows, staggered arrival); it
+follows the pointer, stays while the pointer is in it, folds after the grace; Escape / Left /
+blur fold it and return focus without re-opening (a returned focus is not an intent — the first
+browser probe re-opened the branch on Escape through the section's own focus handler). Proof:
+sidebar-nav 31, layout suite 117, client suite 2,483, the eight static gates, the browser probe
+and screenshots in `shots-sidebar3/` (expanded branch, rail branch, phone drawer).
+

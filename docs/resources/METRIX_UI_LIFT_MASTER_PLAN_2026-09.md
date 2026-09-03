@@ -89,17 +89,20 @@ Net: 33 held, 10 partial (all addressed or carried below), 2 superseded, 1 open.
 
 Filled at the end of the pass — see the commits on the branch and the register §14 entry.
 
-### 2.1 The sidebar: collapsible again, pages on intent
-Change log entry 7 (entry 6's rail-and-map shipped for a few hours and was withdrawn on the
-owner's second pass). The sidebar is the collapsible / expandable navigation (216 px or a 56 px
-rail; toggle and keyboard splitter; remembered per browser) and keeps one idea from the map: a
-section's pages disclose on intent — a 180 ms dwell or focus opens the list in place, the label
-stays a plain link, the list follows real pointer travel (a row that lands under a resting
-pointer after the layout shifts is ignored), leaving returns to the active section after a
-260 ms grace; the rail gets a flyout of pages on the same dwell and its icons navigate. What a
-module or page is for is its tooltip, never a line in the sidebar. The sentence-style notes this
-pass had added (landing scope, three optional-input caveats) are back behind the existing
-disclosure patterns: a tag with its reason in the title; caveats collapsed by default.
+### 2.1 The sidebar: collapsible again, pages as a branch beside it
+Change log entry 8 (entry 6's rail-and-map shipped for a few hours and was withdrawn on the
+owner's second pass; entry 7's in-place accordion shipped for an hour and was withdrawn on the
+third — "I didn't mean expand hover"). The sidebar is the collapsible / expandable navigation
+(216 px or a 56 px rail; toggle and keyboard splitter; remembered per browser) and nothing in it
+expands: a section is one link and a click is the navigation at once; a 700 ms dwell (or focus,
+or a first tap on touch) slides the section's pages out to the RIGHT as a flow-chart branch —
+connector from the row, the section as a node, pages off one rule with elbows, arriving in
+sequence — which follows the pointer between sections, stays while the pointer is in it, and
+folds after a 260 ms grace on leave (Escape / Left / blur fold it and return focus). The rail
+gets the same branch beside its icons. What a module or page is for is its tooltip, never a line
+in the sidebar. The sentence-style notes this pass had added (landing scope, three
+optional-input caveats) are back behind the existing disclosure patterns: a tag with its reason
+in the title; caveats collapsed by default.
 
 ### 2.2 Charts: the root cause and the theme
 The KPI hover bar chart's "dark blue" was `hsl(var(--interactive))` — an undefined token, so
