@@ -28,6 +28,7 @@ import { SharePieChart } from "@/components/charts/SharePieChart";
 import { PREFIX_COLORS, getVariablePrefix, resolveVariableLabel } from "@/lib/variable-registry";
 import type { MessagePillar, ActiveHypothesis } from "@/lib/data/seedTypes";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
+import { VERDICT } from "@/components/charts/chartTokens";
 
 const SECTION = "Strategy · 04";
 
@@ -118,10 +119,10 @@ function PillarCoverageStrip({
                 size="md"
                 fill={
                   tier === "high"
-                    ? "hsl(var(--metrix-success) / 0.8)"
+                    ? VERDICT.good
                     : tier === "medium"
-                      ? "hsl(var(--metrix-gold) / 0.8)"
-                      : "hsl(var(--foreground) / 0.18)"
+                      ? VERDICT.partial
+                      : VERDICT.unmeasured
                 }
               />
             </div>
@@ -138,10 +139,10 @@ function PillarCoverageStrip({
               style={{
                 background:
                   tier === "high"
-                    ? "hsl(var(--metrix-success) / 0.8)"
+                    ? VERDICT.good
                     : tier === "medium"
-                      ? "hsl(var(--metrix-gold) / 0.8)"
-                      : "hsl(var(--foreground) / 0.18)",
+                      ? VERDICT.partial
+                      : VERDICT.unmeasured,
               }}
             />
             <span className={TYPE.label}>{TIER_LABEL[tier]}</span>

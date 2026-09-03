@@ -554,3 +554,28 @@ interpretation whose scale they cannot see.
 **Reach.** Chrome only. The structural tiles, the run-scope narrowing test that reads the Message
 pillars tile, and every existing segment assertion are untouched.
 
+## 13. The last charts join the theme (2026-09-03, autonomous pass 5)
+
+**What.** The chart pass's remaining surfaces (master plan §4 Phase D, register C-3/C-5/C-6):
+
+- **StrategyOverview's coverage meters** were painted from `--metrix-gold` and `--metrix-success`,
+  two legacy aliases no other chart uses, with a raw `hsl(var(--foreground) / 0.18)` for the low
+  tier. They read from `VERDICT` now — the theme's diverging polarity set — which gains a
+  `partial` step for the middle tier rather than borrowing a categorical hue for it.
+- **The Audience positioning map** carried five raw colour literals and 9/10 px type: the grid,
+  axis lines, tick fills, the bubble stroke and label, and the median reference lines. All of them
+  are `AXIS`, `CHART_TYPE` and `MARK` now, so the scatter recesses the way every other chart does
+  and its smallest type sits at the 11 px chrome floor instead of 9.
+
+**Why.** One theme or no theme. A chart that keeps its own colours and its own type scale is a
+chart that will drift, and the two that were left were the two a demo actually opens.
+
+**Where.** `components/charts/chartTokens.ts` (`VERDICT.partial`),
+`pages/metrix/strategy/StrategyOverview.tsx`, `pages/metrix/analysis/AudienceView.tsx`.
+
+**Proof.** `check:chart-geometry` and `check:accessible-names` PASS against a dev server;
+`check:unexplained-dashes` clean over 684 dashes across 16 routes × 2 accounts. Client suite
+2,520. The eight static gates PASS.
+
+**Reach.** Chrome only. No data change; every figure these charts draw is the one it drew before.
+
