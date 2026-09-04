@@ -236,7 +236,18 @@ describe("AnalysisCommandCenter · Manual import card", () => {
     mockImports = [];
     await act(async () => { renderCC(); });
     expect(screen.getByText("Manual import")).toBeTruthy();
-    expect(screen.getByText("Upload performance exports from Settings → General before running analysis.")).toBeTruthy();
+    expect(screen.getByText("Add a performance export before running analysis. Settings keeps every staged file.")).toBeTruthy();
+  });
+
+  it("stages from the card itself: Add import opens the manual import dialog", async () => {
+    // Staging used to be reachable only through Settings (owner, 2026-09-04:
+    // "the command center does not surface the functionality to stage").
+    mockImports = [];
+    await act(async () => { renderCC(); });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => { fireEvent.click(screen.getByTestId("button-add-import")); });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 
   it("lists each staged file with a Staged badge, separate from the run trigger card", async () => {

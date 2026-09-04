@@ -61,6 +61,7 @@ import { useGenerationRun } from "@/components/generation/GenerationControls";
 import { RunSelector, ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import type { AdAccount, StrategyData, BriefBuilder } from "@/lib/data/seedTypes";
+import { hasLiveMetaConnection } from "@/lib/data/accountSource";
 import { computeStaleStages } from "./staleStageDetection";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getReportBuilder } from "@/lib/data/metrixSeedAdapter";
@@ -1598,7 +1599,8 @@ export function LoopCommandChain({
   // dataComplete and analysisComplete use DIFFERENT signals:
   //   Data     — source is connected (live Meta) OR manual files are staged OR analysis ran
   //   Analysis — result data exists from a completed analysis run
-  const isLiveMeta       = ["meta", "facebook", "meta ads"].includes((account.platform ?? "").toLowerCase());
+  // The source, not the platform: a manual account's ads are Meta ads too.
+  const isLiveMeta       = hasLiveMetaConnection(account);
   const analysisComplete = cellCount + variableCount > 0;
   const dataComplete     = isLiveMeta || stagedImportCount > 0 || analysisComplete;
   const strategyComplete = pillarCount > 0;

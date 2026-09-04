@@ -78,6 +78,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "DetailReveal",
   "LoopChecklist",
   "UnconfiguredState",
+  "firstRunSteps",
   "PendingState",
   "StageNotRunState",
   "useLoopStage",

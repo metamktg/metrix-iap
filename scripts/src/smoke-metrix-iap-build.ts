@@ -31,8 +31,14 @@ const appDir = path.join(repoRoot, "artifacts/metrix-iap");
 const indexHtml = path.join(appDir, "dist/public/index.html");
 
 const BASE_PATH = "/";
-const COMPOSITE_BASE_URL =
-  process.env["METRIX_IAP_COMPOSITE_BASE_URL"] ?? "http://localhost:80";
+// The managed composite router (Replit) serves "/" and "/api" on port 80. Set
+// METRIX_IAP_COMPOSITE_BASE_URL to point the check elsewhere, and setting it
+// also makes the check mandatory: a router you named must answer. Left unset,
+// the check runs when something listens on the default and is skipped with a
+// NOTE when nothing does (GitHub Actions runs this smoke with no router at all,
+// and "fetch failed" there is not a routing verdict).
+const COMPOSITE_BASE_URL_EXPLICIT = process.env["METRIX_IAP_COMPOSITE_BASE_URL"];
+const COMPOSITE_BASE_URL = COMPOSITE_BASE_URL_EXPLICIT ?? "http://localhost:80";
 
 function fail(message: string, extra?: string): never {
   console.error(`\nFAIL  ${message}`);
@@ -189,15 +195,26 @@ async function runSmoke() {
     killGroup(previewServer);
   }
 
-  await assertCompositeRouting().catch((err) => {
-    fail(
-      `Managed composite routing check failed at ${COMPOSITE_BASE_URL}`,
-      String(err?.message ?? err),
+  let routingChecked = false;
+  if (COMPOSITE_BASE_URL_EXPLICIT || (await compositeRouterListens())) {
+    await assertCompositeRouting().catch((err) => {
+      fail(
+        `Managed composite routing check failed at ${COMPOSITE_BASE_URL}`,
+        String(err?.message ?? err),
+      );
+    });
+    routingChecked = true;
+  } else {
+    console.log(
+      `\nNOTE  No managed composite router listening at ${COMPOSITE_BASE_URL}; ` +
+        `routing check skipped (set METRIX_IAP_COMPOSITE_BASE_URL to require it).`,
     );
-  });
+  }
 
   console.log(
-    `\nPASS  Metrix IAP production build and managed routing checks passed — pre-auth forms, deep links, and /api responses verified`,
+    routingChecked
+      ? `\nPASS  Metrix IAP production build and managed routing checks passed: pre-auth forms, deep links, and /api responses verified`
+      : `\nPASS  Metrix IAP production build checks passed: pre-auth forms and deep links verified (managed routing not checked, no router listening)`,
   );
   process.exit(0);
 }
@@ -542,6 +559,34 @@ async function assertLoginFormVisible(port: string): Promise<void> {
 // "/api". This check runs through the application router (not either service's
 // local port), which catches a route-ordering regression that would otherwise
 // return the SPA HTML for API requests.
+// True when a TCP connection to the composite router's origin is accepted at
+// all. Only "nothing listens" skips the check; a listener that then answers
+// wrongly is still a failure, which is the regression the check exists for.
+async function compositeRouterListens(): Promise<boolean> {
+  try {
+    await fetch(new URL("/api/healthz", COMPOSITE_BASE_URL), {
+      signal: AbortSignal.timeout(3_000),
+      headers: { accept: "application/json" },
+    });
+    return true;
+  } catch (err: any) {
+    const cause = err?.cause ?? err;
+    const code = String(cause?.code ?? "");
+    const refusedCode = (c: string) =>
+      c === "ECONNREFUSED" || c === "ENOTFOUND" || c === "EHOSTUNREACH";
+    const refused =
+      refusedCode(code) ||
+      /ECONNREFUSED|ENOTFOUND|EHOSTUNREACH/.test(String(cause?.message ?? "")) ||
+      (Array.isArray(cause?.errors) &&
+        cause.errors.length > 0 &&
+        cause.errors.every((e: any) => refusedCode(String(e?.code ?? ""))));
+    if (refused) return false;
+    // A timeout or a reset means something is there but unhealthy: let the
+    // real check report it.
+    return true;
+  }
+}
+
 async function assertCompositeRouting(): Promise<void> {
   const healthUrl = new URL("/api/healthz", COMPOSITE_BASE_URL);
   const authUrl = new URL("/api/metrix/auth/me", COMPOSITE_BASE_URL);

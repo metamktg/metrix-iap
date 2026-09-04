@@ -43,6 +43,7 @@
     "smoke:metrix-iap-funnel-filter": "tsx ./src/smoke-metrix-iap-funnel-filter.ts",
     "smoke:metrix-iap-engagement-funnel": "tsx ./src/smoke-metrix-iap-engagement-funnel.ts",
     "smoke:metrix-iap-ad-account-overview": "tsx ./src/smoke-metrix-iap-ad-account-overview.ts",
+    "smoke:metrix-iap-first-run": "tsx ./src/smoke-metrix-iap-first-run.ts",
     "smoke:metrix-iap-section-info-icons": "tsx ./src/smoke-metrix-iap-section-info-icons.ts",
     "smoke:metrix-iap-avatars-tooltips": "tsx ./src/smoke-metrix-iap-avatars-tooltips.ts",
     "smoke:metrix-iap-review-queue": "tsx ./src/smoke-metrix-iap-review-queue.ts",
