@@ -29,6 +29,14 @@ import { TYPE, HEADING } from "@/pages/metrix/typography";
 import { DenseText } from "@/pages/metrix/shared";
 import { fmtDelta } from "@/lib/normalize";
 
+/** The family an evidence reference points into: the first path segment
+ * of "core_reanalysis_read.primary_control" or "cell/AAFE_HK_v3", read as
+ * words. The identifier itself belongs in a title attribute. */
+function evidenceFamily(ref: string): string {
+  const head = ref.split(/[./]/)[0] ?? ref;
+  return head.replace(/_/g, " ").trim() || ref;
+}
+
 type Priority = "critical" | "important" | "informational";
 
 /**
@@ -213,12 +221,15 @@ export function SignalDeck({
                     validate
                   </span>
                 )}
+                {/* The producer's reference ("core_reanalysis_read.primary_control")
+                    is an identifier, not a label: the face names the family
+                    it points into and the whole reference stays in the title. */}
                 {c.evidence_ref && (
                   <span
                     className="text-micro text-muted-foreground/75 truncate max-w-[10rem]"
                     title={`Evidence: ${c.evidence_ref}`}
                   >
-                    {c.evidence_ref}
+                    Evidence · {evidenceFamily(c.evidence_ref)}
                   </span>
                 )}
                 {onOpen && (

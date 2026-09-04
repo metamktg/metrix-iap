@@ -22,6 +22,7 @@ import { addToTray, removeFromTray } from "@/lib/data/trayStore";
 import { ConfidenceBadge, CrossLink, DenseText, ModuleHeader, StageNotRunState, UnconfiguredState } from "@/pages/metrix/shared";
 import { impactRank } from "@/components/deck/RecommendationDeck";
 import { KIND_LABEL, KIND_STYLE, KIND_STYLE_FALLBACK, recommendationKind } from "@/components/deck/recommendationKind";
+import { HypothesisCodeChipsRow } from "@/pages/metrix/strategy/strategyShared";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
 import {
   Check,
@@ -241,8 +242,16 @@ function QueueCard({
           )}
         </div>
 
-        {/* Title */}
-        <p className="text-title font-bold text-foreground leading-snug mb-1.5">
+        {/* Title. A TEST card's title is the hypothesis sentence ("We
+            believe that isolating Row B …"); its variable codes lead as
+            chips, the scannable index the Hypothesis Queue uses, and the
+            sentence follows clamped. Chips only here: this is a button. */}
+        {verb.label === KIND_LABEL.test && (
+          <div className="mb-1.5">
+            <HypothesisCodeChipsRow label={card.title} />
+          </div>
+        )}
+        <p className={cn("text-title font-bold text-foreground leading-snug mb-1.5", verb.label === KIND_LABEL.test && "line-clamp-3")}>
           {card.title}
         </p>
 
