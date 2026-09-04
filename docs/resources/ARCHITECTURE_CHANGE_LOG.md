@@ -816,7 +816,8 @@ creates `ad_breakdown_performance_identity_key` on the same columns with `md5(ad
 `md5(segment_key)` in place of the raw text, so no future identity can hit the limit. The writer
 inserts run-scoped rows and never upserts on this key, so the expression index changes nothing
 for it. The client's Evidence tab labelled an asset segment by its key; it now labels it by the
-asset's own value.
+asset's own value, and the run controls show a failed run's error whole rather than as one
+truncated span (the screenshot showed "index row size 3432 exceeds b…" and nothing after it).
 
 **Why.** A key names a row; it does not carry the row. The limit is Postgres's, and 2,704 bytes
 is smaller than one long primary text.
