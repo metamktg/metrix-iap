@@ -120,3 +120,63 @@ describe("createCoalescedCache — freshness", () => {
     expect(calls).toBe(2);
   });
 });
+
+describe("createCoalescedCache — stale-while-revalidate past the TTL", () => {
+  it("serves the stale value at once and runs exactly one background rebuild", async () => {
+    let clock = 0;
+    let builds = 0;
+    let release: (v: string) => void = () => {};
+    const cache = createCoalescedCache<string>(
+      () => {
+        builds++;
+        return builds === 1 ? Promise.resolve("v1") : new Promise((r) => { release = r; });
+      },
+      1000,
+      () => clock,
+    );
+    expect(await cache.get()).toBe("v1");
+    clock = 5000; // past the TTL
+    const [a, b] = await Promise.all([cache.get(), cache.get()]);
+    expect(a).toBe("v1");
+    expect(b).toBe("v1");
+    expect(builds).toBe(2); // one background rebuild for both stale reads
+    expect(cache.rebuilding()).toBe(true);
+    release("v2");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(cache.rebuilding()).toBe(false);
+    expect(await cache.get()).toBe("v2");
+    expect(builds).toBe(2);
+  });
+
+  it("keeps serving the stale value when the background rebuild fails, and retries on the next stale read", async () => {
+    let clock = 0;
+    let builds = 0;
+    const cache = createCoalescedCache<string>(
+      () => {
+        builds++;
+        if (builds === 1) return Promise.resolve("v1");
+        if (builds === 2) return Promise.reject(new Error("supabase down"));
+        return Promise.resolve("v3");
+      },
+      1000,
+      () => clock,
+    );
+    expect(await cache.get()).toBe("v1");
+    clock = 2000;
+    expect(await cache.get()).toBe("v1"); // triggers build 2, which fails
+    await new Promise((r) => setTimeout(r, 0));
+    expect(builds).toBe(2);
+    expect(await cache.get()).toBe("v1"); // still stale, triggers build 3
+    await new Promise((r) => setTimeout(r, 0));
+    expect(await cache.get()).toBe("v3");
+    expect(builds).toBe(3);
+  });
+
+  it("an explicit invalidate is still a cold rebuild: a reader who just mutated waits for fresh data", async () => {
+    let builds = 0;
+    const cache = createCoalescedCache<string>(async () => `v${++builds}`, 1000, () => 0);
+    expect(await cache.get()).toBe("v1");
+    cache.invalidate();
+    expect(await cache.get()).toBe("v2");
+  });
+});
