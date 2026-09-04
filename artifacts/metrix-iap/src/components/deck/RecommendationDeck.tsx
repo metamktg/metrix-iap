@@ -318,7 +318,7 @@ export function RecommendationDeck({
             </div>
 
             <div className="flex items-center justify-center gap-3 mt-3 text-caption text-muted-foreground/75">
-              <span>← reject</span>
+              <span>← dismiss</span>
               <span>→ add to tray</span>
               <span>↑ / space details</span>
               <span>{pending.length} left</span>
