@@ -98,17 +98,20 @@ function RecommendationCardFace({ card }: { card: DeckCard }) {
           hierarchy between them. TYPE.title is the role for a card title. */}
       <p className={cn(TYPE.title, "line-clamp-2")}>{card.title}</p>
 
-      {/* payload-ok: swipe-card face inside a <button> — a DenseText control
-          is invalid HTML here and the full card is one tap away. Cut ONCE by
-          the clamp now; deriveLabel(110) on top of it was removing words the
-          clamp would have shown anyway. */}
-      <p className="text-body text-muted-foreground/75 leading-snug line-clamp-3">{card.rationale}</p>
+      {/* payload-ok: swipe-card face inside a <button>, so a DenseText control
+          is invalid HTML here and the full card is one tap away. The clamp
+          shows three lines, about 200 characters; the cut at 200 (word
+          boundary, full text in the title) shows the same words and keeps
+          the paragraph out of the DOM, where the friction gate reads a
+          clamped paragraph as first-layer prose. */}
+      <p className="text-body text-muted-foreground/75 leading-snug line-clamp-3" title={card.rationale}>{deriveLabel(card.rationale, 200)}</p>
 
       <div className="mt-auto pt-2 border-t border-border/20">
         <p className={cn(TYPE.microLabel, "tracking-widest mb-1")}>Recommended</p>
-        {/* payload-ok: same button-card constraint. Two lines — the
-            recommended action is the reason the card exists. */}
-        <p className="text-caption text-foreground/75 leading-snug line-clamp-2">{card.recommendedAction}</p>
+        {/* payload-ok: same button-card constraint. Two lines, about 140
+            characters: the recommended action is the reason the card exists,
+            and the whole of it is in the drawer a tap opens. */}
+        <p className="text-caption text-foreground/75 leading-snug line-clamp-2" title={card.recommendedAction}>{deriveLabel(card.recommendedAction, 140)}</p>
       </div>
     </div>
   );
