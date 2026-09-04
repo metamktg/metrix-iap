@@ -57,7 +57,7 @@ export const DECONSTRUCTION_STATUS_LABEL: Record<CreativeDeconstruction["status"
 
 /** Percentage display for a 0..1 confidence, or em dash. */
 export function pct(confidence: number | null | undefined): string {
-  return confidence == null ? "—" : `${Math.round(confidence * 100)}%`;
+  return confidence == null ? "–" : `${Math.round(confidence * 100)}%`;
 }
 
 /**
@@ -126,8 +126,8 @@ export function useDeconstruction(accountId: string | null) {
       toast({
         title: "Deconstruction started",
         description: n
-          ? `${n} creative${n === 1 ? "" : "s"} queued. Each one is classified in turn — the meter below counts them.`
-          : "Each creative is classified in turn — the meter below counts them.",
+          ? `${n} creative${n === 1 ? "" : "s"} queued. Each one is classified in turn. The meter below counts them.`
+          : "Each creative is classified in turn. The meter below counts them.",
       });
       void queryClient.invalidateQueries({
         queryKey: getGetLatestGenerationRunQueryKey(accountId, "deconstruct"),

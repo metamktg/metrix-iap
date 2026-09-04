@@ -148,7 +148,7 @@ export function ReportHistoryView() {
       toast({
         variant: "destructive",
         title: "Couldn't download the report",
-        description: "This report's saved copy can't be read — try generating it again.",
+        description: "This report's saved copy can't be read. Try generating it again.",
       });
       return;
     }

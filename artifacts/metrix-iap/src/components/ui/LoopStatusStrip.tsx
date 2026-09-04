@@ -38,7 +38,7 @@ export function LoopStatusStrip({ adAccountId, className }: LoopStatusStripProps
   return (
     <div
       className={cn("flex items-center gap-0.5", className)}
-      title={`IAP Loop — ${completedCount}/${STAGES.length} complete`}
+      title={`IAP Loop · ${completedCount}/${STAGES.length} complete`}
     >
       {STAGES.map((stage, i) => {
         const done = stageDone(stage.key, counts);

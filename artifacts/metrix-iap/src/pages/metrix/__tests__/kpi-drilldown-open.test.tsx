@@ -89,7 +89,7 @@ function clickTileBody(tile: HTMLElement) {
 }
 
 describe("clicking a KPI tile opens the drill-down modal", () => {
-  it("Manager Overview — modal opens with per-account breakdown + coverage disclosure", () => {
+  it("Manager Overview · modal opens with per-account breakdown + coverage disclosure", () => {
     select("manager", null);
     const { container } = renderView(ManagerOverview);
     clickTileBody(within(container).getAllByTestId("kpi-tile")[0]);
@@ -106,7 +106,7 @@ describe("clicking a KPI tile opens the drill-down modal", () => {
   ];
 
   for (const [name, View] of ACCOUNT_SCOPED) {
-    it(`${name} (Bookster) — modal opens with the account explorer`, () => {
+    it(`${name} (Bookster) · modal opens with the account explorer`, () => {
       select("ad_account", "bookster");
       const { container } = renderView(View);
       clickTileBody(within(container).getAllByTestId("kpi-tile")[0]);

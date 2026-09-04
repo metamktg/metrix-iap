@@ -42,7 +42,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("useGenerationRun — elapsed-timer seeding", () => {
+describe("useGenerationRun · elapsed-timer seeding", () => {
   it("seeds elapsed from started_at when mounted mid-run", () => {
     // Fix the current time so we can compute an exact expected delta.
     const now = 1_700_000_000_000;

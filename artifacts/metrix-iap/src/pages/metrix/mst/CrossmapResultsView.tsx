@@ -326,7 +326,7 @@ function CrossmapRows({
   return (
     <tbody>
       {fold.visible.map(({ cell, perf, ran: hasData }) => {
-        const diag = cell.diagonal_role === "diag_down" ? "Primary ↘" : cell.diagonal_role === "diag_up" ? "Counter ↗" : "—";
+        const diag = cell.diagonal_role === "diag_down" ? "Primary ↘" : cell.diagonal_role === "diag_up" ? "Counter ↗" : "–";
         if (!hasData) {
           return (
             <tr
@@ -340,11 +340,11 @@ function CrossmapRows({
                 {cell.plain_text.headline && <div className="text-label text-muted-foreground/75 mt-0.5">{cell.plain_text.headline}</div>}
               </Td>
               <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-metrix-cyan")}>{diag}</Td>
-              <Td className="text-muted-foreground/75">—</Td>
-              <Td right>—</Td>
-              <Td right>—</Td>
-              <Td right>—</Td>
-              <Td right>—</Td>
+              <Td className="text-muted-foreground/75">–</Td>
+              <Td right>–</Td>
+              <Td right>–</Td>
+              <Td right>–</Td>
+              <Td right>–</Td>
             </tr>
           );
         }
@@ -379,7 +379,7 @@ function CrossmapRows({
                 {fmtNum(r.Results)}
               </Td>
               <Td right style={cpaIntensity > 0 ? { background: divergingFill(cpaIntensity) } : undefined}>
-                {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+                {r.CPA_result != null ? fmtUSD(r.CPA_result) : "–"}
               </Td>
               <Td right>{fmtPct(r.CTR_link_pct)}</Td>
             </tr>

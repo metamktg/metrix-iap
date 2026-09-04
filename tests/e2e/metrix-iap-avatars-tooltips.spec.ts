@@ -279,7 +279,7 @@ async function main() {
           } else {
             // For low-signal badges, tooltip must show the same rationale as
             // the sr-only text (minus the " — " prefix).
-            const rationale = info.srOnlyText!.replace(/^—\s*/, "").trim();
+            const rationale = info.srOnlyText!.replace(/^[—·]\s*/, "").trim();
             assert(
               rationale.length > 0,
               "low-signal badge sr-only rationale is empty",
@@ -353,7 +353,7 @@ async function main() {
           await hoverAndExpect(
             page,
             openLabel,
-            "Account-level placement signal — no per-profile breakdown available.",
+            "Account-level placement signal · no per-profile breakdown available.",
             "Account placements label",
           );
 

@@ -219,7 +219,7 @@ function SingleCsvConfidenceReport({
               which is not the same as having none. Say which. */}
           {uploadWarnings == null && (
             <p className="text-label text-muted-foreground/75">
-              Upload warnings weren't recorded for this file — it was staged before they were kept.
+              Upload warnings weren't recorded for this file. It was staged before they were kept.
             </p>
           )}
 
@@ -264,7 +264,7 @@ function SingleCsvConfidenceReport({
                       <ConfidenceBar value={col.confidence} />
                     </div>
                   ) : col.tier === "missing" ? (
-                    <span className="text-label text-muted-foreground/75 w-20 shrink-0 text-right">—</span>
+                    <span className="text-label text-muted-foreground/75 w-20 shrink-0 text-right">–</span>
                   ) : (
                     <span className="text-label text-status-success/60 w-20 shrink-0 text-right">100%</span>
                   )}
@@ -275,7 +275,7 @@ function SingleCsvConfidenceReport({
           )}
           {!hasColumnReport && (
             <p className="text-label text-muted-foreground/75">
-              No column report was recorded for this file, so it carries no grade — the upload warnings above are what was kept.
+              No column report was recorded for this file, so it carries no grade. The upload warnings above are what was kept.
             </p>
           )}
         </div>
@@ -315,7 +315,7 @@ export function ImportConfidenceReport({ imports }: { imports: ManualImport[] })
         <div className="text-caption font-semibold text-foreground/85">
           Import Confidence Report
         </div>
-        <InfoTooltip content='Grade reflects weighted column coverage — columns with higher signal value carry more weight. Missing columns with a "−% signal" badge reduce analysis accuracy for this import.' />
+        <InfoTooltip content='Grade reflects weighted column coverage. Columns with higher signal value carry more weight. Missing columns with a "−% signal" badge reduce analysis accuracy for this import.' />
       </div>
       {csvImports.map((imp) => (
         <SingleCsvConfidenceReport

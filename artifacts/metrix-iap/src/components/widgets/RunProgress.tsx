@@ -89,7 +89,7 @@ export function RunProgress({
           </AnimatePresence>
         </span>
         <span className="tabular-nums shrink-0">
-          {measured == null ? "—" : `${Math.round(measured)}%`}
+          {measured == null ? "–" : `${Math.round(measured)}%`}
         </span>
       </div>
 

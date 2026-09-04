@@ -219,7 +219,7 @@ function PanelHarness({ buildModule }: { buildModule: () => ReturnType<typeof bu
   );
 }
 
-describe("DeepDivePanel — new block kinds", () => {
+describe("DeepDivePanel · new block kinds", () => {
   it("renders variable chips, the funnel step list, and the action row for a ran MST cell", () => {
     const onOpenSegments = vi.fn();
     const build = () =>

@@ -114,7 +114,7 @@ export function TabRail<T extends string>({
             onClick={() => !off && onChange(t.id)}
             className={`flex items-center gap-1.5 h-10 px-3 shrink-0 whitespace-nowrap
                         text-body font-body font-medium border-b-2 -mb-px
-                        transition-[color,border-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                        transition-[color,border-color,scale] duration-150 ease-[var(--mx-ease)]
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded-t-lg
                         relative border-transparent
                         ${
@@ -149,7 +149,7 @@ export function TabRail<T extends string>({
                 {t.count}
               </span>
             )}
-            {off && <span className="sr-only"> — unavailable: {t.disabledReason}</span>}
+            {off && <span className="sr-only">, unavailable: {t.disabledReason}</span>}
           </button>
         );
       })}

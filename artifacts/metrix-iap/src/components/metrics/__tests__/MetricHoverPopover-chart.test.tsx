@@ -33,7 +33,7 @@ import { MetricHoverPopover } from "@/components/metrics/MetricHoverPopover";
 afterEach(cleanup);
 
 function metric(overrides: Partial<MetricDef> & Pick<MetricDef, "id">): MetricDef {
-  return { label: overrides.id, value: null, formatted: "—", isResultEvent: false, ...overrides };
+  return { label: overrides.id, value: null, formatted: "–", isResultEvent: false, ...overrides };
 }
 
 function row(name: string, spend: number, cpa: number): CellPerformanceRow {
@@ -55,7 +55,7 @@ function row(name: string, spend: number, cpa: number): CellPerformanceRow {
 
 const ROWS = [row("Alpha", 500, 50), row("Beta", 300, 40), row("Gamma", 200, 80)];
 
-describe("MetricHoverPopover — chart branch", () => {
+describe("MetricHoverPopover · chart branch", () => {
   it("renders the Top concepts chart and the diagnose footer with >= 2 concepts", () => {
     render(
       <MetricHoverPopover metric={metric({ id: "spend", label: "Total spend", formatted: "$1,000" })} cellRows={ROWS} onDiagnose={vi.fn()}>
@@ -68,7 +68,7 @@ describe("MetricHoverPopover — chart branch", () => {
     expect(screen.getByText("$1,000")).toBeTruthy();
   });
 
-  it("paints a volume metric with the interactive token — a bare var of a token that exists", () => {
+  it("paints a volume metric with the interactive token. A bare var of a token that exists", () => {
     const { container } = render(
       <MetricHoverPopover metric={metric({ id: "spend", label: "Total spend", formatted: "$1,000" })} cellRows={ROWS} onDiagnose={vi.fn()}>
         <button type="button">tile</button>
@@ -80,7 +80,7 @@ describe("MetricHoverPopover — chart branch", () => {
     expect(html).not.toContain("chart-amber");
   });
 
-  it("paints a cost metric with the cost series — never amber, never the interactive accent", () => {
+  it("paints a cost metric with the cost series. Never amber, never the interactive accent", () => {
     const { container } = render(
       <MetricHoverPopover metric={metric({ id: "cpa_blended", label: "CPA (blended)", formatted: "$52", value: 52 })} cellRows={ROWS} onDiagnose={vi.fn()}>
         <button type="button">tile</button>

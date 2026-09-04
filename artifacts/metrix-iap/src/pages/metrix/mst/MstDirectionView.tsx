@@ -73,7 +73,7 @@ export function MstDirectionView() {
         const rollupLanding = resultScope.landRows(getAnalysisData(seed, adAccountId)?.concept_rollup ?? [], (r) => r.result_type);
         const rollup = rollupLanding.rows;
         const activeScope = rollupLanding.landed ?? resultScope.scope;
-        const subtitle = "Scale / optimize / validate / avoid — this account's current playbook applied to every measured concept.";
+        const subtitle = "Scale / optimize / validate / avoid · this account's current playbook applied to every measured concept.";
 
         if (!playbook) {
           return (
@@ -140,10 +140,10 @@ export function MstDirectionView() {
             )}
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
-              <CaveatNote text="Automated variable re-weighting isn't a running job yet — Direction reads this account's current scaling playbook (Strategy → generate strategy) and applies it to every measured concept. Re-run Strategy to refresh it." />
+              <CaveatNote text="Automated variable re-weighting isn't a running job yet. Direction reads this account's current scaling playbook (Strategy → generate strategy) and applies it to every measured concept. Re-run Strategy to refresh it." />
 
               {visible.length === 0 ? (
-                <p className={cn(TYPE.body, "text-muted-foreground/75 py-6 text-center")}>No concepts classified yet — generate strategy to populate the playbook.</p>
+                <p className={cn(TYPE.body, "text-muted-foreground/75 py-6 text-center")}>No concepts classified yet · generate strategy to populate the playbook.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {visible.map(({ row, bucket, rationale }) => {
@@ -166,7 +166,7 @@ export function MstDirectionView() {
                                 row.cpa == null && "border-b border-dotted border-muted-foreground/40 cursor-help",
                               )}
                               {...(row.cpa == null
-                                ? { title: "Cost / result: this playbook row carries no cost per result — the bucket was assigned from the variable stack, not from a measured CPA." }
+                                ? { title: "Cost / result: this playbook row carries no cost per result. The bucket was assigned from the variable stack, not from a measured CPA." }
                                 : {})}
                             >
                               {fmtUSD(row.cpa)}
@@ -180,10 +180,10 @@ export function MstDirectionView() {
                                 !row.confidence && "border-b border-dotted border-muted-foreground/40 cursor-help",
                               )}
                               {...(!row.confidence
-                                ? { title: "Confidence: the scaling playbook graded no confidence for this row — a grade needs enough spend and results behind the recommendation." }
+                                ? { title: "Confidence: the scaling playbook graded no confidence for this row. A grade needs enough spend and results behind the recommendation." }
                                 : {})}
                             >
-                              {row.confidence?.replace(/_/g, " ") ?? "—"}
+                              {row.confidence?.replace(/_/g, " ") ?? "–"}
                             </div>
                           </div>
                         </div>
@@ -196,7 +196,7 @@ export function MstDirectionView() {
 
               {unclassified.length > 0 && (
                 <p className={cn(TYPE.caption, "text-muted-foreground/75")}>
-                  {unclassified.length} measured concept{unclassified.length !== 1 ? "s" : ""} not yet named in the playbook — {unclassified.map((r) => `${r.book} ${r.concept}`).join(", ")}.
+                  {unclassified.length} measured concept{unclassified.length !== 1 ? "s" : ""} not yet named in the playbook, {unclassified.map((r) => `${r.book} ${r.concept}`).join(", ")}.
                 </p>
               )}
 

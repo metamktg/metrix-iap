@@ -174,7 +174,7 @@ export function ConnectMetaDialog({
           <div className="min-w-0">
             <div className="text-body font-semibold text-foreground">Use manual import instead</div>
             <p className="text-caption text-foreground/75 mt-0.5">
-              Upload exported Meta reports for {account.name} today — no live connection required.
+              Upload exported Meta reports for {account.name} today · no live connection required.
             </p>
           </div>
         </div>
@@ -391,7 +391,7 @@ function CsvMappingDiffCallout({
             <div key={col} className="flex items-center gap-2 text-label">
               <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
               <span className="font-medium text-status-success">{col}</span>
-              <span className="text-status-success/55">— now found</span>
+              <span className="text-status-success/55">, now found</span>
             </div>
           ))}
         </div>
@@ -402,7 +402,7 @@ function CsvMappingDiffCallout({
             <div key={col} className="flex items-center gap-2 text-label">
               <XCircle className="w-3.5 h-3.5 text-status-danger/80 shrink-0" />
               <span className="font-medium text-status-danger">{col}</span>
-              <span className="text-status-danger/55">— still missing</span>
+              <span className="text-status-danger/55">, still missing</span>
             </div>
           ))}
         </div>
@@ -452,7 +452,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
         <GitMerge className={cn("w-3.5 h-3.5 shrink-0", iconColor)} />
         <span className="text-caption font-medium text-foreground/80 flex-1">
           Column mapping{" "}
-          <span className="font-normal text-muted-foreground/80">— {headerLabel}</span>
+          <span className="font-normal text-muted-foreground/80">–{headerLabel}</span>
         </span>
         <ChevronDown
           className={cn(
@@ -529,7 +529,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
           {optionalMissing.length > 0 && (
             <div className={cn("pt-2 space-y-1", (resolved.length > 0 || requiredMissing.length > 0) && "mt-1")}>
               <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/75 pb-0.5">
-                Optional columns not included in this export — no action needed
+                Optional columns not included in this export. No action needed
               </p>
               {optionalMissing.map((e) => (
                 <div
@@ -743,7 +743,7 @@ function SmartCsvUpload({
     const fileList = Array.from(files);
     const oversized = fileList.filter((f) => f.size > MAX_PERFORMANCE_UPLOAD_BYTES);
     if (oversized.length > 0) {
-      setFailures(oversized.map((f) => `${f.name} — file is too large — the limit is ${MAX_PERFORMANCE_UPLOAD_MB_LABEL}.`));
+      setFailures(oversized.map((f) => `${f.name} · file is too large · the limit is ${MAX_PERFORMANCE_UPLOAD_MB_LABEL}.`));
       if (fileRef.current) fileRef.current.value = "";
       return;
     }
@@ -785,7 +785,7 @@ function SmartCsvUpload({
       <div>
         <div className="text-body font-semibold text-foreground">Performance CSVs</div>
         <p className="text-caption text-foreground/75 mt-0.5">
-          Drag in every export you have from Meta Ads Manager — CSV or XLSX, Metrix reads each file's headers and
+          Drag in every export you have from Meta Ads Manager. CSV or XLSX, Metrix reads each file's headers and
           files it automatically. Any one of Demographics, Placements or Ad Summary lets analysis run; every
           other export adds resolution.
         </p>
@@ -822,7 +822,7 @@ function SmartCsvUpload({
         <span className="text-body font-medium text-foreground/85">
           {current !== null ? `Uploading ${current.name}…` : "Drop your Meta CSV or XLSX exports here, or click to browse"}
         </span>
-        <span className="text-caption text-muted-foreground/75">Any number of files, any order — up to {MAX_PERFORMANCE_UPLOAD_MB_LABEL} each</span>
+        <span className="text-caption text-muted-foreground/75">Any number of files, any order, up to {MAX_PERFORMANCE_UPLOAD_MB_LABEL} each</span>
         {current !== null && <div className="w-full max-w-xs mt-1"><UploadProgressBar pct={current.pct} label="" /></div>}
       </button>
 
@@ -879,7 +879,7 @@ function SmartCsvUpload({
       {expandedSlot && (staged[expandedSlot]?.length ?? 0) > 1 && (
         <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-2 space-y-1">
           <div className="text-label font-semibold text-muted-foreground/75 px-1">
-            {SMART_CSV_SLOTS.find((s) => s.kind === expandedSlot)?.label} — every one of these files feeds the next
+            {SMART_CSV_SLOTS.find((s) => s.kind === expandedSlot)?.label}. Every one of these files feeds the next
             analysis run
           </div>
           {staged[expandedSlot]!.map((imp) => (
@@ -898,7 +898,7 @@ function SmartCsvUpload({
         </div>
       )}
       {!anyDeliveryStaged && (
-        <p className="text-label text-muted-foreground/75 px-0.5">* Stage any one delivery export — Demographics, Placements or Ad Summary — to continue.</p>
+        <p className="text-label text-muted-foreground/75 px-0.5">* Stage any one delivery export (Demographics, Placements or Ad Summary) to continue.</p>
       )}
 
       <details className="group rounded-lg border border-border/30">
@@ -943,8 +943,8 @@ function SmartCsvUpload({
               <div className="flex-1 min-w-0 space-y-1">
                 <div className={cn("text-caption font-semibold", alarmed ? "text-status-warning" : "text-foreground/85")}>
                   {alarmed
-                    ? `Staged with ${attention.length} warning${attention.length !== 1 ? "s" : ""} — check before running analysis`
-                    : `Staged — ${notices.length} notice${notices.length !== 1 ? "s" : ""}, no action needed`}
+                    ? `Staged with ${attention.length} warning${attention.length !== 1 ? "s" : ""} · check before running analysis`
+                    : `Staged · ${notices.length} notice${notices.length !== 1 ? "s" : ""}, no action needed`}
                 </div>
                 {attention.length > 0 && (
                   <ul className="space-y-0.5">
@@ -957,7 +957,7 @@ function SmartCsvUpload({
                   <details className="group/notices">
                     <summary className="flex items-center gap-1 text-label text-muted-foreground/75 cursor-pointer hover:text-foreground/80 transition-colors [&::-webkit-details-marker]:hidden">
                       <ChevronRight className="w-3 h-3 shrink-0 transition-transform group-open/notices:rotate-90" />
-                      {notices.length} notice{notices.length !== 1 ? "s" : ""} — automatic mappings &amp; optional columns
+                      {notices.length} notice{notices.length !== 1 ? "s" : ""}, automatic mappings &amp; optional columns
                     </summary>
                     <ul className="space-y-0.5 pl-4 pt-1">
                       {notices.map((w, i) => (
@@ -1076,7 +1076,7 @@ function MatchMethodBadge({ method }: { method?: "id" | "fuzzy" | "guess" | null
   const config = {
     id: { icon: Hash, label: "Matched by ID code", className: "bg-primary/10 text-interactive" },
     fuzzy: { icon: Sparkles, label: "Matched by filename similarity", className: "bg-foreground/[0.06] text-muted-foreground/85" },
-    guess: { icon: Sparkles, label: "Best guess — please review", className: "bg-status-warning/10 text-status-warning" },
+    guess: { icon: Sparkles, label: "Best guess · please review", className: "bg-status-warning/10 text-status-warning" },
   }[method];
   const Icon = config.icon;
   return (
@@ -1260,7 +1260,7 @@ function CreativeAdNamesEditor({
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <span>
             {parsedNames.filter((n) => !knownAdNames.has(n)).join(", ")} not found among ad names seen in the staged
-            CSVs yet — double check spelling, or this is expected if the CSVs haven't been uploaded.
+            CSVs yet · double check spelling, or this is expected if the CSVs haven't been uploaded.
           </span>
         </div>
       )}
@@ -1337,7 +1337,7 @@ function CreativeUploadSection({
       onChanged();
       setErrors([]);
       setLinkNotices([
-        "Matched on the server. Any file still unmapped had no close ad-name match yet — it will be re-checked after the next analysis run, or map it below.",
+        "Matched on the server. Any file still unmapped had no close ad-name match yet. It will be re-checked after the next analysis run, or map it below.",
       ]);
     } catch (err) {
       setErrors([err instanceof Error ? err.message : "Auto-map failed."]);
@@ -1366,7 +1366,7 @@ function CreativeUploadSection({
       setCurrentPct(0);
 
       if (file.size > MAX_UPLOAD_BYTES) {
-        failures.push(`${file.name} is too large — the limit is ${MAX_UPLOAD_MB_LABEL}.`);
+        failures.push(`${file.name} is too large. The limit is ${MAX_UPLOAD_MB_LABEL}.`);
         continue;
       }
 
@@ -1414,7 +1414,7 @@ function CreativeUploadSection({
             Stage individual ad creative files (images/videos) so they render immediately.
           </p>
           <p className="text-label text-muted-foreground/75 leading-relaxed mt-0.5">
-            Files are matched to ad names on the server — at upload when the account already has analysis, and again after every run. Correct any match below.
+            Files are matched to ad names on the server. At upload when the account already has analysis, and again after every run. Correct any match below.
           </p>
         </div>
       </div>
@@ -1454,7 +1454,7 @@ function CreativeUploadSection({
       {isUploading && currentFile && (
         <UploadProgressBar
           pct={currentPct}
-          label={queueTotal > 1 ? `File ${queueIndex} of ${queueTotal} — ${currentFile}` : currentFile}
+          label={queueTotal > 1 ? `File ${queueIndex} of ${queueTotal} · ${currentFile}` : currentFile}
         />
       )}
 
@@ -1489,7 +1489,7 @@ function CreativeUploadSection({
             {mappedCount < creativeAssets.length && (
               <span className="text-label text-muted-foreground/85">
                 {matchCandidates.size > 0
-                  ? "Unmapped files had no close ad-name match — pick one below or leave them for the next run"
+                  ? "Unmapped files had no close ad-name match. Pick one below or leave them for the next run"
                   : "Unmapped files will be matched after the first analysis run"}
               </span>
             )}
@@ -1668,7 +1668,7 @@ function PipelineProgress({
  *  analysis run, so all of them need to be visible here, not just the first. */
 function stagedFilesLabel(list: ManualImport[]): string {
   if (list.length <= 1) return list[0]?.filename ?? "";
-  return `${list.length} files — ${list.map((i) => i.filename).join(", ")}`;
+  return `${list.length} files · ${list.map((i) => i.filename).join(", ")}`;
 }
 
 /** Accounts the reader staged a file for in this browser session — see the auto-advance note in ManualUploadPanel. */
@@ -1751,7 +1751,7 @@ export function ManualUploadPanel({
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-label font-semibold uppercase text-muted-foreground/75">Step 2 of 2 — Review</span>
+          <span className="text-label font-semibold uppercase text-muted-foreground/75">Step 2 of 2 · Review</span>
         </div>
         <PipelineProgress
           demoStaged={Boolean(demoImport)}
@@ -1765,23 +1765,23 @@ export function ManualUploadPanel({
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 text-caption">
               <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
-              <span className="text-foreground/80 truncate">Demographics — {stagedFilesLabel(demoImports)}</span>
+              <span className="text-foreground/80 truncate">Demographics · {stagedFilesLabel(demoImports)}</span>
             </div>
             <div className="flex items-center gap-2 text-caption">
               <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
-              <span className="text-foreground/80 truncate">Placements — {stagedFilesLabel(placementImports)}</span>
+              <span className="text-foreground/80 truncate">Placements · {stagedFilesLabel(placementImports)}</span>
             </div>
             {summaryImports.length > 0 ? (
               <div className="flex items-center gap-2 text-caption">
                 <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
-                <span className="text-foreground/80 truncate">Ad Summary — {stagedFilesLabel(summaryImports)}</span>
+                <span className="text-foreground/80 truncate">Ad Summary · {stagedFilesLabel(summaryImports)}</span>
               </div>
             ) : (
               /* Inline nudge — no separate warning block needed */
               <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border border-status-warning/25 bg-status-warning/[0.05]">
                 <div className="flex items-center gap-2 min-w-0">
                   <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0" />
-                  <span className="text-caption text-status-warning/80 truncate">No Ad Summary export — spend may be underreported</span>
+                  <span className="text-caption text-status-warning/80 truncate">No Ad Summary export · spend may be underreported</span>
                 </div>
                 <button
                   onClick={() => setStep("upload")}
@@ -1794,7 +1794,7 @@ export function ManualUploadPanel({
             {conversionDeviceImports.length > 0 && (
               <div className="flex items-center gap-2 text-caption">
                 <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
-                <span className="text-foreground/80 truncate">Conversion Device — {stagedFilesLabel(conversionDeviceImports)}</span>
+                <span className="text-foreground/80 truncate">Conversion Device · {stagedFilesLabel(conversionDeviceImports)}</span>
               </div>
             )}
             {/* Creative files: compact count summary — avoids listing 60+ raw filenames */}
@@ -1824,7 +1824,7 @@ export function ManualUploadPanel({
                 )}
               </div>
             ) : (
-              <div className="text-caption text-muted-foreground/75">No creative files staged — optional.</div>
+              <div className="text-caption text-muted-foreground/75">No creative files staged · optional.</div>
             )}
           </div>
         </div>
@@ -1870,7 +1870,7 @@ export function ManualUploadPanel({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-label font-semibold uppercase text-muted-foreground/75">Step 1 of 2 — Upload files</span>
+        <span className="text-label font-semibold uppercase text-muted-foreground/75">Step 1 of 2 · Upload files</span>
       </div>
       <PipelineProgress
         demoStaged={Boolean(demoImport)}
@@ -1901,7 +1901,7 @@ export function ManualUploadPanel({
       <div className="flex items-center justify-between pt-1 border-t border-border/30 mt-1">
         <div className="max-w-[60%]">
           <p className="text-label text-foreground/75 font-medium">
-            {anyDeliveryStaged ? "Ready to review — any export not yet staged adds resolution." : "Stage any one delivery export (Demographics, Placements or Ad Summary) to continue."}
+            {anyDeliveryStaged ? "Ready to review · any export not yet staged adds resolution." : "Stage any one delivery export (Demographics, Placements or Ad Summary) to continue."}
           </p>
           <p className="text-label text-muted-foreground/75 leading-relaxed mt-0.5">Files are stored raw until an analysis run explicitly processes them.</p>
         </div>
@@ -2114,7 +2114,7 @@ export function CreativeLibraryPanel({
       <div className="flex items-start gap-2.5 p-3 rounded-lg border border-primary/20 bg-primary/[0.04]">
         <ListChecks className="w-4 h-4 text-interactive shrink-0 mt-0.5" />
         <p className="text-caption text-foreground/80 leading-relaxed">
-          Map each file to an ad from this account's existing analysis using the dropdown below —
+          Map each file to an ad from this account's existing analysis using the dropdown below, 
           mappings save immediately, no separate confirm step.
         </p>
       </div>
@@ -2192,7 +2192,7 @@ export function CreativeLibraryDialog({
               <DialogTitle className={DIALOG.title}>Upload Creatives</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
                 Add creative files to{" "}
-                <span className="text-foreground/80 font-medium">{account.name}</span> after the fact —
+                <span className="text-foreground/80 font-medium">{account.name}</span> after the fact, 
                 they render immediately and map to ads already in its IAP analysis.
               </DialogDescription>
             </DialogHeader>
@@ -2266,7 +2266,7 @@ export function ManualImportDialog({
               <DialogDescription className="text-body leading-relaxed">
                 Upload Meta performance exports for{" "}
                 <span className="text-foreground/80 font-medium">{account.name}</span>, plus any
-                creative files. Files are staged for the analysis pipeline — performance data appears
+                creative files. Files are staged for the analysis pipeline. Performance data appears
                 only after you explicitly run analysis from the account's setup screen.
               </DialogDescription>
             </DialogHeader>

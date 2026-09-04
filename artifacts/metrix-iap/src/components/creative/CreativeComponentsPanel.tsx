@@ -151,11 +151,11 @@ export function CreativeComponentsPanel({
                     <td className="px-3 py-2 text-right tabular-nums">{fmtMetric("count", r.ads)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmtMetric("usd_total", r.spend)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmtMetric("count", r.results)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums" title={r.cost_per_result == null ? "No results yet — cost per result is not computable" : undefined}>
+                    <td className="px-3 py-2 text-right tabular-nums" title={r.cost_per_result == null ? "No results yet · cost per result is not computable" : undefined}>
                       {fmtMetric("usd_unit", r.cost_per_result)}
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmtMetric("pct", r.ctr_link_pct)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.efficiency_index == null ? "—" : `${r.efficiency_index.toFixed(2)}×`}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{r.efficiency_index == null ? "–" : `${r.efficiency_index.toFixed(2)}×`}</td>
                     <td className="px-3 py-2">
                       <ProgressMeter value={r.weight} total={1} label={`Weight ${r.weight.toFixed(2)}`} size="sm" />
                     </td>
@@ -174,7 +174,7 @@ export function CreativeComponentsPanel({
           <DetailReveal
             label="What this grades"
             labelClassName={cn(TYPE.caption, "text-muted-foreground/75")}
-            sections={[{ text: "Each concept's confidence tier is set by spend and result volume, as before. The evidence grade says how much of that concept's spend ran on ads whose copy is known — full at 80% or more, partial above 0 — and the score scales the tier by it, with a 70% floor so a concept with no known copy keeps most of its volume-based confidence." }]}
+            sections={[{ text: "Each concept's confidence tier is set by spend and result volume, as before. The evidence grade says how much of that concept's spend ran on ads whose copy is known (full at 80% or more, partial above 0) and the score scales the tier by it, with a 70% floor so a concept with no known copy keeps most of its volume-based confidence." }]}
           />
         </div>
         {graded.length === 0 ? (
@@ -199,10 +199,10 @@ export function CreativeComponentsPanel({
                   <tr key={`${r.book ?? ""}:${r.concept}`} className="border-t border-border/30" data-testid="concept-evidence-row">
                     <td className="px-3 py-2 font-medium text-foreground">{r.book ? `${r.book} · ${r.concept}` : r.concept}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmtMetric("usd_total", r.spend)}</td>
-                    <td className="px-3 py-2">{r.confidence_level ? <ConfidenceBadge value={r.confidence_level.replace("_", " ")} /> : "—"}</td>
+                    <td className="px-3 py-2">{r.confidence_level ? <ConfidenceBadge value={r.confidence_level.replace("_", " ")} /> : "–"}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmtMetric("pct", r.creative_coverage_pct)}</td>
                     <td className="px-3 py-2">{EVIDENCE_LABEL[String(r.evidence_grade)] ?? String(r.evidence_grade)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.confidence_score == null ? "—" : r.confidence_score.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{r.confidence_score == null ? "–" : r.confidence_score.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>

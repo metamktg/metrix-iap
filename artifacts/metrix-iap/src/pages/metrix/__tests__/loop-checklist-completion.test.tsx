@@ -18,7 +18,7 @@ import { LoopChecklist, type LoopChecklistStep } from "../shared";
 
 afterEach(cleanup);
 
-describe("LoopChecklist — all steps done", () => {
+describe("LoopChecklist · all steps done", () => {
   const steps: LoopChecklistStep[] = [
     { label: "Data connected",     done: true, route: "/a" },
     { label: "Analysis run",       done: true, route: "/b" },
@@ -59,7 +59,7 @@ describe("LoopChecklist — all steps done", () => {
   });
 });
 
-describe("LoopChecklist — no steps done", () => {
+describe("LoopChecklist · no steps done", () => {
   const steps: LoopChecklistStep[] = [
     { label: "Data connected",     done: false },
     { label: "Analysis run",       done: false },
@@ -100,7 +100,7 @@ describe("LoopChecklist — no steps done", () => {
   });
 });
 
-describe("LoopChecklist — partial completion (first 2 of 4 done)", () => {
+describe("LoopChecklist · partial completion (first 2 of 4 done)", () => {
   const steps: LoopChecklistStep[] = [
     { label: "Data connected",     done: true,  route: "/a" },
     { label: "Analysis run",       done: true,  route: "/b" },
@@ -135,7 +135,7 @@ describe("LoopChecklist — partial completion (first 2 of 4 done)", () => {
   });
 });
 
-describe("LoopChecklist — single step", () => {
+describe("LoopChecklist · single step", () => {
   it("shows 0/1 when the only step is not done", () => {
     const { container } = render(
       <LoopChecklist steps={[{ label: "Only step", done: false }]} />

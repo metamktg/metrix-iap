@@ -10,7 +10,7 @@ import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, serializeReportModel, parseReportModel, type ReportBlock, type ReportModel } from "@/lib/reportExport";
-import { ModuleHeader, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink, fmtUSD, fmtNum, fmtPct } from "../shared";
+import { ModuleHeader, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink, fmtUSD, fmtNum, fmtPct, InfoTooltip } from "../shared";
 import { TYPE } from "../typography";
 import { useDateRange, formatIsoRange, isoMin, isoMax, type IsoRange } from "@/contexts/DateRangeContext";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -220,7 +220,7 @@ export function ReportBuilderView() {
           } else {
             const label =
               outcome.kind === "fallback_downloaded"
-                ? `${FORMAT_LABEL["google_doc"]} (downloaded as .doc — Google not connected)`
+                ? `${FORMAT_LABEL["google_doc"]} (downloaded as .doc. Google not connected)`
                 : (FORMAT_LABEL[result.report.export_format] ?? result.report.export_format);
             toast({
               title: "Report generated",
@@ -232,7 +232,7 @@ export function ReportBuilderView() {
           toast({
             variant: "destructive",
             title: "Report saved, but the download failed",
-            description: `"${result.report.title}" was saved to Report History, but its saved copy can't be read — try generating it again.`,
+            description: `"${result.report.title}" was saved to Report History, but its saved copy can't be read. Try generating it again.`,
           });
         }
       },
@@ -364,15 +364,18 @@ export function ReportBuilderView() {
             />
             <ModuleTabs tabs={tabs} active={tab} onChange={setTab} />
 
-            <div className={cn("px-6 py-5 space-y-5", tab === "preview" ? "max-w-6xl" : "max-w-4xl")}>
+            <div className={cn("px-6 py-5 space-y-5", tab === "preview" ? "max-w-[1400px]" : "max-w-4xl")}>
               {tab === "preview" && (
                 <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,360px)_1fr] gap-4 items-start">
                   {/* ── Left rail: audience · sections · window · generate ── */}
                   <div className="space-y-4 min-w-0">
                     {/* Audience — the canvas's density/branding selector */}
-                    <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
-                      <div className="text-cardtitle font-semibold text-foreground mb-0.5">Audience</div>
-                      <p className={cn(TYPE.caption, "text-muted-foreground/75 mb-2.5")}>Sets branding and delivery density</p>
+                    <div className="mx-module">
+                      <div className="mx-module-head flex items-center gap-2">
+                        <div className="text-cardtitle font-semibold text-foreground">Audience</div>
+                        <InfoTooltip content="Sets branding and delivery density" />
+                      </div>
+                      <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       <div className="flex flex-col gap-1.5">
                         {([
                           { id: "internal" as Mode, Icon: Building2, label: "Internal ops", desc: "Full Metrix branding · internal density" },
@@ -397,15 +400,18 @@ export function ReportBuilderView() {
                         ))}
                       </div>
                     </div>
+                    </div>
 
                     {/* Sections — the canvas's checklist card */}
-                    <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
-                      <div className="flex items-baseline justify-between gap-2 mb-2">
+                    <div className="mx-module">
+                      <div className="mx-module-head flex items-center justify-between gap-2">
                         <div className="text-cardtitle font-semibold text-foreground">Sections</div>
                         <span className={cn(TYPE.label, "text-muted-foreground/75 tabular-nums")}>
                           {rb.report_sections.length - excludedSections.size} of {rb.report_sections.length}
                         </span>
                       </div>
+                    </div>
+                      <div className="rounded-xl border border-border/50 bg-foreground/[0.02] p-4">
                       <div className="flex flex-col">
                         {rb.report_sections.map((s) => {
                           const included = !excludedSections.has(s);
@@ -498,7 +504,7 @@ export function ReportBuilderView() {
                         </div>
                       )}
                       <p className="mt-2 text-label text-muted-foreground/75">
-                        Affects this report only — the global date filter is untouched. Sections still summarize each item's full flight; this import has no daily grain.
+                        Affects this report only. The global date filter is untouched. Sections still summarize each item's full flight; this import has no daily grain.
                       </p>
                     </div>
 

@@ -56,7 +56,7 @@ describe("persisted upload warnings", () => {
         imports={[
           imp({
             upload_warnings: [
-              "3 ID columns were blank — likely a Google Sheets round-trip.",
+              "3 ID columns were blank. Likely a Google Sheets round-trip.",
               "Duplicate header set detected in Meta's pivot export.",
             ],
           }),
@@ -65,7 +65,7 @@ describe("persisted upload warnings", () => {
     );
     open();
     expect(screen.getByText("Upload warnings (2)")).toBeTruthy();
-    expect(screen.getByText("3 ID columns were blank — likely a Google Sheets round-trip.")).toBeTruthy();
+    expect(screen.getByText("3 ID columns were blank. Likely a Google Sheets round-trip.")).toBeTruthy();
     expect(screen.getByText("Duplicate header set detected in Meta's pivot export.")).toBeTruthy();
   });
 
@@ -102,12 +102,12 @@ describe("column report absent / optional breakdown columns", () => {
     // claims: render when EITHER exists.
     render(
       <ImportConfidenceReport
-        imports={[imp({ mapping_summary: null, upload_warnings: ["3 ID columns were blank — likely a Google Sheets round-trip."] })]}
+        imports={[imp({ mapping_summary: null, upload_warnings: ["3 ID columns were blank. Likely a Google Sheets round-trip."] })]}
       />,
     );
     open();
     expect(screen.getByText("Upload warnings (1)")).toBeTruthy();
-    expect(screen.getByText("3 ID columns were blank — likely a Google Sheets round-trip.")).toBeTruthy();
+    expect(screen.getByText("3 ID columns were blank. Likely a Google Sheets round-trip.")).toBeTruthy();
     expect(screen.getByText(/column report not recorded/)).toBeTruthy();
     expect(screen.queryByText(/signal coverage/)).toBeNull();
   });

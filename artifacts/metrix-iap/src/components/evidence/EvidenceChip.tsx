@@ -93,7 +93,7 @@ export function EvidenceExplainer({
             text:
               coveragePct === null
                 ? "Coverage is measured against the Ad Summary export per Ad ID. Without one at this scope the rows are shown as observed and labelled unreconciled."
-                : `${coveragePct}% of the control source's spend is carried by these rows. The remainder is unattributed by this breakdown — it is never allocated to a segment and never scaled.`,
+                : `${coveragePct}% of the control source's spend is carried by these rows. The remainder is unattributed by this breakdown. It is never allocated to a segment and never scaled.`,
           },
         ]
       : []),

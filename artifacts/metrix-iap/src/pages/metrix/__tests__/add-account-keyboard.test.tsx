@@ -144,7 +144,7 @@ beforeEach(() => {
 // 1. Choose step — Tab order
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("choose step — Tab order", () => {
+describe("choose step · Tab order", () => {
   it("Tab reaches the manual-upload button first (Meta connect is disabled, out of sequence)", async () => {
     const user = userEvent.setup();
     renderDialog({ open: true, onOpenChange: vi.fn() });
@@ -189,7 +189,7 @@ describe("choose step — Tab order", () => {
 // 2. manual_name step — keyboard submission and Tab order
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("manual_name step — Enter submits", () => {
+describe("manual_name step · Enter submits", () => {
   it("pressing Enter on the name input fires the create mutation when name is valid", async () => {
     const user = userEvent.setup();
     renderDialog({ open: true, onOpenChange: vi.fn() });
@@ -308,7 +308,7 @@ describe("manual_name step — Enter submits", () => {
 // 3. Confirm-before-dismiss — Esc cancels, not closes outer dialog
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("confirm-before-dismiss — Esc cancels", () => {
+describe("confirm-before-dismiss · Esc cancels", () => {
   it("first Esc shows the confirm screen when staged imports exist", async () => {
     const user = userEvent.setup();
     const onOpenChange = vi.fn();
@@ -484,7 +484,7 @@ describe("focus return after dialog closes", () => {
 // 5. "Done — open account" navigates to the created account
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("Done — open account button", () => {
+describe("Done · open account button", () => {
   it("calls selectAdAccount with the created account ID and closes the dialog", async () => {
     const user = userEvent.setup();
     const onOpenChange = vi.fn();
@@ -492,7 +492,7 @@ describe("Done — open account button", () => {
     // Drive to the upload step (mockMutateAsync resolves with account_id "acct-test").
     await reachUploadStep(user, onOpenChange);
 
-    const doneBtn = screen.getByRole("button", { name: /Done — open account/i });
+    const doneBtn = screen.getByRole("button", { name: /Done · open account/i });
     await user.click(doneBtn);
 
     // selectAdAccount must be called with the exact id returned by the create mutation.

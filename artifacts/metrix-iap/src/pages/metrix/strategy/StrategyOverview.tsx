@@ -76,7 +76,7 @@ function PillarCoverageStrip({
 }) {
   const maxCells = Math.max(...pillars.map((p) => p.source_cells.length), 1);
   return (
-    <div className="space-y-2.5" aria-label="Pillar coverage — source cell count">
+    <div className="space-y-2.5" aria-label="Pillar coverage · source cell count">
       {pillars.map((p, i) => {
         const t = splitTitle(p.label);
         const tier = pillarTier(p.source_cells);
@@ -91,7 +91,7 @@ function PillarCoverageStrip({
                 .getElementById(`pillar-${p.id}`)
                 ?.scrollIntoView({ behavior: "smooth", block: "start" })
             }
-            title={`${t.main}${t.qualifier ? ` — ${t.qualifier}` : ""} · ${p.source_cells.length} source cell${p.source_cells.length !== 1 ? "s" : ""}`}
+            title={`${t.main}${t.qualifier ? `, ${t.qualifier}` : ""} · ${p.source_cells.length} source cell${p.source_cells.length !== 1 ? "s" : ""}`}
           >
             <span className={cn(TYPE.label, "w-5 text-right tabular-nums shrink-0")}>
               {String(i + 1).padStart(2, "0")}
@@ -260,7 +260,7 @@ function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<ty
   });
 
   return (
-    <SectionCard title="Scaling playbook" desc="Scale · optimize · validate · explore · avoid" right={<SectionInfoIcon tip="Prioritised action list — what to scale, optimise, validate, explore, and avoid based on analysis reads." />}>
+    <SectionCard title="Scaling playbook" desc="Scale · optimize · validate · explore · avoid" right={<SectionInfoIcon tip="Prioritised action list · what to scale, optimise, validate, explore, and avoid based on analysis reads." />}>
       <div className="space-y-2">
         {activeLanes.map(({ key, label, accent }) => {
           const items = playbook[key] as string[];
@@ -504,7 +504,7 @@ export function StrategyOverview() {
                   {pillars.length > 0 && (
                     <SectionCard
                       title="Variable family map"
-                      desc="Which variable families each pillar uses — row = family, column = pillar"
+                      desc="Which variable families each pillar uses. Row = family, column = pillar"
                       right={<><SectionInfoIcon tip="Grid showing which creative variable families are used by each message pillar, revealing gaps and overlaps in the strategy." /><CrossLink to="/app/strategy/map" label="Map →" /></>}
                     >
                       <VariableFamilyHeatmap pillars={pillars} />
@@ -656,7 +656,7 @@ export function StrategyOverview() {
               )}
 
               {/* ── Strategy modules ──────────────────────────────────── */}
-              <SectionCard title="Go deeper" desc="Same strategy, different lenses — map, audience, and validation queue" right={<SectionInfoIcon tip="Deeper views of the same strategy from different angles — map, avatars, and hypothesis queue." />}>
+              <SectionCard title="Go deeper" desc="Same strategy, different lenses, map, audience, and validation queue" right={<SectionInfoIcon tip="Deeper views of the same strategy from different angles. Map, avatars, and hypothesis queue." />}>
                 <div className="grid grid-cols-dashboard-3 gap-3">
                   {subpages.map((s) => (
                     <a

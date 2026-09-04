@@ -134,7 +134,7 @@ export function MetrixBootLoader({ slow }: { slow?: BootLoaderSlowState | null }
             className="w-full text-center space-y-2 pt-2"
           >
             <p className="text-caption text-foreground/85 leading-relaxed">
-              Still waiting on the data service after {slow.elapsedSeconds}s. It may be busy finishing an analysis run —
+              Still waiting on the data service after {slow.elapsedSeconds}s. It may be busy finishing an analysis run, 
               your data is safe.
             </p>
             <button

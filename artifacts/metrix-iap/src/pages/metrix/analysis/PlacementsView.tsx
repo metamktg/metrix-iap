@@ -121,7 +121,7 @@ function DeviceDeliveryCard({ rows }: { rows: DeviceDeliveryRow[] }) {
                 {deviceLabel(d.device)}
               </span>,
               <span key={`${d.device}-cpa`} className={cellCls} style={cellStyle} title={blendCpa != null && d.cpa != null ? `${((d.cpa / blendCpa - 1) * 100).toFixed(0)}% vs account blend` : undefined}>
-                {d.cpa != null ? fmtUSD(d.cpa) : "—"}
+                {d.cpa != null ? fmtUSD(d.cpa) : "–"}
               </span>,
               <span key={`${d.device}-spend`} className={cellCls} style={cellStyle}>{fmtUSD(d.spend, 0)}</span>,
               <span key={`${d.device}-results`} className={cellCls} style={cellStyle}>{fmtNum(d.results)}</span>,
@@ -175,10 +175,10 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
         { label: "Results", value: fmtNum(own.results), delta: null },
         { label: "Impressions", value: fmtNum(own.impressions), delta: null },
         { label: "Link clicks", value: fmtNum(own.linkClicks), delta: null },
-        { label: "CPA", value: own.cpa != null ? fmtUSD(own.cpa) : "—", delta: deltaLabel(own.cpa, accCpa, true) },
-        { label: "Link CTR", value: own.ctr != null ? fmtPct(own.ctr) : "—", delta: deltaLabel(own.ctr, accCtr, false) },
-        { label: "CPM", value: own.cpm != null ? fmtUSD(own.cpm) : "—", delta: deltaLabel(own.cpm, accCpm, true) },
-        { label: "CPC", value: own.cpc != null ? fmtUSD(own.cpc) : "—", delta: null },
+        { label: "CPA", value: own.cpa != null ? fmtUSD(own.cpa) : "–", delta: deltaLabel(own.cpa, accCpa, true) },
+        { label: "Link CTR", value: own.ctr != null ? fmtPct(own.ctr) : "–", delta: deltaLabel(own.ctr, accCtr, false) },
+        { label: "CPM", value: own.cpm != null ? fmtUSD(own.cpm) : "–", delta: deltaLabel(own.cpm, accCpm, true) },
+        { label: "CPC", value: own.cpc != null ? fmtUSD(own.cpc) : "–", delta: null },
       ]
     : [];
 
@@ -269,7 +269,7 @@ const TRACKING_BASIS_COPY: Record<string, { attribution: string; caveat: string 
   conversion: {
     attribution: "the converting",
     caveat:
-      "Conversion-attributed rows — spend and impressions are not attributable under this tracking basis, so no CPA or CTR exists here by design.",
+      "Conversion-attributed rows · spend and impressions are not attributable under this tracking basis, so no CPA or CTR exists here by design.",
   },
 };
 
@@ -280,7 +280,7 @@ function basisCopy(basis: string): { attribution: string; caveat: string } {
       // Names the basis, asserts nothing about what it does or does not
       // support. An unknown basis is a gap in this table, and it should read
       // as one rather than borrowing the conversion basis's disclaimer.
-      caveat: `Rows attributed on the "${basis}" tracking basis. Metrix has no description for this basis yet — read the metrics below against the source export, not against delivery-basis figures elsewhere in this view.`,
+      caveat: `Rows attributed on the "${basis}" tracking basis. Metrix has no description for this basis yet. Read the metrics below against the source export, not against delivery-basis figures elsewhere in this view.`,
     }
   );
 }
@@ -434,7 +434,7 @@ export function PlacementsView() {
                         <MetricTile
                           variant="primary"
                           label="Top placement"
-                          value={top?.placement ?? "—"}
+                          value={top?.placement ?? "–"}
                           sub={top ? `${fmtNum(top.purchases ?? 0)} purchases · ${fmtNum(top.link_clicks ?? 0)} link clicks` : undefined}
                         />
                       </div>
@@ -501,7 +501,7 @@ export function PlacementsView() {
                   <MetricTile
                     variant="primary"
                     label={`Best · ${activeMetric.label}`}
-                    value={best?.placement ?? "—"}
+                    value={best?.placement ?? "–"}
                     sub={
                       best && activeMetric.value(best) != null
                         ? `${activeMetric.format(activeMetric.value(best)!)} ${activeMetric.label.toLowerCase()}`
@@ -517,7 +517,7 @@ export function PlacementsView() {
                   desc={`Ranked by ${activeMetric.label} · V3 + C4E combined`}
                   right={
                     <div className="flex items-center gap-2">
-                      <SectionInfoIcon tip="Each placement's bar is scaled to the top placement on the active KPI. Cost-metric fills grade against the account blend — accent means at or under blend. Click a placement for the full breakdown." />
+                      <SectionInfoIcon tip="Each placement's bar is scaled to the top placement on the active KPI. Cost-metric fills grade against the account blend. Accent means at or under blend. Click a placement for the full breakdown." />
                       <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} />
                     </div>
                   }
@@ -552,7 +552,7 @@ export function PlacementsView() {
                           </div>
                           <div className="flex items-center justify-end gap-1.5">
                             <span className={cn(TYPE.body, "font-medium tabular-nums text-foreground")}>
-                              {v != null ? activeMetric.format(v) : "—"}
+                              {v != null ? activeMetric.format(v) : "–"}
                             </span>
                             <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground/75 group-hover:text-primary/60 transition-colors" />
                           </div>

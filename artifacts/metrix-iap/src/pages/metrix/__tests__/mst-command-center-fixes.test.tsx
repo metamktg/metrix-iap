@@ -160,7 +160,7 @@ beforeEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-describe("MstCommandCenter — run-scope wiring narrows avatar KPIs", () => {
+describe("MstCommandCenter · run-scope wiring narrows avatar KPIs", () => {
   it("Top spend share tile reflects the scoped avatar total, and the excluded avatar's stats disappear", () => {
     const view = renderMst();
 
@@ -192,7 +192,7 @@ describe("MstCommandCenter — run-scope wiring narrows avatar KPIs", () => {
   });
 });
 
-describe("MstCommandCenter — Link CVR correctness (item 4)", () => {
+describe("MstCommandCenter · Link CVR correctness (item 4)", () => {
   it("shows results ÷ link clicks, not link clicks ÷ impressions (CTR)", () => {
     renderMst();
     const cvr = realCvr(run1OwnedRows);
@@ -207,7 +207,7 @@ describe("MstCommandCenter — Link CVR correctness (item 4)", () => {
   });
 });
 
-describe("MstCommandCenter — per-ad drawer shows real per-ad numbers (item 3)", () => {
+describe("MstCommandCenter · per-ad drawer shows real per-ad numbers (item 3)", () => {
   it("two ads sharing a cell show their own distinct spend, not the shared cell rollup", () => {
     renderMst();
 
@@ -245,7 +245,7 @@ describe("MstCommandCenter — per-ad drawer shows real per-ad numbers (item 3)"
 // its per-ad figures are still full-window, on a different time base than
 // the tile above. The all-time/no-scope view has no such mismatch to
 // disclose, so the note must not appear there.
-describe("MstCommandCenter — per-ad drawer discloses its full-window time base under an active run scope", () => {
+describe("MstCommandCenter · per-ad drawer discloses its full-window time base under an active run scope", () => {
   const CAVEAT_TEXT =
     "Per-ad Spend and Results below are full-window totals, not scoped to the run selection above.";
 

@@ -67,7 +67,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof strategyShared> = [
   "FoldedList",
 ];
 
-describe("strategyShared.tsx exports — set equality", () => {
+describe("strategyShared.tsx exports, set equality", () => {
   it("exports the expected set of runtime names (no missing, no extras)", () => {
     const actual = Object.keys(strategyShared);
     const missing = RUNTIME_EXPORTS.filter((name) => !actual.includes(name));
@@ -85,7 +85,7 @@ describe("strategyShared.tsx exports — set equality", () => {
 // ─── 2. Binding checks ────────────────────────────────────────────────
 // Guards every export against being set to null or undefined.
 
-describe("strategyShared.tsx exports — binding checks", () => {
+describe("strategyShared.tsx exports, binding checks", () => {
   it.each(RUNTIME_EXPORTS)("%s is defined and non-null", (name) => {
     expect(strategyShared[name]).toBeDefined();
     expect(strategyShared[name]).not.toBeNull();
@@ -96,7 +96,7 @@ describe("strategyShared.tsx exports — binding checks", () => {
 // Calls each utility function with minimal args and asserts the return
 // is not null/undefined. Catches stubs like `export function familyLabel() { return null; }`.
 
-describe("strategyShared.tsx utility functions — return-value checks", () => {
+describe("strategyShared.tsx utility functions, return-value checks", () => {
   it("familyLabel returns a non-null string for a known family", () => {
     const result = strategyShared.familyLabel("hook");
     expect(result).not.toBeNull();
@@ -195,7 +195,7 @@ describe("strategyShared.tsx utility functions — return-value checks", () => {
 // Renders each component with minimal props and asserts the container
 // produced DOM output. Catches null-returning stubs for display components.
 
-describe("strategyShared.tsx display components — render checks", () => {
+describe("strategyShared.tsx display components, render checks", () => {
   it("VariableChip renders non-empty output", () => {
     const { container } = render(<strategyShared.VariableChip code="HK_benefit" />);
     expect(container.firstChild).not.toBeNull();
@@ -291,7 +291,7 @@ describe("strategyShared.tsx display components — render checks", () => {
 
   it("ScalingPlaybookLanes renders non-empty output for a playbook with scale_now entries", () => {
     const playbook: ScalingPlaybook = {
-      scale_now: ["HK_benefit + TN_conversational — top performing stack"],
+      scale_now: ["HK_benefit + TN_conversational · top performing stack"],
       optimize: ["FW_social_proof variants need budget increase"],
     };
     const { container } = render(<strategyShared.ScalingPlaybookLanes playbook={playbook} />);

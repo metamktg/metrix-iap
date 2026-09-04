@@ -143,15 +143,15 @@ function LocalTagChips({ codes }: { codes: string[] }) {
 // ─── Formatting ────────────────────────────────────────────────────────
 
 function usd(n: number | null | undefined, d = 0): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: d, maximumFractionDigits: d });
 }
 function num(n: number | null | undefined): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return Math.round(n).toLocaleString("en-US");
 }
 function pct(n: number | null | undefined): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return `${n.toFixed(2)}%`;
 }
 
@@ -228,7 +228,7 @@ function OverviewTab({ data, perfRows }: { data: CreativeCardData; perfRows: Cel
           {([
             { label: "Spend", value: usd(s.spend) },
             { label: s.resultLabel ?? "Results", value: num(s.results) },
-            { label: "CPA", value: s.cpa != null ? usd(s.cpa) : "—" },
+            { label: "CPA", value: s.cpa != null ? usd(s.cpa) : "–" },
             { label: "Link CTR", value: pct(s.ctrPct) },
           ] as const).map((item) => (
             <div key={item.label} className="rounded-lg border border-border/30 bg-foreground/[0.02] px-3 py-2.5 text-center">
@@ -532,8 +532,8 @@ function DemographicsTab({
                   {([
                     { key: "spend", label: "Spend", value: usd(g.spend) },
                     { key: "results", label: "Results", value: num(g.results) },
-                    { key: "cpa", label: "CPA", value: g.cpa != null ? usd(g.cpa, 2) : "—" },
-                    { key: "ctr", label: "Link CTR", value: g.ctr != null ? pct(g.ctr) : "—" },
+                    { key: "cpa", label: "CPA", value: g.cpa != null ? usd(g.cpa, 2) : "–" },
+                    { key: "ctr", label: "Link CTR", value: g.ctr != null ? pct(g.ctr) : "–" },
                     { key: "reach", label: "Reach", value: num(g.reach) },
                   ] as const).map((kpi) => (
                     <div key={kpi.key} className="flex items-center justify-between">
@@ -635,7 +635,7 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
                   <span className={cn(TYPE.caption, "ml-1.5 text-muted-foreground/75")}>{platformLabel(b.Platform)}</span>
                 </div>
                 <span className="tabular-nums text-muted-foreground/75 shrink-0 ml-2">
-                  {metric === "spend" ? usd(b["Amount spent (USD)"]) : cpa != null ? usd(cpa) : "—"}
+                  {metric === "spend" ? usd(b["Amount spent (USD)"]) : cpa != null ? usd(cpa) : "–"}
                 </span>
               </div>
               <ProgressMeter
@@ -654,7 +654,7 @@ function PlacementsTab({ rows, emptyReason }: { rows: PlacementRow[]; emptyReaso
       </div>
 
       <p className={cn(TYPE.caption, "text-muted-foreground/75 pt-2 border-t border-border/20")}>
-        Placement signal is account-level — not scoped to this creative cell.
+        Placement signal is account-level · not scoped to this creative cell.
       </p>
     </div>
   );
@@ -703,7 +703,7 @@ function FunnelTab({ perfRow, perfRows, emptyReason }: { perfRow: CellPerformanc
       <FunnelStepsChart steps={steps} />
       {chain.length === 0 && (
         <p className={cn(TYPE.caption, "text-muted-foreground/75 pt-1 border-t border-border/20")} data-testid="funnel-no-chain">
-          No conversion chain — this account's ads ran under {observed.length > 0 ? observed.join(", ") : "no placed result event"}. Delivery steps only.
+          No conversion chain · this account's ads ran under {observed.length > 0 ? observed.join(", ") : "no placed result event"}. Delivery steps only.
         </p>
       )}
       {chain.length > 0 && unmeasured.length > 0 && (
@@ -874,7 +874,7 @@ export function CreativeExpandDialog({
                   <div className="space-y-1.5 min-w-0">
                     <p className="text-caption font-medium text-status-warning/90">Not fully mapped to IAP library</p>
                     <p className="text-label text-muted-foreground/75 leading-relaxed">
-                      This cell has performance data but no library entry — variable codes, copy, and asset may be absent.
+                      This cell has performance data but no library entry. Variable codes, copy, and asset may be absent.
                     </p>
                     {onUploadCreatives && (
                       <button

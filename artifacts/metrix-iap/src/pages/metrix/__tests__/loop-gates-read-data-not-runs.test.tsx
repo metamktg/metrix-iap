@@ -124,7 +124,7 @@ beforeEach(() => {
 
 afterEach(() => cleanup());
 
-describe("Creative Command Center — the brief gate", () => {
+describe("Creative Command Center · the brief gate", () => {
   it("the fixture is the case this guards: pillars present, no strategy generation run", () => {
     expect(pillarCount(baseSeed)).toBeGreaterThan(0);
     expect(IMPORTER_STAGE_STATUS.strategy.status).toBe("none");
@@ -149,7 +149,7 @@ describe("Creative Command Center — the brief gate", () => {
   });
 });
 
-describe("Strategy Command Center — the analysis gate", () => {
+describe("Strategy Command Center · the analysis gate", () => {
   it("offers generation when the analysis data is validated, with no manual run on record", async () => {
     expect(IMPORTER_STAGE_STATUS.analysis.status).toBe("none");
     expect(IMPORTER_STAGE_STATUS.analysis.validated).toBe(true);

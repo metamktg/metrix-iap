@@ -28,7 +28,7 @@ beforeEach(() => {
   localStorage.clear();
 });
 
-describe("useResizableColumn — accessibility contract", () => {
+describe("useResizableColumn · accessibility contract", () => {
   it("is focusable and exposes the splitter's value range", () => {
     const { result } = renderHook(() => useResizableColumn("Resize panel", OPTS));
     const h = result.current.handleProps;
@@ -83,7 +83,7 @@ describe("useResizableColumn — accessibility contract", () => {
   });
 });
 
-describe("useResizableColumn — the width survives navigation", () => {
+describe("useResizableColumn · the width survives navigation", () => {
   it("persists a keyboard resize", () => {
     const { result } = renderHook(() => useResizableColumn("Resize panel", OPTS));
     act(() => result.current.handleProps.onKeyDown({ key: "ArrowLeft", preventDefault: () => {} } as never));
@@ -131,7 +131,7 @@ describe("useResizableColumn — the width survives navigation", () => {
   });
 });
 
-describe("useResizableColumn — a column that must not disappear", () => {
+describe("useResizableColumn · a column that must not disappear", () => {
   const NO_COLLAPSE = { ...OPTS, collapseBelow: undefined, edge: "right" as const };
 
   it("reports a floor of minWidth, not zero, when it cannot collapse", () => {

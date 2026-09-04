@@ -97,7 +97,12 @@ export function SwipeDeck<T>({
   const visible = items.slice(0, Math.max(1, depth));
 
   return (
-    <div className={cn("relative select-none", className)} data-testid={testId}>
+    // h-full: every card is absolutely positioned, so this box has no height
+    // of its own. Without it the caller's sized container (the deck gives it
+    // 300 px) never reaches the cards, each card box collapses to its border,
+    // and three faces overflow onto one another. Measured on 2026-09-04: the
+    // card box was 2 px tall on every overview.
+    <div className={cn("relative select-none h-full", className)} data-testid={testId}>
       {/* No AnimatePresence here on purpose. Removal is driven by onCommit,
           which fires only once the card has finished flying off-screen — by
           then it is transparent and outside the frame, so an exit animation

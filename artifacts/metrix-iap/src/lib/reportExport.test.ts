@@ -236,7 +236,7 @@ describe("buildReportModel", () => {
 // change that adds new IAP sections (or removes existing ones) is caught
 // the moment the fixture is refreshed — even if the hand-crafted makeSeed()
 // fixture above has not been updated.
-describe("buildReportModel — fixture seed structural checks", () => {
+describe("buildReportModel · fixture seed structural checks", () => {
   it("builds a model from the fixture's bookster account with all expected sections", () => {
     const model = buildReportModel(fixtureSeed, "bookster", "internal");
     expect(model).not.toBeNull();
@@ -498,7 +498,7 @@ function makeSeedWithTwoSegments(): MetrixSeed {
 const SEG_A = { age: "25-34", gender: "female" };
 const SEG_B = { age: "35-44", gender: "male" };
 
-describe("buildReportModel — segment comparison", () => {
+describe("buildReportModel · segment comparison", () => {
   it("does NOT include a segment comparison section when the option is absent", () => {
     const model = buildReportModel(makeSeed(), "bookster", "internal")!;
     expect(model.sections.every((s) => !s.title.startsWith("Segment Comparison"))).toBe(true);
@@ -597,7 +597,7 @@ describe("buildReportModel — segment comparison", () => {
 // export path took no coverage at all, so the same numbers left the product
 // unqualified. These pin that it no longer can.
 
-describe("buildReportModel — segment comparison coverage gating", () => {
+describe("buildReportModel · segment comparison coverage gating", () => {
   const req: SegmentComparisonRequest = { segmentA: SEG_A, segmentB: SEG_B };
 
   function comparisonText(opts: Parameters<typeof buildReportModel>[3]) {
@@ -617,13 +617,13 @@ describe("buildReportModel — segment comparison coverage gating", () => {
         note: "Re-export Demographics from Meta Ads Reporting as CSV.",
       },
     });
-    const coverage = texts.filter((t) => t.startsWith("Coverage —"));
+    const coverage = texts.filter((t) => t.startsWith("Coverage, "));
     expect(coverage).toHaveLength(1);
     expect(coverage[0]).toContain("2%");
     expect(coverage[0]).toContain("segment reads describe that slice");
     // Coverage is context (owner direction 2026-09-02): it does not downgrade
     // a segment's own read, so no "insufficient" line and no invented "low".
-    expect(texts.some((t) => t.startsWith("Insufficient join coverage —"))).toBe(false);
+    expect(texts.some((t) => t.startsWith("Insufficient join coverage, "))).toBe(false);
   });
 
   it("leaves an adequately covered run's segments unqualified", () => {
@@ -631,12 +631,12 @@ describe("buildReportModel — segment comparison coverage gating", () => {
       segmentComparison: req,
       demoCoverage: { spend_coverage_pct: 96, below_threshold: false, note: null },
     });
-    expect(texts.some((t) => t.startsWith("Coverage —"))).toBe(false);
+    expect(texts.some((t) => t.startsWith("Coverage, "))).toBe(false);
   });
 
   it("falls back to per-segment heuristics on a legacy run with no measured coverage", () => {
     const texts = comparisonText({ segmentComparison: req });
-    expect(texts.some((t) => t.startsWith("Coverage —"))).toBe(false);
+    expect(texts.some((t) => t.startsWith("Coverage, "))).toBe(false);
   });
 });
 

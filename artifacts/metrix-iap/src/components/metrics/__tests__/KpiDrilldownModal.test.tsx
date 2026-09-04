@@ -106,7 +106,7 @@ beforeEach(() => {
 
 // ─── Manager scope ────────────────────────────────────────────────────
 
-describe("KpiDrilldownModal — manager scope", () => {
+describe("KpiDrilldownModal · manager scope", () => {
   it("renders per-account rows with each account's own window label + coverage disclosure", () => {
     renderModal({ accounts: [ALPHA, BETA] });
     const modal = screen.getByTestId("kpi-drilldown-modal");
@@ -130,7 +130,7 @@ describe("KpiDrilldownModal — manager scope", () => {
     expect(rowsAsc[0].textContent).toContain("Alpha");
   });
 
-  it("metric an account doesn't track shows n/a — never zero", () => {
+  it("metric an account doesn't track shows n/a. Never zero", () => {
     renderModal({ accounts: [ALPHA, BETA], metricId: "result:purchases" });
     fireEvent.click(screen.getByLabelText("Table view"));
     const table = screen.getByTestId("kpi-drilldown-table");
@@ -158,7 +158,7 @@ describe("KpiDrilldownModal — manager scope", () => {
 
 // ─── Account scope ────────────────────────────────────────────────────
 
-describe("KpiDrilldownModal — account scope", () => {
+describe("KpiDrilldownModal · account scope", () => {
   const accountProps = {
     scope: "account" as const,
     catalog: ACCOUNT_CATALOG,
@@ -202,7 +202,7 @@ describe("KpiDrilldownModal — account scope", () => {
     expect(modal.textContent).not.toContain("NaN");
   });
 
-  it("narrowed scope withholds account-wide dimensions — only scoped-capable breakdowns remain", () => {
+  it("narrowed scope withholds account-wide dimensions. Only scoped-capable breakdowns remain", () => {
     const withSignals: AnalysisData = {
       ...ANALYSIS,
       v3_placement_signal: [{ Placement: "Feed", Platform: "facebook", "Amount spent (USD)": 999, Impressions: 9000, "Link clicks": 90, Results: 9, CPA: null }],

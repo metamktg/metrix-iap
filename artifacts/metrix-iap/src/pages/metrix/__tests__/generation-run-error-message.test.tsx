@@ -93,19 +93,19 @@ beforeEach(() => {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-describe("GenerationErrorNote — verbatim message rendering", () => {
+describe("GenerationErrorNote · verbatim message rendering", () => {
   it("renders the exact message inside the note text", () => {
     render(
-      <GenerationErrorNote message="OpenAI rate limit exceeded — retry in 60 s" />,
+      <GenerationErrorNote message="OpenAI rate limit exceeded. Retry in 60 s" />,
     );
     expect(
       screen.getByText(
-        /Last generation run failed: OpenAI rate limit exceeded — retry in 60 s/,
+        /Last generation run failed: OpenAI rate limit exceeded. Retry in 60 s/,
       ),
     ).toBeTruthy();
   });
 
-  it("renders a different message verbatim — not a hardcoded string", () => {
+  it("renders a different message verbatim. Not a hardcoded string", () => {
     render(
       <GenerationErrorNote message="Supabase query returned 0 analysis rows; nothing to generate from" />,
     );
@@ -135,7 +135,7 @@ describe("GenerationErrorNote — verbatim message rendering", () => {
   });
 });
 
-describe("useGenerationRun — lastError derived from run.error_message", () => {
+describe("useGenerationRun, lastError derived from run.error_message", () => {
   it("lastError equals run.error_message when status is 'error'", () => {
     mockGenRunStatus = "error";
     mockGenErrorMessage = "Zod validation failed: missing required field 'hypothesis'";
@@ -218,7 +218,7 @@ function makeSettlementHarness(kind: GenerationKind) {
   return { rerender };
 }
 
-describe("useGenerationRun — polling-settlement toast shows real error_message", () => {
+describe("useGenerationRun · polling-settlement toast shows real error_message", () => {
   it("toast description equals run.error_message when polling settles to error (strategy)", async () => {
     // Step 1: render with a running run — this triggers setPolling(true) in
     // the hook's "keep polling while running" effect.

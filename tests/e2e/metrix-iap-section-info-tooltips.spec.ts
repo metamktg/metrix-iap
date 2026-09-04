@@ -248,7 +248,7 @@ async function main() {
           await assertSectionTooltip(
             page,
             "Placement breakdown",
-            "Each placement's bar is scaled to the top placement on the active KPI. Cost-metric fills grade against the account blend — accent means at or under blend. Click a placement for the full breakdown.",
+            "Each placement's bar is scaled to the top placement on the active KPI. Cost-metric fills grade against the account blend. Accent means at or under blend. Click a placement for the full breakdown.",
           );
           console.log('       "Placement breakdown" tooltip verified ✓');
 

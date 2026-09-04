@@ -282,7 +282,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
               <div className="text-caption text-muted-foreground/75 leading-relaxed">
                 {concepts.length === 0
                   ? "No concept rows available for this metric in the current import."
-                  : "Only one concept found — full breakdown available in the diagnostic."}
+                  : "Only one concept found · full breakdown available in the diagnostic."}
               </div>
               {metric.sub && (
                 <div className="text-caption text-muted-foreground/75">{metric.sub}</div>

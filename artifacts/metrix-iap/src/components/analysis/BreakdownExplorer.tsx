@@ -378,7 +378,7 @@ export function BreakdownExplorer({
         <button
           type="button"
           onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
-          aria-label={sortDir === "desc" ? "Sorted descending — switch to ascending" : "Sorted ascending — switch to descending"}
+          aria-label={sortDir === "desc" ? "Sorted descending · switch to ascending" : "Sorted ascending · switch to descending"}
           className="pressable inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/50 text-caption text-foreground/75 hover:text-foreground transition-colors"
         >
           {sortDir === "desc" ? <ArrowDown className="w-3 h-3" aria-hidden /> : <ArrowUp className="w-3 h-3" aria-hidden />}
@@ -398,7 +398,7 @@ export function BreakdownExplorer({
       {!restriction && donutBlocked && (
         <NoticeNote testid="breakdown-donut-blocked">
           A share-of-total donut only makes sense for additive metrics (spend, impressions, clicks, results).
-          {" "}{metricLabel} is a ratio — its segments don't sum to a meaningful total, so the donut is withheld.
+          {" "}{metricLabel} is a ratio · its segments don't sum to a meaningful total, so the donut is withheld.
           The ranked bars and table below stay available.
         </NoticeNote>
       )}
@@ -409,7 +409,7 @@ export function BreakdownExplorer({
           <div className="py-8 text-center space-y-1.5" data-testid="breakdown-empty">
             <p className="text-title font-bold text-foreground/60">No segment data for this selection</p>
             <p className="text-caption text-muted-foreground/75 max-w-sm mx-auto leading-relaxed">
-              No rows back this metric for the selected dimension in the current import — values that can't be
+              No rows back this metric for the selected dimension in the current import. Values that can't be
               honestly computed show as n/a, never zero.
             </p>
           </div>

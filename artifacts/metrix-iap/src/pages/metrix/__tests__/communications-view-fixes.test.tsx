@@ -85,7 +85,7 @@ beforeEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-describe("CommunicationsView — pillar card 'Who responds' confidence badge", () => {
+describe("CommunicationsView · pillar card 'Who responds' confidence badge", () => {
   it("shows the HIGH confidence badge, not the first-listed (low) ICP's, when target_icps lists low before high", () => {
     renderCommunications();
 

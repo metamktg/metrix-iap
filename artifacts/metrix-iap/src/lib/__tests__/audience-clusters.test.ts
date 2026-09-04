@@ -67,7 +67,7 @@ describe("buildAudienceClusters", () => {
     expect(clusters.length).toBeGreaterThan(0);
   });
 
-  it("is deterministic — identical input always produces identical clusters", () => {
+  it("is deterministic · identical input always produces identical clusters", () => {
     const entries = Array.from({ length: 14 }, (_, i) =>
       seg(`${20 + i}-${29 + i}`, i % 2 === 0 ? "male" : "female", {
         spend: 40 + (i * 37) % 200,

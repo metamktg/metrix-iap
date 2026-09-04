@@ -281,7 +281,7 @@ export function assessSegmentSignal(
   // fabricated reason, not a real read.
   const sourceHasImpressions = scopedTotals.impressions != null && scopedTotals.impressions > 0;
   if (sourceHasImpressions && totals.impressions != null && totals.impressions < LOW_SIGNAL_IMPRESSIONS) {
-    reasons.push(`${Math.round(totals.impressions).toLocaleString("en-US")} impressions — under the ${LOW_SIGNAL_IMPRESSIONS.toLocaleString("en-US")} for a stable read.`);
+    reasons.push(`${Math.round(totals.impressions).toLocaleString("en-US")} impressions. Under the ${LOW_SIGNAL_IMPRESSIONS.toLocaleString("en-US")} for a stable read.`);
   }
   if (
     totals.spend != null &&
@@ -419,7 +419,7 @@ export function computeSegmentAttribution(
     return {
       available: false,
       unavailableReason: hasAccountGrainOnly
-        ? "This import's demographic export is account-level only — it doesn't break this segment down by creative, so concept and variable attribution can't be honestly computed."
+        ? "This import's demographic export is account-level only. It doesn't break this segment down by creative, so concept and variable attribution can't be honestly computed."
         : "No demographic rows exist for this segment in the current selection.",
       cells: [],
       variables: [],

@@ -33,7 +33,7 @@
 import type { DeckCard } from "@/components/deck/RecommendationDeck";
 import type { AdAccount, ConceptRollupRow, RecommendationCard, SeedImpact } from "./seedTypes";
 import { scopeToRun } from "@/lib/run-supersede";
-import { parseHierarchyRef } from "@/lib/normalize";
+import { parseHierarchyRef, humanizeDiagnosis } from "@/lib/normalize";
 import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
 
 export interface DerivedRecommendation extends DeckCard {
@@ -96,9 +96,14 @@ function evidenceForRef(rollup: ConceptRollupRow[], label: string): RefEvidence 
   };
 }
 
+/** The rationale of a reference the strategy names and the rows do not
+ *  measure. Exported so a tile that already says "no measured figure" in
+ *  its number slot can leave the reason line out rather than say it twice. */
+export const UNMEASURED_RATIONALE = "The strategy names this reference; the account's rollup rows carry no measurement for it.";
+
 /** A measured line, or an honest statement that the rows carry no number. */
 function evidenceLine(ev: RefEvidence | null): string {
-  if (!ev) return "The strategy names this reference; the account's rollup rows carry no measurement for it.";
+  if (!ev) return UNMEASURED_RATIONALE;
   const bits = [`${fmtUSD(ev.spend, 0)} spent`, `${fmtNum(ev.results)} results`];
   if (ev.cpa != null) bits.push(`${fmtUSD(ev.cpa)} per result`);
   else bits.push("no conversions recorded");
@@ -125,6 +130,21 @@ function scopeOf(label: string): string {
  * `deriveRecommendations` is pure: same account in, same cards out, in the
  * same order. Nothing here reads the clock or the DOM.
  */
+/**
+ * A hypothesis card's figure: the first CPA / CVR / CTR / "cost per X" target
+ * the success criteria state, as "CPA ≤ $25" or "CVR ≥ 15%". Null when the
+ * criteria carry no such figure. It used to be the first 24 characters of
+ * the sentence, which rendered as "C1A achieves cost per pu".
+ */
+function hypothesisTarget(criteria: string | null): { label: string; value: string } | null {
+  if (!criteria) return null;
+  const m = criteria.match(/\b(CPA|CVR|CTR|cost per [a-z]+)\s*(≤|<=|≥|>=|<|>|=|of|at|under|below|above)?\s*(\$\s?[\d][\d.,]*|[\d][\d.,]*\s?%)/i);
+  if (!m) return null;
+  const name = /^cost per/i.test(m[1]) ? m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() : m[1].toUpperCase();
+  const op = ({ "<=": "≤", ">=": "≥", of: "", at: "", under: "≤", below: "≤", above: "≥" } as Record<string, string>)[m[2]?.toLowerCase() ?? ""] ?? (m[2] ?? "");
+  return { label: "Target", value: [name, op, m[3].replace(/\s+/g, "")].filter(Boolean).join(" ") };
+}
+
 export function deriveRecommendations(account: AdAccount | null | undefined): DerivedRecommendation[] {
   const iap = account?.iap;
   if (!iap) return [];
@@ -170,7 +190,7 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
       scope: scopeOf(label),
       actionGroup: "Budget actions",
       href: "/app/strategy/map",
-      hrefLabel: "See the scaling playbook",
+      hrefLabel: "Why the playbook retires it",
       metric: metricFor(ev),
       source: "strategy.scaling_playbook.avoid_combinations",
       stage: 3,
@@ -231,11 +251,14 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
     const subject = campaign ?? placement ?? "this segment";
     out.push({
       id: `derived:investigate:${investigateIdx++}`,
-      title: campaign ? `No results on ${campaign}` : placement ? `Reach without result · ${placement}` : "Spend with no recorded result",
-      rationale: diagnosis || "The account recorded spend against this segment and no results.",
+      // "{campaign} spent with no result", the same shape as the ad-level
+      // card below it. It used to read "No results on {campaign}", which is
+      // the sentence an empty state opens with, on a tile that is not one.
+      title: campaign ? `${campaign} spent with no result` : placement ? `Reach without result · ${placement}` : "Spend with no recorded result",
+      rationale: diagnosis ? humanizeDiagnosis(diagnosis) : "The account recorded spend against this segment and no results.",
       recommendedAction: diagnosis.startsWith("traffic_quality")
         ? `Exclude ${subject} from the delivery mix and re-read the remaining placements.`
-        : "Confirm the conversion is being recorded before concluding the creative failed — a broken signal and a failed creative look identical here.",
+        : "Confirm the conversion is being recorded before concluding the creative failed. A broken signal and a failed creative look identical here.",
       impact: "high",
       confidence: diagnosis.includes("validation_required") ? "validation required" : "recorded",
       scope: segment,
@@ -253,10 +276,10 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
       id: `derived:investigate:ads:${diagnosis || "unstated"}`,
       title: `${g.count} ad${g.count === 1 ? "" : "s"} spent with no recorded result`,
       rationale: diagnosis
-        ? `${diagnosis} — summed across ${g.count} ad${g.count === 1 ? "" : "s"}.`
+        ? `${humanizeDiagnosis(diagnosis)}. Summed across ${g.count} ad${g.count === 1 ? "" : "s"}.`
         : `Recorded across ${g.count} ad${g.count === 1 ? "" : "s"} with no stated diagnosis.`,
       recommendedAction:
-        "Check the conversion signal for these ads before retiring their creative — engagement without a recorded result is the tracking signature, not a creative verdict.",
+        "Check the conversion signal for these ads before retiring their creative. Engagement without a recorded result is the tracking signature, not a creative verdict.",
       impact: "high",
       confidence: diagnosis.includes("validation_required") ? "validation required" : "recorded",
       scope: "creative",
@@ -294,7 +317,7 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
     out.push({
       id: `derived:validate:${i}`,
       title: label,
-      rationale: "Named for validation by the strategy map — not yet measured at a volume that would settle it.",
+      rationale: "Named for validation by the strategy map. Not yet measured at a volume that would settle it.",
       recommendedAction: "Fund this as a test cell with enough volume to reach a read.",
       impact: "medium",
       confidence: "unvalidated",
@@ -328,7 +351,7 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
       actionGroup: "Test actions",
       href: "/app/strategy/hypotheses",
       hrefLabel: "Open the hypothesis queue",
-      metric: criteria ? { label: "Target", value: criteria.replace(/^.*?(CPA[^,]*|CVR[^,]*).*$/i, "$1").slice(0, 24) } : null,
+      metric: hypothesisTarget(criteria),
       source: "strategy.active_hypotheses",
       stage: 5,
       derived: true,

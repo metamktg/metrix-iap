@@ -119,7 +119,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "withFrom",
 ];
 
-describe("shared.tsx exports — set equality", () => {
+describe("shared.tsx exports, set equality", () => {
   it("exports the expected set of runtime names (no missing, no extras)", () => {
     const actual = Object.keys(shared);
     const missing = RUNTIME_EXPORTS.filter((name) => !actual.includes(name));
@@ -132,7 +132,7 @@ describe("shared.tsx exports — set equality", () => {
 // ─── 2. Binding checks ────────────────────────────────────────────────
 // Guards every export against being set to null or undefined.
 
-describe("shared.tsx exports — binding checks", () => {
+describe("shared.tsx exports, binding checks", () => {
   it.each(RUNTIME_EXPORTS)("%s is defined and non-null", (name) => {
     expect(shared[name]).toBeDefined();
     expect(shared[name]).not.toBeNull();
@@ -143,7 +143,7 @@ describe("shared.tsx exports — binding checks", () => {
 // Calls each utility function with minimal args and asserts the return
 // is not null/undefined. Catches stubs like `export function fmtUSD() { return null; }`.
 
-describe("shared.tsx utility functions — return-value checks", () => {
+describe("shared.tsx utility functions, return-value checks", () => {
   it("fmtUSD returns a non-null string", () => {
     expect(shared.fmtUSD(100)).not.toBeNull();
     expect(shared.fmtUSD(100)).toBeDefined();
@@ -170,7 +170,7 @@ describe("shared.tsx utility functions — return-value checks", () => {
   });
 
   it("deriveLabel returns a non-null string for a non-empty input", () => {
-    const result = shared.deriveLabel("Benefit Hook — drive registration");
+    const result = shared.deriveLabel("Benefit Hook · drive registration");
     expect(result).not.toBeNull();
     expect(result).toBeDefined();
     expect(result.length).toBeGreaterThan(0);
@@ -203,7 +203,7 @@ describe("shared.tsx utility functions — return-value checks", () => {
 // Renders each component with minimal props and asserts the container
 // produced DOM output. Catches null-returning stubs for display components.
 
-describe("shared.tsx display components — render checks (no context)", () => {
+describe("shared.tsx display components, render checks (no context)", () => {
   it("InfoTooltip renders non-empty output", () => {
     const { container } = render(<shared.InfoTooltip content="Helpful explanation" />);
     expect(container.firstChild).not.toBeNull();
@@ -373,7 +373,7 @@ describe("shared.tsx display components — render checks (no context)", () => {
 
 // ─── 5. Component render checks — needs DateRangeProvider ────────────
 
-describe("shared.tsx display components — render checks (DateRangeProvider)", () => {
+describe("shared.tsx display components, render checks (DateRangeProvider)", () => {
   it("NoDataInRangeState renders non-empty output", () => {
     const { container } = render(
       <DateRangeProvider>

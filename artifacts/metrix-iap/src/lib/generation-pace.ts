@@ -37,6 +37,6 @@ export function pacePhrase(elapsedSeconds: number, typicalSeconds: number): stri
   const typicalMin = Math.max(1, Math.round(typicalSeconds / 60));
   const typical = `about ${typicalMin}–${typicalMin + 1} min`;
   return elapsedSeconds > typicalSeconds
-    ? `Longer than the usual ${typical} — still running.`
+    ? `Longer than the usual ${typical} · still running.`
     : `The bar holds while the model runs. Usually ${typical}.`;
 }

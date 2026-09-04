@@ -30,7 +30,7 @@ const strongTotals: SegmentRawTotals = {
 };
 const scopedTotals: SegmentRawTotals = { ...strongTotals, spend: 850, impressions: 60_000 };
 
-describe("assessSegmentSignal — bands and coverage as context", () => {
+describe("assessSegmentSignal · bands and coverage as context", () => {
   it("classifies a strong segment on its own volume without coverage info (legacy runs)", () => {
     const s = assessSegmentSignal(strongTotals, scopedTotals, null);
     expect(s.state).toBe("ok"); // $400 / 20 results: the documented medium band
@@ -121,7 +121,7 @@ describe("creative empty-state reasons", () => {
   it("funnel reason distinguishes no-mapping-at-all from no-rows-for-this-cell", () => {
     // The reason names the join order (mapped Ad IDs first, then the cell code) and the remedy.
     expect(funnelEmptyReasonFor(undefined, "C8A")).toContain("mapped Ad IDs first");
-    expect(funnelEmptyReasonFor([], "C8A")).toContain("map the creative to its ad and re-run analysis");
+    expect(funnelEmptyReasonFor([], "C8A")).toContain("Map the creative to its ad and re-run analysis");
     const perfRow = { cell_id: "C1A" } as CellPerformanceRow;
     expect(funnelEmptyReasonFor([perfRow], "C8A")).toContain("don't appear in the imported performance exports");
     expect(funnelEmptyReasonFor([perfRow], "C1A")).toBeNull();

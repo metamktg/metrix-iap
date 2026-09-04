@@ -57,7 +57,7 @@ describe("DumbbellRows", () => {
       />,
     );
     expect(screen.getByText("n/a")).toBeTruthy();
-    expect(screen.getByText("—")).toBeTruthy();
+    expect(screen.getByText("–")).toBeTruthy();
     expect(screen.getByLabelText(/No results.*not measured/)).toBeTruthy();
   });
 

@@ -131,7 +131,7 @@ export function CreativeScanView() {
                       ]}
                     />
                     {libraryFilter === "attention" && attentionCells.length === 0 && (
-                      <span className={cn(TYPE.caption, "text-muted-foreground/75")}>Nothing flagged — every concept is mapped to performance.</span>
+                      <span className={cn(TYPE.caption, "text-muted-foreground/75")}>Nothing flagged · every concept is mapped to performance.</span>
                     )}
                   </div>
 

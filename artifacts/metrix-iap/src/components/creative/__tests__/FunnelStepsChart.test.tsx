@@ -61,7 +61,7 @@ describe("buildFunnelSteps · chain from observed events", () => {
     expect(steps.map((s) => s.value)).toEqual([10000, 200, 30, 15, 10]);
   });
 
-  it("leaves a step null — never 0 — when the account carries the event but this cell did not measure it", () => {
+  it("leaves a step null (never 0) when the account carries the event but this cell did not measure it", () => {
     const steps = buildFunnelSteps(
       { Impressions: 10000, "Link clicks": 200, "Result type": "Website purchases", Results: 10 },
       { events: ECOM_EVENTS, rowsByEvent: [{ "Result type": "Website purchases", Results: 10 }] },
@@ -109,7 +109,7 @@ describe("buildFunnelSteps · no account context", () => {
     const steps = buildFunnelSteps({ Impressions: 10000, "Link clicks": 200, checkouts_initiated: null });
     expect(steps.map((s) => s.label)).toEqual(["Impressions", "Link Clicks", "Checkouts initiated"]);
     expect(steps[2]!.value).toBeNull();
-    expect(steps[2]!.formatted).toBe("—");
+    expect(steps[2]!.formatted).toBe("–");
   });
 });
 
@@ -168,10 +168,10 @@ describe("FunnelStepsChart · partial chain (unmeasured steps)", () => {
     expect(screen.getAllByText("No data").length).toBe(2);
   });
 
-  it("shows a rate between Impressions and Link Clicks, and '— no rate' where a side is unmeasured", () => {
+  it("shows a rate between Impressions and Link Clicks, and ', no rate' where a side is unmeasured", () => {
     renderPartial();
     expect(screen.getAllByText(/conversion/i).length).toBeGreaterThan(0);
-    expect(screen.queryAllByText(/— no rate/).length).toBeGreaterThan(0);
+    expect(screen.queryAllByText(/, no rate/).length).toBeGreaterThan(0);
   });
 });
 

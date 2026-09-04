@@ -44,7 +44,7 @@ function metric(id: string, overrides: Partial<MetricDef> = {}): MetricDef {
 
 // ── Ratio metrics — summed numerator/denominator, never per-row averaged ──
 
-describe("topConceptsForMetric — ratio metric aggregation (cvr, ctr_all, cpc, cpm)", () => {
+describe("topConceptsForMetric · ratio metric aggregation (cvr, ctr_all, cpc, cpm)", () => {
   // topConceptsForMetric groups rows by cell_id (a concept's single creative
   // cell can carry multiple rows — e.g. one per result-event type on a
   // multi-event account — matching how performance_by_cell is really
@@ -131,7 +131,7 @@ describe("topConceptsForMetric — ratio metric aggregation (cvr, ctr_all, cpc, 
 
 // ── Bug 2 — zero-results cost cells must be null, not a fabricated $0 ──
 
-describe("topConceptsForMetric — cpa_blended / cost:<event> zero-results honesty", () => {
+describe("topConceptsForMetric · cpa_blended / cost:<event> zero-results honesty", () => {
   const rows: CellPerformanceRow[] = [
     row({
       cell_id: "cell-real", book2_concept_name: "RealConversion",
@@ -175,7 +175,7 @@ describe("topConceptsForMetric — cpa_blended / cost:<event> zero-results hones
 
 // ── Regression: pre-existing metric ids still behave as before ─────────
 
-describe("topConceptsForMetric — regression coverage for already-correct metrics", () => {
+describe("topConceptsForMetric · regression coverage for already-correct metrics", () => {
   // Same cell_id for both rows — one concept's cell with two rows (see note
   // in the describe block above on why grouping is by cell_id).
   const rows: CellPerformanceRow[] = [

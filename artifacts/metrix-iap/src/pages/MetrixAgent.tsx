@@ -148,7 +148,7 @@ export function MetrixAgent() {
                   { icon: Database, label: "Source-backed intelligence", sub: "Every insight traces to a named table and run." },
                   { icon: Zap,      label: "Next action surfacing",       sub: "Prioritized recommendations across all modules." },
                   { icon: Brain,    label: "Reasoning transparency",      sub: "See why each suggestion was generated." },
-                  { icon: ArrowRight, label: "Workflow execution (read-only)", sub: "Summarize, draft, and queue — never auto-apply." },
+                  { icon: ArrowRight, label: "Workflow execution (read-only)", sub: "Summarize, draft, and queue. Never auto-apply." },
                 ].map(({ icon: Icon, label, sub }) => (
                   <div key={label} className="flex items-start gap-3 p-2.5 rounded-lg border border-border/25 bg-foreground/[0.02]">
                     <div className="w-6 h-6 rounded border border-border/30 bg-foreground/[0.03] flex items-center justify-center shrink-0 mt-0.5">

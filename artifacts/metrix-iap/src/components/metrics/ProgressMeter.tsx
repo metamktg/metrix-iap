@@ -91,7 +91,7 @@ export function ProgressMeter({
         {Array.from({ length: segments }, (_, i) => (
           <span
             key={i}
-            className={`flex-1 rounded-full transition-[background-color] duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${
+            className={`flex-1 rounded-full transition-[background-color] duration-300 ease-[var(--mx-ease)] ${
               i < on && fillClassName ? fillClassName : ""
             }`}
             style={
@@ -129,12 +129,12 @@ export function ProgressMeter({
           ? undefined
           : total > 0
             ? "Not measured"
-            : "Nothing to compare against — the total for this group is zero."
+            : "Nothing to compare against · the total for this group is zero."
       }
     >
       {measurable && (
         <div
-          className={`h-full rounded-full transition-[width] duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${fillClassName ?? ""}`}
+          className={`h-full rounded-full transition-[width] duration-300 ease-[var(--mx-ease)] ${fillClassName ?? ""}`}
           style={
             fillClassName
               ? { width: `${pct}%` }
@@ -152,7 +152,7 @@ export function ProgressMeter({
  * and this does NOT, so a 140% overrun reads as 140.
  */
 export function progressText(value: number | null, total: number): string {
-  if (value == null || !Number.isFinite(value)) return "—";
+  if (value == null || !Number.isFinite(value)) return "–";
   if (total <= 0) return "n/a";
   return `${Math.round((value / total) * 100)}%`;
 }

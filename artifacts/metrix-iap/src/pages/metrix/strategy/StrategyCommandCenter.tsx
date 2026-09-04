@@ -68,7 +68,7 @@ export function StrategyCommandCenter() {
           ? "An analysis run is in progress. Strategy generation reads its output, so it unlocks when the run finishes."
           : status.analysis.status === "success"
             ? "The latest analysis run finished, but not every analysis surface has validated data yet. Check the Analysis completeness report before generating strategy."
-            : "Strategy generation reads validated analysis data, and this account has none yet.";
+            : "Generating a new strategy needs a validated analysis run, and this account has not had one yet. The strategy shown above was imported and stays readable on the Strategy pages.";
         const run = generation.lastRun;
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -90,7 +90,7 @@ export function StrategyCommandCenter() {
               {/* Direction for this stage, from the account's own rows —
                   each tile carries the number behind it and a link to the
                   surface that proves it. Absent when this stage has none. */}
-              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 3); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="What the data says to do next" /> : null; })()}
+              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 3); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="Next best actions" /> : null; })()}
 
               {/* Execution card: verb title + input-metric tiles + primary action —
                   canvas's Command Center Execution-card pattern. The tile grid stays

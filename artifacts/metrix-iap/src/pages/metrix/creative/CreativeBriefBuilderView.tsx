@@ -70,7 +70,7 @@ function downloadBriefJson(brief: DraftBrief, accountName: string) {
  * than emitted as blank headings.
  */
 function mailtoForBrief(brief: DraftBrief, pillarLabel: string): string {
-  const subject = `Creative brief — ${pillarLabel} (${brief.asset_type})`;
+  const subject = `Creative brief · ${pillarLabel} (${brief.asset_type})`;
   const sec = (k: string) => {
     const v = brief.full_brief?.[k];
     return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -100,7 +100,7 @@ function mailtoForBrief(brief: DraftBrief, pillarLabel: string): string {
     ...part(
       "Evidence",
       str(foundation, "target_icp") && `Target: ${str(foundation, "target_icp")}${
-        str(foundation, "avatar_basis") === "exploratory" ? " (exploratory — no historical avatar data)" : ""
+        str(foundation, "avatar_basis") === "exploratory" ? " (exploratory · no historical avatar data)" : ""
       }`,
       str(foundation, "performance_benchmark") && `Benchmark: ${str(foundation, "performance_benchmark")}`,
     ),
@@ -333,7 +333,7 @@ export function CreativeBriefBuilderView() {
                         item={{
                           id: detail.id,
                           kind: "brief",
-                          title: `${pillarLabel} — ${detail.asset_type} brief`,
+                          title: `${pillarLabel} · ${detail.asset_type} brief`,
                           sub: detail.human_direction,
                           href: `/app/creative/builder?focus=${detail.id}`,
                         }}
@@ -365,7 +365,7 @@ export function CreativeBriefBuilderView() {
                                 never read as a real avatar link. */}
                             {avatarBasis === "exploratory" && (
                               <span className={cn(TYPE.label, "ml-1.5 text-status-warning/85 border border-status-warning/25 bg-status-warning/[0.06] rounded px-1.5 py-0.5")}>
-                                exploratory — no historical avatar data
+                                exploratory · no historical avatar data
                               </span>
                             )}
                           </p>

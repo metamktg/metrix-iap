@@ -177,7 +177,7 @@ export const navTree: NavSection[] = [
     id: "listen",
     group: "loop",
     loopStage: 1,
-    purpose: "What the data is saying — alerts, signal, next moves",
+    purpose: "What the data is saying. Alerts, signal, next moves",
     number: "02",
     label: "Listen",
     icon: "Radio",
@@ -252,7 +252,7 @@ export const navTree: NavSection[] = [
       {
         id: "analysis-audience",
         label: "Audience",
-        purpose: "Who responded — segments, clusters, signal",
+        purpose: "Who responded · segments, clusters, signal",
         to: "/app/analysis/audience",
         dataSource: "demographic_registration_signal",
       },
@@ -436,7 +436,7 @@ export const navTree: NavSection[] = [
       {
         id: "mst-direction",
         label: "Direction",
-        purpose: "Scale, optimize, validate, retire — next sprint",
+        purpose: "Scale, optimize, validate, retire, next sprint",
         to: "/app/mst/direction",
         dataSource: "optimization_loop",
         placeholder: true,
@@ -469,7 +469,7 @@ export const navTree: NavSection[] = [
       {
         id: "action-agent",
         label: "Agent",
-        purpose: "Autonomous execution — coming soon",
+        purpose: "Autonomous execution · coming soon",
         to: "/app/action/agent",
         badgeKey: "agent",
         placeholder: true,
@@ -483,7 +483,10 @@ export const navTree: NavSection[] = [
     number: "08",
     label: "Reports",
     icon: "FileBarChart",
-    landing: "/app/reports",
+    // The section lands on the builder, not on a hub that relays to it: the
+    // job a reader brings here is "read a report", and the hub only listed
+    // the pages the sidebar already lists. /app/reports stays routable.
+    landing: "/app/reports/builder",
     children: [
       {
         id: "reports-builder",
@@ -523,6 +526,7 @@ export const navTree: NavSection[] = [
         purpose: "Cell and variable rows as data",
         to: "/app/exports/analysis",
         dataSource: "performance_by_cell, v3_variable_performance",
+        hidden: true,
       },
       {
         id: "exports-strategy",
@@ -530,6 +534,7 @@ export const navTree: NavSection[] = [
         purpose: "Pillars and hypotheses as JSON",
         to: "/app/exports/strategy",
         dataSource: "message_pillars, active_hypotheses",
+        hidden: true,
       },
       {
         id: "exports-reports",
@@ -537,6 +542,7 @@ export const navTree: NavSection[] = [
         purpose: "Report files in their export formats",
         to: "/app/exports/reports",
         dataSource: "export_formats, report_history",
+        hidden: true,
       },
       {
         id: "exports-brief",
@@ -544,6 +550,7 @@ export const navTree: NavSection[] = [
         purpose: "Briefs, ready to hand off",
         to: "/app/exports/brief",
         dataSource: "draft_briefs",
+        hidden: true,
       },
     ],
   },

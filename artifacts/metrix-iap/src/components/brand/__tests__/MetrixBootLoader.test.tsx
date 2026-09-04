@@ -36,7 +36,7 @@ function makeMatchMediaStub(reducedMotion: boolean) {
   });
 }
 
-describe("MetrixBootLoader — ARIA attributes", () => {
+describe("MetrixBootLoader · ARIA attributes", () => {
   afterEach(cleanup);
 
   it("renders a role=status element with aria-busy=true and the loading label", () => {
@@ -47,7 +47,7 @@ describe("MetrixBootLoader — ARIA attributes", () => {
   });
 });
 
-describe("MetrixBootLoader — progress bar", () => {
+describe("MetrixBootLoader · progress bar", () => {
   afterEach(cleanup);
 
   it("mounts the .mx-boot-fill progress bar element inside the loader", () => {
@@ -57,7 +57,7 @@ describe("MetrixBootLoader — progress bar", () => {
   });
 });
 
-describe("MetrixBootLoader — callout rotation (normal motion)", () => {
+describe("MetrixBootLoader · callout rotation (normal motion)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -104,7 +104,7 @@ describe("MetrixBootLoader — callout rotation (normal motion)", () => {
   });
 });
 
-describe("MetrixBootLoader — callout rotation (reduced motion)", () => {
+describe("MetrixBootLoader · callout rotation (reduced motion)", () => {
   // Capture the original matchMedia stub set up by test-setup.ts so we can
   // restore it after each test in this group.
   let originalMatchMedia: typeof window.matchMedia;

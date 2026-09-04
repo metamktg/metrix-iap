@@ -12,7 +12,7 @@ afterEach(cleanup);
 
 const usd = (n: number) => `$${n.toFixed(2)}`;
 
-describe("GoalProgressCard — no goal, no bar", () => {
+describe("GoalProgressCard · no goal, no bar", () => {
   it("draws no bar and says so when no goal was set", () => {
     render(<GoalProgressCard label="CPA" value={18.4} goal={null} format={usd} />);
     expect(screen.queryByRole("meter")).toBeNull();
@@ -35,13 +35,13 @@ describe("GoalProgressCard — no goal, no bar", () => {
         unmeasuredReason="no results in this window"
       />,
     );
-    expect(screen.getByText("—")).toBeTruthy();
+    expect(screen.getByText("–")).toBeTruthy();
     expect(screen.getByText("no results in this window")).toBeTruthy();
     expect(screen.queryByRole("meter")).toBeNull();
   });
 });
 
-describe("GoalProgressCard — the verdict flips with the metric's direction", () => {
+describe("GoalProgressCard · the verdict flips with the metric's direction", () => {
   it("under a cost ceiling is good", () => {
     render(<GoalProgressCard label="CPA" value={18} goal={25} format={usd} lowerIsBetter />);
     const bar = screen.getByRole("meter").firstElementChild as HTMLElement;
@@ -54,7 +54,7 @@ describe("GoalProgressCard — the verdict flips with the metric's direction", (
     expect(bar.style.background).toContain("--status-danger");
   });
 
-  it("short of a results target is not good — the same ratio, the opposite reading", () => {
+  it("short of a results target is not good. The same ratio, the opposite reading", () => {
     // The flip this case exists to protect is real and still holds: 18 of 25
     // is GOOD under a cost ceiling and NOT good toward a results target.
     //
@@ -89,7 +89,7 @@ describe("GoalProgressCard — the verdict flips with the metric's direction", (
   });
 });
 
-describe("GoalProgressCard — an overrun is reported, not clipped", () => {
+describe("GoalProgressCard · an overrun is reported, not clipped", () => {
   it("reports the real percentage even though the bar cannot exceed its track", () => {
     render(<GoalProgressCard label="CPA" value={60} goal={25} format={usd} lowerIsBetter />);
     // The bar is clamped — it has nowhere to go — but the number is not.
@@ -104,7 +104,7 @@ describe("GoalProgressCard — an overrun is reported, not clipped", () => {
   });
 });
 
-describe("GoalProgressCard — a delta is reported, not judged", () => {
+describe("GoalProgressCard · a delta is reported, not judged", () => {
   it("shows the sign without a status colour", () => {
     render(<GoalProgressCard label="CPA" value={18} goal={25} format={usd} deltaPct={12.5} />);
     // fmtDelta scales precision: one decimal below 10%, none above.

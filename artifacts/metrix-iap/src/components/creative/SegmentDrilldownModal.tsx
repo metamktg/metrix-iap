@@ -113,7 +113,7 @@ function SegmentMetricPicker({
             })}
             {atCap && (
               <p className={cn(TYPE.caption, "text-status-warning/80 pt-0.5")}>
-                Maximum of {MAX_VISIBLE_SEGMENT_METRICS} metrics — remove one to add another.
+                Maximum of {MAX_VISIBLE_SEGMENT_METRICS} metrics · remove one to add another.
               </p>
             )}
           </div>
@@ -297,12 +297,12 @@ function CompareMetricCell({
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="text-muted-foreground/75 cursor-default">—</span>
+          <span className="text-muted-foreground/75 cursor-default">–</span>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-[220px]">
           <p className="text-label">
             This metric is not in the segment catalog for this account, which is a defect rather
-            than missing data. Nothing was measured or withheld — the tile has no definition to read.
+            than missing data. Nothing was measured or withheld. The tile has no definition to read.
           </p>
         </TooltipContent>
       </Tooltip>
@@ -312,7 +312,7 @@ function CompareMetricCell({
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="text-muted-foreground/75 cursor-default">—</span>
+          <span className="text-muted-foreground/75 cursor-default">–</span>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-[220px]">
           <p className="text-label">{m.unavailableReason}</p>
@@ -356,7 +356,7 @@ function WinnerDiffBadge({
     );
   }
 
-  if (winner.side === null) return <span className="text-muted-foreground/75">—</span>;
+  if (winner.side === null) return <span className="text-muted-foreground/75">–</span>;
 
   const isAWins = winner.side === "a";
   const winnerLabel = isAWins ? label : compareLabel;
@@ -418,10 +418,10 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
                     </div>
                     <div className="shrink-0 text-right">
                       <div className="text-caption font-semibold text-foreground tabular-nums">
-                        {c.totals.results != null ? `${fmtNum(c.totals.results)} res` : "—"}
+                        {c.totals.results != null ? `${fmtNum(c.totals.results)} res` : "–"}
                       </div>
                       <div className={cn(TYPE.caption, "text-muted-foreground/75")}>
-                        {c.totals.spend != null ? fmtUSD(c.totals.spend, 0) : "—"}
+                        {c.totals.spend != null ? fmtUSD(c.totals.spend, 0) : "–"}
                         {c.derived.cpa != null ? ` · ${fmtUSD(c.derived.cpa)} CPA` : ""}
                       </div>
                     </div>
@@ -445,7 +445,7 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
                       <VariableChip v={v} />
                     </div>
                     <div className="shrink-0 text-right text-micro text-muted-foreground/75 tabular-nums">
-                      {v.derived.cpa != null ? `${fmtUSD(v.derived.cpa)} CPA` : v.totals.spend != null ? fmtUSD(v.totals.spend, 0) : "—"}
+                      {v.derived.cpa != null ? `${fmtUSD(v.derived.cpa)} CPA` : v.totals.spend != null ? fmtUSD(v.totals.spend, 0) : "–"}
                     </div>
                   </div>
                 ))}
@@ -607,7 +607,7 @@ function CompareMetricTable({
                         direction={m.direction}
                       />
                     ) : (
-                      <span className="text-micro text-muted-foreground/75">—</span>
+                      <span className="text-micro text-muted-foreground/75">–</span>
                     )}
                   </td>
                   <td className={cn("px-3 py-2 text-right text-title tabular-nums", bWins && "bg-primary/[0.04]")} data-testid={`cell-compare-metric-${id}-b`}>
@@ -725,14 +725,14 @@ export function SegmentDrilldownModal({
             )}
             <div className="text-label text-muted-foreground/75 uppercase tracking-widest">{kicker}</div>
             <DialogTitle className={DIALOG.title} data-testid="title-segment-drilldown">
-              {comparing ? `${label} vs ${compareLabel}` : `${label} — what's driving results`}
+              {comparing ? `${label} vs ${compareLabel}` : `${label} · what's driving results`}
             </DialogTitle>
             <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
               {comparing
                 ? "Both segments' numbers are computed independently from their own demographic rows"
                 : "Every number below is computed from this segment's own demographic rows"}
               {cellIds ? ` (scoped to ${cellIds.join(", ")})` : ""}. Metrics the export can't support show as
-              unavailable — never estimated.
+              unavailable · never estimated.
             </DialogDescription>
           </DialogHeader>
 
@@ -810,7 +810,7 @@ export function SegmentDrilldownModal({
               <div className="flex items-start gap-2 text-label text-muted-foreground/75 leading-relaxed">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
-                  Each column is computed independently from that segment's own demographic rows — the same math as
+                  Each column is computed independently from that segment's own demographic rows. The same math as
                   the single-segment drill-down. Hover a dash for why a metric is unavailable in that segment.
                 </span>
               </div>
@@ -986,17 +986,17 @@ export function SegmentDrilldownModal({
                         </div>
                         <div className="shrink-0 text-right">
                           <div className="text-caption font-semibold text-foreground tabular-nums">
-                            {p.totals.results != null ? `${fmtNum(p.totals.results)} results` : "—"}
+                            {p.totals.results != null ? `${fmtNum(p.totals.results)} results` : "–"}
                           </div>
                           <div className="text-micro text-muted-foreground/75 tabular-nums">
-                            {perfSummary(p.totals, p.derived).join(" · ") || "—"}
+                            {perfSummary(p.totals, p.derived).join(" · ") || "–"}
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                   <p className={cn(TYPE.caption, "text-muted-foreground/75 leading-snug")}>
-                    Computed from this import's combined demographic × placement rows for {label} only — real joint
+                    Computed from this import's combined demographic × placement rows for {label} only · real joint
                     grain, not the account-level placement marginals.
                   </p>
                 </div>
@@ -1016,7 +1016,7 @@ export function SegmentDrilldownModal({
                           <VariableChip v={v} />
                         </div>
                         <div className="shrink-0 text-right text-micro text-muted-foreground/75 tabular-nums">
-                          {perfSummary(v.totals, v.derived).join(" · ") || "—"}
+                          {perfSummary(v.totals, v.derived).join(" · ") || "–"}
                         </div>
                       </div>
                     ))}

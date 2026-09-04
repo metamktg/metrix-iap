@@ -177,7 +177,7 @@ export function InfoTooltip({ content }: { content: string }) {
 
 /** Resolve a raw variable code — including compound "A + B" stacks — to labels. */
 export function readableVariables(code: string | null | undefined): string {
-  if (!code) return "—";
+  if (!code) return "–";
   return code
     .split(/\s*\+\s*/)
     .map((c) => resolveVariableLabel(c.trim()))
@@ -187,17 +187,17 @@ export function readableVariables(code: string | null | undefined): string {
 // ─── Formatting ───────────────────────────────────────────────────────
 
 export function fmtUSD(n: number | null | undefined, digits = 2): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 export function fmtNum(n: number | null | undefined): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return Math.round(n).toLocaleString("en-US");
 }
 
 export function fmtPct(n: number | null | undefined, digits = 2): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return `${n.toFixed(digits)}%`;
 }
 
@@ -582,7 +582,7 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
       {narrowed && (
         <span className="inline-flex items-center gap-1.5 text-caption text-muted-foreground/75">
           Flight-window scope
-          <InfoTooltip content={grainNote ?? "Items are included when their flight window overlaps this range; metrics cover each item's full flight — this import has no daily grain."} />
+          <InfoTooltip content={grainNote ?? "Items are included when their flight window overlaps this range; metrics cover each item's full flight. This import has no daily grain."} />
         </span>
       )}
     </div>
@@ -616,6 +616,18 @@ export function NoDataInRangeState({ what, detail }: { what: string; detail?: st
 // Pass `source` to show a monospace source badge before the text.
 // Pass `defaultExpanded` to start expanded (e.g. short caveats with no truncation).
 
+/** Whole sentences up to `max` characters; a first sentence longer than that is cut at a word. */
+function previewSentences(text: string, max: number): string {
+  const sentences = text.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g)?.map((s) => s.trim()).filter(Boolean) ?? [text];
+  let out = "";
+  for (const sentence of sentences) {
+    const next = out ? `${out} ${sentence}` : sentence;
+    if (next.length > max) break;
+    out = next;
+  }
+  return out || deriveLabel(text, max);
+}
+
 export function CaveatNote({
   text,
   source,
@@ -633,7 +645,11 @@ export function CaveatNote({
   const body = (text ?? "").trim();
   const isLong = body.length > THRESHOLD;
   const [expanded, setExpanded] = useState(defaultExpanded || !isLong);
-  const preview = isLong ? body.slice(0, THRESHOLD).trimEnd() + "…" : body;
+  // Collapsed, the pill shows whole SENTENCES while they fit the threshold,
+  // so it says one complete thing (and names what the first sentence names,
+  // such as the account's terminal metric). It used to cut mid-sentence at
+  // 110 characters, which took the space of a message and said nothing.
+  const preview = isLong ? previewSentences(body, THRESHOLD) : body;
 
   if (!body) return null;
 
@@ -1306,24 +1322,28 @@ export function MetricTile({
     ? cn(TYPE.microLabel, "text-muted-foreground/75 mb-1.5 truncate")
     : cn(TYPE.microLabel, "text-muted-foreground/75 mb-2 truncate");
 
+  // The label sits ABOVE the tile, on the page ground (owner, 2026-09-03):
+  // the tile's border boxes the number, not its name.
   if (onClick) {
     return (
+      <div className="flex flex-col gap-1.5 min-w-0 h-full group/tile">
+        <div className={cn(labelCls, "mb-0 px-0.5 group-hover/tile:text-interactive/70 transition-colors")}>{label}</div>
       <button
         type="button"
         onClick={onClick}
         className={cn(
-          "mx-kpi-tile p-4 text-left w-full group/tile relative",
+          "mx-kpi-tile p-4 text-left w-full relative flex-1",
           "hover:border-primary/40 hover:bg-primary/[0.04] active:scale-[0.98]",
-          "transition-[border-color,background-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+          "transition-[border-color,background-color,scale] duration-150 ease-[var(--mx-ease)]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           isPrimary && "border-primary/35 bg-primary/[0.03]"
         )}
         title={actionTitle}
+        aria-label={typeof label === "string" ? `${label}: ${value}` : undefined}
         data-testid="metric-tile"
       >
         {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
         <div className="relative z-10">
-          <div className={cn(labelCls, "group-hover/tile:text-interactive/70 transition-colors")}>{label}</div>
           <div className="text-bignum font-h1 font-bold text-foreground metric-num leading-none">{value}</div>
           {sub && <div className="text-caption text-muted-foreground/75 mt-2 leading-snug line-clamp-2">{sub}</div>}
           {/* Visible at rest, not only on hover. A touch device has no hover
@@ -1332,26 +1352,31 @@ export function MetricTile({
               identical to the static variant beside it and gave the reader
               no reason to press it. It brightens on hover instead of
               materialising. */}
-          <div className="mt-2 text-micro uppercase tracking-wider text-interactive/80 group-hover/tile:text-interactive transition-[color] duration-150 ease-[cubic-bezier(0.2,0,0,1)]">
+          <div className="mt-2 text-micro uppercase tracking-wider text-interactive/80 group-hover/tile:text-interactive transition-[color] duration-150 ease-[var(--mx-ease)]">
             {actionLabel} →
           </div>
         </div>
       </button>
+      </div>
     );
   }
   return (
-    <div className={cn(
-      "mx-kpi-tile p-4 relative transition-[border-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
-      // group-hover only fires inside an ancestor marked .group. Several
-      // call sites have none, so the lift silently never happened there.
-      // The tile's own :hover is in .mx-kpi-tile and always applies.
-      isPrimary && "border-primary/35 bg-primary/[0.03]"
-    )}>
-      {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
-      <div className="relative z-10">
-        <div className={labelCls}>{label}</div>
-        <div className="text-bignum font-h1 font-bold text-foreground metric-num leading-none">{value}</div>
-        {sub && <div className="text-caption text-muted-foreground/75 mt-2 leading-snug line-clamp-2">{sub}</div>}
+    <div className="flex flex-col gap-1.5 min-w-0 h-full">
+      <div className={cn(labelCls, "mb-0 px-0.5")}>{label}</div>
+      {/* The tile names its metric: with the label lifted out of the tile,
+          a null value's dash lost the sibling that resolved it, and
+          check:unexplained-dashes reads a title within four ancestors. */}
+      <div
+        title={typeof label === "string" ? label : undefined}
+        className={cn(
+        "mx-kpi-tile p-4 relative flex-1 transition-[border-color] duration-150 ease-[var(--mx-ease)]",
+        isPrimary && "border-primary/35 bg-primary/[0.03]"
+      )}>
+        {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
+        <div className="relative z-10">
+          <div className="text-bignum font-h1 font-bold text-foreground metric-num leading-none">{value}</div>
+          {sub && <div className="text-caption text-muted-foreground/75 mt-2 leading-snug line-clamp-2">{sub}</div>}
+        </div>
       </div>
     </div>
   );
@@ -1435,7 +1460,7 @@ export function CrossLink({ to, label, srNote }: { to: string; label: string; sr
       className="pressable inline-flex items-center gap-2 text-caption font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-interactive hover:bg-primary/20 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,opacity,transform] shadow-sm shadow-primary/5"
     >
       {label}
-      {srNote && <span className="sr-only">{` — ${srNote}`}</span>}
+      {srNote && <span className="sr-only">{` · ${srNote}`}</span>}
       <ArrowRight className="w-3.5 h-3.5" />
     </button>
   );
@@ -1672,7 +1697,7 @@ export function StaleFocusNotice({ label = "item" }: { label?: string }) {
     >
       <AlertTriangle className="w-3.5 h-3.5 text-status-warning/70 shrink-0" />
       <p className="text-body text-foreground/75 leading-none">
-        Linked {label} no longer available — removed, regenerated, or outside the current range.
+        Linked {label} no longer available · removed, regenerated, or outside the current range.
       </p>
     </div>
   );
@@ -1724,8 +1749,14 @@ export function SegmentedToggle<T extends string>({
         return (
           <button
             key={id}
+            type="button"
             onClick={() => onChange(id)}
             aria-pressed={isActive}
+            // Under `sm` the label is hidden and only the icon shows; the
+            // name must survive that, for assistive tech and for the
+            // tooltip a pointer gets.
+            aria-label={label}
+            title={label}
             className={cn(
               "pressable relative inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium transition-colors",
               isActive ? "text-interactive" : "text-muted-foreground/75 hover:text-foreground/80"
@@ -1845,8 +1876,21 @@ export function OverviewHeaderControls({
   const [, navigate] = useLocation();
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
+      {/* Below lg the five chips become one select: at 390 px they pushed the
+          title onto two lines under a row of controls. */}
+      <label className="lg:hidden inline-flex items-center h-7 rounded-md border border-border/40 px-2 text-caption text-muted-foreground/75">
+        <span className="sr-only">Date range</span>
+        <select
+          value={preset}
+          onChange={(e) => onPresetChange(e.target.value as ViewPreset)}
+          className="bg-transparent text-caption font-medium text-foreground outline-none"
+          aria-label="Date range"
+        >
+          {VIEW_PRESETS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+        </select>
+      </label>
       <div
-        className="flex items-center rounded-md border border-border/40 overflow-hidden"
+        className="hidden lg:flex items-center rounded-md border border-border/40 overflow-hidden"
         role="group"
         aria-label="Date range"
         title={availableWindow ? `Data: ${availableWindow.start} – ${availableWindow.end}` : undefined}
@@ -2060,12 +2104,15 @@ export function SectionCard({
     <>
       {/* H2: the first real content heading under the page's H1
           (ModuleHeader) — see typography.ts's H1–H6 hierarchy doc. */}
-      <h2 className={cn(HEADING.h2, "truncate")}>{title}</h2>
+      {/* One line, always: the head row is a strip, and a title that wraps
+          pushes the module's controls under itself. `text-wrap: balance`
+          on the h2 role would otherwise reflow it. */}
+      <h2 className={cn(HEADING.h2, "truncate whitespace-nowrap [text-wrap:nowrap]")} title={title}>{title}</h2>
       {collapsible && (
         <ChevronDown
           className={cn(
             "w-3.5 h-3.5 shrink-0 text-muted-foreground/75",
-            "transition-transform duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+            "transition-transform duration-150 ease-[var(--mx-ease)]",
             bodyVisible && "rotate-180"
           )}
           aria-hidden
@@ -2075,13 +2122,14 @@ export function SectionCard({
   );
 
   return (
-    <section className="mx-card-hero">
-      {/* mx-module-header gives this row its own PLANE. Before, the header
-          and the data shared the card's ground with only a primary/10
-          hairline between them, so a module title competed with the numbers
-          it labelled instead of framing them. See the .mx-module-header
-          comment in index.css for the three-plane hierarchy. */}
-      <div className="mx-accent-bar mx-module-header relative flex items-center gap-2 pr-3.5">
+    <section className="mx-module" data-testid="section-card">
+      {/* The title row lives OUTSIDE the tile, above it (owner, 2026-09-03):
+          the module's authority is the heading, so it is not boxed in with
+          the data it labels. Title and its collapse control left, the
+          module's own controls (filters, breakdowns, metric selectors,
+          cross-links) right, in one row; the rounded, bordered tile below
+          holds only the data. See .mx-module-head in index.css. */}
+      <div className="mx-module-head relative flex items-center gap-2 flex-wrap">
         {collapsible ? (
           <button
             type="button"
@@ -2090,33 +2138,33 @@ export function SectionCard({
             aria-controls={bodyId}
             aria-label={`${bodyVisible ? "Collapse" : "Expand"} section: ${title}`}
             // h-10 is the hit-area floor. The old control was a p-0.5
-            // chevron — about 18px square, and the only part of the strip
+            // chevron, about 18px square, and the only part of the strip
             // a keyboard could reach.
             className={cn(
-              "min-w-0 flex items-center gap-1.5 h-10 pl-3.5 pr-1 text-left rounded-l-[inherit]",
-              "hover:bg-foreground/[0.02] active:scale-[0.99]",
-              "transition-[background-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+              "min-w-0 flex items-center gap-1.5 h-10 pl-1 pr-1.5 -ml-1 text-left rounded-md",
+              "hover:bg-foreground/[0.03] active:scale-[0.99]",
+              "transition-[background-color,scale] duration-150 ease-[var(--mx-ease)]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             )}
           >
             {heading}
           </button>
         ) : (
-          <div className="min-w-0 flex items-center gap-1.5 h-10 pl-3.5 pr-1">{heading}</div>
+          <div className="min-w-0 flex items-center gap-1.5 h-10 pr-1">{heading}</div>
         )}
         {desc && <InfoTooltip content={desc} />}
-        <div className="ml-auto shrink-0 flex items-center gap-2">
+        <div className="ml-auto shrink-0 flex items-center gap-2 flex-wrap justify-end">
           {right}
           {table && <DataSourceBadge table={table} collapsible />}
         </div>
       </div>
       {/* The body arrives and leaves with the one reveal signature.
           RevealPanel's AnimatePresence has initial={false}, so a section
-          that mounts open (the default) renders instantly — only a user's
+          that mounts open (the default) renders instantly; only a user's
           own expand/collapse animates. This one wiring is what puts the
           motion system on every module section of every page. */}
       <RevealPanel open={bodyVisible}>
-        <div id={bodyId} className="relative p-3">
+        <div id={bodyId} className="mx-card-hero relative p-3">
           {children}
         </div>
       </RevealPanel>
@@ -2256,7 +2304,7 @@ export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; cur
               onClick={() => !locked && navigate(s.to)}
               disabled={locked}
               aria-current={isCurrent ? "step" : undefined}
-              title={locked ? `${s.label} — locked` : s.label}
+              title={locked ? `${s.label} · locked` : s.label}
               className={cn("pressable group flex items-center gap-1.5", locked ? "cursor-not-allowed" : "cursor-pointer")}
             >
               <span

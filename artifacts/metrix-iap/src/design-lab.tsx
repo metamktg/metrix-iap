@@ -19,6 +19,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 
+import { RecommendationTileVariants } from "./design-lab-variants";
 import { MetricBarChart } from "@/components/charts/MetricBarChart";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { MetricTable, type MetricColumn } from "@/components/charts/MetricTable";
@@ -170,15 +171,15 @@ const COLS: MetricColumn<TRow>[] = [
 // levels separate by size, weight and tracking — never by typeface. Nothing
 // a reader takes in sits under 13px.
 const TYPE_LADDER: [string, string, string][] = [
-  ["text-bignum font-h1 font-bold leading-none", "34 · Outfit 700", "H1 — route title"],
-  ["text-h2 font-h2 font-bold leading-tight", "28 · Outfit 700", "H2 — section title"],
-  ["text-h3 font-h3 font-bold leading-snug", "24 · Outfit 700", "H3 — card title"],
-  ["text-h4 font-h4 font-bold leading-snug", "21 · Outfit 700", "H4 — group header"],
-  ["text-h5 font-h5 font-bold leading-snug", "18 · Outfit 700", "H5 — sub-group"],
-  ["text-body font-body", "15 · Figtree 400", "Body — the floor. Every sentence lands here or above."],
-  ["text-caption font-body", "13 · Figtree", "Caption — the reading floor. Counts, units, dates."],
-  ["text-label font-h6 font-semibold uppercase", "12 · Figtree 600", "H6 / label — eyebrow. Looked at, not read."],
-  ["text-micro-num tabular-nums", "11 · Figtree", "Micro — badge numerals"],
+  ["text-bignum font-h1 font-bold leading-none", "34 · Outfit 700", "H1 · route title"],
+  ["text-h2 font-h2 font-bold leading-tight", "28 · Outfit 700", "H2 · section title"],
+  ["text-h3 font-h3 font-bold leading-snug", "24 · Outfit 700", "H3 · card title"],
+  ["text-h4 font-h4 font-bold leading-snug", "21 · Outfit 700", "H4 · group header"],
+  ["text-h5 font-h5 font-bold leading-snug", "18 · Outfit 700", "H5 · sub-group"],
+  ["text-body font-body", "15 · Figtree 400", "Body. The floor. Every sentence lands here or above."],
+  ["text-caption font-body", "13 · Figtree", "Caption. The reading floor. Counts, units, dates."],
+  ["text-label font-h6 font-semibold uppercase", "12 · Figtree 600", "H6 / label, eyebrow. Looked at, not read."],
+  ["text-micro-num tabular-nums", "11 · Figtree", "Micro · badge numerals"],
 ];
 
 function App() {
@@ -189,6 +190,10 @@ function App() {
         <p className="mx-section-header__sub mb-6">
           The real stylesheet, the real tokens, fixture data · everything jsdom cannot see
         </p>
+
+        <Panel title="Prototype · recommendation tile, three directions" note="Same data, same tokens, same rail · the picker swaps the hierarchy the tile leads with · A is shipped, B and C wait on the owner">
+          <RecommendationTileVariants />
+        </Panel>
 
         <Panel title="Type scale" note="Two faces · every header step ≥3px · body floor 15px · nothing readable under 13px">
           <div className="flex flex-col gap-2">
@@ -216,7 +221,7 @@ function App() {
           </div>
         </Panel>
 
-        <Panel title="Diverging scale — verdicts" note="Fills from ramp steps 700–900 · neutral midpoint · legend derived from the same function">
+        <Panel title="Diverging scale · verdicts" note="Fills from ramp steps 700–900 · neutral midpoint · legend derived from the same function">
           <div className="flex flex-wrap gap-2 items-end mb-3">
             {[0, 0.15, 0.3, 0.45, 0.5, 0.55, 0.7, 0.85, 1].map((t) => (
               <div key={t} className="flex flex-col gap-1.5">
@@ -228,7 +233,7 @@ function App() {
             ))}
             <div className="flex flex-col gap-1.5">
               <div className="w-16 h-12 rounded-md grid place-items-center" style={{ background: divergingFill(null) }}>
-                <span className="text-caption text-muted-foreground/75">—</span>
+                <span className="text-caption text-muted-foreground/75">–</span>
               </div>
               <span className="text-micro text-muted-foreground/75">n/a</span>
             </div>
@@ -266,7 +271,7 @@ function App() {
           ))}
         </Panel>
 
-        <Panel title="Sequential scale — magnitude" note="One role's ramp, darkest for the smallest · magnitude has no good end">
+        <Panel title="Sequential scale · magnitude" note="One role's ramp, darkest for the smallest · magnitude has no good end">
           <div className="flex flex-wrap gap-2 items-end">
             {[0.05, 0.2, 0.45, 0.6, 0.8, 0.95].map((t) => (
               <div key={t} className="flex flex-col gap-1.5">
@@ -290,7 +295,7 @@ function App() {
         </Panel>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Panel title="Trend — one series" note="Days 13–14 have no rows: the line breaks">
+          <Panel title="Trend · one series" note="Days 13–14 have no rows: the line breaks">
             <TrendChart
               days={DAYS}
               missingDays={["2026-07-13", "2026-07-14"]}
@@ -298,7 +303,7 @@ function App() {
               height={200}
             />
           </Panel>
-          <Panel title="Trend — two series, indexed" note="Different units on ONE axis · no second y-scale">
+          <Panel title="Trend · two series, indexed" note="Different units on ONE axis · no second y-scale">
             <TrendChart
               days={DAYS}
               normalize="index"
@@ -330,7 +335,7 @@ function App() {
                 id: "2", account_id: "a", scope: "audience", impact: "medium", confidence: "medium",
                 title: "Frequency", headline: "Frequency is climbing on the 45–54 pocket",
                 priority: "important", confidence_level: "medium", needs_validation: true,
-                implication: "Delivery to this segment has narrowed while spend held, so the same people are seeing more. No CTR decay yet — this is early enough to act on rather than a diagnosis of fatigue.",
+                implication: "Delivery to this segment has narrowed while spend held, so the same people are seeing more. No CTR decay yet. This is early enough to act on rather than a diagnosis of fatigue.",
                 rationale: "", recommended_action: "Widen the exclusion window or add a second creative to the set.",
               },
               {
@@ -369,7 +374,7 @@ function App() {
           />
         </Panel>
 
-        <Panel title="Evidence layer — the validated account, as the surfaces show it" note="Reconciled against the Ad Summary per Ad ID · demographic coverage 60.05% · residual never allocated" >
+        <Panel title="Evidence layer · the validated account, as the surfaces show it" note="Reconciled against the Ad Summary per Ad ID · demographic coverage 60.05% · residual never allocated" >
           <div id="evidence-lab" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="space-y-3">
               <div className="flex flex-wrap gap-1.5">
@@ -390,7 +395,7 @@ function App() {
         </Panel>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Panel title="Map — verdict scale" note="CPA against a $20 goal · lower is better · diverging">
+          <Panel title="Map · verdict scale" note="CPA against a $20 goal · lower is better · diverging">
             <HeatMatrix
               rows={["18–24", "25–34", "35–44", "45–54", "55+"]}
               cols={["Female", "Male", "Unknown"]}
@@ -410,7 +415,7 @@ function App() {
               ]}
             />
           </Panel>
-          <Panel title="Map — magnitude scale" note="Spend across the MST 4×4 · more is simply more · one hue">
+          <Panel title="Map · magnitude scale" note="Spend across the MST 4×4 · more is simply more · one hue">
             <HeatMatrix
               rows={["Hook A", "Hook B", "Hook C", "Hook D"]}
               cols={["Avatar 1", "Avatar 2", "Avatar 3", "Avatar 4"]}
@@ -479,7 +484,7 @@ function App() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Panel title="Popover — open" note="design-system chrome · elevation-floating · rounded-xl">
+          <Panel title="Popover · open" note="design-system chrome · elevation-floating · rounded-xl">
             <Popover defaultOpen>
               <PopoverTrigger asChild>
                 <button type="button" className="text-body text-interactive">Trigger</button>
@@ -492,7 +497,7 @@ function App() {
               </PopoverContent>
             </Popover>
           </Panel>
-          <Panel title="Tooltip — open" note="was bg-primary, which read as an action surface">
+          <Panel title="Tooltip · open" note="was bg-primary, which read as an action surface">
             <TooltipProvider>
               <Tooltip open>
                 <TooltipTrigger asChild>
@@ -520,7 +525,7 @@ function App() {
           />
         </Panel>
 
-        <Panel title="Goal progress" note="no goal, no bar — and an overrun is reported, not clipped">
+        <Panel title="Goal progress" note="no goal, no bar. And an overrun is reported, not clipped">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             <GoalProgressCard label="Cost per result" value={18.4} goal={25} format={money2} lowerIsBetter
                               goalSource="median of this window" deltaPct={-8.2} />
@@ -532,7 +537,7 @@ function App() {
           <div className="mt-3 space-y-2 max-w-md">
             <ProgressMeter value={30} total={120} label="Matrix coverage" size="md" />
             <ProgressMeter value={5} total={0} label="Result share" size="md" />
-            <ProgressMeter value={2} total={3} segments={3} label="Confidence — Medium" size="md" />
+            <ProgressMeter value={2} total={3} segments={3} label="Confidence · Medium" size="md" />
           </div>
         </Panel>
 
@@ -557,7 +562,7 @@ function App() {
               marginal={new Map([
                 ["HK_ProofFirst", { label: "CPA", value: "$18.40" }],
                 ["TN_Direct", { label: "CPA", value: "$22.10" }],
-                ["FW_PAS", { label: "CPA", value: "—" }],
+                ["FW_PAS", { label: "CPA", value: "–" }],
               ])}
               marginalLabel="CPA"
               onSelect={() => {}}
@@ -591,7 +596,7 @@ function App() {
               rows={[
                 { label: "Spend", value: "$14,820", swatch: seriesColor(0) },
                 { label: "Cost/result", value: "$12.44", swatch: seriesColor(1) },
-                { label: "Link CTR", value: "—", swatch: seriesColor(2) },
+                { label: "Link CTR", value: "–", swatch: seriesColor(2) },
               ]}
               detail="31 ads · 2.1M impressions"
             />

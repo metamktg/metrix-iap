@@ -29,7 +29,7 @@ function TaggedSpan({ rationale, className, testId, state, children }: { rationa
         <TooltipTrigger asChild>
           <span data-testid={testId} data-state={state} className={cn("inline-flex items-center gap-1 rounded-full border px-1.5 py-px whitespace-nowrap select-none cursor-default", TYPE.microLabel, className)}>
             {children}
-            <span className="sr-only">{` — ${rationale}`}</span>
+            <span className="sr-only">{` · ${rationale}`}</span>
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-[260px]">

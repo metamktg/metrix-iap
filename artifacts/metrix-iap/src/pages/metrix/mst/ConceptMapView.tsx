@@ -275,7 +275,7 @@ function ConceptGroupList({
             <div className={cn("flex items-center justify-between mt-1.5", TYPE.label, "text-muted-foreground/75 tabular-nums")}>
               <span>{fmtUSD(g.spend, 0)} spend</span>
               <span>{fmtNum(g.results)} results</span>
-              <span>{g.cpa != null ? fmtUSD(g.cpa) : "—"} CPA</span>
+              <span>{g.cpa != null ? fmtUSD(g.cpa) : "–"} CPA</span>
             </div>
 
             <div className="mt-3 pt-3 border-t border-border/20 flex items-center gap-1.5 flex-wrap">

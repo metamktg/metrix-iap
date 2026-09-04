@@ -104,22 +104,23 @@ export function DataModule({
     // correctness problem for the reader, not a crash for the user.
     console.warn(
       `DataModule "${title}" was given an empty scope. Every number under it ` +
-        `is unattributed — state at minimum the metric it is measuring.`,
+        `is unattributed · state at minimum the metric it is measuring.`,
     );
   }
 
   return (
     <section
-      className={cn("mx-card", className)}
+      className={cn("mx-module", className)}
       aria-labelledby={titleId}
       data-testid={testId}
     >
       {/* The header wraps rather than truncating: on a narrow viewport the
           view switcher drops under the title instead of squeezing it, which
           is the failure mode of every header built as a single flex row. */}
-      {/* The header sits on its own plane — see .mx-module-header. A title
-          that shares a ground with its own data competes with it. */}
-      <div className="mx-module-header flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 sm:px-5 py-3">
+      {/* The title row lives OUTSIDE the tile, above it: title and info
+          left, the module's own controls (view switcher, breakdown, metric
+          picker) right; the bordered tile below holds the data alone. */}
+      <div className="mx-module-head flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         {/* h2, at the section rank — NOT h3.
             A DataModule sits exactly where a SectionCard sits and holds the
             same kind of content, so ranking it a level lower made one panel's
@@ -127,7 +128,7 @@ export function DataModule({
             could see, and skipped a level in the document outline. Same role,
             same rank, same size. */}
         <div className="flex items-center gap-1.5 min-w-0">
-          <h2 id={titleId} className={cn(HEADING.h2, "min-w-0 truncate")}>
+          <h2 id={titleId} className={cn(HEADING.h2, "min-w-0 truncate whitespace-nowrap [text-wrap:nowrap]")} title={title}>
             {title}
           </h2>
           {info && <SectionInfoIcon tip={info} />}
@@ -138,7 +139,7 @@ export function DataModule({
         </div>
       </div>
 
-      <div className="p-4 sm:p-5">
+      <div className="mx-card p-4 sm:p-5">
         {children}
 
         {scope.length > 0 && (

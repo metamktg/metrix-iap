@@ -153,7 +153,7 @@ beforeEach(() => {
 // 1. All seven DNA family cards are present in the Variable performance tab
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("DNA family card grid — presence", () => {
+describe("DNA family card grid · presence", () => {
   it("renders one card per fixture family after switching to the Variable performance tab", async () => {
     const user = userEvent.setup();
     selectBookster();
@@ -243,7 +243,7 @@ describe("DNA family card keyboard reachability", () => {
 // 3. Enter on a best-read card opens the VariableDrilldownModal
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("DNA family card keyboard — Enter opens drill-down", () => {
+describe("DNA family card keyboard · Enter opens drill-down", () => {
   it("pressing Enter on a card with role=button opens the VariableDrilldownModal", async () => {
     const user = userEvent.setup();
     selectBookster();
@@ -289,7 +289,7 @@ describe("DNA family card keyboard — Enter opens drill-down", () => {
 // 4. Title text is intact (proxy for no truncation at any breakpoint)
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("DNA family card title row — full label text present", () => {
+describe("DNA family card title row. Full label text present", () => {
   it("renders the full human-readable family label in the title span of every card", async () => {
     const user = userEvent.setup();
     selectBookster();
@@ -356,7 +356,7 @@ describe("DNA family card title row — full label text present", () => {
 // 5. Best-read footer renders correctly when a top variable is present
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("DNA family card — best-read footer", () => {
+describe("DNA family card · best-read footer", () => {
   it("interactive cards show a 'Best read' footer section", async () => {
     const user = userEvent.setup();
     selectBookster();

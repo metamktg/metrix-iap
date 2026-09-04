@@ -67,7 +67,7 @@ function everyEventKey(): string[] {
   return [...keys].sort();
 }
 
-describe("label integrity — what the data layer actually renders", () => {
+describe("label integrity · what the data layer actually renders", () => {
   it("finds real variable codes in the fixture to sweep", () => {
     expect(everyVariableCode().length).toBeGreaterThan(10);
   });
@@ -144,7 +144,7 @@ describe("label integrity — what the data layer actually renders", () => {
         }
       }
     }
-    expect(swept, "no breakdown rows were swept — the assertion below proves nothing").toBeGreaterThan(50);
+    expect(swept, "no breakdown rows were swept. The assertion below proves nothing").toBeGreaterThan(50);
     expect(bad, `Breakdown row labels:\n${bad.slice(0, 25).join("\n")}`).toEqual([]);
   });
 
@@ -183,7 +183,7 @@ describe("label integrity — what the data layer actually renders", () => {
     // These were written and then never rendered anywhere. They are now shown
     // in the VariableChip tooltip, so their quality is user-facing.
     const described = everyVariableCode().filter((c) => resolveVariableDescription(c) !== "");
-    expect(described.length, "no descriptions resolve — the wiring regressed").toBeGreaterThan(0);
+    expect(described.length, "no descriptions resolve · the wiring regressed").toBeGreaterThan(0);
 
     const bad: string[] = [];
     for (const code of described) {

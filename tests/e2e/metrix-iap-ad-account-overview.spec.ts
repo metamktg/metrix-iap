@@ -206,8 +206,8 @@ async function main() {
       }
     });
 
-    // ── Test 4: the hero and the slider are one derivation ──────────────
-    await test("Next Best Action hero names a recommendation the account's own rows produced", async () => {
+    // ── Test 4: the rail carries only what the derivation produced ──────
+    await test("Next best actions rail carries recommendations the account's own rows produced, each with provenance and a drawer", async () => {
       const ctx = await browser.newContext({
         viewport: { width: 1440, height: 900 },
       });
@@ -216,51 +216,49 @@ async function main() {
         await mockApis(ctx);
         await gotoOverview(page);
 
-        // WHAT THIS GUARDS, AND WHY IT CHANGED.
-        // The original assertion was "bookster stores no
-        // optimization_loop.recommendation_cards, therefore no hero" — a
-        // proxy for the real rule, which is that the hero must never show
-        // a recommendation nothing produced. The stored cards are still
-        // null for every account; recommendations are now DERIVED from the
-        // account's own rows, so the premise "no cards means no hero" is
-        // false while the rule it stood for is unchanged. Assert the rule
-        // directly: whatever the hero names, the slider carries too,
-        // because both read one derivation. A fabricated hero would name
-        // something the slider has never heard of.
-        const hero = page.locator('[data-testid="next-best-action-card"]');
-        const empty = page.locator('[data-testid="next-best-action-empty"]');
-        const heroCount = await hero.count();
+        // WHAT THIS GUARDS.
+        // The rail must never show a recommendation nothing produced. The
+        // stored optimization_loop cards are still null for every account;
+        // recommendations are DERIVED from the account's own rows, and every
+        // tile must say which rows (its source) and open into the drawer
+        // that carries the whole reason and the decision. The single hero
+        // card that stood above this rail is gone (owner, 2026-09-04): it
+        // showed one signal and repeated the rail's first tile.
+        const rail = page.locator('[data-testid="recommendation-slider"]');
+        const empty = page.locator('[data-testid="recommendation-slider-empty"]');
+        const railCount = await rail.count();
         const emptyCount = await empty.count();
         assert(
-          heroCount + emptyCount === 1,
-          `Expected exactly one of the hero card or its empty state, found ${heroCount} hero(s) and ${emptyCount} empty state(s).`,
+          railCount + emptyCount === 1,
+          `Expected exactly one of the rail or its empty state, found ${railCount} rail(s) and ${emptyCount} empty state(s).`,
         );
-
-        const tileTitles = await page
-          .locator('[data-testid="recommendation-tile"] h4')
-          .evaluateAll((els) => els.map((e) => (e.getAttribute("title") ?? e.textContent ?? "").trim()));
-
-        if (heroCount === 0) {
-          // An account that derives nothing shows the honest empty state —
-          // and then the slider must be empty too, or the two disagree.
-          assert(
-            tileTitles.length === 0,
-            `The hero rendered its empty state while the slider showed ${tileTitles.length} recommendation(s). One derivation, two answers.`,
-          );
-          console.log("       no recommendations derived; hero and slider agree on empty");
+        if (railCount === 0) {
+          console.log("       no recommendations derived; the rail shows its honest empty state");
           return;
         }
 
-        const heroTitle = (await page.locator('[data-testid="next-best-action-title"]').innerText()).trim();
-        assert(
-          tileTitles.length > 0,
-          `The hero named "${heroTitle}" while the slider showed nothing. The hero is reading a source the slider is not.`,
-        );
-        assert(
-          tileTitles.includes(heroTitle),
-          `The hero named "${heroTitle}", which is not among the ${tileTitles.length} recommendation(s) the slider carries: ${tileTitles.slice(0, 4).join(" | ")}`,
-        );
-        console.log(`       hero "${heroTitle.slice(0, 48)}" is one of the ${tileTitles.length} derived recommendation(s)`);
+        const tiles = page.locator('[data-testid="recommendation-tile"]');
+        const n = await tiles.count();
+        assert(n > 0, "The rail rendered with no tiles.");
+        const titles = await page
+          .locator('[data-testid="recommendation-tile"] h4')
+          .evaluateAll((els) => els.map((e) => (e.getAttribute("title") ?? e.textContent ?? "").trim()));
+        assert(titles.length === n && titles.every((t) => t.length > 0), `Every tile must name what to do; got ${titles.length} title(s) for ${n} tile(s).`);
+        const sourced = await page.locator('[data-testid="recommendation-tile"] [title^="Source · "]').count();
+        assert(sourced === n, `Every tile must name its source: ${sourced} of ${n} do.`);
+        const count = (await page.locator('[data-testid="recommendation-count"]').innerText()).trim();
+        assert(count === String(n), `The head counts ${count} but the rail holds ${n} tile(s).`);
+
+        // The title is the way in: the drawer carries the whole reason and
+        // the decision, and Escape hands the page back.
+        await page.locator('[data-testid="recommendation-open"]').first().click();
+        const drawer = page.locator('[data-testid="recommendation-drawer"]');
+        await drawer.waitFor({ state: "visible", timeout: 5000 });
+        assert((await drawer.getByText("What the rows say").count()) === 1, "The drawer must carry the whole reason under 'What the rows say'.");
+        assert((await drawer.locator('[data-testid="recommendation-drawer-approve"]').count()) === 1, "The drawer must carry the decision.");
+        await page.keyboard.press("Escape");
+        await drawer.waitFor({ state: "detached", timeout: 5000 });
+        console.log(`       ${n} tile(s), each titled and sourced; the drawer opens and closes`);
       } finally {
         await ctx.close();
       }

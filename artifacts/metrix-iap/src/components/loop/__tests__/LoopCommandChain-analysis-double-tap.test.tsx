@@ -161,7 +161,7 @@ beforeEach(() => {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-describe("LoopCommandChain — analysis run double-tap guard", () => {
+describe("LoopCommandChain · analysis run double-tap guard", () => {
   it("mutateAsync is not called before the Analysis hub confirmation step", () => {
     const seed = seedWithManualAccount();
     selectAccount("manual_account");

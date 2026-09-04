@@ -76,7 +76,7 @@ beforeEach(() => {
   localStorage.clear();
 });
 
-describe("Creative DNA — measured header", () => {
+describe("Creative DNA · measured header", () => {
   it("carries a configurable tile row over the same rows the page reads", () => {
     renderPage(<AnalysisDnaView />, "/app/analysis/dna");
     const row = screen.getByTestId("dna-tile-row");
@@ -101,7 +101,7 @@ describe("Creative DNA — measured header", () => {
   });
 });
 
-describe("Avatars — audience performance beside the structural counts", () => {
+describe("Avatars · audience performance beside the structural counts", () => {
   it("keeps the counts and adds the money", () => {
     renderPage(<AvatarsView />, "/app/strategy/avatars");
     // The structural tiles stay: they answer "how many", which the

@@ -108,7 +108,7 @@ export function parseFocusRingOpacities(
 ): number[] {
   if (!source.includes("focus-visible:ring-primary")) {
     throw new Error(
-      `Could not find "focus-visible:ring-primary" in ${componentName} — ` +
+      `Could not find "focus-visible:ring-primary" in ${componentName} · ` +
         "the focus-ring class may have been removed or renamed.",
     );
   }

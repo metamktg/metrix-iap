@@ -13,7 +13,7 @@ import { resolveVariableLabel } from "./variable-registry";
 
 /** Resolve a raw variable code — including compound "A + B" stacks — to labels. */
 function readableVariables(code: string | null | undefined): string {
-  if (!code) return "—";
+  if (!code) return "–";
   return code
     .split(/\s*\+\s*/)
     .map((c) => resolveVariableLabel(c.trim()))

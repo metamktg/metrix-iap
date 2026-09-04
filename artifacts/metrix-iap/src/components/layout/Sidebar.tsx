@@ -223,7 +223,7 @@ function ChildRow({
         }}
         aria-current={active ? "page" : undefined}
         // What the page proves is a tooltip, never a line under the label.
-        title={child.purpose ? `${child.label} — ${child.purpose}` : child.label}
+        title={child.purpose ? `${child.label} · ${child.purpose}` : child.label}
         className={cn(
           "flex items-center gap-1.5 pl-3 pr-2 min-h-8 py-1 rounded-r text-caption transition-[color,background-color,border-color,box-shadow,opacity,transform]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",

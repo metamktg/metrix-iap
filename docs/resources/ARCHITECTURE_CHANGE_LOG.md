@@ -740,3 +740,64 @@ resolved to something the author never meant — the first cost nine tests in on
 others broken behind a fail-fast run. Both times the failure message described the assertion, not
 the locator, which is what makes the class expensive to diagnose. A locator should name a control
 structurally; the words inside it belong to the product and will change.
+
+## 18. The UI/UX overhaul: one loop shape, one vocabulary, no em dashes, Sonner (2026-09-03)
+
+**What.** The six-phase overhaul recorded in `METRIX_UI_UX_OVERHAUL_2026-09.md`. The
+architectural pieces: (1) the toast layer is Sonner behind the unchanged `useToast` API
+(`command-deck/hooks/use-toast.tsx` forwards; the Radix reducer and `ui/toaster.tsx` are
+gone); (2) the run chain on Account Overview counts with the loop's own numerals and draws
+Data and Reports as icons (`LoopCommandChain` `stageNumber: number | null`); (3) engine
+diagnosis codes pass through `humanizeDiagnosis` before a reader sees them; (4) the four
+Exports pages render as cards on the Exports page (`ExportsCards.tsx`), their nav rows hidden,
+routes kept; Reports lands on the builder; Listen renders its high-impact signals; (5) the
+route host moves focus to the page on navigation and names it by the arriving heading;
+(6) the copy carries no em dashes (1,076 replacements by rule; the data-path delimiter kept);
+(7) a visual crawler (`shoot:routes`) that every screen claim in the record cites.
+
+**Why.** Owner (2026-09-03): restore the visual regressions and the undisclosed items, then
+run the end-to-end overhaul prompt autonomously with a triple validation pass; keep the
+palette; no em dashes; clarity over novelty; flag backend changes rather than make them.
+
+**Where.** Listed file by file in the record's §2.2, §4.4, §5 and §6.
+
+**Proof.** The record's §7: typecheck, the client suite, the twenty static gates, the four
+browser gates, the sixteen e2e smokes, and the crawl at both widths, all on the same head.
+
+**Reach.** Client and the shared design-system hook. No server, schema or integration change;
+the backend items are flagged in the record's §8.
+
+## 19. The next best action is a rail, and one drawer behind every recommendation (2026-09-04)
+
+**What.** (1) `NextBestActionCard` is removed. Account Overview's next best action is
+`RecommendationSlider` given a `scopeId`: the same rail the command centres carry, with Add to
+Tray and Dismiss on each tile (the deck's `decisionStore` / `trayStore`), a decided tile
+leaving the rail, and two empty states that tell "nothing derived" from "everything reviewed".
+(2) `RecommendationDrawer` (`components/deck/`) is the one disclosure behind a recommendation:
+a Radix Dialog side sheet (`.mx-drawer` / `.mx-scrim` in `index.css`, 200 ms in, 150 ms out,
+none under reduced motion) carrying the whole reason, the action, the confidence verbatim, the
+provenance, the number, the evidence link and the decision. The rail's tiles open it from
+their title; `RecommendationDeck`'s private `DetailDrawer` is deleted and the deck opens the
+same one (its swipe-left is now "Dismiss", the word its tab already used). (3) The kind
+vocabulary and the impact tint live in `components/deck/recommendationKind.ts`, read by the
+rail, the drawer and the deck. (4) The rail gains mouse drag on its ground (a drag past 6 px
+swallows the click), page dots that jump a viewport, a page indicator, and Left / Right /
+Home / End on the focused rail. Its title everywhere is "Next best actions".
+
+**Why.** Owner (2026-09-04, with a screenshot of the hero): make it a tile slider that carries
+more than one signal, that a reader can swipe between and click into for more. The hero showed
+one signal and repeated the rail's first tile beneath it; two surfaces for one derivation.
+
+**Where.** `components/deck/RecommendationSlider.tsx`, `RecommendationDrawer.tsx`,
+`recommendationKind.ts`, `RecommendationDeck.tsx`; `pages/metrix/AdAccountOverview.tsx` and
+the four command centres; `index.css`; tests in `components/deck/__tests__/` and
+`pages/metrix/act/__tests__/action-queue-shared-impact-rank.test.tsx`; e2e
+`tests/e2e/metrix-iap-ad-account-overview.spec.ts` test 4.
+
+**Proof.** `recommendation-slider.test.tsx` (decisions, tray, the two empty states, the
+drawer's contents and its decision, drag swallowing the click, arrow keys only on the rail);
+the overview e2e (one rail or one empty state, every tile titled and sourced, the drawer opens
+and closes); the static and browser gates and the crawl, recorded in the overhaul record §10.
+
+**Reach.** Client only. The decision and tray stores, the derivation and the seed are untouched.
+

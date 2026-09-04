@@ -108,7 +108,7 @@ function renderView(View: React.ComponentType) {
  *  stored snapshot, not from re-composition. */
 function makeArchivedModel(): ReportModel {
   return {
-    docTitle: "Archived Report — Legacy Shape",
+    docTitle: "Archived Report · Legacy Shape",
     brandName: "Metrix IAP",
     brandLine: "Internal dashboard mode · full Metrix branding",
     accountName: "Bookster",
@@ -210,7 +210,7 @@ describe("ReportHistoryView · snapshot downloads", () => {
     ];
     selectBookster();
     const { container } = renderView(ReportHistoryView);
-    expect(container.textContent).toContain("Archived Report — Legacy Shape");
+    expect(container.textContent).toContain("Archived Report · Legacy Shape");
 
     fireEvent.click(screen.getByRole("button", { name: /Download HTML/i }));
 
@@ -218,7 +218,7 @@ describe("ReportHistoryView · snapshot downloads", () => {
     const [format, model] = downloadMock.mock.calls[0] as [string, ReportModel];
     expect(format).toBe("html");
     // Content only the snapshot could contain — proof it wasn't re-composed.
-    expect(model.docTitle).toBe("Archived Report — Legacy Shape");
+    expect(model.docTitle).toBe("Archived Report · Legacy Shape");
     expect(model.sections.map((s) => s.title)).toEqual(["Legacy Snapshot Section"]);
     expect(model.windowLabel).toBe("Jun 1 – Jun 14, 2026");
     expect(model.generatedAt.getTime()).toBe(new Date("2026-06-15T10:00:00.000Z").getTime());

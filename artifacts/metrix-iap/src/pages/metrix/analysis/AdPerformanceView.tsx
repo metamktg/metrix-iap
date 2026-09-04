@@ -149,7 +149,7 @@ function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; s
     <SectionCard
       title="Signals worth acting on"
       desc="Data-quality flags from the last analysis run · grouped by real urgency"
-      right={<SectionInfoIcon tip="Grouped by each flag's real kind: anomalies (Act now), quality-tracking caveats (Watch), everything else like attribution-window notes (Investigate). No confidence percentage — flags carry no real confidence score." />}
+      right={<SectionInfoIcon tip="Grouped by each flag's real kind: anomalies (Act now), quality-tracking caveats (Watch), everything else like attribution-window notes (Investigate). No confidence percentage. Flags carry no real confidence score." />}
     >
       {/* Curated headline row: the single highest-$-impact real flag per
           tier, one column each — the mock's top-line "signals worth acting
@@ -518,7 +518,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
       table="concept_rollup"
       right={
         <div className="flex items-center gap-2">
-          <SectionInfoIcon tip="Each concept's measured rollup with the strategy map's scaling-playbook classification. Unclassified concepts are position-only in the local library — no playbook entry names them yet. Lift compares each concept's link-CVR against its book's average." />
+          <SectionInfoIcon tip="Each concept's measured rollup with the strategy map's scaling-playbook classification. Unclassified concepts are position-only in the local library. No playbook entry names them yet. Lift compares each concept's link-CVR against its book's average." />
           <RankSortBar metrics={TIER_RANK_METRICS} activeId={activeMetric.id} onSelect={select} />
         </div>
       }
@@ -599,16 +599,16 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
                           className={r.liftReason ? "border-b border-dotted border-muted-foreground/40 cursor-help" : undefined}
                           {...(r.liftReason ? { title: `Lift: ${r.liftReason}` } : {})}
                         >
-                          —
+                          –
                         </span>
                       ) : `${r.lift >= 0 ? "+" : ""}${fmtPct(r.lift)}`}
                     </td>
                     <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : (
                       <span
                         className={cn(TYPE.label, "text-muted-foreground/75 border-b border-dotted border-muted-foreground/40 cursor-help")}
-                        title="Confidence: the analysis engine graded no confidence for this concept — it needs enough spend and results to grade one."
+                        title="Confidence: the analysis engine graded no confidence for this concept. It needs enough spend and results to grade one."
                       >
-                        —
+                        –
                       </span>
                     )}</td>
                     <td className="text-right">
@@ -633,7 +633,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
                           <div className="rounded-lg border border-border/40 bg-foreground/[0.02] px-3 py-2">
                             <div className={cn(TYPE.microLabel, "mb-1")}>Recommended next</div>
                             <div className={TYPE.body}>
-                              {r.bucketEntry ?? "No playbook entry names this concept yet — position-only in the local library."}
+                              {r.bucketEntry ?? "No playbook entry names this concept yet. Position-only in the local library."}
                             </div>
                           </div>
                           {varStack && (
@@ -720,7 +720,7 @@ function BuyerIntentFunnelCard({
     <SectionCard
       title="Buyer-intent funnel"
       desc="Impressions through real intent signal · stage-over-stage retention"
-      right={<SectionInfoIcon tip="Every stage with measured data renders — impressions through purchases — whatever the account's objectives. Each stage's % is measured against the previous real stage; absent stages are explained, never faked as zero bars." />}
+      right={<SectionInfoIcon tip="Every stage with measured data renders (impressions through purchases) whatever the account's objectives. Each stage's % is measured against the previous real stage; absent stages are explained, never faked as zero bars." />}
     >
       <div className="space-y-1.5" data-testid="buyer-intent-funnel">
         {visibleStages.map((stage) => {
@@ -765,7 +765,7 @@ function BuyerIntentFunnelCard({
             text={
               objectivesIncludeEcommerce
                 ? "Add-to-cart, checkout, and purchase data comes from the demographic export when the account is configured for ecommerce tracking. These fields appear once a matching export is staged and analyzed."
-                : `No purchase-funnel events in this data — terminal metric ${cohortMeta.terminalMetricLabel} (${cohortMeta.label}). Add-to-cart, checkout and purchase stages appear here automatically if the data ever carries them; nothing is gated on the objective label.`
+                : `No purchase-funnel events in this data. Terminal metric ${cohortMeta.terminalMetricLabel} (${cohortMeta.label}). Add-to-cart, checkout and purchase stages appear here automatically if the data ever carries them; nothing is gated on the objective label.`
             }
           />
         </div>
@@ -809,7 +809,7 @@ function CostPerResultCard({ adAccountId, accountConfigured }: { adAccountId: st
     <SectionCard
       title="What moved cost per result"
       desc="Prior 28-day window vs current · blended cost per result across all result events"
-      right={<SectionInfoIcon tip="The same prior-period comparison the KPI tiles use (analysis-summary endpoint, 28-day window). A full per-factor breakdown by audience, creative, and placement isn't available — see the note below." />}
+      right={<SectionInfoIcon tip="The same prior-period comparison the KPI tiles use (analysis-summary endpoint, 28-day window). A full per-factor breakdown by audience, creative, and placement isn't available. See the note below." />}
     >
       {trend ? (
         <div className="flex flex-wrap items-end gap-5">
@@ -844,7 +844,7 @@ function CostPerResultCard({ adAccountId, accountConfigured }: { adAccountId: st
         </p>
       )}
       <p className={cn(TYPE.caption, "text-muted-foreground/75 mt-3")}>
-        Full per-factor attribution isn't available yet — placement, audience, and creative breakdowns don't carry prior-period comparisons in the current data model.
+        Full per-factor attribution isn't available yet · placement, audience, and creative breakdowns don't carry prior-period comparisons in the current data model.
       </p>
     </SectionCard>
   );
@@ -1017,7 +1017,7 @@ export function AdPerformanceView() {
                 />
               }
             />
-            <RangeScopeBar grainNote="Campaign totals cover the account's full flight window — this import has no daily grain." />
+            <RangeScopeBar grainNote="Campaign totals cover the account's full flight window. This import has no daily grain." />
 
             {!rangeHasData ? (
               <NoDataInRangeState what="analysis data" />
@@ -1043,7 +1043,7 @@ export function AdPerformanceView() {
                     spend: (
                       <span>
                         Range-scoped: {scoped.concepts} concept flight{scoped.concepts === 1 ? "" : "s"} overlapping
-                        the selected range — whole flights, no per-day interpolation.
+                        the selected range · whole flights, no per-day interpolation.
                         {rollupSuperseded > 0 && (
                           <>
                             {" "}Measured by the latest analysis run only; {rollupSuperseded} row
@@ -1102,7 +1102,7 @@ export function AdPerformanceView() {
               </div>
 
               {controls && (
-                <SectionCard title="Core control reads" desc="Control creative · per funnel depth" table="core_reanalysis_read" right={<SectionInfoIcon tip="The winning concept at each funnel stage as determined by the most recent re-analysis run — the benchmark every new test is measured against." />}>
+                <SectionCard title="Core control reads" desc="Control creative · per funnel depth" table="core_reanalysis_read" right={<SectionInfoIcon tip="The winning concept at each funnel stage as determined by the most recent re-analysis run. The benchmark every new test is measured against." />}>
                   {/* Primary control dominates (accent card, 3/5 width);
                       the secondary control read sits subordinate beside it. */}
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -1167,7 +1167,7 @@ export function AdPerformanceView() {
                   a compact index (label + a live stat), not a second nav. Each
                   module's full description lives in the title attr, not as
                   always-visible first-layer prose. */}
-              <SectionCard title="Analysis modules" desc="Same data · different slices" right={<SectionInfoIcon tip="Each module drills into a different dimension of the same import — Library (cell/variable performance), Audience, Placements, Budget, and Engagement Funnel." />}>
+              <SectionCard title="Analysis modules" desc="Same data · different slices" right={<SectionInfoIcon tip="Each module drills into a different dimension of the same import. Library (cell/variable performance), Audience, Placements, Budget, and Engagement Funnel." />}>
                 {/* Progressive disclosure: the two data-heavy modules get full
                     cards; the remaining slices sit as a subordinate chip row. */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

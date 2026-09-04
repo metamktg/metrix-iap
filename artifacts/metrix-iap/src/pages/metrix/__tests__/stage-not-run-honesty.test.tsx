@@ -19,9 +19,9 @@ const acct = (loop_status: Array<Record<string, unknown>> | undefined) =>
   ({ iap: loop_status ? { loop_status } : {} }) as never;
 
 const BOOKSTER_NOTE =
-  "Not yet run — golden-formula output requires the Creative Scan / Test Engine stage plus raw Meta exports with real ad_id.";
+  "Not yet run · golden-formula output requires the Creative Scan / Test Engine stage plus raw Meta exports with real ad_id.";
 const ECAS_NOTE =
-  "Not yet run — blocked on creative_scan (which is blocked on tracking fix + budget delivery).";
+  "Not yet run · blocked on creative_scan (which is blocked on tracking fix + budget delivery).";
 
 describe("StageNotRunState", () => {
   it("shows the stage's own note verbatim when the seed carries one", () => {
@@ -36,7 +36,7 @@ describe("StageNotRunState", () => {
     expect(screen.getByText(BOOKSTER_NOTE)).toBeTruthy();
   });
 
-  it("shows a DIFFERENT account's different real blocker — the note is not generic copy", () => {
+  it("shows a DIFFERENT account's different real blocker. The note is not generic copy", () => {
     render(
       <StageNotRunState
         title="No actions yet"
@@ -71,7 +71,7 @@ describe("StageNotRunState", () => {
     expect(screen.queryByText(/registered for this account/)).toBeNull();
   });
 
-  it("never tells the reader to run analysis — analysis does not produce this stage", () => {
+  it("never tells the reader to run analysis. Analysis does not produce this stage", () => {
     for (const status of [
       [{ stage: "optimization_loop", status: "pending", note: BOOKSTER_NOTE }],
       [{ stage: "optimization_loop", status: "pending", note: null }],

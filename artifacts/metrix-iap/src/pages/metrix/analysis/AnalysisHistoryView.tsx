@@ -169,7 +169,7 @@ function RunHistoryStack({ runs }: { runs: AnalysisRun[] }) {
     const warnings = run.csv_warnings ?? [];
     return {
       id: run.id,
-      title: `Run #${i + 1} — ${run.status === "success" ? "Success" : run.status === "running" ? "Running" : "Failed"}`,
+      title: `Run #${i + 1} · ${run.status === "success" ? "Success" : run.status === "running" ? "Running" : "Failed"}`,
       icon: run.status === "running" ? Loader2 : run.status === "success" ? CheckCircle2 : XCircle,
       meta: (
         <span className="inline-flex items-center gap-2">
@@ -231,7 +231,7 @@ export function AnalysisHistoryView() {
             section={SECTION}
             title="History"
             accountName={account!.name}
-            subtitle="All analysis runs for this account — each run is a distinct data snapshot."
+            subtitle="All analysis runs for this account. Each run is a distinct data snapshot."
             table="manual_analysis_runs"
           />
           <div className="px-6 py-5 space-y-5 max-w-3xl">
@@ -244,7 +244,7 @@ export function AnalysisHistoryView() {
                   <p className="text-caption font-semibold text-foreground/90">
                     {successRuns.length} successful run{successRuns.length !== 1 ? "s" : ""} available.
                   </p>
-                  <InfoTooltip content="Open the IAP Loop and go to the Strategy stage to select up to 3 runs to ground your strategy in — each run covers a distinct date range and can be combined." />
+                  <InfoTooltip content="Open the IAP Loop and go to the Strategy stage to select up to 3 runs to ground your strategy in. Each run covers a distinct date range and can be combined." />
                 </div>
               </div>
             )}

@@ -101,7 +101,7 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
             )}
           />
           <div className="text-label text-muted-foreground/75">
-            {tooLong ? `${trimmed.length}/80 — too long` : `id · ${accountId}`}
+            {tooLong ? `${trimmed.length}/80, too long` : `id · ${accountId}`}
           </div>
         </div>
         <button
@@ -406,7 +406,7 @@ export function GeneralView() {
                 <div className="flex-1 min-w-0">
                   <div className="text-body font-medium text-foreground">Creative library</div>
                   <div className="text-label text-muted-foreground/85">
-                    Add creative files after the fact, mapped to existing ads — no CSV re-upload needed
+                    Add creative files after the fact, mapped to existing ads. No CSV re-upload needed
                   </div>
                 </div>
                 <button

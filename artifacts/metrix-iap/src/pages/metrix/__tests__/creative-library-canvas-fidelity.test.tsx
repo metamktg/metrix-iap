@@ -112,13 +112,13 @@ beforeEach(() => {
   activeSeed = baseSeed;
 });
 
-describe("Creative Library — Next moves card", () => {
+describe("Creative Library · Next moves card", () => {
   it("shows an honest empty state when the account has no optimization-loop data yet", () => {
     activeSeed = baseSeed; // real fixture: optimization_loop is null for every account
     renderFor("bookster");
     expect(screen.getByText("Next moves")).toBeTruthy();
     expect(
-      screen.getByText("No creative-scoped recommendations yet — these appear once the optimization loop has run for this account.")
+      screen.getByText("No creative-scoped recommendations yet · these appear once the optimization loop has run for this account.")
     ).toBeTruthy();
   });
 
@@ -146,7 +146,7 @@ describe("Creative Library — Next moves card", () => {
   });
 });
 
-describe("Creative Library — Variable library chips open the drill-down modal", () => {
+describe("Creative Library · Variable library chips open the drill-down modal", () => {
   it("opens VariableDrilldownModal with real KPI data when a chip is clicked", () => {
     renderFor("bookster");
     fireEvent.click(screen.getByRole("tab", { name: /Variable library/i }));
@@ -156,12 +156,12 @@ describe("Creative Library — Variable library chips open the drill-down modal"
   });
 });
 
-describe("Creative Library — Cross-map cells are real click targets", () => {
+describe("Creative Library · Cross-map cells are real click targets", () => {
   it("opens the real creative when a tested cell is clicked", () => {
     renderFor("bookster");
     fireEvent.click(screen.getByRole("tab", { name: /Cross-map/i }));
     // C2B / MOF and C2F / MOF are real tested combinations in Bookster's data.
-    const testedCells = screen.getAllByTitle(/spend · \d+ results — click to open the creative/i);
+    const testedCells = screen.getAllByTitle(/spend · \d+ results. Click to open the creative/i);
     expect(testedCells.length).toBeGreaterThan(0);
     fireEvent.click(testedCells[0]);
     // The creative expand dialog's tab bar renders once open.
@@ -172,7 +172,7 @@ describe("Creative Library — Cross-map cells are real click targets", () => {
   it("queues a real Task Tray item when an untested cell is clicked", () => {
     renderFor("bookster");
     fireEvent.click(screen.getByRole("tab", { name: /Cross-map/i }));
-    const untestedCell = screen.getAllByTitle(/Untested — click to queue/i)[0];
+    const untestedCell = screen.getAllByTitle(/Untested · click to queue/i)[0];
     expect(untestedCell).toBeTruthy();
     const label = untestedCell.getAttribute("title")!;
     const match = /queue "(.+)"/.exec(label)!;

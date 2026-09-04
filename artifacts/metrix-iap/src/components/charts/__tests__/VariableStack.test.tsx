@@ -18,7 +18,7 @@ afterEach(cleanup);
 
 const STACK = { hook: "HK_ProofFirst", tone: "TN_Direct", cta: "CTA_StartFree" };
 
-describe("VariableStack — an unset family is a gap, not an omission", () => {
+describe("VariableStack · an unset family is a gap, not an omission", () => {
   it("renders every family, filled or not", () => {
     render(<VariableStack stack={STACK} />);
     expect(screen.getAllByRole("listitem")).toHaveLength(VARIABLE_FAMILIES.length);
@@ -50,7 +50,7 @@ describe("VariableStack — an unset family is a gap, not an omission", () => {
   });
 });
 
-describe("VariableStack — a marginal read is not an attribution", () => {
+describe("VariableStack · a marginal read is not an attribution", () => {
   const marginal = new Map([["HK_ProofFirst", { label: "CPA", value: "$18.40" }]]);
 
   it("shows the read for a variable that has one", () => {
@@ -70,7 +70,7 @@ describe("VariableStack — a marginal read is not an attribution", () => {
     expect(container.textContent).toContain("marginal, not attributed");
   });
 
-  it("shows no number for a variable with no read — never a zero", () => {
+  it("shows no number for a variable with no read. Never a zero", () => {
     render(<VariableStack stack={STACK} marginal={marginal} marginalLabel="CPA" />);
     expect(screen.queryByText("$0.00")).toBeNull();
     expect(screen.queryByText("0")).toBeNull();
@@ -83,13 +83,13 @@ describe("VariableStack — a marginal read is not an attribution", () => {
     // row once any read exists — which means an unmeasured variable needs a
     // mark of its own rather than a blank that looks like a layout gap.
     render(<VariableStack stack={STACK} marginal={marginal} marginalLabel="CPA" />);
-    const dashes = screen.getAllByText("—");
+    const dashes = screen.getAllByText("–");
     expect(dashes.length).toBeGreaterThan(0);
     expect(dashes[0]!.getAttribute("title")).toContain("No measurement");
   });
 });
 
-describe("VariableStack — selection", () => {
+describe("VariableStack · selection", () => {
   it("names the family and the variable in the button", async () => {
     const u = userEvent.setup();
     const onSelect = vi.fn();
@@ -98,7 +98,7 @@ describe("VariableStack — selection", () => {
     expect(onSelect).toHaveBeenCalledWith("HK_ProofFirst", "hook");
   });
 
-  it("makes an unfilled family unclickable — there is nothing to open", () => {
+  it("makes an unfilled family unclickable. There is nothing to open", () => {
     const onSelect = vi.fn();
     render(<VariableStack stack={STACK} onSelect={onSelect} />);
     expect(screen.getAllByRole("button")).toHaveLength(3);

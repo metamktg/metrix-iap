@@ -18,7 +18,7 @@ afterEach(cleanup);
 describe("KpiStat", () => {
   it("marks an absent value with a reason a reader can reach", () => {
     const { container } = render(
-      <KpiStat label="CPA" value="—" unavailableReason="no results in this segment" />,
+      <KpiStat label="CPA" value="–" unavailableReason="no results in this segment" />,
     );
     const value = container.querySelector("[data-unavailable-reason]") as HTMLElement | null;
     expect(value).not.toBeNull();
@@ -42,13 +42,13 @@ describe("KpiStat", () => {
   });
 
   it("leaves a dash bare when the caller genuinely has no reason to give", () => {
-    const { container } = render(<KpiStat label="CPA" value="—" />);
+    const { container } = render(<KpiStat label="CPA" value="–" />);
     expect(container.querySelector("[data-unavailable-reason]")).toBeNull();
   });
 
   it("renders no interactive element, so it is legal inside a button-card", () => {
     const { container } = render(
-      <KpiStat label="CTR" value="—" unavailableReason="no impressions in this segment" />,
+      <KpiStat label="CTR" value="–" unavailableReason="no impressions in this segment" />,
     );
     expect(container.querySelectorAll("button").length).toBe(0);
   });
