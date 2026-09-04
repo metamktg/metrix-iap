@@ -118,6 +118,7 @@ import { TYPE, HEADING } from "./typography";
 // chain). Same name, two unrelated concepts. Importing it unaliased broke
 // seven files, so the seed record comes in as SeedLoopStage here.
 import type { AdAccount, LoopStageStatus as SeedLoopStage } from "@/lib/data/seedTypes";
+import { isManualAccount, hasLiveMetaConnection } from "@/lib/data/accountSource";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { RevealPanel } from "@/components/widgets/LayeredDisclosure";
 
@@ -1080,34 +1081,65 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
   );
 }
 
+/** The report kinds that carry spend per ad. Any one of them lets a run
+ *  start (server contract, analysisEngine.ts / spec §2a); the checklist
+ *  used to demand both pivots, which the server never did. */
+const DELIVERY_IMPORT_KINDS = ["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv"] as const;
+
+/**
+ * The first-run checklist for an account that has not run yet, from what
+ * is really staged. Shared by the Overview's setup state and the Analysis
+ * command centre's setup strip, so the two never disagree on which step is
+ * next. Creatives are optional: the server matches them itself, and a run
+ * needs one delivery report, not a mapped creative.
+ */
+export function firstRunSteps(
+  account: AdAccount,
+  imports: { kind: string; status?: string }[],
+  handlers: {
+    openImport: () => void;
+    openConnect: () => void;
+    /** On the Analysis command centre the run card is on the same page, so
+     *  the step brings it into view instead of navigating to itself. */
+    run?: () => void;
+  },
+): LoopChecklistStep[] {
+  const staged = imports.filter((i) => (i.status ?? "staged") === "staged");
+  const reportStaged = staged.some((i) => (DELIVERY_IMPORT_KINDS as readonly string[]).includes(i.kind));
+  const creativeStaged = staged.some((i) => i.kind === "creative_asset");
+  // The run control lives on the Analysis command center, which lets an
+  // unconfigured account through to it.
+  const runStep: LoopChecklistStep = handlers.run
+    ? { label: "Run analysis", done: false, onClick: handlers.run }
+    : { label: "Run analysis", done: false, route: "/app/analysis" };
+  if (isManualAccount(account)) {
+    return [
+      { label: "Name the account", done: true },
+      { label: "Stage a performance export", done: reportStaged, onClick: handlers.openImport },
+      { label: "Upload creatives (optional)", done: creativeStaged, onClick: handlers.openImport },
+      runStep,
+    ];
+  }
+  return [
+    { label: "Connect data source", done: hasLiveMetaConnection(account), onClick: handlers.openConnect },
+    runStep,
+    { label: "Generate strategy", done: false, route: "/app/strategy/overview" },
+    { label: "Generate briefs", done: false, route: "/app/creative/builder" },
+  ];
+}
+
 export function UnconfiguredState({ account }: { account: AdAccount }) {
   const s = account.overview_state;
   const [connectOpen, setConnectOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
-  const isManual = !["meta", "facebook", "meta ads"].includes((account.platform ?? "").toLowerCase());
+  const isManual = isManualAccount(account);
   const { data: importsData } = useListManualImports(account.id);
   const imports = importsData?.imports ?? [];
-  const csvsDone = isManual && (
-    imports.some((i) => i.kind === "performance_demo_csv") &&
-    imports.some((i) => i.kind === "performance_placement_csv")
-  );
-  const creativesMapped = isManual && imports.filter((i) => i.kind === "creative_asset").some((a) => a.ad_names.length > 0);
-
-  const setupSteps: LoopChecklistStep[] = isManual
-    ? [
-        { label: "Name the account", done: true },
-        { label: "Upload performance CSVs", done: csvsDone, onClick: () => setImportOpen(true) },
-        { label: "Map creative assets", done: creativesMapped, route: "/app/settings/general" },
-        // The run control lives on the Analysis command center, not Settings.
-        { label: "Run analysis", done: false, route: "/app/analysis" },
-      ]
-    : [
-        { label: "Connect data source", done: false, onClick: () => setConnectOpen(true) },
-        { label: "Run analysis", done: false, route: "/app/analysis" },
-        { label: "Generate strategy", done: false, route: "/app/strategy/overview" },
-        { label: "Generate briefs", done: false, route: "/app/creative/builder" },
-      ];
+  const setupSteps = firstRunSteps(account, imports, {
+    openImport: () => setImportOpen(true),
+    openConnect: () => setConnectOpen(true),
+  });
 
   return (
     <div className="flex-1 flex items-center justify-center py-16 px-6">
@@ -1414,6 +1446,7 @@ export function ModuleScopeGate({
   title,
   account,
   renderHeader = true,
+  allowUnconfigured = false,
   children,
 }: {
   section: string;
@@ -1423,6 +1456,12 @@ export function ModuleScopeGate({
    *  owns the single ModuleHeader for this route — prevents a duplicate
    *  heading from rendering in the blocked (no-account/unconfigured) states. */
   renderHeader?: boolean;
+  /** Let an unconfigured account through. The Analysis command centre is
+   *  where the first run is staged and started, so it cannot sit behind a
+   *  "run analysis first" gate: the setup checklist's "Run analysis" step
+   *  used to link to this page, which showed the checklist again (owner
+   *  screenshot, 2026-09-04). */
+  allowUnconfigured?: boolean;
   children: () => React.ReactNode;
 }) {
   if (!account) {
@@ -1437,7 +1476,7 @@ export function ModuleScopeGate({
       </div>
     );
   }
-  if (account.status !== "configured") {
+  if (account.status !== "configured" && !allowUnconfigured) {
     return (
       <div className="flex-1 flex flex-col">
         {renderHeader && <ModuleHeader section={section} title={title} accountName={account.name} />}
