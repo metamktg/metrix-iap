@@ -117,9 +117,15 @@ export interface BuildObservationsResult {
 
 const SEP = "";
 
+// The key names the segment; it does not carry it. `asset_value` is the
+// delivered text (a copy signature is headline + primary text + description,
+// joined) and `asset_hash` already identifies it exactly, so the value stays
+// out: on 2026-09-04 a 3,432-byte key hit Postgres's btree row limit (2,704)
+// on ad_breakdown_performance's unique key and the run failed. The value
+// itself is still stored on the row, in `segment`.
 export function segmentKeyOf(segment: SegmentDims): string {
   return Object.entries(segment)
-    .filter(([k, v]) => k !== "asset_fields" && v !== undefined && v !== "")
+    .filter(([k, v]) => k !== "asset_fields" && k !== "asset_value" && v !== undefined && v !== "")
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([k, v]) => `${k}=${v}`)
     .join(SEP);

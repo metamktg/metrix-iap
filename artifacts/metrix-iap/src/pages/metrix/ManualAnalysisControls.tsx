@@ -1420,6 +1420,14 @@ export function AnalysisControls({
         </div>
       )}
 
+      {/* The run's own error, whole. It used to be one truncated span beside
+          the status pill, which showed "index row size 3432 exceeds b…" and
+          hid the part that names the cause. It is the reader's next step. */}
+      {run?.status === "error" && run.error_message && (
+        <p className="text-caption text-status-danger/85 leading-relaxed break-words" data-testid="analysis-run-error">
+          {run.error_message}
+        </p>
+      )}
       <div className="flex items-center justify-between gap-2">
         {run ? (
           <div className="flex items-center gap-2 min-w-0">
@@ -1428,9 +1436,6 @@ export function AnalysisControls({
               <span className="text-label text-muted-foreground/80 truncate">
                 Covers {run.date_start} → {run.date_end} ({run.rows_ingested ?? 0} rows)
               </span>
-            )}
-            {run.status === "error" && run.error_message && (
-              <span className="text-label text-status-danger/80 truncate">{run.error_message}</span>
             )}
           </div>
         ) : (

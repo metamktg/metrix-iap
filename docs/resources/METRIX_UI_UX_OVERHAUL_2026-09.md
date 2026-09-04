@@ -718,7 +718,24 @@ intelligence for marketers who need to move faster") is pinned by `login-page-la
 was left as is; the marketing hero ("Stop Guessing Which Ads Actually Work") is the stronger UVP line
 and could replace it in a copy pass the owner signs off (O9).
 
-### 10.4 Validation on this head
+### 10.4 Validation on the merged head
 
-Recorded in the commit that carries this section; every figure names its command.
+PR #196 was merged by the owner at 02:29Z on 2026-09-04 at `a7845b6`; the deck-face title cut
+(`a734d32`) and the keyboard hint followed on the restarted branch. Every figure names its command
+and was produced on that tree with the machine otherwise idle.
+
+| Check | Command | Result |
+|---|---|---|
+| Typecheck | `pnpm run typecheck` | clean |
+| Client suite + every e2e smoke | `smoke:metrix-iap-tests` | 207 files, 2,540 tests; 21 smokes PASS (route crawl and DOM validity among them) |
+| Static gates | the twenty `check:*` gates (disclosure-rulebook, token-colors, type-scale, optical-authority, interaction, locator-ambiguity, unused-exports, stray-shell-output, chart-palette, payload-legibility, three text-contrast, two command-deck, signal-weights-drift, ui-inventory, field-coverage, communications-section-icons, cohort-reach) | 20 / 20 |
+| Browser gates | `check:friction`, `check:accessible-names`, `check:chart-geometry`, `check:unexplained-dashes` on the dev server | 0 defects, 0 raised ratchets; clean; clean; clean. The friction baseline file is untouched: `/app/act/queue` now reads below its no-data set (lowering is free) |
+| Crawl | `shoot:routes` at 1440 and 390 px | 102 shots, 0 errors, 0 overflow, 0 empty, 0 unlabeled controls |
+| CI-equivalents not in the local chain | `check:api-codegen-drift`, scripts `test`, the 35 api-server pure suites (534 tests), `smoke:api-server`, `smoke:metrix-iap-build`, `smoke:marketing-build`, `smoke:marketing-e2e` | all PASS on this branch's earlier heads; CI run 433 green on `f4fa8a8`, runs 434 and 435 cancelled by the next push, run 436 started on `a7845b6` at 02:29Z and the PR was merged the same minute |
+
+Three raises the friction gate produced on the way, each fixed rather than baselined: the tile
+title in a leaf span (a title is a title; the text is the button's own node), the deck face's
+clamped rationale and action (cut at 200 / 140 at a word boundary, which is what the clamp showed),
+and the deck face's hypothesis title (cut at 160). The deck's own wrapper height, found by the
+same crawl, is the one defect on this walk that predates the rail.
 

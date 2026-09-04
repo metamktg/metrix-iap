@@ -1326,6 +1326,17 @@ create table if not exists ad_breakdown_performance (
 );
 create index if not exists ad_breakdown_performance_account_run_idx
   on ad_breakdown_performance (account_id, manual_analysis_run_id, breakdown);
+
+-- The unique key held unbounded text: ad_identity (an ad name, or an
+-- unjoinable row's own key) and segment_key (which carried a copy
+-- signature's whole text until 2026-09-04). A btree index row is capped at
+-- 2,704 bytes; a 3,432-byte key failed a live run. The key now indexes a
+-- fixed-size digest of the two text columns. The writer inserts run-scoped
+-- rows (no upsert), so an expression index changes nothing for it.
+alter table ad_breakdown_performance
+  drop constraint if exists ad_breakdown_performance_account_id_manual_analysis_run_id__key;
+create unique index if not exists ad_breakdown_performance_identity_key
+  on ad_breakdown_performance (account_id, manual_analysis_run_id, breakdown, ad_identity_kind, md5(ad_identity), md5(segment_key), result_type);
 create index if not exists ad_breakdown_performance_ad_idx
   on ad_breakdown_performance (account_id, meta_ad_id);
 
