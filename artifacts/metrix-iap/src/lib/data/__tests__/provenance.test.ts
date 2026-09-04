@@ -8,6 +8,23 @@ import {
   readSeedProvenance,
   sourceFileCoverage,
 } from "../provenance";
+
+import { humanizeFactPath } from "../provenance";
+
+describe("humanizeFactPath", () => {
+  it("reads a dotted path as words", () => {
+    expect(humanizeFactPath("bundle_metadata.client_id")).toBe("bundle metadata · client id");
+    expect(humanizeFactPath("loop_run.client")).toBe("loop run · client");
+  });
+  it("names a list index as the nth item of the list", () => {
+    expect(humanizeFactPath("manual_uploads[0].verification")).toBe("manual uploads · upload 1 · verification");
+    expect(humanizeFactPath("source_files[2]")).toBe("source files · file 3");
+  });
+  it("keeps a plain key and never returns an empty label", () => {
+    expect(humanizeFactPath("client")).toBe("client");
+    expect(humanizeFactPath("")).toBe("");
+  });
+});
 import type { MetrixSeed } from "../seedTypes";
 
 function seed(patch: Partial<MetrixSeed> = {}): MetrixSeed {

@@ -12,7 +12,7 @@
 // `lastSignOfLife` is the whole behavioural change, so it is where the
 // guarantees are pinned.
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { lastSignOfLife, HEARTBEAT_INTERVAL_MS } from "../runHeartbeat";
 
 const iso = (msAgo: number) => new Date(Date.now() - msAgo).toISOString();
@@ -159,5 +159,83 @@ describe("model-call bounds vs the heartbeat ceiling", () => {
     // The SDK default is 2. Left at the default, a 4-minute timeout becomes
     // 12 minutes of wall clock per call.
     expect(MODEL_CALL_MAX_RETRIES).toBeLessThan(2);
+  });
+});
+
+// ─── A stage boundary re-arms the ceiling ───────────────────────────────
+//
+// The ceiling measured from the run's START, so a legitimate run longer
+// than MAX_HEARTBEAT_MS (Pure Path: 22k ad rows, 150k ledger rows through
+// PostgREST, over 30 minutes) stopped attesting mid-way and was reclaimed
+// by the next read while it was still writing (2026-09-04, run 8148628c).
+// Progress writes now touch the heartbeat, so the ceiling measures from
+// the last stage the run reached: working runs run, wedged runs are still
+// reclaimed MAX_HEARTBEAT_MS after their last progress.
+
+const beats: string[] = [];
+vi.mock("../supabase", () => ({
+  getSupabase: () => ({
+    from: (table: string) => ({
+      update: () => ({
+        eq: () => ({
+          eq: async () => {
+            beats.push(table);
+            return { error: null };
+          },
+        }),
+      }),
+    }),
+  }),
+}));
+
+describe("touchRunHeartbeat", () => {
+  beforeEach(() => {
+    beats.length = 0;
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("keeps a run that reaches new stages beating past the ceiling, and stops a run that does not", async () => {
+    const { startRunHeartbeat, touchRunHeartbeat, MAX_HEARTBEAT_MS, HEARTBEAT_INTERVAL_MS } = await import("../runHeartbeat");
+    const stop = startRunHeartbeat("manual_analysis_runs", "run-long");
+    await vi.advanceTimersByTimeAsync(0);
+    const initial = beats.length;
+
+    // Two thirds of the ceiling in, the run reaches a stage.
+    await vi.advanceTimersByTimeAsync((MAX_HEARTBEAT_MS * 2) / 3);
+    expect(beats.length).toBeGreaterThan(initial);
+    touchRunHeartbeat("manual_analysis_runs", "run-long");
+
+    // Past the ORIGINAL ceiling: still beating, because the ceiling now
+    // measures from the touch.
+    await vi.advanceTimersByTimeAsync((MAX_HEARTBEAT_MS * 2) / 3);
+    const afterTouch = beats.length;
+    await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL_MS * 2);
+    expect(beats.length).toBeGreaterThan(afterTouch);
+
+    // No further stage: MAX_HEARTBEAT_MS after the touch the beating stops.
+    await vi.advanceTimersByTimeAsync(MAX_HEARTBEAT_MS);
+    const atCeiling = beats.length;
+    await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL_MS * 3);
+    expect(beats.length).toBe(atCeiling);
+    stop();
+  });
+
+  it("is a no-op for a run with no heartbeat (a reclaimed run's late write)", async () => {
+    const { touchRunHeartbeat } = await import("../runHeartbeat");
+    expect(() => touchRunHeartbeat("manual_analysis_runs", "nobody")).not.toThrow();
+  });
+
+  it("forgets the heartbeat once it is stopped", async () => {
+    const { startRunHeartbeat, touchRunHeartbeat, HEARTBEAT_INTERVAL_MS } = await import("../runHeartbeat");
+    const stop = startRunHeartbeat("manual_analysis_runs", "run-short");
+    await vi.advanceTimersByTimeAsync(0);
+    stop();
+    const stopped = beats.length;
+    touchRunHeartbeat("manual_analysis_runs", "run-short");
+    await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL_MS * 3);
+    expect(beats.length).toBe(stopped);
   });
 });

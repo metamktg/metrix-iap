@@ -1016,3 +1016,57 @@ the period excludes it, honestly. Open: the ledger still compares a whole-period
 truth summed over the run window, so a 28-day pivot beside a 30-day summary reads as 93% covered
 rather than as a period mismatch; summing the daily truth over the pivot's own period is the next
 step, recorded in the spec.
+
+## 25. A working run is never reclaimed, and the ledger is linear in ads (2026-09-04, live hazard, backend, flagged)
+
+**What changed.** Three things the Pure Path run 8148628c exposed on the #203 build, plus the fixes
+the high-confidence review of #201 and #203 asked for.
+
+- **The heartbeat ceiling measures from the last progress write, not from the start.**
+  `runHeartbeat.ts` keeps the live heartbeats in a registry; `touchRunHeartbeat(table, runId)`
+  re-arms a run's ceiling, and `analysisEngine.updateProgress` calls it on every stage boundary and
+  writes `heartbeat_at` with the progress (guarded on `status = 'running'`). Why: the ceiling
+  (`MAX_HEARTBEAT_MS`, 30 minutes) measured from `started_at`, and the Pure Path run takes over 30
+  minutes, so the interval stopped attesting at 10:46Z while the run was still working; the next
+  read of the run list would have flipped it to error and deleted its outputs. A run that keeps
+  reaching stages is working, however long it takes; one that stops reaching them is the wedged case
+  the ceiling exists for, and it is still reclaimed 30 minutes after its last progress.
+- **The reconciliation stage yields between its three builds.** `buildObservations`, `buildTruth`
+  and `buildLedger` are pure and synchronous; a progress write between them turns the event loop
+  (the interval fires) and attests liveness itself, so a long build is never mistaken for a dead
+  process. Stages 87 "Reconciling: the control per ad" and "Reconciling: the ledger" are new.
+- **`buildLedger` is linear in ads.** One line looked up each ad's result type with `obs.find(...)`
+  over the breakdown's whole observation list: quadratic in ads, about 98 million string comparisons
+  at 1,751 ads and 112k observations, 95% of the ledger's time and the whole of a 25-minute
+  synchronous stage. The result type is now read off the ad's first observation when its entry is
+  created. Output byte-identical (rows, summary, observations checked at two sizes on a synthetic
+  Pure Path shape); the ledger 20 to 25 times faster.
+- **Review fixes (A2 to A5, B1, B2 in `METRIX_ASSESSMENT_ROUND_2026-09-04.md` §4).** The batch
+  recovery count filters on `account_id` too (every composite index leads with it; the run id alone
+  scanned the largest table). The HTTP status rides with an insert error and 0 or 5xx is retryable;
+  the bare words "network" and "timeout" left the retry regex and "timed out" (the edge's phrasing)
+  joined it. The `creative_assets` upsert retries a transport failure (idempotent). The unscoped
+  recovery test plans both halves and asserts the stored rows. The schema applier's wait for a
+  running analysis counts only runs with a sign of life inside the engine's 10-minute threshold
+  (a dead 'running' row used to hold every later apply, after which no fingerprint was recorded and
+  the schema change never landed), and only a missing table reads as nothing to wait for. The
+  applier's marker table `metrix_schema_state` gets row-level security and the API roles revoked
+  right after it is created, so the anon key can neither read nor forge the fingerprint that gates
+  the skip.
+
+**Where it lives.** `artifacts/api-server/src/lib/runHeartbeat.ts` (registry, `touchRunHeartbeat`),
+`analysisEngine.ts` (`updateProgress`, the reconciliation stage, the chunked-insert client, the
+creative_assets upsert), `reconciliation.ts` (the per-ad result type), `chunkedInsert.ts`,
+`scripts/src/apply-supabase-schema.ts`.
+
+**What proves it.** `runHeartbeat.test.ts` (the ceiling re-arms on a touch, stops without one, a
+stopped heartbeat is forgotten), `chunkedInsert.test.ts` (the unscoped recovery asserts exactly),
+the reconciliation suites unchanged (110 tests), and the profiling harness in the session's
+scratchpad (`profile/patched-check.ts`: original 14.7 s, patched 0.69 s, identical output).
+
+**How far it reaches.** The engine and the applier; no schema change (the applier's own marker
+table gains RLS, which `schema.sql` cannot carry because the applier creates it first), no API
+shape change (two new progress stage strings). Open from the review: A1 (a 23505 on a run-scoped
+retry could be proven landed by a count), B3 (the hook's timeout targets pnpm), B4 (a splitter
+test against the file's constructs). Held for the owner: H1 (a failed re-run empties the window),
+task 22 (evidence on demand), task 23 (the rest of the run's time, which is PostgREST writes).

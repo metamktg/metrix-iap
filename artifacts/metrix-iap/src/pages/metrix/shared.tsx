@@ -102,7 +102,7 @@ import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { useListManualImports } from "@workspace/api-client-react";
-import { navTree, visibleChildren, LOOP_STAGES } from "@/navigation/navTree";
+import { navTree, visibleChildren, LOOP_STAGES, NAV_GROUP_LABEL } from "@/navigation/navTree";
 import { fromOriginTarget } from "@/navigation/navHistory";
 import { Plug, FileUp, Clock, Info, ArrowRight, ArrowLeftRight, CheckCircle2, CalendarRange, Maximize2, Minimize2, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Venus, Mars, AlignLeft, Download } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
@@ -195,6 +195,22 @@ export function fmtUSD(n: number | null | undefined, digits = 2): string {
 export function fmtNum(n: number | null | undefined): string {
   if (n == null) return "–";
   return Math.round(n).toLocaleString("en-US");
+}
+
+/**
+ * Currency for an axis tick: whole dollars under $1k ("$750"), thousands
+ * with one decimal where it carries information under $10k ("$1.2k",
+ * "$1k"), whole thousands under $1M ("$48k"), millions above ("$1.4M").
+ * The old `${(v / 1000).toFixed(0)}k` read "$0k $0k $0k $1k $1k" across
+ * any range under $5k, which is most single-concept spend axes.
+ */
+export function fmtUSDAxis(n: number): string {
+  const abs = Math.abs(n);
+  const trim = (x: number, digits: number) => (Number.isInteger(x) ? String(x) : x.toFixed(digits));
+  if (abs < 1000) return `$${Math.round(n).toLocaleString("en-US")}`;
+  if (abs < 10_000) return `$${trim(Math.round((n / 1000) * 10) / 10, 1)}k`;
+  if (abs < 1_000_000) return `$${Math.round(n / 1000)}k`;
+  return `$${trim(Math.round((n / 1_000_000) * 10) / 10, 1)}M`;
 }
 
 export function fmtPct(n: number | null | undefined, digits = 2): string {
@@ -490,6 +506,17 @@ export function SectionTabBar({ section }: { section: string }) {
 
 // ─── Page header ──────────────────────────────────────────────────────
 
+/** What a hub's eyebrow calls its section: the loop stage for a loop
+ * section, the nav group for any other section navTree knows, else the
+ * label alone. Never the nav ordinal. */
+function hubEyebrow(label: string): string {
+  const key = label.toLowerCase();
+  const stage = LOOP_STAGES.find((s) => s.label.toLowerCase() === key);
+  if (stage) return `Stage ${stage.loopStage} · ${stage.label}`;
+  const section = navTree.find((s) => s.label.toLowerCase() === key);
+  return section ? `${NAV_GROUP_LABEL[section.group]} · ${section.label}` : label;
+}
+
 export function ModuleHeader({
   section,
   title,
@@ -510,12 +537,15 @@ export function ModuleHeader({
   const sectionLabel = section.split(" · ")[0];
   // A stage's command-center hub sets title to the bare stage name (e.g.
   // title="Strategy" on the page whose section is "Strategy · 04"), which
-  // would otherwise render the eyebrow and H1 as an exact duplicate. Fall
-  // back to the full section string (surfacing the "· 04" stage position
-  // that's normally trimmed off) instead of inventing new copy. Keep this
-  // comparison against the bare `title`, not the account-prefixed H1 below —
-  // the account name belongs only in the H1, never duplicated into the eyebrow.
-  const eyebrowText = sectionLabel.toLowerCase() === title.toLowerCase() ? section : sectionLabel;
+  // would otherwise render the eyebrow and H1 as an exact duplicate. On a
+  // hub the eyebrow names the section's place in the product's shape
+  // instead: its loop stage ("Stage 3 · Strategy") or its group ("Outputs ·
+  // Reports"), both read from navTree. It used to surface the nav ordinal
+  // ("Strategy · 04"), a second numbering that competed with the loop's own
+  // numerals on the sidebar spine and the stage strip (one loop shape, one
+  // vocabulary). Keep this comparison against the bare `title`, not the
+  // account-prefixed H1 below: the account name belongs only in the H1.
+  const eyebrowText = sectionLabel.toLowerCase() === title.toLowerCase() ? hubEyebrow(sectionLabel) : sectionLabel;
 
   return (
     <div className="shrink-0">
@@ -2074,8 +2104,13 @@ export function DataWindowBar({
             </button>
           );
         })}
+        {/* The windows come from ad_performance's day-level rows. An account
+            whose analysis arrived through the importer (bookster, ECAS) has
+            totals and no such rows, so "No data uploaded yet" beside
+            $8,000.84 of spend told the reader two things at once. Name what
+            is absent. */}
         {windows.length === 0 && !isFetching && (
-          <span className="text-caption text-muted-foreground/75 italic">No data uploaded yet</span>
+          <span className="text-caption text-muted-foreground/75 italic">No day-level rows for this account</span>
         )}
       </div>
       {isFetching && (
@@ -2280,6 +2315,7 @@ export function ShowMoreButton({
 
 export function PrerequisiteGate({
   met,
+  loading = false,
   title,
   message,
   ctaLabel,
@@ -2287,12 +2323,35 @@ export function PrerequisiteGate({
   children,
 }: {
   met: boolean;
+  /** The predicate behind `met` is still being read (the stage-status
+   * query is in flight). The gate must not tell the reader the stage is
+   * locked on the strength of a default it has not confirmed. */
+  loading?: boolean;
   title: string;
   message: string;
   ctaLabel?: string;
   ctaTo?: string;
   children: () => React.ReactNode;
 }) {
+  // The stage-status hook answers with its defaults (nothing validated,
+  // nothing unlocked) until its query resolves, so a gate that reads `met`
+  // alone showed "Run analysis first" for one round trip on EVERY visit and
+  // then swapped to the real content. Locked copy is a claim about the
+  // account; it waits for the answer. A quiet, labelled placeholder holds
+  // the space instead, so the layout does not jump when the content lands.
+  if (!met && loading) {
+    return (
+      <div
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+        className="flex items-center justify-center py-16"
+        data-testid="prerequisite-gate-loading"
+      >
+        <span className="text-caption text-muted-foreground/75">Checking this stage…</span>
+      </div>
+    );
+  }
   if (!met) {
     return (
       <PendingState

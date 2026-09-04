@@ -142,10 +142,11 @@ export function CreativeCommandCenter() {
                   <MetricTile label="Total briefs" value={String(briefs.length)} variant="primary" />
                   <MetricTile label="Pillars covered" value={String(pillarsCovered)} sub={`of ${strategy?.message_pillars.length ?? 0}`} />
                   <MetricTile label="Static" value={String(byFormat("static").length)} />
-                  <MetricTile label="Video + UGC" value={String(byFormat("video").length + byFormat("ugc").length)} sub="no source-backed drafts yet" />
+                  <MetricTile label="Video + UGC" value={String(byFormat("video").length + byFormat("ugc").length)} sub="briefs · none source-backed yet" />
                 </div>
                 <PrerequisiteGate
                   met={strategyOk}
+                  loading={status.isLoading}
                   title="Generate strategy first"
                   message="Briefs are generated from strategy message pillars, and this account has none yet. Imported or generated, either works."
                   ctaLabel="Go to Strategy"

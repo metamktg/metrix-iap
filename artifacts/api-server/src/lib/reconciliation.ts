@@ -835,11 +835,16 @@ export function buildLedger(args: {
       byMetric.push({ metric, truth_value: row.truth_value, observed_value: observed, coverage_pct: row.coverage_pct, residual: row.residual, evidence_state: stateFor });
     }
 
-    // Ad scope.
-    const perAd = new Map<string, { identity: AdIdentity; observed: Record<string, number>; importIds: Set<string> }>();
+    // Ad scope. The result type is read off the ad's first observation HERE,
+    // once, when its entry is created. It used to be looked up per ad below
+    // with `obs.find(...)` over the whole breakdown, a scan quadratic in
+    // ads: at 1,751 ads and 112k observations that was ~98 million string
+    // comparisons, 95% of the ledger's time and the whole of a 25-minute
+    // synchronous stage on the Pure Path run (2026-09-04).
+    const perAd = new Map<string, { identity: AdIdentity; observed: Record<string, number>; importIds: Set<string>; result_type: string }>();
     for (const o of obs) {
       const k = identityKey(o.identity);
-      const cur = perAd.get(k) ?? { identity: o.identity, observed: {}, importIds: new Set<string>() };
+      const cur = perAd.get(k) ?? { identity: o.identity, observed: {}, importIds: new Set<string>(), result_type: o.result_type };
       addMetrics(cur.observed, o.metrics);
       for (const id of o.source_import_ids) cur.importIds.add(id);
       perAd.set(k, cur);
@@ -853,7 +858,7 @@ export function buildLedger(args: {
       for (const [k, t] of truth.per_ad) {
         if (perAd.has(k)) continue;
         missing += 1;
-        perAd.set(k, { identity: t.identity, observed: {}, importIds: new Set() });
+        perAd.set(k, { identity: t.identity, observed: {}, importIds: new Set(), result_type: "" });
       }
     }
 
@@ -896,7 +901,7 @@ export function buildLedger(args: {
       }
       let spendState: EvidenceState = "unreconciled";
       let spendCoverage: number | null = null;
-      const adResultType = obs.find((o) => identityKey(o.identity) === k)?.result_type ?? "";
+      const adResultType = ad.result_type;
       const truthResultType = truth.per_ad.get(k)?.result_type ?? "";
       for (const metric of metrics) {
         const observed = round2(ad.observed[metric] ?? 0);

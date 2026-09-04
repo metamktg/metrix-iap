@@ -113,18 +113,37 @@ async function recordedFingerprint(): Promise<string | null> {
        applied_by text
      )`,
   );
+  // The table lives in `public`, which PostgREST serves to the
+  // browser-embedded anon key under Supabase's default grants, and it gates
+  // the skip decision: a row written with the current file's fingerprint
+  // would make every later apply a no-op. Deny the API roles, idempotently.
+  await client!.query("alter table metrix_schema_state enable row level security");
+  await client!.query(
+    `do $$ begin
+       if exists (select 1 from pg_roles where rolname = 'anon') then revoke all on metrix_schema_state from anon; end if;
+       if exists (select 1 from pg_roles where rolname = 'authenticated') then revoke all on metrix_schema_state from authenticated; end if;
+     end $$`,
+  );
   const r = await client!.query<{ schema_sha256: string }>("select schema_sha256 from metrix_schema_state where id = 1");
   return r.rows[0]?.schema_sha256 ?? null;
 }
 
 async function runningAnalysisCount(): Promise<number> {
   try {
+    // Alive by the engine's own definition: a sign of life within its stale
+    // threshold (analysisEngine STALE_ANALYSIS_RUN_MS, 10 minutes). A dead
+    // 'running' row (a deploy restarted the server mid-run) is flipped only
+    // lazily when someone opens the run list, and it used to hold every
+    // later apply for the full wait, after which the hook gave up and no
+    // fingerprint was recorded: the schema change never landed.
     const r = await client!.query<{ n: string }>(
-      "select count(*)::text as n from manual_analysis_runs where status = 'running'",
+      "select count(*)::text as n from manual_analysis_runs where status = 'running' " +
+        "and coalesce(heartbeat_at, started_at, 'epoch'::timestamptz) > now() - interval '10 minutes'",
     );
     return Number(r.rows[0]?.n ?? 0);
-  } catch {
-    return 0; // table absent on a fresh database: nothing to wait for
+  } catch (err) {
+    if ((err as { code?: string }).code === "42P01") return 0; // table absent on a fresh database: nothing to wait for
+    throw err;
   }
 }
 

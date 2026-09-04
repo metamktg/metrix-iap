@@ -48,9 +48,13 @@ export interface TrendSectionProps {
   accountId: string | null;
   start: string | null;
   end: string | null;
+  /** Whether the account has any day-level window to select at all. When
+   * it has none, "select a window" is an instruction the reader cannot
+   * follow; the empty state says what the trend needs instead. */
+  hasWindows?: boolean;
 }
 
-export function TrendSection({ accountId, start, end }: TrendSectionProps) {
+export function TrendSection({ accountId, start, end, hasWindows = true }: TrendSectionProps) {
   const [chosen, setChosen] = useState<string[]>(["spend"]);
 
   const enabled = Boolean(accountId && start && end);
@@ -118,7 +122,9 @@ export function TrendSection({ accountId, start, end }: TrendSectionProps) {
       <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
         {!enabled ? (
           <p className="text-body text-muted-foreground/75 py-6 text-center">
-            Select a data window to see the daily trend.
+            {hasWindows
+              ? "Select a data window to see the daily trend."
+              : "The daily trend needs an ad-level daily export. None is staged for this account."}
           </p>
         ) : (
           <TrendChart

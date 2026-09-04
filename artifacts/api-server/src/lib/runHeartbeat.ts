@@ -82,9 +82,30 @@ export function lastSignOfLife(row: Record<string, unknown>): number {
  * a heartbeat must never abort the work it is monitoring, and missing a
  * beat only risks an early reclaim, never a wrong result.
  */
+/** The live heartbeats, so a stage boundary can re-arm one (see touchRunHeartbeat). */
+const live = new Map<string, { touch: () => void }>();
+
+/**
+ * Re-arm the ceiling of the heartbeat for `runId`: the run just reached a
+ * new stage, which is the strongest sign of life there is. Without this a
+ * legitimate run longer than MAX_HEARTBEAT_MS (the Pure Path run takes
+ * over 30 minutes: 22k ad rows, 150k ledger rows through PostgREST) stopped
+ * attesting mid-way and was reclaimed by the next read, its outputs
+ * deleted, while it was still writing (2026-09-04, run 8148628c). The
+ * ceiling now measures from the LAST PROGRESS WRITE, not from the start:
+ * a run that keeps reaching stages is working, one that stops is wedged.
+ * A no-op when no heartbeat is running for the id (a reclaimed run's late
+ * write, a test without one).
+ */
+export function touchRunHeartbeat(table: HeartbeatTable, runId: string): void {
+  live.get(`${table}:${runId}`)?.touch();
+}
+
 export function startRunHeartbeat(table: HeartbeatTable, runId: string): () => void {
   let stopped = false;
-  const openedAt = Date.now();
+  let openedAt = Date.now();
+  const key = `${table}:${runId}`;
+  live.set(key, { touch: () => { openedAt = Date.now(); } });
 
   const beat = async (): Promise<void> => {
     if (stopped) return;
@@ -112,10 +133,11 @@ export function startRunHeartbeat(table: HeartbeatTable, runId: string): () => v
     if (Date.now() - openedAt >= MAX_HEARTBEAT_MS) {
       logger.warn(
         { table, runId, ms: Date.now() - openedAt },
-        "Run exceeded the heartbeat ceiling — no longer attesting liveness; it is now reclaimable",
+        "Run exceeded the heartbeat ceiling since its last progress write — no longer attesting liveness; it is now reclaimable",
       );
       stopped = true;
       clearInterval(timer);
+      live.delete(key);
       return;
     }
     void beat();
@@ -124,6 +146,7 @@ export function startRunHeartbeat(table: HeartbeatTable, runId: string): () => v
   timer.unref?.();
 
   return () => {
+    live.delete(key);
     if (stopped) return;
     stopped = true;
     clearInterval(timer);

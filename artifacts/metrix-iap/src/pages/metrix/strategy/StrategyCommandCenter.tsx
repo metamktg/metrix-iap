@@ -107,6 +107,7 @@ export function StrategyCommandCenter() {
                 )}
                 <PrerequisiteGate
                   met={analysisOk}
+                  loading={status.isLoading}
                   title="Run analysis first"
                   message={gateMessage}
                   ctaLabel="Go to Analysis"
