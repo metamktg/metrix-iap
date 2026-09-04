@@ -337,6 +337,7 @@ const mkGrain = (over: Partial<ReportGrain>): ReportGrain => ({
   distinct_days: 1,
   period: { start: "2026-08-06", end: "2026-09-02" },
   aggregate_shape: true,
+  day_header: "reporting starts",
   dimensions: ["Platform", "Placement"],
   asset_columns: [],
   distinct_ad_ids: 1,

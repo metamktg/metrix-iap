@@ -77,8 +77,16 @@ export interface ReportGrain {
   /** Rows span more than one distinct Day (a daily export). */
   has_day: boolean;
   distinct_days: number;
-  /** The reporting period the rows cover: Day min/max, or the Reporting ends context when present. */
+  /** The reporting period the rows cover: Day min/max, or the Reporting ends context when present (ISO only; a non-ISO end is ignored). */
   period: { start: string; end: string } | null;
+  /**
+   * The export header the Day column resolved from, lower-cased ("day",
+   * "reporting starts", …), or null when the file has no Day column. Meta's
+   * ad-level exports without the Day breakdown put "Reporting starts" on
+   * every row; that header, not the row shape, is what says the file is a
+   * whole-period export (analysisEngine.ts wholePeriodOf).
+   */
+  day_header: string | null;
   /** Whole-period aggregate: one Day value on every row (Meta's "Reporting starts"). */
   aggregate_shape: boolean;
   /** Breakdown dimensions present WITH values (Gender, Age, Platform, Placement, Impression device, Conversion device). */
@@ -131,6 +139,7 @@ export function isAdditiveMetric(slug: string): boolean {
 // ─── Grain detection ───────────────────────────────────────────────────────
 
 const DIMENSION_COLUMNS: readonly string[] = ["Gender", "Age", "Platform", "Placement", "Impression device", "Conversion device"];
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 function classifyReport(csvClass: IapCsvClass, dims: string[], assetColumns: AssetColumnPresence[], hasDay: boolean): ReportClass {
   const hasAsset = assetColumns.some((c) => c.role === "breakdown");
@@ -227,8 +236,11 @@ export function detectReportGrain(parsed: IapCsvParseResult, csvClass: IapCsvCla
     if (row.context) {
       if (row.context["Account ID"]) accountIds.add(row.context["Account ID"]);
       if (row.context["Attribution setting"]) attribution.add(row.context["Attribution setting"]);
+      // Only an ISO end can be compared with the ISO Day values; a
+      // slash-dated end (a spreadsheet round-trip) would sort as text and
+      // could not stamp a date column, so it counts as unstated.
       const end = row.context["Reporting ends"] ?? row.context["Report end"] ?? row.context["Date end"];
-      if (end && (!periodEnd || end > periodEnd)) periodEnd = end;
+      if (end && ISO_DAY.test(end) && (!periodEnd || end > periodEnd)) periodEnd = end;
     }
     for (const [slug, v] of Object.entries(row.base)) {
       if (v === null || typeof v !== "number") continue;
@@ -261,6 +273,7 @@ export function detectReportGrain(parsed: IapCsvParseResult, csvClass: IapCsvCla
         ? { start: sortedDays[0]!, end: periodEnd ?? sortedDays[sortedDays.length - 1]! }
         : null,
     aggregate_shape: sortedDays.length === 1 && rows.length > 1,
+    day_header: parsed.mappingSummary.find((e) => e.canonical === "Day")?.foundAs?.trim().toLowerCase() ?? null,
     dimensions: dims,
     asset_columns: assetColumns,
     distinct_ad_ids: adIds.size,
