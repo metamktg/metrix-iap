@@ -5,6 +5,17 @@
 import { describe, it, expect } from "vitest";
 import { deriveLabel } from "../shared";
 
+describe("deriveLabel · unclosed parenthetical", () => {
+  it("never ends a cut inside a parenthetical", () => {
+    const label = deriveLabel("BOOK0 Concept C2 (esp. Row B) keeps its shape under retirement pressure", 24);
+    expect(label).toBe("BOOK0 Concept C2…");
+    expect(label).not.toMatch(/\(/);
+  });
+  it("keeps a closed parenthetical that fits", () => {
+    expect(deriveLabel("BOOK0 Concept C2 (esp. Row B)", 60)).toBe("BOOK0 Concept C2 (esp. Row B)");
+  });
+});
+
 describe("deriveLabel", () => {
   it("returns empty string for empty/nullish input", () => {
     expect(deriveLabel("")).toBe("");
