@@ -99,10 +99,13 @@ describe("insertChunkedWithRecovery", () => {
   });
 
   it("a table without a run id treats a duplicate-key error on the retry as the lost batch having landed", async () => {
-    const { client, calls } = fakeClient(["lost_after", { error: "duplicate key value violates unique constraint", code: "23505" }]);
+    const dup = { error: "duplicate key value violates unique constraint", code: "23505" };
+    const { client, calls, stored } = fakeClient(["lost_after", dup, dup]);
     const res = await insertChunkedWithRecovery(client, "signal", rows(20), { runId: "r", chunk: 20, runScoped: false, sleep: noSleep });
-    expect(res).toEqual({ inserted: 20, retried: 1, recovered: 1 });
-    expect(calls.map((c) => c.batch)).toEqual([20, 10, 10].slice(0, calls.length));
+    expect(res).toEqual({ inserted: 20, retried: 1, recovered: 2 });
+    // Both halves meet the conflict; neither is stored a second time.
+    expect(calls.map((c) => c.batch)).toEqual([20, 10, 10]);
+    expect(stored).toHaveLength(20);
   });
 
   it("backs off between attempts with the caller's clock", async () => {
