@@ -21,7 +21,7 @@ import {
   DetailReveal, deriveLabel,
   LoopAction, SkeletonTileRow, InfoTooltip, readableVariables, eventLabel, SectionInfoIcon,
   DataWindowBar, SegmentedToggle,
-  type DataWindowSelection,
+  type DataWindowSelection, fmtUSDAxis,
 } from "../shared";
 import {
   getGetAnalysisSummaryByDateRangeQueryOptions,
@@ -299,7 +299,7 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
         title="Spend"
         color="var(--color-chart-1)"
         gradientId="aov-spend-gradient"
-        tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+        tickFormatter={fmtUSDAxis}
         formatValue={(v: number) => fmtUSD(v, 0)}
         height={96}
         showAxis={false}
@@ -368,7 +368,7 @@ function CellPerfBars({ items, resultNoun }: {
           <CartesianGrid {...AXIS.gridSoft} horizontal={false} />
           <XAxis
             type="number"
-            tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+            tickFormatter={fmtUSDAxis}
             tick={{ ...AXIS.tick, fill: AXIS.labelDim }}
             tickLine={false}
             axisLine={false}

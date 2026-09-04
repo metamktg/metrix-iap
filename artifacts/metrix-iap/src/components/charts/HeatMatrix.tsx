@@ -224,7 +224,9 @@ export function HeatMatrix({
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5">
         <span className="text-label">{measureLabel}</span>
         {scale === "verdict" ? (
-          divergingLegend().map((l, i) => (
+          // The hatch below is the one "Not measured" entry; the diverging
+          // ramp's grey swatch of the same name would list it twice.
+          divergingLegend().filter((l) => l.label !== "Not measured").map((l, i) => (
             <span key={i} className="flex items-center gap-1">
               <span className="w-4 h-3 rounded-sm" style={{ background: l.fill }} />
               {l.label && <span className="text-caption text-muted-foreground">{l.label}</span>}

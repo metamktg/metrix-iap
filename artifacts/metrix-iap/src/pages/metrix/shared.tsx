@@ -197,6 +197,22 @@ export function fmtNum(n: number | null | undefined): string {
   return Math.round(n).toLocaleString("en-US");
 }
 
+/**
+ * Currency for an axis tick: whole dollars under $1k ("$750"), thousands
+ * with one decimal where it carries information under $10k ("$1.2k",
+ * "$1k"), whole thousands under $1M ("$48k"), millions above ("$1.4M").
+ * The old `${(v / 1000).toFixed(0)}k` read "$0k $0k $0k $1k $1k" across
+ * any range under $5k, which is most single-concept spend axes.
+ */
+export function fmtUSDAxis(n: number): string {
+  const abs = Math.abs(n);
+  const trim = (x: number, digits: number) => (Number.isInteger(x) ? String(x) : x.toFixed(digits));
+  if (abs < 1000) return `$${Math.round(n).toLocaleString("en-US")}`;
+  if (abs < 10_000) return `$${trim(Math.round((n / 1000) * 10) / 10, 1)}k`;
+  if (abs < 1_000_000) return `$${Math.round(n / 1000)}k`;
+  return `$${trim(Math.round((n / 1_000_000) * 10) / 10, 1)}M`;
+}
+
 export function fmtPct(n: number | null | undefined, digits = 2): string {
   if (n == null) return "–";
   return `${n.toFixed(digits)}%`;

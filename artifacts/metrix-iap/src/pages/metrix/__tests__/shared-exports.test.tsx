@@ -57,6 +57,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "readableVariables",
   "fmtUSD",
   "fmtNum",
+  "fmtUSDAxis",
   "fmtPct",
   "EVENT_LABEL",
   "eventLabel",
