@@ -587,7 +587,7 @@ export function MstCommandCenter() {
               {/* Direction for this stage, from the account's own rows —
                   each tile carries the number behind it and a link to the
                   surface that proves it. Absent when this stage has none. */}
-              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 5); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="What the data says to do next" /> : null; })()}
+              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 5); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="Next best actions" /> : null; })()}
 
               <PrerequisiteGate
                 met={status.mst.unlocked}

@@ -36,8 +36,8 @@ import { deriveRecommendations, toLoopCards } from "@/lib/data/recommendations";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 // Impact ranking (for sorting cards highest-impact first) comes from the
-// shared `impactRank` in RecommendationDeck — the same source NextBestActionCard
-// uses — so the two surfaces can never silently disagree on priority.
+// shared `impactRank` in RecommendationDeck, the one definition every
+// recommendation surface reads, so no two surfaces can disagree on priority.
 
 function actionVerb(recommended_action: string): { label: string; cls: string } {
   const a = recommended_action.toLowerCase();

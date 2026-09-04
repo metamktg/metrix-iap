@@ -18,10 +18,16 @@ const FEATURES = [
   { label: "Scale With Confidence",   sub: "Repeatable, predictable growth." },
 ] as const;
 
+// The three proof points are the marketing site's (artifacts/marketing/
+// src/content.ts, COPY.proof), word for word. This panel used to carry a
+// second, different set (+34% / −18% / $2.4M) under the same claim to
+// mirror the site; two sets of figures for one product is a credibility
+// defect, so the site's set is the only set. Both are marketing claims
+// with no source in this repo (flagged to the owner, overhaul record §10).
 const PROOF_POINTS = [
-  { value: "+34%",  label: "Avg. ROAS Increase",   evidence: "214 audited campaigns" },
-  { value: "−18%",  label: "CPA Reduction",         evidence: "Top quartile partners"  },
-  { value: "$2.4M", label: "Wasted Spend Saved",    evidence: "Reallocated, 2025"      },
+  { value: "3.4x",  label: "Avg. ROAS Lift",  evidence: "Across audited campaigns"   },
+  { value: "−47%",  label: "Wasted Spend",    evidence: "Identified and eliminated"  },
+  { value: "+245k", label: "Data Points",     evidence: "Analysed across all accounts" },
 ] as const;
 
 // ── Tiny reusable icon marks ──────────────────────────────────────────────
@@ -125,8 +131,12 @@ export function LoginPage() {
                 marketers who need<br />
                 to move <span className="text-interactive">faster.</span>
               </h1>
+              {/* The loop, in the product's own six words and order: the
+                  sidebar's stages, the command chain's numerals. The line
+                  used to read "Test · Optimize · Scale · Repeat", a mantra
+                  nothing inside the app repeats. */}
               <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">
-                TEST · OPTIMIZE · SCALE · REPEAT
+                LISTEN · ANALYSIS · STRATEGY · CREATIVE · MST · ACTION
               </p>
             </div>
 

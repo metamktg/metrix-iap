@@ -106,7 +106,7 @@ export function RecommendationTileVariants() {
       </div>
       <p className={cn(TYPE.caption, "text-muted-foreground/75")}>{VARIANTS.find((v) => v.id === variant)?.note}</p>
       {variant === "A" ? (
-        <RecommendationSlider recs={RECS} title="What the data says to do next" />
+        <RecommendationSlider recs={RECS} title="Next best actions" />
       ) : (
         <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1">
           {RECS.map((r) => variant === "B" ? <TileNumberFirst key={r.id} rec={r} /> : <TileSentenceFirst key={r.id} rec={r} />)}

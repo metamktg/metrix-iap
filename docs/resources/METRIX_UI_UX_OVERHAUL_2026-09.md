@@ -90,7 +90,7 @@ the sidebar click and every in-page click, not scrolling):
 |---|---|---|---|
 | Connect an account | Landing → Add Ad Account → Meta / Manual → uploads → Review | 4 to 5 | 1 (which export is "delivery") |
 | Read a report | Landing → Reports → Report Builder → Generate → preview | 4 | 1 (Reports hub is a relay page) |
-| Act on a recommendation | Landing → Next best action → Approve | 1 | 0 |
+| Act on a recommendation | Landing → Next best actions rail → Add to Tray | 1 | 0 |
 | Manage settings | Landing → account menu → Account, or sidebar → Settings | 1 to 2 | 0 |
 
 The first-run path in the master plan (§5) stands at ten clicks; that number was walked
@@ -525,7 +525,7 @@ layer, and want their disclosure back. This reverses D1 in §1.3.
 
 | Before | After | Where |
 |---|---|---|
-| Next Best Action: full title, full rationale paragraph on the face | Title clamped to two lines (full text in `title`); one complete clause of the rationale (`deriveLabel`, 120, marked `payload-ok` with the owner's reason) on the face; the paragraph behind "Why this action". A CSS clamp was tried first and rejected: it keeps the paragraph in the DOM, where `check:friction` counts it as first-layer prose | `components/deck/NextBestActionCard.tsx` |
+| Next Best Action: full title, full rationale paragraph on the face | Title clamped to two lines (full text in `title`); one complete clause of the rationale (`deriveLabel`, 120, marked `payload-ok` with the owner's reason) on the face; the paragraph behind "Why this action". A CSS clamp was tried first and rejected: it keeps the paragraph in the DOM, where `check:friction` counts it as first-layer prose | `components/deck/NextBestActionCard.tsx` (superseded the next day: the hero card is gone, see §10) |
 | Recommendation tile: rationale paragraph on the face (this pass's D1) | One clause as the reveal's label (`deriveLabel`, 72, `payload-ok`); the reason, the action and the provenance open on click; a hypothesis tile shows no "no measured figure" line, because a target is not a measurement | `components/deck/RecommendationSlider.tsx` |
 | Hypothesis "Target": the first 24 characters of the criteria sentence | A figure or nothing: `hypothesisTarget()` reads the first CPA / CVR / CTR / "cost per X" target ("CPA ≤ $25", "CVR ≥ 15%"), else no metric row (a hypothesis has a target, not a measurement, so no "no measured figure" line either) | `lib/data/recommendations.ts` |
 

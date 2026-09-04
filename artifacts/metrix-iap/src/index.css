@@ -1225,6 +1225,25 @@ main img {
  * ease-out, transform and opacity only, once per mount. A query change on
  * the same page does not remount, so it does not replay. Reduced motion
  * zeroes it through the global rule above. */
+/* ── The recommendation drawer (2026-09-04) ───────────────────────────
+   The disclosure behind a recommendation tile or a deck card. It arrives
+   with a 16 px slide and a fade and leaves faster than it came; Radix
+   keeps the node mounted until the closing animation ends, and with
+   reduced motion there is none, so the node goes at once. `both` is safe
+   here: the resting keyframe is transform: none, so the sheet is not a
+   containing block for anything fixed once it has arrived. */
+.mx-drawer[data-state="open"]   { animation: mx-drawer-in 200ms var(--mx-ease) both; }
+.mx-drawer[data-state="closed"] { animation: mx-drawer-out 150ms var(--mx-ease) both; }
+.mx-scrim[data-state="open"]    { animation: mx-scrim-in 200ms var(--mx-ease) both; }
+.mx-scrim[data-state="closed"]  { animation: mx-scrim-out 150ms var(--mx-ease) both; }
+@keyframes mx-drawer-in  { from { transform: translateX(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes mx-drawer-out { from { transform: none; opacity: 1; } to { transform: translateX(16px); opacity: 0; } }
+@keyframes mx-scrim-in   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mx-scrim-out  { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .mx-drawer[data-state], .mx-scrim[data-state] { animation: none; }
+}
+
 @keyframes mx-route-in {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
