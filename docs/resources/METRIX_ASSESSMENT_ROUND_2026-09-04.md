@@ -162,7 +162,25 @@ The owner's report: the run quad-counted rows and spend, and new pivots were upl
 
 ### 6.1 Run 8148628c outcome
 
-_Filled in when the run settles._
+**Success at 11:52:48Z after 96 minutes**, 21,130 rows ingested, window 2026-08-04 to 2026-09-02. It survived the hazard by luck: nothing read the run list between the heartbeat ceiling (10:46Z) and the finish. The stage times are the record that produced the fix in §4: 24 minutes to 82% (parse, buckets, rollups), 37 minutes of one synchronous reconciliation stage (10:39:47Z to 11:16:31Z, the quadratic ledger scan), 15 minutes writing 305 breakdown batches, 21 minutes writing the ledger and evidence.
+
+Verified by SQL against the run id (the queries are the ones in the check-in prompt):
+
+| Table | Rows | Spend | Dates |
+|---|---|---|---|
+| `ad_performance` | 21,034 rows, 1,751 Meta ad ids | $1,430,311.34 | daily, 2026-08-04 to 09-02; 08-06 alone $47,190.82 |
+| `placement_performance` | 37 | $1,340,876.32 | period 2026-08-06 to 09-02 |
+| `platform_performance` | 11 | $1,340,876.32 | period 2026-08-06 to 09-02 |
+| `device_performance` | 8 | $1,340,876.32 | period 2026-08-06 to 09-02 |
+| `demographic_performance` | 40 | $1,340,876.21 | period 2026-08-06 to 09-02 |
+| `ad_breakdown_performance` | 75,969 | | |
+| `reconciliation_ledger` | 162,141 | | |
+
+Against the owner's report: the ad rows read $1,430,311 where the previous run read $4,072,100, and Meta's own account total for the window is $1,437,538, so the ad rows are within 0.5% of Meta (the remainder is ads only the whole-period exports carry). The four breakdown classes each carry the same $1,340,876 of the 28-day pivots at period grain, never added to the daily rows.
+
+The run's own warnings say what happened to every file: the two demographic pivots cover 1,461 of the same ads, the later-staged plain Gender × Age file is used and the Text-asset file's 32,183 rows ($1,168,587) are not counted again; the coarse placement pivot loses to the device pivot (finer breakdown, 15,705 rows, $1,340,876 not counted again); the whole-period Ad Summary workbook loses its 3,157 rows ($1,248,138) to the two daily Ad Summaries on the ads they share; the two daily Ad Summaries overlap on 13 ad-days only; 96 rows of the earlier run in the window were replaced. Coverage: demographic and placement at 93.7% of the $1,430,311 daily baseline (whole-period, 958 ad names), the daily ad summary at 100%.
+
+**One finding the run surfaces (F10, HIGH, held).** The reconciliation control is the whole-period Ad Summary workbook: "selected control reports $1,248,138.43, the daily Ad Summary (per Ad ID) reports $1,430,311.34 (14.6% apart)", and every breakdown's residuals are computed against it, which is why the demographic and placement classes read "107.43% of the Ad Summary" in the ledger notes although they are 93.7% of the daily rows. `buildTruth` ranks a per-Ad-ID Ad Summary above a daily summary by class, before coverage, so a whole-period workbook covering 1,494 ads outranks two daily files covering 1,751. The spec's own overlap rule (a daily file beats a whole-period file per ad) argues the control should be the per-ad union, daily first. This is a reconciliation-spec decision, not a UI change: it is recorded here and in §8, and the ledger's signed residuals stay honest in the meantime because the disagreement is recorded, never averaged.
 
 ---
 
@@ -188,6 +206,7 @@ Each item ships as its own commit on the working branch, typechecked and unit-te
 - **Task 22, evidence on demand.** The seed carries evidence summaries only; per-ad and per-segment rows move to per-account endpoints. Backend change required by the UI; the local reference implementation exists and is not pushed. Needs approval.
 - **Task 23, run performance.** 30 minutes for 22k ad rows through PostgREST. Profile and cut; a backend change. Needs approval.
 - **H1, failed re-run empties the window.** Write under the run id, swap on success. Backend change. Needs approval.
+- **F10, the reconciliation control ranks class over coverage** (§6.1). `buildTruth` in `reconciliation.ts` picks a whole-period per-Ad-ID Ad Summary over two daily ones that cover 257 more ads, so the ledger's residuals are measured against a control 12.7% below the daily total. Proposed: rank per-Ad-ID candidates by the overlap rule per ad (daily first) and reconcile against their union; a spec change (`docs/specs/iap-multi-report-reconciliation.md`). Needs a decision.
 - **Task 24, boot-time and payload smokes.** A scripts-only addition; queued after §7 unless the owner objects.
 - **Open decisions O1 to O7** from the earlier register, unchanged.
 - **The LinkedIn video**, deferred.
