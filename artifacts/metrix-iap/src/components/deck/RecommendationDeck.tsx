@@ -96,7 +96,11 @@ function RecommendationCardFace({ card }: { card: DeckCard }) {
       {/* Was 14px stock semibold — the same size as the rationale
           under it, so the card had a title and a body at one size and no
           hierarchy between them. TYPE.title is the role for a card title. */}
-      <p className={cn(TYPE.title, "line-clamp-2")}>{card.title}</p>
+      {/* payload-ok: same button-card constraint. A hypothesis title is a
+          whole sentence; two clamped lines show about 160 characters, and the
+          cut shows the same words with the whole title in the attribute and
+          in the drawer a tap opens. */}
+      <p className={cn(TYPE.title, "line-clamp-2")} title={card.title}>{deriveLabel(card.title, 160)}</p>
 
       {/* payload-ok: swipe-card face inside a <button>, so a DenseText control
           is invalid HTML here and the full card is one tap away. The clamp
