@@ -1014,7 +1014,13 @@ export function AnalysisControls({
   // The latest run's reconciliation ledger (seed, scoped to the account) —
   // rendered as the Reconciliation panel once a run has settled.
   const seed = useMetrixSeed();
-  const reconciliation = getAnalysisData(seed, accountId)?.reconciliation ?? null;
+  const analysisData = getAnalysisData(seed, accountId);
+  const reconciliation = analysisData?.reconciliation ?? null;
+  // An account whose analysis arrived through the importer (bookster, ECAS)
+  // has cell rows and no manual run on record. "No analysis has been run
+  // yet" beside an analysis export of 12 cell rows told the reader two
+  // things at once; say where the outputs came from instead.
+  const hasImportedOutputs = (analysisData?.performance_by_cell.length ?? 0) > 0;
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
   const { data: runsData } = useListAnalysisRuns(accountId);
@@ -1439,7 +1445,11 @@ export function AnalysisControls({
             )}
           </div>
         ) : (
-          <span className="text-label text-muted-foreground/75">No analysis has been run yet.</span>
+          <span className="text-label text-muted-foreground/75">
+            {hasImportedOutputs
+              ? "No in-app run recorded. This account's analysis was imported."
+              : "No analysis has been run yet."}
+          </span>
         )}
 {runReplacesData ? (
           // A RE-RUN is destructive by design: ingestion is an idempotent

@@ -1074,6 +1074,7 @@ export function AnalysisOverview() {
                   accountId={adAccountId ?? null}
                   start={queryWindow?.start ?? null}
                   end={queryWindow?.end ?? null}
+                  hasWindows={windowsFetching || (windowsData?.windows ?? []).length > 0}
                 />
 
                 <KpiDrilldownModal

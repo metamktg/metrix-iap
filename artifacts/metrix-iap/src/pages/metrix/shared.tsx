@@ -2074,8 +2074,13 @@ export function DataWindowBar({
             </button>
           );
         })}
+        {/* The windows come from ad_performance's day-level rows. An account
+            whose analysis arrived through the importer (bookster, ECAS) has
+            totals and no such rows, so "No data uploaded yet" beside
+            $8,000.84 of spend told the reader two things at once. Name what
+            is absent. */}
         {windows.length === 0 && !isFetching && (
-          <span className="text-caption text-muted-foreground/75 italic">No data uploaded yet</span>
+          <span className="text-caption text-muted-foreground/75 italic">No day-level rows for this account</span>
         )}
       </div>
       {isFetching && (
