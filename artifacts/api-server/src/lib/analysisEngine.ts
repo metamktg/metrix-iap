@@ -46,6 +46,7 @@ import { loadImportBytes } from "./supabaseBinary";
 import { autoMapUnmappedCreatives } from "./creativeAutoMap";
 import { detectReportGrain, type ReportGrain } from "./reportGrain";
 import { resolveClassOverlaps, type OverlapSupersession } from "./reportOverlap";
+import { insertChunkedWithRecovery, type ChunkedInsertClient } from "./chunkedInsert";
 import {
   buildLedger,
   buildObservations,
@@ -2695,11 +2696,36 @@ export async function startManualAnalysis(
         if ((del.count ?? 0) > 0) replacedByTable.set(table, del.count!);
       };
 
+      // One statement per batch, and a batch that loses its connection is
+      // recovered rather than failing the run (chunkedInsert.ts: on
+      // 2026-09-04 PostgREST killed the 140th of 178 breakdown batches and
+      // thirteen minutes of a correct run were thrown away). The evidence
+      // tables carry wide rows, so they go in smaller batches.
       const CHUNK = 500;
+      const WIDE_TABLES = new Set(["ad_breakdown_performance", "reconciliation_ledger", "variable_segment_performance", "variable_evidence"]);
+      // The signal tables carry no run id; every row is unique per account
+      // instead, which is what their recovery relies on.
+      const UNSCOPED_TABLES = new Set(["demographic_signal", "placement_signal"]);
+      const chunkedInsertClient: ChunkedInsertClient = {
+        insert: async (table, batch) => {
+          const ins = await supabase.from(table).insert(batch as Record<string, any>[]);
+          return { error: ins.error ? { message: ins.error.message, code: ins.error.code ?? null } : null };
+        },
+        countForRun: async (table, run) => {
+          const res = await supabase.from(table).select("*", { count: "exact", head: true }).eq("manual_analysis_run_id", run);
+          if (res.error) throw new Error(res.error.message);
+          return res.count ?? 0;
+        },
+      };
       const insertChunked = async (table: string, rows: Record<string, any>[]) => {
-        for (let i = 0; i < rows.length; i += CHUNK) {
-          const ins = await supabase.from(table).insert(rows.slice(i, i + CHUNK));
-          if (ins.error) throw new Error(ins.error.message);
+        const result = await insertChunkedWithRecovery(chunkedInsertClient, table, rows, {
+          runId,
+          chunk: WIDE_TABLES.has(table) ? 250 : 500,
+          runScoped: !UNSCOPED_TABLES.has(table),
+          log: (message, meta) => logger.warn({ accountId, runId, ...meta }, message),
+        });
+        if (result.retried > 0 || result.recovered > 0) {
+          logger.warn({ accountId, runId, table, ...result }, "Chunked insert recovered from a lost connection");
         }
       };
 
