@@ -98,6 +98,31 @@ function str(v: unknown): string | null {
  * Depth is capped because the input is external data, not because any real
  * package nests that far.
  */
+/**
+ * A fact's dotted path as words, for the label a reader scans:
+ * "manual_uploads[0].verification" reads "manual uploads · upload 1 ·
+ * verification", "bundle_metadata.client_id" reads "bundle metadata ·
+ * client id". The path itself stays in the row's title attribute; it is
+ * the key the record uses and the one an operator would grep for.
+ */
+export function humanizeFactPath(path: string): string {
+  const segments = path.split(".").filter((s) => s.length > 0);
+  const out: string[] = [];
+  for (const seg of segments) {
+    const m = /^(.*?)\[(\d+)\]$/.exec(seg);
+    const name = (m ? m[1] : seg).replace(/_/g, " ").trim();
+    if (name) out.push(name);
+    if (m) {
+      // "manual_uploads[0]" is the first upload: the noun is the list
+      // name's last word, singular when it ends in "s".
+      const last = name.split(" ").pop() ?? "";
+      const noun = last.endsWith("s") ? last.slice(0, -1) : last;
+      out.push(`${noun || "item"} ${Number(m[2]) + 1}`);
+    }
+  }
+  return out.length > 0 ? out.join(" · ") : path;
+}
+
 export function flattenFacts(input: unknown, prefix = "", depth = 0): ProvenanceFact[] {
   if (depth > 6) return prefix ? [{ path: prefix, value: "…(nested too deep to display)" }] : [];
   if (input === null) return prefix ? [{ path: prefix, value: "null" }] : [];
