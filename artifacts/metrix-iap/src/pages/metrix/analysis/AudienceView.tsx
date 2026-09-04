@@ -423,7 +423,8 @@ function PositioningMapCard({
                   value: `${resultPlural} →`,
                   angle: -90,
                   position: "insideLeft",
-                  offset: 50,
+                  // Left of the tick labels (the 60 px margin holds them), not over them.
+                  offset: 8,
                   fill: AXIS.tick.fill,
                   fontSize: CHART_TYPE.label,
                 }}
@@ -439,7 +440,7 @@ function PositioningMapCard({
                 <ReferenceLine
                   y={medianResults}
                   {...AXIS.reference}
-                  label={{ value: "median", position: "insideTopRight", fill: AXIS.tick.fill, fontSize: CHART_TYPE.tick }}
+                  label={{ value: "median", position: "insideTopLeft", fill: AXIS.tick.fill, fontSize: CHART_TYPE.tick }}
                 />
               )}
               <Tooltip content={<MapTooltip />} cursor={false} />

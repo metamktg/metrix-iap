@@ -646,7 +646,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
           note:
             "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. " +
             "Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. " +
-            "The export window may differ from the account's campaign window — treat cross-surface comparisons as directional.",
+            "The export window may differ from the account's campaign window. Treat cross-surface comparisons as directional.",
           devices: conversionDevices,
           platforms: conversionPlatforms,
           placements: conversionPlacements,
@@ -1052,7 +1052,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   // When account-level totals exceed the ad-level table, say so explicitly.
   const coverageNote =
     accountTotals && round(effectiveSpend) !== round(totalSpend)
-      ? ` Account totals come from the account-level export; the ad-level table covers $${round(totalSpend)} of the $${round(effectiveSpend)} account spend — the remainder sits on ads absent from the ad-level export.`
+      ? ` Account totals come from the account-level export; the ad-level table covers $${round(totalSpend)} of the $${round(effectiveSpend)} account spend. The remainder sits on ads absent from the ad-level export.`
       : "";
   const dataCaveat = (
     `Totals cover the full imported window ${windowStart} → ${windowEnd}${acrossClause}.${coverageNote} ` +

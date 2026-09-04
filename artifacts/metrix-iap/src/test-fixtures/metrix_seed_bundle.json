@@ -16602,7 +16602,7 @@
             "tracking_basis": "conversion",
             "window_start": "2026-01-01",
             "window_end": "2026-07-09",
-            "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window — treat cross-surface comparisons as directional.",
+            "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window. Treat cross-surface comparisons as directional.",
             "devices": [
               {
                 "device": "iphone",
@@ -47614,7 +47614,7 @@
             "tracking_basis": "conversion",
             "window_start": "2026-07-21",
             "window_end": "2026-07-21",
-            "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window — treat cross-surface comparisons as directional.",
+            "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window. Treat cross-surface comparisons as directional.",
             "devices": [
               {
                 "device": "iphone",
@@ -55103,7 +55103,7 @@
             "tracking_basis": "conversion",
             "window_start": "2026-04-04",
             "window_end": "2026-04-04",
-            "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window — treat cross-surface comparisons as directional.",
+            "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window. Treat cross-surface comparisons as directional.",
             "devices": [
               {
                 "device": "iphone",
@@ -72228,7 +72228,7 @@
             "tracking_basis": "conversion",
             "window_start": "2026-07-29",
             "window_end": "2026-07-29",
-            "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window — treat cross-surface comparisons as directional.",
+            "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window. Treat cross-surface comparisons as directional.",
             "devices": [
               {
                 "device": "iphone",
@@ -98699,7 +98699,7 @@
             "tracking_basis": "conversion",
             "window_start": "2026-07-05",
             "window_end": "2026-07-05",
-            "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window — treat cross-surface comparisons as directional.",
+            "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window. Treat cross-surface comparisons as directional.",
             "devices": [
               {
                 "device": "iphone",
