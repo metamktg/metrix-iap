@@ -801,3 +801,36 @@ and closes); the static and browser gates and the crawl, recorded in the overhau
 
 **Reach.** Client only. The decision and tray stores, the derivation and the seed are untouched.
 
+## 20. A copy signature in a btree key (2026-09-04, live failure, backend, flagged)
+
+**What.** A live run on a client account (owner screenshot, 02:59Z) failed with Postgres's
+`index row size 3432 exceeds btree version 4 maximum 2704 for index
+"ad_breakdown_performance_account_id_manual_analysis_run_id__key"` (the project's own postgres
+logs, read through the Supabase MCP). The unique key on `ad_breakdown_performance` carries
+`segment_key`, and for an asset breakdown `segmentKeyOf()` put the copy signature's whole text
+(`asset_value`: headline + primary text + description, joined) into it, beside the `asset_hash`
+that already identifies it. Two changes, both backend, both on the branch and NOT applied to the
+live project: (1) `reconciliation.ts` `segmentKeyOf()` leaves `asset_value` out of the key
+(the value stays on the row, in `segment`); (2) `schema.sql` drops that unique constraint and
+creates `ad_breakdown_performance_identity_key` on the same columns with `md5(ad_identity)` and
+`md5(segment_key)` in place of the raw text, so no future identity can hit the limit. The writer
+inserts run-scoped rows and never upserts on this key, so the expression index changes nothing
+for it. The client's Evidence tab labelled an asset segment by its key; it now labels it by the
+asset's own value.
+
+**Why.** A key names a row; it does not carry the row. The limit is Postgres's, and 2,704 bytes
+is smaller than one long primary text.
+
+**Where.** `artifacts/api-server/src/lib/reconciliation.ts`; `scripts/src/metrix-supabase/schema.sql`
+(after `ad_breakdown_performance_account_run_idx`); `artifacts/metrix-iap/src/components/evidence/EvidenceTab.tsx`.
+
+**Proof.** The seven reconciliation suites and the 35 pure api-server suites pass; the schema
+block is idempotent (`drop constraint if exists`, `create unique index if not exists`) and is
+applied by `import:metrix` / the schema step. **For the live project the two statements must be
+run once** (Supabase SQL editor, or `apply_migration`); the failed run can then be re-run from
+the account's setup screen. This was flagged to the owner rather than applied.
+
+**Reach.** Server (one pure function), importer DDL, one client label. The reconciliation
+contract (`docs/specs/iap-multi-report-reconciliation.md`) is unchanged: a copy signature is
+still identified by its hash, which the spec already states.
+

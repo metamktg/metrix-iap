@@ -33,6 +33,14 @@ function segmentLabel(s: VariableSegmentRow): string {
   if (s.breakdown === "demographic") return `${d.age ?? "?"} · ${d.gender ?? "?"}`;
   if (s.breakdown === "placement") return [d.platform, d.placement, d.device].filter(Boolean).join(" · ");
   if (s.breakdown === "all") return "All ads";
+  // An asset segment is named by what was delivered, not by its key: the
+  // key is a hash since 2026-09-04 (the value used to be inside it, and a
+  // copy signature's whole text broke a database key). A copy signature's
+  // fields are joined by \u0001 in the value; read them as a row.
+  if (d.asset_fields && Object.keys(d.asset_fields).length > 0) {
+    return Object.entries(d.asset_fields).map(([k, v]) => `${ASSET_LABEL[k] ?? k}: ${v}`).join(" · ");
+  }
+  if (d.asset_value) return [d.asset_type ? (ASSET_LABEL[d.asset_type] ?? d.asset_type) : null, d.asset_value.split("\u0001").join(" · ")].filter(Boolean).join(": ");
   return s.segment_key;
 }
 
