@@ -146,6 +146,7 @@ export function CreativeCommandCenter() {
                 </div>
                 <PrerequisiteGate
                   met={strategyOk}
+                  loading={status.isLoading}
                   title="Generate strategy first"
                   message="Briefs are generated from strategy message pillars, and this account has none yet. Imported or generated, either works."
                   ctaLabel="Go to Strategy"

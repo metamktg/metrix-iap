@@ -2280,6 +2280,7 @@ export function ShowMoreButton({
 
 export function PrerequisiteGate({
   met,
+  loading = false,
   title,
   message,
   ctaLabel,
@@ -2287,12 +2288,35 @@ export function PrerequisiteGate({
   children,
 }: {
   met: boolean;
+  /** The predicate behind `met` is still being read (the stage-status
+   * query is in flight). The gate must not tell the reader the stage is
+   * locked on the strength of a default it has not confirmed. */
+  loading?: boolean;
   title: string;
   message: string;
   ctaLabel?: string;
   ctaTo?: string;
   children: () => React.ReactNode;
 }) {
+  // The stage-status hook answers with its defaults (nothing validated,
+  // nothing unlocked) until its query resolves, so a gate that reads `met`
+  // alone showed "Run analysis first" for one round trip on EVERY visit and
+  // then swapped to the real content. Locked copy is a claim about the
+  // account; it waits for the answer. A quiet, labelled placeholder holds
+  // the space instead, so the layout does not jump when the content lands.
+  if (!met && loading) {
+    return (
+      <div
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+        className="flex items-center justify-center py-16"
+        data-testid="prerequisite-gate-loading"
+      >
+        <span className="text-caption text-muted-foreground/75">Checking this stage…</span>
+      </div>
+    );
+  }
   if (!met) {
     return (
       <PendingState
