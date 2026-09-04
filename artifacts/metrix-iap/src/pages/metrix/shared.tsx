@@ -102,7 +102,7 @@ import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { useListManualImports } from "@workspace/api-client-react";
-import { navTree, visibleChildren, LOOP_STAGES } from "@/navigation/navTree";
+import { navTree, visibleChildren, LOOP_STAGES, NAV_GROUP_LABEL } from "@/navigation/navTree";
 import { fromOriginTarget } from "@/navigation/navHistory";
 import { Plug, FileUp, Clock, Info, ArrowRight, ArrowLeftRight, CheckCircle2, CalendarRange, Maximize2, Minimize2, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Venus, Mars, AlignLeft, Download } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
@@ -490,6 +490,17 @@ export function SectionTabBar({ section }: { section: string }) {
 
 // ─── Page header ──────────────────────────────────────────────────────
 
+/** What a hub's eyebrow calls its section: the loop stage for a loop
+ * section, the nav group for any other section navTree knows, else the
+ * label alone. Never the nav ordinal. */
+function hubEyebrow(label: string): string {
+  const key = label.toLowerCase();
+  const stage = LOOP_STAGES.find((s) => s.label.toLowerCase() === key);
+  if (stage) return `Stage ${stage.loopStage} · ${stage.label}`;
+  const section = navTree.find((s) => s.label.toLowerCase() === key);
+  return section ? `${NAV_GROUP_LABEL[section.group]} · ${section.label}` : label;
+}
+
 export function ModuleHeader({
   section,
   title,
@@ -510,12 +521,15 @@ export function ModuleHeader({
   const sectionLabel = section.split(" · ")[0];
   // A stage's command-center hub sets title to the bare stage name (e.g.
   // title="Strategy" on the page whose section is "Strategy · 04"), which
-  // would otherwise render the eyebrow and H1 as an exact duplicate. Fall
-  // back to the full section string (surfacing the "· 04" stage position
-  // that's normally trimmed off) instead of inventing new copy. Keep this
-  // comparison against the bare `title`, not the account-prefixed H1 below —
-  // the account name belongs only in the H1, never duplicated into the eyebrow.
-  const eyebrowText = sectionLabel.toLowerCase() === title.toLowerCase() ? section : sectionLabel;
+  // would otherwise render the eyebrow and H1 as an exact duplicate. On a
+  // hub the eyebrow names the section's place in the product's shape
+  // instead: its loop stage ("Stage 3 · Strategy") or its group ("Outputs ·
+  // Reports"), both read from navTree. It used to surface the nav ordinal
+  // ("Strategy · 04"), a second numbering that competed with the loop's own
+  // numerals on the sidebar spine and the stage strip (one loop shape, one
+  // vocabulary). Keep this comparison against the bare `title`, not the
+  // account-prefixed H1 below: the account name belongs only in the H1.
+  const eyebrowText = sectionLabel.toLowerCase() === title.toLowerCase() ? hubEyebrow(sectionLabel) : sectionLabel;
 
   return (
     <div className="shrink-0">
