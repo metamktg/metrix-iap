@@ -991,6 +991,13 @@ proof is the next Pure Path run: `ad_performance` sums to the 30-day Ad Summary'
 placement and platform tables to the device pivot's, and the run's warnings carry one `[Overlap]`
 line per superseded file and one `[Whole-period]` line per pivot.
 
+**Addendum (same day).** The first re-run with the fix failed at 88% with "TypeError: fetch failed": PostgREST's
+timeout manager killed the 140th of 178 `ad_breakdown_performance` batches after 139 had landed in six minutes,
+and the run's own cleanup threw thirteen minutes of correct rows away. `lib/chunkedInsert.ts` now recovers a
+batch that lost its connection: a batch is one statement, so counting the run's rows in the table says whether
+it landed; a lost batch is sent again in halves with backoff, a landed one is kept, any other count stops the
+run, and a database error is never retried. The wide evidence tables go in batches of 250.
+
 **Reach.** The analysis engine and the reconciliation layer; no schema change (the breakdown
 tables already carried `date_end`), no API change (the coverage note text changed, the shape did
 not). Surfaces that read `date_start` alone (the summary readers' view presets) treat a period row
