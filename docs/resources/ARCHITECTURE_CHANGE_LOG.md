@@ -998,6 +998,16 @@ batch that lost its connection: a batch is one statement, so counting the run's 
 it landed; a lost batch is sent again in halves with backoff, a landed one is kept, any other count stops the
 run, and a database error is never retried. The wide evidence tables go in batches of 250.
 
+**Addendum 2 (same day, from the high-confidence review of #202).** The grain now records the header the Day
+column resolved from (`day_header`) and `wholePeriodOf` reads it: "reporting starts" is a period, "day" is a day
+even beside multi-day files, so a genuine one-day daily pivot is never stamped as a period; a non-ISO stated end
+never becomes the window end. In period grain one ad is one row whatever periods its classes state. Creative
+metadata is read from every Ad Summary file's rows before overlap resolution. A class mixing daily rows with a
+whole-period file's surviving rows is judged on its daily rows, never called a duplicate. Coverage returns its run
+warnings structurally (no prose sniffing). Imports and the ledger's reports are ordered by `created_at`, so "later
+staged" is staging order, not class order. The client keeps "Reconciliation check failed" as attention under the
+`[Coverage]` prefix. The window end reads only files that still contribute rows.
+
 **Reach.** The analysis engine and the reconciliation layer; no schema change (the breakdown
 tables already carried `date_end`), no API change (the coverage note text changed, the shape did
 not). Surfaces that read `date_start` alone (the summary readers' view presets) treat a period row

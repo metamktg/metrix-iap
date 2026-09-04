@@ -34,6 +34,7 @@ describe("splitWarningsBySeverity", () => {
       "[Result type] 2377 ad/day row(s) had no result type in any export…",
       "[Duplicate data] 500 row(s) in Demographics \"f.csv\" are exact duplicates…",
       "Reconciliation check failed: Demographics rows carry $200 of spend…",
+      "[Coverage] Reconciliation check failed: Device/Placement rows carry $200 of spend, 200% of the $100 daily-attributable total for this window.",
     ]) {
       expect(isInformationalWarning(w)).toBe(false);
     }

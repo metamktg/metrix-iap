@@ -1020,8 +1020,15 @@ export type AdDayBucket = AggBucket &
  *   • when NO daily row exists, every row is a period row: the bucket is
  *     dated at the period start with `dateEnd` at the period end, so
  *     ad_performance carries the period honestly (`grain: "period"`).
+ * In period grain an ad's rows from different classes may state different
+ * periods (a 30-day demographic pivot beside a 28-day placement pivot), so
+ * the bucket key carries no date and the bucket's period widens to cover
+ * every source; one ad is one row.
  * Legacy `summaryMetadataOnly` marks every summary row whole-period with
- * an unstated end.
+ * an unstated end. `creativeMetadataRows` are read for creative metadata
+ * only: the summary rows of every staged file BEFORE overlap resolution,
+ * so copy columns carried only by a whole-period export survive that
+ * export losing its rows to a daily one.
  *
  * ad_summary's "Campaign name" breakdown is required to be present as a
  * column but its VALUES are tolerated blank (see iapCsvSpec.ts's ad_summary
@@ -1045,6 +1052,8 @@ export function mergeAdPerformanceBuckets(
     summaryMetadataOnly?: boolean;
     /** The period a whole-period row covers; null for a daily row. Object identity, so pass the rows the run scoped. */
     periodOf?: (row: IapCsvRow) => ReportPeriod | null;
+    /** Extra ad_summary rows read for creative metadata only (every file's rows before overlap resolution). */
+    creativeMetadataRows?: readonly IapCsvRow[];
   },
 ): {
   adBuckets: Map<string, AdDayBucket>;
@@ -1071,6 +1080,17 @@ export function mergeAdPerformanceBuckets(
     [scopedSummary, "summary"],
   ];
   const anyDaily = inputs.some(([rows, cls]) => rows.some((r) => periodOf(r, cls) === null));
+  // In period grain every row is one ad's period total: the key carries
+  // no date, and a bucket's period widens over its sources.
+  const PERIOD_KEY = "\u0000period";
+  const bucketKey = (campaign: string, identity: string, date: string): string => [campaign, identity, anyDaily ? date : PERIOD_KEY].join("\u0001");
+  const adDateKey = (identity: string, date: string): string => [identity, anyDaily ? date : PERIOD_KEY].join("\u0001");
+  const widen = (bucket: { date: string; dateEnd?: string }, stamp: { date: string; dateEnd?: string }): void => {
+    if (anyDaily) return;
+    if (stamp.date < bucket.date) bucket.date = stamp.date;
+    const end = stamp.dateEnd ?? stamp.date;
+    if (bucket.dateEnd === undefined || end > bucket.dateEnd) bucket.dateEnd = end;
+  };
   // Spend of whole-period rows per ad while daily rows exist, so the ads no
   // daily row covers can be counted back honestly at the end.
   const periodSpendByAd = new Map<string, Partial<Record<Cls, number>>>();
@@ -1102,10 +1122,11 @@ export function mergeAdPerformanceBuckets(
     const campaign = row.breakdowns["Campaign name"]!;
     const adSet = row.breakdowns["Ad set name"] ?? "";
     const adName = row.breakdowns["Ad name"]!;
-    const key = [campaign, rowAdIdentity(row), stamp.date].join("\u0001");
+    const key = bucketKey(campaign, rowAdIdentity(row), stamp.date);
     if (!demoAdBuckets.has(key)) {
       demoAdBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, date: stamp.date, ...(stamp.dateEnd ? { dateEnd: stamp.dateEnd } : {}) });
     }
+    widen(demoAdBuckets.get(key)!, stamp);
     accumulate(demoAdBuckets.get(key)!, row);
     captureAdIdentity(demoAdBuckets.get(key)!, row);
   }
@@ -1125,6 +1146,15 @@ export function mergeAdPerformanceBuckets(
   // Same ad can appear across multiple rows (different dates) — metadata should
   // be consistent, so we just take the first non-empty value per column.
   const adCreativeMetadata = new Map<string, Record<string, string>>();
+  const collectCreativeMetadata = (row: IapCsvRow): void => {
+    if (!row.creativeMetadata || Object.keys(row.creativeMetadata).length === 0) return;
+    const metadataKey = rowAdIdentity(row);
+    const existing = adCreativeMetadata.get(metadataKey) ?? {};
+    for (const [col, val] of Object.entries(row.creativeMetadata)) {
+      if (!existing[col] && val) existing[col] = val;
+    }
+    adCreativeMetadata.set(metadataKey, existing);
+  };
   for (const row of scopedSummary) {
     const campaign = row.breakdowns["Campaign name"] ?? "";
     const adSet = row.breakdowns["Ad set name"] ?? "";
@@ -1133,27 +1163,21 @@ export function mergeAdPerformanceBuckets(
     // only: its "date" is the report window start, not a real day.
     const stamp = stampOf(row, "summary");
     if (stamp) {
-      const key = [campaign, rowAdIdentity(row), stamp.date].join("\u0001");
+      const key = bucketKey(campaign, rowAdIdentity(row), stamp.date);
       if (!summaryAdBuckets.has(key)) {
         const bucket = { ...emptyBucket(), campaign, adSet, adName, date: stamp.date, ...(stamp.dateEnd ? { dateEnd: stamp.dateEnd } : {}) };
         summaryAdBuckets.set(key, bucket);
         if (campaign === "") {
-          summaryAdBucketsByAdDate.set([rowAdIdentity(row), stamp.date].join("\u0001"), bucket);
+          summaryAdBucketsByAdDate.set(adDateKey(rowAdIdentity(row), stamp.date), bucket);
         }
       }
+      widen(summaryAdBuckets.get(key)!, stamp);
       accumulate(summaryAdBuckets.get(key)!, row);
       captureAdIdentity(summaryAdBuckets.get(key)!, row);
     }
-    // Collect creative metadata (merge, keeping first non-empty value per column)
-    if (row.creativeMetadata && Object.keys(row.creativeMetadata).length > 0) {
-      const metadataKey = rowAdIdentity(row);
-      const existing = adCreativeMetadata.get(metadataKey) ?? {};
-      for (const [col, val] of Object.entries(row.creativeMetadata)) {
-        if (!existing[col] && val) existing[col] = val;
-      }
-      adCreativeMetadata.set(metadataKey, existing);
-    }
+    collectCreativeMetadata(row);
   }
+  for (const row of opts?.creativeMetadataRows ?? []) collectCreativeMetadata(row);
 
   // ── Ad-level rows (ad_performance): aggregate the placement export
   // across its device/platform/placement dimensions to a per-ad/day row.
@@ -1166,10 +1190,11 @@ export function mergeAdPerformanceBuckets(
     const campaign = row.breakdowns["Campaign name"]!;
     const adSet = row.breakdowns["Ad set name"] ?? "";
     const adName = row.breakdowns["Ad name"]!;
-    const key = [campaign, rowAdIdentity(row), stamp.date].join("\u0001");
+    const key = bucketKey(campaign, rowAdIdentity(row), stamp.date);
     if (!adBuckets.has(key)) {
       adBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, resultType: "", date: stamp.date, ...(stamp.dateEnd ? { dateEnd: stamp.dateEnd } : {}) });
     }
+    widen(adBuckets.get(key)!, stamp);
     accumulate(adBuckets.get(key)!, row);
     captureAdIdentity(adBuckets.get(key)!, row);
   }
@@ -1178,7 +1203,7 @@ export function mergeAdPerformanceBuckets(
   // so a blank-Campaign-name ad_summary row for an ad/date already present
   // here is recognized as a supplement, not inserted as a second row.
   const placementAdDateKeys = new Set(
-    Array.from(adBuckets.values()).map((b) => [b.metaAdId || b.adName, b.date].join("\u0001")),
+    Array.from(adBuckets.values()).map((b) => adDateKey(b.metaAdId || b.adName, b.date)),
   );
   // Supplement from the ad_summary (preferred) then demo aggregation:
   // fill spend/results/resultType for any ad bucket the placement export
@@ -1186,15 +1211,15 @@ export function mergeAdPerformanceBuckets(
   let unknownResultTypeRows = 0;
   for (const b of adBuckets.values()) {
     const adIdentity = b.metaAdId || b.adName;
-    const adKey = [b.campaign, adIdentity, b.date].join("\u0001");
-    const adDateKey = [adIdentity, b.date].join("\u0001");
+    const adKey = bucketKey(b.campaign, adIdentity, b.date);
     // Exact [campaign, adName, date] match first; fall back to the
     // ad-date-only index for a blank-Campaign-name summary bucket that can
     // never carry the real campaign name to match adKey directly.
-    const summary = summaryAdBuckets.get(adKey) ?? summaryAdBucketsByAdDate.get(adDateKey);
+    const summary = summaryAdBuckets.get(adKey) ?? summaryAdBucketsByAdDate.get(adDateKey(adIdentity, b.date));
     const demo = demoAdBuckets.get(adKey);
     const preferred = summary ?? demo;
     if (preferred) {
+      widen(b, { date: preferred.date, dateEnd: preferred.dateEnd });
       if (b.spend === null) b.spend = preferred.spend;
       if (b.results === null) b.results = preferred.results;
       if (!b.resultType) b.resultType = preferred.resultType ?? "";
@@ -1221,7 +1246,7 @@ export function mergeAdPerformanceBuckets(
   for (const [key, sum] of summaryAdBuckets) {
     const alreadyCovered =
       adBuckets.has(key) ||
-      (sum.campaign === "" && placementAdDateKeys.has([sum.metaAdId || sum.adName, sum.date].join("\u0001")));
+      (sum.campaign === "" && placementAdDateKeys.has(adDateKey(sum.metaAdId || sum.adName, sum.date)));
     if (!alreadyCovered) {
       if (!sum.resultType) unknownResultTypeRows += 1;
       adBuckets.set(key, { ...sum, resultType: sum.resultType ?? "unknown" });
@@ -1334,6 +1359,10 @@ export interface AnalysisDataCoverage {
 const pctOfBaseline = (part: number, whole: number): number | null =>
   whole > 0 ? Math.round((part / whole) * 1000) / 10 : null;
 
+/** Export headers Meta puts on a whole-period ad-level export in place of a Day breakdown (the parser aliases them to "Day"). */
+const PERIOD_START_HEADERS: ReadonlySet<string> = new Set(["reporting starts", "report start", "date start"]);
+const ISO_DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 /**
  * The period a staged file covers when it is a WHOLE-PERIOD export rather
  * than a daily one, or null. Meta's ad-level exports without the Day
@@ -1344,57 +1373,55 @@ const pctOfBaseline = (part: number, whole: number): number | null =>
  * AAFE; ×3 on Pure Path, where the placement, device and demographic pivots
  * were all whole-period).
  *
- * The shape alone cannot tell a whole-period export from one real day of
- * data. It is whole-period when the file states a reporting end later than
- * its start, or, when it states none, when another file in the run spans
- * several days (the AAFE heuristic). A single-day file with no stated end
- * and no multi-day companion stays daily: there is nothing to prove
- * otherwise. The unstated end is reported as such so the run can stand the
- * window end in for it and say so.
+ * The header the Day column resolved from (`grain.day_header`) is the
+ * signal: "reporting starts" and its aliases mean a period; "day" or "date"
+ mean one real day of data even beside multi-day files. When the grain
+ * carries no header (a grain stored before the field existed), a stated
+ * reporting end later than the start proves the period, and otherwise a
+ * multi-day companion file does (the AAFE heuristic). The unstated end is
+ * reported as such so the run can stand the window end in for it and say
+ * so. A non-ISO stated end never reaches here (reportGrain.ts drops it).
  */
 export function wholePeriodOf(
-  grain: Pick<ReportGrain, "aggregate_shape" | "period">,
+  grain: Pick<ReportGrain, "aggregate_shape" | "period"> & Partial<Pick<ReportGrain, "day_header">>,
   anyDailyInRun: boolean,
 ): ReportPeriod | null {
   if (!grain.aggregate_shape || !grain.period) return null;
-  const endKnown = grain.period.end > grain.period.start;
-  if (!endKnown && !anyDailyInRun) return null;
-  return { start: grain.period.start, end: grain.period.end, endKnown };
+  const start = grain.period.start;
+  const end = ISO_DAY_RE.test(grain.period.end) && grain.period.end > start ? grain.period.end : start;
+  const endKnown = end > start;
+  const header = grain.day_header ?? null;
+  if (header !== null && !PERIOD_START_HEADERS.has(header)) return null;
+  if (header !== null) return { start, end, endKnown };
+  if (endKnown) return { start, end, endKnown: true };
+  return anyDailyInRun ? { start, end: start, endKnown: false } : null;
 }
 
-/** Opens the whole-period sentence of a coverage note; coverageWarnings reads it. */
-const WHOLE_PERIOD_NOTE_LEAD = "This ";
-
-/**
- * The run warnings a coverage carries: every note on a daily class, and on
- * a whole-period class only a note that leads with a problem (the
- * whole-period sentence closes such a note; on its own it duplicates the
- * run's own [Whole-period] warning). Pure; exported for unit tests.
- */
-export function coverageWarnings(coverage: AnalysisDataCoverage): string[] {
-  const out: string[] = [];
-  for (const cls of coverage.classes) {
-    if (!cls.note) continue;
-    if (cls.aggregate_shape && cls.note.startsWith(WHOLE_PERIOD_NOTE_LEAD)) continue;
-    out.push(`[Coverage] ${cls.note}`);
-  }
-  return out;
+export interface DataCoverageReport {
+  coverage: AnalysisDataCoverage;
+  /** The notes that are run warnings: every problem note, never the whole-period sentence on its own. */
+  warnings: string[];
 }
 
 /**
  * Measures per-report-class join coverage against the run's own merged daily
- * ad rows. Pure — exported for unit tests.
+ * ad rows. Pure — exported for unit tests. `periodOf` names the rows that
+ * come from whole-period exports; a class whose rows are all such rows is
+ * `aggregate_shape`, and a class that mixes daily rows with the surviving
+ * rows of a whole-period file (the overlap rule's outcome) is judged on its
+ * daily rows and says how much whole-period spend it carries beside them.
  */
-export function computeDataCoverage(args: {
+export function computeDataCoverageReport(args: {
   window: { start: string; end: string };
   scopedDemo: IapCsvRow[];
   scopedPlacement: IapCsvRow[];
   scopedSummary: IapCsvRow[];
   scopedConversionDevice: IapCsvRow[];
   adBuckets: Map<string, AggBucket & { adName: string; date: string; dateEnd?: string }>;
-  /** Classes whose scoped rows come from whole-period exports, with the period those rows cover. */
-  wholePeriod?: Partial<Record<ReportClassCoverageKey, { start: string; end: string }>>;
-}): AnalysisDataCoverage {
+  /** The period a whole-period row covers; null (or absent) for a daily row. */
+  periodOf?: (row: IapCsvRow) => { start: string; end: string } | null;
+}): DataCoverageReport {
+  const periodOf = args.periodOf ?? (() => null);
   let baselineSpend = 0;
   const baselineAds = new Set<string>();
   let dailyStart: string | null = null;
@@ -1418,23 +1445,40 @@ export function computeDataCoverage(args: {
   ];
 
   const classes: ReportClassCoverage[] = [];
+  const warnings: string[] = [];
   for (const [key, rows] of classRows) {
     if (rows.length === 0) continue; // class not imported — absence is its own honest state
-    const period = args.wholePeriod?.[key] ?? null;
-    const aggregateShape = period !== null;
     let spend = 0;
     let anySpend = false;
+    let periodSpend = 0;
+    let periodRows = 0;
+    let period: { start: string; end: string } | null = null;
     const ads = new Set<string>();
+    const periodOnlyAds = new Set<string>();
+    const dailyAds = new Set<string>();
     for (const r of rows) {
       const s = r.base["amount_spent"];
+      const p = periodOf(r);
       if (typeof s === "number") {
         spend += s;
         anySpend = true;
+        if (p) periodSpend += s;
       }
       const ad = r.breakdowns["Ad name"];
-      if (ad) ads.add(ad);
+      if (ad) {
+        ads.add(ad);
+        (p ? periodOnlyAds : dailyAds).add(ad);
+      }
+      if (p) {
+        periodRows += 1;
+        period = widenPeriod(period, p);
+      }
     }
+    for (const ad of dailyAds) periodOnlyAds.delete(ad);
     spend = Math.round(spend * 100) / 100;
+    periodSpend = Math.round(periodSpend * 100) / 100;
+    const aggregateShape = periodRows > 0 && periodRows === rows.length;
+    const mixed = periodRows > 0 && !aggregateShape;
     const spendCoverage = anySpend ? pctOfBaseline(spend, baselineSpend) : null;
     const adCoverage = ads.size > 0 ? pctOfBaseline(ads.size, baselineAds.size) : null;
     // Conversion-device exports carry no spend by design (tracking_basis
@@ -1450,23 +1494,25 @@ export function computeDataCoverage(args: {
     // BUG-19 showed up as exactly 200% here). 101% allows rounding drift.
     // A whole-period pivot whose period reaches beyond the days the daily
     // rows cover legitimately exceeds them: that is days, not duplication.
+    // In a mixed class the whole-period rows belong to ads the daily rows
+    // do not carry (that is why the overlap rule kept them), so they are
+    // outside the baseline and outside this check.
     const beyondDailySpan =
-      period !== null && dailyStart !== null && dailyEnd !== null && (period.start < dailyStart || period.end > dailyEnd);
-    const overBaseline = coverageApplies && spendCoverage > 101 && !beyondDailySpan;
+      aggregateShape && period !== null && dailyStart !== null && dailyEnd !== null && (period.start < dailyStart || period.end > dailyEnd);
+    const comparableCoverage = mixed && baselineSpend > 0 ? pctOfBaseline(Math.round((spend - periodSpend) * 100) / 100, baselineSpend) : spendCoverage;
+    const overBaseline = coverageApplies && comparableCoverage !== null && comparableCoverage > 101 && !beyondDailySpan;
 
-    // A problem sentence leads the note; the whole-period sentence, when
-    // there is one, closes it (coverageWarnings reads that order).
-    const notes: string[] = [];
+    const problems: string[] = [];
     if (overBaseline) {
-      notes.push(
-        `Reconciliation check failed: ${iapCsvClassLabel(key)} rows carry ${money(spend)} of spend, ` +
-          `${spendCoverage}% of the ${money(baselineSpend)} daily-attributable total for this window. ` +
+      problems.push(
+        `Reconciliation check failed: ${iapCsvClassLabel(key)} rows carry ${money(mixed ? Math.round((spend - periodSpend) * 100) / 100 : spend)} of spend, ` +
+          `${comparableCoverage}% of the ${money(baselineSpend)} daily-attributable total for this window. ` +
           `A breakdown can never exceed the total, so some rows are being counted more than once. ` +
           `Most likely the same export is staged twice in different formats or overlapping date windows. ` +
           `Remove the duplicate file(s) and re-run analysis.`,
       );
     } else if (beyondDailySpan && spendCoverage !== null && spendCoverage > 101) {
-      notes.push(
+      problems.push(
         `${iapCsvClassLabel(key)} rows carry ${money(spend)}, more than the ${money(baselineSpend)} the daily rows sum to, ` +
           `because the export covers ${span(period!)} while the daily rows cover ${dailyStart} to ${dailyEnd}. ` +
           `Re-export the daily report for the full period to align them.`,
@@ -1474,30 +1520,40 @@ export function computeDataCoverage(args: {
     } else if (belowThreshold && key === "demographic") {
       // Context, not a warning (owner direction 2026-09-02): what the rows
       // carry, what that means for a segment read, and how to widen it.
-      notes.push(
+      problems.push(
         `Demographic rows carry ${money(spend)} of the ${money(baselineSpend)} daily-attributable spend (${spendCoverage}%) ` +
           `across ${ads.size} of ${baselineAds.size} ads; segment reads describe that slice. ` +
           `To widen it, re-export Demographics for all ads over the full window.`,
       );
     } else if (belowThreshold) {
-      notes.push(
+      problems.push(
         `${iapCsvClassLabel(key)} rows carry ${spendCoverage}% of the daily-attributable spend for this window. Surfaces built from this class describe only that slice.`,
       );
     }
-    if (period && key === "ad_summary") {
-      notes.push(
-        `${WHOLE_PERIOD_NOTE_LEAD}ad summary export is a whole-period per-ad report covering ${span(period)} (its date column is the report window start on every row), not a daily export. ` +
+    if (mixed && period) {
+      problems.push(
+        `${money(periodSpend)} of the ${iapCsvClassLabel(key)} spend comes from whole-period rows (${span(period)}) for ${periodOnlyAds.size} ad(s) the daily rows do not carry; ` +
+          `those rows are outside the daily baseline and the duplicate check.`,
+      );
+    }
+    const context: string[] = [];
+    if (aggregateShape && period && key === "ad_summary") {
+      context.push(
+        `This ad summary export is a whole-period per-ad report covering ${span(period)} (its date column is the report window start on every row), not a daily export. ` +
           `Its ${money(spend)} period total was used for creative metadata and total-spend cross-checking only, never added to daily totals. ` +
           `Re-export it with the "Day" breakdown to include ad-level daily spend.`,
       );
-    } else if (period) {
-      const surface = key === "demographic" ? "Audience" : "Placements";
-      const noun = key === "demographic" ? "demographics" : key === "device_placement" ? "placements" : "conversion device";
-      notes.push(
-        `${WHOLE_PERIOD_NOTE_LEAD}${noun} export is a whole-period report covering ${span(period)} (its date column is the report window start on every row), not a daily export. ` +
+    } else if (aggregateShape && period) {
+      const surface = key === "demographic" ? "Audience" : key === "conversion_device" ? "Devices" : "Placements";
+      context.push(
+        `This ${shortClassNoun(key)} export is a whole-period report covering ${span(period)} (its date column is the report window start on every row), not a daily export. ` +
           `Its ${money(spend)} feeds the ${surface} breakdowns and the reconciliation ledger at period grain; it never adds to the daily ad rows.`,
       );
     }
+    // The run repeats a problem; the whole-period sentence on its own
+    // duplicates the run's [Whole-period] warning and stays on the coverage.
+    if (problems.length > 0) warnings.push(`[Coverage] ${problems.join(" ")}`);
+    const notes = [...problems, ...context];
 
     classes.push({
       report_class: key,
@@ -1513,12 +1569,40 @@ export function computeDataCoverage(args: {
   }
 
   return {
-    window: args.window,
-    baseline_spend: baselineSpend,
-    baseline_distinct_ads: baselineAds.size,
-    threshold_pct: COVERAGE_THRESHOLD_PCT,
-    classes,
+    coverage: {
+      window: args.window,
+      baseline_spend: baselineSpend,
+      baseline_distinct_ads: baselineAds.size,
+      threshold_pct: COVERAGE_THRESHOLD_PCT,
+      classes,
+    },
+    warnings,
   };
+}
+
+/** The coverage alone; see computeDataCoverageReport for the run warnings it carries. */
+export function computeDataCoverage(args: Parameters<typeof computeDataCoverageReport>[0]): AnalysisDataCoverage {
+  return computeDataCoverageReport(args).coverage;
+}
+
+/** The union of two periods. */
+function widenPeriod(cur: { start: string; end: string } | null, p: { start: string; end: string }): { start: string; end: string } {
+  if (!cur) return { start: p.start, end: p.end };
+  return { start: p.start < cur.start ? p.start : cur.start, end: p.end > cur.end ? p.end : cur.end };
+}
+
+/** The short noun a coverage note calls a class by ("placements", not the spec's full label). */
+function shortClassNoun(key: ReportClassCoverageKey): string {
+  switch (key) {
+    case "demographic":
+      return "demographics";
+    case "device_placement":
+      return "placements";
+    case "ad_summary":
+      return "ad summary";
+    case "conversion_device":
+      return "conversion device";
+  }
 }
 
 /**
@@ -1569,7 +1653,7 @@ export function wholePeriodWarning(
   if (file.cls === "ad_summary") {
     return `${head} Its ${money} was used for creative metadata and total-spend cross-checking only, never added to daily totals. Re-export it with the "Day" breakdown to include ad-level daily spend.`;
   }
-  const surface = file.cls === "demographic" ? "Audience" : file.cls === "asset" ? "Creative" : "Placements";
+  const surface = file.cls === "demographic" ? "Audience" : file.cls === "asset" ? "Creative" : file.cls === "conversion_device" ? "Devices" : "Placements";
   return `${head} Its ${money} feeds the ${surface} breakdowns and the reconciliation ledger at period grain; it never adds to the daily ad rows.`;
 }
 
@@ -2270,6 +2354,10 @@ export async function startManualAnalysis(
         totalsRow: IapCsvParseResult["totalsRow"];
       };
       const parsedFiles: ParsedFile[] = [];
+      // Staging order across classes (the imports query orders by
+      // created_at): "later staged" in the overlap rule and the ledger means
+      // this, never the order the classes are parsed in.
+      const stagingOrder = new Map<string, number>((imports ?? []).map((i, idx) => [String(i["id"]), idx]));
       // Objective column groups seen across ALL staged files this run —
       // compared against the account's configured objectives (Settings →
       // General) to decide what gets assessed vs flagged. Never blocks.
@@ -2291,7 +2379,7 @@ export async function startManualAnalysis(
               label,
               importId: String(imp["id"]),
               filename: String(imp["filename"]),
-              order: parsedFiles.length,
+              order: stagingOrder.get(String(imp["id"])) ?? parsedFiles.length,
               grain: detectReportGrain(result, cls),
               rows,
               totalsRow: result.totalsRow,
@@ -2337,6 +2425,7 @@ export async function startManualAnalysis(
       const rowsByClass = new Map<IapCsvClass, IapCsvRow[]>();
       const periodByRow = new Map<IapCsvRow, ReportPeriod>();
       const fileByRow = new Map<IapCsvRow, ParsedFile>();
+      const filesWithRows = new Set<string>();
       for (const cls of ["demographic", "device_placement", "ad_summary", "asset", "conversion_device"] as const) {
         const files = parsedFiles.filter((f) => f.cls === cls);
         const resolution = resolveClassOverlaps(
@@ -2359,6 +2448,7 @@ export async function startManualAnalysis(
           for (const r of resolution.kept.get(f.importId) ?? []) {
             rows.push(r);
             fileByRow.set(r, f);
+            filesWithRows.add(f.importId);
             if (period) periodByRow.set(r, period);
           }
         }
@@ -2424,14 +2514,16 @@ export async function startManualAnalysis(
 
       await updateProgress(runId, 50, "Building performance aggregates");
       // The latest date the data reaches: the latest Day, or the latest
-      // stated reporting end of a whole-period file (its Day is its start).
+      // stated reporting end of a whole-period file that still contributes
+      // rows (its Day is its start; a file that lost every row to a daily
+      // one no longer says where the data reaches).
       const allDates = [
         ...demoRows.map((r) => r.breakdowns["Day"]!),
         ...placementRows.map((r) => r.breakdowns["Day"]!),
         ...summaryRows.map((r) => r.breakdowns["Day"]!),
         ...conversionDeviceRows.map((r) => r.breakdowns["Day"]!),
         ...assetRows.map((r) => r.breakdowns["Day"]!),
-        ...[...filePeriod.values()].filter((p): p is ReportPeriod => p !== null && p.endKnown).map((p) => p.end),
+        ...[...filePeriod.entries()].filter(([id, p]) => p !== null && p.endKnown && filesWithRows.has(id)).map(([, p]) => p!.end),
       ];
       const maxDate = allDates.reduce((max, d) => (d > max ? d : max), allDates[0]!);
 
@@ -2477,11 +2569,15 @@ export async function startManualAnalysis(
       // date) — see mergeAdPerformanceBuckets for the full priority/dedupe
       // rules, including the blank-Campaign-name ad_summary handling and
       // what a whole-period row contributes.
+      // Creative metadata comes from every Ad Summary file's rows as parsed,
+      // not from the class array: a whole-period export that lost its rows
+      // to a daily one may still be the only file carrying the copy columns.
+      const creativeMetadataRows = parsedFiles.filter((f) => f.cls === "ad_summary").flatMap((f) => f.rows);
       const { adBuckets, adCreativeMetadata, unknownResultTypeRows, grain: adGrain, periodOnlyAds } = mergeAdPerformanceBuckets(
         scopedDemo,
         scopedPlacement,
         scopedSummary,
-        { periodOf },
+        { periodOf, creativeMetadataRows },
       );
       for (const { file, spend, period } of wholePeriodFilesInScope.values()) {
         allCsvWarnings.push(wholePeriodWarning(file, period, Math.round(spend * 100) / 100, adGrain));
@@ -2497,31 +2593,16 @@ export async function startManualAnalysis(
       // Measured per report class against this run's own daily-attributable
       // baseline; persisted with the run and served to every aggregating
       // surface via the analysis-summary API. See computeDataCoverage.
-      const classPeriod = (rows: IapCsvRow[]): { start: string; end: string } | undefined => {
-        let period: { start: string; end: string } | undefined;
-        for (const r of rows) {
-          const p = periodOf(r);
-          if (!p) return undefined; // one daily row makes the class daily
-          period = period
-            ? { start: p.start < period.start ? p.start : period.start, end: p.end > period.end ? p.end : period.end }
-            : { start: p.start, end: p.end };
-        }
-        return period;
-      };
-      const dataCoverage = computeDataCoverage({
+      const { coverage: dataCoverage, warnings: coverageRunWarnings } = computeDataCoverageReport({
         window: { start: dateStart, end: dateEnd },
         scopedDemo,
         scopedPlacement,
         scopedSummary,
         scopedConversionDevice,
         adBuckets,
-        wholePeriod: {
-          demographic: classPeriod(scopedDemo),
-          device_placement: classPeriod(scopedPlacement),
-          ad_summary: classPeriod(scopedSummary),
-        },
+        periodOf,
       });
-      for (const w of coverageWarnings(dataCoverage)) allCsvWarnings.push(w);
+      allCsvWarnings.push(...coverageRunWarnings);
       const summaryCls = dataCoverage.classes.find((c) => c.report_class === "ad_summary");
       if (summaryCls?.aggregate_shape && adGrain === "daily") {
         const summarySpend = summaryCls.spend ?? null;
@@ -2900,7 +2981,8 @@ export async function startManualAnalysis(
       // BREAKDOWN (a joint Gender × Age × Text file loses its demographic
       // margin to a plain Gender × Age file and keeps its asset margins),
       // where the class arrays resolve per file.
-      const reconReports: ReportInput[] = parsedFiles
+      const reconReports: ReportInput[] = [...parsedFiles]
+        .sort((a, b) => a.order - b.order)
         .filter((f) => f.cls !== "conversion_device")
         .map((f) => ({
           import_id: f.importId,

@@ -19,7 +19,7 @@ import {
   COVERAGE_THRESHOLD_PCT,
   buildAdPerformanceRows,
   computeDataCoverage,
-  coverageWarnings,
+  computeDataCoverageReport,
   mergeAdPerformanceBuckets,
   overlapWarning,
   wholePeriodOf,
@@ -69,6 +69,24 @@ describe("wholePeriodOf", () => {
   it("a daily file is never whole-period", () => {
     expect(wholePeriodOf({ aggregate_shape: false, period: { start: "2026-07-01", end: "2026-07-28" } }, true)).toBeNull();
     expect(wholePeriodOf({ aggregate_shape: true, period: null }, true)).toBeNull();
+  });
+
+  it("the Day column's source header decides when the grain carries it: Reporting starts is a period, Day is a day", () => {
+    // Meta's whole-period export: Day aliased from "Reporting starts", no end stated, no companion.
+    expect(wholePeriodOf({ aggregate_shape: true, period: { start: "2026-07-01", end: "2026-07-01" }, day_header: "reporting starts" }, false)).toEqual({
+      start: "2026-07-01",
+      end: "2026-07-01",
+      endKnown: false,
+    });
+    // One real day of daily data beside a multi-day file, with the report range stated: still a day.
+    expect(wholePeriodOf({ aggregate_shape: true, period: { start: "2026-07-01", end: "2026-07-28" }, day_header: "day" }, true)).toBeNull();
+    expect(wholePeriodOf({ aggregate_shape: true, period: { start: "2026-07-01", end: "2026-07-01" }, day_header: "date" }, true)).toBeNull();
+    // A non-ISO stated end never proves a period.
+    expect(wholePeriodOf({ aggregate_shape: true, period: { start: "2026-07-01", end: "9/2/2026" }, day_header: "reporting starts" }, false)).toEqual({
+      start: "2026-07-01",
+      end: "2026-07-01",
+      endKnown: false,
+    });
   });
 });
 
@@ -137,6 +155,28 @@ describe("mergeAdPerformanceBuckets with whole-period rows", () => {
     ]);
   });
 
+  it("in period grain, one ad with two classes stating different periods is one row over the union of both", () => {
+    const demo = [row("2026-07-01", "AdA", 3000, DEMO_DIMS)]; // Gender × Age pivot, 07-01 to 07-30
+    const pivot = [row("2026-07-03", "AdA", 2800, PLACEMENT_DIMS)]; // Platform × Placement pivot, 07-03 to 07-30
+    const demoPeriod = periodFor(demo, { start: "2026-07-01", end: "2026-07-30", endKnown: true });
+    const pivotPeriod = periodFor(pivot, { start: "2026-07-03", end: "2026-07-30", endKnown: true });
+    const { adBuckets, grain } = mergeAdPerformanceBuckets(demo, pivot, [], { periodOf: (r) => demoPeriod(r) ?? pivotPeriod(r) });
+    expect(grain).toBe("period");
+    expect(adBuckets.size).toBe(1); // never two rows, never $5,800 for one ad
+    const only = [...adBuckets.values()][0]!;
+    expect(only.spend).toBe(2800); // the placement rows carry the ad; the demographic total supplements only what is missing
+    expect(only.date).toBe("2026-07-01");
+    expect(only.dateEnd).toBe("2026-07-30");
+  });
+
+  it("creative metadata survives a whole-period summary losing its rows to a daily one", () => {
+    const daily = [row("2026-07-01", "AdA", 100), row("2026-07-02", "AdA", 100)];
+    const whole = [{ ...row("2026-07-01", "AdA", 200), creativeMetadata: { "Body (ad settings)": "hello" } }];
+    const { adBuckets, adCreativeMetadata } = mergeAdPerformanceBuckets([], [], daily, { creativeMetadataRows: whole });
+    expect(spendOf(adBuckets)).toBe(200);
+    expect(adCreativeMetadata.get("AdA")).toEqual({ "Body (ad settings)": "hello" });
+  });
+
   it("a daily row keeps date_end equal to its day", () => {
     const { adBuckets } = mergeAdPerformanceBuckets([], placement, []);
     const rows = buildAdPerformanceRows("acct", "run", adBuckets, new Map());
@@ -191,7 +231,7 @@ describe("computeDataCoverage", () => {
       scopedSummary: summary,
       scopedConversionDevice: [],
       adBuckets,
-      wholePeriod: { ad_summary: { start: "2026-07-01", end: "2026-07-02" } },
+      periodOf: periodFor(summary, { start: "2026-07-01", end: "2026-07-02", endKnown: true }),
     });
     const sumCov = cov.classes.find((c) => c.report_class === "ad_summary")!;
     expect(sumCov.aggregate_shape).toBe(true);
@@ -236,7 +276,7 @@ describe("computeDataCoverage", () => {
       scopedSummary: daily,
       scopedConversionDevice: [],
       adBuckets,
-      wholePeriod: { device_placement: { start: "2026-07-01", end: "2026-07-28" } },
+      periodOf: periodFor(pivot),
     });
     expect(cov.baseline_spend).toBe(2800);
     const pc = cov.classes.find((c) => c.report_class === "device_placement")!;
@@ -265,7 +305,7 @@ describe("computeDataCoverage", () => {
       scopedSummary: daily,
       scopedConversionDevice: [],
       adBuckets,
-      wholePeriod: { device_placement: { start: "2026-07-01", end: "2026-07-30" } },
+      periodOf: periodFor(pivot, { start: "2026-07-01", end: "2026-07-30", endKnown: true }),
     });
     const pc = cov.classes.find((c) => c.report_class === "device_placement")!;
     expect(pc.spend_coverage_pct).toBe(107.1);
@@ -279,42 +319,69 @@ describe("computeDataCoverage", () => {
     const { adBuckets } = mergeAdPerformanceBuckets([], pivot, daily, {
       periodOf: periodFor(pivot, { start: "2026-07-01", end: "2026-07-02", endKnown: true }),
     });
-    const cov = computeDataCoverage({
+    const period = { start: "2026-07-01", end: "2026-07-02", endKnown: true };
+    const { coverage: cov, warnings } = computeDataCoverageReport({
       window: { start: "2026-07-01", end: "2026-07-02" },
       scopedDemo: [],
       scopedPlacement: pivot,
       scopedSummary: daily,
       scopedConversionDevice: [],
       adBuckets,
-      wholePeriod: { device_placement: { start: "2026-07-01", end: "2026-07-02" } },
+      periodOf: periodFor(pivot, period),
     });
     const pc = cov.classes.find((c) => c.report_class === "device_placement")!;
     expect(pc.spend_coverage_pct).toBe(200);
     expect(pc.note).toContain("Reconciliation check failed");
     expect(pc.note).toMatch(/This placements export is a whole-period report/); // the period sentence still closes it
-    expect(coverageWarnings(cov)).toEqual([`[Coverage] ${pc.note}`]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/^\[Coverage\] Reconciliation check failed/);
+    expect(warnings[0]).not.toContain("whole-period report"); // the [Whole-period] run warning says that already
   });
 
-  it("coverageWarnings: a whole-period class warns only when its note leads with a problem; a daily class always does", () => {
+  it("run warnings carry every problem note and never the whole-period sentence on its own", () => {
     const daily = [row("2026-07-01", "A", 100)];
     const pivot = [row("2026-07-01", "A", 100, PLACEMENT_DIMS)];
     const demo = [row("2026-07-01", "A", 8, DEMO_DIMS)];
-    const { adBuckets } = mergeAdPerformanceBuckets(demo, pivot, daily, {
-      periodOf: periodFor(pivot, { start: "2026-07-01", end: "2026-07-01", endKnown: true }),
-    });
-    const cov = computeDataCoverage({
+    const periodOf = periodFor(pivot, { start: "2026-07-01", end: "2026-07-01", endKnown: true });
+    const { adBuckets } = mergeAdPerformanceBuckets(demo, pivot, daily, { periodOf });
+    const { coverage: cov, warnings } = computeDataCoverageReport({
       window: { start: "2026-07-01", end: "2026-07-01" },
       scopedDemo: demo,
       scopedPlacement: pivot,
       scopedSummary: daily,
       scopedConversionDevice: [],
       adBuckets,
-      wholePeriod: { device_placement: { start: "2026-07-01", end: "2026-07-01" } },
+      periodOf,
     });
-    const warnings = coverageWarnings(cov);
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatch(/^\[Coverage\] Demographic rows carry \$8/);
     expect(cov.classes.find((c) => c.report_class === "device_placement")!.note).toMatch(/^This placements export/);
+  });
+
+  it("a class that mixes daily rows with a whole-period file's surviving rows is judged on its daily rows, never called a duplicate", () => {
+    // Daily demographic rows for A ($50 × 2), a whole-period demographic row for B ($500) that no daily row covers,
+    // daily placement rows for A: the overlap rule keeps B's row, and B is outside the daily baseline.
+    const dailyDemo = [row("2026-07-01", "A", 50, DEMO_DIMS), row("2026-07-02", "A", 50, DEMO_DIMS)];
+    const periodDemo = [row("2026-07-01", "B", 500, DEMO_DIMS)];
+    const placement = [row("2026-07-01", "A", 50, PLACEMENT_DIMS), row("2026-07-02", "A", 50, PLACEMENT_DIMS)];
+    const periodOf = periodFor(periodDemo, { start: "2026-07-01", end: "2026-07-02", endKnown: true });
+    const { adBuckets, periodOnlyAds } = mergeAdPerformanceBuckets([...dailyDemo, ...periodDemo], placement, [], { periodOf });
+    expect(periodOnlyAds).toEqual({ count: 1, spend: 500 });
+    const { coverage: cov, warnings } = computeDataCoverageReport({
+      window: { start: "2026-07-01", end: "2026-07-02" },
+      scopedDemo: [...dailyDemo, ...periodDemo],
+      scopedPlacement: placement,
+      scopedSummary: [],
+      scopedConversionDevice: [],
+      adBuckets,
+      periodOf,
+    });
+    const dc = cov.classes.find((c) => c.report_class === "demographic")!;
+    expect(dc.aggregate_shape).toBe(false);
+    expect(dc.note).not.toContain("Reconciliation check failed");
+    expect(dc.note).toContain("$500 of the Demographic");
+    expect(dc.note).toContain("for 1 ad(s) the daily rows do not carry");
+    expect(warnings.some((w) => w.includes("counted more than once"))).toBe(false);
   });
 
   it("never applies spend coverage to conversion_device (no spend by design)", () => {

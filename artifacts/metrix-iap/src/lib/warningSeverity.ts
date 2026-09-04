@@ -27,7 +27,9 @@ const NOTICE_PATTERNS: RegExp[] = [
   // direction 2026-09-02): the surfaces carry it as a tag, the run panel
   // files it with the notices. A failed reconciliation check (over-count)
   // is a different line and stays attention.
-  /^\s*\[Coverage\]/,
+  // The over-count failure the engine prefixes the same way is the one
+  // coverage line that asks for a decision (remove a file, re-run).
+  /^\s*\[Coverage\](?![\s\S]*Reconciliation check failed)/,
   // A whole-period export is named for what it is and where its spend goes
   // (2026-09-04); an overlap the run resolved by the finer breakdown or by
   // the daily file asks nothing of the reader. The one overlap that does,
