@@ -939,3 +939,63 @@ rebuild runs (an explicit invalidation stays a cold rebuild, so a reader who jus
 fresh data), and `index.ts` warms the seed at boot. No schema content change; one new marker
 table `metrix_schema_state` (one row). Open: `pnpm --filter db push` in `post-merge.sh` printed "No
 changes detected" and then the hook timed out at 06:05:31Z; not root-caused here.
+
+## 24. A whole-period export is a period, and files that cover the same ads count once (2026-09-04, live defect)
+
+**What.** Two grain rules the engine had for one class now hold for every class, in one place.
+`wholePeriodOf` (`analysisEngine.ts`) names the period of a file whose rows all carry the same
+reporting start (Meta's ad-level exports without the Day breakdown; the parser aliases "Reporting
+starts" to "Day"): a later stated reporting end proves it, and without one a multi-day companion
+file does (the AAFE heuristic, kept). The run keeps that period on the row. Whole-period rows never
+build daily ad buckets while any daily row exists (`mergeAdPerformanceBuckets` `periodOf`; the ads
+only they carry are counted and warned as `periodOnlyAds`), a run with no daily source at all
+stamps every ad row start→end (`grain: "period"`), and the demographic / placement / platform /
+device rows carry `date_start` = period start and `date_end` = period end with the period in the
+bucket key. Overlaps between files are one rule in `lib/reportOverlap.ts` (`OverlapResolver`,
+`resolveClassOverlaps`): for every ad a file covers, on a day or over its period, a daily file
+beats a whole-period file, then the finer delivery breakdown wins, then the later-staged file; the
+loser's rows for that ad are not counted and the run says which file, how many rows, how much
+spend and why. The engine's class arrays, the reconciliation observations (per breakdown) and the
+truth candidates (`summariseReports`) all use it; an asset pivot competes only with a pivot of the
+same asset columns, as the ledger keys asset observations by asset type. Imports are read oldest
+first so "later staged" means something. `computeDataCoverage` takes the whole-period classes' periods, grades a
+whole-period ad summary as a control rather than a slice, and tells a pivot whose period reaches
+beyond the daily rows apart from a duplicate.
+
+**Why.** The Pure Path account staged, per the new process, a Platform × Placement pivot and a
+Platform × Placement × Impression device pivot of one 28-day period, a 28-day and a 30-day daily
+Ad Summary, and two Gender × Age pivots of the period. Every pivot's rows carried 2026-08-06 as
+their day. The engine built the daily ad buckets from the placement rows first, so each pivot put
+its 28-day total on one day, the two pivots summed to $2.68M on that day, the daily summaries
+added their $1.39M beside it, and `ad_performance` read $4,072,100 against Meta's $1,437,538. The
+placement and platform tables carried both pivots ($2.68M), the truth summed both Ad Summaries
+($2.77M), and the coverage baseline, being the inflated ad rows, saw nothing wrong. The
+whole-period detection existed only for the ad summary (`detectAggregateAdSummary`, retired here),
+and the per-file overlap rule only in the observations, at day-level keys that two files of
+different depth never share.
+
+**Where.** `artifacts/api-server/src/lib/reportOverlap.ts` (new), `lib/analysisEngine.ts`
+(`wholePeriodOf`, `mergeAdPerformanceBuckets`, `computeDataCoverage`, `coverageWarnings`,
+`overlapWarning`, `wholePeriodWarning`, the parse and window stages of the run),
+`lib/reconciliation.ts` (`buildObservations`, `summariseReports`, `breakdownDepth`,
+`OverlapRecord.reason`). Tests: `__tests__/reportOverlap.test.ts`,
+`__tests__/analysisEngineCoverage.test.ts` (rewritten), the two overlap describes appended to
+`__tests__/reconciliation.test.ts`.
+
+**Proof.** The unit tests reproduce the Pure Path shape: a whole-period pivot beside a daily
+summary builds 28 ad rows summing to the summary's total, never the pivot's total on the first day;
+two placement files of different depth yield the finer file's spend once; a joint Gender × Age ×
+Text file loses its demographic margin to a plain Gender × Age file and keeps its asset margins;
+two daily Ad Summaries of the same window are one control at the fixture's account truth. The live
+proof is the next Pure Path run: `ad_performance` sums to the 30-day Ad Summary's total, the
+placement and platform tables to the device pivot's, and the run's warnings carry one `[Overlap]`
+line per superseded file and one `[Whole-period]` line per pivot.
+
+**Reach.** The analysis engine and the reconciliation layer; no schema change (the breakdown
+tables already carried `date_end`), no API change (the coverage note text changed, the shape did
+not). Surfaces that read `date_start` alone (the summary readers' view presets) treat a period row
+as starting on its start day, which is what the misdated rows did before; a preset shorter than
+the period excludes it, honestly. Open: the ledger still compares a whole-period pivot with the
+truth summed over the run window, so a 28-day pivot beside a 30-day summary reads as 93% covered
+rather than as a period mismatch; summing the daily truth over the pivot's own period is the next
+step, recorded in the spec.
