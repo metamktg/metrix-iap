@@ -40,6 +40,58 @@ const BASE_PATH = "/";
 const COMPOSITE_BASE_URL_EXPLICIT = process.env["METRIX_IAP_COMPOSITE_BASE_URL"];
 const COMPOSITE_BASE_URL = COMPOSITE_BASE_URL_EXPLICIT ?? "http://localhost:80";
 
+// This is deliberately small: the boot smoke is checking the auth → seed →
+// authenticated-shell contract, not the completeness of the live seed. The
+// shape mirrors the minimum bundle already used by the session persistence
+// smoke, and is enough for the manager landing view to mount all providers.
+const AUTHENTICATED_SMOKE_USER = {
+  id: "smoke-user-id",
+  email: "smoke@example.com",
+  role: "member",
+  must_change_password: false,
+  manage_team: false,
+  view_agency_rollups: false,
+  export_data: false,
+};
+
+const AUTHENTICATED_SMOKE_SEED = {
+  schema_version: "1.0",
+  generated_at: "2024-01-01T00:00:00.000Z",
+  integrity_note: "authenticated-boot-smoke",
+  app_defaults: {
+    initial_view: "manager",
+    active_manager_account_id: "smoke-manager",
+    selected_ad_account_id: null,
+    navigation: [],
+    forbidden_ui_terms: [],
+    data_isolation_rule: "",
+  },
+  manager_account: {
+    id: "smoke-manager",
+    name: "Smoke Test Agency",
+    type: "agency",
+    overview_mode: "manager",
+    configured_ad_accounts: 0,
+    unconfigured_ad_accounts: 1,
+    bottom_line_totals: {
+      spend_usd: 0,
+      impressions: 0,
+      link_clicks: 0,
+      link_ctr_pct: null,
+      result_totals_by_event: {},
+    },
+    recommendation_cards: [],
+  },
+  ad_accounts: [
+    {
+      id: "smoke-ad-account",
+      name: "Smoke Test Account",
+      status: "unconfigured",
+      platform: "Meta Ads",
+    },
+  ],
+};
+
 function fail(message: string, extra?: string): never {
   console.error(`\nFAIL  ${message}`);
   if (extra) console.error(extra);
@@ -188,6 +240,13 @@ async function runSmoke() {
     await assertChangePasswordFormVisible(PREVIEW_PORT).catch((err) => {
       fail(
         "Change Password page render check failed on production build",
+        String(err?.message ?? err),
+      );
+    });
+
+    await assertAuthenticatedBoot(PREVIEW_PORT).catch((err) => {
+      fail(
+        "Authenticated dashboard boot check failed on production build",
         String(err?.message ?? err),
       );
     });
@@ -550,6 +609,217 @@ async function assertLoginFormVisible(port: string): Promise<void> {
     console.log("  ✓  direct /app/analysis URL returned the SPA entry point");
 
     await ctx.close();
+  } finally {
+    await browser.close();
+  }
+}
+
+// ── authenticated dashboard boot assertion ───────────────────────────────────
+
+interface ApiObservation {
+  method: string;
+  url: string;
+  status: number;
+  body: string;
+}
+
+/**
+ * Exercises the first authenticated render without depending on a mutable
+ * database account or a real password. The browser still follows the same
+ * client path as a logged-in user:
+ *
+ *   GET /api/metrix/auth/me → authenticated user
+ *   GET /api/metrix/seed    → seed bundle envelope
+ *   authenticated manager landing view
+ *
+ * Keeping the route interception at the `/api` boundary catches regressions
+ * where a caller accidentally drops the API prefix or changes the endpoint.
+ */
+async function assertAuthenticatedBoot(port: string): Promise<void> {
+  const { chromium } = await import("playwright-core");
+
+  const executablePath = process.env["REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE"];
+  const browser = await chromium.launch({
+    executablePath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  const browserConsoleErrors: string[] = [];
+  const pageErrors: string[] = [];
+  const apiObservations: ApiObservation[] = [];
+  let seedRequestCount = 0;
+
+  const recordApi = (
+    request: { method(): string; url(): string },
+    status: number,
+    body: string,
+  ) => {
+    apiObservations.push({
+      method: request.method(),
+      url: request.url(),
+      status,
+      body,
+    });
+  };
+
+  const diagnostics = () => {
+    const consoleText =
+      browserConsoleErrors.length > 0
+        ? browserConsoleErrors.map((entry) => `  • ${entry}`).join("\n")
+        : "  (none)";
+    const pageErrorText =
+      pageErrors.length > 0
+        ? pageErrors.map((entry) => `  • ${entry}`).join("\n")
+        : "  (none)";
+    const apiText =
+      apiObservations.length > 0
+        ? apiObservations
+            .map(
+              (entry) =>
+                `  • ${entry.method} ${entry.url} → HTTP ${entry.status}: ` +
+                `${entry.body.slice(0, 1_000)}${entry.body.length > 1_000 ? "…" : ""}`,
+            )
+            .join("\n")
+        : "  (no intercepted API responses)";
+
+    return (
+      "\n--- browser console errors ---\n" +
+      consoleText +
+      "\n--- uncaught page errors ---\n" +
+      pageErrorText +
+      "\n--- API response details ---\n" +
+      apiText
+    );
+  };
+
+  try {
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+    const page = await ctx.newPage();
+
+    page.on("console", (message) => {
+      if (message.type() === "error") {
+        browserConsoleErrors.push(message.text());
+      }
+    });
+    page.on("pageerror", (error) => {
+      pageErrors.push(error.message);
+    });
+
+    // Keep a fallback handler behind the expected deterministic fixtures.
+    // Playwright checks routes in reverse registration order, so the two
+    // handlers below win for the happy path. If a client changes an endpoint,
+    // this handler records the real response (often the Vite SPA HTML or a
+    // 404), which makes the failure actionable instead of looking like a
+    // missing request.
+    await ctx.route("**/api/**", async (route) => {
+      try {
+        const response = await route.fetch();
+        const body = await response.text();
+        recordApi(route.request(), response.status(), body);
+        await route.fulfill({ response, body });
+      } catch (err) {
+        recordApi(
+          route.request(),
+          0,
+          `request failed: ${String(err instanceof Error ? err.message : err)}`,
+        );
+        await route.abort();
+      }
+    });
+
+    await ctx.route("**/api/metrix/auth/me", (route) => {
+      const body = JSON.stringify({ user: AUTHENTICATED_SMOKE_USER });
+      recordApi(route.request(), 200, body);
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body,
+      });
+    });
+
+    await ctx.route("**/api/metrix/seed", (route) => {
+      seedRequestCount += 1;
+      const body = JSON.stringify(AUTHENTICATED_SMOKE_SEED);
+      recordApi(route.request(), 200, body);
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body,
+      });
+    });
+
+    console.log(
+      `Navigating to http://localhost:${port}/ to check authenticated dashboard boot...`,
+    );
+    const rootResponse = await page.goto(`http://localhost:${port}/`, {
+      waitUntil: "domcontentloaded",
+    });
+    if (rootResponse?.status() !== 200) {
+      throw new Error(
+        `Authenticated boot root URL returned HTTP ${rootResponse?.status() ?? "no response"}`,
+      );
+    }
+
+    await page
+      .getByText("Bottom-line totals", { exact: true })
+      .waitFor({ state: "visible", timeout: 20_000 });
+    await page
+      .getByText("Smoke Test Agency", { exact: true })
+      .first()
+      .waitFor({ state: "visible", timeout: 5_000 });
+
+    if (seedRequestCount !== 1) {
+      throw new Error(
+        `Expected exactly one first seed request through /api/metrix/seed, observed ${seedRequestCount}`,
+      );
+    }
+
+    const seedObservation = apiObservations.find((entry) =>
+      entry.url.endsWith("/api/metrix/seed"),
+    );
+    if (!seedObservation || seedObservation.status !== 200) {
+      throw new Error(
+        "The first /api/metrix/seed response did not return HTTP 200 JSON",
+      );
+    }
+
+    let seedEnvelope: unknown;
+    try {
+      seedEnvelope = JSON.parse(seedObservation.body);
+    } catch {
+      throw new Error("The first /api/metrix/seed response was not valid JSON");
+    }
+    if (
+      !seedEnvelope ||
+      typeof seedEnvelope !== "object" ||
+      typeof (seedEnvelope as Record<string, unknown>).schema_version !== "string" ||
+      !(
+        (seedEnvelope as Record<string, unknown>).manager_account &&
+        typeof (seedEnvelope as Record<string, unknown>).manager_account === "object"
+      ) ||
+      !Array.isArray((seedEnvelope as Record<string, unknown>).ad_accounts)
+    ) {
+      throw new Error(
+        "The first /api/metrix/seed response did not contain the expected " +
+          "schema_version, manager_account, and ad_accounts envelope",
+      );
+    }
+
+    if (browserConsoleErrors.length > 0 || pageErrors.length > 0) {
+      throw new Error(
+        "Authenticated landing view rendered, but the browser reported an error",
+      );
+    }
+
+    console.log(
+      '  ✓  authenticated landing view rendered after /api/metrix/seed returned the expected JSON envelope',
+    );
+    await ctx.close();
+  } catch (err) {
+    throw new Error(`${String(err instanceof Error ? err.message : err)}${diagnostics()}`);
   } finally {
     await browser.close();
   }
