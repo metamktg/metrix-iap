@@ -24,7 +24,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import bcrypt from "bcryptjs";
-import { db, pool, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 import { withValidationLock } from "./lib/validation-lock.js";
@@ -948,6 +947,15 @@ async function assertLiveAuthenticatedBoot(baseUrl: string): Promise<void> {
       apiText
     );
   };
+
+  // The database module throws at import when DATABASE_URL is unset, and CI
+  // has none by design (the workflow header). This live check runs only when
+  // the managed router listens, which CI never has, so the module is loaded
+  // here rather than at the top of the file: the preview checks must not die
+  // on an import that only the live check needs. Loaded before `try` so the
+  // cleanup in `finally` can reach it; nothing exists to clean up if the
+  // import itself fails.
+  const { db, pool, usersTable } = await import("@workspace/db");
 
   try {
     const passwordHash = await bcrypt.hash(livePassword, 12);
