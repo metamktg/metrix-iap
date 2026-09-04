@@ -28,6 +28,15 @@ const NOTICE_PATTERNS: RegExp[] = [
   // files it with the notices. A failed reconciliation check (over-count)
   // is a different line and stays attention.
   /^\s*\[Coverage\]/,
+  // A whole-period export is named for what it is and where its spend goes
+  // (2026-09-04); an overlap the run resolved by the finer breakdown or by
+  // the daily file asks nothing of the reader. The one overlap that does,
+  // two files at the same depth where one may be a re-upload, ends by
+  // asking to remove one and stays attention; so does a [Truth] line that
+  // records a disagreement between control sources.
+  /^\s*\[Whole-period\]/,
+  /^\s*\[Overlap\](?![\s\S]*remove one of them)/,
+  /^\s*\[Truth\] [\d,]+ row\(s\) of .* appear in more than one staged file/,
   /no action needed/,
   /matched automatically/,
   /\(via slug match\)/,

@@ -120,3 +120,20 @@ describe("hasReducedConfidence", () => {
     expect(hasReducedConfidence([])).toBe(false);
   });
 });
+
+describe("whole-period and overlap lines (2026-09-04)", () => {
+  it("files a whole-period note, a resolved overlap and a superseded-control note as notices; a same-depth overlap and a truth disagreement stay attention", () => {
+    const { attention, notices } = splitWarningsBySeverity([
+      '[Whole-period] Placements "IAP-devi-YUSIF-28D.csv": every row carries the report window start as its date, so this is a whole-period export covering 2026-08-06 to 2026-09-02, not a daily export. Its $1,340,876.12 feeds the Placements breakdowns and the reconciliation ledger at period grain; it never adds to the daily ad rows.',
+      '[Overlap] Placements "IAP-PLACEPLAT-YUSIF-28D.csv" and "IAP-devi-YUSIF-28D.csv" both cover 1,718 ad(s) over the same days. "IAP-devi-YUSIF-28D.csv" carries the finer breakdown (Platform · Placement · Impression device), so its rows are used and "IAP-PLACEPLAT-YUSIF-28D.csv"\'s 3,436 row(s) ($1,340,876.12) are not counted again.',
+      '[Overlap] Ad Summary "IAP-AGE-GEN-YUSIF-30D (1).xlsx" and "IAP-day-spend-YUSIF-30D-copy.csv" both cover 1,494 ad(s). "IAP-day-spend-YUSIF-30D-copy.csv" carries them by day and "IAP-AGE-GEN-YUSIF-30D (1).xlsx" as one period, so the daily rows are used and "IAP-AGE-GEN-YUSIF-30D (1).xlsx"\'s 1,494 row(s) ($1,400,000) are not counted again.',
+      "[Truth] 48,104 row(s) of the daily Ad Summary (per Ad ID) appear in more than one staged file for the same ad and day; the later-staged file's rows are the control, never both.",
+      '[Overlap] Ad Summary "IAP-DAY-AD-ID-YUSIF-28d.csv" and "IAP-day-spend-YUSIF-30D-copy.csv" both cover 1,718 ad(s) over the same days. "IAP-day-spend-YUSIF-30D-copy.csv" was staged later, so its rows are used and "IAP-DAY-AD-ID-YUSIF-28d.csv"\'s 48,104 row(s) ($1,338,041) are not counted again. If both are the same export, remove one of them.',
+      "[Truth] amount_spent: selected control reports 1,437,538, the daily Ad Summary (per Ad ID) reports 1,338,041 (6.9% apart). The selected source is used; the disagreement is recorded, not averaged.",
+    ]);
+    expect(notices).toHaveLength(4);
+    expect(attention).toHaveLength(2);
+    expect(attention[0]).toMatch(/remove one of them/);
+    expect(attention[1]).toMatch(/apart/);
+  });
+});

@@ -341,9 +341,20 @@ Rules that are load-bearing:
   `evidence_state = 'overcounted'`.
 - Analysis proceeds without an Ad Summary; rows are `unreconciled`. `observed_reconciled` requires a
   compatible control source at that scope.
-- Overlapping imports of the same class within one run (same ad identity × day or period in two
-  files) are not unioned: the later-staged file supersedes for the overlapping keys and the run warns
-  with the count. Disjoint files are unioned. The account-level ledger row records both import ids.
+- Overlapping imports within one run are not unioned. For every ad a file covers (× result type ×
+  asset type), on a day or over the file's period, one file wins: a daily file over a whole-period
+  file (days sum to the period; the period cannot be split), then the file with the finer delivery
+  breakdown (its margin reproduces the coarser file), then the later-staged file (a re-export
+  supersedes). The rule is one module, `lib/reportOverlap.ts`, applied per breakdown to the
+  observations (a Gender × Age × Text file loses its demographic margin to a plain Gender × Age
+  file and keeps its asset margins), per class to the engine's fact rows, and per candidate to the
+  control sources (two daily Ad Summaries of overlapping windows are one control). The loser's rows
+  are not counted and the run warns with the file, the ad count, the row count, the spend and the
+  reason. Disjoint files are unioned. The account-level ledger row records both import ids.
+  (Amended 2026-09-04 after the Pure Path account summed two placement pivots of one period, two
+  Ad Summaries and two demographic pivots and read three times its spend. Open: a whole-period
+  pivot is still compared with the truth summed over the run window; summing the daily truth over
+  the pivot's own period is the next step.)
 
 The old `import_metric_reconciliation` table (two metrics, demographic vs placement) is superseded by
 this ledger and stays unwritten; the reserved `AnalysisRun.reconciliation` API field keeps its

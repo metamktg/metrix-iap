@@ -23,6 +23,7 @@ import {
   normalizeAssetValue,
   resolveNameToInstances,
 } from "./reportGrain";
+import { OverlapResolver, type OverlapKey, type OverlapReason, type OverlapSource } from "./reportOverlap";
 
 // ─── Vocabulary ────────────────────────────────────────────────────────────
 
@@ -105,6 +106,8 @@ export interface OverlapRecord {
   superseded_import_id: string;
   winning_import_id: string;
   keys: number;
+  /** Why the winner won: the daily file over the whole-period one, the finer breakdown, or the later staging. */
+  reason: OverlapReason;
 }
 
 export interface BuildObservationsResult {
@@ -169,6 +172,26 @@ export function breakdownsFor(grain: ReportGrain): Breakdown[] {
       return ["demographic", "placement", "demographic_placement"];
     default:
       return [];
+  }
+}
+
+const DEMO_DIMS = ["Gender", "Age"];
+const PLACEMENT_DIMS = ["Platform", "Placement", "Impression device"];
+
+/** How many of the breakdown's own delivery dimensions the file carries: the depth reportOverlap.ts ranks files by. */
+function breakdownDepth(breakdown: Breakdown, grain: ReportGrain): number {
+  const has = (dims: readonly string[]) => dims.filter((d) => grain.dimensions.includes(d)).length;
+  switch (breakdown) {
+    case "demographic":
+    case "demographic_asset":
+      return has(DEMO_DIMS);
+    case "placement":
+    case "placement_asset":
+      return has(PLACEMENT_DIMS);
+    case "demographic_placement":
+      return has(DEMO_DIMS) + has(PLACEMENT_DIMS);
+    case "asset":
+      return 0;
   }
 }
 
@@ -243,10 +266,14 @@ function segmentsFor(row: IapCsvRow, breakdown: Breakdown, grain: ReportGrain): 
 /**
  * Reduces every pivot report to observations at ad × segment × period.
  *
- * Overlap rule (spec §8): within one breakdown, when two imports carry the
- * same (ad identity, segment, result type, day-or-period), they are not
- * unioned — the later-staged import supersedes for those keys and the
- * overlap is recorded. Disjoint imports union.
+ * Overlap rule (spec §8, reportOverlap.ts): within one breakdown, when two
+ * imports carry the same ad (× result type × asset type) on the same day or
+ * over the same period, they are not unioned: one import wins for that
+ * ad's keys (a daily file over a whole-period one, then the file with the
+ * finer breakdown, then the later-staged) and the overlap is recorded.
+ * Disjoint imports union. A joint file competes per breakdown, so a
+ * Gender × Age × Text file can lose its demographic margin to a plain
+ * Gender × Age file and keep its asset margins.
  */
 export function buildObservations(
   reports: readonly ReportInput[],
@@ -256,36 +283,55 @@ export function buildObservations(
   const overlaps: OverlapRecord[] = [];
   const pivots = reports.filter((r) => breakdownsFor(r.grain).length > 0);
 
-  // Pass 1 — the winning import per (breakdown, day-level key).
-  type RowRef = { report: ReportInput; row: IapCsvRow; identity: AdIdentity; breakdown: Breakdown; segment: SegmentDims; segment_key: string; dayKey: string };
+  // Pass 1 — what every import covers, per breakdown: the ad (× result type
+  // × asset type, so a Text file and a Headline file never compete) on a
+  // day, or over the file's period. The resolver picks the winner per key.
+  type RowRef = { report: ReportInput; row: IapCsvRow; identity: AdIdentity; breakdown: Breakdown; segment: SegmentDims; segment_key: string; key: OverlapKey; dayKey: string };
   const refs: RowRef[] = [];
-  const winner = new Map<string, string>();
-  for (const report of pivots) {
+  const resolvers = new Map<Breakdown, OverlapResolver>();
+  const sources = new Map<string, OverlapSource>();
+  const sourceFor = (report: ReportInput, order: number, breakdown: Breakdown): OverlapSource => {
+    const id = `${breakdown}${SEP}${report.import_id}`;
+    let source = sources.get(id);
+    if (!source) {
+      source = { id: report.import_id, order, depth: breakdownDepth(breakdown, report.grain), daily: report.grain.has_day };
+      sources.set(id, source);
+    }
+    return source;
+  };
+  pivots.forEach((report, order) => {
     for (const row of report.rows) {
       const identity = resolveIdentity(row, report.grain, opts.instancesByName);
       const resultType = typeof row.base["result_type"] === "string" ? row.base["result_type"] : "";
       const day = report.grain.has_day ? row.breakdowns["Day"] ?? "" : "";
       for (const breakdown of breakdownsFor(report.grain)) {
+        const resolver = resolvers.get(breakdown) ?? resolvers.set(breakdown, new OverlapResolver()).get(breakdown)!;
+        const source = sourceFor(report, order, breakdown);
         for (const segment of segmentsFor(row, breakdown, report.grain)) {
           const segment_key = segmentKeyOf(segment);
+          const key: OverlapKey = {
+            group: [identityKey(identity), resultType, segment.asset_type ?? ""].join(SEP),
+            day: report.grain.has_day ? day : null,
+          };
+          resolver.register(source, key);
           const dayKey = [breakdown, identityKey(identity), segment_key, resultType, day].join(SEP);
-          winner.set(dayKey, report.import_id);
-          refs.push({ report, row, identity, breakdown, segment, segment_key, dayKey });
+          refs.push({ report, row, identity, breakdown, segment, segment_key, key, dayKey });
         }
       }
     }
-  }
+  });
 
   // Pass 2 — aggregate the winning rows; count superseded keys per pair.
-  const superseded = new Map<string, Set<string>>();
+  const superseded = new Map<string, { keys: Set<string>; reason: OverlapReason }>();
   const buckets = new Map<string, Observation>();
   for (const ref of refs) {
-    const win = winner.get(ref.dayKey)!;
-    if (win !== ref.report.import_id) {
-      const pair = `${ref.breakdown}${SEP}${ref.report.import_id}${SEP}${win}`;
-      const set = superseded.get(pair) ?? new Set<string>();
-      set.add(ref.dayKey);
-      superseded.set(pair, set);
+    const win = resolvers.get(ref.breakdown)!.winner(ref.key)!;
+    if (win.id !== ref.report.import_id) {
+      const pair = `${ref.breakdown}${SEP}${ref.report.import_id}${SEP}${win.id}`;
+      const loser = sources.get(`${ref.breakdown}${SEP}${ref.report.import_id}`)!;
+      const rec = superseded.get(pair) ?? { keys: new Set<string>(), reason: OverlapResolver.reason(loser, win) };
+      rec.keys.add(ref.dayKey);
+      superseded.set(pair, rec);
       continue;
     }
     const resultType = typeof ref.row.base["result_type"] === "string" ? ref.row.base["result_type"] : "";
@@ -324,11 +370,17 @@ export function buildObservations(
     }
   }
 
-  for (const [pair, keys] of superseded) {
+  for (const [pair, { keys, reason }] of superseded) {
     const [breakdown, superseded_import_id, winning_import_id] = pair.split(SEP) as [Breakdown, string, string];
-    overlaps.push({ breakdown, superseded_import_id, winning_import_id, keys: keys.size });
+    overlaps.push({ breakdown, superseded_import_id, winning_import_id, keys: keys.size, reason });
+    const why =
+      reason === "daily_over_period"
+        ? "the daily file supersedes the whole-period file for them"
+        : reason === "finer_breakdown"
+          ? "the file with the finer breakdown supersedes them"
+          : "the later-staged file supersedes them";
     warnings.push(
-      `[Overlap] ${keys.size.toLocaleString()} ${breakdown} key(s) appear in two staged files; the later-staged file supersedes them so the same delivery is never counted twice.`,
+      `[Overlap] ${keys.size.toLocaleString()} ${breakdown} key(s) appear in two staged files; ${why} so the same delivery is never counted twice.`,
     );
   }
 
@@ -406,13 +458,31 @@ function periodFit(grain: ReportGrain, window: { start: string; end: string } | 
 function summariseReports(
   reports: readonly ReportInput[],
   instancesByName?: ReadonlyMap<string, readonly string[]>,
-): { per_ad: TruthSet["per_ad"]; account: Record<string, number>; allJoinable: boolean } {
+): { per_ad: TruthSet["per_ad"]; account: Record<string, number>; allJoinable: boolean; superseded: number } {
   const per_ad = new Map<string, { identity: AdIdentity; metrics: Record<string, number>; result_type: string }>();
   const account: Record<string, number> = {};
   let allJoinable = true;
+  // Two Ad Summaries of overlapping windows (a 28-day and a 30-day export
+  // of one month) are one control, not two: per ad and day the later-staged
+  // file's row is the truth and the other is not added (reportOverlap.ts).
+  const resolver = new OverlapResolver();
+  const sources = reports.map((r, order): OverlapSource => ({ id: r.import_id, order, depth: 0, daily: r.grain.has_day }));
+  const keyOf = (row: IapCsvRow, report: ReportInput): OverlapKey => ({
+    group: identityKey(resolveIdentity(row, report.grain, instancesByName)),
+    day: report.grain.has_day ? row.breakdowns["Day"] ?? "" : null,
+  });
+  reports.forEach((report, i) => {
+    for (const row of report.rows) resolver.register(sources[i]!, keyOf(row, report));
+  });
+  let superseded = 0;
   for (const report of reports) {
     if (!report.grain.ad_id_joinable) allJoinable = false;
     for (const row of report.rows) {
+      const win = resolver.winner(keyOf(row, report));
+      if (win && win.id !== report.import_id) {
+        superseded += 1;
+        continue;
+      }
       const identity = resolveIdentity(row, report.grain, instancesByName);
       const m = additiveMetricsOf(row);
       addMetrics(account, m);
@@ -422,7 +492,7 @@ function summariseReports(
       else per_ad.set(k, { identity, metrics: { ...m }, result_type: typeof row.base["result_type"] === "string" ? row.base["result_type"] : "" });
     }
   }
-  return { per_ad, account, allJoinable };
+  return { per_ad, account, allJoinable, superseded };
 }
 
 function conflictsBetween(selected: Record<string, number>, alternative: TruthAlternative): string[] {
@@ -468,7 +538,12 @@ export function buildTruth(
   const alternatives: TruthAlternative[] = [];
   let selected: TruthSet | null = null;
   for (const c of candidates) {
-    const { per_ad, account, allJoinable } = summariseReports(c.reports, opts.instancesByName);
+    const { per_ad, account, allJoinable, superseded } = summariseReports(c.reports, opts.instancesByName);
+    if (superseded > 0) {
+      notes.push(
+        `[Truth] ${superseded.toLocaleString("en-US")} row(s) of ${c.label} appear in more than one staged file for the same ad and day; the later-staged file's rows are the control, never both.`,
+      );
+    }
     if (!selected) {
       const first = c.reports[0]!.grain;
       selected = {
