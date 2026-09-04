@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { reconcileAgencyAdminAccess } from "./lib/agencyAccessSafeguard";
 import { ensureDemoAccount } from "./lib/demoAccountSafeguard";
+import { getMetrixSeedFromSupabase } from "./lib/metrixSeedAssembly";
 
 const rawPort = process.env["PORT"];
 
@@ -38,3 +39,12 @@ reconcileAgencyAdminAccess(logger).catch((err) => {
 ensureDemoAccount(logger).catch((err) => {
   logger.error({ err }, "Demo account safeguard failed to run");
 });
+
+// Warm the seed cache at boot (2026-09-04): the first reader after a deploy
+// used to pay the whole assembly on the boot splash, and past the TTL every
+// reader did until the stale-while-revalidate cache landed. A failure here
+// is logged and the first request rebuilds as before.
+const warmStart = Date.now();
+getMetrixSeedFromSupabase()
+  .then(() => logger.info({ ms: Date.now() - warmStart }, "Metrix seed cache warmed"))
+  .catch((err) => logger.warn({ err, ms: Date.now() - warmStart }, "Metrix seed cache warm-up failed; the first request will assemble it"));

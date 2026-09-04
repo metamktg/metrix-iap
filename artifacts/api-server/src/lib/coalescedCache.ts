@@ -20,8 +20,14 @@
 // re-implementation of it sitting in a test file.
 
 export interface CoalescedCache<T> {
-  /** Cached value if fresh; otherwise one shared rebuild. */
+  /**
+   * Cached value if fresh. Past the TTL, the stale value is returned at
+   * once and ONE rebuild runs in the background (stale-while-revalidate);
+   * with nothing cached, one shared rebuild.
+   */
   get(): Promise<T>;
+  /** True while a rebuild is running. */
+  rebuilding(): boolean;
   /** Drop the entry. Does NOT cancel a rebuild already in flight. */
   invalidate(): void;
   /** Test seam: drop the entry AND any in-flight rebuild. */
@@ -36,24 +42,43 @@ export function createCoalescedCache<T>(
   let cached: { at: number; data: T } | null = null;
   let inFlight: Promise<T> | null = null;
 
+  const rebuild = (): Promise<T> => {
+    if (inFlight) return inFlight;
+    inFlight = build()
+      .then((data) => {
+        cached = { at: now(), data };
+        return data;
+      })
+      .finally(() => {
+        // Cleared on rejection too. A failed rebuild must not be handed
+        // to every future caller, and must not wedge the endpoint
+        // permanently behind a promise that already settled badly.
+        inFlight = null;
+      });
+    return inFlight;
+  };
+
   return {
     async get(): Promise<T> {
       if (cached && now() - cached.at < ttlMs) return cached.data;
-      if (inFlight) return inFlight;
+      if (cached) {
+        // Stale-while-revalidate (2026-09-04): a TTL expiry used to make
+        // the next reader wait for the whole rebuild, which on a seed of
+        // production size is minutes on the boot splash. The stale bundle
+        // is seconds old in practice and every in-app mutation still
+        // invalidates explicitly (a cold rebuild, below), so a reader that
+        // just changed something never sees stale data; only the TTL
+        // refresh happens off the request path. A failed background
+        // rebuild keeps serving the stale value and is retried on the next
+        // read past the TTL.
+        rebuild().catch(() => {});
+        return cached.data;
+      }
+      return rebuild();
+    },
 
-      inFlight = build()
-        .then((data) => {
-          cached = { at: now(), data };
-          return data;
-        })
-        .finally(() => {
-          // Cleared on rejection too. A failed rebuild must not be handed
-          // to every future caller, and must not wedge the endpoint
-          // permanently behind a promise that already settled badly.
-          inFlight = null;
-        });
-
-      return inFlight;
+    rebuilding(): boolean {
+      return inFlight !== null;
     },
 
     invalidate(): void {

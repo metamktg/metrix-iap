@@ -933,6 +933,9 @@ intact); the runner test drives a fake client through lock-loss retry, give-up a
 log line ("applied … statements", then "unchanged … nothing applied" on the run after) and an
 empty lock-timeout count in `postgres_logs` for that window.
 
-**Reach.** Operator scripts only. No runtime code, no schema content change; one new marker table
-`metrix_schema_state` (one row). Open: `pnpm --filter db push` in `post-merge.sh` printed "No
+**Reach.** Operator scripts, plus two small runtime reliefs for the same boot stall shipped in
+the same PR: `lib/coalescedCache.ts` serves the stale bundle past the TTL while ONE background
+rebuild runs (an explicit invalidation stays a cold rebuild, so a reader who just mutated sees
+fresh data), and `index.ts` warms the seed at boot. No schema content change; one new marker
+table `metrix_schema_state` (one row). Open: `pnpm --filter db push` in `post-merge.sh` printed "No
 changes detected" and then the hook timed out at 06:05:31Z; not root-caused here.
