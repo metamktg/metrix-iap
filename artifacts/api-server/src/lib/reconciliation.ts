@@ -271,6 +271,9 @@ function segmentsFor(row: IapCsvRow, breakdown: Breakdown, grain: ReportGrain): 
  * over the same period, they are not unioned: one import wins for that
  * ad's keys (a daily file over a whole-period one, then the file with the
  * finer breakdown, then the later-staged) and the overlap is recorded.
+ * "Later staged" is the report's position in `reports`: the caller passes
+ * them in staging order (the engine sorts by the import's created_at, not
+ * by class).
  * Disjoint imports union. A joint file competes per breakdown, so a
  * Gender × Age × Text file can lose its demographic margin to a plain
  * Gender × Age file and keep its asset margins.
@@ -467,12 +470,18 @@ function summariseReports(
   // file's row is the truth and the other is not added (reportOverlap.ts).
   const resolver = new OverlapResolver();
   const sources = reports.map((r, order): OverlapSource => ({ id: r.import_id, order, depth: 0, daily: r.grain.has_day }));
+  // One identity per row, resolved once and reused by the register, the
+  // winner lookup and the metrics (three lookups per row otherwise).
+  const identities = new Map<IapCsvRow, AdIdentity>();
   const keyOf = (row: IapCsvRow, report: ReportInput): OverlapKey => ({
-    group: identityKey(resolveIdentity(row, report.grain, instancesByName)),
+    group: identityKey(identities.get(row)!),
     day: report.grain.has_day ? row.breakdowns["Day"] ?? "" : null,
   });
   reports.forEach((report, i) => {
-    for (const row of report.rows) resolver.register(sources[i]!, keyOf(row, report));
+    for (const row of report.rows) {
+      identities.set(row, resolveIdentity(row, report.grain, instancesByName));
+      resolver.register(sources[i]!, keyOf(row, report));
+    }
   });
   let superseded = 0;
   for (const report of reports) {
@@ -483,7 +492,7 @@ function summariseReports(
         superseded += 1;
         continue;
       }
-      const identity = resolveIdentity(row, report.grain, instancesByName);
+      const identity = identities.get(row)!;
       const m = additiveMetricsOf(row);
       addMetrics(account, m);
       const k = identityKey(identity);
@@ -541,7 +550,7 @@ export function buildTruth(
     const { per_ad, account, allJoinable, superseded } = summariseReports(c.reports, opts.instancesByName);
     if (superseded > 0) {
       notes.push(
-        `[Truth] ${superseded.toLocaleString("en-US")} row(s) of ${c.label} appear in more than one staged file for the same ad and day; the later-staged file's rows are the control, never both.`,
+        `[Truth] ${superseded.toLocaleString("en-US")} row(s) of ${c.label} appear in more than one staged file for the same ad and day; one file's rows are the control for those, never both.`,
       );
     }
     if (!selected) {
