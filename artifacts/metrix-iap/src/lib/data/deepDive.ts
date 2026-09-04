@@ -177,7 +177,7 @@ export function buildSegmentModule(input: SegmentModuleInput): DeepDiveModule {
       kind: "note",
       text:
         `${restrictedCount} metric(s) show n/a because this dimension's tracking basis or source export ` +
-        `can't honestly support them — values are never fabricated as zero.`,
+        `can't honestly support them · values are never fabricated as zero.`,
     });
   }
 
@@ -240,7 +240,7 @@ export function buildCellDeepDiveModule(input: CellDeepDiveInput): DeepDiveModul
     blocks.push({
       kind: "note",
       text:
-        `This tile never ran — no performance rows exist for ${cellId} in this import. It's a planned matrix ` +
+        `This tile never ran. No performance rows exist for ${cellId} in this import. It's a planned matrix ` +
         `cell without observed spend; numbers appear here once it runs.`,
     });
   } else {
@@ -276,7 +276,7 @@ export function buildCellDeepDiveModule(input: CellDeepDiveInput): DeepDiveModul
           metricId: "roas",
           label: "ROAS",
           value: "n/a",
-          note: "No purchase-value field exists anywhere in this account's data — ROAS is never fabricated as a number.",
+          note: "No purchase-value field exists anywhere in this account's data. ROAS is never fabricated as a number.",
         },
         {
           metricId: "mapping_confidence",
@@ -306,7 +306,7 @@ export function buildCellDeepDiveModule(input: CellDeepDiveInput): DeepDiveModul
       const backed = perf.filter((r) => r[key] != null);
       if (backed.length === 0) {
         omittedNote =
-          "Downstream funnel steps (add-to-cart / checkout / purchase) aren't in this import for this cell — " +
+          "Downstream funnel steps (add-to-cart / checkout / purchase) aren't in this import for this cell, " +
           "shown only when the source export actually carries them, never fabricated as zero.";
         break;
       }
@@ -461,7 +461,7 @@ export function buildConceptGroupDeepDiveModule(input: ConceptGroupDeepDiveInput
 
   if (pillars.length > 0) {
     for (const p of pillars) {
-      const text = [p.plain_descriptor ? `"${p.plain_descriptor}"` : null, p.why_it_matters].filter(Boolean).join(" — ");
+      const text = [p.plain_descriptor ? `"${p.plain_descriptor}"` : null, p.why_it_matters].filter(Boolean).join("–");
       if (text) blocks.push({ kind: "note", title: `Pillar · ${p.label}`, text });
     }
   } else {

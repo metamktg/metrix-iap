@@ -30,7 +30,7 @@ beforeEach(() => {
   at("/app/analysis/overview");
 });
 
-describe("usePersistedRunScope — ?run=", () => {
+describe("usePersistedRunScope, ?run=", () => {
   it("arrives scoped to the run the link names", () => {
     at("/app/analysis/overview?run=run-b");
     const { result } = renderHook(() => usePersistedRunScope("analysis-overview", "acct", RUNS));
@@ -38,7 +38,7 @@ describe("usePersistedRunScope — ?run=", () => {
     expect(result.current[0].selectedRunIds).toEqual(["run-b"]);
   });
 
-  it("hands the scope to the picker afterwards — a later choice is not overwritten", () => {
+  it("hands the scope to the picker afterwards. A later choice is not overwritten", () => {
     at("/app/analysis/overview?run=run-b");
     const { result, rerender } = renderHook(() => usePersistedRunScope("analysis-overview", "acct", RUNS));
     act(() => { result.current[1]({ allTime: true, selectedRunIds: [] }); });
@@ -54,7 +54,7 @@ describe("usePersistedRunScope — ?run=", () => {
     expect(result.current[0].allTime).toBe(true);
   });
 
-  it("waits for the run list — nothing is applied while it is still loading", () => {
+  it("waits for the run list. Nothing is applied while it is still loading", () => {
     at("/app/analysis/overview?run=run-b");
     const { result } = renderHook(() => usePersistedRunScope("analysis-overview", "acct", undefined));
     expect(result.current[0].allTime).toBe(true);

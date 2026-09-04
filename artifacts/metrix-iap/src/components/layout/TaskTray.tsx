@@ -16,6 +16,7 @@ import {
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useAccount } from "@/contexts/AccountContext";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
+import { useIsCompactShell } from "@/lib/useMediaQuery";
 import {
   useTrayItems,
   getOpenTrayItems,
@@ -604,6 +605,9 @@ function EmptySlot({
 export function TaskTray() {
   useTrayItems();
   const { open, toggle, close } = useTaskTray();
+  // Under 1024 px the tray is an overlay the Topbar's Tray button opens, not
+  // a strip that takes 46 px off a 390 px page. Closed, it renders nothing.
+  const compact = useIsCompactShell();
   const { activeAdAccount, activeAdAccountId, selectedAccountType } = useAccount();
   const [, navigate] = useLocation();
 
@@ -654,15 +658,20 @@ export function TaskTray() {
   // panel visibly tracks the pointer while dragging.
   const currentWidth = open ? dragWidth ?? width : TRAY_CLOSED_WIDTH;
 
+  if (compact && !open) return null;
+
   return (
     <div
       data-open={open}
       className={cn(
-        "relative shrink-0 border-l-2 bg-surface-sidebar flex flex-col overflow-hidden",
+        "border-l-2 bg-surface-sidebar flex flex-col overflow-hidden",
+        compact
+          ? "fixed inset-y-0 right-0 z-40 w-[min(100%,380px)] elevation-floating"
+          : "relative shrink-0",
         open ? "border-border/60" : "border-border/50",
         dragWidth == null && "transition-[width] duration-200 ease-out"
       )}
-      style={{ width: currentWidth }}
+      style={compact ? undefined : { width: currentWidth }}
     >
       {/* Slide-to-resize handle — drag left to grow the tray (up to
           TRAY_MAX_WIDTH), drag right to shrink it; releasing below

@@ -196,7 +196,7 @@ export function RankedBars({
                       measured ? "text-foreground" : "text-muted-foreground",
                     )}
                   >
-                    {measured ? format(d.value!) : "—"}
+                    {measured ? format(d.value!) : "–"}
                   </span>
                   {d.note && <span className={cn(TYPE.caption, "tabular-nums")}>{d.note}</span>}
                 </span>

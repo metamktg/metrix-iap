@@ -14,6 +14,8 @@ import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { getAdAccounts, getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
 import { ModuleHeader, MetricTile, PendingState, HubNavGrid, SectionCard, StageLoopHub, buildLoopStages } from "../shared";
+import { SignalDeck } from "@/components/signals/SignalDeck";
+import { useLocation } from "wouter";
 import { Radio, CheckCircle2, Circle, AlertTriangle, Bell, Activity, Lightbulb } from "lucide-react";
 
 const SECTION = "Listen · 02";
@@ -51,7 +53,7 @@ export function ListenCommandCenter() {
       <ModuleHeader
         section={SECTION}
         title="Listen"
-        subtitle="What's going on across every account — alerts, signal, and what to do next."
+        subtitle="What's going on across every account. Alerts, signal, and what to do next."
       />
       <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
         <MetricTile label="Accounts connected" value={`${configuredCount} / ${accounts.length}`} />
@@ -109,6 +111,7 @@ export function ListenCommandCenter() {
  * signals — no roster of other accounts, no cross-account connection list.
  */
 function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
+  const [, navigate] = useLocation();
   const seed = useMetrixSeed();
   const account = getAdAccount(seed, adAccountId);
   const status = useStageStatus(adAccountId);
@@ -121,7 +124,7 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
         section={SECTION}
         title="Listen"
         accountName={account?.name}
-        subtitle="What's going on in this account — alerts, signal, and what to do next."
+        subtitle="What's going on in this account. Alerts, signal, and what to do next."
       />
       <StageLoopHub stages={buildLoopStages(status)} current="listen" />
       <div className="px-6 pt-5 grid grid-cols-2 gap-3">
@@ -133,12 +136,22 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
         {highImpact === 0 ? (
           <PendingState title="Nothing needs attention" message="No high-impact signals right now for this account." icon={Radio} />
         ) : (
-          <div className="rounded-xl border border-status-danger/20 bg-status-danger/[0.03] p-4 flex items-center gap-3">
-            <AlertTriangle className="w-4 h-4 text-status-danger shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="text-title font-bold text-foreground">{highImpact} high-impact signal{highImpact === 1 ? "" : "s"}</div>
-              <div className="text-label text-muted-foreground/75 mt-0.5">Review in Alerts for details and recommended actions.</div>
+          // The signals themselves, not a box counting them: the reader came
+          // to hear what the account is saying, and a count behind a link
+          // was one more click between them and it.
+          <div data-testid="listen-high-impact-signals">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-status-danger shrink-0" aria-hidden="true" />
+              <span className="text-label uppercase tracking-widest text-muted-foreground/75">
+                {highImpact} high-impact signal{highImpact === 1 ? "" : "s"}
+              </span>
             </div>
+            <SignalDeck
+              cards={signals.filter((s) => s.impact === "high")}
+              actionLabel="Open in Alerts"
+              onOpen={() => navigate("/app/listen/alerts")}
+              initialVisible={3}
+            />
           </div>
         )}
 

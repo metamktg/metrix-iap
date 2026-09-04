@@ -171,7 +171,7 @@ describe("applyCreativeFilters · tier · sortDir=asc (CPA, lower-is-better)", (
   //                    mid50 = v > p25(55) AND v < p75(200) → B(100)
   //                    bottom25 = v >= p75(200) → D(200)
 
-  it("top25 keeps the LOWEST CPA values (≤ p25) — most efficient", () => {
+  it("top25 keeps the LOWEST CPA values (≤ p25), most efficient", () => {
     const filters: CreativeFilterState = { ...DEFAULT_FILTER_STATE, tier: "top25" };
     const result = applyCreativeFilters(ALL, filters, "cpa", "asc");
     const ids = result.map((r) => r.cell_id);
@@ -191,7 +191,7 @@ describe("applyCreativeFilters · tier · sortDir=asc (CPA, lower-is-better)", (
     expect(ids).not.toContain("D"); // 200 == p75 (not strictly less) ✗
   });
 
-  it("bottom25 keeps the HIGHEST CPA values (≥ p75) — least efficient", () => {
+  it("bottom25 keeps the HIGHEST CPA values (≥ p75), least efficient", () => {
     const filters: CreativeFilterState = { ...DEFAULT_FILTER_STATE, tier: "bottom25" };
     const result = applyCreativeFilters(ALL, filters, "cpa", "asc");
     const ids = result.map((r) => r.cell_id);

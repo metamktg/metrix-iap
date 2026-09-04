@@ -179,7 +179,7 @@ beforeEach(() => {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-describe("LoopCommandChain — conversion-export confirmation gate", () => {
+describe("LoopCommandChain · conversion-export confirmation gate", () => {
   it("shows a confirm/cancel dialog instead of a dead-end error on 409 conversion_export_confirmation_required", async () => {
     mockMutateAsync.mockRejectedValueOnce(conversionExportError());
     const seed = seedWithManualAccount();

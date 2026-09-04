@@ -15,11 +15,11 @@ import { DIALOG } from "@/pages/metrix/typography";
 import { platformLabel } from "@/pages/metrix/shared";
 
 function usd(n: number | null | undefined, digits = 2): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 function num(n: number | null | undefined): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return Math.round(n).toLocaleString("en-US");
 }
 
@@ -50,35 +50,35 @@ function metricValueForSegment(t: SegmentTotals, metric: Pick<MetricDef, "id" | 
     case "impressions":
       return { value: t.impressions, display: num(t.impressions) };
     case "reach":
-      return { value: t.reach, display: t.reach != null ? num(t.reach) : "—" };
+      return { value: t.reach, display: t.reach != null ? num(t.reach) : "–" };
     case "clicks_all":
-      return { value: t.clicksAll, display: t.clicksAll != null ? num(t.clicksAll) : "—" };
+      return { value: t.clicksAll, display: t.clicksAll != null ? num(t.clicksAll) : "–" };
     case "link_clicks":
       return { value: t.linkClicks, display: num(t.linkClicks) };
     case "link_ctr": {
       const v = t.impressions > 0 ? (t.linkClicks / t.impressions) * 100 : null;
-      return { value: v, display: v != null ? `${v.toFixed(2)}%` : "—" };
+      return { value: v, display: v != null ? `${v.toFixed(2)}%` : "–" };
     }
     // ── Lower-funnel metrics ────────────────────────────────────────
     case "add_to_cart_rate": {
       const v = t.linkClicks > 0 && t.addsToCart != null ? (t.addsToCart / t.linkClicks) * 100 : null;
-      return { value: v, display: v != null ? `${v.toFixed(2)}%` : "—" };
+      return { value: v, display: v != null ? `${v.toFixed(2)}%` : "–" };
     }
     case "cost_per_add_to_cart": {
       const v = t.addsToCart != null && t.addsToCart > 0 ? t.spend / t.addsToCart : null;
-      return { value: v, display: v != null ? usd(v) : "—" };
+      return { value: v, display: v != null ? usd(v) : "–" };
     }
     case "checkout_rate": {
       const v = t.linkClicks > 0 && t.checkoutsInitiated != null ? (t.checkoutsInitiated / t.linkClicks) * 100 : null;
-      return { value: v, display: v != null ? `${v.toFixed(2)}%` : "—" };
+      return { value: v, display: v != null ? `${v.toFixed(2)}%` : "–" };
     }
     case "cost_per_checkout": {
       const v = t.checkoutsInitiated != null && t.checkoutsInitiated > 0 ? t.spend / t.checkoutsInitiated : null;
-      return { value: v, display: v != null ? usd(v) : "—" };
+      return { value: v, display: v != null ? usd(v) : "–" };
     }
     case "cvr": {
       const v = t.linkClicks > 0 ? (t.results / t.linkClicks) * 100 : null;
-      return { value: v, display: v != null ? `${v.toFixed(2)}%` : "—" };
+      return { value: v, display: v != null ? `${v.toFixed(2)}%` : "–" };
     }
     // ── Library tile ID aliases (lib_* → same computation as segment IDs) ──
     case "lib_clicks_all":
@@ -110,7 +110,7 @@ function metricValueForSegment(t: SegmentTotals, metric: Pick<MetricDef, "id" | 
     case "cpa_blended":
     default: {
       const v = t.results > 0 ? t.spend / t.results : null;
-      return { value: v, display: v != null ? usd(v) : "—" };
+      return { value: v, display: v != null ? usd(v) : "–" };
     }
   }
 }
@@ -219,12 +219,12 @@ export function SegmentGridModal({
       <DialogContent className="max-w-3xl bg-surface-deep border-border/50">
         <DialogHeader className="text-left space-y-1">
           <div className="text-label text-muted-foreground/75 uppercase tracking-widest">{kicker}</div>
-          <DialogTitle className={DIALOG.title}>{title} — avatar × placement</DialogTitle>
+          <DialogTitle className={DIALOG.title}>{title}, avatar × placement</DialogTitle>
           <DialogDescription className="text-caption text-muted-foreground/75 leading-relaxed">
             Two real marginals from this import, both by{" "}
             <span className="text-foreground/80 font-medium">{metricLabel}</span>: avatar segments, and placements at
             account level. Meta's export carries no joint demographic × placement breakdown, so there is no
-            intersection to show — and none is estimated.{unavailableOnPlacements ? " The placement export doesn't carry this metric, so those figures show as unavailable rather than estimated." : ""}
+            intersection to show · and none is estimated.{unavailableOnPlacements ? " The placement export doesn't carry this metric, so those figures show as unavailable rather than estimated." : ""}
           </DialogDescription>
         </DialogHeader>
 
@@ -323,7 +323,7 @@ export function SegmentGridModal({
           <span>
             Avatars: demographic audience signal{cellIds ? ` scoped to ${cellIds.join(", ")}` : " for the whole account"}.
             Placements: account-level placement signal. The two are separate marginals of the same spend, so
-            reading one against the other is directional — they do not multiply out.
+            reading one against the other is directional. They do not multiply out.
           </span>
         </div>
       </DialogContent>

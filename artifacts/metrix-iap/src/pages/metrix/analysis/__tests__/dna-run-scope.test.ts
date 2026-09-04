@@ -40,7 +40,7 @@ function multiRunAccount() {
 }
 
 describe("creative DNA rows are scoped to one run", () => {
-  it("the fixture still spans multiple runs — otherwise this proves nothing", () => {
+  it("the fixture still spans multiple runs. Otherwise this proves nothing", () => {
     const acct = multiRunAccount();
     expect(acct, "no fixture account has variable rows from more than one run").not.toBeNull();
     expect(acct!.runs.size).toBeGreaterThan(1);
@@ -66,7 +66,7 @@ describe("creative DNA rows are scoped to one run", () => {
       counts.set(k, (counts.get(k) ?? 0) + 1);
     }
     const duplicated = [...counts.entries()].filter(([, n]) => n > 1);
-    expect(duplicated.map(([k]) => k), "scoped rows still collide — React keys would too").toEqual([]);
+    expect(duplicated.map(([k]) => k), "scoped rows still collide · React keys would too").toEqual([]);
 
     // Unscoped, the same token's spend is summed once per run.
     const token = acct.rows[0].variable_id as string;

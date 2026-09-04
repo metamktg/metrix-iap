@@ -27,7 +27,7 @@ describe("LOOP_STAGES", () => {
     }
   });
 
-  it("does not include Reports or Exports — outputs, not stages", () => {
+  it("does not include Reports or Exports. Outputs, not stages", () => {
     expect(loopStageById("reports")).toBeNull();
     expect(loopStageById("exports")).toBeNull();
     expect(loopStageById("mst")?.label).toBe("MST");

@@ -44,7 +44,7 @@ describe("metricValueFromTotals", () => {
     expect(metricValueFromTotals("result:unknown_event", totals())).toBeNull();
   });
 
-  it("returns null for cost ratios with a zero denominator — never divides into a fabricated number", () => {
+  it("returns null for cost ratios with a zero denominator. Never divides into a fabricated number", () => {
     const t = totals({ bottom_line_totals: {} , total_link_clicks: 0, total_impressions: 0 });
     expect(metricValueFromTotals("cpa_blended", t)).toBeNull();
     expect(metricValueFromTotals("cpc", t)).toBeNull();
@@ -73,7 +73,7 @@ describe("trendForMetric", () => {
     expect(t!.improved).toBe(true);
   });
 
-  it("returns null without a prior window — never a fabricated 0%", () => {
+  it("returns null without a prior window. Never a fabricated 0%", () => {
     expect(trendForMetric("spend", totals(), null)).toBeNull();
     expect(trendForMetric("spend", totals(), undefined)).toBeNull();
   });

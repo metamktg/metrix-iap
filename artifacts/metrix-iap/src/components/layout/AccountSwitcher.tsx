@@ -349,7 +349,7 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
         <button
           ref={triggerRef}
           onClick={toggle}
-          aria-label={`Switch account — currently: ${triggerLabel}`}
+          aria-label={`Switch account · currently: ${triggerLabel}`}
           title={triggerLabel}
           className={cn(
             "pressable w-10 h-10 mx-auto rounded-lg flex items-center justify-center transition-colors",

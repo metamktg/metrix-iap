@@ -39,7 +39,7 @@ function richestPillar(): MessagePillar {
   const withDetails = all.filter(pillarHasDetails);
   expect(
     withDetails.length,
-    "fixture carries no pillar with disclosure sections — this suite would pass vacuously",
+    "fixture carries no pillar with disclosure sections. This suite would pass vacuously",
   ).toBeGreaterThan(0);
   // Pick the one with the most sections filled, so the order test sees the
   // longest sequence the UI can produce.
@@ -79,7 +79,7 @@ function domIndex(el: Element): number {
   return all.indexOf(el);
 }
 
-describe("Strategy Map — pillar disclosure hierarchy", () => {
+describe("Strategy Map · pillar disclosure hierarchy", () => {
   it("reveals sections in the strategy's own order, audience first", () => {
     const pillar = richestPillar();
     render(<PillarDetailSections pillar={pillar} />);
@@ -87,7 +87,7 @@ describe("Strategy Map — pillar disclosure hierarchy", () => {
     const order = renderedHeadingOrder();
     expect(
       order.length,
-      "no known section headings rendered — the labels may have been renamed",
+      "no known section headings rendered. The labels may have been renamed",
     ).toBeGreaterThan(1);
 
     // Whatever subset this pillar carries, it must appear in the canonical

@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ComponentType } from "react";
 import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@workspace/command-deck/components/ui/toaster";
+import { Toaster } from "@workspace/command-deck/components/ui/sonner";
 import { TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import { MetrixDataProvider } from "@/contexts/MetrixDataContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -283,7 +283,10 @@ function App() {
             <AuthGate />
           </AuthProvider>
         </WouterRouter>
-        <Toaster />
+        {/* One Toaster, at the root: outside every dialog portal so a toast
+            never sits behind a modal, with a close button so nothing has to
+            be waited out. */}
+        <Toaster position="bottom-right" closeButton />
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -173,15 +173,15 @@ function buildResolvedAudienceMetrics(
   const all: ResolvedMetricOption[] = [
     { id: "results",      label: resultPlural,       formatted: fmtNum(totals.results ?? 0) },
     { id: "spend",        label: "Spend",             formatted: fmtUSD(totals.spend ?? 0, 0) },
-    { id: "cpa",          label: "CPA",               formatted: derived.cpa != null ? fmtUSD(derived.cpa) : "—" },
-    { id: "resultRate",   label: "Result rate",       formatted: rate != null ? fmtPct(rate) : "—" },
-    { id: "ctr",          label: "Link CTR",          formatted: derived.ctr != null ? fmtPct(derived.ctr) : "—" },
+    { id: "cpa",          label: "CPA",               formatted: derived.cpa != null ? fmtUSD(derived.cpa) : "–" },
+    { id: "resultRate",   label: "Result rate",       formatted: rate != null ? fmtPct(rate) : "–" },
+    { id: "ctr",          label: "Link CTR",          formatted: derived.ctr != null ? fmtPct(derived.ctr) : "–" },
     { id: "impressions",  label: "Impressions",       formatted: fmtNum(totals.impressions ?? 0) },
-    { id: "cvr",          label: "CVR",               formatted: derived.cvr != null ? fmtPct(derived.cvr) : "—" },
-    { id: "cpm",          label: "CPM",               formatted: derived.cpm != null ? fmtUSD(derived.cpm) : "—" },
-    { id: "atcRate",      label: "Add to cart rate",  formatted: derived.addToCartRate != null ? fmtPct(derived.addToCartRate) : "—" },
-    { id: "costPerAtc",   label: "Cost per ATC",      formatted: derived.costPerAddToCart != null ? fmtUSD(derived.costPerAddToCart) : "—" },
-    { id: "checkoutRate", label: "Checkout rate",     formatted: derived.checkoutRate != null ? fmtPct(derived.checkoutRate) : "—" },
+    { id: "cvr",          label: "CVR",               formatted: derived.cvr != null ? fmtPct(derived.cvr) : "–" },
+    { id: "cpm",          label: "CPM",               formatted: derived.cpm != null ? fmtUSD(derived.cpm) : "–" },
+    { id: "atcRate",      label: "Add to cart rate",  formatted: derived.addToCartRate != null ? fmtPct(derived.addToCartRate) : "–" },
+    { id: "costPerAtc",   label: "Cost per ATC",      formatted: derived.costPerAddToCart != null ? fmtUSD(derived.costPerAddToCart) : "–" },
+    { id: "checkoutRate", label: "Checkout rate",     formatted: derived.checkoutRate != null ? fmtPct(derived.checkoutRate) : "–" },
   ];
   return scale === "communication" ? all.filter((m) => !COST_SCALE_IDS.has(m.id)) : all.filter((m) => m.id !== "resultRate");
 }
@@ -580,17 +580,17 @@ function GroupDetailRow({
       <div className="flex items-center gap-4 shrink-0">
         <KpiStat
           label="CPA index"
-          value={cpaIndex != null ? `${cpaIndex}%` : "—"}
+          value={cpaIndex != null ? `${cpaIndex}%` : "–"}
           unavailableReason={indexReason("CPA", accountDerived.cpa, group.derived.cpa)}
         />
         <KpiStat
           label="CVR index"
-          value={cvrIndex != null ? `${cvrIndex}%` : "—"}
+          value={cvrIndex != null ? `${cvrIndex}%` : "–"}
           unavailableReason={indexReason("CVR", accountDerived.cvr, group.derived.cvr)}
         />
         <KpiStat
           label="Spend"
-          value={group.totals.spend != null ? fmtUSD(group.totals.spend, 0) : "—"}
+          value={group.totals.spend != null ? fmtUSD(group.totals.spend, 0) : "–"}
           unavailableReason={segmentStatReason(group.totals, group.derived, "spend")}
         />
         <KpiStat label={resultPlural} value={fmtNum(group.totals.results)} />
@@ -615,7 +615,7 @@ function GroupDetailCard({
       title={title}
       desc={`${groups.length} ${groupNoun}${groups.length !== 1 ? "s" : ""}, indexed against the account average`}
       defaultOpen={false}
-      right={<SectionInfoIcon tip="CPA/CVR index shows each group's rate relative to the real account-wide blended rate — 100% is the account average, under 100% CPA is cheaper than average, over 100% CVR is better than average." />}
+      right={<SectionInfoIcon tip="CPA/CVR index shows each group's rate relative to the real account-wide blended rate. 100% is the account average, under 100% CPA is cheaper than average, over 100% CVR is better than average." />}
     >
       {groups.length === 0 ? (
         <GroupingEmptyState hint={emptyHint} fallback={`No ${groupNoun}s to show.`} />
@@ -687,7 +687,7 @@ function RankedListTab({
                 </span>
                 <SignalTag signal={e.signal} className="shrink-0" />
                 <span className={cn(TYPE.title, "font-bold tabular-nums text-foreground/80 shrink-0 mr-1")}>
-                  {v != null ? activeMetric.format(v) : "—"}
+                  {v != null ? activeMetric.format(v) : "–"}
                 </span>
                 <span className="shrink-0 inline-flex items-center gap-1 h-6 px-2.5 rounded-md text-label font-semibold bg-primary/15 text-interactive opacity-55 group-hover:opacity-100 transition-opacity">
                   Explore <ArrowRight className="w-3.5 h-3.5" />
@@ -701,11 +701,11 @@ function RankedListTab({
               </div>
               <div className="ml-6 flex items-center gap-4 flex-wrap">
                 <KpiStat label={resultPlural}  value={fmtNum(e.totals.results)}                                   highlight={activeMetric.id === "results"} />
-                <KpiStat label="CPA"           value={e.derived.cpa != null ? fmtUSD(e.derived.cpa) : "—"}       highlight={activeMetric.id === "cpa"}
+                <KpiStat label="CPA"           value={e.derived.cpa != null ? fmtUSD(e.derived.cpa) : "–"}       highlight={activeMetric.id === "cpa"}
                          unavailableReason={segmentStatReason(e.totals, e.derived, "cpa")} />
-                <KpiStat label="Spend"         value={e.totals.spend != null ? fmtUSD(e.totals.spend, 0) : "—"}  highlight={activeMetric.id === "spend"}
+                <KpiStat label="Spend"         value={e.totals.spend != null ? fmtUSD(e.totals.spend, 0) : "–"}  highlight={activeMetric.id === "spend"}
                          unavailableReason={segmentStatReason(e.totals, e.derived, "spend")} />
-                <KpiStat label="CTR"           value={e.derived.ctr != null ? fmtPct(e.derived.ctr) : "—"}       highlight={activeMetric.id === "ctr"}
+                <KpiStat label="CTR"           value={e.derived.ctr != null ? fmtPct(e.derived.ctr) : "–"}       highlight={activeMetric.id === "ctr"}
                          unavailableReason={segmentStatReason(e.totals, e.derived, "ctr")} />
               </div>
             </button>
@@ -715,7 +715,7 @@ function RankedListTab({
       <ShowMoreButton total={ranked.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="segments" />
       <p className={cn("mt-3", TYPE.label, "text-muted-foreground/75")}>
         Bar length is relative to the best segment on {activeMetric.label}.{" "}
-        {ranked.length} segment{ranked.length !== 1 ? "s" : ""} — click any row for its messaging attribution.
+        {ranked.length} segment{ranked.length !== 1 ? "s" : ""}, click any row for its messaging attribution.
       </p>
     </SectionCard>
   );
@@ -946,7 +946,7 @@ export function AudienceView() {
       reason:
         `Clusters are built from cost per result and conversion rate, so they need results. ` +
         `${withSpend} segment${withSpend === 1 ? "" : "s"} here ${withSpend === 1 ? "has" : "have"} spend but no results yet, ` +
-        `so there is nothing to cluster on — the spend itself is real and Age view shows it.`,
+        `so there is nothing to cluster on. The spend itself is real and Age view shows it.`,
       actionLabel: "Switch to Age view",
       onSwitch: () => setMode("age"),
     };
@@ -973,7 +973,7 @@ export function AudienceView() {
                   title="No demographic signal"
                   message={
                     totalDemoRows > 0
-                      ? `${totalDemoRows} demographic row${totalDemoRows === 1 ? "" : "s"} exist under other result events — switch the result scope above to read them.`
+                      ? `${totalDemoRows} demographic row${totalDemoRows === 1 ? "" : "s"} exist under other result events. Switch the result scope above to read them.`
                       : "Audience intelligence appears once demographic result data exists."
                   }
                   icon={Users}
@@ -989,7 +989,7 @@ export function AudienceView() {
                 section={SECTION}
                 title="Audience"
                 accountName={acct.name}
-                subtitle={`${clusterGroups.length} real behavioral cluster${clusterGroups.length !== 1 ? "s" : ""}, derived from the demographic breakdown — not declared targeting.`}
+                subtitle={`${clusterGroups.length} real behavioral cluster${clusterGroups.length !== 1 ? "s" : ""}, derived from the demographic breakdown. Not declared targeting.`}
                 tabs="analysis"
               />
               <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
@@ -1111,7 +1111,7 @@ export function AudienceView() {
                       <MetricTile
                         variant="primary"
                         label={`Prime · ${activeMetric.label}`}
-                        value={topSeg ? segmentLabel(topSeg.seg) : "—"}
+                        value={topSeg ? segmentLabel(topSeg.seg) : "–"}
                         sub={
                           topSeg
                             ? `${activeMetric.format(activeMetric.value(topSeg)!)} ${activeMetric.label.toLowerCase()}`

@@ -32,7 +32,7 @@ const base = {
   adds_to_cart_value: null,
 };
 
-describe("adaptApiDemoRows — demographic impressions", () => {
+describe("adaptApiDemoRows · demographic impressions", () => {
   it("carries the real impressions figure through instead of zero", () => {
     const [row] = adaptApiDemoRows([{ ...base, impressions: 50_000 }]);
     expect(row!.Impressions).toBe(50_000);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Menu } from "lucide-react";
 import { Sidebar } from "./Sidebar";
@@ -36,6 +36,38 @@ export function AppShell({ children }: AppShellProps) {
   const compact = useIsCompactShell();
   const [navOpen, setNavOpen] = useState(false);
   const [location] = useLocation();
+  const mainRef = useRef<HTMLElement | null>(null);
+  const firstRoute = useRef(true);
+
+  // A route change moves focus to the page and names it by its own title,
+  // so a screen reader hears where it landed instead of staying on the
+  // link that was pressed. Skipped on first paint: the login focus and the
+  // browser's own document focus are the right first stop there.
+  useEffect(() => {
+    if (firstRoute.current) { firstRoute.current = false; return; }
+    const main = mainRef.current;
+    if (!main) return;
+    // Focus moves at once. The name follows the page's own h1, which a lazy
+    // route renders a beat later (behind the Suspense fallback), so the
+    // label is read off the DOM when the h1 lands rather than off the
+    // previous page's heading.
+    main.setAttribute("aria-label", "Page content");
+    main.focus({ preventScroll: true });
+    // The heading in the DOM right now belongs to the page being LEFT (the
+    // new one is still behind its Suspense fallback), so only a heading
+    // that is a different node counts.
+    const leaving = main.querySelector("h1");
+    const name = () => {
+      const h1 = main.querySelector("h1");
+      const title = h1?.textContent?.trim();
+      if (h1 && h1 !== leaving && title) { main.setAttribute("aria-label", title); return true; }
+      return false;
+    };
+    const observer = new MutationObserver(() => { if (name()) observer.disconnect(); });
+    observer.observe(main, { childList: true, subtree: true });
+    const stop = window.setTimeout(() => observer.disconnect(), 2000);
+    return () => { observer.disconnect(); window.clearTimeout(stop); };
+  }, [location]);
 
   // Navigating closes the drawer. Keyed on location so it fires for any
   // route change, including one triggered from inside the drawer itself.
@@ -79,7 +111,7 @@ export function AppShell({ children }: AppShellProps) {
           )}
           <div
             className={`fixed inset-y-0 left-0 z-50 flex transition-transform duration-200
-                        ease-[cubic-bezier(0.2,0,0,1)] ${navOpen ? "translate-x-0" : "-translate-x-full"}`}
+                        ease-[var(--mx-ease)] ${navOpen ? "translate-x-0" : "-translate-x-full"}`}
             // INERT, not just aria-hidden.
             //
             // aria-hidden hides a subtree from assistive tech and does
@@ -117,7 +149,7 @@ export function AppShell({ children }: AppShellProps) {
               aria-expanded={navOpen}
               className="pressable shrink-0 h-10 w-10 ml-2 inline-flex items-center justify-center rounded-lg
                          text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06]
-                         transition-[color,background-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                         transition-[color,background-color,scale] duration-150 ease-[var(--mx-ease)]
                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Menu className="w-5 h-5" aria-hidden="true" />
@@ -130,8 +162,11 @@ export function AppShell({ children }: AppShellProps) {
         <SeedRefreshFailedBanner />
         <GlobalRunningBanner />
 
-        <main className="flex-1 overflow-hidden flex">
-          <div className="flex-1 overflow-auto flex flex-col min-w-0">
+        <main ref={mainRef} tabIndex={-1} aria-label="Page content" className="flex-1 overflow-hidden flex outline-none">
+          {/* data-route-host: the page mounted here arrives with a 180 ms
+              fade and 4 px rise (index.css .mx-route-in), once per mount,
+              never on a query change. */}
+          <div data-route-host className="flex-1 overflow-auto flex flex-col min-w-0">
             {children}
           </div>
 

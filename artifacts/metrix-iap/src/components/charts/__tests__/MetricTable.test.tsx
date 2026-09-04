@@ -29,25 +29,25 @@ const names = () => table().rows.map((r) => within(r).getAllByRole("cell")[0]!.t
 const render_ = () =>
   render(<MetricTable rows={ROWS} rowKey={(r) => r.id} label={(r) => r.name} columns={COLS} />);
 
-describe("MetricTable — a null is not a zero", () => {
+describe("MetricTable · a null is not a zero", () => {
   it("renders an unmeasured cell as a dash, never as 0", () => {
     render_();
     const bravo = table().rows.find((r) => within(r).queryByText("Bravo creative"))!;
     const cells = within(bravo).getAllByRole("cell");
     // Spend 400 is real; CPA is unmeasured.
     expect(cells[1]!.textContent).toContain("$400");
-    expect(cells[2]!.textContent!.trim()).toBe("—");
+    expect(cells[2]!.textContent!.trim()).toBe("–");
     expect(cells[2]!.textContent).not.toContain("0");
   });
 
-  it("still renders a real zero as a zero — the two are different facts", () => {
+  it("still renders a real zero as a zero. The two are different facts", () => {
     render_();
     const delta = table().rows.find((r) => within(r).queryByText("Delta creative"))!;
     expect(within(delta).getAllByRole("cell")[1]!.textContent).toContain("$0");
   });
 });
 
-describe("MetricTable — sorting", () => {
+describe("MetricTable · sorting", () => {
   it("sorts descending on first click of a normal metric", async () => {
     const u = userEvent.setup();
     render_();
@@ -83,7 +83,7 @@ describe("MetricTable — sorting", () => {
   });
 });
 
-describe("MetricTable — filtering", () => {
+describe("MetricTable · filtering", () => {
   it("narrows to matching rows and says so when nothing matches", async () => {
     const u = userEvent.setup();
     render_();
@@ -105,7 +105,7 @@ describe("MetricTable — filtering", () => {
   });
 });
 
-describe("MetricTable — the reader picks the metrics", () => {
+describe("MetricTable · the reader picks the metrics", () => {
   it("hides optional columns until they are chosen", async () => {
     const u = userEvent.setup();
     render_();
@@ -133,7 +133,7 @@ describe("MetricTable — the reader picks the metrics", () => {
   });
 });
 
-describe("MetricTable — long lists", () => {
+describe("MetricTable · long lists", () => {
   const many: Row[] = Array.from({ length: 30 }, (_, i) => ({
     id: `r${i}`, name: `Row ${i}`, spend: 100 - i, cpa: i, ctr: 1,
   }));

@@ -23,7 +23,7 @@ const STAGES = [
   { key: "purchase", label: "Purchases", value: 1_000 },
 ];
 
-describe("FunnelChart — a missing stage is not a zero", () => {
+describe("FunnelChart · a missing stage is not a zero", () => {
   it("says how many stages the export did not carry", () => {
     render(<FunnelChart stages={STAGES} format={count} />);
     expect(screen.getByText(/1 stage not carried by this export/)).toBeTruthy();
@@ -52,7 +52,7 @@ describe("FunnelChart — a missing stage is not a zero", () => {
   });
 });
 
-describe("FunnelChart — a stage above the one before it is reported, not clamped", () => {
+describe("FunnelChart · a stage above the one before it is reported, not clamped", () => {
   it("flags an over-100% step instead of capping it", () => {
     render(
       <FunnelChart
@@ -69,7 +69,7 @@ describe("FunnelChart — a stage above the one before it is reported, not clamp
   });
 });
 
-describe("FunnelChart — the two bases", () => {
+describe("FunnelChart · the two bases", () => {
   it("states which basis the bar lengths use", () => {
     render(<FunnelChart stages={STAGES} format={count} />);
     expect(screen.getByText(/share of the previous stage/)).toBeTruthy();
@@ -119,7 +119,7 @@ const map = (extra: Partial<React.ComponentProps<typeof HeatMatrix>> = {}) => (
   />
 );
 
-describe("HeatMatrix — an unmeasured cell is not a low one", () => {
+describe("HeatMatrix · an unmeasured cell is not a low one", () => {
   it("announces the gap as unmeasured", () => {
     render(map());
     expect(screen.getByRole("gridcell", { name: /35–44, Male: Cost per result not measured/ })).toBeTruthy();
@@ -128,7 +128,7 @@ describe("HeatMatrix — an unmeasured cell is not a low one", () => {
   it("gives a gap no value text and no fill", () => {
     const { container } = render(map());
     const gap = screen.getByRole("gridcell", { name: /not measured/ }) as HTMLElement;
-    expect(within(gap).getByText("—")).toBeTruthy();
+    expect(within(gap).getByText("–")).toBeTruthy();
     // Hatched, not filled — the two must not be the same square.
     expect(gap.style.backgroundImage).toContain("repeating-linear-gradient");
     expect(gap.style.background).toBe("");
@@ -141,7 +141,7 @@ describe("HeatMatrix — an unmeasured cell is not a low one", () => {
   });
 });
 
-describe("HeatMatrix — severity stays in order", () => {
+describe("HeatMatrix · severity stays in order", () => {
   it("paints a worse value at least as intensely as a less bad one", () => {
     render(map());
     const worse = screen.getByRole("gridcell", { name: /Male: Cost per result \$30\.00/ }) as HTMLElement;
@@ -160,7 +160,7 @@ describe("HeatMatrix — severity stays in order", () => {
   });
 });
 
-describe("HeatMatrix — the grid is operable", () => {
+describe("HeatMatrix · the grid is operable", () => {
   it("exposes one tab stop and moves focus with the arrow keys", async () => {
     const u = userEvent.setup();
     render(map());
@@ -198,7 +198,7 @@ describe("HeatMatrix — the grid is operable", () => {
   });
 });
 
-describe("ViewSwitcher — an unsupported view is disabled WITH its reason", () => {
+describe("ViewSwitcher · an unsupported view is disabled WITH its reason", () => {
   it("keeps every view present so absence is never ambiguous", () => {
     render(<ViewSwitcher shape="historical_matrix_4x4" value="map" onChange={() => {}} />);
     for (const label of ["Trend", "Compare", "Breakdown", "Funnel", "Map", "Table"]) {

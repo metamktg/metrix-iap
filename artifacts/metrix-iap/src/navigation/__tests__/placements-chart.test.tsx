@@ -46,7 +46,7 @@ describe("Placements view renders real placement data from the seed fixture", ()
     expect(placementButtons.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders the 'Feed' placement label — present in both v3 and c4e signals", async () => {
+  it("renders the 'Feed' placement label. Present in both v3 and c4e signals", async () => {
     await renderAt(PLACEMENTS_PATH);
     // "Feed" appears in both v3_placement_signal and c4e_placement_signal in
     // the seed fixture. If either signal stops being read, the rollup may

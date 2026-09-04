@@ -172,7 +172,7 @@ const LEGACY_GATE_TEXT = /live insights require meta connection/i;
 
 // ── AlertsView ────────────────────────────────────────────────────────────
 
-describe("AlertsView — disconnected", () => {
+describe("AlertsView · disconnected", () => {
   it("renders the Active alerts metric tile", () => {
     render(<AlertsView />, { wrapper: makeWrapper() });
     expect(screen.getByText(/active alerts/i)).toBeTruthy();
@@ -211,7 +211,7 @@ describe("AlertsView — disconnected", () => {
   });
 });
 
-describe("AlertsView — connected", () => {
+describe("AlertsView · connected", () => {
   beforeEach(() => { mockMeta.connected = true; });
 
   it("hides ConnectionNudgeBanner when Meta is connected", () => {
@@ -232,7 +232,7 @@ describe("AlertsView — connected", () => {
 
 // ── SignalView ────────────────────────────────────────────────────────────
 
-describe("SignalView — disconnected", () => {
+describe("SignalView · disconnected", () => {
   it("renders the Active signals metric tile", () => {
     render(<SignalView />, { wrapper: makeWrapper("/app/listen/signal") });
     expect(screen.getByText(/^active$/i)).toBeTruthy();
@@ -271,7 +271,7 @@ describe("SignalView — disconnected", () => {
   });
 });
 
-describe("SignalView — connected", () => {
+describe("SignalView · connected", () => {
   beforeEach(() => { mockMeta.connected = true; });
 
   it("hides ConnectionNudgeBanner when Meta is connected", () => {
@@ -292,7 +292,7 @@ describe("SignalView — connected", () => {
 
 // ── RecommendationsView ───────────────────────────────────────────────────
 
-describe("RecommendationsView — disconnected", () => {
+describe("RecommendationsView · disconnected", () => {
   it("renders the Recommendations metric tile", () => {
     render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
     // "Recommendations" appears in both the page title and the MetricTile label.
@@ -310,7 +310,7 @@ describe("RecommendationsView — disconnected", () => {
   // something true. The subject of this file is unchanged — the view renders
   // its content whether or not Meta is connected — and the honesty rule is
   // unchanged too: the tiles appear only when there is something to count.
-  it("renders its content when Meta is disconnected — real recommendations, not a gate", () => {
+  it("renders its content when Meta is disconnected. Real recommendations, not a gate", () => {
     render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
     const derived = deriveRecommendations(booksterFull);
     expect(derived.length).toBeGreaterThan(0);
@@ -323,7 +323,7 @@ describe("RecommendationsView — disconnected", () => {
     expect(screen.queryByText(/^no recommendations$/i)).toBeNull();
   });
 
-  it("counts only what it can measure — the tiles never state a zero for an unrun stage", () => {
+  it("counts only what it can measure. The tiles never state a zero for an unrun stage", () => {
     render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
     // "Auto-applied 0" is a policy statement (nothing is ever auto-applied),
     // and it renders beside real counts — never as the only content of an
@@ -347,7 +347,7 @@ describe("RecommendationsView — disconnected", () => {
   });
 });
 
-describe("RecommendationsView — connected", () => {
+describe("RecommendationsView · connected", () => {
   beforeEach(() => { mockMeta.connected = true; });
 
   it("hides ConnectionNudgeBanner when Meta is connected", () => {
@@ -374,7 +374,7 @@ describe("RecommendationsView — connected", () => {
 //   • The "No recommendations" PendingState is absent
 //   • ConnectionNudgeBanner still tracks the Meta connection state correctly
 
-describe("RecommendationsView — with recommendation cards (disconnected)", () => {
+describe("RecommendationsView · with recommendation cards (disconnected)", () => {
   beforeEach(() => {
     activeSeed = syntheticSeedWithCards;
     mockMeta.connected = false;
@@ -401,7 +401,7 @@ describe("RecommendationsView — with recommendation cards (disconnected)", () 
   });
 });
 
-describe("RecommendationsView — with recommendation cards (connected)", () => {
+describe("RecommendationsView · with recommendation cards (connected)", () => {
   beforeEach(() => {
     activeSeed = syntheticSeedWithCards;
     mockMeta.connected = true;

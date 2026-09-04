@@ -77,7 +77,7 @@ const UNPRODUCIBLE: Exclusion[] = [
     path: "iap.campaign_summary.bottom_line_totals",
     how: ["delete", "null"],
     why:
-      "Same literal (metrixSeedAssembly.ts:861, `bottom_line_totals: byEvent`) — the key is " +
+      "Same literal (metrixSeedAssembly.ts:861, `bottom_line_totals: byEvent`). The key is " +
       "unconditional and byEvent is always an object. `{}` IS producible (an account whose " +
       "ad_performance table is empty) and is therefore still swept.",
   },
@@ -228,7 +228,7 @@ function bundleWithAccount(account: Any): Any {
   return sweepBundle;
 }
 
-describe("seed contract fuzzing — the client must degrade, never crash", () => {
+describe("seed contract fuzzing · the client must degrade, never crash", () => {
   // ── harness guards ───────────────────────────────────────────────────
   // Two mistakes this suite could make silently: throwing on the untouched
   // fixture (so every "finding" is mine), or generating no cases (so it
@@ -238,7 +238,7 @@ describe("seed contract fuzzing — the client must degrade, never crash", () =>
     const err = driveEverything(baseBundle);
     expect(
       err?.message ?? null,
-      "the harness itself fails on good data — every finding below would be mine, not the app's",
+      "the harness itself fails on good data. Every finding below would be mine, not the app's",
     ).toBeNull();
   });
 
@@ -303,7 +303,7 @@ describe("seed contract fuzzing — the client must degrade, never crash", () =>
     const stale = UNPRODUCIBLE.filter((ex) => !usedExclusions.has(ex));
     expect(
       stale.map((ex) => ex.path ?? ex.prefix),
-      "exclusions that no longer match any path — the shape they excused is gone, so delete them",
+      "exclusions that no longer match any path. The shape they excused is gone, so delete them",
     ).toEqual([]);
     // ~600 cases x the full adapter+derivation surface. Measured at ~16 s on
     // the CI runner, so the file-wide 15 s default is not enough; the timeout

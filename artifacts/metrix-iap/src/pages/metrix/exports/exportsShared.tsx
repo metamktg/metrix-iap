@@ -17,7 +17,7 @@ export function GoogleDriveComingSoonButton() {
       className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/75 cursor-not-allowed"
     >
       <Cloud className="w-3.5 h-3.5" />
-      Google Drive — Coming soon
+      Google Drive · Coming soon
     </button>
   );
 }
@@ -42,11 +42,11 @@ export function JsonExportCard({
   const [downloaded, setDownloaded] = useState(false);
   return (
     <SectionCard title={title} desc={desc}>
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex flex-col gap-3">
         <p className="text-caption text-muted-foreground/75 leading-relaxed min-w-0">
           Includes: {fieldSummary.join(", ")}.
         </p>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => {

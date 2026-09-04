@@ -2,7 +2,7 @@
 // Reusable decision swiper used by Manager Overview and Ad Account Overview.
 // Inputs: mouse drag, touch drag, keyboard arrows (after focus), buttons.
 //   swipe right / →  = Approve  → Task Tray (manual implementation task)
-//   swipe left  / ←  = Reject   → Dismissed Log (restorable)
+//   swipe left  / ←  = Dismiss  → Dismissed Log (restorable)
 //   tap / Space / ↑  = Open details
 //   Ctrl/Cmd+Z       = Undo last decision
 // Approved cards NEVER auto-edit campaigns.
@@ -20,7 +20,6 @@ import {
   Layers,
   LayoutGrid,
   CheckCircle2,
-  AlertTriangle,
 } from "lucide-react";
 import {
   useDecisions,
@@ -31,10 +30,11 @@ import {
   isDone,
 } from "@/lib/data/decisionStore";
 import { addToTray, removeFromTray } from "@/lib/data/trayStore";
-import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 import { deriveLabel } from "@/pages/metrix/shared";
 import { TYPE } from "@/pages/metrix/typography";
 import { SwipeDeck } from "@/components/widgets/SwipeDeck";
+import { RecommendationDrawer } from "./RecommendationDrawer";
+import { IMPACT_STYLE } from "./recommendationKind";
 
 export interface DeckCard {
   id: string;
@@ -48,16 +48,10 @@ export interface DeckCard {
   actionGroup: string; // "Budget actions" | "Creative actions" | ...
 }
 
-const IMPACT_STYLE: Record<string, string> = {
-  high: "bg-status-danger/10 text-status-danger border-status-danger/20",
-  medium: "bg-status-warning/10 text-status-warning border-status-warning/20",
-  low: "bg-muted text-muted-foreground/75 border-border/40",
-  setup: "bg-primary/10 text-interactive border-primary/20",
-};
 
 // Single source of truth for how impact tiers rank against each other —
 // shared by every surface that sorts DeckCard-shaped recommendations by
-// impact (NextBestActionCard, ActionQueueView, …) so they can never
+// impact (the next-best-actions rail, ActionQueueView, …) so they can never
 // silently diverge on what "impact" means as an absolute rank.
 export const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
 
@@ -85,113 +79,6 @@ function Badge({ text, cls }: { text: string; cls: string }) {
   );
 }
 
-// ─── Detail drawer ────────────────────────────────────────────────────
-
-function DetailDrawer({
-  card,
-  onClose,
-  onApprove,
-  onReject,
-  onSegments,
-}: {
-  card: DeckCard;
-  onClose: () => void;
-  onApprove: () => void;
-  onReject: () => void;
-  onSegments?: (card: DeckCard) => void;
-}) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  return (
-    <>
-      <div className="fixed inset-0 bg-background/40 backdrop-blur-sm z-40" onClick={onClose} />
-      <div className="fixed right-0 top-0 h-full w-[400px] max-w-full bg-surface-deep border-l border-border/50 z-50 flex flex-col overflow-hidden elevation-floating">
-        <div className="flex items-center gap-2 px-5 py-4 border-b border-border/40">
-          <div className="flex-1 min-w-0">
-            <div className="text-label text-muted-foreground/75 uppercase tracking-widest mb-1">
-              Recommendation
-            </div>
-            <p className="text-title font-bold text-foreground leading-tight">{card.title}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="pressable w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {card.descriptor && <Badge text={card.descriptor} cls="bg-foreground/[0.04] text-foreground/70 border-border/40" />}
-            <Badge text={card.scope} cls={SCOPE_STYLE[card.scope] ?? "bg-muted text-muted-foreground/75 border-border/40"} />
-            <Badge text={`${card.impact} impact`} cls={IMPACT_STYLE[card.impact] ?? IMPACT_STYLE.low} />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-label uppercase tracking-widest text-muted-foreground/75">Rationale</label>
-            <p className="text-body text-foreground/80 leading-relaxed"><TokenizedConceptText text={card.rationale} /></p>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-label uppercase tracking-widest text-muted-foreground/75">Recommended action</label>
-            <p className="text-body text-foreground/80 leading-relaxed"><TokenizedConceptText text={card.recommendedAction} /></p>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-label uppercase tracking-widest text-muted-foreground/75">Confidence</label>
-            <p className="text-body text-foreground/80 capitalize">{card.confidence}</p>
-          </div>
-
-          {onSegments && (
-            <div className="space-y-1.5">
-              <label className="text-label uppercase tracking-widest text-muted-foreground/75">Evidence segments</label>
-              <div>
-                <button
-                  onClick={() => onSegments(card)}
-                  className="inline-flex items-center gap-1.5 text-caption font-medium text-interactive border border-primary/30 hover:bg-primary/10 active:bg-primary/20 rounded-md px-2.5 py-1.5 transition-colors"
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  Avatar × placement drill-down
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-start gap-2 p-3 rounded-lg border border-status-warning/15 bg-status-warning/[0.04]">
-            <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
-            <p className="text-label text-status-warning/80 leading-relaxed">
-              Approving adds a manual implementation task. No auto-changes are applied to live campaigns.
-            </p>
-          </div>
-        </div>
-
-        <div className="px-5 py-4 border-t border-border/40 flex items-center gap-2">
-          <button
-            onClick={() => { onReject(); onClose(); }}
-            className="pressable flex-1 flex items-center justify-center gap-1.5 h-9 rounded border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
-          >
-            <X className="w-3.5 h-3.5" /> Reject
-          </button>
-          <button
-            onClick={() => { onApprove(); onClose(); }}
-            className="pressable flex-1 flex items-center justify-center gap-1.5 h-9 rounded bg-primary/15 border border-primary/30 text-body font-medium text-interactive hover:bg-primary/25 transition-colors"
-          >
-            <Check className="w-3.5 h-3.5" /> Add to Tray
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
-
 // ─── Card face ────────────────────────────────────────────────────────
 // Presentation only. The gesture, the thresholds, the rotation, the intent
 // stamps and the commit sequencing all live in SwipeDeck now — this used to
@@ -209,19 +96,26 @@ function RecommendationCardFace({ card }: { card: DeckCard }) {
       {/* Was 14px stock semibold — the same size as the rationale
           under it, so the card had a title and a body at one size and no
           hierarchy between them. TYPE.title is the role for a card title. */}
-      <p className={cn(TYPE.title, "line-clamp-2")}>{card.title}</p>
+      {/* payload-ok: same button-card constraint. A hypothesis title is a
+          whole sentence; two clamped lines show about 160 characters, and the
+          cut shows the same words with the whole title in the attribute and
+          in the drawer a tap opens. */}
+      <p className={cn(TYPE.title, "line-clamp-2")} title={card.title}>{deriveLabel(card.title, 160)}</p>
 
-      {/* payload-ok: swipe-card face inside a <button> — a DenseText control
-          is invalid HTML here and the full card is one tap away. Cut ONCE by
-          the clamp now; deriveLabel(110) on top of it was removing words the
-          clamp would have shown anyway. */}
-      <p className="text-body text-muted-foreground/75 leading-snug line-clamp-3">{card.rationale}</p>
+      {/* payload-ok: swipe-card face inside a <button>, so a DenseText control
+          is invalid HTML here and the full card is one tap away. The clamp
+          shows three lines, about 200 characters; the cut at 200 (word
+          boundary, full text in the title) shows the same words and keeps
+          the paragraph out of the DOM, where the friction gate reads a
+          clamped paragraph as first-layer prose. */}
+      <p className="text-body text-muted-foreground/75 leading-snug line-clamp-3" title={card.rationale}>{deriveLabel(card.rationale, 200)}</p>
 
       <div className="mt-auto pt-2 border-t border-border/20">
         <p className={cn(TYPE.microLabel, "tracking-widest mb-1")}>Recommended</p>
-        {/* payload-ok: same button-card constraint. Two lines — the
-            recommended action is the reason the card exists. */}
-        <p className="text-caption text-foreground/75 leading-snug line-clamp-2">{card.recommendedAction}</p>
+        {/* payload-ok: same button-card constraint. Two lines, about 140
+            characters: the recommended action is the reason the card exists,
+            and the whole of it is in the drawer a tap opens. */}
+        <p className="text-caption text-foreground/75 leading-snug line-clamp-2" title={card.recommendedAction}>{deriveLabel(card.recommendedAction, 140)}</p>
       </div>
     </div>
   );
@@ -394,7 +288,7 @@ export function RecommendationDeck({
                 onCommit={(c, dir) => (dir === "right" ? approve(c.id) : reject(c.id))}
                 onTap={(c) => setDetailId(c.id)}
                 right={{ label: "Add to Tray", tone: "success" }}
-                left={{ label: "Reject", tone: "danger" }}
+                left={{ label: "Dismiss", tone: "danger" }}
               />
             </div>
 
@@ -403,7 +297,7 @@ export function RecommendationDeck({
               <button
                 onClick={() => reject(pending[0].id)}
                 className="pressable w-11 h-11 rounded-full flex items-center justify-center border border-status-danger/30 text-status-danger hover:bg-status-danger/10 transition-colors"
-                aria-label="Reject"
+                aria-label="Dismiss"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -424,7 +318,7 @@ export function RecommendationDeck({
             </div>
 
             <div className="flex items-center justify-center gap-3 mt-3 text-caption text-muted-foreground/75">
-              <span>← reject</span>
+              <span>← dismiss</span>
               <span>→ add to tray</span>
               <span>↑ / space details</span>
               <span>{pending.length} left</span>
@@ -449,12 +343,13 @@ export function RecommendationDeck({
       {tab === "dismissed" && <DismissedLog items={rejected} onRestore={restore} />}
 
       {detailCard && (
-        <DetailDrawer
-          card={detailCard}
+        <RecommendationDrawer
+          rec={detailCard}
+          open
           onClose={() => setDetailId(null)}
           onApprove={() => { approve(detailCard.id); setDetailId(null); }}
-          onReject={() => { reject(detailCard.id); setDetailId(null); }}
-          onSegments={onSegments}
+          onDismiss={() => { reject(detailCard.id); setDetailId(null); }}
+          onSegments={onSegments ? () => onSegments(detailCard) : undefined}
         />
       )}
     </div>
@@ -518,7 +413,7 @@ function TaskTray({
 
 function DismissedLog({ items, onRestore }: { items: DeckCard[]; onRestore: (id: string) => void }) {
   if (!items.length) {
-    return <EmptyPanel Icon={Slash} title="No dismissed recommendations" sub="Rejected recommendations are kept here with a restore option." />;
+    return <EmptyPanel Icon={Slash} title="No dismissed recommendations" sub="Dismissed recommendations are kept here with a restore option." />;
   }
   return (
     <div className="space-y-2">

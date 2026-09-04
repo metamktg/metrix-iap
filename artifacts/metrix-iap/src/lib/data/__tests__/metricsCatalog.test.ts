@@ -19,7 +19,7 @@ function sourceWith(resultEvents: MetricSource["resultEvents"]): MetricSource {
   };
 }
 
-describe("buildMetricCatalog — per-objective cost metrics", () => {
+describe("buildMetricCatalog · per-objective cost metrics", () => {
   it("adds a real Cost-per-X entry for each real event, computed as spend ÷ results", () => {
     const catalog = buildMetricCatalog(
       sourceWith([{ key: "Website purchases", label: "Purchases", results: 640, spend: 1280 }])
@@ -33,7 +33,7 @@ describe("buildMetricCatalog — per-objective cost metrics", () => {
     expect(costEntry!.eventKey).toBe("Website purchases");
   });
 
-  it("derives one honestly-labeled Cost-per-X metric per real event key — never a fixed list", () => {
+  it("derives one honestly-labeled Cost-per-X metric per real event key. Never a fixed list", () => {
     const catalog = buildMetricCatalog(
       sourceWith([
         { key: "Mobile app installs", label: "Installs", results: 100, spend: 500 },
@@ -57,7 +57,7 @@ describe("buildMetricCatalog — per-objective cost metrics", () => {
     expect(catalog.find((m) => m.id === resultCostMetricId("onb_initiate_checkout"))!.label).toBe("Cost per checkout");
   });
 
-  it("omits the Cost-per-X entry entirely when results is 0 — never divides by zero", () => {
+  it("omits the Cost-per-X entry entirely when results is 0. Never divides by zero", () => {
     const catalog = buildMetricCatalog(
       sourceWith([{ key: "Website purchases", label: "Purchases", results: 0, spend: 500 }])
     );
@@ -66,7 +66,7 @@ describe("buildMetricCatalog — per-objective cost metrics", () => {
     expect(catalog.some((m) => m.id === resultMetricId("Website purchases"))).toBe(true);
   });
 
-  it("produces a genuinely per-account metric list — different accounts get different Cost-per-X entries", () => {
+  it("produces a genuinely per-account metric list. Different accounts get different Cost-per-X entries", () => {
     const accountA = buildMetricCatalog(
       sourceWith([{ key: "Website purchases", label: "Purchases", results: 640, spend: 1280 }])
     );

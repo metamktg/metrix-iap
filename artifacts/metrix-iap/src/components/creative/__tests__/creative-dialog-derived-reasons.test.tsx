@@ -66,7 +66,7 @@ beforeEach(() => {
   ACTIVE_ACCOUNT = "bookster";
 });
 
-describe("CreativeExpandDialog — derived empty reasons", () => {
+describe("CreativeExpandDialog · derived empty reasons", () => {
   it("says rows did not JOIN (not 'import a file') for a cell absent from an imported export", () => {
     // bookster HAS demographic rows, just none for this cell code.
     open("C9Z");

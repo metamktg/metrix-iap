@@ -112,7 +112,7 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
-describe("BUG-08 — restage discoverability", () => {
+describe("BUG-08 · restage discoverability", () => {
   it("points at Import History when the missing files were already processed by a prior run", async () => {
     // Exactly the state a successful run leaves behind.
     mockImports = [
@@ -121,7 +121,7 @@ describe("BUG-08 — restage discoverability", () => {
     ];
     await openWarnings();
     const text = warningText();
-    expect(text).toContain("re-stage it from Import History");
+    expect(text).toContain("Re-stage it from Import History");
     expect(text).toContain("Demographics and Placement");
   });
 
@@ -149,7 +149,7 @@ describe("BUG-08 — restage discoverability", () => {
     expect(screen.queryByText("A delivery report is required before running analysis")).toBeNull();
     const text = warningText();
     expect(text).toContain("Placement");
-    expect(text).toContain("re-stage it from Import History");
+    expect(text).toContain("Re-stage it from Import History");
     expect(text).not.toContain("Demographics and Placement");
   });
 

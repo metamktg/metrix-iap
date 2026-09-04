@@ -125,7 +125,7 @@ describe("VariableTable · Evidence column", () => {
 });
 
 describe("VariableTable · awareness rows are never scored on cost", () => {
-  it("renders — with the reason in its title for a row on the communication scale, and keeps CPA for a purchase row", () => {
+  it("renders · with the reason in its title for a row on the communication scale, and keeps CPA for a purchase row", () => {
     render(
       <VariableTable
         rows={[
@@ -137,7 +137,7 @@ describe("VariableTable · awareness rows are never scored on cost", () => {
     );
     const dashes = screen.getAllByTitle(/communication signals/);
     expect(dashes).toHaveLength(2);
-    expect(dashes.every((d) => d.textContent === "—")).toBe(true);
+    expect(dashes.every((d) => d.textContent === "–")).toBe(true);
     expect(screen.getByText("$90.00")).toBeTruthy();
     expect(screen.queryByText("$0.02")).toBeNull();
   });

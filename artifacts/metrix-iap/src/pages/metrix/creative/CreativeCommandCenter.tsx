@@ -43,7 +43,7 @@ function formatOf(assetType: string): FormatTab {
 }
 
 const CHILDREN = [
-  { to: "/app/creative/library", label: "Library", Icon: Library, desc: "The creative asset register — distinct from the IAP Library's variable stacks.", lineage: "mst.local_book2_library[] · ads[]" },
+  { to: "/app/creative/library", label: "Library", Icon: Library, desc: "The creative asset register · distinct from the IAP Library's variable stacks.", lineage: "mst.local_book2_library[] · ads[]" },
   { to: "/app/creative/builder", label: "Brief builder", Icon: FileEdit, desc: "Open any generated brief in its own workspace to assign, export, or hand off for production.", lineage: "brief_builder.draft_briefs[]" },
   { to: "/app/creative/scan", label: "Creative Scan", Icon: ScanLine, desc: "Upload your own creative for an IAP-variable confidence pass.", lineage: "loop_status → creative_scan" },
   { to: "/app/creative/import-export", label: "Import & Export", Icon: ArrowLeftRight, desc: "Staged creative asset uploads for this account.", lineage: "manual_imports · creative_asset" },
@@ -127,7 +127,7 @@ export function CreativeCommandCenter() {
               {/* Direction for this stage, from the account's own rows —
                   each tile carries the number behind it and a link to the
                   surface that proves it. Absent when this stage has none. */}
-              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 4); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="What the data says to do next" /> : null; })()}
+              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 4); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="Next best actions" /> : null; })()}
 
               {/* Execution card: verb title + input-metric tiles + primary action —
                   canvas's Command Center Execution-card pattern (COMMAND["creative.cc"]
@@ -147,7 +147,7 @@ export function CreativeCommandCenter() {
                 <PrerequisiteGate
                   met={strategyOk}
                   title="Generate strategy first"
-                  message="Briefs are generated from strategy message pillars, and this account has none yet — imported or generated, either works."
+                  message="Briefs are generated from strategy message pillars, and this account has none yet. Imported or generated, either works."
                   ctaLabel="Go to Strategy"
                   ctaTo={withFrom("/app/strategy", fp)}
                 >
@@ -226,8 +226,8 @@ export function CreativeCommandCenter() {
                     !strategyOk
                       ? "Briefs are generated from strategy message pillars, and this account has none yet."
                       : tab === "static"
-                        ? "No draft briefs for this account yet — generate a set from its strategy pillars."
-                        : `No source-backed ${tab === "ugc" ? "UGC" : "video"} briefs exist for this account yet. Briefs are only generated from validated strategy — nothing is fabricated.`
+                        ? "No draft briefs for this account yet. Generate a set from its strategy pillars."
+                        : `No source-backed ${tab === "ugc" ? "UGC" : "video"} briefs exist for this account yet. Briefs are only generated from validated strategy. Nothing is fabricated.`
                   }
                   icon={tab === "video" ? Video : tab === "ugc" ? Users : FileText}
                 />

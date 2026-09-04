@@ -124,7 +124,7 @@ describe("suggestAdNameMatch minimum containment signal", () => {
 // had to land on the ad "C2B" and nowhere else, and two files that differ
 // only by that code had to land on two different ads.
 
-describe("suggestAdNameMatch — cell codes (C1A, C2B) decide the match", () => {
+describe("suggestAdNameMatch · cell codes (C1A, C2B) decide the match", () => {
   const ADS = ["C1A SKOV2", "C2A SKOV2", "C2B", "C3B", "New Sales Ad"];
 
   it("routes a file to the one ad carrying its cell code, over a more similar-looking name", () => {

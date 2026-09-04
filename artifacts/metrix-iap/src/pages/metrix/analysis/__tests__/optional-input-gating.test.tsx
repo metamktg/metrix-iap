@@ -96,7 +96,7 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
-describe("Engagement Funnel — demographic export absent", () => {
+describe("Engagement Funnel · demographic export absent", () => {
   it("lands on the Placement breakdown, disables the demo-only modes with the reason named, and never blanks", () => {
     activeSeed = seedWith((a) => { a.iap.analysis.demographic_registration_signal = []; });
     renderView(EngagementFunnelView);
@@ -144,7 +144,7 @@ describe("Engagement Funnel — demographic export absent", () => {
   });
 });
 
-describe("Budget — campaign summary absent", () => {
+describe("Budget · campaign summary absent", () => {
   it("gates only the event-total tiles and still renders concept and placement spend", () => {
     activeSeed = seedWith((a) => { delete a.iap.campaign_summary; });
     renderView(BudgetView);
@@ -156,7 +156,7 @@ describe("Budget — campaign summary absent", () => {
   });
 });
 
-describe("Findings — failure patterns are intelligence", () => {
+describe("Findings · failure patterns are intelligence", () => {
   it("renders the flagged-campaigns strip (and the scope bar) when failure patterns are the only intelligence", () => {
     activeSeed = seedWith((a) => {
       a.iap.intelligence.concept_scores = [];
@@ -173,7 +173,7 @@ describe("Findings — failure patterns are intelligence", () => {
   });
 });
 
-describe("Audience / Creative DNA — a stored scope that empties the rows", () => {
+describe("Audience / Creative DNA · a stored scope that empties the rows", () => {
   // Bookster's bottom-line totals name four events; store a scope the rows
   // do not carry and the page must keep the switch on screen and say the
   // rows exist under another event — not "no signal".
@@ -199,7 +199,7 @@ describe("Audience / Creative DNA — a stored scope that empties the rows", () 
   });
 });
 
-describe("Avatars — profile detail with none of its three optional inputs", () => {
+describe("Avatars · profile detail with none of its three optional inputs", () => {
   it("keeps a disabled disclosure that names the inputs instead of vanishing", () => {
     activeSeed = seedWith((a) => {
       delete a.mst; // no matrix → no measured DNA for any profile

@@ -13,7 +13,7 @@ import { allocateShareSlices, MIN_SHARE } from "../share-slices";
 const MAX = 5;
 const names = (xs: { name: string }[]) => xs.map((x) => x.name);
 
-describe("allocateShareSlices — the colour budget is never exceeded", () => {
+describe("allocateShareSlices · the colour budget is never exceeded", () => {
   it("never names more segments than there are categorical slots", () => {
     const data = Array.from({ length: 12 }, (_, i) => ({ name: `S${i}`, value: 100 - i }));
     const a = allocateShareSlices(data, MAX);
@@ -42,7 +42,7 @@ describe("allocateShareSlices — the colour budget is never exceeded", () => {
   });
 });
 
-describe("allocateShareSlices — thin slices", () => {
+describe("allocateShareSlices · thin slices", () => {
   it("folds anything under the readable-share floor", () => {
     const data = [
       { name: "dominant", value: 970 },
@@ -58,7 +58,7 @@ describe("allocateShareSlices — thin slices", () => {
     expect(10 / 1000).toBeLessThan(MIN_SHARE);
   });
 
-  it("does not bucket a lone thin slice when a slot is free — that would cost it its name for nothing", () => {
+  it("does not bucket a lone thin slice when a slot is free. That would cost it its name for nothing", () => {
     const data = [{ name: "dominant", value: 990 }, { name: "sliver", value: 10 }];
     const a = allocateShareSlices(data, MAX);
     expect(names(a.named)).toEqual(["dominant", "sliver"]);
@@ -66,7 +66,7 @@ describe("allocateShareSlices — thin slices", () => {
   });
 });
 
-describe("allocateShareSlices — nothing is destroyed by folding", () => {
+describe("allocateShareSlices · nothing is destroyed by folding", () => {
   it("names every folded member so the tooltip can report them", () => {
     const data = Array.from({ length: 9 }, (_, i) => ({ name: `seg-${i}`, value: 100 - i }));
     const a = allocateShareSlices(data, MAX);
@@ -89,7 +89,7 @@ describe("allocateShareSlices — nothing is destroyed by folding", () => {
   });
 });
 
-describe("allocateShareSlices — degenerate input", () => {
+describe("allocateShareSlices · degenerate input", () => {
   it("handles an empty set", () => {
     const a = allocateShareSlices([], MAX);
     expect(a.slices).toEqual([]);

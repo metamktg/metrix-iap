@@ -136,7 +136,7 @@ export function MetricTable<Row>({
             aria-label={filterPlaceholder}
             className="w-full h-9 pl-8 pr-8 rounded-lg bg-input/40 text-body text-foreground
                        placeholder:text-muted-foreground/75 outline-none
-                       transition-[background-color,box-shadow] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                       transition-[background-color,box-shadow] duration-150 ease-[var(--mx-ease)]
                        focus:bg-input/60 focus:shadow-[0_0_0_2px_hsl(var(--ring)/0.45)]"
           />
           {query && (
@@ -146,7 +146,7 @@ export function MetricTable<Row>({
               aria-label="Clear filter"
               className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 grid place-items-center
                          text-muted-foreground/75 hover:text-foreground active:scale-[0.96]
-                         transition-[color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]"
+                         transition-[color,scale] duration-150 ease-[var(--mx-ease)]"
             >
               <X className="w-3.5 h-3.5" aria-hidden="true" />
             </button>
@@ -161,7 +161,7 @@ export function MetricTable<Row>({
             aria-controls={pickerId}
             className="h-9 px-3 inline-flex items-center gap-1.5 rounded-lg bg-input/40
                        text-caption text-muted-foreground hover:text-foreground active:scale-[0.96]
-                       transition-[color,background-color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]"
+                       transition-[color,background-color,scale] duration-150 ease-[var(--mx-ease)]"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Metrics</span>
@@ -185,7 +185,7 @@ export function MetricTable<Row>({
                   <label
                     key={c.key}
                     className={`flex items-center gap-2 px-2 h-10 rounded-md text-body
-                                transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                                transition-colors duration-150 ease-[var(--mx-ease)]
                                 ${c.locked ? "opacity-50" : "cursor-pointer hover:bg-muted/40"}`}
                     title={c.hint}
                   >
@@ -238,7 +238,7 @@ export function MetricTable<Row>({
                         title={c.hint}
                         className={`${HEADING.h4} w-full h-10 px-3 inline-flex items-center justify-end gap-1
                                     hover:text-foreground active:scale-[0.96]
-                                    transition-[color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]`}
+                                    transition-[color,scale] duration-150 ease-[var(--mx-ease)]`}
                       >
                         <span>{c.label}</span>
                         <Icon
@@ -255,7 +255,7 @@ export function MetricTable<Row>({
               {visible.map((r) => (
                 <tr
                   key={rowKey(r)}
-                  className="border-t border-border/40 transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-muted/25"
+                  className="border-t border-border/40 transition-colors duration-150 ease-[var(--mx-ease)] hover:bg-muted/25"
                 >
                   <td className="py-2.5 pr-3 align-top">
                     <div className="text-body text-foreground leading-snug" style={{ textWrap: "pretty" }}>
@@ -273,7 +273,7 @@ export function MetricTable<Row>({
                       <td key={c.key} className="py-2.5 px-3 text-right align-top">
                         {v == null ? (
                           <span className="text-body text-muted-foreground/75" title="Not measured for this row">
-                            —
+                            –
                           </span>
                         ) : (
                           <span className="text-body text-foreground tabular-nums">{c.format(v)}</span>
@@ -293,7 +293,7 @@ export function MetricTable<Row>({
           type="button"
           onClick={() => setExpanded(true)}
           className="mt-2 h-10 px-3 -ml-3 text-caption text-muted-foreground hover:text-foreground
-                     active:scale-[0.96] transition-[color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]"
+                     active:scale-[0.96] transition-[color,scale] duration-150 ease-[var(--mx-ease)]"
         >
           Show all <span className="tabular-nums">{sorted.length}</span> rows
         </button>

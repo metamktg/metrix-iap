@@ -113,7 +113,7 @@ beforeEach(() => {
 // 1. Bookster — full real data, both cards + honest golden-formula note
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("Bookster — Gene loci", () => {
+describe("Bookster · Gene loci", () => {
   it("renders real variable codes ranked by spend, with a locus row per variable", () => {
     selectAccount("bookster");
     const { container } = renderPage();
@@ -152,7 +152,7 @@ describe("Bookster — Gene loci", () => {
   });
 });
 
-describe("Bookster — Formula sequences", () => {
+describe("Bookster · Formula sequences", () => {
   it("renders the account's real tested combinations", () => {
     selectAccount("bookster");
     const { container } = renderPage();
@@ -164,7 +164,7 @@ describe("Bookster — Formula sequences", () => {
   });
 });
 
-describe("Bookster — Golden formula honesty", () => {
+describe("Bookster · Golden formula honesty", () => {
   it("quotes the seed's own pending reason instead of fabricating a formula", () => {
     selectAccount("bookster");
     const { container } = renderPage();
@@ -189,7 +189,7 @@ describe("Bookster — Golden formula honesty", () => {
 // 2. ECAS — combinations only, no fabricated Gene loci
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("ECAS — combinations without variable performance", () => {
+describe("ECAS · combinations without variable performance", () => {
   it("renders Formula sequences but not Gene loci", () => {
     selectAccount("ecas");
     const { container } = renderPage();
@@ -204,7 +204,7 @@ describe("ECAS — combinations without variable performance", () => {
 // 3. BELT manual account — raw_token family, no combinations
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("BELT manual account — raw-token variables, no combinations", () => {
+describe("BELT manual account · raw-token variables, no combinations", () => {
   it("renders Gene loci with a readable family fallback label, no Formula sequences card", () => {
     selectAccount("manual_gXU2GXOGunDq");
     const { container } = renderPage();
@@ -221,7 +221,7 @@ describe("BELT manual account — raw-token variables, no combinations", () => {
 // 4. Gabri manual account — neither field populated
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("Gabri manual account — no creative DNA signal", () => {
+describe("Gabri manual account · no creative DNA signal", () => {
   it("renders the honest empty state, no fabricated cards", () => {
     selectAccount("manual_BwsYjC5ZRk0i");
     const { container } = renderPage();

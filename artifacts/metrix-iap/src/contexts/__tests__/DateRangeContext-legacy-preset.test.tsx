@@ -47,7 +47,7 @@ function Probe() {
   );
 }
 
-describe("DateRangeContext — unrecognized persisted preset values", () => {
+describe("DateRangeContext · unrecognized persisted preset values", () => {
   beforeEach(() => {
     cleanup();
     sessionStorage.clear();

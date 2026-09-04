@@ -61,7 +61,7 @@ describe("when the paragraph can be measured", () => {
     expect(screen.getByText(LONG)).toBeTruthy();
   });
 
-  it("shows More on short text that does NOT fit — a narrow column", () => {
+  it("shows More on short text that does NOT fit. A narrow column", () => {
     // The mirror image, and the reason a bigger threshold is not the fix:
     // at 390px this same text wraps past two lines and genuinely needs the
     // control. Width decides, not length.

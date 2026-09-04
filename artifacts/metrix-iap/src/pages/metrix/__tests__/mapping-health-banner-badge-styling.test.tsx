@@ -109,7 +109,7 @@ beforeEach(() => {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-describe("MappingHealthBanner — severity styling", () => {
+describe("MappingHealthBanner · severity styling", () => {
   it("renders an optional-missing column as a neutral notice, never a warning", () => {
     mockImports = [
       {

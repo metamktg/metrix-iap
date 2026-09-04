@@ -28,7 +28,7 @@ describe("pacePhrase", () => {
     expect(phrase).not.toContain("Longer than");
   });
 
-  it("stops reassuring once the run overruns — an overrun should read as one", () => {
+  it("stops reassuring once the run overruns. An overrun should read as one", () => {
     const phrase = pacePhrase(400, 210);
     expect(phrase).toContain("Longer than");
     expect(phrase).not.toContain("bar holds");

@@ -28,7 +28,7 @@ export function StrategyHistoryView() {
         <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
           <ModuleHeader section={SECTION} title="History" accountName={account!.name} subtitle="Strategy generation runs for this account." table="generation_runs" />
           <div className="px-6 py-5 space-y-4 max-w-3xl">
-            <CaveatNote text="Only the most recent strategy generation run is tracked today — a full multi-run log is planned but not yet built." />
+            <CaveatNote text="Only the most recent strategy generation run is tracked today. A full multi-run log is planned but not yet built." />
             {!run ? (
               <PendingState title="No runs yet" message="Generate strategy from the Strategy command center to see it here." icon={History} />
             ) : (

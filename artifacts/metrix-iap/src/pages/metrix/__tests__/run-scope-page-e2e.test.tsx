@@ -155,7 +155,7 @@ const pillarCount = (text: string | null) => {
   return m ? Number(m[1]) : null;
 };
 
-describe("IAP Library — in-page run scope picker", () => {
+describe("IAP Library · in-page run scope picker", () => {
   it("enforces the 3-run cap from the page header popover", () => {
     renderView(IapLibraryView);
     exerciseCap();
@@ -180,7 +180,7 @@ describe("IAP Library — in-page run scope picker", () => {
   });
 });
 
-describe("Strategy Overview — in-page run scope picker", () => {
+describe("Strategy Overview · in-page run scope picker", () => {
   it("enforces the 3-run cap from the page header popover", () => {
     renderView(StrategyOverview);
     exerciseCap();

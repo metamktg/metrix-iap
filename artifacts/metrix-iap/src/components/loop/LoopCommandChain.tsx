@@ -275,8 +275,13 @@ function StageTile({
   onClick,
 }: {
   stage: Stage;
-  /** 1-based position in the chain — the circle's number until the stage completes. */
-  stageNumber: number;
+  /**
+   * The IAP loop's own numeral for this stage (Analysis 2, Strategy 3,
+   * Creative 4), so the chain and the sidebar count the same way. Null for
+   * Data (the step before the loop) and Reports (an output): those circles
+   * carry the stage icon instead, never a number the sidebar gives to MST.
+   */
+  stageNumber: number | null;
   /** Render the connecting line after this stage (all but the last). */
   showLine: boolean;
   isComplete: boolean;
@@ -294,7 +299,7 @@ function StageTile({
   // a thin connecting line that reads progress at a glance. Every prior
   // state survives the restyle: running (spinner + elapsed), failed,
   // stale, locked, next, and the active/open command-hub highlight.
-  const { label } = STAGE_CONFIG[stage];
+  const { label, icon: StageIcon } = STAGE_CONFIG[stage];
 
   const circle = isRunning ? (
     <Loader2 className="w-3 h-3 animate-spin" />
@@ -304,6 +309,8 @@ function StageTile({
     <RotateCcw className="w-3 h-3" />
   ) : isComplete ? (
     <CheckCircle2 className="w-3 h-3" />
+  ) : stageNumber == null ? (
+    <StageIcon className="w-3 h-3" aria-hidden="true" />
   ) : (
     <span className="text-label font-semibold leading-none">{stageNumber}</span>
   );
@@ -975,7 +982,7 @@ function CommandHub({
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5 rounded-lg border border-status-success/20 bg-status-success/[0.05] px-2.5 py-2">
             <CheckCircle2 className="w-3.5 h-3.5 text-status-success/70 shrink-0" />
-            <span className="text-label text-status-success/70 font-medium">Live Meta — connected</span>
+            <span className="text-label text-status-success/70 font-medium">Live Meta · connected</span>
           </div>
           <button
             onClick={() => goTo("/app/settings/integrations")}
@@ -1758,7 +1765,7 @@ export function LoopCommandChain({
           return false;
         }
       }
-      const msg = err instanceof Error ? err.message : "Could not start analysis — check your connection.";
+      const msg = err instanceof Error ? err.message : "Could not start analysis · check your connection.";
       setAnalysisStartError(msg);
       return false;
     } finally {
@@ -1793,7 +1800,7 @@ export function LoopCommandChain({
         });
       },
       onError: (err) => {
-        const msg = err instanceof Error ? err.message : "Could not generate the report — please try again.";
+        const msg = err instanceof Error ? err.message : "Could not generate the report. Please try again.";
         setReportError(msg);
         setReportGenerating(false);
         reportFireRef.current = false;
@@ -1949,7 +1956,7 @@ export function LoopCommandChain({
                 <XCircle className="w-3.5 h-3.5 text-status-danger/80 shrink-0 mt-0.5" />
                 <div className="flex flex-col min-w-0 gap-0.5">
                   <span className="text-label text-status-danger/80 font-semibold">
-                    {stageLabel} failed — not running
+                    {stageLabel} failed · not running
                   </span>
                   <span className="text-label text-status-danger/55 font-normal break-words">
                     {message}
@@ -1980,7 +1987,7 @@ export function LoopCommandChain({
         <div className="flex items-center overflow-x-auto" data-testid="loop-stepper">
           <StageTile
             stage="data"
-            stageNumber={1}
+            stageNumber={null}
             showLine
             isComplete={dataComplete}
             isRunning={false}
@@ -2039,7 +2046,7 @@ export function LoopCommandChain({
 
           <StageTile
             stage="report"
-            stageNumber={5}
+            stageNumber={null}
             showLine={false}
             isComplete={reportComplete}
             isRunning={reportGenerating}

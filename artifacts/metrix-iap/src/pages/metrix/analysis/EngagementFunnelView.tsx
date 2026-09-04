@@ -82,11 +82,11 @@ function pct(a: number | null | undefined, b: number | null | undefined): number
   return r == null ? null : r * 100;
 }
 function fmtRate(v: number | null, decimals = 1): string {
-  if (v == null) return "—";
+  if (v == null) return "–";
   return v.toFixed(decimals) + "%";
 }
 function fmtFreq(v: number | null): string {
-  if (v == null) return "—";
+  if (v == null) return "–";
   return v.toFixed(2) + "×";
 }
 
@@ -514,7 +514,7 @@ export function BreakdownTable({
                         "tabular-nums whitespace-nowrap",
                         col.id === sortId ? "font-semibold text-interactive" : "text-foreground/70"
                       )}>
-                        {val != null ? col.format(val) : <span className="text-muted-foreground/75">—</span>}
+                        {val != null ? col.format(val) : <span className="text-muted-foreground/75">–</span>}
                       </td>
                     );
                   })}
@@ -689,7 +689,7 @@ function VideoMetricsNote({ show }: { show: boolean }) {
   if (!show) return null;
   return (
     <div data-testid="video-metrics-note">
-      <CaveatNote text="ThruPlay rate and video-play-percentage data require a Meta Video Creative report CSV — a separate export from the standard demographic/placement performance report, not currently detected in staged uploads. To see video metrics: in Meta Ads Manager, go to Columns → Customize, add ThruPlays and Video play %, export as CSV, and stage it alongside your performance exports." />
+      <CaveatNote text="ThruPlay rate and video-play-percentage data require a Meta Video Creative report CSV. A separate export from the standard demographic/placement performance report, not currently detected in staged uploads. To see video metrics: in Meta Ads Manager, go to Columns → Customize, add ThruPlays and Video play %, export as CSV, and stage it alongside your performance exports." />
     </div>
   );
 }
@@ -735,7 +735,7 @@ export function EngagementFunnelView() {
   // reader's raw choice and is honoured again the moment demo rows arrive.
   const hasDemo = demoRows.length > 0;
   const hasVideo = accountHasVideoCreative(account);
-  const demoOnlyReason = "Needs the Demographics export — not staged for this account";
+  const demoOnlyReason = "Needs the Demographics export · not staged for this account";
   const fallbackDim: BreakdownDim = placRows.length > 0 ? "placement" : "device";
   const dim: BreakdownDim = hasDemo ? dimRaw : dimRaw === "audience" ? fallbackDim : dimRaw;
   const viewMode: ViewMode = hasDemo ? viewModeRaw : "breakdown";
@@ -803,7 +803,7 @@ export function EngagementFunnelView() {
               section={SECTION}
               title="Engagement Funnel"
               accountName={acct.name}
-              subtitle="Upstream engagement quality — reach, frequency, CTR all vs link — through to purchase. Sortable by any stage, any dimension."
+              subtitle="Upstream engagement quality (reach, frequency, CTR all vs link) through to purchase. Sortable by any stage, any dimension."
               tabs="analysis"
             />
 
@@ -961,7 +961,7 @@ export function EngagementFunnelView() {
                         <span className="font-medium text-foreground/80">Intent conversion: </span>
                         {fmtRate(pct(summaryTiles.ctrLink, summaryTiles.ctrAll), 0)} of all clicks become link clicks.
                         {summaryTiles.ctrLink != null && summaryTiles.ctrAll != null && summaryTiles.ctrAll > 0 && summaryTiles.ctrLink / summaryTiles.ctrAll < 0.4 && (
-                          <span className="text-status-warning/70 ml-1">Low ratio — check for high engagement creative that doesn't drive off-platform intent.</span>
+                          <span className="text-status-warning/70 ml-1">Low ratio · check for high engagement creative that doesn't drive off-platform intent.</span>
                         )}
                       </div>
                     )}
@@ -990,8 +990,8 @@ export function EngagementFunnelView() {
                       <CaveatNote
                         text={
                           convDevices.length > 0
-                            ? "Meta's export didn't include per-device delivery data for this window, so device-level spend/impressions aren't available. Conversion-attributed device data is shown on the Placements page instead (funnel actions only — no spend/impressions)."
-                            : "Meta's export didn't include per-device delivery data for this window — this can happen for certain date ranges or account states. Placement and platform breakdowns are unaffected."
+                            ? "Meta's export didn't include per-device delivery data for this window, so device-level spend/impressions aren't available. Conversion-attributed device data is shown on the Placements page instead (funnel actions only. No spend/impressions)."
+                            : "Meta's export didn't include per-device delivery data for this window. This can happen for certain date ranges or account states. Placement and platform breakdowns are unaffected."
                         }
                       />
                     </>
@@ -1000,7 +1000,7 @@ export function EngagementFunnelView() {
                   )}
                   {dim === "audience" && (
                     <CaveatNote
-                      text="Demographic rows don't carry raw impression counts per segment in every export — Frequency and CTR All are derived from available Reach and Impressions fields and may be 0 for some segments."
+                      text="Demographic rows don't carry raw impression counts per segment in every export. Frequency and CTR All are derived from available Reach and Impressions fields and may be 0 for some segments."
                     />
                   )}
                 </SectionCard>
@@ -1009,15 +1009,15 @@ export function EngagementFunnelView() {
               {viewMode === "scatter" && (
                 <>
                   <SectionCard
-                    title={`Frequency × Link CTR — ${dim === "audience" ? "Audience segments" : dim === "placement" ? "Placements" : "Devices"}`}
+                    title={`Frequency × Link CTR · ${dim === "audience" ? "Audience segments" : dim === "placement" ? "Placements" : "Devices"}`}
                     desc="Each dot is a segment. Bubble size = spend share. Reference lines show the account median. High-frequency + low-CTR segments signal creative fatigue."
-                    right={<SectionInfoIcon tip="Segments above the median frequency line but below the median CTR line are candidates for creative refresh — they've seen the ad often enough that engagement is declining." />}
+                    right={<SectionInfoIcon tip="Segments above the median frequency line but below the median CTR line are candidates for creative refresh. They've seen the ad often enough that engagement is declining." />}
                   >
                     {dim === "audience" ? (
                       <FrequencyScatter rows={breakdownRows} />
                     ) : (
                       <div className="flex items-center justify-center h-40 text-body text-muted-foreground/75">
-                        Placement rows don't include Reach data — frequency scatter requires the demographic export.
+                        Placement rows don't include Reach data. Frequency scatter requires the demographic export.
                         <button
                           onClick={() => setDim("audience")}
                           className="pressable ml-2 text-interactive underline"

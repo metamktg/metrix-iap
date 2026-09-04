@@ -77,7 +77,7 @@ beforeEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-describe("AvatarsView combos panel — no implied cross-tab (C1)", () => {
+describe("AvatarsView combos panel · no implied cross-tab (C1)", () => {
   it("no longer promises a concept × placement × platform join", () => {
     renderAvatars();
     expect(screen.queryByText("Creative combos")).toBeNull();

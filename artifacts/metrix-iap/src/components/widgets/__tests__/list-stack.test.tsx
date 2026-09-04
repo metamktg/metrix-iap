@@ -58,7 +58,7 @@ describe("ListStack", () => {
     expect(screen.getByTestId("stack-face").textContent).toContain("History (2)");
   });
 
-  it("piles a single overflow item too — a disclosure of one is still a disclosure", () => {
+  it("piles a single overflow item too. A disclosure of one is still a disclosure", () => {
     renderStack(["Alpha", "Bravo", "Charlie", "Delta"], 3);
     const face = screen.getByTestId("stack-face");
     expect(face.textContent).toContain("History (1)");

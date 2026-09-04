@@ -110,17 +110,17 @@ export function parseReportModel(json: string): ReportModel | null {
 // ─── Formatting helpers ───────────────────────────────────────────────
 
 function num(n: number | null | undefined): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return n.toLocaleString("en-US", { maximumFractionDigits: n % 1 === 0 ? 0 : 2 });
 }
 
 function usd(n: number | null | undefined): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function pct(n: number | null | undefined): string {
-  if (n == null) return "—";
+  if (n == null) return "–";
   return `${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
 }
 
@@ -147,7 +147,7 @@ function cellRows(rows: CellPerformanceRow[], limit = 10): TableBlock {
       usd(r["Amount spent (USD)"]),
       num(r.Impressions),
       num(r.Results),
-      r.CPA_result == null ? "—" : usd(r.CPA_result),
+      r.CPA_result == null ? "–" : usd(r.CPA_result),
       pct(r.CTR_link_pct),
     ]),
   };
@@ -163,7 +163,7 @@ function variableRows(rows: VariablePerformanceRow[], limit = 12): TableBlock {
       r.variable_id,
       usd(r["Amount spent (USD)"]),
       num(r.Results),
-      r.CPA_result == null ? "—" : usd(r.CPA_result),
+      r.CPA_result == null ? "–" : usd(r.CPA_result),
       pct(r.CTR_link_pct),
       num(r.unique_ads),
     ]),
@@ -182,7 +182,7 @@ function placementRows(rows: PlacementRow[], caption: string, limit = 10): Table
       usd(r["Amount spent (USD)"]),
       num(r.Impressions),
       num(r.Results),
-      r.CPA == null ? "—" : usd(r.CPA),
+      r.CPA == null ? "–" : usd(r.CPA),
     ]),
   };
 }
@@ -239,10 +239,10 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
   if (t.includes("core control")) {
     if (!core) return [];
     const blocks: ReportBlock[] = [
-      { kind: "text", text: `${core.primary_control} — ${core.primary_control_read}` },
+      { kind: "text", text: `${core.primary_control} · ${core.primary_control_read}` },
     ];
     if (core.registration_control) {
-      blocks.push({ kind: "text", text: `${core.registration_control} — ${core.registration_control_read}` });
+      blocks.push({ kind: "text", text: `${core.registration_control} · ${core.registration_control_read}` });
     }
     return blocks;
   }
@@ -270,7 +270,7 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
         // attribution windows can overlap, so a multi-event sum is an
         // upper bound rather than an exact figure.
         ...(resultTypes.size > 1
-          ? { caption: `Spend summed across ${resultTypes.size} result types — attribution windows can overlap, so treat this as an upper bound` }
+          ? { caption: `Spend summed across ${resultTypes.size} result types. Attribution windows can overlap, so treat this as an upper bound` }
           : {}),
       });
     }
@@ -342,7 +342,7 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
         r.Gender,
         usd(r["Amount spent (USD)"]),
         num(r.Results),
-        r.CPA_result == null ? "—" : usd(r.CPA_result),
+        r.CPA_result == null ? "–" : usd(r.CPA_result),
         pct(r.CTR_link_pct),
       ]),
     });
@@ -385,7 +385,7 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
   if (t.includes("strategy")) {
     const blocks: ReportBlock[] = [];
     for (const p of strategy?.message_pillars ?? []) {
-      blocks.push({ kind: "text", text: `${p.label} — ${p.plain_descriptor} Why it matters: ${p.why_it_matters}` });
+      blocks.push({ kind: "text", text: `${p.label} · ${p.plain_descriptor} Why it matters: ${p.why_it_matters}` });
     }
     const hyps = strategy?.active_hypotheses ?? [];
     if (hyps.length > 0) {
@@ -454,25 +454,25 @@ function buildSegmentComparisonSection(
   if (coverage?.partial) {
     blocks.push({
       kind: "text",
-      text: `Coverage — demographic rows carry ${coverage.pct != null ? `${coverage.pct}%` : "part"} of this account's spend; segment reads describe that slice.`,
+      text: `Coverage, demographic rows carry ${coverage.pct != null ? `${coverage.pct}%` : "part"} of this account's spend; segment reads describe that slice.`,
     });
   }
   for (const [label, side] of [[labelA, a], [labelB, b]] as const) {
-    if (side.signal.state === "high") blocks.push({ kind: "text", text: `High signal — ${label}: clears the documented high confidence band on its own volume.` });
-    for (const reason of side.signal.reasons) blocks.push({ kind: "text", text: `Low signal — ${label}: ${reason}` });
+    if (side.signal.state === "high") blocks.push({ kind: "text", text: `High signal · ${label}: clears the documented high confidence band on its own volume.` });
+    for (const reason of side.signal.reasons) blocks.push({ kind: "text", text: `Low signal · ${label}: ${reason}` });
   }
 
   // Side-by-side key metrics table.
   blocks.push({
     kind: "table",
-    caption: `${labelA} vs ${labelB} — key metrics`,
+    caption: `${labelA} vs ${labelB} · key metrics`,
     headers: ["Metric", labelA, labelB],
     rows: [
       ["Spend", usd(a.totals.spend), usd(b.totals.spend)],
       ["Results", num(a.totals.results), num(b.totals.results)],
-      ["CPA", a.derived.cpa == null ? "—" : usd(a.derived.cpa), b.derived.cpa == null ? "—" : usd(b.derived.cpa)],
+      ["CPA", a.derived.cpa == null ? "–" : usd(a.derived.cpa), b.derived.cpa == null ? "–" : usd(b.derived.cpa)],
       ["Link CTR", pct(a.derived.ctr), pct(b.derived.ctr)],
-      ["CPM", a.derived.cpm == null ? "—" : usd(a.derived.cpm), b.derived.cpm == null ? "—" : usd(b.derived.cpm)],
+      ["CPM", a.derived.cpm == null ? "–" : usd(a.derived.cpm), b.derived.cpm == null ? "–" : usd(b.derived.cpm)],
       ["Frequency", num(a.derived.frequency), num(b.derived.frequency)],
     ],
   });
@@ -486,22 +486,22 @@ function buildSegmentComparisonSection(
   ): ReportBlock[] {
     if (!drilldown.attribution.available) {
       const reason = drilldown.attribution.unavailableReason ?? "Concept attribution not available for this segment.";
-      return [{ kind: "text", text: `${label} — concept breakdown unavailable: ${reason}` }];
+      return [{ kind: "text", text: `${label} · concept breakdown unavailable: ${reason}` }];
     }
     const top = drilldown.attribution.cells.slice(0, TOP_CONCEPTS);
     if (top.length === 0) {
-      return [{ kind: "text", text: `${label} — no concept rows in this scope.` }];
+      return [{ kind: "text", text: `${label} · no concept rows in this scope.` }];
     }
     return [
       {
         kind: "table",
-        caption: `${label} — top concepts by results`,
+        caption: `${label} · top concepts by results`,
         headers: ["Cell", "Concept", "Results", "CPA", "Link CTR"],
         rows: top.map((c) => [
           c.cellId,
-          c.conceptName ?? "—",
+          c.conceptName ?? "–",
           num(c.totals.results),
-          c.derived.cpa == null ? "—" : usd(c.derived.cpa),
+          c.derived.cpa == null ? "–" : usd(c.derived.cpa),
           pct(c.derived.ctr),
         ]),
       },
@@ -586,7 +586,7 @@ export function buildReportModel(
 
   const internal = mode === "internal";
   return {
-    docTitle: opts.docTitle ?? `Creative Signal Report — ${account.name}`,
+    docTitle: opts.docTitle ?? `Creative Signal Report · ${account.name}`,
     brandName: internal ? "Metrix IAP" : account.name,
     brandLine: internal
       ? "Internal dashboard mode · full Metrix branding"
@@ -599,7 +599,7 @@ export function buildReportModel(
     windowLabel: opts.windowLabel ?? null,
     hasAnalysisDerivedContent,
     footerNote: internal
-      ? "Generated by Metrix IAP. Composed from the account's analysis and strategy — no independent analysis was run."
+      ? "Generated by Metrix IAP. Composed from the account's analysis and strategy. No independent analysis was run."
       : `Prepared for ${account.name}. Composed from the account's analysis and strategy.`,
   };
 }

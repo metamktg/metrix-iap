@@ -40,7 +40,7 @@ function makeMetric(overrides: Partial<MetricDef> & Pick<MetricDef, "id">): Metr
   return {
     label: overrides.id,
     value: null,
-    formatted: "—",
+    formatted: "–",
     isResultEvent: false,
     ...overrides,
   };
@@ -60,7 +60,7 @@ function renderPopover(metric: MetricDef) {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe("MetricHoverPopover — empty cellRows fallback", () => {
+describe("MetricHoverPopover · empty cellRows fallback", () => {
   beforeEach(() => cleanup());
 
   it("renders without throwing for spend metric", () => {
@@ -88,12 +88,12 @@ describe("MetricHoverPopover — empty cellRows fallback", () => {
 
   it("renders without throwing for cpa_blended metric", () => {
     expect(() =>
-      renderPopover(makeMetric({ id: "cpa_blended", label: "CPA (blended)", formatted: "—", value: null }))
+      renderPopover(makeMetric({ id: "cpa_blended", label: "CPA (blended)", formatted: "–", value: null }))
     ).not.toThrow();
   });
 
   it("shows fallback text for cpa_blended when no cell rows match", () => {
-    renderPopover(makeMetric({ id: "cpa_blended", label: "CPA (blended)", formatted: "—", value: null }));
+    renderPopover(makeMetric({ id: "cpa_blended", label: "CPA (blended)", formatted: "–", value: null }));
     expect(screen.getByText(/no concept rows available/i)).toBeTruthy();
   });
 
@@ -171,7 +171,7 @@ function renderPopoverWithOneRow(metric: MetricDef) {
   );
 }
 
-describe("MetricHoverPopover — single-concept fallback", () => {
+describe("MetricHoverPopover · single-concept fallback", () => {
   beforeEach(() => cleanup());
 
   it("shows the single-concept message for spend metric", () => {

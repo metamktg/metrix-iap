@@ -16,7 +16,6 @@ import {
   getAdAccount, getAnalysisData, getMST,
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
-import { NextBestActionCard } from "@/components/deck/NextBestActionCard";
 import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
 import { deriveRecommendations, toDeckCards } from "@/lib/data/recommendations";
 import {
@@ -242,19 +241,18 @@ export function AdAccountOverview() {
         {/* Scrollable main content */}
         <div className="flex-1 min-w-0 overflow-y-auto px-6 py-3 space-y-3">
 
-          {/* Next best action — Nocturne hero for the top pending
-              recommendation; renders nothing when none are pending. */}
-          <NextBestActionCard
-            scopeId={account.id}
-            cards={deckCards}
-            stageNote={account.iap?.loop_status?.find((st) => st.stage === "optimization_loop")?.note ?? null}
-          />
-
-          {/* Every recommendation the account's own rows support, ranked by
-              the money each moves, each carrying its number and a link to
-              the surface that proves it. */}
+          {/* Next best actions: every recommendation the account's own rows
+              support, ranked by the money each moves, one rail to swipe
+              between. Each tile carries its number, one clause of the
+              reason, a link to the surface that proves it, and Add to Tray
+              and Dismiss under this account's scope; the title opens the
+              drawer with the whole reason. The single hero card that stood
+              above this rail showed one signal and repeated the rail's
+              first tile (owner, 2026-09-04). */}
           <RecommendationSlider
             recs={recommendations}
+            scopeId={account.id}
+            title="Next best actions"
             emptyNote={account.iap?.loop_status?.find((st) => st.stage === "optimization_loop")?.note ?? null}
           />
 
@@ -298,7 +296,7 @@ export function AdAccountOverview() {
           {/* Current sprint — MST status has no canvas equivalent on this
               screen, so it stays as its own compact card. The "next
               action" half that used to sit beside it read the exact same
-              optimization_loop.recommendation_cards as NextBestActionCard
+              optimization_loop.recommendation_cards as the next-best-actions rail
               above and has been removed as a duplicate surface. Kept
               visually quiet (small pad, muted border/bg, lighter type) so
               it doesn't compete with the KPI tiles / Results-by-event
@@ -365,7 +363,7 @@ export function AdAccountOverview() {
                         <td className="text-right tabular-nums text-foreground/85">{fmtNum(e.results)}</td>
                         <td className="text-right tabular-nums text-muted-foreground/75">{fmtUSD(e.spend, 0)}</td>
                         <td className="text-right tabular-nums text-muted-foreground/75" title="Share of the spend shown in this table">
-                          {share != null ? `${share < 1 ? "<1" : Math.round(share)}%` : "—"}
+                          {share != null ? `${share < 1 ? "<1" : Math.round(share)}%` : "–"}
                         </td>
                         <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/75")}>
                           {cpa != null ? fmtUSD(cpa) : "n/a"}
@@ -466,7 +464,7 @@ export function AdAccountOverview() {
             right={
               <>
                 <CrossLink to="/app/act/queue" label="Open full queue" />
-                <SectionInfoIcon tip="AI-generated recommendations to approve or dismiss — never applied automatically." />
+                <SectionInfoIcon tip="AI-generated recommendations to approve or dismiss. Never applied automatically." />
               </>
             }
           >

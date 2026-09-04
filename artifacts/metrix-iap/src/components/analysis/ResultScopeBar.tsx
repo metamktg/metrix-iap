@@ -16,8 +16,8 @@ const RANK_LABEL: Record<string, string> = { cpa: "cost per result", cpc: "cost 
 
 const SCALE_TEXT: Record<string, string> = {
   conversion: "Purchase-intent events. Each event is judged on its own cost per result; \"All conversions\" blends terminal outcomes only (a purchase and a lead), never a funnel step such as a checkout.",
-  consideration: "Traffic events. Judged on cost per visit and click-through — never against a purchase.",
-  awareness: "Communication signals — CPM, click-through, reach, frequency and the event's own rate — read for gaps against this class's own median. Never cost per result, and never weighted against a purchase.",
+  consideration: "Traffic events. Judged on cost per visit and click-through. Never against a purchase.",
+  awareness: "Communication signals (CPM, click-through, reach, frequency and the event's own rate) read for gaps against this class's own median. Never cost per result, and never weighted against a purchase.",
   unplaced: "Result types Metrix cannot place on a scale (\"unknown\", custom events). Their spend stays visible here; nothing is judged.",
 };
 
@@ -96,7 +96,7 @@ export function ResultScopeTag({ scope, className }: { scope: ResultScope | null
         communication ? "border-primary/30 bg-primary/10 text-interactive" : "border-border/50 text-muted-foreground/75",
         className,
       )}
-      title={`${scopeSubtitle(scope)} — ${communication ? "judged on communication signals, never cost per result" : "judged on cost per result"}`}
+      title={`${scopeSubtitle(scope)} · ${communication ? "judged on communication signals, never cost per result" : "judged on cost per result"}`}
     >
       {scope.label}
       {communication && <span aria-hidden className="w-1 h-1 rounded-full bg-current" />}
@@ -121,7 +121,7 @@ export function LandedScopeNote({ landed, what = "This page", className }: { lan
     <p
       data-testid="result-scope-landed"
       className={cn(TYPE.microLabel, "text-muted-foreground/75 px-6 pt-2 flex items-center gap-1.5 flex-wrap normal-case tracking-normal font-normal", className)}
-      title={`${what} landed on ${scopeSubtitle(landed)} — no rows under the account's default scope. Pick a chip above to change it.`}
+      title={`${what} landed on ${scopeSubtitle(landed)} · no rows under the account's default scope. Pick a chip above to change it.`}
     >
       <span>Landed on</span>
       <ResultScopeTag scope={landed} />

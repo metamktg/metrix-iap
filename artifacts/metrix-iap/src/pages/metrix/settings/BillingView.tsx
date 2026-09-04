@@ -22,7 +22,7 @@ export function BillingView() {
       />
       <PendingState
         title="Metrix is in open beta"
-        message="Metrix is currently invite-only open beta — there's no billing or subscription plan to manage yet. Plans and pricing launch after the beta period."
+        message="Metrix is currently invite-only open beta. There's no billing or subscription plan to manage yet. Plans and pricing launch after the beta period."
         icon={CreditCard}
       />
     </div>

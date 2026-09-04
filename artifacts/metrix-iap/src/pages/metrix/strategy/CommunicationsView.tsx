@@ -83,7 +83,7 @@ function ConfidenceBar({ cells }: { cells: string[] }) {
         value={step}
         total={3}
         segments={3}
-        label={`Confidence — ${TIER_LABEL[tier]}`}
+        label={`Confidence · ${TIER_LABEL[tier]}`}
         fill={TIER_FILL[tier]}
         size="md"
       />
@@ -246,7 +246,7 @@ export function CommunicationsView() {
               <ModuleHeader section={SECTION} title="Communications" accountName={account!.name} />
               <PendingState
                 title="No communications data yet"
-                message="Communications derive from generated message pillars — generate strategy first."
+                message="Communications derive from generated message pillars. Generate strategy first."
                 icon={MessageSquare}
               />
             </div>
@@ -259,7 +259,7 @@ export function CommunicationsView() {
               section={SECTION}
               title="Communications"
               accountName={account!.name}
-              subtitle="Who responds, to what, and why — per message pillar."
+              subtitle="Who responds, to what, and why. Per message pillar."
               table="message_pillars, historical_matrix_4x4"
             />
 
@@ -269,7 +269,7 @@ export function CommunicationsView() {
                 table="message_pillars"
                 collapsible={false}
                 right={
-                  <SectionInfoIcon tip="Each pillar is a validated message direction backed by source cells — showing what creative angles work, who responds, and the strategic rationale behind them." />
+                  <SectionInfoIcon tip="Each pillar is a validated message direction backed by source cells. Showing what creative angles work, who responds, and the strategic rationale behind them." />
                 }
               >
                 <div className="pt-3 space-y-3">

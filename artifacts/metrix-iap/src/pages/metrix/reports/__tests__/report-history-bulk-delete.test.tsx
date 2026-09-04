@@ -35,7 +35,7 @@ vi.mock("@/contexts/MetrixDataContext", async () => {
 
 import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
-import { Toaster } from "@workspace/command-deck/components/ui/toaster";
+import { Toaster } from "@workspace/command-deck/components/ui/sonner";
 import { ReportHistoryView } from "../ReportHistoryView";
 
 const WORKSPACE_ID = "metrix_manager";
@@ -246,7 +246,7 @@ describe("Report History bulk delete (select mode)", () => {
       expect(screen.getByText("Reports deleted")).not.toBeNull();
     });
     expect(
-      screen.getByText("2 reports were removed from Report History."),
+      await screen.findByText("2 reports were removed from Report History."),
     ).not.toBeNull();
 
     // Select mode exited: "Select" button is back, no checkboxes remain.

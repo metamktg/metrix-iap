@@ -69,7 +69,7 @@ export function ReportsCommandCenter() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 <SectionCard title="Build report" desc="Compose the client or internal report from the current loop state.">
                   <div className="grid grid-cols-2 gap-2 mb-3.5">
-                    <MetricTile label="Sections" value={previewRb ? fmtNum(previewRb.report_sections.length) : "—"} sub={previewRb ? "available" : undefined} />
+                    <MetricTile label="Sections" value={previewRb ? fmtNum(previewRb.report_sections.length) : "–"} sub={previewRb ? "available" : undefined} />
                     <MetricTile
                       label="Last sent"
                       value={lastSent ? new Date(lastSent.generated_at).toLocaleDateString() : "Never"}
@@ -77,7 +77,7 @@ export function ReportsCommandCenter() {
                     />
                     <MetricTile
                       label="Formats"
-                      value={previewRb ? fmtNum(previewRb.export_formats.length) : "—"}
+                      value={previewRb ? fmtNum(previewRb.export_formats.length) : "–"}
                       sub={previewRb && previewRb.export_formats.length > 0 ? previewRb.export_formats.join(" · ") : undefined}
                     />
                     <MetricTile label="On file" value={fmtNum(reports.length)} sub="reports total" />

@@ -41,10 +41,10 @@ export function funnelEmptyReasonFor(
   cellId: string,
 ): string | null {
   if (!perfRows || perfRows.length === 0) {
-    return "No per-creative performance rows join to this creative yet. Performance joins through the creative's mapped Ad IDs first (then its cell code) — map the creative to its ad and re-run analysis.";
+    return "No per-creative performance rows join to this creative yet. Performance joins through the creative's mapped Ad IDs first (then its cell code). Map the creative to its ad and re-run analysis.";
   }
   if (!perfRows.some((r) => r.cell_id === cellId)) {
-    return "No performance rows joined to this creative — its mapped ad names don't appear in the imported performance exports.";
+    return "No performance rows joined to this creative. Its mapped ad names don't appear in the imported performance exports.";
   }
   return null;
 }

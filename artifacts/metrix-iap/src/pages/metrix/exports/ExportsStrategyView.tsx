@@ -28,7 +28,7 @@ export function ExportsStrategyView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Strategy JSON" accountName={acct.name} />
-              <PendingState title="No strategy data yet" message="Generate strategy first — there's nothing to export yet." icon={FileJson} />
+              <PendingState title="No strategy data yet" message="Generate strategy first · there's nothing to export yet." icon={FileJson} />
             </div>
           );
         }

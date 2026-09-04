@@ -147,7 +147,7 @@ beforeEach(() => {
   mockGenState.briefRunning    = false;
 });
 
-describe("LoopCommandChain — stale badge rendering", () => {
+describe("LoopCommandChain · stale badge rendering", () => {
   it("shows no stale badge when all stages are fresh", () => {
     // Analysis ran, strategy + briefs generated AFTER analysis → all fresh
     mockAnalysisState.run    = { status: "success", finished_at: T_OLD };

@@ -15,7 +15,7 @@ const INDEX_CSS = fs.readFileSync(
   "utf-8",
 );
 
-describe("SERIES — the single-series accents", () => {
+describe("SERIES · the single-series accents", () => {
   it("is a bare var() of a token index.css actually defines", () => {
     expect(SERIES.interactive).toBe("var(--color-interactive)");
     expect(SERIES.interactive.startsWith("hsl(")).toBe(false);
@@ -34,7 +34,7 @@ describe("SERIES — the single-series accents", () => {
   });
 });
 
-describe("CHART_TYPE — nothing inside a chart sits under the chrome floor", () => {
+describe("CHART_TYPE · nothing inside a chart sits under the chrome floor", () => {
   it("ticks are at the 11px micro step and value labels at the 12px label step", () => {
     expect(CHART_TYPE.tick).toBe(11);
     expect(CHART_TYPE.label).toBe(12);
@@ -55,12 +55,12 @@ describe("CHART_TYPE — nothing inside a chart sits under the chrome floor", ()
   });
 });
 
-describe("MARK / AXIS — the shared mark and frame", () => {
+describe("MARK / AXIS · the shared mark and frame", () => {
   it("noAnimation spreads to a recharts prop that turns the 1500ms grow-in off", () => {
     expect(MARK.noAnimation).toEqual({ isAnimationActive: false });
   });
 
-  it("carries no black literal — the brush and cursor come from the ground", () => {
+  it("carries no black literal · the brush and cursor come from the ground", () => {
     for (const v of [AXIS.brush.fill, AXIS.brush.stroke, AXIS.cursorFill.fill, AXIS.gridSoft.stroke, AXIS.labelDim]) {
       expect(v).not.toMatch(/0 0% 0%|#000|rgba?\(/);
       expect(v).toMatch(/var\(--/);

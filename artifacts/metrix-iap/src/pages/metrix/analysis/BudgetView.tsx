@@ -164,7 +164,7 @@ function EventRowsList({ rows }: { rows: EventRow[] }) {
                 <span className="text-body font-medium text-foreground/90 truncate">{eventLabel(event)}</span>
                 <span className="text-body tabular-nums text-foreground/80 text-right">{fmtUSD(totals.spend, 0)}</span>
                 <span className="text-body tabular-nums text-foreground/80 text-right">{fmtNum(totals.results)}</span>
-                <span className="text-body tabular-nums text-foreground/80 text-right">{totals.results > 0 ? fmtUSD(totals.spend / totals.results, 2) : "—"}</span>
+                <span className="text-body tabular-nums text-foreground/80 text-right">{totals.results > 0 ? fmtUSD(totals.spend / totals.results, 2) : "–"}</span>
                 <span className="text-body tabular-nums text-muted-foreground/75 text-right">{fmtNum(totals.link_clicks)}</span>
               </div>
             ))}
@@ -322,7 +322,7 @@ export function BudgetView() {
             ) : (
               <div className="px-6 pt-5" data-testid="budget-no-summary-note">
                 <CaveatNote
-                  text="Event totals are not available — this account has no campaign summary yet. Concept and placement spend below read the analysis rows directly."
+                  text="Event totals are not available. This account has no campaign summary yet. Concept and placement spend below read the analysis rows directly."
                 />
               </div>
             )}

@@ -40,7 +40,7 @@ function allStacks(): Record<string, string | null>[] {
 }
 
 describe("labels and prefixes come from variable_registry", () => {
-  it("the fixture actually carries a registry — otherwise the rest proves nothing", () => {
+  it("the fixture actually carries a registry. Otherwise the rest proves nothing", () => {
     expect(registry.length).toBeGreaterThan(0);
   });
 

@@ -24,8 +24,8 @@ function BlendedStatStrip({ blended }: { blended: BlendedKPI }) {
   const items = [
     { label: "Spend",     value: fmtUSD(blended.spend, 0) },
     { label: "Results",   value: fmtNum(blended.results) },
-    { label: "CPA",       value: blended.cpa != null ? fmtUSD(blended.cpa) : "—" },
-    { label: "Link CTR",  value: blended.ctrPct != null ? fmtPct(blended.ctrPct) : "—" },
+    { label: "CPA",       value: blended.cpa != null ? fmtUSD(blended.cpa) : "–" },
+    { label: "Link CTR",  value: blended.ctrPct != null ? fmtPct(blended.ctrPct) : "–" },
   ];
   return (
     <div className="flex items-center gap-4 tabular-nums">

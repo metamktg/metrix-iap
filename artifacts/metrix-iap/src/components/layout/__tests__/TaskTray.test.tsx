@@ -214,7 +214,7 @@ describe("trayStore: addToTray / removeFromTray / isInTray", () => {
 });
 
 describe("trayStore: setTrayItemStatus / history", () => {
-  it("marks an item done — it leaves the open list but stays in history", () => {
+  it("marks an item done · it leaves the open list but stays in history", () => {
     addToTray("a", makeItem({ id: "c1", title: "Task one" }));
     setTrayItemStatus("a", "c1", "done");
     expect(getOpenTrayItems("a")).toHaveLength(0);
@@ -223,7 +223,7 @@ describe("trayStore: setTrayItemStatus / history", () => {
     expect(hist[0].status).toBe("done");
   });
 
-  it("archives an item — never deleted, kept in history", () => {
+  it("archives an item · never deleted, kept in history", () => {
     addToTray("a", makeItem({ id: "c1" }));
     setTrayItemStatus("a", "c1", "archived");
     expect(getTrayHistory("a")[0].status).toBe("archived");
@@ -349,7 +349,7 @@ describe("TaskTray: My Tray section", () => {
     expect(within(section).getByText("Archived")).toBeTruthy();
   });
 
-  it("history is never deleted — both done and archived items are listed", () => {
+  it("history is never deleted · both done and archived items are listed", () => {
     addToTray("acct1", makeItem({ id: "c1", title: "Done one" }));
     addToTray("acct1", makeItem({ id: "c2", title: "Archived one" }));
     setTrayItemStatus("acct1", "c1", "done");

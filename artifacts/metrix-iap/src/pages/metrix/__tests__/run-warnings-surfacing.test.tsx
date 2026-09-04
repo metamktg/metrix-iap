@@ -31,9 +31,9 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
 }));
 
 const REDUCED_CONFIDENCE =
-  "⚠ Reduced confidence: core metric columns are missing and will be null — Impressions. " +
+  "⚠ Reduced confidence: core metric columns are missing and will be null, Impressions. " +
   "Key analysis metrics (efficiency scores, CTR, CPM calculations) will be incomplete.";
-const ROUTINE = 'Note: "Date" matched automatically to "Day" (via alias match) — no action needed.';
+const ROUTINE = 'Note: "Date" matched automatically to "Day" (via alias match). No action needed.';
 
 const RUNS = [
   {
@@ -103,7 +103,7 @@ beforeEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-describe("AnalysisHistoryView — run warnings (C10)", () => {
+describe("AnalysisHistoryView · run warnings (C10)", () => {
   it("renders a warnings panel for the run that has warnings", () => {
     renderHistory();
     expect(screen.getAllByTestId("csv-warnings-panel").length).toBe(1);

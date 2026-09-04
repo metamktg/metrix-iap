@@ -26,7 +26,7 @@ describe("FUNNEL_STAGE_CONFIGS", () => {
     expect(FUNNEL_STAGE_CONFIGS.upper.sortDir).toBe("desc");
   });
 
-  it("lower stage's context-free base is the scope's result metrics only — no funnel step assumed", () => {
+  it("lower stage's context-free base is the scope's result metrics only. No funnel step assumed", () => {
     const cfg = FUNNEL_STAGE_CONFIGS.lower;
     expect(cfg.tileIds).toEqual(["lib_spend", "lib_results", "lib_cpa", "lib_cvr"]);
     expect(cfg.tileIds).not.toContain("lib_atc_rate");
@@ -55,7 +55,7 @@ describe("lowerFunnelTileIds · built from the events present", () => {
     expect(ids.filter((id) => id === "lib_checkout_rate")).toHaveLength(1);
   });
 
-  it("leads with the event's own rate and CPM — never cost per result — under a communication scope", () => {
+  it("leads with the event's own rate and CPM (never cost per result) under a communication scope", () => {
     const ids = lowerFunnelTileIds({ events: ["ThruPlays"], scale: "communication" });
     expect(ids).toEqual(["lib_spend", "lib_results", "lib_result_rate", "lib_cpm"]);
     expect(ids).not.toContain("lib_cpa");

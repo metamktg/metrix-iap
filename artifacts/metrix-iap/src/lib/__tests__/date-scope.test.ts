@@ -145,7 +145,7 @@ describe("sumInRange", () => {
   ];
   const strictDates = (r: (typeof strictRows)[number]) => ({ start: r.start, end: r.end });
 
-  it("returns null when no row falls in the range — never 0", () => {
+  it("returns null when no row falls in the range. Never 0", () => {
     const out = sumInRange(strictRows, { start: "2026-09-01", end: "2026-09-30" }, strictDates, (r) => r.v);
     expect(out).toBeNull();
   });

@@ -100,7 +100,7 @@ beforeEach(() => {
 
 // ─── L-15: narrow to a family, cards and rows together ─────────────────
 
-describe("Variables tab — variable-family filter", () => {
+describe("Variables tab · variable-family filter", () => {
   it("offers every family the rows in scope carry, and no family they do not", async () => {
     const user = userEvent.setup();
     renderLibrary();
@@ -167,7 +167,7 @@ describe("Variables tab — variable-family filter", () => {
 
 // ─── L-4: a tile drills into variables, not only into people ───────────
 
-describe("Metric tiles — breakdown by variable family", () => {
+describe("Metric tiles · breakdown by variable family", () => {
   it("opens the full breakdown, whose dimensions include one per variable family", async () => {
     const user = userEvent.setup();
     renderLibrary();
@@ -206,7 +206,7 @@ describe("Metric tiles — breakdown by variable family", () => {
 
 // ─── L-5: a chip says what the variable cost ───────────────────────────
 
-describe("Cell drawer — per-variable cost on the stack", () => {
+describe("Cell drawer · per-variable cost on the stack", () => {
   it("annotates chips with what that variable cost under the active scope", async () => {
     // Deep-link straight to a cell: ?focus= opens its drawer on arrival.
     const cell = analysis.performance_by_cell.find((r) => typeof r.hook_variable === "string" && r.hook_variable) as
@@ -250,7 +250,7 @@ describe("Library evidence chip", () => {
     }
   });
 
-  it("renders no chip when the account has no reconciliation — silence, not a false claim", () => {
+  it("renders no chip when the account has no reconciliation. Silence, not a false claim", () => {
     renderLibrary();
     expect(screen.queryByTestId("library-coverage-chip")).toBeNull();
   });

@@ -170,7 +170,7 @@ export function RunScopePicker({
         </div>
         {capHit && (
           <p data-testid="text-run-cap" className="text-body text-status-warning/80 px-1 pt-2">
-            Up to {RUN_SCOPE_MAX} runs at a time — deselect one to add another.
+            Up to {RUN_SCOPE_MAX} runs at a time · deselect one to add another.
           </p>
         )}
       </PopoverContent>

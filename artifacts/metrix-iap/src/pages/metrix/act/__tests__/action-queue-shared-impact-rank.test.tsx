@@ -1,21 +1,17 @@
 // ─── Action Queue — shared impact rank ─────────────────────────────────
 //
-// NextBestActionCard (components/deck) and ActionQueueView (this directory)
-// both sort DeckCard-shaped recommendations by impact. Each file used to
-// define its own private IMPACT_RANK map (3/2/1/0 vs. 4/3/2/1) for the
-// identical purpose over the identical `impact` field — same relative
-// order today, but two independent sources of truth that could silently
-// desync on any future edit to only one side.
-//
-// Both now import the single `impactRank` from RecommendationDeck instead
-// of declaring their own copy. This suite proves that behaviorally: cards
-// spanning all four impact tiers are fed to both ActionQueueView (via the
-// seed) and NextBestActionCard (via props), and both surfaces' resulting
-// order is asserted against — and only explainable by — the one shared
-// `impactRank` ordering.
+// ActionQueueView sorts DeckCard-shaped recommendations by impact through
+// the single `impactRank` in RecommendationDeck. It used to have a private
+// IMPACT_RANK map (4/3/2/1) beside the hero card's own (3/2/1/0): the same
+// relative order, two sources of truth that could silently desync on any
+// edit to only one side. The hero card is gone (owner, 2026-09-04): the
+// overview's next best action is the recommendation rail, which keeps the
+// derivation's own order (by the money each finding moves) and leads with
+// its first pending card. This suite proves the queue's order is the
+// shared one, and that the rail's leader is the derivation's leader.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, cleanup, screen } from "@testing-library/react";
+import { render, cleanup, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router as WouterRouter } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
@@ -68,8 +64,8 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { ActionQueueView } from "../ActionQueueView";
-import { NextBestActionCard } from "@/components/deck/NextBestActionCard";
-import type { DeckCard } from "@/components/deck/RecommendationDeck";
+import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
+import type { DerivedRecommendation } from "@/lib/data/recommendations";
 import { _resetForTest as resetDecisions } from "@/lib/data/decisionStore";
 import { _resetForTest as resetTray } from "@/lib/data/trayStore";
 
@@ -169,7 +165,7 @@ describe("shared impact rank source (RecommendationDeck)", () => {
   });
 });
 
-describe("ActionQueueView — renders the pending queue in shared-impact-rank order", () => {
+describe("ActionQueueView · renders the pending queue in shared-impact-rank order", () => {
   it("orders cards high, medium, low, setup regardless of input order", () => {
     render(<ActionQueueView />, { wrapper: makeWrapper() });
 
@@ -186,9 +182,9 @@ describe("ActionQueueView — renders the pending queue in shared-impact-rank or
   });
 });
 
-describe("NextBestActionCard — picks the shared-impact-rank top card", () => {
-  const cards: DeckCard[] = IMPACT_TIERS.map((impact, i) => ({
-    id: `deck-rank-test-${impact}`,
+describe("RecommendationSlider · leads with the derivation's first pending card", () => {
+  const recs: DerivedRecommendation[] = IMPACT_TIERS.map((impact, i) => ({
+    id: `rank-test-${impact}`,
     title: `Deck card ${i} (${impact})`,
     rationale: `Rationale for ${impact}.`,
     recommendedAction: `Action for ${impact}.`,
@@ -196,14 +192,23 @@ describe("NextBestActionCard — picks the shared-impact-rank top card", () => {
     confidence: "high",
     scope: "ad_account",
     actionGroup: "Budget actions",
+    href: null,
+    hrefLabel: null,
+    metric: null,
+    source: "optimization_loop.recommendation_cards",
+    stage: 6,
+    derived: false,
   }));
 
-  it("surfaces the highest-impact card first", () => {
-    render(<NextBestActionCard scopeId="bookster" cards={cards} />, {
+  it("keeps the order it is given and promotes the next card when the leader is decided", () => {
+    render(<RecommendationSlider scopeId="bookster" recs={recs} />, {
       wrapper: makeWrapper(),
     });
-    expect(screen.getByTestId("next-best-action-title").textContent).toBe(
-      "Deck card 2 (high)"
-    );
+    const titleOf = (i: number) =>
+      screen.getAllByTestId("recommendation-tile")[i]!.querySelector("h4")!.getAttribute("title");
+    expect(titleOf(0)).toBe("Deck card 0 (low)");
+    fireEvent.click(screen.getAllByTestId("recommendation-dismiss")[0]!);
+    expect(titleOf(0)).toBe("Deck card 1 (setup)");
+    expect(screen.getAllByTestId("recommendation-tile")).toHaveLength(3);
   });
 });

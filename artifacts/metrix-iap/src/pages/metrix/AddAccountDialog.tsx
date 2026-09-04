@@ -201,7 +201,7 @@ export function AddAccountDialog({
                 type="button"
                 disabled
                 aria-disabled="true"
-                title="Live Meta connection is coming soon — use manual upload above for now"
+                title="Live Meta connection is coming soon. Use manual upload above for now"
                 className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-border/30 bg-foreground/[0.01] opacity-70 cursor-not-allowed text-left"
               >
                 <div className="w-9 h-9 rounded-lg border border-border/30 bg-foreground/[0.02] flex items-center justify-center shrink-0">
@@ -234,7 +234,7 @@ export function AddAccountDialog({
               </div>
               <DialogTitle className={DIALOG.title}>Name the ad account</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
-                Use the client or brand name. The account starts unconfigured — performance data
+                Use the client or brand name. The account starts unconfigured, performance data
                 appears only after uploaded reports are processed by an analysis run.
               </DialogDescription>
             </DialogHeader>
@@ -290,7 +290,7 @@ export function AddAccountDialog({
               <DialogTitle className={DIALOG.title}>{created.name} created</DialogTitle>
               <DialogDescription className="text-body leading-relaxed">
                 Stage exported reports now, or skip and upload later from the account's setup
-                screen. Uploads are stored for the analysis pipeline — nothing is parsed at
+                screen. Uploads are stored for the analysis pipeline. Nothing is parsed at
                 upload time.
               </DialogDescription>
             </DialogHeader>
@@ -306,7 +306,7 @@ export function AddAccountDialog({
                 own Review step ("Back to uploads"), which stays within this
                 same account. */}
             <div className="flex items-center justify-end pt-1">
-              <GhostBtn onClick={finish}>Done — open account</GhostBtn>
+              <GhostBtn onClick={finish}>Done · open account</GhostBtn>
             </div>
           </>
         )}

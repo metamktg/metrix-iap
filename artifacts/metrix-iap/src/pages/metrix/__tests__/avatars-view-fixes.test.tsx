@@ -138,7 +138,7 @@ beforeEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-describe("AvatarsView — run-scope wiring narrows cell-attributed KPIs (item 1)", () => {
+describe("AvatarsView · run-scope wiring narrows cell-attributed KPIs (item 1)", () => {
   it("narrows the Segments tile when scoped to a run, and restores it on All time", () => {
     const view = renderAvatars();
     expect(segmentsCount(view.container.textContent)).toBe(allSegs);
@@ -156,7 +156,7 @@ describe("AvatarsView — run-scope wiring narrows cell-attributed KPIs (item 1)
   });
 });
 
-describe("AvatarsView — hypothesis fold surfaces real fields (item 2)", () => {
+describe("AvatarsView · hypothesis fold surfaces real fields (item 2)", () => {
   it("shows the hypothesis status/priority, risk, and expected impact for a real, populated hypothesis", () => {
     renderAvatars();
 
@@ -196,7 +196,7 @@ const matrixColumns: Array<{ id: string; matched_profile_ids?: string[] | null }
 const c2Column = matrixColumns.find((c) => c.id === "C2");
 if (!c2Column) throw new Error("fixture has no C2 matrix column for the confidence-disclosure test");
 if (matrixColumns.some((c) => c.matched_profile_ids != null)) {
-  throw new Error("fixture already carries matched_profile_ids — item-1's no-op premise no longer holds");
+  throw new Error("fixture already carries matched_profile_ids. Item-1's no-op premise no longer holds");
 }
 
 const icpProfilesRaw: Array<{ profile_id: string; performance_data?: { spend?: number | null; confidence?: string | null } | null }> =
@@ -232,7 +232,7 @@ function fmtUsd2(n: number): string {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-describe("AvatarsView — matched avatars narrow ICP performance for real (item 3)", () => {
+describe("AvatarsView · matched avatars narrow ICP performance for real (item 3)", () => {
   afterEach(() => {
     c2Column.matched_profile_ids = null;
     timePoorProfile!.performance_data!.spend = ORIGINAL_ALL_TIME_SPEND;
@@ -288,7 +288,7 @@ describe("AvatarsView — matched avatars narrow ICP performance for real (item 
   });
 });
 
-describe("AvatarsView — no matched avatars in scope discloses the all-time fallback (item 3)", () => {
+describe("AvatarsView · no matched avatars in scope discloses the all-time fallback (item 3)", () => {
   it("shows an honest 'all-time, no matched avatars' note on an ICP card when a run is scoped but the fixture's real matched_profile_ids gap leaves it unable to narrow", () => {
     // Uses the checked-in fixture completely unmodified: every column's
     // matched_profile_ids is null, so avatarsForProfile(...) is always []

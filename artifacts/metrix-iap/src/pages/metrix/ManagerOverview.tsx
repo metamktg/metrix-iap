@@ -419,7 +419,7 @@ export function ManagerOverview() {
             <span className="text-muted-foreground/80 shrink-0">{fmtCompactUSD(r.spend)}</span>
           </div>
         ))}
-        <div className="text-muted-foreground/75 pt-0.5">Blended across all configured accounts — see "By account" for the full table.</div>
+        <div className="text-muted-foreground/75 pt-0.5">Blended across all configured accounts, see "By account" for the full table.</div>
       </div>
     );
   }, [accountTotals]);

@@ -77,7 +77,7 @@ function renderShell() {
 beforeEach(() => { sessionStorage.clear(); localStorage.clear(); });
 afterEach(() => { cleanup(); document.body.style.overflow = ""; });
 
-describe("compact shell — the drawer", () => {
+describe("compact shell · the drawer", () => {
   beforeEach(() => setCompact(true));
 
   it("offers a way to open navigation", () => {
@@ -133,7 +133,7 @@ describe("compact shell — the drawer", () => {
   });
 });
 
-describe("desktop shell — no drawer at all", () => {
+describe("desktop shell · no drawer at all", () => {
   beforeEach(() => setCompact(false));
 
   it("shows no menu button, because the rail is already there", () => {

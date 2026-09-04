@@ -87,7 +87,7 @@ beforeEach(() => {
   activeSeed = baseSeed;
 });
 
-describe("Creative Library — copy components", () => {
+describe("Creative Library · copy components", () => {
   it("with no scanned library, the export's copy components stand in and the library tabs say why they are off", () => {
     activeSeed = seedWith((a) => {
       delete a.mst;

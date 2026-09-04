@@ -24,7 +24,7 @@ const base = (over: Partial<SignalCard> = {}): SignalCard => ({
   ...over,
 });
 
-describe("SignalDeck — the card leads with what was supplied", () => {
+describe("SignalDeck · the card leads with what was supplied", () => {
   it("leads with the metric when the producer gave one", () => {
     render(<SignalDeck cards={[base({ metric_value: "$18.40", metric_context: "vs $23.10 account mean", headline: "Testimonial hook is cheaper" })]} />);
     expect(screen.getByText("$18.40")).toBeTruthy();
@@ -44,7 +44,7 @@ describe("SignalDeck — the card leads with what was supplied", () => {
   });
 });
 
-describe("SignalDeck — a rank is never invented", () => {
+describe("SignalDeck · a rank is never invented", () => {
   it("shows the raw impact and marks the card unranked when priority is absent", () => {
     render(<SignalDeck cards={[base({ impact: "high" })]} />);
     expect(screen.getByText("high")).toBeTruthy();
@@ -73,7 +73,7 @@ describe("SignalDeck — a rank is never invented", () => {
   });
 });
 
-describe("SignalDeck — a delta is reported, not judged", () => {
+describe("SignalDeck · a delta is reported, not judged", () => {
   it("shows the sign but does not colour a rise as good", () => {
     render(<SignalDeck cards={[base({ metric_value: "$41.00", delta_pct: 22.4 })]} />);
     const delta = screen.getByText("+22%");
@@ -102,7 +102,7 @@ describe("SignalDeck — a delta is reported, not judged", () => {
   });
 });
 
-describe("SignalDeck — flags and evidence", () => {
+describe("SignalDeck · flags and evidence", () => {
   it("surfaces the validation flag its producer set", () => {
     render(<SignalDeck cards={[base({ needs_validation: true })]} />);
     expect(screen.getByText("validate")).toBeTruthy();
@@ -119,7 +119,7 @@ describe("SignalDeck — flags and evidence", () => {
   });
 });
 
-describe("SignalDeck — the deck itself", () => {
+describe("SignalDeck · the deck itself", () => {
   it("holds cards past the initial window behind one control", async () => {
     const u = userEvent.setup();
     const many = Array.from({ length: 9 }, (_, i) => base({ id: `s${i}`, title: `Signal ${i}` }));

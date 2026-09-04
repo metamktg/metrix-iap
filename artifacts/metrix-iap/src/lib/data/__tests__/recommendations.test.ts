@@ -132,7 +132,7 @@ describe("deriveRecommendations", () => {
     expect(recs.some((r) => r.derived)).toBe(true);
   });
 
-  it("is pure — same account in, identical cards out", () => {
+  it("is pure · same account in, identical cards out", () => {
     expect(deriveRecommendations(bookster)).toEqual(deriveRecommendations(bookster));
   });
 

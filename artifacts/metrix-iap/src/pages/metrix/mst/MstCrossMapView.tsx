@@ -24,12 +24,12 @@ const TAB_CONTENT: Record<Tab, { section: string; title: string; subtitle: strin
   concept: {
     section: "MST · 06",
     title: "Concept Map",
-    subtitle: "Concepts mapped to pillars — dynamic cross-tile visualization (heatmaps, position maps, avatar tiles, trend/pattern charts) is planned but not yet built; this shows the underlying joins today.",
+    subtitle: "Concepts mapped to pillars · dynamic cross-tile visualization (heatmaps, position maps, avatar tiles, trend/pattern charts) is planned but not yet built; this shows the underlying joins today.",
   },
   crossmap: {
     section: "MST · 06",
     title: "Crossmap Results",
-    subtitle: "Planned cells × actual delivery — dynamic cross-tile visualization (heatmaps, position maps, avatar tiles, trend/pattern charts) is planned but not yet built; this shows the underlying joins today.",
+    subtitle: "Planned cells × actual delivery · dynamic cross-tile visualization (heatmaps, position maps, avatar tiles, trend/pattern charts) is planned but not yet built; this shows the underlying joins today.",
   },
 };
 

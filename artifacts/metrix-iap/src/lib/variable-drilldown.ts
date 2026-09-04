@@ -426,7 +426,7 @@ export function computeVariableDrilldown(
       unavailableReason:
         demoRows.length > 0 || (opts.breakdownRows ?? []).length > 0
           ? "This run's demographic rows don't join to this variable's ads at ad grain. Re-run analysis on the current build to write ad-grain evidence."
-          : "No demographic export in this run — segment performance is unavailable.",
+          : "No demographic export in this run. Segment performance is unavailable.",
       rows: [],
       source: null,
     };

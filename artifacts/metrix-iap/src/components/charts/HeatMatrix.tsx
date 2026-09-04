@@ -196,7 +196,7 @@ export function HeatMatrix({
                       className="h-14 rounded-lg px-1.5 flex flex-col items-center justify-center gap-0.5
                                  enabled:hover:ring-1 enabled:hover:ring-ring/50 enabled:active:scale-[0.96]
                                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-                                 transition-[box-shadow,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]"
+                                 transition-[box-shadow,scale] duration-150 ease-[var(--mx-ease)]"
                       style={isGap ? { backgroundImage: GAP_HATCH } : { background: fillFor(v) }}
                     >
                       <span
@@ -204,7 +204,7 @@ export function HeatMatrix({
                           isGap ? "text-muted-foreground/75" : "text-foreground font-medium"
                         }`}
                       >
-                        {isGap ? "—" : format(v)}
+                        {isGap ? "–" : format(v)}
                       </span>
                       {cell?.sub && !isGap && (
                         <span className="text-micro text-foreground truncate max-w-full">

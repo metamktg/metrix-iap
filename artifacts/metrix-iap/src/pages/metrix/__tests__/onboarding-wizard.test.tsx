@@ -105,8 +105,8 @@ describe("OnboardingWizard", () => {
     await user.click(screen.getByRole("button", { name: /^Next$/i }));
 
     expect(screen.getByText(/What you'll need from Meta/i)).toBeTruthy();
-    expect(screen.getByText(/Required columns — Demographics/i)).toBeTruthy();
-    expect(screen.getByText(/Required columns — Placements/i)).toBeTruthy();
+    expect(screen.getByText(/Required columns · Demographics/i)).toBeTruthy();
+    expect(screen.getByText(/Required columns · Placements/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /Prepare exports/, current: "step" })).toBeTruthy();
     expect(screen.getByText(/1\/3 visited/i)).toBeTruthy();
   });

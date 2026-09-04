@@ -49,7 +49,7 @@ export function ViewSwitcher({
   return (
     <div
       role="group"
-      aria-label={`${label} — chart type`}
+      aria-label={`${label} · chart type`}
       // Outer rail rounded-xl (12px) with p-1 (4px) puts the inner buttons at
       // rounded-lg (8px): concentric, not the same radius as the rail.
       // Scrolls rather than overflowing: six views is 508px, wider than a
@@ -77,7 +77,7 @@ export function ViewSwitcher({
             title={reason ?? undefined}
             aria-describedby={undefined}
             className={`h-10 px-2.5 inline-flex items-center gap-1.5 rounded-lg text-caption shrink-0
-                        transition-[background-color,color,scale] duration-150 ease-[cubic-bezier(0.2,0,0,1)]
+                        transition-[background-color,color,scale] duration-150 ease-[var(--mx-ease)]
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
                         ${
                           disabled
@@ -89,7 +89,7 @@ export function ViewSwitcher({
           >
             <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span>{VIEW_LABEL[v]}</span>
-            {disabled && <span className="sr-only"> — unavailable: {reason}</span>}
+            {disabled && <span className="sr-only">, unavailable: {reason}</span>}
           </button>
         );
       })}

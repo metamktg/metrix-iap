@@ -63,7 +63,7 @@ describe("account rename", () => {
     mount();
     fireEvent.change(screen.getByTestId("input-account-name"), { target: { value: "x".repeat(81) } });
     expect((screen.getByTestId("button-save-account-name") as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText("81/80 — too long")).toBeTruthy();
+    expect(screen.getByText("81/80, too long")).toBeTruthy();
   });
 
   it("submits the trimmed name against the unchanged account id", () => {

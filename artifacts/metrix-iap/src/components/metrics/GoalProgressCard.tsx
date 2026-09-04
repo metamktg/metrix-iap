@@ -93,7 +93,7 @@ export function GoalProgressCard({
     <div
       className="rounded-xl border border-border/40 bg-foreground/[0.02] p-3.5
                  transition-[border-color,background-color] duration-150
-                 ease-[cubic-bezier(0.2,0,0,1)] hover:border-border/70"
+                 ease-[var(--mx-ease)] hover:border-border/70"
     >
       <div className="flex items-baseline gap-2 mb-1.5 min-w-0">
         <span className={`${HEADING.h6} truncate`} title={label}>{label}</span>
@@ -112,7 +112,7 @@ export function GoalProgressCard({
 
       <div className="flex items-baseline gap-2 flex-wrap mb-2.5">
         <span className="text-h3 font-h3 font-semibold text-foreground tabular-nums leading-none">
-          {value != null ? format(value) : "—"}
+          {value != null ? format(value) : "–"}
         </span>
         {value == null && unmeasuredReason && (
           <span className="text-caption font-body text-muted-foreground/75">{unmeasuredReason}</span>
@@ -135,7 +135,7 @@ export function GoalProgressCard({
             aria-label={`${label}: ${format(value)} against a goal of ${format(goal)}`}
           >
             <div
-              className="h-full rounded-full transition-[width] duration-300 ease-[cubic-bezier(0.2,0,0,1)]"
+              className="h-full rounded-full transition-[width] duration-300 ease-[var(--mx-ease)]"
               style={{
                 width: `${filled * 100}%`,
                 background:
@@ -161,7 +161,7 @@ export function GoalProgressCard({
         <div className="flex items-center gap-2 flex-wrap">
           <span
             className="text-caption font-body text-muted-foreground/75"
-            title="A progress bar needs a target. None has been set for this metric, so none is drawn — a bar against an assumed goal would report progress toward a number nobody chose."
+            title="A progress bar needs a target. None has been set for this metric, so none is drawn. A bar against an assumed goal would report progress toward a number nobody chose."
           >
             {value == null ? "Not measured" : "No goal set"}
           </span>

@@ -363,7 +363,7 @@ export function dimensionMetricRestriction(dimensionId: string, metricId: string
     // link clicks is the only field shared with the delivery basis.
     return metricId === "link_clicks"
       ? null
-      : "Conversion-basis rows carry no delivery data (spend, impressions) — delivery metrics never mix with conversion tracking. Only link clicks is available here.";
+      : "Conversion-basis rows carry no delivery data (spend, impressions). Delivery metrics never mix with conversion tracking. Only link clicks is available here.";
   }
   if (eventKeyOfMetric(metricId) != null && !(dimensionId === "cell" || dimensionId === "concept" || dimensionId.startsWith("var:") || dimensionId === "avatar")) {
     return "The placement export carries no result-type column, so per-event results can't be honestly scoped to this dimension.";
@@ -382,7 +382,7 @@ export function dimensionMetricRestriction(dimensionId: string, metricId: string
     // for this dimension was a column of "0" against tokens that had really
     // spent thousands — which reads as "these tokens got no impressions"
     // rather than "impressions are not attributable to a token at all".
-    return "An ad-name token is a substring shared across many ads, so it has no impressions, reach or clicks of its own — only spend, link clicks and results are attributable at this level.";
+    return "An ad-name token is a substring shared across many ads, so it has no impressions, reach or clicks of its own. Only spend, link clicks and results are attributable at this level.";
   }
   return null;
 }

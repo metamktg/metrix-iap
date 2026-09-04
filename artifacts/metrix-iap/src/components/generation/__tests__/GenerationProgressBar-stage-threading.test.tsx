@@ -170,7 +170,7 @@ afterEach(() => {
 // StrategyCommandCenter passes progressStage as stageLabel (no fallback needed).
 // GenerationProgressBar renders the server string in the DOM.
 
-describe("StrategyCommandCenter — GenerationProgressBar shows server stage label when progress_pct > 0", () => {
+describe("StrategyCommandCenter · GenerationProgressBar shows server stage label when progress_pct > 0", () => {
   it("renders the server stage string in the bar", async () => {
     mockGenRunData = runningRun({ progress_pct: 60, progress_stage: "Persisting pillars…" });
     await act(async () => { renderStrategy(); });
@@ -210,7 +210,7 @@ describe("StrategyCommandCenter — GenerationProgressBar shows server stage lab
 // StrategyCommandCenter applies the ?? fallback: "Generating strategy…"
 // GenerationProgressBar renders the fallback string in the DOM.
 
-describe("StrategyCommandCenter — GenerationProgressBar shows fallback when progress_pct is 0", () => {
+describe("StrategyCommandCenter · GenerationProgressBar shows fallback when progress_pct is 0", () => {
   it("renders the fallback string when the server has no progress yet", async () => {
     mockGenRunData = runningRun({ progress_pct: 0, progress_stage: null });
     await act(async () => { renderStrategy(); });

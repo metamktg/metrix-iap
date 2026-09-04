@@ -26,7 +26,7 @@ function fill(): string {
 const money = (n: number) => `$${n.toFixed(2)}`;
 
 describe("more-is-better metrics", () => {
-  it("is NEUTRAL partway toward the target — not a failure", () => {
+  it("is NEUTRAL partway toward the target. Not a failure", () => {
     render(<GoalProgressCard label="Results" value={318} goal={500} format={String} />);
     expect(fill()).toBe(VERDICT.neutral);
   });
@@ -46,7 +46,7 @@ describe("more-is-better metrics", () => {
     expect(fill()).toBe(VERDICT.good);
   });
 
-  it("is NEVER bad — the card cannot know the window is over", () => {
+  it("is NEVER bad · the card cannot know the window is over", () => {
     for (const v of [0, 1, 250, 499]) {
       render(<GoalProgressCard label="Results" value={v} goal={500} format={String} />);
       expect(fill()).not.toBe(VERDICT.bad);
@@ -61,7 +61,7 @@ describe("lower-is-better metrics keep a real failure state", () => {
     expect(fill()).toBe(VERDICT.good);
   });
 
-  it("is BAD over the ceiling — this one is a genuine breach", () => {
+  it("is BAD over the ceiling. This one is a genuine breach", () => {
     render(<GoalProgressCard label="CPA" value={60} goal={25} format={money} lowerIsBetter />);
     expect(fill()).toBe(VERDICT.bad);
   });

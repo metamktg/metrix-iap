@@ -101,7 +101,7 @@ describe("unified KPI tiles mount on every migrated view", () => {
   }
 });
 
-describe("manager spend tile — progressive disclosure", () => {
+describe("manager spend tile · progressive disclosure", () => {
   it("no verbose per-account sub-text inline in any tile body", () => {
     select("manager", null);
     const { container } = renderView(ManagerOverview);

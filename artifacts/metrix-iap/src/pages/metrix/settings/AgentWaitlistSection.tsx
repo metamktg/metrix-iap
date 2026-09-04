@@ -316,7 +316,7 @@ export function AgentWaitlistSection() {
                         ) : result.temp_password ? (
                           <div className="flex items-center gap-2 p-2 rounded border border-status-warning/20 bg-status-warning/[0.06]" data-testid={`panel-temp-password-${entry.email}`}>
                             <div className="text-caption text-foreground min-w-0">
-                              Email not sent — share this temporary password manually:{" "}
+                              Email not sent · share this temporary password manually:{" "}
                               <span className=" text-caption text-status-warning">{result.temp_password}</span>
                             </div>
                             <CopyConfirmButton value={result.temp_password!} data-testid={`button-copy-temp-password-${entry.email}`} />
@@ -373,7 +373,7 @@ export function AgentWaitlistSection() {
                         ) : result.temp_password ? (
                           <div className="flex items-center gap-2 p-2 rounded border border-status-warning/20 bg-status-warning/[0.06]" data-testid={`panel-temp-password-${entry.email}`}>
                             <div className="text-caption text-foreground min-w-0">
-                              Email not sent — share this temporary password manually:{" "}
+                              Email not sent · share this temporary password manually:{" "}
                               <span className=" text-caption text-status-warning">{result.temp_password}</span>
                             </div>
                             <CopyConfirmButton value={result.temp_password!} data-testid={`button-copy-temp-password-${entry.email}`} />

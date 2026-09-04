@@ -72,7 +72,7 @@ export function CellCreativeUploadDialog({
   const handleFile = useCallback(
     (f: File) => {
       if (f.size > MAX_BYTES) {
-        setErrorMsg("File is too large — the limit is 8 MB.");
+        setErrorMsg("File is too large · the limit is 8 MB.");
         return;
       }
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -165,14 +165,14 @@ export function CellCreativeUploadDialog({
           <div className="flex flex-col items-center gap-3 py-6">
             <CheckCircle className="w-8 h-8 text-status-success" />
             <p className="text-body text-center text-muted-foreground">
-              Creative filed to <span className=" text-interactive">{cellId}</span> — the library will refresh automatically.
+              Creative filed to <span className=" text-interactive">{cellId}</span>. The library will refresh automatically.
             </p>
             {validation && (
               <div className="w-full flex items-center gap-1.5 justify-center text-caption text-muted-foreground/75">
                 <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                 {matched
                   ? `Matched the cell's DNA${validation.overall_confidence != null ? ` · ${Math.round(validation.overall_confidence * 100)}% confidence` : ""}`
-                  : "Filed with an explicit override — mismatch was confirmed."}
+                  : "Filed with an explicit override. Mismatch was confirmed."}
               </div>
             )}
             <button

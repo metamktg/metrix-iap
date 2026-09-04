@@ -10,7 +10,7 @@ import { ModuleHeader, SectionCard, PendingState, CrossLink } from "./shared";
 import { Sparkles, Newspaper, BookOpen, Plug, LineChart, Compass, FileText } from "lucide-react";
 
 const GUIDE_STEPS = [
-  { Icon: Plug, title: "Connect or import an account", desc: "Connect a live Meta ad account (Settings → Integrations) or add a manual import — every module scopes to one account at a time." },
+  { Icon: Plug, title: "Connect or import an account", desc: "Connect a live Meta ad account (Settings → Integrations) or add a manual import. Every module scopes to one account at a time." },
   { Icon: LineChart, title: "Run analysis", desc: "From the Analysis command center, pick a date range and run analysis on the staged data. Nothing runs automatically." },
   { Icon: Compass, title: "Generate strategy", desc: "Once analysis succeeds, generate message pillars and hypotheses from the Strategy command center." },
   { Icon: FileText, title: "Generate briefs, then test", desc: "Creative turns strategy into briefs; MST reads back what those briefs produced once they've run." },

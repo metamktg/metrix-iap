@@ -170,7 +170,7 @@ function ColumnAliasGuide({
             </div>
           ))}
           <p className="px-2.5 py-2 text-label text-muted-foreground/75 leading-relaxed">
-            The parser accepts these automatically — no need to rename columns before uploading.
+            The parser accepts these automatically. No need to rename columns before uploading.
           </p>
         </div>
       )}
@@ -213,7 +213,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
         )}
         <FileText className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
         <span className="text-body font-medium text-foreground">
-          Required columns — {CSV_CLASS_TITLES[csvClass]}
+          Required columns · {CSV_CLASS_TITLES[csvClass]}
           {classData?.report_name ? ` (${classData.report_name})` : ""}
         </span>
       </button>
@@ -224,7 +224,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
           ) : (
             <>
               <p className="text-label text-muted-foreground/75">
-                Upload as CSV (preferred) or XLSX — same required columns either way.
+                Upload as CSV (preferred) or XLSX. Same required columns either way.
               </p>
               <div className="rounded-md border border-border/30 p-2">
                 <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/80 mb-1">
@@ -313,7 +313,7 @@ function ObjectiveFlagsPanel({ run }: { run: AnalysisRun }) {
         <div className="flex-1 min-w-0">
           <div className="text-caption font-semibold text-interactive">Objective coverage notices</div>
           <p className="text-label text-interactive/70 mt-0.5">
-            {count} {count === 1 ? "notice" : "notices"} about configured objectives vs the data in this run — nothing was blocked, fabricated, or auto-enabled.{" "}
+            {count} {count === 1 ? "notice" : "notices"} about configured objectives vs the data in this run. Nothing was blocked, fabricated, or auto-enabled.{" "}
             <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
           </p>
         </div>
@@ -415,7 +415,7 @@ export function GuessedMatchesCallout({
           <p className="text-caption text-status-warning/80 leading-relaxed">
             {plural ? "These filenames" : "This filename"} didn't clearly match an ad name, so we
             picked the most likely one as a best guess. Confirm {plural ? "they're" : "it's"} right
-            or fix {plural ? "them" : "it"} first — otherwise analysis may link the wrong creative to
+            or fix {plural ? "them" : "it"} first · otherwise analysis may link the wrong creative to
             an ad.
           </p>
           <ul className="text-label text-status-warning/70 leading-relaxed space-y-0.5 pt-0.5">
@@ -500,8 +500,8 @@ function CompletenessPanel({ accountId, runId }: { accountId: string; runId: str
         )}
         <span className={cn("text-caption font-semibold", data.complete ? "text-status-success" : "text-status-warning")}>
           {data.complete
-            ? "Analysis validated — every module received data"
-            : `Analysis incomplete — ${gaps.length} module${gaps.length !== 1 ? "s" : ""} missing data`}
+            ? "Analysis validated · every module received data"
+            : `Analysis incomplete · ${gaps.length} module${gaps.length !== 1 ? "s" : ""} missing data`}
         </span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
@@ -603,8 +603,8 @@ function CreativeLinkageStatus({
             {allLinked
               ? `${linked} of ${total} creatives linked`
               : noneLinked
-              ? `${total} creative ${total === 1 ? "file" : "files"} staged — ad name mapping needed`
-              : `${linked} of ${total} creatives linked — ${unlinked.length} ad ${unlinked.length === 1 ? "name" : "names"} unmatched`}
+              ? `${total} creative ${total === 1 ? "file" : "files"} staged. Ad name mapping needed`
+              : `${linked} of ${total} creatives linked · ${unlinked.length} ad ${unlinked.length === 1 ? "name" : "names"} unmatched`}
           </div>
           {noneLinked && (
             <p className="text-label text-muted-foreground/75 leading-relaxed">
@@ -615,7 +615,7 @@ function CreativeLinkageStatus({
           {!allLinked && !noneLinked && unlinked.length > 0 && (
             <div className="text-label text-status-warning/70 leading-relaxed space-y-0.5">
               <p>
-                These ad names had no matching row in the data — check that the names in
+                These ad names had no matching row in the data. Check that the names in
                 the creative mapping exactly match what's in your CSV:
               </p>
               <ul className="space-y-0.5 pt-0.5">
@@ -832,7 +832,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
                 included in this export
               </div>
               <p className="text-label text-muted-foreground/75 mt-0.5 leading-relaxed">
-                Analysis proceeds without them — no action needed. Including them in a future
+                Analysis proceeds without them. No action needed. Including them in a future
                 export deepens signal coverage.{" "}
                 <span className="underline cursor-pointer">{noticesExpanded ? "Hide" : "Show"} list</span>
               </p>
@@ -1093,7 +1093,7 @@ export function AnalysisControls({
   const absentOptionalExports: { label: string; adds: string }[] = [
     ...(!hasDemoCsv ? [{ label: "Demographics export", adds: "age × gender breakdown for Audience and the Engagement Funnel" }] : []),
     ...(!hasPlacementCsv ? [{ label: "Placements export", adds: "placement × platform breakdown for Placements" }] : []),
-    ...(!hasSummary ? [{ label: "Ad Summary export", adds: "the full per-ad spend ledger and the reconciliation control — pivots alone attribute only part of spend under iOS privacy limits" }] : []),
+    ...(!hasSummary ? [{ label: "Ad Summary export", adds: "the full per-ad spend ledger and the reconciliation control. Pivots alone attribute only part of spend under iOS privacy limits" }] : []),
   ];
 
   // Detect whether any required breakdown column is missing across staged CSVs.
@@ -1299,9 +1299,9 @@ export function AnalysisControls({
       <CaveatNote
         text={
           `Not staged: ${absentOptionalExports.map((e) => `${e.label} (adds ${e.adds})`).join("; ")}. ` +
-          `The run proceeds on what is staged — each export adds resolution.` +
+          `The run proceeds on what is staged. Each export adds resolution.` +
           (canRestageMissing
-            ? ` A previously processed ${restagableSentence} export is already on this account — re-stage it from Import History below, or upload a new one from the setup screen.`
+            ? ` A previously processed ${restagableSentence} export is already on this account. Re-stage it from Import History below, or upload a new one from the setup screen.`
             : "")
         }
       />
@@ -1318,9 +1318,9 @@ export function AnalysisControls({
             A delivery report is required before running analysis
           </div>
           <p className="text-label text-status-danger/70 leading-relaxed">
-            Stage any one of: Demographics export, Placements export, Ad Summary export — each carries spend per ad, and the others add resolution.{" "}
+            Stage any one of: Demographics export, Placements export, Ad Summary export. Each carries spend per ad, and the others add resolution.{" "}
             {canRestageMissing
-              ? `A previously processed ${restagableSentence} export is already on this account — re-stage it from Import History below, or upload a new one from the setup screen.`
+              ? `A previously processed ${restagableSentence} export is already on this account. Re-stage it from Import History below, or upload a new one from the setup screen.`
               : "Upload one from this account's setup screen."}
           </p>
         </div>
@@ -1401,7 +1401,7 @@ export function AnalysisControls({
             <AlertTriangle className="w-3.5 h-3.5 text-status-danger shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0 space-y-1">
               <div className="text-caption font-semibold text-status-danger">
-                Required columns are missing — this run will likely fail
+                Required columns are missing · this run will likely fail
               </div>
               <p className="text-label text-status-danger/70 leading-relaxed">
                 One or more required breakdown columns (e.g. Age, Placement) were not found in your
@@ -1420,6 +1420,14 @@ export function AnalysisControls({
         </div>
       )}
 
+      {/* The run's own error, whole. It used to be one truncated span beside
+          the status pill, which showed "index row size 3432 exceeds b…" and
+          hid the part that names the cause. It is the reader's next step. */}
+      {run?.status === "error" && run.error_message && (
+        <p className="text-caption text-status-danger/85 leading-relaxed break-words" data-testid="analysis-run-error">
+          {run.error_message}
+        </p>
+      )}
       <div className="flex items-center justify-between gap-2">
         {run ? (
           <div className="flex items-center gap-2 min-w-0">
@@ -1428,9 +1436,6 @@ export function AnalysisControls({
               <span className="text-label text-muted-foreground/80 truncate">
                 Covers {run.date_start} → {run.date_end} ({run.rows_ingested ?? 0} rows)
               </span>
-            )}
-            {run.status === "error" && run.error_message && (
-              <span className="text-label text-status-danger/80 truncate">{run.error_message}</span>
             )}
           </div>
         ) : (
@@ -1601,7 +1606,7 @@ export function AnalysisControls({
       )}
 
       <div className="flex items-center gap-1.5">
-        <p className="text-label text-muted-foreground/75">Analysis only runs when you press this button — it will never run on its own.</p>
+        <p className="text-label text-muted-foreground/75">Analysis only runs when you press this button. It will never run on its own.</p>
         <InfoTooltip content="It reads your staged uploads and reports the exact dates found in the data for the selected range." />
       </div>
     </div>

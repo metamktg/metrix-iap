@@ -105,7 +105,7 @@ export function AnalysisCommandCenter() {
               section={SECTION}
               title="Analysis"
               accountName={acct.name}
-              subtitle="Analyze this account's staged uploads for a chosen window. Never runs automatically — every child page reads a different slice of the same result."
+              subtitle="Analyze this account's staged uploads for a chosen window. Never runs automatically. Every child page reads a different slice of the same result."
               right={
                 <OverviewHeaderControls
                   preset={preset}
@@ -128,7 +128,7 @@ export function AnalysisCommandCenter() {
               {/* Direction for this stage, from the account's own rows —
                   each tile carries the number behind it and a link to the
                   surface that proves it. Absent when this stage has none. */}
-              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 2); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="What the data says to do next" /> : null; })()}
+              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 2); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="Next best actions" /> : null; })()}
 
               <SectionCard
                 title="Run analysis"
@@ -306,7 +306,7 @@ export function AnalysisCommandCenter() {
                     to: "/app/analysis/history",
                     label: runCount > 0 ? `Run history · ${runCount} run${runCount !== 1 ? "s" : ""}` : "Run history",
                     desc: runCount > 0
-                      ? `${runCount} successful run${runCount !== 1 ? "s" : ""} — each can be selected independently when building strategy in the IAP Loop.`
+                      ? `${runCount} successful run${runCount !== 1 ? "s" : ""} · each can be selected independently when building strategy in the IAP Loop.`
                       : "Full detail on analysis runs for this account, including data-integrity flags.",
                     Icon: History,
                     lineage: "manual_analysis_runs[]",

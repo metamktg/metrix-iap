@@ -59,12 +59,12 @@ export function CsvWarningsPanel({ run, compact = false }: { run: AnalysisRun; c
             {reducedConfidence
               ? "Analysis succeeded with reduced confidence"
               : alarmed
-                ? `Analysis succeeded — ${attention.length} warning${attention.length !== 1 ? "s" : ""} to review`
-                : "Analysis succeeded — routine column mappings only"}
+                ? `Analysis succeeded · ${attention.length} warning${attention.length !== 1 ? "s" : ""} to review`
+                : "Analysis succeeded · routine column mappings only"}
           </div>
           <p className={cn(TYPE.caption, "mt-0.5", alarmed ? "text-status-warning/70" : "text-muted-foreground/75")}>
             {reducedConfidence
-              ? "Some core metric columns were missing — key efficiency scores may be incomplete. "
+              ? "Some core metric columns were missing. Key efficiency scores may be incomplete. "
               : ""}
             {attention.length > 0 && `${attention.length} warning${attention.length !== 1 ? "s" : ""}`}
             {attention.length > 0 && notices.length > 0 && " · "}
@@ -92,7 +92,7 @@ export function CsvWarningsPanel({ run, compact = false }: { run: AnalysisRun; c
             <details className="group/run-notices pt-1">
               <summary className="flex items-center gap-1 text-label text-muted-foreground/75 cursor-pointer hover:text-foreground/80 transition-colors [&::-webkit-details-marker]:hidden">
                 <ChevronRight className="w-3 h-3 shrink-0 transition-transform group-open/run-notices:rotate-90" />
-                {notices.length} routine notice{notices.length !== 1 ? "s" : ""} — automatic mappings &amp; optional columns (no action needed)
+                {notices.length} routine notice{notices.length !== 1 ? "s" : ""}, automatic mappings &amp; optional columns (no action needed)
               </summary>
               <ul className="space-y-1 pl-4 pt-1">
                 {notices.map((w, i) => (

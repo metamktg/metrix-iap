@@ -119,7 +119,7 @@ beforeEach(() => {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-describe("AnalysisControls — error run shows verbatim error_message", () => {
+describe("AnalysisControls · error run shows verbatim error_message", () => {
   it("renders the exact error_message string when run.status is 'error'", () => {
     mockRunStatus = "error";
     mockErrorMessage = "CSV column 'age' is missing from the placement export";
@@ -129,7 +129,7 @@ describe("AnalysisControls — error run shows verbatim error_message", () => {
     ).toBeTruthy();
   });
 
-  it("renders a different error_message verbatim — not a hardcoded string", () => {
+  it("renders a different error_message verbatim. Not a hardcoded string", () => {
     mockRunStatus = "error";
     mockErrorMessage = "Date range exceeds data coverage: no rows after 2024-01-01";
     renderControls();

@@ -262,7 +262,7 @@ describe("buyer-intent funnel (cohort-aware)", () => {
     expect(within(funnel).getByText("Purchase")).toBeTruthy();
   });
 
-  it("keeps measured lower-funnel stages under ANY objective label — the label is a lens, never a wall", () => {
+  it("keeps measured lower-funnel stages under ANY objective label. The label is a lens, never a wall", () => {
     // CONTRACT FLIP (owner decision, 2026-08-28). The previous contract —
     // "an app-only cohort never shows ecommerce stages" — hid a lead-gen
     // account's 26 real measured purchases behind its label. The decided
@@ -354,7 +354,7 @@ describe("what moved cost per result", () => {
   });
 });
 
-describe("page header — title, date-range/vs-prior/Summary/Export cluster", () => {
+describe("page header · title, date-range/vs-prior/Summary/Export cluster", () => {
   it("shows the account name in the page title", () => {
     renderFor("bookster");
     expect(screen.getByRole("heading", { name: "Bookster · Ad Performance" })).toBeTruthy();

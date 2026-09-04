@@ -119,7 +119,7 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
-describe("SegmentDrilldownModal — self-resolved demographic coverage", () => {
+describe("SegmentDrilldownModal · self-resolved demographic coverage", () => {
   it("tags partial coverage even though no call site passed it in", async () => {
     SUMMARY = {
       data_coverage: {

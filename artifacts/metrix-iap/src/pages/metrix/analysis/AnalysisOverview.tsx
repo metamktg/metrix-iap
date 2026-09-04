@@ -389,7 +389,7 @@ function CellPerfBars({ items, resultNoun }: {
               rows: [
                 { label: "Spend", value: fmtUSD(d.spend, 0), swatch: SERIES_VARS[0] },
                 { label: resultNoun, value: fmtNum(d.results) },
-                { label: "CPA", value: d.cpa != null ? fmtUSD(d.cpa) : "—" },
+                { label: "CPA", value: d.cpa != null ? fmtUSD(d.cpa) : "–" },
                 { label: "Type", value: eventLabel(d.resultType) },
               ],
             }))}
@@ -457,14 +457,14 @@ function PlacementTable({ placements }: {
           <div className="text-right shrink-0 w-[52px]">
             <div className={cn(TYPE.label, "text-muted-foreground/75 mb-0.5")}>CPA</div>
             <div className={cn(TYPE.caption, " font-semibold tabular-nums", cpaBadgeCls(p.cpa))}>
-              {p.cpa != null ? fmtUSD(p.cpa, 0) : "—"}
+              {p.cpa != null ? fmtUSD(p.cpa, 0) : "–"}
             </div>
           </div>
           {/* CTR badge */}
           <div className="text-right shrink-0 w-[42px]">
             <div className={cn(TYPE.label, "text-muted-foreground/75 mb-0.5")}>CTR</div>
             <div className={cn(TYPE.caption, " tabular-nums text-foreground/60")}>
-              {p.ctr != null ? fmtPct(p.ctr, 1) : "—"}
+              {p.ctr != null ? fmtPct(p.ctr, 1) : "–"}
             </div>
           </div>
         </div>
@@ -516,9 +516,9 @@ function DemoHeatmapGrid({
         sub: fmtUSD(c.spend, 0),
         hint:
           `${c.age} / ${c.gender}: ` +
-          (c.cpa != null ? `${fmtUSD(c.cpa)} CPA` : "no CPA — no results recorded") +
+          (c.cpa != null ? `${fmtUSD(c.cpa)} CPA` : "no CPA · no results recorded") +
           ` \u00b7 ${fmtUSD(c.spend, 0)} spend \u00b7 ${fmtNum(c.results)} results` +
-          ` — click to drill down`,
+          `, click to drill down`,
         meta: { age: c.age, gender: c.gender } satisfies SegmentId,
       })),
     [cells],
@@ -648,7 +648,7 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
               <td className="text-muted-foreground/75">{variableFamilyLabel(r.variable_family)}</td>
               <td className="text-right tabular-nums text-foreground/85">{fmtUSD(r["Amount spent (USD)"], 0)}</td>
               <td className="text-right tabular-nums text-foreground/85">{fmtNum(r.Results)}</td>
-              <td className="text-right tabular-nums text-foreground/85">{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</td>
+              <td className="text-right tabular-nums text-foreground/85">{r.CPA_result != null ? fmtUSD(r.CPA_result) : "–"}</td>
               <td className="text-right tabular-nums text-foreground/85">{fmtPct(r.CTR_link_pct)}</td>
             </tr>
           ))}
@@ -1044,10 +1044,12 @@ export function AnalysisOverview() {
                     </div>
                     {/* Right: result type donut — inline with tiles */}
                     {resultTypePie.length > 0 && (
-                      <div className="w-[196px] shrink-0 rounded-xl border border-border/40 bg-foreground/[0.02] p-3 flex flex-col">
-                        <div className={cn(TYPE.title, "mb-1.5")}>
+                      <div className="w-[196px] shrink-0 flex flex-col gap-1.5">
+                        {/* Title above the tile, like every module. */}
+                        <div className={cn(TYPE.microLabel, "text-muted-foreground/75 px-0.5")}>
                           By result type
                         </div>
+                        <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-3 flex flex-col">
                         <SharePieChart
                           data={resultTypePie}
                           unit="usd"
@@ -1056,6 +1058,7 @@ export function AnalysisOverview() {
                         />
                         <div className="mt-1.5 flex justify-end">
                           <CrossLink to="/app/analysis/library" label="Library →" />
+                        </div>
                         </div>
                       </div>
                     )}
@@ -1170,7 +1173,7 @@ export function AnalysisOverview() {
                       {scopedVariableRows.length > 0 && (
                         <SectionCard
                           title="Variable performance"
-                          desc={`Hook · Tone · Framework · Concept — top 8 · click column to sort${runScoped ? " · scoped to the selected run(s)" : ""}`}
+                          desc={`Hook · Tone · Framework · Concept, top 8 · click column to sort${runScoped ? " · scoped to the selected run(s)" : ""}`}
                           right={<><SectionInfoIcon tip="Shows how each creative variable family (hook, tone, framework, concept) performs on spend and CPA across the top results." /><CrossLink to="/app/analysis/library" label="Full →" /></>}
                         >
                           <CompactVariableTable rows={scopedVariableRows} />
@@ -1229,7 +1232,7 @@ export function AnalysisOverview() {
 
                   {/* ── Core control reads ────────────────────────── */}
                   {controls && (
-                    <SectionCard title="Core control reads" desc="Control creative · per funnel depth" right={<SectionInfoIcon tip="The benchmark creative concepts that set the efficiency floor — new tests are judged against these." />}>
+                    <SectionCard title="Core control reads" desc="Control creative · per funnel depth" right={<SectionInfoIcon tip="The benchmark creative concepts that set the efficiency floor. New tests are judged against these." />}>
                       <div className="grid grid-cols-dashboard-2 gap-3">
                         <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
                           <div className="text-micro uppercase tracking-widest text-muted-foreground/75 mb-1">Primary control</div>

@@ -23,7 +23,7 @@ function renderTile(label: string, value: string) {
   return container;
 }
 
-describe("MetricTile — fmtMetric usd_unit (CPA / CPC)", () => {
+describe("MetricTile · fmtMetric usd_unit (CPA / CPC)", () => {
   it("renders $7.09 for a sub-$1,000 unit cost", () => {
     const value = fmtMetric("usd_unit", 7.09);
     expect(value).toBe("$7.09");
@@ -46,7 +46,7 @@ describe("MetricTile — fmtMetric usd_unit (CPA / CPC)", () => {
   });
 });
 
-describe("MetricTile — fmtMetric usd_total (spend)", () => {
+describe("MetricTile · fmtMetric usd_total (spend)", () => {
   it("renders $2,963 (always 0 dp) for a spend value", () => {
     const value = fmtMetric("usd_total", 2963.4);
     expect(value).toBe("$2,963");
@@ -62,7 +62,7 @@ describe("MetricTile — fmtMetric usd_total (spend)", () => {
   });
 });
 
-describe("MetricTile — fmtMetric pct (CTR / CVR)", () => {
+describe("MetricTile · fmtMetric pct (CTR / CVR)", () => {
   it("renders 15.1% (1 dp) for a rate at/above 10%", () => {
     const value = fmtMetric("pct", 15.06);
     expect(value).toBe("15.1%");
@@ -85,7 +85,7 @@ describe("MetricTile — fmtMetric pct (CTR / CVR)", () => {
   });
 });
 
-describe("MetricTile — fmtMetric count (impressions / results)", () => {
+describe("MetricTile · fmtMetric count (impressions / results)", () => {
   it("renders 12,437 (rounded with thousands separator)", () => {
     const value = fmtMetric("count", 12437.4);
     expect(value).toBe("12,437");
@@ -94,18 +94,18 @@ describe("MetricTile — fmtMetric count (impressions / results)", () => {
   });
 });
 
-describe("MetricTile — null / undefined sentinel", () => {
+describe("MetricTile · null / undefined sentinel", () => {
   it("renders an em dash when the value is null", () => {
     const value = fmtMetric("usd_unit", null);
-    expect(value).toBe("—");
+    expect(value).toBe("–");
     const container = renderTile("CPA", value);
-    expect(within(container).getByText("—")).toBeTruthy();
+    expect(within(container).getByText("–")).toBeTruthy();
   });
 
   it("renders an em dash when the value is undefined", () => {
     const value = fmtMetric("pct", undefined);
-    expect(value).toBe("—");
+    expect(value).toBe("–");
     const container = renderTile("CTR", value);
-    expect(within(container).getByText("—")).toBeTruthy();
+    expect(within(container).getByText("–")).toBeTruthy();
   });
 });
