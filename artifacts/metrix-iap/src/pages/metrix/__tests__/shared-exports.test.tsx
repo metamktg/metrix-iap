@@ -57,6 +57,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "readableVariables",
   "fmtUSD",
   "fmtNum",
+  "fmtUSDAxis",
   "fmtPct",
   "EVENT_LABEL",
   "eventLabel",
@@ -283,16 +284,36 @@ describe("shared.tsx display components, render checks (no context)", () => {
   it("ModuleHeader prefixes the H1 with accountName but keeps the eyebrow-dedup comparison on the bare title", () => {
     // Regression for the account-name-prefix feature: a stage's command-center
     // hub sets title to the bare stage name ("Strategy") while section carries
-    // the stage position ("Strategy · 04") — the eyebrow must still collapse to
-    // the full section string once accountName is added, and the account name
-    // must never leak into the eyebrow line, only the H1.
+    // the nav position ("Strategy · 04"). The eyebrow names the LOOP STAGE
+    // (the sidebar spine's and the stage strip's own numeral), never the nav
+    // ordinal, once accountName is added; and the account name must never
+    // leak into the eyebrow line, only the H1.
     const { container } = render(
       <shared.ModuleHeader section="Strategy · 04" title="Strategy" accountName="Bookster" />
     );
     expect(container.querySelector("h1")?.textContent).toBe("Bookster · Strategy");
     expect(container.querySelector(".mx-section-header__eyebrow")?.textContent).toBe(
-      "Agency view · Strategy · 04"
+      "Agency view · Stage 3 · Strategy"
     );
+  });
+
+  it("ModuleHeader's hub eyebrow never carries the nav ordinal", () => {
+    // The loop numbers Listen 1 to Action 6 on the spine and the stage strip;
+    // "Listen · 02" was a second numbering of the same thing.
+    const listen = render(<shared.ModuleHeader section="Listen · 02" title="Listen" accountName="Bookster" />);
+    expect(listen.container.querySelector(".mx-section-header__eyebrow")?.textContent).toBe("Agency view · Stage 1 · Listen");
+    listen.unmount();
+    // A hub outside the loop names its group.
+    const reports = render(<shared.ModuleHeader section="Reports · 08" title="Reports" accountName="Bookster" />);
+    expect(reports.container.querySelector(".mx-section-header__eyebrow")?.textContent).toBe("Agency view · Outputs · Reports");
+    reports.unmount();
+    // A hub navTree does not know keeps its bare label.
+    const agency = render(<shared.ModuleHeader section="Agency Overview · 01" title="Agency Overview" />);
+    expect(agency.container.querySelector(".mx-section-header__eyebrow")?.textContent).toBe("Agency view · Agency Overview");
+    agency.unmount();
+    // A child page keeps the bare section label, as before.
+    const child = render(<shared.ModuleHeader section="Strategy · 04" title="Avatars" accountName="Bookster" />);
+    expect(child.container.querySelector(".mx-section-header__eyebrow")?.textContent).toBe("Agency view · Strategy");
   });
 
   it("ModuleTabs renders non-empty output", () => {

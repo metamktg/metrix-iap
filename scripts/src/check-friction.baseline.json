@@ -2,18 +2,14 @@
   "/app/account": {
     "warnBoxes": 4,
     "warnIcons": 0,
-    "longProse": 2,
+    "longProse": 0,
     "noData": []
   },
   "/app/act/queue": {
     "warnBoxes": 0,
     "warnIcons": 0,
     "longProse": 12,
-    "noData": [
-      "No results on BOOK0_APP_MAY26_IOS_MST _V1 [iOS]",
-      "No results on BOOK2_LEAD_JUN26_QUIZ_V1",
-      "No results on BOOK2_LEAD_JUN26_QUIZ_V3"
-    ]
+    "noData": []
   },
   "/app/action/agent": {
     "warnBoxes": 0,
@@ -71,7 +67,7 @@
     "warnIcons": 0,
     "longProse": 0,
     "noData": [
-      "No data uploaded yet"
+      "No day-level rows for this account"
     ]
   },
   "/app/analysis/performance": {

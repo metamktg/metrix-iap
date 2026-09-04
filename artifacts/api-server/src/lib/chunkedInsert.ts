@@ -26,7 +26,7 @@
 
 export interface ChunkedInsertClient {
   /** Inserts the batch as one statement; resolves with the database's error, throws on a network failure. */
-  insert(table: string, rows: readonly Record<string, unknown>[]): Promise<{ error: { message: string; code?: string | null } | null }>;
+  insert(table: string, rows: readonly Record<string, unknown>[]): Promise<{ error: { message: string; code?: string | null; status?: number | null } | null }>;
   /** Rows the run holds in the table right now. */
   countForRun(table: string, runId: string): Promise<number>;
 }
@@ -53,13 +53,23 @@ export interface ChunkedInsertResult {
 }
 
 const RETRYABLE_CODES: ReadonlySet<string> = new Set(["57014", "40P01", "55P03", "08006", "08003", "08000"]);
-const RETRYABLE_MESSAGE = /fetch failed|ECONNRESET|EPIPE|ETIMEDOUT|socket hang up|network|timeout|terminating connection|server closed the connection/i;
+// Transport phrases only. The bare words "network" and "timeout" used to be
+// here and matched genuine database errors whose text happened to carry
+// them (three sleeps before the real message surfaced); "timed out" is the
+// edge's own phrasing (a Cloudflare 522 page), which carries no SQLSTATE.
+const RETRYABLE_MESSAGE = /fetch failed|ECONNRESET|EPIPE|ETIMEDOUT|socket hang up|timed out|terminating connection|server closed the connection/i;
 const UNIQUE_VIOLATION = "23505";
 
 /** A network-level failure or a statement the server gave up on, as opposed to an answer about the rows. */
 export function isRetryableInsertFailure(err: unknown): boolean {
   if (err && typeof err === "object" && "code" in err && typeof (err as { code?: unknown }).code === "string") {
     if (RETRYABLE_CODES.has((err as { code: string }).code)) return true;
+  }
+  // No answer at all (status 0) or the server's own failure (5xx) is a
+  // transport failure whatever the body says.
+  if (err && typeof err === "object" && "status" in err && typeof (err as { status?: unknown }).status === "number") {
+    const status = (err as { status: number }).status;
+    if (status === 0 || status >= 500) return true;
   }
   const message = err instanceof Error ? err.message : typeof err === "string" ? err : err && typeof err === "object" && "message" in err ? String((err as { message: unknown }).message) : "";
   return RETRYABLE_MESSAGE.test(message);

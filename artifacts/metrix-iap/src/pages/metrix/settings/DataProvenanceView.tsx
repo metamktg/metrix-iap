@@ -26,7 +26,7 @@
 import { useMemo } from "react";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAccount } from "@/contexts/AccountContext";
-import { readSeedProvenance, sourceFileCoverage } from "@/lib/data/provenance";
+import { readSeedProvenance, sourceFileCoverage, humanizeFactPath } from "@/lib/data/provenance";
 import type { AccountProvenance, RegistryFamily } from "@/lib/data/provenance";
 import { ModuleHeader, SectionCard, CaveatNote, PendingState, DenseText, CrossLink } from "../shared";
 import { TYPE, HEADING } from "../typography";
@@ -39,8 +39,10 @@ const SECTION = "Settings · 10";
 function Fact({ label, value, mutedWhenAbsent = true }: { label: string; value: string | null; mutedWhenAbsent?: boolean }) {
   return (
     <div className="flex flex-col gap-0.5 min-w-0 py-2">
+      {/* The label is the path read as words; the path itself is the
+          title, for the operator who needs the exact key. */}
       <div className={cn(TYPE.microLabel, "truncate")} title={label}>
-        {label}
+        {humanizeFactPath(label)}
       </div>
       {value === null ? (
         <div className={cn(TYPE.caption, mutedWhenAbsent && "text-muted-foreground/75 italic")}>

@@ -113,9 +113,16 @@ describe("SignalDeck · flags and evidence", () => {
     expect(screen.queryByText("validate")).toBeNull();
   });
 
-  it("shows the evidence trace when the card carries one", () => {
+  it("shows the evidence trace when the card carries one: the family on the face, the reference in the title", () => {
     render(<SignalDeck cards={[base({ evidence_ref: "cell/AAFE_HK_v3" })]} />);
-    expect(screen.getByText("cell/AAFE_HK_v3")).toBeTruthy();
+    const face = screen.getByText("Evidence · cell");
+    expect(face.getAttribute("title")).toBe("Evidence: cell/AAFE_HK_v3");
+    expect(screen.queryByText("cell/AAFE_HK_v3")).toBeNull();
+  });
+
+  it("reads a dotted producer reference as words on the face", () => {
+    render(<SignalDeck cards={[base({ evidence_ref: "core_reanalysis_read.primary_control" })]} />);
+    expect(screen.getByText("Evidence · core reanalysis read")).toBeTruthy();
   });
 });
 

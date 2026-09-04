@@ -46,7 +46,8 @@ import { loadImportBytes } from "./supabaseBinary";
 import { autoMapUnmappedCreatives } from "./creativeAutoMap";
 import { detectReportGrain, type ReportGrain } from "./reportGrain";
 import { resolveClassOverlaps, type OverlapSupersession } from "./reportOverlap";
-import { insertChunkedWithRecovery, type ChunkedInsertClient } from "./chunkedInsert";
+import { insertChunkedWithRecovery, isRetryableInsertFailure, defaultBackoffMs, type ChunkedInsertClient } from "./chunkedInsert";
+import { touchRunHeartbeat } from "./runHeartbeat";
 import {
   buildLedger,
   buildObservations,
@@ -624,12 +625,21 @@ async function finishRun(
  * Non-fatal: a progress write failure must never abort the analysis pipeline.
  */
 async function updateProgress(runId: string, pct: number, stage: string): Promise<void> {
+  // A stage boundary is a sign of life. The heartbeat interval cannot fire
+  // while a synchronous stage holds the event loop, so the progress write
+  // carries `heartbeat_at` itself, and it re-arms the interval's ceiling
+  // (runHeartbeat.ts): a run that keeps reaching new stages is working,
+  // however long it takes; one that stops reaching them is the wedged case
+  // the ceiling exists for. Guarded on 'running' so a reclaimed run's late
+  // progress write updates nothing.
+  touchRunHeartbeat("manual_analysis_runs", runId);
   try {
     const supabase = getSupabase();
     await supabase
       .from("manual_analysis_runs")
-      .update({ progress_pct: pct, progress_stage: stage })
-      .eq("id", runId);
+      .update({ progress_pct: pct, progress_stage: stage, heartbeat_at: new Date().toISOString() })
+      .eq("id", runId)
+      .eq("status", "running");
   } catch {
     // Silently ignore — progress display is non-critical
   }
@@ -2790,10 +2800,20 @@ export async function startManualAnalysis(
       const chunkedInsertClient: ChunkedInsertClient = {
         insert: async (table, batch) => {
           const ins = await supabase.from(table).insert(batch as Record<string, any>[]);
-          return { error: ins.error ? { message: ins.error.message, code: ins.error.code ?? null } : null };
+          // The HTTP status rides along: a 5xx or a status of 0 (no answer at
+          // all) is a transport failure whatever the body says, e.g. an HTML
+          // 522 page from the edge, which carries no SQLSTATE.
+          return { error: ins.error ? { message: ins.error.message, code: ins.error.code ?? null, status: ins.status ?? null } : null };
         },
         countForRun: async (table, run) => {
-          const res = await supabase.from(table).select("*", { count: "exact", head: true }).eq("manual_analysis_run_id", run);
+          // The account leads every output table's index; a count on the run
+          // id alone scans the whole table (the largest holds ~89k rows per
+          // run) at the moment the server is already slow.
+          const res = await supabase
+            .from(table)
+            .select("*", { count: "exact", head: true })
+            .eq("account_id", accountId)
+            .eq("manual_analysis_run_id", run);
           if (res.error) throw new Error(res.error.message);
           return res.count ?? 0;
         },
@@ -2991,8 +3011,13 @@ export async function startManualAnalysis(
           totals_row: f.totalsRow,
         }))
         .filter((r) => r.rows.length > 0);
+      // Three synchronous builds. Each progress write between them turns the
+      // event loop (the heartbeat interval gets to fire) and attests liveness
+      // itself, so a long build is never mistaken for a dead process.
       const observed = buildObservations(reconReports, { instancesByName });
+      await updateProgress(runId, 87, "Reconciling: the control per ad");
       const truth = buildTruth(reconReports, { instancesByName, window: { start: dateStart, end: dateEnd } });
+      await updateProgress(runId, 87, "Reconciling: the ledger");
       const ledger = buildLedger({ observations: observed.observations, truth, reports: reconReports, instancesByName });
       allCsvWarnings.push(...observed.warnings, ...ledger.summary.notes);
       logger.info(
@@ -3150,10 +3175,31 @@ export async function startManualAnalysis(
         last_seen_at: new Date().toISOString(),
       }));
       for (let i = 0; i < assetRowsOut.length; i += CHUNK) {
-        const up = await supabase
-          .from("creative_assets")
-          .upsert(assetRowsOut.slice(i, i + CHUNK), { onConflict: "account_id,ad_identity_kind,ad_identity,asset_type,provenance,content_hash", ignoreDuplicates: false });
-        if (up.error) throw new Error(up.error.message);
+        const slice = assetRowsOut.slice(i, i + CHUNK);
+        // An upsert is idempotent, so a transport failure is simply sent
+        // again (the batch-insert recovery is not needed here); a database
+        // error is an answer and stops the run.
+        for (let attempt = 1; ; attempt++) {
+          let failure: unknown = null;
+          try {
+            const up = await supabase
+              .from("creative_assets")
+              .upsert(slice, { onConflict: "account_id,ad_identity_kind,ad_identity,asset_type,provenance,content_hash", ignoreDuplicates: false });
+            if (!up.error) break;
+            const err = { message: up.error.message, code: up.error.code ?? null, status: up.status ?? null };
+            if (!isRetryableInsertFailure(err)) throw new Error(up.error.message);
+            failure = err;
+          } catch (err) {
+            if (failure === null) {
+              if (!isRetryableInsertFailure(err)) throw err;
+              failure = err;
+            }
+          }
+          const message = failure instanceof Error ? failure.message : String((failure as { message?: unknown })?.message ?? failure);
+          if (attempt >= 4) throw new Error(`Upsert into creative_assets failed after ${attempt} attempt(s): ${message}`);
+          logger.warn({ accountId, runId, attempt, message }, "creative_assets upsert: retrying after a transport failure");
+          await new Promise((resolve) => setTimeout(resolve, defaultBackoffMs(attempt)));
+        }
       }
       await insertChunked(
         "variable_evidence",

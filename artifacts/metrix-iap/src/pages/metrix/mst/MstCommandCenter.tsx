@@ -589,8 +589,16 @@ export function MstCommandCenter() {
                   surface that proves it. Absent when this stage has none. */}
               {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 5); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="Next best actions" /> : null; })()}
 
+              {/* The gate asks for the INPUT this stage reads, the same
+                  rule the Strategy and Creative gates follow: an account
+                  whose matrix arrived through the importer carries briefed
+                  cells without a briefs generation run on record, and the
+                  Account Overview already names those cells ("MST active ·
+                  16 matrix cells"). The server's `unlocked` (live briefs
+                  exist) stays a second ticket through. */}
               <PrerequisiteGate
-                met={status.mst.unlocked}
+                met={status.mst.unlocked || (matrix?.columns.length ?? 0) > 0}
+                loading={status.isLoading}
                 title="Generate briefs first"
                 message="MST reads matrix cells briefed for this account. This account doesn't have any generated briefs yet."
                 ctaLabel="Go to Creative"
