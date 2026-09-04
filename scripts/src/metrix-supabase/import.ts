@@ -32,6 +32,8 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { existsSync, readFileSync } from "node:fs";
+import { splitSqlStatements } from "../lib/schema-apply.js";
+import { applySchemaStatements } from "../lib/schema-apply-runner.js";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -1331,9 +1333,13 @@ async function main() {
     // ── DDL ────────────────────────────────────────────────────────────
     // Schema must run first so all guarded tables exist before we query counts.
     // CREATE TABLE IF NOT EXISTS makes this safe on a fresh database.
+    // One statement per transaction with a short lock_timeout (the shared
+    // runner), never the whole file as one query: that shape held ACCESS
+    // EXCLUSIVE locks on every table for the length of the script and
+    // convoyed production reads behind it (2026-09-04).
     const schemaSql = readFileSync(join(__dirname, "schema.sql"), "utf8");
-    await q(schemaSql);
-    console.log("Schema applied.");
+    const schemaResult = await applySchemaStatements(client, splitSqlStatements(schemaSql));
+    console.log(`Schema applied (${schemaResult.statements} statements${schemaResult.retried ? `, ${schemaResult.retried} retried` : ""}).`);
 
     // ── Every table the import deletes ─────────────────────────────────
     // Defined before BEGIN so the same list can be used for both the lock
