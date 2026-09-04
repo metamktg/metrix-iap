@@ -46,11 +46,15 @@ export async function applySchemaStatements(
     const before = Date.now();
     for (let attempt = 1; ; attempt++) {
       try {
-        await client.query("begin");
-        await client.query(`set local lock_timeout = '${lockTimeout}'`);
-        await client.query(`set local statement_timeout = '${statementTimeout}'`);
-        await client.query(stmt);
-        await client.query("commit");
+        // One round trip per statement: the simple-query protocol runs a
+        // multi-statement string in order, so begin / set local / the
+        // statement / commit travel together. Five round trips through the
+        // pooler cost ~0.4 s per statement on 2026-09-04, and 242 statements
+        // plus one slow backfill ran past the post-merge hook's 150 s cap
+        // before the fingerprint could be recorded.
+        await client.query(
+          `begin;\nset local lock_timeout = '${lockTimeout}';\nset local statement_timeout = '${statementTimeout}';\n${stmt};\ncommit;`,
+        );
         break;
       } catch (err) {
         try {

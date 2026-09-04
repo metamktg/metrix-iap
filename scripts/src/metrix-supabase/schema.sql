@@ -1663,17 +1663,20 @@ update manual_imports mi
  where mi.content_md5 is null
    and mi.content is not null;
 
+-- Correlated on purpose (2026-09-04): the earlier shape aggregated and
+-- hashed EVERY import's chunks (189 MB) before the join could discard the
+-- rows that already had a hash, so this "no-op" cost about 60 s on every
+-- apply and pushed the post-merge applier past its 150 s cap. Written as a
+-- correlated subquery, no chunk is read unless its import still lacks a hash.
 update manual_imports mi
-   set content_md5 = a.asm_md5
-  from (
-    select c.import_id,
-           md5(string_agg(c.content, ''::bytea order by c.chunk_index)) as asm_md5
-      from manual_import_chunks c
-     group by c.import_id
-  ) a
- where a.import_id = mi.id
-   and mi.content_md5 is null
-   and mi.content is null;
+   set content_md5 = (
+     select md5(string_agg(c.content, ''::bytea order by c.chunk_index))
+       from manual_import_chunks c
+      where c.import_id = mi.id
+   )
+ where mi.content_md5 is null
+   and mi.content is null
+   and exists (select 1 from manual_import_chunks c where c.import_id = mi.id);
 
 -- ─────────────────────────────────────────────────────────────────────
 -- BUG-39 — run liveness heartbeat
