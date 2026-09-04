@@ -8,7 +8,7 @@
 import type { ChunkedUploadInitKind } from './chunkedUploadInitKind';
 
 export interface ChunkedUploadInit {
-  /** Performance report kinds only — creative assets use single-request staging. */
+  /** Any staged kind. Performance report kinds are capped at 150 MB; creative_asset at 75 MB (the same limit as single-request staging). */
   kind: ChunkedUploadInitKind;
   /** @minLength 1 */
   filename: string;

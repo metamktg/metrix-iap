@@ -470,7 +470,7 @@ export interface ColumnMappingSummaryEntry {
 }
 
 /**
- * Performance report kinds only — creative assets use single-request staging.
+ * Any staged kind. Performance report kinds are capped at 150 MB; creative_asset at 75 MB (the same limit as single-request staging).
  */
 export type ChunkedUploadInitKind = typeof ChunkedUploadInitKind[keyof typeof ChunkedUploadInitKind];
 
@@ -481,10 +481,11 @@ export const ChunkedUploadInitKind = {
   performance_ad_summary_csv: 'performance_ad_summary_csv',
   performance_conversion_device_csv: 'performance_conversion_device_csv',
   performance_asset_csv: 'performance_asset_csv',
+  creative_asset: 'creative_asset',
 } as const;
 
 export interface ChunkedUploadInit {
-  /** Performance report kinds only — creative assets use single-request staging. */
+  /** Any staged kind. Performance report kinds are capped at 150 MB; creative_asset at 75 MB (the same limit as single-request staging). */
   kind: ChunkedUploadInitKind;
   /** @minLength 1 */
   filename: string;

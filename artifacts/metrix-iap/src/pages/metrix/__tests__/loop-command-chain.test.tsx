@@ -156,6 +156,9 @@ function seedWithNoAnalysisAccount(): typeof baseSeed {
   const noAnalysisAccount = {
     ...bookster,
     id: "fresh_account",
+    // A live Meta registration (the source, not the platform string, is what
+    // makes an account live: every account is platform "Meta Ads").
+    source_status: "live_meta_connection",
     name: "Fresh Account",
     iap: {
       ...bookster.iap,
@@ -255,9 +258,9 @@ describe("LoopCommandChain · configured account with no analysis run yet", () =
   });
 
   it("Data stage is complete for a live Meta account, the rest are not", () => {
-    // fresh_account inherits platform "Meta Ads" from Bookster.
-    // isLiveMeta recognises "meta ads" as a live Meta connection, so the
-    // Data stage is complete (source connected) even without an analysis run.
+    // fresh_account registered from a live Meta connection (source_status),
+    // so the Data stage is complete (source connected) even without an
+    // analysis run.
     // Analysis/Strategy/Briefs/Report all still pending.
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
@@ -279,7 +282,7 @@ describe("LoopCommandChain · configured account with no analysis run yet", () =
   });
 
   it("Analysis stage tile is NOT locked. Data is complete for a live Meta account", () => {
-    // isLiveMeta=true (platform "Meta Ads") → dataComplete=true → Analysis
+    // isLiveMeta=true (source_status live_meta_connection) → dataComplete=true → Analysis
     // becomes the "next" step, not locked. Locked = disabled only when
     // !dataComplete && !analysisComplete && !analysisRunning.
     const seed = seedWithNoAnalysisAccount();
@@ -495,7 +498,8 @@ describe("LoopCommandChain · hooks-violation guard (hoisted useState/useMemo)",
     // locked/pending) above the UnconfiguredState checklist — same structural
     // frame as a configured account so every account sees the full loop.
     expect(container.textContent).toContain("IAP Loop");
-    expect(container.textContent).toContain("Connect data source");
+    // An account with no live connection gets the manual checklist.
+    expect(container.textContent).toContain("Stage a performance export");
   });
 
   it("renders without throwing for a manager view (no account selected)", () => {

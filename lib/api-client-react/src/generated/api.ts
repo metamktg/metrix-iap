@@ -463,8 +463,8 @@ export const getInitChunkedManualImportUploadUrl = (accountId: string,) => {
 }
 
 /**
- * Creates an 'uploading' manual import row for a performance report file too large for a single request (the deployment proxy caps request bodies well below the 150 MB file limit). The client then PUTs base64 chunks and finishes with the complete endpoint, which runs the exact same validation as the single-request staging route. Performance CSV kinds only. Requires access to the account.
- * @summary Begin a chunked upload of a large performance report file
+ * Creates an 'uploading' manual import row for a file too large for a single request (the deployment proxy caps request bodies well below the file limits, answering with a bare 413). The client then PUTs base64 chunks and finishes with the complete endpoint, which runs the exact same validation and staging as the single-request route, so a performance report gets the identical mapping report and duplicate guard, and a creative_asset gets the identical content check and server-side ad-name auto-map. Performance report kinds are capped at 150 MB, creative_asset at 75 MB. Requires access to the account.
+ * @summary Begin a chunked upload of a large file
  */
 export const initChunkedManualImportUpload = async (accountId: string,
     chunkedUploadInit: ChunkedUploadInit, options?: RequestInit): Promise<ChunkedUploadInitResult> => {
@@ -513,7 +513,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type InitChunkedManualImportUploadMutationError = ErrorType<ApiError>
 
     /**
- * @summary Begin a chunked upload of a large performance report file
+ * @summary Begin a chunked upload of a large file
  */
 export const useInitChunkedManualImportUpload = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof initChunkedManualImportUpload>>, TError,{accountId: string;data: BodyType<ChunkedUploadInit>}, TContext>, request?: SecondParameter<typeof customFetch>}

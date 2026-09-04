@@ -18,6 +18,7 @@ import { deleteDerivedLibraryEntries, classifyCellCreative, fileCellCreativeOver
 import { getSupabase } from "../../lib/supabase";
 import { restageImportsForRun, loadImportContentBuffer } from "../../lib/analysisEngine";
 import { IapCsvFormatError } from "../../lib/iapCsvParser";
+import { creativeAssetTypeMismatch } from "../../lib/creativeAssetType";
 import {
   userHasAccountAccess,
   syncCreativeAssetLinks,
@@ -25,6 +26,8 @@ import {
   PerformanceCsvValidation,
   validatePerformanceCsvUpload,
   findStagedByteDuplicate,
+  autoLinkStagedCreative,
+  MAX_MANUAL_IMPORT_BYTES,
 } from "./shared";
 import { getCreativeFile, type CreativeFile } from "../../lib/creativeFileCache";
 import { resolveServedAsset, isInlineVideo } from "../../lib/assetContentType";
@@ -137,7 +140,7 @@ router.post("/metrix/accounts/:accountId/manual-imports/uploads", requireAuth, a
   const accountId = String(req.params["accountId"]);
   const { z } = await import("zod/v4");
   const Body = z.object({
-    kind: z.enum(["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv", "performance_conversion_device_csv", "performance_asset_csv"]),
+    kind: z.enum(["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv", "performance_conversion_device_csv", "performance_asset_csv", "creative_asset"]),
     filename: z.string().min(1),
     content_type: z.string().nullish(),
     size_bytes: z.number().int().positive(),
@@ -145,7 +148,7 @@ router.post("/metrix/accounts/:accountId/manual-imports/uploads", requireAuth, a
   });
   const parsed = Body.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: "kind (a performance report kind), filename, size_bytes, and chunk_count are required." });
+    res.status(400).json({ message: "kind (a performance report kind or creative_asset), filename, size_bytes, and chunk_count are required." });
     return;
   }
   const user = req.authUser!;
@@ -161,8 +164,12 @@ router.post("/metrix/accounts/:accountId/manual-imports/uploads", requireAuth, a
       res.status(404).json({ message: "Ad account not found." });
       return;
     }
-    if (parsed.data.size_bytes > MAX_CHUNKED_IMPORT_BYTES) {
-      res.status(400).json({ message: "File is too large — the limit is 150 MB." });
+    // The limit is the kind's: a creative keeps the 75 MB it has on the
+    // single-request path (chunking changes the transport, not the cap);
+    // a performance report goes to 150 MB.
+    const limit = parsed.data.kind === "creative_asset" ? MAX_MANUAL_IMPORT_BYTES : MAX_CHUNKED_IMPORT_BYTES;
+    if (parsed.data.size_bytes > limit) {
+      res.status(400).json({ message: `File is too large. The limit is ${limit === MAX_MANUAL_IMPORT_BYTES ? "75" : "150"} MB.` });
       return;
     }
     if (parsed.data.chunk_count > MAX_UPLOAD_CHUNKS) {
@@ -297,9 +304,11 @@ router.post(
         res.status(422).json({ message: "Some chunks never arrived — the upload was discarded. Try again." });
         return;
       }
-      if (content.length === 0 || content.length > MAX_CHUNKED_IMPORT_BYTES) {
+      const isCreative = upload.kind === "creative_asset";
+      const limit = isCreative ? MAX_MANUAL_IMPORT_BYTES : MAX_CHUNKED_IMPORT_BYTES;
+      if (content.length === 0 || content.length > limit) {
         await discardSession();
-        res.status(422).json({ message: "The assembled file is empty or over the 150 MB limit — the upload was discarded." });
+        res.status(422).json({ message: `The assembled file is empty or over the ${isCreative ? "75" : "150"} MB limit. The upload was discarded.` });
         return;
       }
       if (content.length !== upload.size_bytes) {
@@ -323,16 +332,28 @@ router.post(
         return;
       }
 
-      let validation: PerformanceCsvValidation;
-      try {
-        validation = await validatePerformanceCsvUpload(upload.kind, upload.filename, content);
-      } catch (err) {
-        if (err instanceof IapCsvFormatError) {
+      // A creative gets the single-request path's own content check (a
+      // video renamed .png would render as a broken image); a performance
+      // report gets the same validation as single-request staging.
+      let validation: PerformanceCsvValidation = {};
+      if (isCreative) {
+        const mismatch = creativeAssetTypeMismatch(upload.filename, content);
+        if (mismatch) {
           await discardSession();
-          res.status(422).json({ message: err.message });
+          res.status(422).json({ message: mismatch });
           return;
         }
-        throw err;
+      } else {
+        try {
+          validation = await validatePerformanceCsvUpload(upload.kind, upload.filename, content);
+        } catch (err) {
+          if (err instanceof IapCsvFormatError) {
+            await discardSession();
+            res.status(422).json({ message: err.message });
+            return;
+          }
+          throw err;
+        }
       }
 
       const update = await supabase
@@ -352,6 +373,9 @@ router.post(
         .eq("status", "uploading");
       if (update.error) throw new Error(update.error.message);
 
+      // The same server-side ad-name match the single-request path runs.
+      const linkResult = isCreative ? await autoLinkStagedCreative(accountId, importId, req.log) : null;
+
       req.log.info(
         { accountId, kind: upload.kind, filename: upload.filename, sizeBytes: content.length, chunked: true },
         "Manual import staged (chunked)",
@@ -366,6 +390,7 @@ router.post(
           ...(validation.mappingSummary ? { mapping_summary: validation.mappingSummary } : {}),
           ...(validation.uploadWarnings ? { upload_warnings: validation.uploadWarnings } : {}),
           ...(validation.reportGrain ? { report_grain: validation.reportGrain } : {}),
+          ...(linkResult ? { link_result: { matched: linkResult.matched, unmatched: linkResult.unmatched } } : {}),
         }),
       );
     } catch (err) {

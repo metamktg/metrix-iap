@@ -835,3 +835,71 @@ the account's setup screen. This was flagged to the owner rather than applied.
 contract (`docs/specs/iap-multi-report-reconciliation.md`) is unchanged: a copy signature is
 still identified by its hash, which the spec already states.
 
+## 21. Creative uploads take the chunked transport (2026-09-04, live failure)
+
+**What.** Five creative videos failed to stage with a bare `Upload failed (HTTP 413)` (owner
+screenshot). A creative asset always went up as one base64 JSON body, and the deployment proxy
+rejects large bodies before Express sees them; the chunked transport that carries performance
+reports above 20 MB was closed to `creative_asset`. Now: the chunked init admits `creative_asset`
+(capped at the single-request 75 MB, not the report's 150 MB), completion stages a creative
+exactly as the single-request route does (content-type mismatch check, md5 duplicate guard, the
+server-side ad-name auto-map, `link_result` in the response; the auto-map block moved from
+`accounts.ts` into `autoLinkStagedCreative` in `routes/metrix/shared.ts` so both routes share it),
+and the client sends a creative above 20 MB in chunks and re-sends a smaller one in chunks if a
+single request still meets a 413. The OpenAPI contract's `ChunkedUploadInit.kind` enum carries
+`creative_asset` and the generated clients are regenerated. The dialog's cap copy reads the
+constant (it said 50 MB beside a 75 MB limit), and a 413 reads "Too large for one request".
+
+**Why.** The cap is the proxy's, not the file's; the only transport that scales past it already
+existed and was one enum value away.
+
+**Where.** `lib/api-spec/openapi.yaml`; `artifacts/api-server/src/routes/metrix/{uploads,accounts,shared}.ts`;
+`artifacts/metrix-iap/src/pages/metrix/ConnectAccountDialogs.tsx`; the regenerated `lib/api-zod`
+and `lib/api-client-react`.
+
+**Proof.** `check:api-codegen-drift`, typecheck, the api-server pure suites, the dialog suites and
+the static gates on the branch; the live check is the next creative upload over 20 MB.
+
+**Reach.** Upload transport only. Staging semantics, the run, and the schema are unchanged.
+
+## 22. The first run has a surface (2026-09-04, owner screenshots)
+
+**What.** (1) `lib/data/accountSource.ts`: `isManualAccount` / `hasLiveMetaConnection` read
+`source_status`, and `UnconfiguredState`'s checklist and `LoopCommandChain`'s Data stage read them
+instead of the platform string (every account is platform "Meta Ads", so a manual account counted
+as a live connection: its checklist said "Connect data source" with exports already staged, and
+the chain marked Data complete with nothing staged). (2) `firstRunSteps` in `shared.tsx` is the
+one first-run checklist, from what is really staged: any delivery report (the server contract, not
+"both pivots"), creatives optional, Run analysis last. (3) `ModuleScopeGate` takes
+`allowUnconfigured`; the Analysis command centre passes it and, before the first successful run,
+carries the checklist as a "Set up this account" strip above its Run analysis, Manual import and
+Run history cards and hides the export and explore grid. The checklist's "Run analysis" step lands
+on a page that can run, and on the centre itself it scrolls the run card into view and hands it
+focus (`firstRunSteps`' optional `run` handler) rather than linking to the page the reader is on.
+The centre's Manual import card carries an "Add import" control that opens `ManualImportDialog`
+for every account (its empty state used to point at Settings → General), and Analysis › History
+passes `allowUnconfigured` too: a run history exists from the first attempt, and the centre's
+"Full history" link used to land on the checklist. (4) `tests/e2e/metrix-iap-first-run.spec.ts`,
+wired as `smoke:metrix-iap-first-run` in the smoke list, synthesises an unconfigured manual
+account with a staged export and a failed run and asserts all of it, the reveal, the dialog and
+the history page included, at 1440 and 390 px. (5) `smoke:metrix-iap-build`'s composite
+routing check (port 80) runs only when a router listens and is skipped with a NOTE when the
+connection is refused; `METRIX_IAP_COMPOSITE_BASE_URL` makes it mandatory. It was red on main in
+GitHub Actions, where nothing serves port 80, so every PR's build smoke failed for a reason that
+was not the PR's.
+
+**Why.** Owner (2026-09-04): "the command center does not surface the functionality to stage and
+run and see analysis run history." It did not: the gate sent an unconfigured account to a
+checklist whose run step pointed back at the gate.
+
+**Where.** `artifacts/metrix-iap/src/lib/data/accountSource.ts`, `pages/metrix/shared.tsx`,
+`pages/metrix/analysis/AnalysisCommandCenter.tsx`, `analysis/AnalysisHistoryView.tsx`,
+`components/loop/LoopCommandChain.tsx`; tests `account-scoping`, `loop-command-chain`,
+`shared-exports`, `analysis-command-center-canvas-fidelity`; the new spec and smoke;
+`scripts/src/smoke-metrix-iap-build.ts` for the routing guard.
+
+**Proof.** The smoke (4/4 at both widths), the eleven suites that render the checklist, the chain
+and the centre (358 tests), typecheck and the static gates.
+
+**Reach.** Client only. Account creation, the run, and the status promotion are unchanged.
+

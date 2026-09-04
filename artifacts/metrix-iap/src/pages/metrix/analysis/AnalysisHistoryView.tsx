@@ -224,7 +224,10 @@ export function AnalysisHistoryView() {
   const successRuns = runs.filter((r) => r.status === "success");
 
   return (
-    <ModuleScopeGate section={SECTION} title="History" account={account}>
+    // A run history exists from the first attempt, successful or not, so the
+    // page lets an unconfigured account through (its "No runs yet" state
+    // covers the account that has none).
+    <ModuleScopeGate section={SECTION} title="History" account={account} allowUnconfigured>
       {() => (
         <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
           <ModuleHeader

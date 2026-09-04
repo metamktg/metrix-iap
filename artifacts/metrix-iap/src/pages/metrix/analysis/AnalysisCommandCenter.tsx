@@ -4,7 +4,8 @@
 // live only in the child pages (Ad Performance, IAP Library, Audience,
 // Placements, Budget, History).
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useLocation } from "wouter";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -14,7 +15,9 @@ import { resolveObjectivesMeta } from "@/lib/data/cohortMeta";
 import {
   ModuleHeader, ModuleScopeGate, SectionCard, StageLoopHub, buildLoopStages, CrossLink, HubNavGrid,
   MetricTile, fmtNum, OverviewHeaderControls, type ViewPreset,
+  LoopChecklist, firstRunSteps,
 } from "../shared";
+import { ManualImportDialog, ConnectMetaDialog } from "../ConnectAccountDialogs";
 import { AnalysisControls, type AnalysisDateRange } from "../ManualAnalysisControls";
 import { CreativeNextStepNudge } from "@/components/creative/CreativeNextStepNudge";
 import {
@@ -24,7 +27,7 @@ import {
 } from "@workspace/api-client-react";
 import {
   LayoutDashboard, Library, Dna, Users, LayoutGrid, Wallet, History,
-  CheckCircle2, XCircle, Loader2, FileJson, FileText,
+  CheckCircle2, XCircle, Loader2, FileJson, FileText, FileUp,
 } from "lucide-react";
 import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
 import { deriveRecommendations, recommendationsForStage } from "@/lib/data/recommendations";
@@ -84,11 +87,32 @@ export function AnalysisCommandCenter() {
   // state that gates the execution card's date-range chooser + warnings —
   // not a decorative pill. Summary = collapsed (tiles + button only).
   const [detailOn, setDetailOn] = useState(false);
+  // The setup strip's dialogs (first run only).
+  const [importOpen, setImportOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
+  // The checklist's "Run analysis" step brings the run card into view and
+  // hands it focus: the card is on this page, so a link to /app/analysis
+  // would land the reader where they already are.
+  const runCardRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
+  const revealRunCard = () => {
+    const el = runCardRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+    el.focus({ preventScroll: true });
+  };
 
   return (
-    <ModuleScopeGate section={SECTION} title="Analysis" account={account}>
+    <ModuleScopeGate section={SECTION} title="Analysis" account={account} allowUnconfigured>
       {() => {
         const acct = account!;
+        // Before the first successful run the centre is the setup surface:
+        // the checklist sits above the run card, and the modules that read
+        // a run's output (the export, the explore grid) wait for one. The
+        // account's status is the signal (it flips to configured when real
+        // analysis data lands), not the runs list, which is empty until its
+        // query answers and would flash the strip on a configured account.
+        const firstRun = acct.status !== "configured";
         const objectivesMeta = resolveObjectivesMeta(acct.objectives);
         const adsInScope = acct.ads?.length ?? 0;
         const analysis = getAnalysisData(seed, adAccountId);
@@ -105,7 +129,9 @@ export function AnalysisCommandCenter() {
               section={SECTION}
               title="Analysis"
               accountName={acct.name}
-              subtitle="Analyze this account's staged uploads for a chosen window. Never runs automatically. Every child page reads a different slice of the same result."
+              subtitle={firstRun
+                ? "Stage this account's exports, then run its first analysis. Never runs automatically."
+                : "Analyze this account's staged uploads for a chosen window. Never runs automatically. Every child page reads a different slice of the same result."}
               right={
                 <OverviewHeaderControls
                   preset={preset}
@@ -130,6 +156,29 @@ export function AnalysisCommandCenter() {
                   surface that proves it. Absent when this stage has none. */}
               {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 2); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="Next best actions" /> : null; })()}
 
+              {firstRun && (
+                <SectionCard
+                  title="Set up this account"
+                  desc="What the first run needs, from what is staged now."
+                  collapsible={false}
+                >
+                  <div data-testid="first-run-checklist">
+                    <LoopChecklist
+                      steps={firstRunSteps(acct, importsData?.imports ?? [], {
+                        openImport: () => setImportOpen(true),
+                        openConnect: () => setConnectOpen(true),
+                        run: revealRunCard,
+                      })}
+                    />
+                  </div>
+                </SectionCard>
+              )}
+              {/* Staging happens here, not only in Settings: the Manual import
+                  card's "Add import" opens the same dialog for every account. */}
+              <ManualImportDialog account={acct} open={importOpen} onOpenChange={setImportOpen} />
+              <ConnectMetaDialog account={acct} open={connectOpen} onOpenChange={setConnectOpen} />
+
+              <div ref={runCardRef} tabIndex={-1} data-testid="analysis-run-card" className="outline-none scroll-mt-4">
               <SectionCard
                 title="Run analysis"
                 desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically."
@@ -155,17 +204,30 @@ export function AnalysisCommandCenter() {
                 </p>
                 <AnalysisControls accountId={acct.id} onDateRangeChange={setRunWindow} detailsOpen={detailOn} />
               </SectionCard>
+              </div>
 
               <SectionCard
                 title="Manual import"
                 desc={stagedImports.length > 0
                   ? `${stagedImports.length} file${stagedImports.length !== 1 ? "s" : ""} staged for the next analysis run.`
                   : "No files currently staged."}
-                right={<CrossLink to="/app/settings/general" label="Manage imports" />}
+                right={
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setImportOpen(true)}
+                      className="pressable inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border/50 text-caption font-semibold text-foreground/85 hover:text-foreground hover:bg-foreground/5 transition-colors"
+                      data-testid="button-add-import"
+                    >
+                      <FileUp className="w-3.5 h-3.5" /> Add import
+                    </button>
+                    <CrossLink to="/app/settings/general" label="Manage imports" />
+                  </div>
+                }
               >
                 {stagedImports.length === 0 ? (
                   <p className="text-caption text-muted-foreground/75">
-                    Upload performance exports from Settings → General before running analysis.
+                    Add a performance export before running analysis. Settings keeps every staged file.
                   </p>
                 ) : (
                   <div className="flex flex-col">
@@ -234,6 +296,7 @@ export function AnalysisCommandCenter() {
                 )}
               </SectionCard>
 
+              {!firstRun && (
               <SectionCard
                 title="JSON export"
                 desc="Read-only snapshot of this account's Analysis data. Exports never mutate the loop."
@@ -257,6 +320,9 @@ export function AnalysisCommandCenter() {
                 </button>
               </SectionCard>
 
+              )}
+
+              {!firstRun && (
               <HubNavGrid
                 label="Explore Analysis"
                 items={[
@@ -313,6 +379,7 @@ export function AnalysisCommandCenter() {
                   },
                 ]}
               />
+              )}
               {/* Findings is an Analysis page kept off the menu (navTree
                   `hidden: true`) until its producer runs for real accounts;
                   until now its only inbound path was a legacy redirect. */}

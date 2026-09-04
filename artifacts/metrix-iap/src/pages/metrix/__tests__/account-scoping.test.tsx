@@ -6,7 +6,7 @@
 // Uses the real seed bundle served by the API so the assertions track
 // production data.
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { withUnconfiguredAccount } from "@/test-fixtures/unconfigured";
 import { render, cleanup, fireEvent, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -163,7 +163,30 @@ describe("SKOV Pet selected", () => {
     it(`${name} shows the unconfigured state`, () => {
       select("ad_account", "skov_pet");
       const { container } = renderView(View);
-      expect(container.textContent).toContain("Connect data source");
+      if (View === AnalysisCommandCenter) {
+        // The Analysis centre is where the first run is staged and started,
+        // so it lets an unconfigured account through to its modules and
+        // carries the checklist as a strip instead (owner, 2026-09-04).
+        expect(container.textContent).toContain("Set up this account");
+        expect(container.textContent).toContain("Run analysis");
+        expect(container.querySelector('[data-testid="button-add-import"]')).not.toBeNull();
+      } else if (View === AnalysisHistoryView) {
+        // A run history exists from the first attempt, so the page lets an
+        // unconfigured account through to its own "No runs yet" state
+        // instead of the checklist the centre's "Full history" link used
+        // to land on.
+        // The runs query is live here, so the page reads "Loading runs…"
+        // until it answers and "No runs yet" once it has; either is the page
+        // itself, never the gate.
+        expect(container.textContent).toMatch(/Loading runs…|No runs yet/);
+        expect(container.textContent).not.toContain("Stage a performance export");
+      } else {
+        // An account with no live connection gets the manual checklist: the
+        // source decides, not the platform string ("Meta Ads" on every
+        // account). "Connect data source" is the live-connection step.
+        expect(container.textContent).toContain("Stage a performance export");
+        expect(container.textContent).not.toContain("Connect data source");
+      }
     });
   }
 
@@ -201,7 +224,14 @@ describe("Manager selected", () => {
   });
 });
 
-describe("Unconfigured-state actions (SKOV Pet)", () => {
+describe("Unconfigured-state actions (SKOV Pet, registered from a live Meta connection)", () => {
+  // The connect step belongs to an account that registered through Meta
+  // OAuth; a manual account never sees it. The shared seed is mutated for
+  // this block only.
+  const skov = () => seed.ad_accounts.find((a: { id: string }) => a.id === "skov_pet") as { source_status?: string };
+  beforeEach(() => { skov().source_status = "live_meta_connection"; });
+  afterEach(() => { delete skov().source_status; });
+
   it("Connect data source checklist step shows the gated live-Meta 'Coming soon' state, not a working OAuth flow", () => {
     select("ad_account", "skov_pet");
     renderView(SignalView);
@@ -237,6 +267,7 @@ describe("Bookster selected (sanity)", () => {
       // rendered scoped content instead of a gate/unconfigured state.
       expect(container.textContent).not.toContain("No ad account selected");
       expect(container.textContent).not.toContain("Connect data source");
+      expect(container.textContent).not.toContain("Stage a performance export");
       expect(container.textContent).not.toContain("Connect Meta Ad Account");
       // And it never re-introduces the removed account banner.
       expect(container.textContent).not.toContain("Scoped to ad account");

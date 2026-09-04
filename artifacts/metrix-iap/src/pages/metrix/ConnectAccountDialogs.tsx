@@ -270,7 +270,7 @@ function stageManualImportWithProgress(
         const message =
           (parsed && typeof parsed === "object" && "message" in parsed
             ? String((parsed as { message?: unknown }).message)
-            : null) ?? `Upload failed (HTTP ${xhr.status})`;
+            : null) ?? (xhr.status === 413 ? "Too large for one request (HTTP 413)." : `Upload failed (HTTP ${xhr.status})`);
         reject(new Error(message));
       }
     };
@@ -299,7 +299,7 @@ async function chunkedUploadRequest(url: string, method: "POST" | "PUT", body?: 
     const message =
       (parsed && typeof parsed === "object" && "message" in parsed
         ? String((parsed as { message?: unknown }).message)
-        : null) ?? `Upload failed (HTTP ${res.status})`;
+        : null) ?? (res.status === 413 ? "Too large for one request (HTTP 413)." : `Upload failed (HTTP ${res.status})`);
     throw new Error(message);
   }
   return parsed;
@@ -314,7 +314,7 @@ async function chunkedUploadRequest(url: string, method: "POST" | "PUT", body?: 
 async function stageManualImportChunked(
   accountId: string,
   file: File,
-  kind: CsvKind,
+  kind: CsvKind | "creative_asset",
   onProgress?: (pct: number) => void
 ): Promise<ManualImportResult> {
   const chunkCount = Math.max(1, Math.ceil(file.size / UPLOAD_CHUNK_BYTES));
@@ -1371,20 +1371,38 @@ function CreativeUploadSection({
       }
 
       try {
-        const content_base64 = await fileToBase64(file);
         // No mapping is sent: the server matches the filename against the
         // ads it knows at staging, and again after every analysis run.
-        const staged = await stageManualImportWithProgress(
-          accountId,
-          {
-            kind: "creative_asset",
-            filename: file.name,
-            content_type: file.type || undefined,
-            content_base64,
-            ad_names: [],
-          },
-          throttledSetPct
-        );
+        // A large video takes the chunked transport, the same one the
+        // performance reports use: the deployment proxy answers a single
+        // request over its body cap with a bare 413 before the API sees
+        // it (five videos did on 2026-09-04). A file under the threshold
+        // that still meets a 413 is sent again in chunks rather than
+        // reported, because the cap is the proxy's, not the file's.
+        const stageChunked = () => stageManualImportChunked(accountId, file, "creative_asset", throttledSetPct);
+        let staged: ManualImportResult;
+        if (file.size > CHUNKED_THRESHOLD_BYTES) {
+          staged = await stageChunked();
+        } else {
+          try {
+            const content_base64 = await fileToBase64(file);
+            staged = await stageManualImportWithProgress(
+              accountId,
+              {
+                kind: "creative_asset",
+                filename: file.name,
+                content_type: file.type || undefined,
+                content_base64,
+                ad_names: [],
+              },
+              throttledSetPct
+            );
+          } catch (err) {
+            if (!(err instanceof Error && /HTTP 413/.test(err.message))) throw err;
+            setCurrentPct(0);
+            staged = await stageChunked();
+          }
+        }
         newlyStaged.push(staged.import_id);
         const matched = staged.link_result?.matched ?? [];
         if (matched.length === 0 && matchCandidates.size === 0) {
@@ -1447,7 +1465,7 @@ function CreativeUploadSection({
             ? queueTotal > 1
               ? `Uploading file ${queueIndex} of ${queueTotal}${currentFile ? ` — ${currentFile}` : ""}…`
               : `Uploading${currentFile ? ` ${currentFile}` : ""}…`
-            : "Choose one or more creative files (max 50 MB each)"}
+            : `Choose one or more creative files (max ${MAX_UPLOAD_MB_LABEL} each)`}
         </span>
       </button>
 

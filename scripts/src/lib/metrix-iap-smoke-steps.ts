@@ -37,6 +37,13 @@ export const IAP_SMOKE_STEPS: SmokeStep[] = [
     script: "smoke:metrix-iap-avatars-tooltips",
   },
   { label: "AdAccountOverview UX e2e", script: "smoke:metrix-iap-ad-account-overview" },
+  {
+    // A manual account before its first successful run: the Analysis centre
+    // must surface staging, the run control and the run history, and the
+    // checklist must read the staged exports (owner screenshot, 2026-09-04).
+    label: "First-run journey e2e (unconfigured manual account)",
+    script: "smoke:metrix-iap-first-run",
+  },
   { label: "IAP Library review queue e2e", script: "smoke:metrix-iap-review-queue" },
   {
     label: "MetricHoverPopover + drill-down e2e",
