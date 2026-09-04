@@ -160,8 +160,12 @@ describe("per-account source chain", () => {
       | undefined;
     expect(meta).toBeTruthy();
     // The dotted path proves the record was traversed rather than
-    // pick-listed — a pick-list would only ever show keys it was told about.
-    expect(container.textContent).toContain("loop_run.");
+    // pick-listed (a pick-list would only ever show keys it was told about).
+    // The face reads the path as words; the record key itself stays on the
+    // label's title attribute for the reader who wants the JSON path.
+    expect(container.textContent).toContain("loop run · ");
+    const raw = Array.from(container.querySelectorAll("[title]")).map((el) => el.getAttribute("title") ?? "");
+    expect(raw.some((t) => t.startsWith("loop_run."))).toBe(true);
   });
 });
 
