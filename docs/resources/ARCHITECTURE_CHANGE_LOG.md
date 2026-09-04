@@ -835,3 +835,30 @@ the account's setup screen. This was flagged to the owner rather than applied.
 contract (`docs/specs/iap-multi-report-reconciliation.md`) is unchanged: a copy signature is
 still identified by its hash, which the spec already states.
 
+## 21. Creative uploads take the chunked transport (2026-09-04, live failure)
+
+**What.** Five creative videos failed to stage with a bare `Upload failed (HTTP 413)` (owner
+screenshot). A creative asset always went up as one base64 JSON body, and the deployment proxy
+rejects large bodies before Express sees them; the chunked transport that carries performance
+reports above 20 MB was closed to `creative_asset`. Now: the chunked init admits `creative_asset`
+(capped at the single-request 75 MB, not the report's 150 MB), completion stages a creative
+exactly as the single-request route does (content-type mismatch check, md5 duplicate guard, the
+server-side ad-name auto-map, `link_result` in the response; the auto-map block moved from
+`accounts.ts` into `autoLinkStagedCreative` in `routes/metrix/shared.ts` so both routes share it),
+and the client sends a creative above 20 MB in chunks and re-sends a smaller one in chunks if a
+single request still meets a 413. The OpenAPI contract's `ChunkedUploadInit.kind` enum carries
+`creative_asset` and the generated clients are regenerated. The dialog's cap copy reads the
+constant (it said 50 MB beside a 75 MB limit), and a 413 reads "Too large for one request".
+
+**Why.** The cap is the proxy's, not the file's; the only transport that scales past it already
+existed and was one enum value away.
+
+**Where.** `lib/api-spec/openapi.yaml`; `artifacts/api-server/src/routes/metrix/{uploads,accounts,shared}.ts`;
+`artifacts/metrix-iap/src/pages/metrix/ConnectAccountDialogs.tsx`; the regenerated `lib/api-zod`
+and `lib/api-client-react`.
+
+**Proof.** `check:api-codegen-drift`, typecheck, the api-server pure suites, the dialog suites and
+the static gates on the branch; the live check is the next creative upload over 20 MB.
+
+**Reach.** Upload transport only. Staging semantics, the run, and the schema are unchanged.
+

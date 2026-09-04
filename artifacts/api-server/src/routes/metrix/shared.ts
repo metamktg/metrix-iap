@@ -13,6 +13,7 @@ import { ensureSupabaseAuthUser } from "@workspace/auth-mirror";
 import { sendApprovalEmail } from "../../lib/approvalEmail";
 import { invalidateMetrixSeedCache } from "../../lib/metrixSeedAssembly";
 import { getSupabase } from "../../lib/supabase";
+import { autoMapUnmappedCreatives } from "../../lib/creativeAutoMap";
 import { parseIapCsv, IapCsvFormatError, type DuplicateHeaderConflict } from "../../lib/iapCsvParser";
 import { detectReportGrain, type ReportGrain } from "../../lib/reportGrain";
 import { IAP_CSV_CLASS_SPECS, type IapCsvClass } from "../../lib/iapCsvSpec";
@@ -295,4 +296,30 @@ export async function findStagedByteDuplicate(
   if (dupCheckRes.error) throw new Error(dupCheckRes.error.message);
   const existing = dupCheckRes.data?.[0];
   return existing ? { filename: String(existing["filename"]) } : null;
+}
+
+/**
+ * After a creative_asset is staged, match it on the server against the ads
+ * this account already knows (creativeAutoMap.ts) and report the names it
+ * landed on. Before the first analysis run there is nothing to match
+ * against, and that is fine: the run's link step revisits every unmapped
+ * file with the registry it just wrote. Never fatal to the upload itself.
+ * Shared by single-request and chunked staging so both transports stage a
+ * creative identically.
+ */
+export async function autoLinkStagedCreative(
+  accountId: string,
+  importId: string,
+  log: { info: (obj: object, msg: string) => void; warn: (obj: object, msg: string) => void },
+): Promise<CreativeLinkResult> {
+  try {
+    const auto = await autoMapUnmappedCreatives(accountId);
+    const stagedRow = await getSupabase().from("manual_imports").select("ad_names").eq("id", importId).limit(1);
+    const names = ((stagedRow.data?.[0]?.["ad_names"] as string[] | null) ?? []);
+    log.info({ accountId, importId, considered: auto.considered, mapped: auto.mapped }, "Creative staged; server auto-map ran");
+    return { matched: names, unmatched: [] };
+  } catch (err) {
+    log.warn({ err, accountId, importId }, "Creative staged; server auto-map failed (file stays unmapped)");
+    return { matched: [], unmatched: [] };
+  }
 }
