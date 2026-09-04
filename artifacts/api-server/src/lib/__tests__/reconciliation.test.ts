@@ -319,3 +319,136 @@ describe("rates, states and helpers", () => {
     expect(segmentKeyOf({ gender: "female", device: "" })).toBe(segmentKeyOf({ gender: "female" }));
   });
 });
+
+// ─── Overlaps between files of one breakdown, and between control files ────
+// The Pure Path shapes of 2026-09-04: two placement pivots of one period at
+// different depth, a whole-period pivot beside a daily one, and two daily Ad
+// Summaries of overlapping windows. Grains are built by hand where the CSV
+// fixtures cannot produce the shape.
+import type { ReportGrain } from "../reportGrain";
+
+const mkGrain = (over: Partial<ReportGrain>): ReportGrain => ({
+  report_class: "placement",
+  csv_class: "device_placement",
+  has_ad_id: true,
+  ad_id_fill_pct: 100,
+  ad_id_joinable: true,
+  has_day: false,
+  distinct_days: 1,
+  period: { start: "2026-08-06", end: "2026-09-02" },
+  aggregate_shape: true,
+  dimensions: ["Platform", "Placement"],
+  asset_columns: [],
+  distinct_ad_ids: 1,
+  distinct_ad_names: 1,
+  reused_ad_names: 0,
+  currency: "CAD",
+  account_ids: ["1"],
+  attribution_settings: [],
+  header_conflicts: [],
+  additive_metrics: ["amount_spent"],
+  non_additive_metrics: [],
+  result_types: ["Website purchases"],
+  has_totals_row: false,
+  has_campaign_ids: false,
+  has_ad_set_ids: false,
+  ...over,
+});
+const mkRow = (adId: string, spend: number, dims: Record<string, string>, day = "2026-08-06") => ({
+  breakdowns: { Day: day, "Campaign name": "C", "Ad ID": adId, "Ad name": `Ad ${adId}`, ...dims },
+  base: { amount_spent: spend, impressions: 10, results: 1, result_type: "Website purchases" },
+  extra: {},
+});
+const spendOf = (obs: { breakdown: string; metrics: Record<string, number> }[], breakdown: string) =>
+  obs.filter((o) => o.breakdown === breakdown).reduce((s, o) => s + (o.metrics["amount_spent"] ?? 0), 0);
+
+describe("overlaps between files of one breakdown (Pure Path shapes)", () => {
+  it("a Platform × Placement pivot and a Platform × Placement × Impression device pivot of one period count once: the finer file wins", () => {
+    const coarse: ReportInput = {
+      import_id: "placeplat",
+      grain: mkGrain({}),
+      rows: [mkRow("1", 60, { Platform: "facebook", Placement: "feed" }), mkRow("1", 40, { Platform: "instagram", Placement: "stories" })],
+    };
+    const fine: ReportInput = {
+      import_id: "device",
+      grain: mkGrain({ dimensions: ["Platform", "Placement", "Impression device"] }),
+      rows: [
+        mkRow("1", 35, { Platform: "facebook", Placement: "feed", "Impression device": "iphone" }),
+        mkRow("1", 25, { Platform: "facebook", Placement: "feed", "Impression device": "android" }),
+        mkRow("1", 40, { Platform: "instagram", Placement: "stories", "Impression device": "iphone" }),
+      ],
+    };
+    const { observations, overlaps, warnings } = buildObservations([coarse, fine]);
+    expect(spendOf(observations, "placement")).toBe(100); // never 200
+    expect(observations.every((o) => o.source_import_ids.join() === "device")).toBe(true);
+    expect(overlaps).toEqual([{ breakdown: "placement", superseded_import_id: "placeplat", winning_import_id: "device", keys: 2, reason: "finer_breakdown" }]);
+    expect(warnings[0]).toMatch(/finer breakdown/);
+  });
+
+  it("a daily pivot beats a whole-period pivot for the ads it carries; the whole-period file keeps the rest", () => {
+    const whole: ReportInput = {
+      import_id: "whole",
+      grain: mkGrain({ report_class: "demographic", csv_class: "demographic", dimensions: ["Gender", "Age"] }),
+      rows: [mkRow("1", 100, { Gender: "female", Age: "25-34" }), mkRow("2", 50, { Gender: "male", Age: "35-44" })],
+    };
+    const daily: ReportInput = {
+      import_id: "daily",
+      grain: mkGrain({ report_class: "demographic", csv_class: "demographic", dimensions: ["Gender", "Age"], has_day: true, distinct_days: 2, aggregate_shape: false }),
+      rows: [mkRow("1", 30, { Gender: "female", Age: "25-34" }, "2026-08-06"), mkRow("1", 30, { Gender: "female", Age: "25-34" }, "2026-08-07")],
+    };
+    const { observations, overlaps } = buildObservations([whole, daily]);
+    expect(spendOf(observations, "demographic")).toBe(110); // 60 by day for ad 1, 50 over the period for ad 2
+    expect(overlaps).toEqual([{ breakdown: "demographic", superseded_import_id: "whole", winning_import_id: "daily", keys: 1, reason: "daily_over_period" }]);
+  });
+
+  it("a joint Gender × Age × Text file loses its demographic margin to a plain Gender × Age file and keeps its asset margins", () => {
+    const joint: ReportInput = {
+      import_id: "joint",
+      grain: mkGrain({
+        report_class: "demographic_asset",
+        csv_class: "demographic",
+        dimensions: ["Gender", "Age"],
+        asset_columns: [{ column: "Text", asset_type: "primary_text", role: "breakdown" }],
+      }),
+      rows: [
+        { ...mkRow("1", 70, { Gender: "female", Age: "25-34" }), assetBreakdowns: { Text: "Hello" } },
+        { ...mkRow("1", 20, { Gender: "female", Age: "25-34" }), assetBreakdowns: { Text: "World" } },
+      ],
+    };
+    const plain: ReportInput = {
+      import_id: "plain",
+      grain: mkGrain({ report_class: "demographic", csv_class: "demographic", dimensions: ["Gender", "Age"] }),
+      rows: [mkRow("1", 100, { Gender: "female", Age: "25-34" })],
+    };
+    const { observations, overlaps } = buildObservations([joint, plain]);
+    expect(spendOf(observations, "demographic")).toBe(100); // the plain file, staged later, not 190
+    expect(spendOf(observations, "asset")).toBe(90); // the joint file's asset margin survives
+    expect(spendOf(observations, "demographic_asset")).toBe(90);
+    expect(overlaps).toEqual([{ breakdown: "demographic", superseded_import_id: "joint", winning_import_id: "plain", keys: 1, reason: "later_staged" }]);
+  });
+});
+
+describe("overlapping control files", () => {
+  const daily28 = report("summary-28d", buildAdSummaryCsv({ daily: true }), "ad_summary");
+  const csv30 = buildAdSummaryCsv({ daily: true });
+  const daily30 = report("summary-30d", csv30, "ad_summary");
+
+  it("two daily Ad Summaries of the same window are one control, never summed", () => {
+    const truth = buildTruth([daily28, daily30]);
+    expect(truth.source).toBe("ad_summary");
+    expect(truth.import_ids).toEqual(["summary-28d", "summary-30d"]);
+    expect(cents(truth.account!["amount_spent"] ?? null)).toBe(ACCOUNT_TRUTH.spendCents);
+    expect(truth.per_ad.size).toBe(44);
+    expect(truth.conflicts.some((c) => /\[Truth\] .* appear in more than one staged file/.test(c))).toBe(true);
+  });
+
+  it("a partial overlap keeps the earlier file's own days and the later file's shared days", () => {
+    const lines = csv30.trimEnd().split("\n");
+    const days = [...new Set(lines.slice(1).map((l) => l.split(",")[0]!))].sort();
+    const from = days[20]!;
+    const tail = [lines[0]!, ...lines.slice(1).filter((l) => l.split(",")[0]! >= from)].join("\n") + "\n";
+    const later = report("summary-tail", tail, "ad_summary");
+    const truth = buildTruth([daily28, later]);
+    expect(cents(truth.account!["amount_spent"] ?? null)).toBe(ACCOUNT_TRUTH.spendCents);
+  });
+});
