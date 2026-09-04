@@ -21,6 +21,7 @@ import {
 import { addToTray, removeFromTray } from "@/lib/data/trayStore";
 import { ConfidenceBadge, CrossLink, DenseText, ModuleHeader, StageNotRunState, UnconfiguredState } from "@/pages/metrix/shared";
 import { impactRank } from "@/components/deck/RecommendationDeck";
+import { KIND_LABEL, KIND_STYLE, KIND_STYLE_FALLBACK, recommendationKind } from "@/components/deck/recommendationKind";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
 import {
   Check,
@@ -39,20 +40,27 @@ import { deriveRecommendations, toLoopCards } from "@/lib/data/recommendations";
 // shared `impactRank` in RecommendationDeck, the one definition every
 // recommendation surface reads, so no two surfaces can disagree on priority.
 
-function actionVerb(recommended_action: string): { label: string; cls: string } {
-  const a = recommended_action.toLowerCase();
-  if (a.includes("scale")) return { label: "Scale", cls: "bg-status-success/10 text-status-success border-status-success/25" };
-  if (a.includes("pause") || a.includes("kill") || a.includes("stop"))
-    return { label: "Retire", cls: "bg-status-danger/10 text-status-danger border-status-danger/25" };
-  return { label: "Optimize", cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
+// The verb is the rail's word for the same card (recommendationKind.ts):
+// a derived card carries its kind in its id, so Investigate, Validate,
+// Test, Data and Budget stay themselves here instead of collapsing into
+// "Optimize" (eighteen of twenty-three cards did). A card the loop
+// generated has no kind; its verb is read off its recommended action.
+function actionVerb(card: Pick<RecommendationCard, "id" | "recommended_action">): { label: string; cls: string } {
+  const kind = recommendationKind({ id: card.id });
+  const known = KIND_LABEL[kind];
+  if (known) return { label: known, cls: KIND_STYLE[kind] ?? KIND_STYLE_FALLBACK };
+  const a = card.recommended_action.toLowerCase();
+  if (a.includes("scale")) return { label: KIND_LABEL.scale, cls: KIND_STYLE.scale };
+  if (a.includes("pause") || a.includes("kill") || a.includes("stop")) return { label: KIND_LABEL.avoid, cls: KIND_STYLE.avoid };
+  return { label: KIND_LABEL.optimize, cls: KIND_STYLE.optimize };
 }
 
-/** The queue's groups, in the loop's order. A card's index in the flat list keeps its stagger slot. */
+/** The queue's groups, in the derivation's order (by the money each moves). A card's index in the flat list keeps its stagger slot. */
 function groupByVerb(cards: RecommendationCard[]): { label: string; cls: string; cards: { card: RecommendationCard; index: number }[] }[] {
-  const order = ["Retire", "Scale", "Optimize"];
+  const order = [KIND_LABEL.avoid, KIND_LABEL.scale, KIND_LABEL.budget, KIND_LABEL.investigate, KIND_LABEL.optimize, KIND_LABEL.validate, KIND_LABEL.test, KIND_LABEL.data];
   const groups = new Map<string, { label: string; cls: string; cards: { card: RecommendationCard; index: number }[] }>();
   cards.forEach((card, index) => {
-    const verb = actionVerb(card.recommended_action);
+    const verb = actionVerb(card);
     const g = groups.get(verb.label) ?? { label: verb.label, cls: verb.cls, cards: [] };
     g.cards.push({ card, index });
     groups.set(verb.label, g);
@@ -153,7 +161,7 @@ function QueueCard({
   useDecisions(); // subscribe to store changes
   const [expanded, setExpanded] = useState(false);
   const decision = getDecision(adAccountId, card.id);
-  const verb = actionVerb(card.recommended_action);
+  const verb = actionVerb(card);
   const impactLabel = fmtImpact(card);
 
   const approve = useCallback(() => {

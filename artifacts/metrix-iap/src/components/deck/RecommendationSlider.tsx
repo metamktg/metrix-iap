@@ -41,7 +41,7 @@ import { Check, ChevronLeft, ChevronRight, X, Zap } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE, HEADING } from "@/pages/metrix/typography";
 import { deriveLabel, CrossLink, InfoTooltip } from "@/pages/metrix/shared";
-import type { DerivedRecommendation } from "@/lib/data/recommendations";
+import { UNMEASURED_RATIONALE, type DerivedRecommendation } from "@/lib/data/recommendations";
 import { useDecisions, getDecision, setDecision } from "@/lib/data/decisionStore";
 import { addToTray } from "@/lib/data/trayStore";
 import { RecommendationDrawer } from "./RecommendationDrawer";
@@ -54,6 +54,8 @@ const TILE_GAP = 12;
 const STEP = TILE_W + TILE_GAP;
 /** A mouse that moves less than this is a click, not a drag. */
 const DRAG_THRESHOLD = 6;
+/** Page dots are drawn up to this many pages; beyond it the indicator alone. */
+const MAX_DOTS = 8;
 
 function Tile({
   rec,
@@ -108,7 +110,9 @@ function Tile({
       {/* The title is the way in. A heading may hold a button (phrasing
           content); a button may not hold a heading, which is why the h4 is
           outside. The chevron is at rest, not on hover: a touch screen has
-          no hover, and the affordance must exist there too. */}
+          no hover, and the affordance must exist there too. The title text
+          is the button's own text node, not a span: the friction gate reads
+          leaf spans as first-layer copy, and a title is a title. */}
       <h4 className={cn(TYPE.body, "font-medium leading-snug min-w-0")} title={rec.title}>
         <button
           type="button"
@@ -116,13 +120,13 @@ function Tile({
           onClick={() => onOpen(rec)}
           aria-label={`Open details: ${rec.title}`}
           className={cn(
-            "pressable group/open flex w-full text-left items-start gap-1.5 rounded-md -mx-1 px-1 py-0.5",
+            "pressable group/open block w-full text-left rounded-md -mx-1 px-1 py-0.5",
             "text-foreground/90 hover:text-interactive transition-colors duration-150 ease-[var(--mx-ease)]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           )}
         >
-          <span className="min-w-0 flex-1">{deriveLabel(rec.title, 68)}</span>
-          <ChevronRight className="w-3.5 h-3.5 shrink-0 mt-0.5 text-muted-foreground/75 group-hover/open:text-interactive" aria-hidden="true" />
+          {deriveLabel(rec.title, 68)}
+          <ChevronRight className="inline-block w-3.5 h-3.5 ml-1 -mt-0.5 align-middle text-muted-foreground/75 group-hover/open:text-interactive" aria-hidden="true" />
         </button>
       </h4>
 
@@ -146,10 +150,17 @@ function Tile({
           Never a paragraph on the face (owner, 2026-09-03), and not a CSS
           clamp either, which keeps the paragraph in the DOM where the
           friction gate counts it. */}
-      {/* payload-ok: owner (2026-09-03), progressive disclosure: one clause on the face, the whole reason in the drawer the title opens */}
-      <p className={cn(TYPE.caption, "text-muted-foreground/75 leading-snug")} title={rec.rationale} data-testid="recommendation-reason">
-        {deriveLabel(rec.rationale, 72)}
-      </p>
+      {/* A reference the rows do not measure already says so in the number
+          slot above; the same sentence as the reason would be the fact
+          twice. The drawer still carries it in full. */}
+      {rec.rationale !== UNMEASURED_RATIONALE && (
+        <>
+          {/* payload-ok: owner (2026-09-03), progressive disclosure: one clause on the face, the whole reason in the drawer the title opens */}
+          <p className={cn(TYPE.caption, "text-muted-foreground/75 leading-snug")} title={rec.rationale} data-testid="recommendation-reason">
+            {deriveLabel(rec.rationale, 72)}
+          </p>
+        </>
+      )}
 
       <div className="mt-auto pt-1 flex items-center gap-1 flex-wrap">
         {rec.href && <CrossLink to={rec.href} label={rec.hrefLabel ?? "See the evidence"} />}
@@ -437,7 +448,10 @@ export function RecommendationSlider({
         ))}
       </div>
 
-      {pages > 1 && (
+      {/* Dots up to eight pages; past that a row of dots is noise on a
+          phone (23 tiles is 23 pages at 390 px) and the "n / m" indicator
+          in the head already says where you are. */}
+      {pages > 1 && pages <= MAX_DOTS && (
         <div className="flex items-center justify-center gap-0.5" role="group" aria-label={`${title} pages`}>
           {Array.from({ length: pages }, (_, i) => (
             <button

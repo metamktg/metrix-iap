@@ -627,3 +627,98 @@ runs. That is a runner fact, not a defect, and is why the first e2e attempt repo
 **Libraries:** added none; Sonner mounted (already installed); removed `react-icons` and
 `@hookform/resolvers`. **Backend:** nothing changed; five items flagged in §8.1. **Open
 decisions:** seven in §8.2, with defaults.
+
+## 10. Owner directives (2026-09-04): the next best action is a rail, module consistency, the UVP pass
+
+Three asks arrived with two screenshots of the live build (the Bookster Analysis centre and the
+SKOVPET Account Overview): make the next best action "a tile slider, so it is more responsive and
+provides more than one signal that users can swipe between and click into"; "improve UI/UX module
+consistency"; and "do another full pass of visual UI/UX friendliness and validate the platform is
+grounded in our UVP and mission statement".
+
+### 10.1 The next best action is a rail
+
+The hero card showed one signal and repeated the rail's first tile directly beneath it: two
+surfaces, one derivation, the second one wider. It is gone. `RecommendationSlider` with a
+`scopeId` is the next best action on Account Overview, and the same component, read-only, stays
+on the four command centres. Its title everywhere is "Next best actions".
+
+| Part | Before | After | Where |
+|---|---|---|---|
+| Signals | One hero card (top impact), the rail beneath it | One rail of every recommendation the rows support, ranked by the money each moves; a `1 / n` page indicator, page dots up to eight pages | `components/deck/RecommendationSlider.tsx` |
+| Swipe | Touch drag (native scroll-snap), arrows | Touch drag, mouse drag on the rail's ground (a drag past 6 px swallows the click it would land on), arrows by one tile, dots by a viewport, Left / Right / Home / End on the focused rail | same |
+| Click into | "Why this action" popover on the hero; a `DetailReveal` popover per tile | The tile's title opens `RecommendationDrawer`: a Radix Dialog side sheet with the whole reason, the recommended action, the confidence in the engine's own words, the provenance, the number, the evidence link and the decision. Focus moves in and returns; Escape and the scrim close it; 16 px slide + fade in 200 ms, out in 150 ms, none under reduced motion (`.mx-drawer`) | `components/deck/RecommendationDrawer.tsx`, `index.css` |
+| Decide | Approve / Dismiss on the hero only | Add to Tray / Dismiss on every tile and in the drawer, on the deck's own `decisionStore` / `trayStore`; a decided tile leaves the rail; the swipe deck below can never disagree | slider, drawer |
+| Empty | "No recommendations…" / "All reviewed" on the hero | The same two states on the rail, told apart by `data-reason`: "nothing derived" (the account's own loop note) and "all n reviewed, approved ones in the tray, dismissed ones in the log" | slider |
+| Vocabulary | Kind labels and tints private to the rail; the deck's drawer said "Reject", its tab "Dismissed"; the Action Queue folded Investigate, Validate, Test, Data and Budget into "Optimize" (18 of 23 cards) | One module, `components/deck/recommendationKind.ts` (kind label, kind tone, impact tint), read by the rail, the drawer, the deck and the queue; the deck's swipe-left is Dismiss; the queue's groups are the derivation's kinds in the derivation's order | `recommendationKind.ts`, `RecommendationDeck.tsx`, `act/ActionQueueView.tsx` |
+| One drawer | The deck had its own hand-rolled drawer (no focus trap, no dialog role) | Deleted; the deck opens `RecommendationDrawer` with its avatar × placement drill-down | `RecommendationDeck.tsx` |
+
+Two things the first crawl on the new rail found and this pass fixed:
+
+- **The swipe deck's card boxes were 2 px tall on every overview** (measured in the live page:
+  the deck gives its stack 300 px, but `SwipeDeck`'s own wrapper holds only absolutely positioned
+  cards and so had no height, the container never reached the cards, and three faces overflowed
+  onto one another). `h-full` on the wrapper. This predates the rail.
+- **A tile for a reference the rows do not measure said so twice** (the number slot and the reason
+  line carried the same sentence). The reason line steps aside when the rationale is
+  `UNMEASURED_RATIONALE`; the drawer still carries it in full.
+
+And one the friction gate found: the tile title moved from an `h4` (which the gate does not read)
+into a `span` inside the new button (which it does), so "No results on {campaign}" surfaced as a
+no-data phrase on `/app/account` and `/app/analysis`. Two fixes, both real: the title is the
+button's own text node, and the investigate card's title is now "{campaign} spent with no result",
+the same shape as its ad-level sibling, because a tile that is not an empty state should not open
+with the words one does. The Action Queue's baseline no-data set drops those phrases (lowering).
+
+### 10.2 Module consistency, on the crawl
+
+Reviewed on the shots of `/app/account`, `/app/analysis`, `/app/strategy`, `/app/creative`,
+`/app/mst`, `/app/listen`, `/app/act/queue`, `/app/reports`, `/app/exports` at 1440 and 390 px
+(`shoot:routes`, 0 errors, 0 overflow, 0 unlabeled controls at both widths).
+
+| Read | Change |
+|---|---|
+| Rail head on the page ground, title left, `n / m` + arrows right, the same row every `SectionCard` wears | none, by construction |
+| Rail tiles at 390 px: one tile and a peek, 23 page dots in a row | dots only up to eight pages; the indicator carries the position past that |
+| Action Queue chips uppercase "RETIRE / SCALE / OPTIMIZE" with one Optimize bucket for five kinds | the derivation's kinds, the rail's tones |
+| Swipe deck faces stacked on one another | the collapsed wrapper, above |
+| Command-centre rails titled "What the data says to do next" | "Next best actions" everywhere |
+
+### 10.3 The UVP and the mission, and what the app says
+
+There is no document in this repository titled "mission statement". The nearest canonical sources,
+in order of authority: the blueprint §1 ("Metrix remains suggestion-only… every recommendation is a
+human-reviewed suggestion, never a command"); the marketing site's copy (`artifacts/marketing/src/
+content.ts`: "Stop guessing which ads actually work", "Know exactly why hooks, angles and creatives
+drive revenue, so you can scale what works, cut what doesn't, and brief teams with clarity", "Not
+more dashboards. Better decisions", "understand what worked, why it worked, and what to do next");
+and the design brief's concept ("a performance intelligence platform for media buyers… mission-control
+software, not a typical SaaS dashboard"). Read together they make four tenets, and the app was
+checked against each:
+
+| Tenet | Where the app carries it | Verdict |
+|---|---|---|
+| Says why it worked: every read names its evidence | Every rail tile names its source (`Source · strategy.scaling_playbook…`) and links to the surface that proves it; the drawer's description IS the provenance; a number the rows do not carry is stated as absent, never as zero | holds |
+| Says what to do next, in verbs | Retire · Scale · Optimize · Validate · Test · Investigate · Data · Budget on the rail, the drawer, the deck and now the queue; the loop's six stages on the sidebar spine, the command chain and the login panel | holds after this pass (the queue was the gap) |
+| Suggestion-only, never a command | Approving files a manual task; the drawer says "Nothing is applied to a live campaign"; runs are manual (the "Run analysis" tile says it never runs on its own) | holds |
+| Brief-ready output for teams | Creative → briefs, Exports as cards, Reports on the builder (§2) | holds |
+
+Copy corrected on this pass:
+
+| Where | Before | After | Why |
+|---|---|---|---|
+| Login panel, loop line | "TEST · OPTIMIZE · SCALE · REPEAT" | "LISTEN · ANALYSIS · STRATEGY · CREATIVE · MST · ACTION" | a mantra nothing in the app repeats, replaced by the loop the sidebar, the chain and the rail all spell |
+| Login panel, proof points | "+34% Avg. ROAS Increase · 214 audited campaigns", "−18% CPA Reduction", "$2.4M Wasted Spend Saved" | The marketing site's "3.4x Avg. ROAS Lift", "−47% Wasted Spend", "+245k Data Points", word for word | the panel's comment says it mirrors the site's copy and it carried a different set of figures for the same claim; one product, one set |
+| Deck, dismissed log | "Rejected recommendations are kept here…" | "Dismissed recommendations are kept here…" | the tab, the swipe and the rail all say Dismiss |
+
+Flagged, not changed (owner): **both sets of proof-point figures are marketing claims with no source
+in this repository** (O8). The login panel now mirrors the site so the product speaks with one voice;
+whether those figures are the figures is the owner's to confirm. The login headline ("Performance
+intelligence for marketers who need to move faster") is pinned by `login-page-layout.spec.ts` and
+was left as is; the marketing hero ("Stop Guessing Which Ads Actually Work") is the stronger UVP line
+and could replace it in a copy pass the owner signs off (O9).
+
+### 10.4 Validation on this head
+
+Recorded in the commit that carries this section; every figure names its command.
+

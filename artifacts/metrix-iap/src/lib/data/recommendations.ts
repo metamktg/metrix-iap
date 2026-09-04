@@ -96,9 +96,14 @@ function evidenceForRef(rollup: ConceptRollupRow[], label: string): RefEvidence 
   };
 }
 
+/** The rationale of a reference the strategy names and the rows do not
+ *  measure. Exported so a tile that already says "no measured figure" in
+ *  its number slot can leave the reason line out rather than say it twice. */
+export const UNMEASURED_RATIONALE = "The strategy names this reference; the account's rollup rows carry no measurement for it.";
+
 /** A measured line, or an honest statement that the rows carry no number. */
 function evidenceLine(ev: RefEvidence | null): string {
-  if (!ev) return "The strategy names this reference; the account's rollup rows carry no measurement for it.";
+  if (!ev) return UNMEASURED_RATIONALE;
   const bits = [`${fmtUSD(ev.spend, 0)} spent`, `${fmtNum(ev.results)} results`];
   if (ev.cpa != null) bits.push(`${fmtUSD(ev.cpa)} per result`);
   else bits.push("no conversions recorded");
@@ -246,7 +251,10 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
     const subject = campaign ?? placement ?? "this segment";
     out.push({
       id: `derived:investigate:${investigateIdx++}`,
-      title: campaign ? `No results on ${campaign}` : placement ? `Reach without result · ${placement}` : "Spend with no recorded result",
+      // "{campaign} spent with no result", the same shape as the ad-level
+      // card below it. It used to read "No results on {campaign}", which is
+      // the sentence an empty state opens with, on a tile that is not one.
+      title: campaign ? `${campaign} spent with no result` : placement ? `Reach without result · ${placement}` : "Spend with no recorded result",
       rationale: diagnosis ? humanizeDiagnosis(diagnosis) : "The account recorded spend against this segment and no results.",
       recommendedAction: diagnosis.startsWith("traffic_quality")
         ? `Exclude ${subject} from the delivery mix and re-read the remaining placements.`
