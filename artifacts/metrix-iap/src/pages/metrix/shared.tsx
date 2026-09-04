@@ -839,15 +839,28 @@ export function ClampedProse({
 // cuts at a word boundary if still over `max`. Purely mechanical — the
 // label is always a prefix/clause of the source text, never new copy.
 
+/** Index of the last "(" with no ")" after it, or -1. */
+function unclosedParen(text: string): number {
+  const open = text.lastIndexOf("(");
+  return open !== -1 && text.indexOf(")", open) === -1 ? open : -1;
+}
+
 export function deriveLabel(text: string | null | undefined, max = 60): string {
   const t = (text ?? "").trim().replace(/\s+/g, " ");
   if (!t) return "";
   const m = t.match(/^(.*?)(?:[.!?](?:\s|$)|\s—\s|:\s)/);
   let clause = m && m[1].trim().length >= 8 ? m[1].trim() : t;
+  // "C2 (esp. Row B)" is one clause: a sentence break inside an open
+  // parenthesis is an abbreviation, not the end of the label.
+  if (clause !== t && unclosedParen(clause) !== -1) clause = t;
   if (clause.length <= max) return clause;
   const cut = clause.slice(0, max + 1);
   const lastSpace = cut.lastIndexOf(" ");
   clause = lastSpace > 24 ? cut.slice(0, lastSpace) : clause.slice(0, max);
+  // A cut that lands inside a parenthetical leaves "(esp" on the card; drop
+  // the unclosed fragment when what remains is still a label.
+  const open = unclosedParen(clause);
+  if (open >= 8) clause = clause.slice(0, open);
   return clause.replace(/[\s,;:—-]+$/, "") + "…";
 }
 
