@@ -2343,7 +2343,13 @@ export async function startManualAnalysis(
             source: { id: f.importId, order: f.order, depth: f.grain.dimensions.length, daily: filePeriod.get(f.importId) === null },
             rows: f.rows,
           })),
-          (row, source) => ({ group: rowAdIdentity(row), day: source.daily ? row.breakdowns["Day"]! : null }),
+          // An asset pivot competes only with a pivot of the same asset
+          // columns: a Text file and a Headline file of one period are two
+          // measurements, not one twice (the ledger keys them by asset type).
+          (row, source) => ({
+            group: cls === "asset" ? [rowAdIdentity(row), ...Object.keys(row.assetBreakdowns ?? {}).sort()].join("\u0001") : rowAdIdentity(row),
+            day: source.daily ? row.breakdowns["Day"]! : null,
+          }),
           (row) => num(row.base["amount_spent"]) ?? 0,
         );
         const rows: IapCsvRow[] = [];

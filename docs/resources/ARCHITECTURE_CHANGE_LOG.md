@@ -956,8 +956,9 @@ bucket key. Overlaps between files are one rule in `lib/reportOverlap.ts` (`Over
 beats a whole-period file, then the finer delivery breakdown wins, then the later-staged file; the
 loser's rows for that ad are not counted and the run says which file, how many rows, how much
 spend and why. The engine's class arrays, the reconciliation observations (per breakdown) and the
-truth candidates (`summariseReports`) all use it. Imports are read oldest first so "later staged"
-means something. `computeDataCoverage` takes the whole-period classes' periods, grades a
+truth candidates (`summariseReports`) all use it; an asset pivot competes only with a pivot of the
+same asset columns, as the ledger keys asset observations by asset type. Imports are read oldest
+first so "later staged" means something. `computeDataCoverage` takes the whole-period classes' periods, grades a
 whole-period ad summary as a control rather than a slice, and tells a pivot whose period reaches
 beyond the daily rows apart from a duplicate.
 
