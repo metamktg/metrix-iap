@@ -1070,3 +1070,30 @@ shape change (two new progress stage strings). Open from the review: A1 (a 23505
 retry could be proven landed by a count), B3 (the hook's timeout targets pnpm), B4 (a splitter
 test against the file's constructs). Held for the owner: H1 (a failed re-run empties the window),
 task 22 (evidence on demand), task 23 (the rest of the run's time, which is PostgREST writes).
+
+### 25, addendum: the seed reads a run's evidence by keyset, per account (2026-09-04, live incident)
+
+**What changed.** `paginatedSelect.selectAllRows` takes `{ keyset: "id" }`: each page asks for the
+rows after the last id it received (`gt` on the key, ordered by it, limited to the page size)
+instead of an offset range. `metrixSeedAssembly`'s run-scoped evidence reads (breakdowns, ledger,
+segments, evidence) go one (account, run) at a time with both keys in the filter, keyset-paged,
+and a read that fails is logged with the table, account and run instead of vanishing.
+
+**Why.** After the Pure Path run succeeded (162k ledger rows, 76k breakdown rows on top of the
+earlier run's), every seed rebuild read `manual_analysis_run_id in (…)` with offset pages: the
+filter could not use the `(account_id, manual_analysis_run_id, …)` index, so each of the 162
+pages re-scanned and re-sorted the whole 292k-row table, PostgREST killed the later pages on its
+statement timeout, the read fell to its `catch (() => [])`, the app read "no evidence" for a run
+that had succeeded, and the next rebuild started the storm again (12:15Z to 12:40Z: thread kills
+every few minutes, 504s on the evidence tables, direct SQL connections timing out). A run's rows
+are contiguous in id, so a keyset page under the composite index is one short range.
+
+**What proves it.** `paginatedSelect.test.ts` (keyset pages start after the last id seen, keep the
+filter on every page, stop when a page comes short, refuse a key that is not selected, surface a
+query error); the offset path's tests unchanged.
+
+**How far it reaches.** The seed assembly only; identical rows in identical order. This does not
+close task 22 (the seed still ships the evidence layer, ~270 pages per rebuild); it makes each
+page cheap and honest. The Pure Path re-run on the fixed build was NOT started: the successful
+run had destaged its seven files (`processed`), the POST answered 422, and restaging them to
+re-run while the read storm was on would have risked the account's only good rows (H1).

@@ -160,6 +160,19 @@ The owner's report: the run quad-counted rows and spend, and new pivots were upl
 - **Hazard recorded (H1).** A failed re-run leaves the account with no ad rows for the window: the rebuild clears the window before its insert and the failure cleanup removes the partial output. Between the failure and the next success the account reads as unconfigured. The fix (write under the run id, swap on success) is a backend change and is held, §8.
 - **Hazard recorded (H2).** The seed rebuild pages the whole evidence layer on every invalidation (task 22): 275 PostgREST pages per build while someone uploads or deletes files. That is what killed the two runs. Held for approval, §8.
 
+### 6.0 The re-run on the fixed build, and the read storm after the publish
+
+- **12:20Z** main (PR #205) published. The API server warmed its seed: the evidence reads for the
+  now-successful run (162k ledger rows, 76k breakdown rows) used offset pages under a filter the
+  composite index could not serve, so every page re-scanned the 292k-row ledger; PostgREST killed
+  the later pages on its statement timeout, the read fell back to an empty evidence layer and the
+  next rebuild repeated it (thread kills every few minutes, 504s at 12:40Z, direct SQL connections
+  timing out). Fixed in this branch: keyset pages per (account, run) (change-log 25, addendum).
+- **12:28Z** the re-run request answered 422: the successful run had destaged its seven files, so
+  no delivery report was staged. Restaging and re-running while the storm was on would have put
+  the account's only good rows at risk (H1), so the re-run is held until the paging fix is live.
+  The heartbeat fix is proven by its unit tests and will be proven live on the next run.
+
 ### 6.1 Run 8148628c outcome
 
 **Success at 11:52:48Z after 96 minutes**, 21,130 rows ingested, window 2026-08-04 to 2026-09-02. It survived the hazard by luck: nothing read the run list between the heartbeat ceiling (10:46Z) and the finish. The stage times are the record that produced the fix in §4: 24 minutes to 82% (parse, buckets, rollups), 37 minutes of one synchronous reconciliation stage (10:39:47Z to 11:16:31Z, the quadratic ledger scan), 15 minutes writing 305 breakdown batches, 21 minutes writing the ledger and evidence.

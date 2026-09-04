@@ -200,6 +200,7 @@ jobs:
           src/lib/__tests__/resultGrainStress.test.ts
           src/lib/__tests__/reportOverlap.test.ts
           src/lib/__tests__/chunkedInsert.test.ts
+          src/lib/__tests__/paginatedSelect.test.ts
 
       - name: API server smoke (boots without Supabase env by design)
         # The server now imports the Anthropic AI integration client at module
