@@ -903,3 +903,36 @@ and the centre (358 tests), typecheck and the static gates.
 
 **Reach.** Client only. Account creation, the run, and the status promotion are unchanged.
 
+## 23. The schema applier stops convoying production (2026-09-04, incident)
+
+**What.** `scripts/src/apply-supabase-schema.ts` (run by `scripts/post-merge.sh`, which the Replit
+`[postMerge]` hook runs on every merge into the workspace) now applies `schema.sql` one statement
+per transaction with `lock_timeout` 3 s, retries a statement that lost a lock race (55P03, 40P01,
+57014) with backoff up to five times, records the schema fingerprint in `metrix_schema_state` and
+skips when unchanged, and waits up to ten minutes for a running analysis before touching tables.
+The pure parts (`splitSqlStatements`, dollar-quote aware; `decideApply`; the retry classifier) live
+in `scripts/src/lib/schema-apply.ts`; the pg-bound runner in `lib/schema-apply-runner.ts` is shared
+with the importer's schema step, so neither path can regress to one-shot application.
+
+**Why.** The applier sent the whole 1,900-line file as one simple query. Postgres runs that as one
+implicit transaction, so every ACCESS EXCLUSIVE lock it took (about eighty `alter table … add
+column if not exists`, which lock even when the column exists) was held until the last statement
+ran. On 2026-09-04 it ran at 05:24Z (my convergence), 05:47Z and 06:04Z (the platform hook, after
+a task merge). Behind one long PostgREST read the DDL waited, and every app read then queued behind
+the DDL: `postgres_logs` show "still waiting for AccessShareLock" and 150 "canceling statement due
+to lock timeout" cancels between 05:24 and 06:09, `postgrest_logs` 63 55P03 errors handed to the
+API, and the owner's boot splash sat at "Still waiting on the data service after 48s".
+
+**Where.** `scripts/src/apply-supabase-schema.ts`, `scripts/src/lib/schema-apply.ts`,
+`scripts/src/lib/schema-apply-runner.ts`, `scripts/src/metrix-supabase/import.ts` (schema step);
+tests `scripts/src/schema-apply.test.ts`, `schema-apply-runner.test.ts`.
+
+**Proof.** The splitter test runs on the real `schema.sql` (242 statements, every `do $$` block
+intact); the runner test drives a fake client through lock-loss retry, give-up and a syntax error;
+`--dry-run` lists the statements without connecting. The live proof is the next post-merge run's
+log line ("applied … statements", then "unchanged … nothing applied" on the run after) and an
+empty lock-timeout count in `postgres_logs` for that window.
+
+**Reach.** Operator scripts only. No runtime code, no schema content change; one new marker table
+`metrix_schema_state` (one row). Open: `pnpm --filter db push` in `post-merge.sh` printed "No
+changes detected" and then the hook timed out at 06:05:31Z; not root-caused here.
