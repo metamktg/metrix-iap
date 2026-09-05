@@ -83,6 +83,12 @@ session picking up phase work:
   disproves it), the bug register from four audits with a status per finding, the module-by-module
   lift to demo standard, the navigation plan, the demo-readiness bar and the handoff. Read its §0
   before trusting a verdict; every number in it names the command that produced it.
+- `METRIX_EXECUTION_LAYER_SWEEP_SPEC_2026-09.md` — the specification for the Execution Layer sweep
+  (2026-09-05): the shared `StageLayout` shell, the per-page status hub, the "base this run on"
+  control, and every backend-driven surface designed in before the pages are redrawn, with the
+  ordered vertical slices and the validation each one must pass. Read its §0 and §1 (the
+  non-regression list) before touching a stage page. Its sources are the owner's reconciled package
+  in `handoff_2026-09-05/`.
 - `METRIX_UI_REFACE_REGISTER_2026-08.md` — the UI reface register. What the design pass has
   closed, what is open, the Watermelon component mapping, and the phased plan. Every claim in it
   is produced by a re-runnable command (`check:ui-inventory`, `check:field-coverage`, and the
