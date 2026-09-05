@@ -136,6 +136,28 @@ describe("RunScopePicker 3-run cap", () => {
     expect(screen.queryByTestId("text-run-cap")).toBeNull();
   });
 
+  it("marks a run whose rollup rows were dropped and refuses to select it", () => {
+    // Sweep slice 2: the account keeps the rollups of its two newest
+    // successful runs; an older run's are gone and there is nothing to
+    // scope to. Its evidence rows stay, which the title says.
+    const runs = [makeRun("run_1", 1), makeRun("run_2", 2), { ...makeRun("run_3", 3), rollups_retained: false }];
+    function Harness() {
+      const [value, setValue] = useState<RunSelectorValue>(ALL_TIME_SELECTION);
+      return <RunScopePicker runs={runs} value={value} onChange={setValue} />;
+    }
+    render(<Harness />);
+    fireEvent.click(screen.getByTestId("button-run-scope"));
+    const dropped = screen.getByTestId("option-run-run_3") as HTMLButtonElement;
+    expect(dropped.disabled).toBe(true);
+    expect(dropped.title).toMatch(/Evidence rows are kept/);
+    expect(screen.getAllByTestId("run-rollups-dropped")).toHaveLength(1);
+    fireEvent.click(dropped);
+    expect(screen.getByTestId("button-run-scope").textContent).toContain("All time");
+    // A run without a verdict (recorded before the field existed) stays selectable.
+    fireEvent.click(screen.getByTestId("option-run-run_1"));
+    expect(screen.getByTestId("button-run-scope").textContent).not.toContain("All time");
+  });
+
   it("falls back to All time when every run is deselected", () => {
     render(<PickerHarness />);
     fireEvent.click(screen.getByTestId("button-run-scope"));

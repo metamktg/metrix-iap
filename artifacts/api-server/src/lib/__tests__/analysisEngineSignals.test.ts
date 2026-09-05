@@ -22,6 +22,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const db = new Map<string, Record<string, any>[]>();
 let idCounter = 0;
+/** A table whose next inserts fail with a database error: how a test makes a run die part-way. */
+let failInsertOn: string | null = null;
 
 type Filter = (r: Record<string, any>) => boolean;
 
@@ -98,9 +100,13 @@ class Builder {
     return this.then((res: any) => ({ ...res, data: res.data?.[0] ?? null }));
   }
 
-  private exec(): { data: any; error: null } {
+  private exec(): { data: any; error: null | { message: string; code: string }; status?: number } {
     const rows = db.get(this.table)!;
     const matches = () => rows.filter((r) => this.filters.every((f) => f(r)));
+    if (this.op === "insert" && failInsertOn === this.table) {
+      // A database error (4xx, a SQLSTATE), which the chunked insert never retries.
+      return { data: null, error: { message: `injected failure on ${this.table}`, code: "XX000" }, status: 400 };
+    }
     if (this.op === "insert") {
       const inserted = this.payload.map((row: Record<string, any>) => ({
         id: `${this.table}_${++idCounter}`,
@@ -161,6 +167,23 @@ vi.mock("../supabase", () => ({
 
 import { startManualAnalysis, AnalysisError } from "../analysisEngine";
 import { buildIapCsvClassFormat } from "../iapCsvSpec";
+import { EVIDENCE_TABLES, ROLLUP_GENERATION_TABLES, rowsOfCurrentRun } from "../runGenerations";
+
+const RUN_OUTPUT_TABLES = [...ROLLUP_GENERATION_TABLES, ...EVIDENCE_TABLES] as const;
+const rowsByRun = (table: string, runId: string) => (db.get(table) ?? []).filter((r) => r["manual_analysis_run_id"] === runId).length;
+const pointer = () => db.get("ad_accounts")![0]!["current_analysis_run_id"] ?? null;
+const warningsOf = (runId: string): string[] => {
+  const row = db.get("manual_analysis_runs")!.find((r) => r["id"] === runId)!;
+  return row["csv_warnings"] ? (JSON.parse(row["csv_warnings"]) as string[]) : [];
+};
+async function waitForRuns(n: number): Promise<void> {
+  for (let i = 0; i < 400; i++) {
+    const runs = db.get("manual_analysis_runs")!;
+    if (runs.length === n && runs.every((r) => r["status"] !== "running")) return;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  throw new Error(`${n} runs never settled`);
+}
 
 const ACCOUNT = "manual_test1";
 
@@ -206,6 +229,7 @@ async function waitForRunToSettle(index = 0): Promise<Record<string, any>> {
 beforeEach(() => {
   db.clear();
   idCounter = 0;
+  failInsertOn = null;
   for (const table of [
     "ad_accounts",
     "manual_imports",
@@ -267,10 +291,13 @@ describe("startManualAnalysis · signal-table output", () => {
     expect(run["date_start"]).toBe("2026-06-01");
     expect(run["date_end"]).toBe("2026-06-01");
 
-    // Performance rows exist and are tied to this run.
+    // Performance rows exist and are tied to this run, and the account
+    // points at it (sweep spec §7.7).
     const adPerf = db.get("ad_performance")!;
     expect(adPerf.length).toBeGreaterThan(0);
     expect(adPerf.every((r) => r["manual_analysis_run_id"] === runId)).toBe(true);
+    expect(pointer()).toBe(runId);
+    expect(warningsOf(runId).some((w) => w.startsWith("[Re-run]"))).toBe(false);
 
     // Audience surface: ACCOUNT-grain demographic signal, importer shape
     // (DemographicRow in seedTypes.ts).
@@ -278,6 +305,7 @@ describe("startManualAnalysis · signal-table output", () => {
     expect(demoSignal).toHaveLength(2); // female 25-34, male 35-44 (sample CSV)
     for (const row of demoSignal) {
       expect(row["account_id"]).toBe(ACCOUNT);
+      expect(row["manual_analysis_run_id"]).toBe(runId);
       expect(row["cell_id"]).toBe("ACCOUNT");
       const p = row["payload"];
       expect(p["cell_id"]).toBe("ACCOUNT");
@@ -300,6 +328,7 @@ describe("startManualAnalysis · signal-table output", () => {
     expect(placementSignal).toHaveLength(2); // feed/facebook, story/instagram
     for (const row of placementSignal) {
       expect(row["signal_scope"]).toBe("v3");
+      expect(row["manual_analysis_run_id"]).toBe(runId);
       const p = row["payload"];
       expect(typeof p["Placement"]).toBe("string");
       expect(typeof p["Platform"]).toBe("string");
@@ -322,28 +351,88 @@ describe("startManualAnalysis · signal-table output", () => {
     expect(db.get("ad_accounts")![0]!["status"]).toBe("configured");
   });
 
-  it("re-running replaces the signal rows instead of duplicating or accumulating them", async () => {
+  it("re-running keeps the previous run beside the new one, points the account at the new one, and drops the third generation", async () => {
+    // Sweep spec §7.7: nothing is deleted before a run writes. The re-run's
+    // rows go in under its own id, the pointer swaps to it once they are
+    // all in place, the previous run stays as the generation before it,
+    // and a third success drops the first run's rollup rows (never its
+    // evidence rows).
     seedManualAccount();
     stageBothCsvs();
-    await startManualAnalysis(ACCOUNT, "all", "tester");
+    const run1 = await startManualAnalysis(ACCOUNT, "all", "tester");
     await waitForRunToSettle(0);
-    const firstDemoCount = db.get("demographic_signal")!.length;
-    const firstPlacementCount = db.get("placement_signal")!.length;
+    const counts = new Map<string, number>();
+    for (const t of RUN_OUTPUT_TABLES) counts.set(t, rowsByRun(t, run1));
+    expect(counts.get("demographic_signal")).toBe(2);
+    expect(counts.get("ad_performance")!).toBeGreaterThan(0);
+    expect(pointer()).toBe(run1);
 
     // Re-stage the same exports (the first run's imports were destaged to
     // 'processed') and run again.
     stageBothCsvs();
-    await startManualAnalysis(ACCOUNT, "all", "tester");
-    for (let i = 0; i < 200; i++) {
-      const runs = db.get("manual_analysis_runs")!;
-      if (runs.length === 2 && runs.every((r) => r["status"] !== "running")) break;
-      await new Promise((r) => setTimeout(r, 10));
-    }
+    const run2 = await startManualAnalysis(ACCOUNT, "all", "tester");
+    await waitForRuns(2);
     expect(db.get("manual_analysis_runs")!.every((r) => r["status"] === "success")).toBe(true);
-    // Same window re-analyzed → same bucket count, not doubled.
-    expect(db.get("demographic_signal")!.length).toBe(firstDemoCount);
-    expect(db.get("placement_signal")!.length).toBe(firstPlacementCount);
+    expect(pointer()).toBe(run2);
+    for (const t of RUN_OUTPUT_TABLES) {
+      expect(rowsByRun(t, run1)).toBe(counts.get(t));
+      expect(rowsByRun(t, run2)).toBe(counts.get(t));
+    }
+    // What a reader sees is the current run only, the same bucket count as
+    // before, not doubled.
+    expect(rowsOfCurrentRun(db.get("demographic_signal")!, pointer())).toHaveLength(2);
+    expect(rowsOfCurrentRun(db.get("ad_performance")!, pointer())).toHaveLength(counts.get("ad_performance")!);
+    // The run says so, as a notice.
+    const note2 = warningsOf(run2).find((w) => w.startsWith("[Re-run]"));
+    expect(note2).toContain("This run is now the account's current analysis");
+    expect(note2).toContain("The previous run (2026-06-01 to 2026-06-01) is kept as the one before it");
+    expect(note2).not.toContain("dropped");
     // iap_runs stays a single upserted row for this account+stage, not two.
     expect(db.get("iap_runs")!.length).toBe(1);
+
+    // A third success: run 1 falls out of the two generations kept.
+    stageBothCsvs();
+    const run3 = await startManualAnalysis(ACCOUNT, "all", "tester");
+    await waitForRuns(3);
+    expect(pointer()).toBe(run3);
+    for (const t of ROLLUP_GENERATION_TABLES) expect(rowsByRun(t, run1)).toBe(0);
+    for (const t of EVIDENCE_TABLES) expect(rowsByRun(t, run1)).toBe(counts.get(t));
+    for (const t of RUN_OUTPUT_TABLES) {
+      expect(rowsByRun(t, run2)).toBe(counts.get(t));
+      expect(rowsByRun(t, run3)).toBe(counts.get(t));
+    }
+    expect(warningsOf(run3).find((w) => w.startsWith("[Re-run]"))).toContain("the rollup rows of 1 older run are dropped");
+  });
+
+  it("a re-run that fails part-way leaves the previous run readable, every one of its rows in place, and only its own rows gone", async () => {
+    seedManualAccount();
+    stageBothCsvs();
+    const run1 = await startManualAnalysis(ACCOUNT, "all", "tester");
+    await waitForRunToSettle(0);
+    const counts = new Map<string, number>();
+    for (const t of RUN_OUTPUT_TABLES) counts.set(t, rowsByRun(t, run1));
+    expect(counts.get("ad_performance")!).toBeGreaterThan(0);
+
+    // The second run dies writing the last rollup table, with every other
+    // table's rows of its own already in place beside run 1's.
+    stageBothCsvs();
+    failInsertOn = "placement_signal";
+    const run2 = await startManualAnalysis(ACCOUNT, "all", "tester");
+    const row2 = await waitForRunToSettle(1);
+    expect(row2["status"]).toBe("error");
+    expect(String(row2["error_message"])).toContain("injected failure on placement_signal");
+
+    // The account still points at run 1, run 1 is whole, and nothing of run
+    // 2 remains in any output table, evidence included.
+    expect(pointer()).toBe(run1);
+    for (const t of RUN_OUTPUT_TABLES) {
+      expect(rowsByRun(t, run1)).toBe(counts.get(t));
+      expect(rowsByRun(t, run2)).toBe(0);
+    }
+    const visible = rowsOfCurrentRun(db.get("ad_performance")!, pointer());
+    expect(visible).toHaveLength(counts.get("ad_performance")!);
+    expect(visible.every((r) => r["manual_analysis_run_id"] === run1)).toBe(true);
+    // The account stays configured on run 1's strength.
+    expect(db.get("ad_accounts")![0]!["status"]).toBe("configured");
   });
 });

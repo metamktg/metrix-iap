@@ -330,7 +330,7 @@ Each item ships as its own commit on the working branch, typechecked and unit-te
 
 - **Task 22, evidence on demand.** The seed carries evidence summaries only; per-ad and per-segment rows move to per-account endpoints. Backend change required by the UI; the local reference implementation exists and is not pushed. Needs approval.
 - **Task 23, run performance.** 30 minutes for 22k ad rows through PostgREST. Profile and cut; a backend change. Needs approval.
-- **H1, failed re-run empties the window.** Write under the run id, swap on success. Backend change. Needs approval.
+- **H1, failed re-run empties the window.** Write under the run id, swap on success. Backend change. Needs approval. Shipped 2026-09-05 as sweep slice 2 (change-log 28): rows are written under the run id, `ad_accounts.current_analysis_run_id` swaps on success, a failed run deletes only its own rows.
 - **F10, the reconciliation control ranks class over coverage** (§6.1). `buildTruth` in `reconciliation.ts` picks a whole-period per-Ad-ID Ad Summary over two daily ones that cover 257 more ads, so the ledger's residuals are measured against a control 12.7% below the daily total. Proposed: rank per-Ad-ID candidates by the overlap rule per ad (daily first) and reconcile against their union; a spec change (`docs/specs/iap-multi-report-reconciliation.md`). Needs a decision.
 - **F11, keyset-supporting indexes on the four evidence tables** (§6.2), CLOSED. `(account_id,
   manual_analysis_run_id, id)` on `ad_breakdown_performance`, `reconciliation_ledger`,

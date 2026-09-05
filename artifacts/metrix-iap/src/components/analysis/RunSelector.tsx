@@ -46,6 +46,18 @@ function runTimestamp(run: AnalysisRun): string {
 /** Max individual runs selectable at once in the compact picker. */
 export const RUN_SCOPE_MAX = 3;
 
+/**
+ * A run whose rollup rows are gone cannot be scoped to: the account keeps
+ * the rollups of its two newest successful runs (sweep spec §7.7), and an
+ * older run's are dropped once a newer one succeeds while its evidence
+ * rows stay. Runs from before the field existed carry no verdict and
+ * stay selectable.
+ */
+function rollupsDropped(run: AnalysisRun): boolean {
+  return run.rollups_retained === false;
+}
+const DROPPED_TITLE = "Rollup rows dropped after two newer runs succeeded. Evidence rows are kept. Re-run analysis to rebuild this window.";
+
 // ─── Compact header run-scope picker ──────────────────────────────────
 // Dropdown/popover replacement for the standing RunSelector checklist:
 // a small trigger button in a page header showing the current selection
@@ -134,17 +146,22 @@ export function RunScopePicker({
         <div className="mt-2 rounded-lg border border-border/40 divide-y divide-border/30 overflow-hidden max-h-[280px] overflow-y-auto">
           {runs.map((run, idx) => {
             const isSel = !value.allTime && value.selectedRunIds.includes(run.id);
+            const dropped = rollupsDropped(run);
             return (
               <button
                 key={run.id}
                 type="button"
                 data-testid={`option-run-${run.id}`}
                 onClick={() => toggleRun(run.id)}
+                disabled={dropped}
+                aria-disabled={dropped || undefined}
+                title={dropped ? DROPPED_TITLE : undefined}
                 className={cn(
                   "pressable-lg w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
                   isSel
                     ? "bg-status-success/[0.07] text-foreground/90"
                     : "bg-transparent text-foreground/55 hover:bg-muted/30",
+                  dropped && "opacity-60 cursor-not-allowed",
                 )}
               >
                 <Checkbox checked={isSel} className="pointer-events-none" />
@@ -156,6 +173,11 @@ export function RunScopePicker({
                   {idx === 0 && (
                     <span className={cn(TYPE.microLabel, "font-semibold text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none")}>
                       Latest
+                    </span>
+                  )}
+                  {dropped && (
+                    <span data-testid="run-rollups-dropped" className={cn(TYPE.microLabel, "font-semibold text-muted-foreground/75 bg-foreground/[0.04] border border-border/40 rounded px-1 py-0.5 leading-none")}>
+                      Rollups dropped
                     </span>
                   )}
                   {run.rows_ingested != null && (
@@ -227,12 +249,14 @@ export function RunSelector({
         >
           {displayRuns.map((run, idx) => {
             const isSel = !value.allTime && value.selectedRunIds.includes(run.id);
+            const dropped = rollupsDropped(run);
             return (
               <button
                 key={run.id}
                 type="button"
                 onClick={() => toggleRun(run.id)}
-                disabled={value.allTime}
+                disabled={value.allTime || dropped}
+                title={dropped ? DROPPED_TITLE : undefined}
                 className={cn(
                   "pressable-lg w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
                   isSel
@@ -246,6 +270,11 @@ export function RunSelector({
                   {idx === 0 && (
                     <span className={cn(TYPE.microLabel, "font-semibold text-status-success/60 bg-status-success/[0.08] border border-status-success/15 rounded px-1 py-0.5 leading-none")}>
                       Latest
+                    </span>
+                  )}
+                  {dropped && (
+                    <span className={cn(TYPE.microLabel, "font-semibold text-muted-foreground/75 bg-foreground/[0.04] border border-border/40 rounded px-1 py-0.5 leading-none")}>
+                      Rollups dropped
                     </span>
                   )}
                   {run.rows_ingested != null && (

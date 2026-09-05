@@ -19,6 +19,13 @@ describe("splitWarningsBySeverity", () => {
     expect(attention.length).toBe(3);
   });
 
+  it("files a re-run that became the current analysis as a notice, and the old replaced-rows line as attention", () => {
+    // Sweep slice 2: nothing is replaced during a run any more; the line
+    // says what stayed and what went, and asks nothing of the reader.
+    expect(isInformationalWarning("[Re-run] This run is now the account's current analysis. The previous run (2026-08-04 to 2026-09-02) is kept as the one before it. Evidence rows are kept for every run.")).toBe(true);
+    expect(isInformationalWarning("[Re-run] Replaced 3195 previously ingested row(s) from an earlier analysis run in the 2026-08-04 – 2026-09-02 window.")).toBe(false);
+  });
+
   it("classifies pre-fold stored-run lines the same way (runs persist warnings verbatim)", () => {
     expect(isInformationalWarning('[Demographics "f.csv"] Metric column "CPM (cost per 1,000 impressions)" auto-matched from "CPM _cost per 1_000 impressions_" (via slug match).')).toBe(true);
     expect(isInformationalWarning('[Ad Summary "f.csv"] Column "Day" was auto-matched from "Reporting starts" (via alias match). Renaming it to "Day" in your export will improve reliability.')).toBe(true);
