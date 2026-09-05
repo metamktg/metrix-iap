@@ -9,7 +9,8 @@
 import { useMemo, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
+import { breakdownSpendShare, spendShareLabel } from "@/lib/account-totals";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CaveatNote, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
@@ -349,6 +350,9 @@ export function PlacementsView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
+  // The placement export covers a share of the account's spend; the spend
+  // tile is a figure about that share and says so.
+  const placementShare = spendShareLabel(breakdownSpendShare(analysis, getCampaignSummary(seed, adAccountId), "placement"));
   const [selectedPlacement, setSelectedPlacement] = useState<string | null>(null);
   const [preset, setPreset] = useState<ViewPreset>("all");
 
@@ -496,7 +500,7 @@ export function PlacementsView() {
               ) : (
                 <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                   <MetricTile label="Placements" value={fmtNum(rollup.length)} />
-                  <MetricTile label="Placement spend" value={fmtUSD(totalSpend, 0)} />
+                  <MetricTile label="Placement spend" value={fmtUSD(totalSpend, 0)} sub={placementShare ? `placement rows · ${placementShare}` : undefined} />
                   <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
                   <MetricTile
                     variant="primary"

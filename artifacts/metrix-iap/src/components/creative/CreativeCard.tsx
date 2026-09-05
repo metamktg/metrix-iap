@@ -32,6 +32,11 @@ export interface CreativeCardStats {
   cpa?: number | null;
   ctrPct?: number | null;
   resultLabel?: string;
+  /** Why spend and results are null, attached where the null is produced
+   *  (a creative with no performance row in the selection). Rendered as
+   *  the dotted-underline title on the dash, the platform's affordance for
+   *  an absent value inside a button-card. */
+  unmeasuredReason?: string;
 }
 
 export interface CreativeCardData {
@@ -221,17 +226,30 @@ export function VariableTagChips({ codes, max }: { codes: string[]; max?: number
 
 function StatStrip({ stats }: { stats: CreativeCardStats }) {
   const items = [
-    { label: "Spend",                        value: usd(stats.spend, 0) },
-    { label: stats.resultLabel ?? "Results", value: num(stats.results) },
+    { label: "Spend",                        value: usd(stats.spend, 0),  absent: stats.spend == null },
+    { label: stats.resultLabel ?? "Results", value: num(stats.results),   absent: stats.results == null },
   ];
   return (
     <div className="grid grid-cols-2 gap-px bg-border/30 rounded-md overflow-hidden border border-border/30">
-      {items.map((it) => (
-        <div key={it.label} className="bg-surface-table px-2 py-1.5 text-center">
-          <div className={cn(TYPE.microLabel, "truncate")}>{it.label}</div>
-          <div className={cn(TYPE.caption, "font-semibold text-foreground/90 tabular-nums mt-0.5")}>{it.value}</div>
-        </div>
-      ))}
+      {items.map((it) => {
+        const reason = it.absent ? stats.unmeasuredReason : undefined;
+        return (
+          <div key={it.label} className="bg-surface-table px-2 py-1.5 text-center">
+            <div className={cn(TYPE.microLabel, "truncate")}>{it.label}</div>
+            <div className={cn(TYPE.caption, "font-semibold text-foreground/90 tabular-nums mt-0.5")}>
+              {/* A dash carries its reason as the dotted-underline title (the
+                  KpiStat affordance): the card is a button, so a tooltip or a
+                  DetailReveal here would be a button inside a button. */}
+              <span
+                className={cn(reason && "border-b border-dotted border-muted-foreground/40 cursor-help")}
+                {...(reason ? { title: `${it.label}: ${reason}`, "data-unavailable-reason": reason } : {})}
+              >
+                {it.value}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

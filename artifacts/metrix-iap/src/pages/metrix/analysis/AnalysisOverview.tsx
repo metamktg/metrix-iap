@@ -31,6 +31,8 @@ import {
 } from "@workspace/api-client-react";
 import { RunScopePicker } from "@/components/analysis/RunSelector";
 import { scopeToSelection, useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
+import { breakdownSpendShare, countCells, resultTypeSpendSplit, spendShareLabel } from "@/lib/account-totals";
+import { adGrainPerformanceRows } from "@/lib/ad-grain-rows";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import { TrendSection } from "@/components/analysis/TrendSection";
@@ -852,14 +854,29 @@ export function AnalysisOverview() {
         const trendData = buildMonthlyTrend(rollup);
 
         // ── Result type donut data ────────────────────────────────────
+        // The split of the account's spend by what its ads were optimised
+        // towards, from the per-event account totals the seed derives from
+        // the ad rows (the window's totals under a date window). It used to
+        // read the cell rows, which an engine-analysed account does not
+        // have, and on an importer account cover the cell library's events
+        // only: Bookster's installs and checkouts never appeared. The cell
+        // rows remain the source under a narrowed run selection, since the
+        // account totals are the current run's.
+        const donutTotals = runScoped
+          ? null
+          : (selectedWindow && runData ? runData.totals?.bottom_line_totals : summary?.bottom_line_totals) ?? null;
+        const donutFromTotals = donutTotals ? resultTypeSpendSplit(donutTotals) : [];
         const resultTypeMap = new Map<string, number>();
         for (const r of cellRows) {
           const key = eventLabel(r["Result type"]);
           resultTypeMap.set(key, (resultTypeMap.get(key) ?? 0) + r["Amount spent (USD)"]);
         }
-        const resultTypePie = [...resultTypeMap.entries()]
-          .map(([name, value]) => ({ name, value }))
-          .sort((a, b) => b.value - a.value);
+        const resultTypePie = donutFromTotals.length > 0
+          ? donutFromTotals
+          : [...resultTypeMap.entries()].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+        const donutSource = donutFromTotals.length > 0 ? "every result event · ad rows" : "cell rows in selection";
+        const demoShare = spendShareLabel(breakdownSpendShare(a, summary, "demographic"));
+        const adsWithPerformance = adGrainPerformanceRows(account?.ads).rows.length;
 
         // ── Top cells ─────────────────────────────────────────────────
         // When a preset is active and data has loaded, use the concept_rows
@@ -977,15 +994,18 @@ export function AnalysisOverview() {
             Icon: Library,
             desc: "Cell and variable performance across the account.",
             // Variable rows are one per run (the picker's history); the count is
-            // the selection's, never every generation at once.
-            stat: `${cellRows.length} cell rows · ${scopeToSelection(a.v3_variable_performance, runSelection, a.latest_analysis_run_id ?? null).length} variable rows`,
+            // the selection's, never every generation at once. Cells are
+            // counted as cells (a cell row is cell × result event, so the
+            // three pages that count them used to show three numbers), and a
+            // run without a cell library counts its ads with performance.
+            stat: `${cellRows.length > 0 ? `${countCells(cellRows)} cells` : `${adsWithPerformance} ads with performance`} · ${scopeToSelection(a.v3_variable_performance, runSelection, a.latest_analysis_run_id ?? null).length} variable rows`,
           },
           {
             to: "/app/analysis/audience",
             label: "Audience",
             Icon: Users,
             desc: `Demographic ${term.singular} signal by age and gender.`,
-            stat: `${scopedDemoRows.length} demographic rows`,
+            stat: `${scopedDemoRows.length} demographic rows${demoShare ? ` · ${demoShare}` : ""}`,
           },
           {
             to: "/app/analysis/placements",
@@ -1058,6 +1078,9 @@ export function AnalysisOverview() {
                           height={148}
                           showLegend={resultTypePie.length <= 3}
                         />
+                        <div className={cn(TYPE.label, "text-muted-foreground/75 mt-1")} data-testid="donut-source">
+                          spend share · {donutSource}
+                        </div>
                         <div className="mt-1.5 flex justify-end">
                           <CrossLink to="/app/analysis/library" label="Library →" />
                         </div>

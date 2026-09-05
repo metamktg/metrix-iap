@@ -284,13 +284,15 @@ describe("buyer-intent funnel (cohort-aware)", () => {
     }
   });
 
-  it("explains an EMPTY lower funnel with the objectives-flavored note, never a fake zero bar", () => {
+  it("explains an EMPTY lower funnel by what the export lacked, never a fake zero bar and never a business model", () => {
     // The absence case is CONSTRUCTED, not assumed: the lower-funnel fields
     // (adds_to_cart / checkouts_initiated / purchases) are stripped from the
-    // demographic rows so sumStrict yields null — genuinely unmeasured. With
-    // non-ecommerce objectives the caveat names the account's own terminal
-    // metric and promises the stages appear if the data ever carries them —
-    // it claims nothing false and hides nothing measured.
+    // demographic rows so sumStrict yields null, genuinely unmeasured, and
+    // Bookster's rows carry no Result type either. The caveat names what
+    // the export lacked. It used to name the account's objective ("cost
+    // per activation (App)"), which the owner decision (2026-09-01) says
+    // the objective is not for: it is an analysis lens, never a way to
+    // describe an account to a reader (audit round 5).
     const bookster = seed.ad_accounts.find((a: { id: string }) => a.id === "bookster")!;
     const prevObjectives = bookster.objectives;
     const rows = bookster.iap.analysis.demographic_registration_signal as Array<Record<string, unknown>>;
@@ -310,9 +312,9 @@ describe("buyer-intent funnel (cohort-aware)", () => {
       expect(within(funnel).queryByText("Purchase")).toBeNull();
       expect(within(funnel).getByText("Impressions")).toBeTruthy();
       expect(within(funnel).getByText("Link clicks")).toBeTruthy();
-      // The absence note names the account's real terminal metric.
-      expect(screen.getByText(/cost per activation/i)).toBeTruthy();
-      expect(screen.getByText(/no purchase-funnel events/i)).toBeTruthy();
+      // The absence note names what the export lacked, not the objective.
+      expect(screen.getByText(/No result event below link clicks/i)).toBeTruthy();
+      expect(screen.queryByText(/cost per activation/i)).toBeNull();
     } finally {
       bookster.objectives = prevObjectives;
       rows.splice(0, rows.length, ...prevRows);

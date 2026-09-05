@@ -301,6 +301,8 @@ export interface LibraryCatalogScope {
   grain?: "cell" | "ad";
   /** Fields the rows carry as 0 because the source never measured them; their tiles read a dash with the reason. */
   unmeasured?: readonly ("reach" | "clicks_all")[];
+  /** Ad grain only: every ad with performance whatever its result type, so the count tile can say how many the scope holds. */
+  adTotal?: number;
 }
 
 /**
@@ -317,6 +319,16 @@ function accountCarriesEvent(
   if ((events ?? []).some((rt) => classifyResultEvent(rt).key === eventKey)) return true;
   const column = eventKey === "add_to_cart" ? "adds_to_cart" : "checkouts_initiated";
   return rows.some((r) => r[column] != null);
+}
+
+/** The count tile's sub on the ad grain: how many of the account's ads with
+ *  performance the scope holds. The tile read "53" beside a grid of 629 ads
+ *  and nothing said the other 576 sat under other result types. */
+function adGrainCountSub(inScope: number, adTotal: number | undefined): string {
+  if (adTotal != null && adTotal > inScope) {
+    return `of ${fmtNum(adTotal)} ads with performance · ${fmtNum(adTotal - inScope)} under other result types`;
+  }
+  return "no creative cell library in this run · one row per ad";
 }
 
 export function buildLibraryMetricCatalog(rows: CellPerformanceRow[], scopeInfo: LibraryCatalogScope = {}): MetricDef[] {
@@ -437,7 +449,7 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[], scopeInfo:
     : [];
 
   return [
-    def("lib_cells",           adGrain ? "Ads with performance" : "Creative cells", hasRows ? uniqueCells : null, hasRows ? fmtNum(uniqueCells) : "–", adGrain ? "no creative cell library in this run · one row per ad" : undefined),
+    def("lib_cells",           adGrain ? "Ads with performance" : "Creative cells", hasRows ? uniqueCells : null, hasRows ? fmtNum(uniqueCells) : "–", adGrain ? adGrainCountSub(uniqueCells, scopeInfo.adTotal) : undefined),
     def("lib_spend",           "Spend (selected)",    hasRows ? spend : null,   hasRows ? fmtUSD(spend, 0) : "–"),
     def("lib_results",         resultsLabel,          hasRows ? results : null, hasRows ? fmtNum(results) : "–", communication ? "awareness event · communication scale" : undefined),
     ...(communication ? [] : [def("lib_cpa", "Avg CPA", cpa, cpa != null ? fmtUSD(cpa) : "–", "spend ÷ results across the scope")]),

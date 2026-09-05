@@ -37,8 +37,9 @@ import { RankSortBar, sortByRankMetric, useRankMetric, type RankMetric } from ".
 import { CombinationChips, familyLabel } from "../strategy/strategyShared";
 import type { DataQualityFlag, ConceptRollupRow, ScalingPlaybook, CellPerformanceRow, MSTLibraryCell } from "@/lib/data/seedTypes";
 import { flagHeadline, flagBody, flagEvidence } from "@/lib/dataQualityFlags";
-import { buildFunnelStages, ZONE_COLOR, type FunnelStage } from "./EngagementFunnelView";
-import { resolveObjectivesMeta, type CohortMeta } from "@/lib/data/cohortMeta";
+import { buildFunnelStages, describeLowerFunnel, ZONE_COLOR, type FunnelStage } from "./EngagementFunnelView";
+import { breakdownSpendShare, countCells, spendShareLabel } from "@/lib/account-totals";
+import { adGrainPerformanceRows } from "@/lib/ad-grain-rows";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { trendForMetric, sparkSeriesForMetric, sparkPoints } from "@/lib/data/summaryTrends";
 import { AddToTrayButton } from "@/components/tray/AddToTrayButton";
@@ -684,7 +685,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
   );
 }
 
-// ─── Buyer-intent funnel — data-first, objective-aware absence copy ────
+// ─── Buyer-intent funnel, data-first ──────────────────────────────────
 // Reuses EngagementFunnelView's real stage math (buildFunnelStages) rather
 // than re-deriving it.
 //
@@ -695,22 +696,15 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
 // curation live in the STRATEGY layer. An earlier version of this card
 // dropped intent/conversion stages for any account not labelled purely
 // "ecommerce", which hid a lead-gen account's 26 real measured purchases —
-// exactly the distortion the decision forbids. Now: a stage renders iff it
-// carries measured data, whatever the label. The objectives' only remaining
-// job here is to pick the honest ABSENCE explanation when the lower funnel
-// has no data at all — a non-ecommerce account gets the cohort-flavored
-// note naming its real terminal metric, an ecommerce account gets the
-// tracking-configuration note. Neither ever covers measured data.
+// exactly the distortion the decision forbids. A stage renders iff it
+// carries measured data, whatever the label; since audit round 5 the lower
+// stages are the account's own result events, so a lead-gen account's
+// leads ARE its conversion band. The absence note names what the export
+// lacked (describeLowerFunnel), never a business model: the objective is
+// not a way to describe an account to a reader (CLAUDE.md).
 
-function BuyerIntentFunnelCard({
-  stages, objectivesIncludeEcommerce, cohortMeta,
-}: {
-  stages: FunnelStage[];
-  objectivesIncludeEcommerce: boolean;
-  cohortMeta: CohortMeta;
-}) {
-  const lowerFunnelStages = stages.filter((s) => s.zone === "intent" || s.zone === "conversion");
-  const hasLowerFunnelData = lowerFunnelStages.some((s) => s.value != null);
+function BuyerIntentFunnelCard({ stages }: { stages: FunnelStage[] }) {
+  const lowerNote = describeLowerFunnel(stages);
   const visibleStages = stages.filter((s) => s.value != null);
 
   if (visibleStages.length === 0) return null;
@@ -719,8 +713,8 @@ function BuyerIntentFunnelCard({
   return (
     <SectionCard
       title="Buyer-intent funnel"
-      desc="Impressions through real intent signal · stage-over-stage retention"
-      right={<SectionInfoIcon tip="Every stage with measured data renders (impressions through purchases) whatever the account's objectives. Each stage's % is measured against the previous real stage; absent stages are explained, never faked as zero bars." />}
+      desc="Impressions through the account's own result events · stage-over-stage retention"
+      right={<SectionInfoIcon tip="Every stage with measured data renders, impressions through the intent and conversion events the ads were optimised towards, whatever the account's objectives. Each stage's % is measured against the previous real stage (a terminal event against the last stage before the conversion band); absent stages are explained, never faked as zero bars." />}
     >
       <div className="space-y-1.5" data-testid="buyer-intent-funnel">
         {visibleStages.map((stage) => {
@@ -751,7 +745,7 @@ function BuyerIntentFunnelCard({
                 <div className="flex items-center gap-1 ml-28 pl-3 mt-1">
                   <ArrowRight className="w-3 h-3 text-muted-foreground/75" />
                   <span className={cn(TYPE.microLabel, stage.pctOfPrev >= 20 ? "text-status-success/70" : stage.pctOfPrev >= 5 ? c.text : "text-status-danger/70")}>
-                    {stage.pctOfPrev.toFixed(1)}% of previous stage
+                    {stage.pctOfPrev.toFixed(1)}% of {stage.zone === "conversion" ? "the last stage before conversion" : "previous stage"}
                   </span>
                 </div>
               )}
@@ -759,15 +753,9 @@ function BuyerIntentFunnelCard({
           );
         })}
       </div>
-      {!hasLowerFunnelData && (
+      {lowerNote && (
         <div className="mt-2">
-          <CaveatNote
-            text={
-              objectivesIncludeEcommerce
-                ? "Add-to-cart, checkout, and purchase data comes from the demographic export when the account is configured for ecommerce tracking. These fields appear once a matching export is staged and analyzed."
-                : `No purchase-funnel events in this data. Terminal metric ${cohortMeta.terminalMetricLabel} (${cohortMeta.label}). Add-to-cart, checkout and purchase stages appear here automatically if the data ever carries them; nothing is gated on the objective label.`
-            }
-          />
+          <CaveatNote text={lowerNote} />
         </div>
       )}
       <div className="pt-2.5">
@@ -924,15 +912,15 @@ export function AdPerformanceView() {
               concepts: rollup.filter((r) => range && r.date_start && r.date_end && !(r.date_end < range.start || r.date_start > range.end)).length,
             }
           : null;
-        const cellRowsInRange = filterCells(a.performance_by_cell).length;
+        // Cells are counted as cells (a cell row is cell × result event); a
+        // run without a cell library counts its ads with performance; the
+        // variable rows are the current run's, not every generation's.
+        const cellsInRange = countCells(filterCells(a.performance_by_cell));
+        const cellsAll = countCells(a.performance_by_cell);
+        const variableRowCount = scopeToRun(a.v3_variable_performance ?? [], a.latest_analysis_run_id ?? null).length;
+        const adsWithPerformance = adGrainPerformanceRows(acct.ads).rows.length;
+        const demoShare = spendShareLabel(breakdownSpendShare(a, summary, "demographic"));
 
-        // Cohort-aware buyer-intent funnel: only a single configured
-        // "ecommerce" objective keeps the ecommerce-only lower-funnel
-        // stages (add to cart / checkout / purchase) — unassigned or
-        // mixed-objective accounts stay conservative and drop them rather
-        // than assume ecommerce.
-        const cohortMeta = resolveObjectivesMeta(acct.objectives);
-        const objectivesIncludeEcommerce = acct.objectives?.includes("ecommerce") ?? false;
         const funnelStages = buildFunnelStages(a.demographic_registration_signal);
 
         const mst = getMST(seed, adAccountId);
@@ -959,9 +947,9 @@ export function AdPerformanceView() {
             label: "IAP Library",
             Icon: Library,
             desc: "Cell and variable performance across the account.",
-            stat: narrowed
-              ? `${cellRowsInRange} cell rows in range · ${a.v3_variable_performance.length} variable rows`
-              : `${a.performance_by_cell.length} cell rows · ${a.v3_variable_performance.length} variable rows`,
+            stat: cellsAll > 0
+              ? `${narrowed ? `${cellsInRange} cells in range` : `${cellsAll} cells`} · ${variableRowCount} variable rows`
+              : `${adsWithPerformance} ads with performance · ${variableRowCount} variable rows`,
           },
           {
             to: "/app/analysis/funnel",
@@ -977,7 +965,7 @@ export function AdPerformanceView() {
             label: "Audience",
             Icon: Users,
             desc: `Demographic ${term.singular} signal by age and gender.`,
-            stat: `${a.demographic_registration_signal.length} demographic rows`,
+            stat: `${a.demographic_registration_signal.length} demographic rows${demoShare ? ` · ${demoShare}` : ""}`,
           },
           {
             to: "/app/analysis/placements",
@@ -1097,7 +1085,7 @@ export function AdPerformanceView() {
               <SignalCards flags={acct.iap?.data_quality ?? []} scopeId={acct.id} detailOn={detailOn} />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <BuyerIntentFunnelCard stages={funnelStages} objectivesIncludeEcommerce={objectivesIncludeEcommerce} cohortMeta={cohortMeta} />
+                <BuyerIntentFunnelCard stages={funnelStages} />
                 <CostPerResultCard adAccountId={adAccountId} accountConfigured={acct.status === "configured"} />
               </div>
 

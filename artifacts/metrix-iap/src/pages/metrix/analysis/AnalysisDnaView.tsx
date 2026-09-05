@@ -29,7 +29,8 @@ import { ResultScopeBar, LandedScopeNote } from "@/components/analysis/ResultSco
 import { useMemo, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData, getCampaignSummary, getStrategyData } from "@/lib/data/metrixSeedAdapter";
+import { scopedAccountTotals } from "@/lib/account-totals";
 import { scopeToRun } from "@/lib/run-supersede";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, SectionCard, CrossLink,
@@ -211,33 +212,19 @@ export function AnalysisDnaView() {
   const variableRows = variableLanding.rows;
   const activeScope = variableLanding.landed ?? resultScope.scope;
   // ── The Library's tile pattern, on the page whose subject is variables
-  //    (#38). The catalog is built from the SAME landed, run-scoped rows the
-  //    gene loci below read, so a tile can never disagree with the card under
-  //    it, and a tile opens the same breakdown a Library tile opens — whose
-  //    dimensions include one per variable family.
-  const dnaSource = useMemo(() => {
-    const spend = variableRows.reduce((n, r) => n + (r["Amount spent (USD)"] ?? 0), 0);
-    const results = variableRows.reduce((n, r) => n + (r.Results ?? 0), 0);
-    const impressions = variableRows.reduce((n, r) => n + (r.Impressions ?? 0), 0);
-    const linkClicks = variableRows.reduce((n, r) => n + (r["Link clicks"] ?? 0), 0);
-    const events = [...new Set(variableRows.map((r) => r["Result type"]))];
-    return {
-      spend,
-      impressions,
-      reach: variableRows.reduce((n, r) => n + (r.Reach ?? 0), 0),
-      clicksAll: variableRows.reduce((n, r) => n + (r["Clicks (all)"] ?? 0), 0),
-      linkClicks,
-      linkCtrPct: impressions > 0 ? (linkClicks / impressions) * 100 : null,
-      resultEvents: events.map((key) => ({
-        key,
-        label: eventLabel(key),
-        results: variableRows.filter((r) => r["Result type"] === key).reduce((n, r) => n + (r.Results ?? 0), 0),
-        spend: variableRows.filter((r) => r["Result type"] === key).reduce((n, r) => n + (r["Amount spent (USD)"] ?? 0), 0),
-      })),
-      isMultiEvent: events.length > 1,
-    };
-  }, [variableRows]);
-  const dnaCatalog = useMemo(() => buildMetricCatalog(dnaSource), [dnaSource]);
+  //    (#38). The tiles are ACCOUNT totals under this page's result scope,
+  //    read from the campaign summary the seed derives from the ad rows.
+  //    They used to be summed from the variable rows: one row per token an
+  //    ad carries, so an ad counted once per token, and Total spend read
+  //    $68,535 on an account that spent $42,290 while impressions read 0
+  //    because the variable rows do not carry them (audit round 5). The
+  //    loci below still read the variable rows, which is what they are for.
+  const summary = getCampaignSummary(seed, adAccountId);
+  const dnaSource = useMemo(
+    () => scopedAccountTotals(summary, activeScope?.resultTypes ?? null),
+    [summary, activeScope],
+  );
+  const dnaCatalog = useMemo(() => (dnaSource ? buildMetricCatalog(dnaSource) : null), [dnaSource]);
   const [dnaMetricId, setDnaMetricId] = useState<string | null>(null);
 
   const combinations = strategy?.variable_combinations ?? [];
@@ -283,13 +270,18 @@ export function AnalysisDnaView() {
               <ResultScopeBar scope={activeScope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
               <LandedScopeNote landed={variableLanding.landed} what="Creative DNA" />
               <div className="px-6 py-5 space-y-4 max-w-5xl">
-                {variableRows.length > 0 && (
-                  <div className="grid grid-cols-dashboard-4 gap-3" data-testid="dna-tile-row">
-                    <KpiTileRow
-                      viewKey="analysis-dna"
-                      catalog={dnaCatalog}
-                      onTileClick={(id) => setDnaMetricId(id)}
-                    />
+                {variableRows.length > 0 && dnaCatalog && (
+                  <div className="space-y-1.5">
+                    <div className={cn(TYPE.microLabel, "text-muted-foreground/75 px-0.5")}>
+                      Account totals · this result scope · ad rows, not variable rows
+                    </div>
+                    <div className="grid grid-cols-dashboard-4 gap-3" data-testid="dna-tile-row">
+                      <KpiTileRow
+                        viewKey="analysis-dna"
+                        catalog={dnaCatalog}
+                        onTileClick={(id) => setDnaMetricId(id)}
+                      />
+                    </div>
                   </div>
                 )}
                 {variableRows.length > 0 && (
@@ -323,7 +315,7 @@ export function AnalysisDnaView() {
           );
         }}
       </ModuleScopeGate>
-      {account && analysis && (
+      {account && analysis && dnaCatalog && (
         <KpiDrilldownModal
           open={dnaMetricId != null}
           onClose={() => setDnaMetricId(null)}

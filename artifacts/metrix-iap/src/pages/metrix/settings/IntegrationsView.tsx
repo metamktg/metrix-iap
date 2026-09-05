@@ -11,6 +11,7 @@ import { useGetMetaConnection } from "@workspace/api-client-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAdAccounts } from "@/lib/data/metrixSeedAdapter";
+import { describeAccountSource } from "@/lib/data/accountSource";
 import { ModuleHeader, SectionCard } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
 import { MetaLiveConnection } from "./MetaLiveConnection";
@@ -47,7 +48,7 @@ export function IntegrationsView() {
         subtitle={
           isAccountScoped && scopedAccount
             ? `Integration settings for ${scopedAccount.name}`
-            : `Data connections across ${manager.name}: ${connected.length} of ${accounts.length} ad accounts connected.`
+            : `Data sources across ${manager.name}: ${connected.length} of ${accounts.length} ad accounts with analysis data.`
         }
       />
 
@@ -71,13 +72,17 @@ export function IntegrationsView() {
                   <div className="space-y-2.5">
                     {accounts.map((a) => {
                       const configured = a.status === "configured";
+                      // The source is the source: this row printed the raw
+                      // source_status ("manual_reports") beside a CONNECTED
+                      // badge on a manual account (audit round 5).
+                      const source = describeAccountSource(a);
                       return (
                         <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
                           {configured ? <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
                           <div className="flex-1 min-w-0">
                             <div className="text-body font-medium text-foreground">{a.name}</div>
                             <div className="text-label text-muted-foreground/85">
-                              {a.platform} · {configured ? (a.source_status ?? "connected") : "not connected"}
+                              {source.label} · {configured ? "analysis data on file" : "no successful run yet"}
                             </div>
                           </div>
                           <span
@@ -88,7 +93,7 @@ export function IntegrationsView() {
                                 : "text-muted-foreground/85 border-border/40 bg-foreground/[0.03]"
                             )}
                           >
-                            {configured ? "Connected" : "Not connected"}
+                            {configured ? source.short : "Not connected"}
                           </span>
                           {!configured && (
                             <button

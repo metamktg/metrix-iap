@@ -1555,3 +1555,103 @@ the basis note. The existing coverage, marginals and downstream tests are unchan
 segment's own totals, signal and coverage are still computed from its demographic rows; only the
 attribution block below them changes. Not in this change: concept attribution for an
 engine-analysed account, which needs the ad-id anchored concept mapping (task #40).
+
+**Live.** PR #219 merged into main as `dd18a234` (2026-09-05 16:55Z) with the two audit-round-4
+commits; the workspace converged as merge `8f315ba7` (the post-merge hook: "Supabase schema
+unchanged (fingerprint 3d7901136139); nothing applied", exit 0; the API Server listening on 8080
+at 16:57:12Z, seed cache warmed in 73,673 ms; API Server, Metrix IAP and Marketing all RUNNING);
+deployment `329ef7e0` published to app.metrix.ad with status success at 17:04Z, serving
+`index-Xj8Gx8Gf.js`. Verified by fetching the served chunks: "Top ads for this segment" and
+`note-attribution-basis` in `SegmentDrilldownModal-DaZTgeUi.js`, "not summed." in
+`AudienceView-DpxdACEZ.js`, "No creative cell library in this run" in
+`IapLibraryView-BDuhmjnK.js`.
+
+## 32. Audit round 5, data honesty: account totals from the campaign summary, the funnel staged from the account's own result events, the source named on the settings surfaces (2026-09-05, UI, one gate allowlist tightened)
+
+**What changed.** The 204-shot route crawl of round 4 (`METRIX_UI_AUDIT_ROUND4_2026-09.md` §B)
+found surfaces that summed the wrong rows or named the wrong cause for data the account has.
+One pure module carries the account-level reads, `lib/account-totals.ts`: `scopedAccountTotals`
+(the campaign summary's `bottom_line_totals`, the per-event totals seed assembly derives from the
+ad rows, restricted to a result scope's raw types), `resultTypeSpendSplit` (the spend split by
+event for a share chart), `breakdownSpendShare` (the share of the account's spend a demographic or
+placement export covers: the run's reconciliation summary per class first, else the rows' spend
+against the summary total, null when the rows exceed the total beyond rounding since that is the
+duplicate-ingestion signature and not a share) and `countCells` (distinct cells, since a cell row
+is cell × result event). On it:
+
+- Creative DNA's tiles are account totals under the page's result scope, captioned "Account totals
+  · this result scope · ad rows, not variable rows". They summed the variable rows, one row per
+  token an ad carries, so an ad counted once per token: Total spend read $68,535 on an account that
+  spent $42,290, and impressions read 0 because the variable rows do not carry them. The loci
+  still read the variable rows, which is what they are for.
+- Analysis Overview's "By result type" donut is the split of the account's spend by every event
+  (the window's totals under a date window; the cell rows only under a narrowed run selection,
+  since the account totals are the current run's) and carries its source ("spend share · every
+  result event · ad rows" / "cell rows in selection"). It read the cell rows, which an
+  engine-analysed account has none of, and on an importer account cover the cell library's events
+  only: Bookster's installs and checkouts never appeared.
+- The Engagement Funnel's lower bands are the account's own result events, read from the
+  demographic rows' Result type (`buildFunnelStages`): an intermediate conversion event (wishlist,
+  cart, checkout, payment info, in that order) is an intent stage, a terminal one (purchase, lead,
+  install, registration…) a conversion stage, each terminal stage measured against the last stage
+  before the conversion band since terminal events are alternatives, not a sequence. The export's
+  own cart / checkout / purchase columns keep winning for the event they name (all three slots stay
+  when the export carries any of them, so an ecommerce export reads exactly as before), and rows
+  that carry neither keep the three classic gaps. Each lower stage says where it was read
+  (`FunnelStage.basis`, a note on the chart). It used to read three hardcoded ecommerce columns:
+  a lead-gen account with 4,323 leads and an app account with 486 installs showed empty intent and
+  conversion bands, the known systemic defect CLAUDE.md names. The absence note is one sentence
+  shared by the full funnel and Ad Performance's compact card (`describeLowerFunnel`): what the
+  export lacked, or which intermediate step it lacked, never a business model. Ad Performance's card
+  named the account's objective and terminal metric ("cost per activation (App)"), which the owner
+  decision (2026-09-01) says the objective is not for.
+- The three pages that counted cells count them the same way: cells, not cell rows (Bookster read
+  "12 cell rows" on Ad Performance, "8 cell rows" on the Overview and "4 of 4 cells" in the
+  Library, three scopings of one library of four cells); a run without a cell library counts its
+  ads with performance; the variable rows are the current run's on Ad Performance too.
+- The Library's count tile on the ad grain says how many of the account's ads with performance the
+  scope holds ("of 629 ads with performance · 576 under other result types"); a creative cell with
+  no performance row reads a dash, never $0 · 0, and the dash carries its reason as the
+  dotted-underline title (`CreativeCardStats.unmeasuredReason`, the KpiStat affordance, since the
+  card is a button): `check:unexplained-dashes` flagged the thirty bare dashes of the first cut.
+- Budget names the missing cell library ("Spend by concept needs cell codes on the ads. This run has
+  none; its N ads with spend are on the IAP Library") instead of "No cell rows match the current
+  metric selection".
+- The demographic and placement surfaces carry the export's share of spend: the Audience module
+  stat on the Overview and Ad Performance ("19 demographic rows · 20% of spend"), the funnel card's
+  caption, the Avatars audience row, the Placement spend tile's sub.
+- The settings surfaces name the source (`describeAccountSource` in `lib/data/accountSource.ts`:
+  Live Meta connection · Manual reports · Imported package · Imported data, with a one-word chip).
+  Settings › General said "Meta ad account · Meta Ads · connected" with a check on a manual account,
+  Integrations printed the raw `manual_reports` / `imported_from_iap_loop_package` beside a
+  CONNECTED badge, and the per-account panel did both. Only a live Meta connection reads as
+  connected; a configured account is "analysis data on file", an unconfigured one "no successful
+  run yet". The read-only "Objectives" module on General is gone (it described the account by its
+  derived objective; `cohortOptions.ts` deleted, the two settings entries removed from
+  `check:cohort-reach`'s allowlist, so the gate now bounds the cohort to the analysis views, the
+  cohort module and the export payload). The System card reads the seed ("Supabase seed
+  2.0.0-supabase · assembled Aug 15, 2026", the assembler's integrity note behind "About this
+  data") instead of a static "SAMPLE / DEMO DATA".
+
+**What proves it.** `account-totals.test.ts` (scope restriction, the blend, null without a summary,
+the split's order and labels, the reconciliation-first share, the rows fallback, the over-total
+refusal, the count of cells). `funnel-result-events.test.ts` (leads as the conversion band with no
+phantom slots, purchase-path order, terminal alternatives against the last stage before them, the
+export column winning and the rows filling in, consideration events never staged, the classic gaps,
+the three absence sentences); `funnel-zero-vs-gap.test.ts` unchanged. `round5-data-honesty.test.tsx`
+renders the fixture's no-cell account with a synthetic summary built so every wrong figure is
+distinguishable from the right one: the DNA tiles read $5,555 under the blend and never $8,642 or
+4,321, the donut lists both events from the ad rows and says so, the Overview and Ad Performance
+count "3 ads with performance · 2 variable rows" and "19 demographic rows · 20% of spend", Budget
+names the cell library, the Placement spend tile reads "placement rows · 50% of spend", the compact
+funnel stages Purchases from the rows and names the missing intermediate step.
+`general-data-source.test.tsx` (Manual reports, Imported package, no Objectives, the System line, no
+demo label), the manager-view describe in `integrations-account-scoping.test.tsx` (labels and chips,
+no raw status, no Connected), `creative-card-null-stats.test.tsx`, the ad-grain describe in
+`libraryMetricCatalog.test.ts`. `ad-performance-canvas.test.tsx`'s absence case now expects the
+export's sentence and asserts the objective is absent.
+
+**How far it reaches.** UI only; no schema, endpoint or engine change. The only figures that move
+are the ones that were wrong: an ecommerce export's funnel is byte-identical, cell-grain accounts
+keep their tiles, and every fallback is a dash or a sentence, never a zero. `check:cohort-reach`'s
+allowed reach shrank from six paths to four.

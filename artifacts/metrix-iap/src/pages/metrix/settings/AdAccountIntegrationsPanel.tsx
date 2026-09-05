@@ -11,6 +11,7 @@ import { useAccount } from "@/contexts/AccountContext";
 import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
 import { useGetMetaConnection } from "@workspace/api-client-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
+import { describeAccountSource } from "@/lib/data/accountSource";
 
 export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) {
   const { selectManager } = useAccount();
@@ -21,6 +22,9 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
   const [copied, setCopied] = useState(false);
 
   const configured = account.status === "configured";
+  // The source is the source: the chip read CONNECTED on a manual account
+  // and the status row printed the raw source_status (audit round 5).
+  const source = describeAccountSource(account);
 
   const handleCopy = async () => {
     if (!account.meta_ad_account_id) return;
@@ -56,7 +60,7 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
                 : "text-muted-foreground/85 border-border/40 bg-foreground/[0.03]"
             )}
           >
-            {configured ? "Connected" : "Not connected"}
+            {configured ? source.short : "Not connected"}
           </span>
         </div>
 
@@ -77,9 +81,9 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
 
         {/* Source status row */}
         <div className="flex items-center gap-3 px-4 py-3">
-          <div className="text-label text-muted-foreground/75 w-40 shrink-0">Source status</div>
-          <span className="text-body text-foreground/80">
-            {account.source_status ?? "–"}
+          <div className="text-label text-muted-foreground/75 w-40 shrink-0">Data source</div>
+          <span className="text-body text-foreground/80" data-testid="account-source-label">
+            {source.label} · {configured ? "analysis data on file" : "no successful run yet"}
           </span>
         </div>
       </div>

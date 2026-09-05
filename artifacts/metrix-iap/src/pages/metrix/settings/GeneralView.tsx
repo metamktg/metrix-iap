@@ -8,7 +8,9 @@ import { useState } from "react";
 import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder, getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, SectionCard, CaveatNote, PendingState, CrossLink, DetailReveal, deriveLabel } from "../shared";
+import { ModuleHeader, SectionCard, CaveatNote, PendingState, CrossLink, DetailReveal, InfoTooltip, deriveLabel } from "../shared";
+import { describeAccountSource } from "@/lib/data/accountSource";
+import type { MetrixSeed } from "@/lib/data/seedTypes";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -23,24 +25,38 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
-import { OBJECTIVE_OPTIONS } from "./cohortOptions";
 import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
 
 const SECTION = "Settings · 10";
 
+/** "Aug 15, 2026" from the seed's generated_at (a date or an ISO timestamp). */
+function fmtSeedDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
 /**
  * Build/data-source info — moved here from the sidebar footer so the
  * global chrome stays clean (canvas parity); this is real, honest
- * information (the running build tag and whether the seed is demo data),
- * it just belongs in Settings rather than cluttering every screen's nav rail.
+ * information (the running build tag and what the seed was assembled
+ * from), it just belongs in Settings rather than cluttering every screen's
+ * nav rail. It read a static "SAMPLE / DEMO DATA" on every account,
+ * including a real client's manual account (audit round 5): the line now
+ * names the seed and the note the assembler wrote about it.
  */
-function SystemInfoSection() {
+function SystemInfoSection({ seed }: { seed: MetrixSeed }) {
+  const assembled = fmtSeedDate(seed.generated_at);
   return (
     <SectionCard title="System" desc="Build and data source">
       <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
-        <div className="space-y-0.5">
+        <div className="space-y-0.5 min-w-0">
           <div className="text-caption font-medium text-foreground/80">METRIX IAP v2.0-rc</div>
-          <div className="text-label text-muted-foreground/75">SAMPLE / DEMO DATA</div>
+          <div className="flex items-center gap-1.5 text-label text-muted-foreground/75" data-testid="system-data-source">
+            <span>Supabase seed {seed.schema_version}{assembled ? ` · assembled ${assembled}` : ""}</span>
+            {seed.integrity_note && <InfoTooltip content={seed.integrity_note} label="About this data" />}
+          </div>
         </div>
         <DataSourceBadgeToggle />
       </div>
@@ -122,55 +138,6 @@ export function AccountNameSection({ accountId, currentName }: { accountId: stri
   );
 }
 
-/**
- * READ-ONLY. The objective is DERIVED FROM THE DATA by the analysis run
- * (owner decision 2026-09-01), never declared by an operator: Meta already
- * states it per ad in "Result type", so the run reads it rather than asking.
- * This section reports what the last run concluded and the evidence behind
- * it — it is not a control, and there is deliberately no way to override it.
- * An account whose ads carry no outcome-naming result type reads as
- * undetermined here, never as a guessed default.
- */
-function ObjectivesSection({ currentObjectives }: { currentObjectives: string[] | undefined }) {
-  const derived = currentObjectives ?? [];
-  const known = OBJECTIVE_OPTIONS.filter((c) => derived.includes(c.id));
-
-  return (
-    <SectionCard
-      title="Objectives"
-      desc="Determined from your data · Read from each ad's Meta result type by the analysis run · Decides which terminal metrics are reported and which optional columns are assessed"
-    >
-      {known.length === 0 ? (
-        <div className="rounded-lg border border-border/40 bg-foreground/[0.02] p-3">
-          <div className="text-body font-medium text-foreground">Not yet determined</div>
-          <div className="text-caption text-muted-foreground/80 mt-1">
-            No ad in this account carries a Meta result type that names a business outcome, so no
-            objective has been inferred. Reporting stays on generic cost per result rather than
-            assuming one. Running analysis on data that includes a Result type column resolves this.
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          {known.map((c) => (
-            <div
-              key={c.id}
-              className="flex items-center gap-2.5 p-3 rounded-lg border border-primary/45 bg-primary/[0.06] text-left"
-            >
-              <c.Icon className="w-4 h-4 text-interactive shrink-0" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <div className="text-body font-medium text-foreground">{c.label}</div>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-status-success shrink-0" />
-                </div>
-                <div className="text-label text-muted-foreground/75 mt-0.5">{c.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </SectionCard>
-  );
-}
 function PrefToggle({
   on,
   onToggle,
@@ -354,7 +321,7 @@ export function GeneralView() {
         <div className="px-6 py-5 space-y-5 max-w-3xl">
           <NotificationPrefsSections />
           <AgentWaitlistSection />
-          <SystemInfoSection />
+          <SystemInfoSection seed={seed} />
         </div>
       </div>
     );
@@ -362,6 +329,9 @@ export function GeneralView() {
 
   const configured = account.status === "configured";
   const rb = configured ? getReportBuilder(seed, adAccountId) : null;
+  // The source is the source, not the platform (accountSource.ts): this
+  // card said "Meta Ads · connected" with a check on a manual account.
+  const source = describeAccountSource(account);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -373,8 +343,10 @@ export function GeneralView() {
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
               {configured ? <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
               <div className="flex-1 min-w-0">
-                <div className="text-body font-medium text-foreground">Meta ad account</div>
-                <div className="text-label text-muted-foreground/85">{configured ? `${account.platform} · connected` : "Not connected"}</div>
+                <div className="text-body font-medium text-foreground" data-testid="data-source-label">{source.label}</div>
+                <div className="text-label text-muted-foreground/85">
+                  {configured ? `${account.platform} · analysis data on file` : `${account.platform} · no successful run yet`}
+                </div>
               </div>
               {!configured && (
                 <button
@@ -422,7 +394,6 @@ export function GeneralView() {
         </SectionCard>
 
         <AccountNameSection accountId={account.id} currentName={String(account.name ?? account.id)} />
-        {configured && <ObjectivesSection currentObjectives={account.objectives} />}
 
         {configured && (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
@@ -467,7 +438,7 @@ export function GeneralView() {
 
         <AgentWaitlistSection />
 
-        <SystemInfoSection />
+        <SystemInfoSection seed={seed} />
 
         <div className={cn("text-label text-muted-foreground/80", "px-1")}>
           Account ID · {account.id}
