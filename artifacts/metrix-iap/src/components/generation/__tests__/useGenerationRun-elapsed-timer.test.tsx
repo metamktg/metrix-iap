@@ -17,6 +17,7 @@ vi.mock("@workspace/api-client-react", () => ({
   useGenerateAccountBriefs:   () => ({ mutate: vi.fn(), isPending: false }),
   useGetLatestGenerationRun:  (...args: unknown[]) => mockGetLatestGenerationRun(...args),
   getGetLatestGenerationRunQueryKey: () => ["latest-gen-run"],
+  getListGenerationRunsQueryKey:     () => ["generation-runs"],
   getGetMetrixSeedQueryKey:          () => ["metrix-seed"],
   ApiError: class ApiError extends Error {},
 }));

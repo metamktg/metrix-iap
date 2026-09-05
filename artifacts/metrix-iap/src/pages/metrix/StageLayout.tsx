@@ -1,8 +1,8 @@
 // ─── StageLayout · the Execution Layer shell ───────────────────────────
 // Sweep spec §3. Every Execution Layer page composes this: the page
 // supplies content, the shell supplies order, width and the slots, top to
-// bottom: header · spine · pages · notice · status hub · execution card ·
-// direction rail · content. The pages strip (owner, 2026-09-05) puts the
+// bottom: header · crumb · spine · pages · notice · status hub · execution
+// card · direction rail · content. The pages strip (owner, 2026-09-05) puts the
 // stage's subpages at the top, where a reader landing on the centre looks
 // for them, with each page's purpose and lineage behind an info tooltip;
 // the explore grid at the foot of the page is gone. Fixed rules: one column, max-w-5xl,
@@ -35,6 +35,8 @@ export interface StageLayoutProps {
   /** One-line purpose, rendered as the header's info tooltip. */
   subtitle?: string;
   headerRight?: React.ReactNode;
+  /** Between the header and the spine: the loop-origin crumb, a scope bar. */
+  crumb?: React.ReactNode;
   /** The stage-status hook's shape; the spine is built from it. */
   status: StageStatusLike;
   /** At most one; the shell renders the first and warns in development on more. */
@@ -70,6 +72,7 @@ export function StageLayout({
   accountName,
   subtitle,
   headerRight,
+  crumb,
   status,
   notice,
   hub,
@@ -92,6 +95,7 @@ export function StageLayout({
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto" data-testid="stage-layout" data-stage={stage}>
       <ModuleHeader section={section} title={title} accountName={accountName} subtitle={subtitle} right={headerRight} />
+      {crumb}
       <StageLoopHub stages={buildLoopStages(status)} current={stage} />
       {/* One column width across every command centre (MST's, the widest
           content, sets it): a reader walking the loop must never see the

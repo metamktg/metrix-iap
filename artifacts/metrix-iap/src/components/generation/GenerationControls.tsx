@@ -4,6 +4,8 @@
 // (strategy-from-analysis, briefs-from-strategy) and polling the run
 // until it settles. On success the seed query is invalidated so the app
 // re-renders with the newly generated set (server-side provenance rule).
+// The run's progress renders in the page's status hub (sweep spec §4,
+// slice 3); the progress bar this file used to carry is gone with it.
 
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,13 +15,13 @@ import {
   useGetLatestGenerationRun,
   getGetMetrixSeedQueryKey,
   getGetLatestGenerationRunQueryKey,
+  getListGenerationRunsQueryKey,
   ApiError,
   type GenerateStrategyInput,
+  type GenerateBriefsInput,
 } from "@workspace/api-client-react";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
-import { fmtElapsed, pacePhrase } from "@/lib/generation-pace";
-import { ProgressMeter } from "@/components/metrics/ProgressMeter";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
 
@@ -90,6 +92,11 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
     if (settledRunIds.current.has(run.id)) return;
     settledRunIds.current.add(run.id);
     setPolling(false);
+    // The run list (the status hub's history, the strategy-run picker)
+    // re-reads on every settle, success or failure.
+    if (accountId) {
+      void queryClient.invalidateQueries({ queryKey: getListGenerationRunsQueryKey(accountId, kind) });
+    }
     if (run.status === "success") {
       void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
       toast({
@@ -104,13 +111,13 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
         variant: "destructive",
       });
     }
-  }, [run, polling, queryClient, toast, kind]);
+  }, [run, polling, queryClient, toast, kind, accountId]);
 
   const strategyMutation = useGenerateAccountStrategy();
   const briefsMutation = useGenerateAccountBriefs();
   const mutation = kind === "strategy" ? strategyMutation : briefsMutation;
 
-  const start = (extraData?: GenerateStrategyInput) => {
+  const start = (extraData?: GenerateStrategyInput | GenerateBriefsInput) => {
     // Guard: when passed directly as an onClick handler, extraData is a React
     // SyntheticEvent that carries the DOM element — discard it so we never
     // accidentally JSON.stringify a circular HTMLButtonElement reference.
@@ -158,9 +165,12 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
       // analysis_all_time) — no implicit "latest run" fallback. Default to
       // all-time only as a safety net if a caller forgets to pass a
       // selection; RunSelector-driven callers always pass one explicitly.
-      strategyMutation.mutate({ accountId, data: extraData ?? { analysis_all_time: true } }, callbacks);
+      strategyMutation.mutate({ accountId, data: (extraData as GenerateStrategyInput | undefined) ?? { analysis_all_time: true } }, callbacks);
     } else {
-      briefsMutation.mutate({ accountId }, callbacks);
+      // Briefs: the strategy run to brief (sweep spec §5.2), or the current
+      // strategy set when the caller names none.
+      const data = extraData as GenerateBriefsInput | undefined;
+      briefsMutation.mutate(data?.strategy_run_id ? { accountId, data } : { accountId }, callbacks);
     }
   };
 
@@ -253,59 +263,6 @@ export function GenerateButton({
       )}
       {isRunning ? runningLabel : label}
     </button>
-  );
-}
-
-/**
- * Determinate progress bar for generation runs — same visual treatment as
- * the analysis pipeline bar in ManualAnalysisControls (label + % readout +
- * thin rounded track). Renders nothing when not running.
- */
-export function GenerationProgressBar({
-  isRunning,
-  progressPercent,
-  stageLabel,
-  elapsedSeconds,
-  typicalSeconds,
-}: {
-  isRunning: boolean;
-  progressPercent: number;
-  stageLabel: string;
-  /** Seconds since the run started. Omit only where no run clock exists. */
-  elapsedSeconds?: number;
-  /** Typical total duration for this kind, for the "usually about N min" note. */
-  typicalSeconds?: number;
-}) {
-  if (!isRunning) return null;
-  // Elapsed time is the ONLY thing on this panel that distinguishes a
-  // working run from a dead one: the percentage holds at 10% for the whole
-  // model call, so a healthy four-minute run and a dead process render
-  // identically without it. See lib/generation-pace.ts.
-  const showClock = typeof elapsedSeconds === "number";
-  return (
-    <div className="space-y-1.5" data-testid="generation-progress-bar">
-      <div className={cn(TYPE.caption, "flex items-center justify-between gap-2 text-muted-foreground/75")}>
-        <span className="truncate">{stageLabel}</span>
-        <span className="flex items-center gap-1.5 tabular-nums shrink-0">
-          {showClock && (
-            <span data-testid="generation-elapsed">{fmtElapsed(elapsedSeconds)}</span>
-          )}
-          <span>{progressPercent}%</span>
-        </span>
-      </div>
-      <ProgressMeter
-        value={progressPercent}
-        total={100}
-        label={stageLabel}
-        size="md"
-        fillClassName="bg-primary/70"
-      />
-      {showClock && typeof typicalSeconds === "number" && (
-        <div className="text-caption text-muted-foreground/75" data-testid="generation-pace-note">
-          {pacePhrase(elapsedSeconds, typicalSeconds)}
-        </div>
-      )}
-    </div>
   );
 }
 

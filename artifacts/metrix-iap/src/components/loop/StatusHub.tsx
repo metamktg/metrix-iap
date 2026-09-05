@@ -169,15 +169,17 @@ export function StatusHub({
         </Row>
       )}
 
-      <Row kind="history" testId="status-hub-history">
-        <div className={cn(TYPE.caption, "flex items-center gap-2")}>
-          <HistoryIcon className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" aria-hidden />
-          <span className="text-foreground/85">
-            {history.count === 0 ? "No completed runs yet" : `${history.count} completed run${history.count === 1 ? "" : "s"}`}
-          </span>
-          <CrossLink to={history.to} label="Full history" />
-        </div>
-      </Row>
+      {history && (
+        <Row kind="history" testId="status-hub-history">
+          <div className={cn(TYPE.caption, "flex items-center gap-2")}>
+            <HistoryIcon className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" aria-hidden />
+            <span className="text-foreground/85">
+              {history.count === 0 ? "No completed runs yet" : `${history.count} completed run${history.count === 1 ? "" : "s"}`}
+            </span>
+            {history.to && <CrossLink to={history.to} label="Full history" />}
+          </div>
+        </Row>
+      )}
     </section>
   );
 }

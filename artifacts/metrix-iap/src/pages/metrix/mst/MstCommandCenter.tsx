@@ -1,8 +1,11 @@
 // ─── MST · Command Center ────────────────────────────────────────────
-// The parent /app/mst route. No execution control here — no backend job
-// exists yet to "run" a sprint (MST is populated by the importer, not an
-// in-app action). Hard-gated on this account having at least one
-// generated brief. Deeper cross-map/sprint-grid/creative-scan analysis
+// The parent /app/mst route, on the Execution Layer shell (StageLayout,
+// sweep spec §3, slice 3): header · crumb and scope bar · spine · pages ·
+// status hub · direction rail · the matrix. No execution control here — no
+// backend job exists yet to "run" a sprint (MST is populated by the
+// importer, not an in-app action), so the hub names the brief set in use
+// and the matrix's readiness and carries no run rows (§4.2, §5.3).
+// Hard-gated on this account having at least one generated brief. Deeper cross-map/sprint-grid/creative-scan analysis
 // still lives only in the child pages — but the matrix's own avatar
 // tiles (concepts × avatar column, each a real matrix-cell rollup) live
 // here: an avatar tile is MST matrix-cell data first, ICP identity
@@ -15,14 +18,16 @@ import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getMST, getAnalysisData, getStrategyData, getAds } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getMST, getAnalysisData, getStrategyData, getAds, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
-  ModuleHeader, ModuleScopeGate, PrerequisiteGate,
-  StageLoopHub, buildLoopStages, HubNavStrip, FlowCrumb, useFromParam, withFrom,
+  ModuleScopeGate, PrerequisiteGate,
+  FlowCrumb, useFromParam, withFrom,
   MetricTile, SectionCard, SectionInfoIcon, resultTerm, fmtUSD, fmtPct, fmtNum,
   useFocusParam, CaveatNote,
 } from "../shared";
+import { StageLayout } from "../StageLayout";
+import { buildMstHub } from "@/lib/loop/statusHub";
 import {
   PersonaAvatar, StatGrid, AccordionToggle, FoldedGrid, DnaChipStrip,
   VariableStackChips, VariableChip, familyLabel,
@@ -37,14 +42,16 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@works
 import { useLocation } from "wouter";
 import { RunScopePicker } from "@/components/analysis/RunSelector";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
-import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
+import {
+  useListAnalysisRuns, getListAnalysisRunsQueryKey,
+  useGetLatestGenerationRun, getGetLatestGenerationRunQueryKey,
+} from "@workspace/api-client-react";
 import {
   Network, Grid3x3, Compass, Library, Dna, ChevronRight, ArrowDownRight, ArrowUp, ArrowDown,
 } from "lucide-react";
 import type { MSTMatrixColumn, MSTMatrixCell, ICPProfile, AdRecord, CellPerformanceRow } from "@/lib/data/seedTypes";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { ProgressMeter } from "@/components/metrics/ProgressMeter";
-import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
 import { deriveRecommendations, recommendationsForStage } from "@/lib/data/recommendations";
 
 const SECTION = "MST · 06";
@@ -452,6 +459,14 @@ export function MstCommandCenter() {
   const strategyData = getStrategyData(seed, adAccountId);
   const icpProfiles = strategyData?.icp_profiles ?? [];
   const term = resultTerm(account);
+  // The brief set the matrix reads, for the hub's inputs row (§5.3): the
+  // seed's briefs and, when they were generated in-app, the run that wrote
+  // them. Read, never polled: this stage has no run of its own.
+  const bb = getBriefBuilder(seed, adAccountId);
+  const { data: latestBriefsRun } = useGetLatestGenerationRun(adAccountId ?? "", "briefs", {
+    query: { enabled: !!adAccountId, queryKey: getGetLatestGenerationRunQueryKey(adAccountId ?? "", "briefs") },
+  });
+  const briefsRun = latestBriefsRun?.run?.status === "success" ? latestBriefsRun.run : null;
 
   // ── Analysis-run scope (compact header dropdown) ──────────────────────
   // Avatar-tile KPIs (spend, CPA, Link CVR, CPM) are aggregated straight
@@ -557,6 +572,11 @@ export function MstCommandCenter() {
   // The gate's own condition, shared with the pages strip: the pages read
   // the matrix, so they have nothing to show until it exists.
   const mstReady = status.mst.unlocked || (matrix?.columns.length ?? 0) > 0;
+  const hub = buildMstHub({
+    briefs: { total: bb?.draft_briefs.length ?? 0, provenance: bb?.provenance },
+    briefsRun,
+    matrix: matrix ? { avatars: matrix.columns.length, cells: matrix.cells.length } : null,
+  });
 
   return (
     <ModuleScopeGate section={SECTION} title="MST" account={account}>
@@ -568,35 +588,33 @@ export function MstCommandCenter() {
           (col.matched_profile_ids ?? []).map((id) => profileById.get(id)).filter((p): p is ICPProfile => p != null);
 
         return (
-          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-            <ModuleHeader
-              section={SECTION}
-              title="MST"
-              accountName={acct.name}
-              subtitle="Matrix Sprint Test results for this account's briefed creative."
-              right={
-                <RunScopePicker
-                  runs={analysisRunsData?.runs ?? []}
-                  value={runSelection}
-                  onChange={setRunSelection}
-                />
-              }
-            />
-            <FlowCrumb {...fp} />
-            <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
-            <StageLoopHub stages={buildLoopStages(status)} current="mst" />
-
-            <div className="px-6 py-5 space-y-4 max-w-5xl">
-              {/* The stage's pages first (owner, 2026-09-05): a reader landing
-                  here reaches the page they came for before the run card. Each
-                  chip's tooltip says what the page is for and what it reads. */}
-              {mstReady && <HubNavStrip items={children} label="MST pages" />}
-
-              {/* Direction for this stage, from the account's own rows —
-                  each tile carries the number behind it and a link to the
-                  surface that proves it. Absent when this stage has none. */}
-              {(() => { const stageRecs = recommendationsForStage(deriveRecommendations(acct), 5); return stageRecs.length > 0 ? <RecommendationSlider recs={stageRecs} title="Next best actions" /> : null; })()}
-
+          <StageLayout
+            stage="mst"
+            section={SECTION}
+            title="MST"
+            accountName={acct.name}
+            subtitle="Matrix Sprint Test results for this account's briefed creative."
+            headerRight={
+              <RunScopePicker
+                runs={analysisRunsData?.runs ?? []}
+                value={runSelection}
+                onChange={setRunSelection}
+              />
+            }
+            crumb={
+              <>
+                <FlowCrumb {...fp} />
+                <ResultScopeBar scope={resultScope.scope} groups={resultScope.groups} onChange={resultScope.setScopeId} />
+              </>
+            }
+            status={status}
+            hub={hub}
+            hubLabel="MST status"
+            recommendations={recommendationsForStage(deriveRecommendations(acct), 5)}
+            // The pages read the matrix, so they have nothing to show until it exists.
+            explore={mstReady ? children : []}
+            exploreLabel="MST pages"
+          >
               {/* The gate asks for the INPUT this stage reads, the same
                   rule the Strategy and Creative gates follow: an account
                   whose matrix arrived through the importer carries briefed
@@ -664,7 +682,6 @@ export function MstCommandCenter() {
                   </>
                 )}
               </PrerequisiteGate>
-            </div>
 
             {detail && (
               <InfoDrawer
@@ -753,7 +770,7 @@ export function MstCommandCenter() {
                 cellIds={detail.cells.map((c) => c.cell_id)}
               />
             )}
-          </div>
+          </StageLayout>
         );
       }}
     </ModuleScopeGate>

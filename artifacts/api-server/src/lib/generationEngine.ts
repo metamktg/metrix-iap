@@ -19,6 +19,7 @@ import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { z } from "zod";
 import { currentRunFilter, getCurrentAnalysisRunId } from "./runGenerations";
 import { getSupabase } from "./supabase";
+import { effectiveWindow, orderRunsNewestFirst, supersedeRows, supersededRunIds, type RunWindow } from "./evidenceSupersede";
 import { fetchSuccessfulRuns, splitBySource } from "./generatedCurrency";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
@@ -263,19 +264,59 @@ function terminalMetricLabelFor(objectives: CohortDefinition[]): string {
   return objectives.map((c) => c.terminal_metric_label).join(" / ");
 }
 
+/** What a strategy run was built from, recorded on the run row (slice 3). */
+export type EvidenceSource = {
+  /** The analysis runs read, resolved: the account's current run under "all time". */
+  runIds: string[];
+  /** The span those runs cover together, after the later run superseded the earlier one's dates. */
+  window: { start: string; end: string } | null;
+  runs: RunWindow[];
+};
+
 type StrategyEvidence = {
   evidence: Row;
   cellIds: Set<string>;
   icpIds: Set<string>;
+  source: EvidenceSource;
 };
+
+/** The windows of the listed analysis runs of one account, newest first. */
+async function analysisRunWindows(accountId: string, runIds: readonly string[]): Promise<RunWindow[]> {
+  if (runIds.length === 0) return [];
+  const { data, error } = await getSupabase()
+    .from("manual_analysis_runs")
+    .select("id, date_start, date_end, started_at")
+    .eq("account_id", accountId)
+    .in("id", [...runIds]);
+  if (error) throw new Error(`Supabase query failed for "manual_analysis_runs": ${error.message}`);
+  return orderRunsNewestFirst(
+    (data ?? []).map((r) => ({
+      id: String(r["id"]),
+      date_start: r["date_start"] ? String(r["date_start"]) : null,
+      date_end: r["date_end"] ? String(r["date_end"]) : null,
+      started_at: String(r["started_at"] ?? ""),
+    })),
+  );
+}
 
 async function buildStrategyEvidence(
   accountId: string,
   accountName: string,
   runIds: string[] | "all" = "all",
+  opts: {
+    /** Briefs: narrow the ICP profiles to the strategy run whose pillars are being briefed. */
+    strategyRunId?: string | null;
+  } = {},
 ): Promise<StrategyEvidence> {
   const scope = await resolveRunScope(accountId, runIds);
-  const [cellRows, varRows, demoRows, placementRows, deviceRows, platformRows, placementPerfRows, conceptRows, icpRows, moduleRows, adPerfRows] =
+  // The runs this pack reads, resolved, and their windows: several selected
+  // runs are combined as a union with supersede (evidenceSupersede.ts), and
+  // the run record names what was read either way.
+  const sourceRunIds = scope.kind === "current" ? (scope.runId ? [scope.runId] : []) : scope.runIds;
+  const sourceRuns = await analysisRunWindows(accountId, sourceRunIds);
+  const combine = <T extends { manual_analysis_run_id?: string | null; date_start?: string | null; date_end?: string | null }>(rows: T[]): T[] =>
+    sourceRuns.length > 1 ? supersedeRows(rows, sourceRuns) : rows;
+  const [cellRows, varRowsRaw, demoRowsRaw, placementRowsRaw, deviceRowsRaw, platformRowsRaw, placementPerfRowsRaw, conceptRowsRaw, icpRows, moduleRows, adPerfRowsRaw] =
     await Promise.all([
       rowsFor("library_cell_performance", accountId), // baseline client-library data, not run-scoped
       rowsForRuns("variable_performance", accountId, scope),
@@ -291,6 +332,14 @@ async function buildStrategyEvidence(
       rowsFor("account_modules", accountId, (q) => q.eq("module", "iap_metadata")),
       rowsForRuns("ad_performance", accountId, scope),
     ]);
+  const varRows = combine(varRowsRaw);
+  const demoRows = combine(demoRowsRaw);
+  const placementRows = combine(placementRowsRaw);
+  const deviceRows = combine(deviceRowsRaw);
+  const platformRows = combine(platformRowsRaw);
+  const placementPerfRows = combine(placementPerfRowsRaw);
+  const conceptRows = combine(conceptRowsRaw);
+  const adPerfRows = combine(adPerfRowsRaw);
 
   const cells = cellRows
     .map((r) => r["payload"] as Row)
@@ -360,8 +409,16 @@ async function buildStrategyEvidence(
   // ICPs that are live, or the model is told not to duplicate profile names
   // that no longer exist and `icpIds` accepts pillar targets pointing at
   // superseded profiles.
-  const icps = splitBySource(icpRows, await fetchSuccessfulRuns(accountId, "strategy"))
-    .active.map((r) => r["payload"] as Row)
+  // Briefs built on a chosen strategy run read that run's ICP set, so a
+  // pillar's target profiles resolve against the profiles it was written
+  // with; the current set stands in when that run wrote none.
+  const chosenIcps = opts.strategyRunId
+    ? icpRows.filter((r) => r["source"] === "generated" && String(r["generation_run_id"] ?? "") === opts.strategyRunId)
+    : [];
+  const icps = (chosenIcps.length > 0
+    ? chosenIcps
+    : splitBySource(icpRows, await fetchSuccessfulRuns(accountId, "strategy")).active)
+    .map((r) => r["payload"] as Row)
     .slice(0, 8);
   const metadata = moduleRows[0]?.["payload"] ?? null;
 
@@ -387,8 +444,28 @@ async function buildStrategyEvidence(
     return cov && typeof cov === "object" ? (cov as Row) : null;
   })();
 
+  const window = effectiveWindow(sourceRuns);
+  const superseded = new Set(supersededRunIds(sourceRuns));
   const evidence: Row = {
     account: { id: accountId, name: accountName },
+    ...(sourceRuns.length > 0
+      ? {
+          analysis_runs: {
+            note:
+              sourceRuns.length > 1
+                ? "This evidence is the union of the analysis runs listed. Where two runs measured the same dates, the later run's rows replaced the earlier run's for those dates; per-run aggregates of a run whose whole window a later run re-measured were dropped. Runs whose windows only partly overlap both appear, so a period inside the overlap is described by both."
+                : "The analysis run this evidence was read from.",
+            effective_window: window,
+            runs: sourceRuns.map((r) => ({
+              id: r.id,
+              date_start: r.date_start,
+              date_end: r.date_end,
+              started_at: r.started_at,
+              superseded_whole_window: superseded.has(r.id),
+            })),
+          },
+        }
+      : {}),
     top_cells: cells,
     variable_performance: variables,
     ...(adRollup.length > 0
@@ -434,21 +511,49 @@ async function buildStrategyEvidence(
     evidence,
     cellIds: new Set(cells.map((c) => String(c["cell_id"] ?? "")).filter(Boolean)),
     icpIds: new Set(icps.map((p) => String(p["profile_id"] ?? "")).filter(Boolean)),
+    source: { runIds: sourceRuns.map((r) => r.id), window, runs: sourceRuns },
   };
 }
 
 /**
- * The pillar set briefs are built from: the CURRENT generated set if one
- * exists, else the imported set.
+ * The pillar set briefs are built from. With a strategy run named (sweep
+ * spec §5.2, the Creative page's picker) it is that run's pillars, exactly
+ * one run, no combining; the run must be this account's, of kind strategy,
+ * successful, and still hold rows. Without one it is the CURRENT generated
+ * set if one exists, else the imported set.
  *
  * Generated sets are archived rather than deleted (GAP-01), so filtering on
  * `source` alone would hand the model pillars from several runs at once and
  * let a brief cite a pillar that was superseded three runs ago. Currency is
  * derived here rather than assumed from the writer having deleted the rest.
  */
-async function storedPillars(accountId: string): Promise<Row[]> {
+async function pillarsForBriefs(
+  accountId: string,
+  strategyRunId: string | null,
+): Promise<{ pillars: Row[]; strategyRunId: string | null }> {
   const all = await rowsFor("message_pillars", accountId);
-  return splitBySource(all, await fetchSuccessfulRuns(accountId, "strategy")).active;
+  if (strategyRunId) {
+    const { data, error } = await getSupabase()
+      .from("generation_runs")
+      .select("id, account_id, kind, status")
+      .eq("id", strategyRunId)
+      .limit(1);
+    if (error) throw new Error(error.message);
+    const run = data?.[0];
+    if (!run || String(run["account_id"]) !== accountId || run["kind"] !== "strategy") {
+      throw new GenerationError("The selected strategy run does not belong to this account.", 404);
+    }
+    if (run["status"] !== "success") {
+      throw new GenerationError("The selected strategy run did not succeed, so it has no pillars to brief.", 422);
+    }
+    const pillars = all.filter((r) => r["source"] === "generated" && String(r["generation_run_id"] ?? "") === strategyRunId);
+    if (pillars.length === 0) {
+      throw new GenerationError("The selected strategy run no longer holds any pillars. Choose another run or regenerate strategy.", 422);
+    }
+    return { pillars, strategyRunId };
+  }
+  const split = splitBySource(all, await fetchSuccessfulRuns(accountId, "strategy"));
+  return { pillars: split.active, strategyRunId: split.generated.length > 0 ? (split.run?.id ?? null) : null };
 }
 
 // ─── placeholder sanitization ─────────────────────────────────────────
@@ -892,6 +997,13 @@ export type GenerationRun = {
    *  or all-time. Both null/false means a pre-run-scoping legacy row. */
   source_analysis_run_ids: string[] | null;
   source_analysis_all_time: boolean;
+  /** Briefs: the strategy run whose pillars were read; null for the imported set or a run before the field. */
+  source_generation_run_id: string | null;
+  /** The span the run's analysis runs cover together (slice 3); null when not recorded. */
+  source_window_start: string | null;
+  source_window_end: string | null;
+  /** Rows the run wrote (pillars for strategy, briefs for briefs). Set by the list endpoint only; null elsewhere. */
+  output_count: number | null;
   /** Items committed so far in a multi-item run (deconstruct). */
   progress_done: number;
   /** Total items targeted by the run; null for runs without a per-item meter. */
@@ -915,6 +1027,10 @@ const runShape = (r: Row): GenerationRun => ({
   finished_at: r["finished_at"] ?? null,
   source_analysis_run_ids: Array.isArray(r["source_analysis_run_ids"]) ? r["source_analysis_run_ids"] : null,
   source_analysis_all_time: r["source_analysis_all_time"] === true,
+  source_generation_run_id: r["source_generation_run_id"] ? String(r["source_generation_run_id"]) : null,
+  source_window_start: r["source_window_start"] ? String(r["source_window_start"]) : null,
+  source_window_end: r["source_window_end"] ? String(r["source_window_end"]) : null,
+  output_count: typeof r["output_count"] === "number" ? Number(r["output_count"]) : null,
   progress_done: Number(r["progress_done"] ?? 0),
   progress_total: r["progress_total"] != null ? Number(r["progress_total"]) : null,
   progress_pct: typeof r["progress_pct"] === "number" ? Number(r["progress_pct"]) : 0,
@@ -971,6 +1087,52 @@ export async function getLatestGenerationRun(
     return runShape(updated?.[0] ?? { ...row, status: "error" });
   }
   return runShape(row);
+}
+
+/** The output table each kind writes, for the list endpoint's row counts. */
+const OUTPUT_TABLE: Record<GenerationKind, string | null> = {
+  strategy: "message_pillars",
+  briefs: "imported_creative_briefs",
+  deconstruct: null,
+};
+
+/**
+ * Every run of an account and kind, newest first, with the rows each run
+ * still holds (sweep spec §5.2: the Creative page's strategy-run picker
+ * shows date, model and pillar count; History shows the whole log). The
+ * latest run is read first through `getLatestGenerationRun` so a dead
+ * 'running' row is reclaimed before the list is served.
+ */
+export async function listGenerationRuns(
+  accountId: string,
+  kind: GenerationKind,
+  limit = 50,
+): Promise<GenerationRun[]> {
+  await getLatestGenerationRun(accountId, kind);
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("generation_runs")
+    .select("*")
+    .eq("account_id", accountId)
+    .eq("kind", kind)
+    .order("started_at", { ascending: false })
+    .limit(Math.max(1, Math.min(100, limit)));
+  if (error) throw new Error(error.message);
+  const runs = (data ?? []).map(runShape);
+  const table = OUTPUT_TABLE[kind];
+  if (!table || runs.length === 0) return runs;
+  const { data: outputs, error: outErr } = await supabase
+    .from(table)
+    .select("generation_run_id")
+    .eq("account_id", accountId)
+    .eq("source", "generated");
+  if (outErr) throw new Error(`${table}: ${outErr.message}`);
+  const counts = new Map<string, number>();
+  for (const row of outputs ?? []) {
+    const id = row["generation_run_id"] ? String(row["generation_run_id"]) : "";
+    if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return runs.map((r) => ({ ...r, output_count: counts.get(r.id) ?? 0 }));
 }
 
 /**
@@ -1043,11 +1205,22 @@ async function recordingRejections<T>(
   }
 }
 
+/** What a run reads, written on its row at insert (sweep spec §5, slice 3). */
+export type RunSource = {
+  /** The selection was "all time" (resolved to the account's current run). */
+  allTime?: boolean;
+  /** The analysis runs read, resolved. */
+  analysisRunIds?: readonly string[];
+  window?: { start: string; end: string } | null;
+  /** Briefs: the strategy run whose pillars were read. */
+  strategyRunId?: string | null;
+};
+
 export async function startRun(
   accountId: string,
   kind: GenerationKind,
   createdBy: string,
-  sourceRunIds?: string[] | "all",
+  source: RunSource = {},
 ): Promise<string> {
   const latest = await getLatestGenerationRun(accountId, kind);
   if (latest && latest.status === "running") {
@@ -1061,11 +1234,17 @@ export async function startRun(
     model: GENERATION_MODEL,
     created_by: createdBy,
   };
-  if (sourceRunIds === "all") {
-    insertPayload["source_analysis_all_time"] = true;
-  } else if (sourceRunIds && sourceRunIds.length > 0) {
-    insertPayload["source_analysis_run_ids"] = sourceRunIds;
+  // The run record always names the runs it read, the resolved ids under
+  // "all time" too, so History can say what a strategy was built from.
+  if (source.allTime) insertPayload["source_analysis_all_time"] = true;
+  if (source.analysisRunIds && source.analysisRunIds.length > 0) {
+    insertPayload["source_analysis_run_ids"] = [...source.analysisRunIds];
   }
+  if (source.window) {
+    insertPayload["source_window_start"] = source.window.start;
+    insertPayload["source_window_end"] = source.window.end;
+  }
+  if (source.strategyRunId) insertPayload["source_generation_run_id"] = source.strategyRunId;
   const { data, error } = await supabase
     .from("generation_runs")
     .insert(insertPayload)
@@ -1199,12 +1378,16 @@ async function startStrategyGenerationInner(
   const account = await accountExists(accountId);
   if (!account) throw new GenerationError("Ad account not found.", 404);
   const objectives = resolveAccountObjectives(account).map((k) => COHORT_DEFINITIONS[k]);
-  const { evidence, cellIds, icpIds } = await buildStrategyEvidence(
+  const { evidence, cellIds, icpIds, source } = await buildStrategyEvidence(
     accountId,
     String(account["name"] ?? accountId),
     runIds,
   );
-  const runId = await startRun(accountId, "strategy", createdBy, runIds);
+  const runId = await startRun(accountId, "strategy", createdBy, {
+    allTime: runIds === "all",
+    analysisRunIds: source.runIds,
+    window: source.window,
+  });
   // Signal liveness for as long as this run is actually working, so a
   // slow model call cannot be mistaken for a dead process and have its
   // outputs deleted out from under it.
@@ -1354,29 +1537,37 @@ async function startStrategyGenerationInner(
  * Validate prerequisites and start a briefs run. Briefs are built from the
  * account's stored pillars (generated set preferred, else imported).
  */
-export async function startBriefsGeneration(accountId: string, createdBy: string): Promise<string> {
+export async function startBriefsGeneration(
+  accountId: string,
+  createdBy: string,
+  strategyRunId: string | null = null,
+): Promise<string> {
   return recordingRejections(accountId, "briefs", () =>
-    startBriefsGenerationInner(accountId, createdBy),
+    startBriefsGenerationInner(accountId, createdBy, strategyRunId),
   );
 }
 
-async function startBriefsGenerationInner(accountId: string, createdBy: string): Promise<string> {
+async function startBriefsGenerationInner(
+  accountId: string,
+  createdBy: string,
+  requestedStrategyRunId: string | null,
+): Promise<string> {
   const account = await accountExists(accountId);
   if (!account) throw new GenerationError("Ad account not found.", 404);
   const objectives = resolveAccountObjectives(account).map((k) => COHORT_DEFINITIONS[k]);
-  const pillars = await storedPillars(accountId);
+  const { pillars, strategyRunId } = await pillarsForBriefs(accountId, requestedStrategyRunId);
   if (pillars.length === 0) {
     throw new GenerationError(
       "This account has no strategy pillars yet — build strategy from the analysis first.",
       422,
     );
   }
-  const { evidence, icpIds } = await buildStrategyEvidence(accountId, String(account["name"] ?? accountId)).catch(() => ({
+  const { evidence, icpIds } = await buildStrategyEvidence(accountId, String(account["name"] ?? accountId), "all", { strategyRunId }).catch(() => ({
     evidence: { note: "No analysis evidence available — briefs are grounded in the stored pillars only." } as Row,
     cellIds: new Set<string>(),
     icpIds: new Set<string>(),
   }));
-  const runId = await startRun(accountId, "briefs", createdBy);
+  const runId = await startRun(accountId, "briefs", createdBy, { strategyRunId });
   const stopHeartbeat = startRunHeartbeat("generation_runs", runId);
   const pillarIds = new Set(pillars.map((p) => String(p["pillar_id"])));
 

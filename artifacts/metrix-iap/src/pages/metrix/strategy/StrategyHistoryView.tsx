@@ -1,15 +1,17 @@
 // ─── Strategy · History ──────────────────────────────────────────────
-// Full detail on the account's strategy generation runs. The backend
-// today only retains the LATEST generation run per account+kind (no
-// run-list endpoint exists yet) — honest about that rather than
-// fabricating a multi-row log.
+// Every strategy generation run for the account, newest first, and what
+// each was built from (sweep spec §5.2, slice 3): the analysis runs and
+// the window they cover together, the pillars the run still holds, its
+// model, its error whole. The list endpoint replaced the latest-run-only
+// read this page used to carry with a caveat about it.
 
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
-import { useGetLatestGenerationRun, getGetLatestGenerationRunQueryKey } from "@workspace/api-client-react";
-import { ModuleHeader, ModuleScopeGate, SectionCard, PendingState, CaveatNote, CrossLink } from "../shared";
-import { History, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { useListGenerationRuns, getListGenerationRunsQueryKey } from "@workspace/api-client-react";
+import { ModuleHeader, ModuleScopeGate, SectionCard, PendingState, CrossLink } from "../shared";
+import { GenerationRunRow } from "@/components/loop/GenerationRunRow";
+import { History } from "lucide-react";
 
 const SECTION = "Strategy · 04";
 
@@ -17,50 +19,32 @@ export function StrategyHistoryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const { data } = useGetLatestGenerationRun(account?.id ?? "", "strategy", {
-    query: { queryKey: getGetLatestGenerationRunQueryKey(account?.id ?? "", "strategy"), enabled: !!account },
+  const { data } = useListGenerationRuns(account?.id ?? "", "strategy", {
+    query: { queryKey: getListGenerationRunsQueryKey(account?.id ?? "", "strategy"), enabled: !!account },
   });
-  const run = data?.run ?? null;
+  const runs = (data?.runs ?? []).slice().sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+  const successes = runs.filter((r) => r.status === "success").length;
+  const current = runs.find((r) => r.status === "success") ?? null;
 
   return (
     <ModuleScopeGate section={SECTION} title="History" account={account}>
       {() => (
         <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-          <ModuleHeader section={SECTION} title="History" accountName={account!.name} subtitle="Strategy generation runs for this account." table="generation_runs" />
+          <ModuleHeader section={SECTION} title="History" accountName={account!.name} subtitle="Strategy generation runs for this account, and what each was built from." table="generation_runs" />
           <div className="px-6 py-5 space-y-4 max-w-3xl">
-            <CaveatNote text="Only the most recent strategy generation run is tracked today. A full multi-run log is planned but not yet built." />
-            {!run ? (
+            {runs.length === 0 ? (
               <PendingState title="No runs yet" message="Generate strategy from the Strategy command center to see it here." icon={History} />
             ) : (
-              <SectionCard title="Latest run" desc={run.model ? `Model: ${run.model}` : undefined}>
-                <div className="flex items-center gap-2 mb-3">
-                  {run.status === "running" && <Loader2 className="w-4 h-4 text-status-warning animate-spin" />}
-                  {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-status-success" />}
-                  {run.status === "error" && <XCircle className="w-4 h-4 text-status-danger" />}
-                  <span className="text-title font-bold text-foreground capitalize">{run.status}</span>
+              <SectionCard
+                title="Generation runs"
+                desc={`${runs.length} run${runs.length === 1 ? "" : "s"} · ${successes} completed · the newest completed run is the current strategy`}
+                right={current ? <CrossLink to="/app/strategy/overview" label="Open the current strategy" /> : undefined}
+              >
+                <div className="flex flex-col" data-testid="strategy-history-runs">
+                  {runs.map((run) => (
+                    <GenerationRunRow key={run.id} run={run} kind="strategy" />
+                  ))}
                 </div>
-                <dl className="grid grid-cols-2 gap-3 text-body">
-                  <div>
-                    <dt className="text-muted-foreground/75">Started</dt>
-                    <dd className="text-foreground/90">{new Date(run.started_at).toLocaleString()}</dd>
-                  </div>
-                  {run.finished_at && (
-                    <div>
-                      <dt className="text-muted-foreground/75">Finished</dt>
-                      <dd className="text-foreground/90">{new Date(run.finished_at).toLocaleString()}</dd>
-                    </div>
-                  )}
-                </dl>
-                {run.error_message && (
-                  <p className="text-caption text-status-danger/90 mt-3">{run.error_message}</p>
-                )}
-                {/* The run's output is the strategy itself — link into it
-                    rather than ending the row here. */}
-                {run.status === "success" && (
-                  <div className="mt-3">
-                    <CrossLink to="/app/strategy/overview" label="Open the generated strategy" />
-                  </div>
-                )}
               </SectionCard>
             )}
           </div>

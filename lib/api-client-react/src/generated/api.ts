@@ -59,6 +59,7 @@ import type {
   CreateGoogleDocResult,
   DailySeriesResult,
   DeconstructCreativesInput,
+  GenerateBriefsInput,
   GenerateStrategyInput,
   GeneratedReportCreateInput,
   GeneratedReportCreateResult,
@@ -72,6 +73,7 @@ import type {
   LatestGenerationRunResult,
   ListAgentWaitlistParams,
   ListCreativeDeconstructionsResult,
+  ListGenerationRunsResult,
   ListManualImportsResult,
   ListMetaReportRowsParams,
   ListSessionsResult,
@@ -2314,17 +2316,18 @@ export const getGenerateAccountBriefsUrl = (accountId: string,) => {
 }
 
 /**
- * Starts an in-app Metrix engine run that generates draft briefs from the account's stored strategy pillars (generated set preferred, else imported). Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Requires access to the account.
- * @summary Generate draft creative briefs from the account's stored strategy pillars
+ * Starts an in-app Metrix engine run that generates draft briefs from the account's strategy pillars. With strategy_run_id the pillars of exactly that successful strategy run are read (no combining); without it, the current generated set, else the imported set. The run records the strategy run it read as source_generation_run_id. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Requires access to the account.
+ * @summary Generate draft creative briefs from one strategy run's pillars
  */
-export const generateAccountBriefs = async (accountId: string, options?: RequestInit): Promise<StartGenerationResult> => {
+export const generateAccountBriefs = async (accountId: string,
+    generateBriefsInput?: GenerateBriefsInput, options?: RequestInit): Promise<StartGenerationResult> => {
 
   return customFetch<StartGenerationResult>(getGenerateAccountBriefsUrl(accountId),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(generateBriefsInput)
   }
 );}
 
@@ -2332,8 +2335,8 @@ export const generateAccountBriefs = async (accountId: string, options?: Request
 
 
 export const getGenerateAccountBriefsMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountBriefs>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof generateAccountBriefs>>, TError,{accountId: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountBriefs>>, TError,{accountId: string;data?: BodyType<GenerateBriefsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateAccountBriefs>>, TError,{accountId: string;data?: BodyType<GenerateBriefsInput>}, TContext> => {
 
 const mutationKey = ['generateAccountBriefs'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -2345,10 +2348,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateAccountBriefs>>, {accountId: string}> = (props) => {
-          const {accountId} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateAccountBriefs>>, {accountId: string;data?: BodyType<GenerateBriefsInput>}> = (props) => {
+          const {accountId,data} = props ?? {};
 
-          return  generateAccountBriefs(accountId,requestOptions)
+          return  generateAccountBriefs(accountId,data,requestOptions)
         }
 
 
@@ -2359,22 +2362,105 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type GenerateAccountBriefsMutationResult = NonNullable<Awaited<ReturnType<typeof generateAccountBriefs>>>
-
+    export type GenerateAccountBriefsMutationBody = BodyType<GenerateBriefsInput> | undefined
     export type GenerateAccountBriefsMutationError = ErrorType<ApiError>
 
     /**
- * @summary Generate draft creative briefs from the account's stored strategy pillars
+ * @summary Generate draft creative briefs from one strategy run's pillars
  */
 export const useGenerateAccountBriefs = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountBriefs>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountBriefs>>, TError,{accountId: string;data?: BodyType<GenerateBriefsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof generateAccountBriefs>>,
         TError,
-        {accountId: string},
+        {accountId: string;data?: BodyType<GenerateBriefsInput>},
         TContext
       > => {
       return useMutation(getGenerateAccountBriefsMutationOptions(options));
     }
+
+export const getListGenerationRunsUrl = (accountId: string,
+    kind: 'strategy' | 'briefs' | 'deconstruct',) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/generation-runs/${kind}`
+}
+
+/**
+ * Returns the account's fifty newest generation runs of one kind, newest first, each with the rows it still holds (output_count, pillars for strategy and briefs for briefs) and what it was built from (source_analysis_run_ids, source_window_start/end, source_generation_run_id). A run stuck in 'running' past the staleness cutoff is honestly flipped to 'error' first. Requires access to the account.
+ * @summary Generation runs for an account and kind, newest first
+ */
+export const listGenerationRuns = async (accountId: string,
+    kind: 'strategy' | 'briefs' | 'deconstruct', options?: RequestInit): Promise<ListGenerationRunsResult> => {
+
+  return customFetch<ListGenerationRunsResult>(getListGenerationRunsUrl(accountId,kind),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGenerationRunsQueryKey = (accountId: string,
+    kind: 'strategy' | 'briefs' | 'deconstruct',) => {
+    return [
+    `/api/metrix/accounts/${accountId}/generation-runs/${kind}`
+    ] as const;
+    }
+
+
+export const getListGenerationRunsQueryOptions = <TData = Awaited<ReturnType<typeof listGenerationRuns>>, TError = ErrorType<ApiError>>(accountId: string,
+    kind: 'strategy' | 'briefs' | 'deconstruct', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGenerationRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGenerationRunsQueryKey(accountId,kind);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGenerationRuns>>> = ({ signal }) => listGenerationRuns(accountId,kind, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined && kind !== null && kind !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGenerationRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGenerationRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listGenerationRuns>>>
+export type ListGenerationRunsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Generation runs for an account and kind, newest first
+ */
+
+export function useListGenerationRuns<TData = Awaited<ReturnType<typeof listGenerationRuns>>, TError = ErrorType<ApiError>>(
+ accountId: string,
+    kind: 'strategy' | 'briefs' | 'deconstruct', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGenerationRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGenerationRunsQueryOptions(accountId,kind,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetLatestGenerationRunUrl = (accountId: string,
     kind: 'strategy' | 'briefs' | 'deconstruct',) => {

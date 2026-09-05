@@ -58,7 +58,9 @@ import {
   AlertDialogTitle,
 } from "@workspace/command-deck/components/ui/alert-dialog";
 import { useGenerationRun } from "@/components/generation/GenerationControls";
-import { RunSelector, ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
+import { RunSelector, type RunSelectorValue } from "@/components/analysis/RunSelector";
+import { usePersistedRunScope } from "@/lib/run-scope";
+import { STRATEGY_BASE_RUN_PAGE_KEY } from "@/components/loop/BaseRunPicker";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import type { AdAccount, StrategyData, BriefBuilder } from "@/lib/data/seedTypes";
 import { hasLiveMetaConnection } from "@/lib/data/accountSource";
@@ -702,6 +704,7 @@ function ReportIntelligence({
 
 function CommandHub({
   stage,
+  accountId,
   onClose,
   currentPath,
   dataComplete,
@@ -746,6 +749,7 @@ function CommandHub({
   onGenerateReport,
 }: {
   stage: Stage;
+  accountId: string;
   onClose: () => void;
   currentPath: string;
   dataComplete: boolean;
@@ -856,17 +860,15 @@ function CommandHub({
   // Pre-execution confirmation step for analysis / strategy / briefs / report
   const [pendingConfirm, setPendingConfirm] = useState<"analysis" | "strategy" | "briefs" | "report" | null>(null);
   const [localDateRange, setLocalDateRange] = useState<AnalysisDateRange>("30d");
-  // Which analysis run(s) the user wants to ground strategy in.
-  // Defaults to All time when the confirmation panel opens — the server
-  // requires an explicit selection, and "everything" is the safest default.
-  const [runSelection, setRunSelection] = useState<RunSelectorValue>(ALL_TIME_SELECTION);
+  // Which analysis run(s) the next strategy run is built on (sweep spec
+  // §5.1): the same persisted choice the Strategy page's base-run picker
+  // reads and writes, the latest successful run by default. Changing it
+  // here changes what the next press builds, and nothing until then.
+  const [runSelection, setRunSelection] = usePersistedRunScope(
+    STRATEGY_BASE_RUN_PAGE_KEY, accountId, analysisRuns, true, "latest-success",
+  );
   // Report delivery mode selection (internal vs client-facing)
   const [reportMode, setReportMode] = useState<"internal" | "client">("internal");
-  useEffect(() => {
-    if (pendingConfirm === "strategy") {
-      setRunSelection(ALL_TIME_SELECTION);
-    }
-  }, [pendingConfirm]);
 
   // Actions section content
   function Actions() {
@@ -2065,6 +2067,7 @@ export function LoopCommandChain({
       <RevealPanel open={activeStage != null}>
         {activeStage && (<CommandHub
           stage={activeStage}
+          accountId={accountId}
           onClose={() => setActiveStage(null)}
           currentPath={location}
           dataComplete={dataComplete}

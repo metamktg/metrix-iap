@@ -1121,8 +1121,8 @@ export const GenerateAccountStrategyResponse = zod.object({
 
 
 /**
- * Starts an in-app Metrix engine run that generates draft briefs from the account's stored strategy pillars (generated set preferred, else imported). Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Requires access to the account.
- * @summary Generate draft creative briefs from the account's stored strategy pillars
+ * Starts an in-app Metrix engine run that generates draft briefs from the account's strategy pillars. With strategy_run_id the pillars of exactly that successful strategy run are read (no combining); without it, the current generated set, else the imported set. The run records the strategy run it read as source_generation_run_id. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Requires access to the account.
+ * @summary Generate draft creative briefs from one strategy run's pillars
  */
 
 
@@ -1131,8 +1131,51 @@ export const GenerateAccountBriefsParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
 })
 
+
+
+
+export const GenerateAccountBriefsBody = zod.object({
+  "strategy_run_id": zod.string().min(1).optional().describe('The successful strategy run whose pillars to brief, exactly one. Omit to brief the account\'s current strategy set (the latest successful generated set, else the imported set).')
+})
+
 export const GenerateAccountBriefsResponse = zod.object({
   "run_id": zod.string()
+})
+
+
+/**
+ * Returns the account's fifty newest generation runs of one kind, newest first, each with the rows it still holds (output_count, pillars for strategy and briefs for briefs) and what it was built from (source_analysis_run_ids, source_window_start/end, source_generation_run_id). A run stuck in 'running' past the staleness cutoff is honestly flipped to 'error' first. Requires access to the account.
+ * @summary Generation runs for an account and kind, newest first
+ */
+
+
+
+export const ListGenerationRunsParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "kind": zod.enum(['strategy', 'briefs', 'deconstruct']).describe('Generation kind.')
+})
+
+export const ListGenerationRunsResponse = zod.object({
+  "runs": zod.array(zod.object({
+  "id": zod.string(),
+  "account_id": zod.string(),
+  "kind": zod.enum(['strategy', 'briefs', 'deconstruct']),
+  "status": zod.enum(['running', 'success', 'error']),
+  "error_message": zod.string().nullish(),
+  "model": zod.string().nullish(),
+  "started_at": zod.string(),
+  "finished_at": zod.string().nullish(),
+  "source_analysis_run_ids": zod.array(zod.string()).nullish().describe('Analysis run ids this generation was grounded in, resolved. Since sweep slice 3 they are recorded under \"all time\" too (the account\'s current run); earlier all-time runs and legacy runs predating run-scoping carry null.'),
+  "source_analysis_all_time": zod.boolean().describe('True when the selection was \"all time\" (resolved to the account\'s current analysis run) rather than a specific set of runs.'),
+  "source_generation_run_id": zod.string().nullish().describe('Briefs runs only. The strategy run whose pillars were briefed; null when the imported set was briefed or the run predates the field.'),
+  "source_window_start": zod.string().nullish().describe('Strategy runs. Earliest day the run\'s analysis runs cover together (ISO date); null when not recorded.'),
+  "source_window_end": zod.string().nullish().describe('Strategy runs. Latest day the run\'s analysis runs cover together (ISO date); null when not recorded.'),
+  "output_count": zod.number().nullish().describe('Rows the run still holds (pillars for strategy, briefs for briefs). Present on the list endpoint; null on the latest-run endpoint.'),
+  "progress_done": zod.number().describe('Items committed so far in a multi-item run (deconstruct). 0 for runs without a per-item meter.'),
+  "progress_total": zod.number().nullish().describe('Total items targeted by the run; null for runs without a per-item meter.'),
+  "progress_pct": zod.number().describe('Live progress percentage (0–100) while the run is executing. Updated at each pipeline phase. 0 when just started; 100 on success.'),
+  "progress_stage": zod.string().describe('Human-readable label for the current pipeline phase (e.g. \"Calling strategy model…\"). Empty string when idle or complete.')
+}))
 })
 
 
@@ -1158,8 +1201,12 @@ export const GetLatestGenerationRunResponse = zod.object({
   "model": zod.string().nullish(),
   "started_at": zod.string(),
   "finished_at": zod.string().nullish(),
-  "source_analysis_run_ids": zod.array(zod.string()).nullish().describe('Analysis run ids this generation was grounded in. Null for legacy runs predating run-scoping, or when source_analysis_all_time is true.'),
-  "source_analysis_all_time": zod.boolean().describe('True when this generation was grounded in every analysis run for the account rather than a specific selection.'),
+  "source_analysis_run_ids": zod.array(zod.string()).nullish().describe('Analysis run ids this generation was grounded in, resolved. Since sweep slice 3 they are recorded under \"all time\" too (the account\'s current run); earlier all-time runs and legacy runs predating run-scoping carry null.'),
+  "source_analysis_all_time": zod.boolean().describe('True when the selection was \"all time\" (resolved to the account\'s current analysis run) rather than a specific set of runs.'),
+  "source_generation_run_id": zod.string().nullish().describe('Briefs runs only. The strategy run whose pillars were briefed; null when the imported set was briefed or the run predates the field.'),
+  "source_window_start": zod.string().nullish().describe('Strategy runs. Earliest day the run\'s analysis runs cover together (ISO date); null when not recorded.'),
+  "source_window_end": zod.string().nullish().describe('Strategy runs. Latest day the run\'s analysis runs cover together (ISO date); null when not recorded.'),
+  "output_count": zod.number().nullish().describe('Rows the run still holds (pillars for strategy, briefs for briefs). Present on the list endpoint; null on the latest-run endpoint.'),
   "progress_done": zod.number().describe('Items committed so far in a multi-item run (deconstruct). 0 for runs without a per-item meter.'),
   "progress_total": zod.number().nullish().describe('Total items targeted by the run; null for runs without a per-item meter.'),
   "progress_pct": zod.number().describe('Live progress percentage (0–100) while the run is executing. Updated at each pipeline phase. 0 when just started; 100 on success.'),

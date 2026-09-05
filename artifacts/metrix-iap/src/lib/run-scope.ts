@@ -27,11 +27,16 @@ function runScopeStorageKey(pageKey: string, adAccountId: string): string {
   return `metrix.runScope.${pageKey}.${adAccountId}`;
 }
 
-function readStoredRunScope(pageKey: string, adAccountId: string | null): RunSelectorValue {
-  if (!adAccountId) return ALL_TIME_SELECTION;
+/**
+ * The stored selection, or null when nothing valid is stored: the two are
+ * different (nothing chosen yet vs "All time" chosen), and the default a
+ * page applies to the first differs by page (see `defaultTo` below).
+ */
+function readStoredRunScope(pageKey: string, adAccountId: string | null): RunSelectorValue | null {
+  if (!adAccountId) return null;
   try {
     const raw = sessionStorage.getItem(runScopeStorageKey(pageKey, adAccountId));
-    if (!raw) return ALL_TIME_SELECTION;
+    if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (
       typeof parsed === "object" && parsed !== null &&
@@ -46,6 +51,26 @@ function readStoredRunScope(pageKey: string, adAccountId: string | null): RunSel
     }
   } catch {
     // Corrupt JSON or storage unavailable — fall back to the default.
+  }
+  return null;
+}
+
+/** What a page shows before the reader has chosen anything. */
+export type RunScopeDefault = "all-time" | "latest-success";
+
+/**
+ * The default selection for a page that has stored nothing: All time, or
+ * the newest successful run (sweep spec §5.1: a strategy is built on the
+ * latest successful analysis run unless the reader picks otherwise). The
+ * latter needs the run list; until it is known the default is All time,
+ * and a list without a successful run falls back to it too.
+ */
+function defaultRunScope(defaultTo: RunScopeDefault, runs: AnalysisRun[] | undefined): RunSelectorValue {
+  if (defaultTo === "latest-success" && runs) {
+    const latest = runs
+      .filter((r) => r.status === "success" && r.rollups_retained !== false)
+      .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())[0];
+    if (latest) return { allTime: false, selectedRunIds: [latest.id] };
   }
   return ALL_TIME_SELECTION;
 }
@@ -66,29 +91,38 @@ export function usePersistedRunScope(
    *  parent owns the persisted selection — an inert child must never write
    *  its unused local state into the parent's shared storage key. */
   enabled = true,
+  /** What the page shows before the reader has chosen: All time (the
+   *  default) or the newest successful run. A stored choice always wins. */
+  defaultTo: RunScopeDefault = "all-time",
 ): [RunSelectorValue, (v: RunSelectorValue) => void] {
   // The selection is keyed to the page + account it was read/written for.
   // On account (or page) change we reset synchronously during render —
   // never letting a previous account's selection survive even one render,
   // where the stale-run guard could validate it against the NEW account's
   // run list and clobber that account's stored value.
+  //
+  // A null value means "nothing chosen yet": the page's default applies,
+  // computed from the run list on every render so the newest successful
+  // run is the default as soon as the list is known, and nothing is
+  // written to storage until the reader chooses.
   const scopeKey = `${pageKey}|${adAccountId ?? ""}`;
-  const [state, setState] = useState<{ key: string; value: RunSelectorValue }>(() => ({
+  const [state, setState] = useState<{ key: string; value: RunSelectorValue | null }>(() => ({
     key: scopeKey,
-    value: enabled ? readStoredRunScope(pageKey, adAccountId) : ALL_TIME_SELECTION,
+    value: enabled ? readStoredRunScope(pageKey, adAccountId) : null,
   }));
   if (state.key !== scopeKey) {
     setState({
       key: scopeKey,
-      value: enabled ? readStoredRunScope(pageKey, adAccountId) : ALL_TIME_SELECTION,
+      value: enabled ? readStoredRunScope(pageKey, adAccountId) : null,
     });
   }
-  const selection =
+  const stored =
     state.key === scopeKey
       ? state.value
       : enabled
         ? readStoredRunScope(pageKey, adAccountId)
-        : ALL_TIME_SELECTION;
+        : null;
+  const selection = stored ?? defaultRunScope(defaultTo, runs);
 
   // ── Arriving pre-scoped (N-5) ────────────────────────────────────────
   // A history row used to link to "Open in Analysis Overview" and leave the
@@ -130,7 +164,7 @@ export function usePersistedRunScope(
     if (!enabled || runs === undefined) return;
     if (state.key !== scopeKey) return;
     const sel = state.value;
-    if (sel.allTime || sel.selectedRunIds.length === 0) return;
+    if (!sel || sel.allTime || sel.selectedRunIds.length === 0) return;
     const known = new Set(runs.map((r) => r.id));
     if (sel.selectedRunIds.some((id) => !known.has(id))) {
       setSelection(ALL_TIME_SELECTION);

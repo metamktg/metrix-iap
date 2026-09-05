@@ -110,3 +110,126 @@ describe("buildAnalysisHub · completed and failed", () => {
     expect(buildAnalysisHub({ ...base, imports: [], runs: [bad, live] }).failed).toBeNull();
   });
 });
+
+// ─── Strategy, Creative and MST (sweep spec §4.2, §5, slice 3) ─────────
+
+import type { GenerationRun } from "@workspace/api-client-react";
+import { buildStrategyHub, buildCreativeHub, buildMstHub, strategyBaseInput } from "../statusHub";
+
+function gen(over: Partial<GenerationRun> & { id: string; kind: GenerationRun["kind"] }): GenerationRun {
+  return {
+    account_id: "acct", status: "success", error_message: null, model: "claude-sonnet-4-6",
+    started_at: iso(T0), finished_at: iso(T0 + 200_000),
+    source_analysis_run_ids: null, source_analysis_all_time: false,
+    source_generation_run_id: null, source_window_start: null, source_window_end: null, output_count: null,
+    progress_done: 0, progress_total: null, progress_pct: 100, progress_stage: "",
+    ...over,
+  } as GenerationRun;
+}
+const analysisRuns: AnalysisRun[] = [
+  run({ id: "a1", date_start: "2026-08-04", date_end: "2026-09-02", rows_ingested: 21130 }),
+  run({ id: "a2", date_start: "2026-07-01", date_end: "2026-07-31", rows_ingested: 8000, started_at: iso(T0 - 5_000_000), finished_at: iso(T0 - 4_800_000) }),
+];
+const strategyBase = { analysisRuns, strategy: { provenance: "generated", pillars: 3, hypotheses: 4 }, starting: false, nowMs: T0 + 60_000, historyTo: "/app/strategy/history" };
+
+describe("strategyBaseInput", () => {
+  it("names all time as the account's current run, one run by its window and rows, several by their span and the supersede rule", () => {
+    expect(strategyBaseInput({ allTime: true, selectedRunIds: [] }, analysisRuns)).toEqual({ label: "Based on · All time", detail: "the account's current analysis run" });
+    expect(strategyBaseInput({ allTime: false, selectedRunIds: ["a1"] }, analysisRuns)).toEqual({ label: "Based on · Aug 4 – Sep 2", detail: "21,130 rows" });
+    expect(strategyBaseInput({ allTime: false, selectedRunIds: ["a1", "a2"] }, analysisRuns)).toEqual({
+      label: "Based on · 2 runs",
+      detail: "Jul 1 – Sep 2, later run supersedes overlapping dates",
+    });
+    expect(strategyBaseInput({ allTime: false, selectedRunIds: ["gone"] }, analysisRuns).label).toBe("Based on · no analysis run selected");
+  });
+});
+
+describe("buildStrategyHub", () => {
+  it("puts the base on the inputs row, the last success with its pillars, window and model on the completed row, and counts the history", () => {
+    const hub = buildStrategyHub({
+      ...strategyBase,
+      selection: { allTime: false, selectedRunIds: ["a1"] },
+      runs: [
+        gen({ id: "s1", kind: "strategy", output_count: 3, source_window_start: "2026-08-04", source_window_end: "2026-09-02" }),
+        gen({ id: "s0", kind: "strategy", started_at: iso(T0 - 9_000_000), finished_at: iso(T0 - 8_800_000), output_count: 2 }),
+      ],
+      latest: null,
+    });
+    expect(hub.inputs).toEqual([{ label: "Based on · Aug 4 – Sep 2", detail: "21,130 rows" }]);
+    expect(hub.lastCompleted).toMatchObject({ runId: "s1", summary: "3 pillars · 4 hypotheses · 2026-08-04 → 2026-09-02 · claude-sonnet-4-6", warnings: [], detailsTo: "/app/strategy/history" });
+    expect(hub.history).toEqual({ to: "/app/strategy/history", count: 2 });
+    expect(hub.inFlight).toBeNull();
+    expect(hub.failed).toBeNull();
+  });
+  it("reads the running run's stage and percent, its elapsed, and an ETA from prior successes else the platform median", () => {
+    const live = gen({ id: "live", kind: "strategy", status: "running", finished_at: null, started_at: iso(T0), progress_pct: 60, progress_stage: "Persisting pillars…" });
+    const hub = buildStrategyHub({ ...strategyBase, selection: { allTime: true, selectedRunIds: [] }, runs: [live], latest: live, nowMs: T0 + 45_000 });
+    expect(hub.inFlight).toMatchObject({ runId: "live", stage: "Persisting pillars…", percent: 60, elapsedSeconds: 45, etaSeconds: 210, slowStage: null });
+    const withPrior = buildStrategyHub({
+      ...strategyBase, selection: { allTime: true, selectedRunIds: [] }, latest: live, nowMs: T0 + 45_000,
+      runs: [live, gen({ id: "p1", kind: "strategy", started_at: iso(T0 - 1_000_000), finished_at: iso(T0 - 1_000_000 + 300_000) })],
+    });
+    expect(withPrior.inFlight?.etaSeconds).toBe(300);
+    // No percent yet: the fallback stage, no number.
+    const fresh = buildStrategyHub({ ...strategyBase, selection: { allTime: true, selectedRunIds: [] }, runs: [], latest: { ...live, progress_pct: 0, progress_stage: "" } });
+    expect(fresh.inFlight).toMatchObject({ stage: "Generating strategy from validated analysis…", percent: null });
+  });
+  it("shows the pre-flight from the click until the run row exists", () => {
+    const hub = buildStrategyHub({ ...strategyBase, selection: { allTime: true, selectedRunIds: [] }, runs: [], latest: null, starting: true });
+    expect(hub.inFlight).toMatchObject({ runId: "", stage: "Reading the analysis evidence before the run starts", percent: null });
+  });
+  it("reports the latest failure with the strategy unchanged, and drops it once a run is in flight", () => {
+    const bad = gen({ id: "bad", kind: "strategy", status: "error", error_message: "model returned no pillars", started_at: iso(T0 + 1000), finished_at: iso(T0 + 2000) });
+    const ok = gen({ id: "ok", kind: "strategy", output_count: 3 });
+    const hub = buildStrategyHub({ ...strategyBase, selection: { allTime: true, selectedRunIds: [] }, runs: [ok, bad], latest: bad });
+    expect(hub.failed).toMatchObject({ runId: "bad", message: "model returned no pillars", retained: "The current strategy is unchanged" });
+    expect(hub.lastCompleted?.runId).toBe("ok");
+    const live = gen({ id: "live", kind: "strategy", status: "running", finished_at: null, started_at: iso(T0 + 5000) });
+    expect(buildStrategyHub({ ...strategyBase, selection: { allTime: true, selectedRunIds: [] }, runs: [ok, bad, live], latest: live }).failed).toBeNull();
+  });
+});
+
+describe("buildCreativeHub", () => {
+  const s1 = gen({ id: "s1", kind: "strategy", output_count: 3 });
+  const creativeBase = { strategyRuns: [s1], baseStrategyRun: s1, basePillars: 3, creatives: { staged: 4, deconstructed: 1 }, briefs: { provenance: "generated", total: 16, static: 12, video: 3, ugc: 1 }, starting: false, nowMs: T0 + 60_000 };
+  it("names the strategy run to brief, the staged creatives and their deconstruction state, and the brief set by format from its strategy run", () => {
+    const b1 = gen({ id: "b1", kind: "briefs", started_at: iso(T0 + 100_000), finished_at: iso(T0 + 300_000), output_count: 16, source_generation_run_id: "s1" });
+    const hub = buildCreativeHub({ ...creativeBase, runs: [b1], latest: b1 });
+    expect(hub.inputs.map((i) => i.label)).toEqual(["Based on · strategy run of Sep 5, 2026 · 3 pillars", "4 creatives staged"]);
+    expect(hub.inputs[1]?.detail).toBe("1 deconstructed");
+    expect(hub.lastCompleted?.summary).toBe("16 briefs · 12 static · 3 video · 1 UGC · from strategy run of Sep 5, 2026 · 3 pillars");
+    expect(hub.history).toEqual({ count: 1 });
+  });
+  it("says when the current briefs predate the current strategy, and briefs the imported set when no generated strategy exists", () => {
+    const old = gen({ id: "b0", kind: "briefs", started_at: iso(T0 - 100_000), finished_at: iso(T0 - 50_000), output_count: 12 });
+    const hub = buildCreativeHub({ ...creativeBase, runs: [old], latest: old, briefs: { provenance: "imported", total: 5, static: 5, video: 0, ugc: 0 } });
+    expect(hub.inputs.at(-1)).toEqual({ label: "Current briefs predate the current strategy", detail: "Regenerate to match" });
+    expect(hub.lastCompleted?.summary).toBe("12 briefs");
+    const imported = buildCreativeHub({ ...creativeBase, strategyRuns: [], baseStrategyRun: null, basePillars: 5, runs: [], latest: null, creatives: { staged: 0, deconstructed: 0 } });
+    expect(imported.inputs).toEqual([
+      { label: "Based on · imported strategy", detail: "5 pillars" },
+      { label: "No creatives staged", detail: "Optional" },
+    ]);
+  });
+  it("reports a failure with the briefs unchanged", () => {
+    const bad = gen({ id: "bad", kind: "briefs", status: "error", error_message: "no pillars", started_at: iso(T0 + 1000), finished_at: iso(T0 + 2000) });
+    expect(buildCreativeHub({ ...creativeBase, runs: [bad], latest: bad }).failed).toMatchObject({ retained: "The current briefs are unchanged" });
+  });
+});
+
+describe("buildMstHub", () => {
+  it("names the brief set in use with a Creative link and the matrix's readiness, and carries no run rows", () => {
+    const hub = buildMstHub({ briefs: { total: 16, provenance: "generated" }, briefsRun: gen({ id: "b1", kind: "briefs" }), matrix: { avatars: 4, cells: 16 } });
+    expect(hub.inputs).toEqual([
+      { label: "Brief set · 16 briefs", detail: "generated Sep 5, 2026", to: "/app/creative" },
+      { label: "Matrix · 4 avatars · 16 cells" },
+    ]);
+    expect(hub.history).toBeUndefined();
+    expect(hub.inFlight).toBeNull();
+    const empty = buildMstHub({ briefs: { total: 0 }, briefsRun: null, matrix: null });
+    expect(empty.inputs).toEqual([
+      { label: "No brief set yet", detail: "Generate briefs", to: "/app/creative" },
+      { label: "No matrix yet", detail: "The matrix reads briefed cells" },
+    ]);
+  });
+});

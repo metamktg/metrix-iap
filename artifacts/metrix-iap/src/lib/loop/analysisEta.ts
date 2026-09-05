@@ -39,7 +39,7 @@ export interface AnalysisEta {
 }
 
 /** Seconds between a run's start and finish, or null while it has neither. */
-function runDurationSeconds(run: Pick<AnalysisRun, "started_at" | "finished_at">): number | null {
+export function runDurationSeconds(run: { started_at: string; finished_at?: string | null }): number | null {
   if (!run.started_at || !run.finished_at) return null;
   const s = new Date(run.started_at).getTime();
   const f = new Date(run.finished_at).getTime();
@@ -48,7 +48,7 @@ function runDurationSeconds(run: Pick<AnalysisRun, "started_at" | "finished_at">
 }
 
 /** The middle value; the mean of the two middle values for an even count. */
-function median(values: readonly number[]): number | null {
+export function median(values: readonly number[]): number | null {
   const sorted = values.filter((v) => Number.isFinite(v)).slice().sort((a, b) => a - b);
   if (sorted.length === 0) return null;
   const mid = Math.floor(sorted.length / 2);
