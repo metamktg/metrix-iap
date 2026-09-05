@@ -28,6 +28,7 @@ type Row = Record<string, unknown>;
 interface AccountEvidence {
   id: string;
   name: string;
+  hasAnalysis: boolean;
   runId: string | null;
   summaryBreakdowns: number;
   truthSource: string | null;
@@ -45,19 +46,37 @@ export function readEvidence(seed: Row): AccountEvidence[] {
   const accounts = (seed["accounts"] ?? seed["ad_accounts"]) as Row[] | undefined;
   const list = Array.isArray(accounts) ? accounts : [];
   return list.map((a) => {
-    const reconciliation = (a["reconciliation"] ?? null) as Row | null;
+    // The evidence layer lives under the account's IAP analysis block
+    // (seedTypes.ts AnalysisData; the client reads it through
+    // getAnalysisData(seed, accountId) = account.iap.analysis).
+    const iap = (a["iap"] ?? null) as Row | null;
+    const analysis = (iap?.["analysis"] ?? null) as Row | null;
+    const reconciliation = (analysis?.["reconciliation"] ?? null) as Row | null;
     const summary = (reconciliation?.["summary"] ?? null) as Row | null;
     return {
       id: String(a["id"] ?? ""),
       name: String(a["name"] ?? a["account_name"] ?? ""),
-      runId: (a["latest_analysis_run_id"] as string | null | undefined) ?? null,
+      hasAnalysis: analysis !== null && typeof analysis === "object",
+      runId: (analysis?.["latest_analysis_run_id"] as string | null | undefined) ?? null,
       summaryBreakdowns: num(summary?.["breakdowns"]),
       truthSource: (summary?.["truth_source"] as string | null | undefined) ?? null,
       ledger: num(reconciliation?.["ledger"]),
-      breakdowns: num(a["ad_breakdowns"]),
-      segments: num(a["variable_segment_performance"]),
+      breakdowns: num(analysis?.["ad_breakdowns"]),
+      segments: num(analysis?.["variable_segment_performance"]),
     };
   });
+}
+
+/**
+ * Pure: a seed in which no account carries an analysis block at the path
+ * this check reads is a seed this check does not understand, and "nothing
+ * matched, so nothing failed" must never read as a pass. The first run of
+ * this script read the account's top level instead of `iap.analysis`,
+ * printed "no run" for every account and exited 0 on a seed that carried
+ * 162k ledger rows; this is the guard against that shape of mistake.
+ */
+export function shapeRecognised(accounts: AccountEvidence[]): boolean {
+  return accounts.some((a) => a.hasAnalysis);
 }
 
 /**
@@ -115,6 +134,10 @@ async function main(): Promise<number> {
   console.log(`seed  ${res.status}  ${ms} ms  ${text.length.toLocaleString("en-US")} bytes`);
 
   const accounts = readEvidence(seed);
+  if (accounts.length === 0 || !shapeRecognised(accounts)) {
+    console.log("NOTE  no account in this seed carries iap.analysis; the seed's shape is not the one this check reads, nothing checked (exit 2).");
+    return 2;
+  }
   for (const a of accounts) {
     const run = a.runId ? a.runId.slice(0, 8) : "no run";
     console.log(

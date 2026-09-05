@@ -244,6 +244,11 @@ The run's own warnings say what happened to every file: the two demographic pivo
   rows are appended; regression tests at 170k (the spread throws, the loop does not) and a 131k-row
   keyset read. Verified after the next publish by the same payload read. Production's warm on this
   build took 549 s (the workspace's 191 s): the payload, task 22, held.
+- **The check's own first run was vacuous (fixed before it reached production).** `check:seed-evidence`
+  read the evidence layer off the account's top level; the layer lives under `iap.analysis`, so it
+  printed "no run" for every account and exited 0 against a 198 MB workspace seed that carried the
+  ledger. It now reads `iap.analysis`, and a seed in which no account carries that block exits 2
+  ("nothing checked"), never 0; both pinned in `check-seed-evidence.test.ts`.
 - **Held with it:** the Pure Path re-run (the seven files need restaging from Analysis › History
   before Run analysis), task 22 (the seed still ships the whole evidence layer; this makes each
   page cheap, not the payload small), and H1.
@@ -275,8 +280,11 @@ Each item ships as its own commit on the working branch, typechecked and unit-te
 - **F10, the reconciliation control ranks class over coverage** (§6.1). `buildTruth` in `reconciliation.ts` picks a whole-period per-Ad-ID Ad Summary over two daily ones that cover 257 more ads, so the ledger's residuals are measured against a control 12.7% below the daily total. Proposed: rank per-Ad-ID candidates by the overlap rule per ad (daily first) and reconcile against their union; a spec change (`docs/specs/iap-multi-report-reconciliation.md`). Needs a decision.
 - **F11, keyset-supporting indexes on the four evidence tables** (§6.2). `(account_id,
   manual_analysis_run_id, id)` on `ad_breakdown_performance`, `reconciliation_ledger`,
-  `variable_segment_performance`, `variable_evidence`. Additive DDL, drafted as its own PR, not
-  applied. Needs approval.
+  `variable_segment_performance`, `variable_evidence`. Additive DDL, drafted and NOT applied. It
+  is commit `d09cb6d` (schema.sql, change-log entry 26, the replit.md seed note), reachable as
+  `refs/pull/208/head`; PR #208 was closed unmerged because a held PR on the working branch
+  would have blocked every later merge from it. On approval: `git cherry-pick d09cb6d` onto a
+  fresh PR. Needs approval.
 - **Task 24, boot-time and payload smokes.** A scripts-only addition; queued after §7 unless the owner objects.
 - **Open decisions O1 to O7** from the earlier register, unchanged.
 - **The LinkedIn video**, deferred.

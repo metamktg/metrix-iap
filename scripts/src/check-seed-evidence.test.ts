@@ -6,26 +6,32 @@
 // verdicts the operator check draws from a payload.
 
 import { describe, it, expect } from "vitest";
-import { readEvidence, findings } from "./check-seed-evidence";
+import { readEvidence, findings, shapeRecognised } from "./check-seed-evidence";
 
+// The evidence layer sits under account.iap.analysis (seedTypes.ts
+// AnalysisData), the block the client reads through getAnalysisData().
 const account = (over: Record<string, unknown>) => ({
   id: "manual_x",
   name: "Pure Path",
-  latest_analysis_run_id: "8148628c",
-  reconciliation: {
-    summary: { truth_source: "ad_summary_ad_id", breakdowns: [{ breakdown: "demographic" }, { breakdown: "placement" }] },
-    ledger: Array.from({ length: 5 }, () => ({})),
+  iap: {
+    analysis: {
+      latest_analysis_run_id: "8148628c",
+      reconciliation: {
+        summary: { truth_source: "ad_summary_ad_id", breakdowns: [{ breakdown: "demographic" }, { breakdown: "placement" }] },
+        ledger: Array.from({ length: 5 }, () => ({})),
+      },
+      ad_breakdowns: Array.from({ length: 3 }, () => ({})),
+      variable_segment_performance: [],
+      ...over,
+    },
   },
-  ad_breakdowns: Array.from({ length: 3 }, () => ({})),
-  variable_segment_performance: [],
-  ...over,
 });
 
 describe("readEvidence", () => {
   it("reads the counts an account carries, from either accounts key", () => {
     const [a] = readEvidence({ accounts: [account({})] });
     expect(a).toEqual({
-      id: "manual_x", name: "Pure Path", runId: "8148628c", summaryBreakdowns: 2,
+      id: "manual_x", name: "Pure Path", hasAnalysis: true, runId: "8148628c", summaryBreakdowns: 2,
       truthSource: "ad_summary_ad_id", ledger: 5, breakdowns: 3, segments: 0,
     });
     expect(readEvidence({ ad_accounts: [account({})] })).toHaveLength(1);
@@ -33,8 +39,29 @@ describe("readEvidence", () => {
   });
 
   it("reads zeros, not throws, for an account with no evidence layer", () => {
-    const [a] = readEvidence({ accounts: [{ id: "new", name: "New", latest_analysis_run_id: null, reconciliation: null }] });
-    expect(a).toMatchObject({ runId: null, summaryBreakdowns: 0, ledger: 0, breakdowns: 0, segments: 0 });
+    const [a] = readEvidence({ accounts: [{ id: "new", name: "New", iap: { analysis: { latest_analysis_run_id: null, reconciliation: null } } }] });
+    expect(a).toMatchObject({ hasAnalysis: true, runId: null, summaryBreakdowns: 0, ledger: 0, breakdowns: 0, segments: 0 });
+  });
+
+  it("reads nothing off the account's top level: the layer lives under iap.analysis", () => {
+    // The first run of this check read the top level, printed "no run" for
+    // every account and exited 0 on a seed carrying 162k ledger rows.
+    const topLevel = { id: "manual_x", name: "Pure Path", latest_analysis_run_id: "8148628c", reconciliation: { summary: { breakdowns: [{}] }, ledger: [{}] }, ad_breakdowns: [{}] };
+    const [a] = readEvidence({ ad_accounts: [topLevel] });
+    expect(a).toMatchObject({ hasAnalysis: false, runId: null, ledger: 0, breakdowns: 0 });
+  });
+});
+
+describe("shapeRecognised", () => {
+  it("is false when no account carries iap.analysis, so the run exits 2 instead of passing vacuously", () => {
+    const topLevelOnly = [{ id: "a", name: "A", latest_analysis_run_id: "x", reconciliation: { summary: { breakdowns: [{}] }, ledger: [] } }];
+    expect(shapeRecognised(readEvidence({ ad_accounts: topLevelOnly }))).toBe(false);
+    expect(shapeRecognised(readEvidence({}))).toBe(false);
+  });
+
+  it("is true as soon as one account carries the analysis block, even an empty one", () => {
+    expect(shapeRecognised(readEvidence({ ad_accounts: [{ id: "n", name: "N" }, { id: "a", name: "A", iap: { analysis: {} } }] }))).toBe(true);
+    expect(shapeRecognised(readEvidence({ accounts: [account({})] }))).toBe(true);
   });
 });
 
