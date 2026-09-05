@@ -400,7 +400,7 @@ async function main() {
           await assertSectionTooltip(
             page,
             "Conversion funnel",
-            "Absolute volume and stage-over-stage retention rate from impression through to purchase, drawn from the demographic export.",
+            "Absolute volume and stage-over-stage retention from impressions through the intent and conversion events the account's ads were optimised towards, drawn from the demographic export. Terminal events are alternatives, each measured against the last stage before them.",
             30_000,
           );
           console.log('       "Conversion funnel" tooltip verified ✓');
