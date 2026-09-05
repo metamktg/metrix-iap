@@ -1403,3 +1403,18 @@ production, which spends a model call; the pack's shape and the supersede rule a
 the wiring typechecks. Not in this slice: the Audience segment-attribution gap the owner raised the
 same afternoon, planned as the next PR (task register: the engine writes demographic rows at
 ACCOUNT grain by construction).
+
+**Live (2026-09-05).** PR #217 merged at 15:04Z on a green run (f384f924). The workspace
+convergence's post-merge hook (merge ae1ab397) applied the schema at 15:05Z: "Applying Supabase
+schema: 259 statement(s), fingerprint 3d7901136139 (changed, previously 3f45559821b4)", "applied:
+259 statement(s) in 18 s", no lock, retry, wait or error line; the restarted API server listened on
+8080 at 15:06:03Z and warmed its seed in 66.9 s; all three workflows running. Read on production
+right after the apply (read-only SQL): the three columns present on `generation_runs`, every
+existing row null on all three, `metrix_schema_state` carrying the new fingerprint with 259
+statements. The publish of the converged workspace (deployment 329ef7e0) reported success and
+served the new build by 15:20Z: `index-BYLPxqvI.js`, the `StrategyCommandCenter` chunk importing
+`BaseRunPicker`, `GenerationRunRow`, `statusHub` and `StageLayout`, those chunks carrying "Base this
+run on", "Based on ·", "Strategy run" and "usually about"; the `CreativeCommandCenter` chunk sending
+`strategy_run_id`; `/api/healthz` 200 and `/api/metrix/auth/me` 401 through the router. Nothing on
+production has yet been generated from the new base control; the first press records its
+`source_analysis_run_ids` and window on the run's row.
