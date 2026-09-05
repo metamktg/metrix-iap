@@ -255,6 +255,58 @@ The run's own warnings say what happened to every file: the two demographic pivo
   before Run analysis), task 22 (the seed still ships the whole evidence layer; this makes each
   page cheap, not the payload small), and H1.
 
+### 6.3 F11 applied and verified live (2026-09-05, 09:18Z)
+
+- **09:16:16Z** the owner merged PR #211 (`12da023`) on a green `ci` run (33956823916). Its schema
+  change is the four `create index if not exists` statements of change-log entry 26; the rest of the
+  PR is documentation.
+- **09:17:54Z to 09:18:37Z, the apply.** The workspace convergence ran `scripts/post-merge.sh`. The
+  applier's own output: "Applying Supabase schema: 246 statement(s), fingerprint 82fdfd86695c
+  (changed, previously 888fee073215)", then the three statements over its print threshold, 11,635 ms
+  `ad_breakdown_performance_account_run_id_idx`, 11,104 ms `reconciliation_ledger_account_run_id_idx`,
+  4,377 ms `variable_segment_performance_account_run_id_idx` (`variable_evidence` built in 0.4 s, from
+  the statement log), and "Supabase schema applied: 246 statement(s) in 43 s", exit 0. It did not wait
+  for a running analysis (none was running) and printed no lock, retry or timeout line.
+  `metrix_schema_state` carries the new fingerprint, 246 statements, `applied_at` 09:18:37Z,
+  `applied_by` workspace. The Postgres log over the window carries the 246 statement echoes and no
+  `canceling`, ERROR or FATAL line; the edge log carries 115 REST requests through the window, 0
+  errors, 2 over 3 s (max 4.8 s) while the two large indexes built: reads shared the build's I/O and
+  were never blocked or cancelled.
+- **The plans, same query text before and after** (`explain (analyze, buffers) select * from <table>
+  where account_id = 'manual_3mqlgWFEyGw3' and manual_analysis_run_id =
+  '8148628c-ad02-4fb8-ad92-02d98928eefb' order by id asc limit 1000`, production):
+
+| Table | Before (09:05Z) | After (09:19Z) |
+|---|---|---|
+| `ad_breakdown_performance` | Index Scan on the primary key, Filter on both keys, 92,260 rows removed, 13,708 buffers (7,852 read), 10,778 ms | Index Scan using `ad_breakdown_performance_account_run_id_idx`, Index Cond on both keys, no filter, 219 buffers (165 read), 264 ms |
+| `reconciliation_ledger` | Index Scan on the primary key, Filter on both keys, 155,300 rows removed, 9,918 buffers (8,289 read), 9,408 ms | Index Scan using `reconciliation_ledger_account_run_id_idx`, Index Cond on both keys, no filter, 317 buffers (0 read), 1.6 ms |
+
+  `pg_indexes` lists the four; `pg_stat_user_indexes` sizes them at 11 MB, 21 MB, 4.4 MB and 344 kB
+  and had counted 13, 14, 4 and 11 scans by 09:20Z (the warm below plus the two explains).
+- **The first warm through the indexes** (the restarted workspace API server, listening 09:18:55Z;
+  edge logs 09:19:05Z to 09:19:52Z, the same request shapes as the §6.2 table):
+
+| Table | Requests | Keyset pages | Errors | Keyset page mean / max (db) | First page per (account, run), mean / max (db) |
+|---|---|---|---|---|---|
+| `reconciliation_ledger` | 175 | 164 | 0 | 247 ms / 2.3 s | 183 ms / 1.0 s (11 calls) |
+| `ad_breakdown_performance` | 87 | 76 | 0 | 423 ms / 3.9 s | 136 ms / 0.4 s (11 calls) |
+| `variable_segment_performance` | 39 | 28 | 0 | 484 ms / 3.2 s | 137 ms / 0.4 s (11 calls) |
+| `variable_evidence` | 12 | 1 | 0 | 426 ms (1 call) | 202 ms / 0.5 s (11 calls) |
+
+  Against §6.2 (01:29Z, the same code, no index): the first pages fell from 4.6 to 5.2 s mean and 54
+  to 58 s max to 136 to 202 ms mean and 1.0 s max; the keyset pages are where they were. The whole
+  evidence read took 47 s and the seed warmed in 64.8 s (191 s and 101 s on the workspace's two
+  previous builds), 198,961,075 bytes, no "could not be read" line, no RangeError.
+- **What it did not change.** The seed still ships the whole evidence layer (198.96 MB; task 22,
+  held): the first page of a run is now as cheap as the pages after it, the payload is not smaller.
+  The deployment at app.metrix.ad needed no publish (the PR carried no code) and reads through the
+  same indexes from its next rebuild on.
+- **Also on main from the same convergence.** The workspace carried one commit of its own,
+  `fabd03b` "Add published Metrix IAP deep-link and API routing smoke checks"
+  (`scripts/src/smoke-metrix-iap-build.ts`, +201 / -360), which the convergence's push brought to
+  main as the merge `a8ddf3c` without a pull request. Not this session's change; flagged to the
+  owner with this record.
+
 ---
 
 ## 7. Execution queue (autonomous, UI only, no schema, in this order)
@@ -280,12 +332,13 @@ Each item ships as its own commit on the working branch, typechecked and unit-te
 - **Task 23, run performance.** 30 minutes for 22k ad rows through PostgREST. Profile and cut; a backend change. Needs approval.
 - **H1, failed re-run empties the window.** Write under the run id, swap on success. Backend change. Needs approval.
 - **F10, the reconciliation control ranks class over coverage** (§6.1). `buildTruth` in `reconciliation.ts` picks a whole-period per-Ad-ID Ad Summary over two daily ones that cover 257 more ads, so the ledger's residuals are measured against a control 12.7% below the daily total. Proposed: rank per-Ad-ID candidates by the overlap rule per ad (daily first) and reconcile against their union; a spec change (`docs/specs/iap-multi-report-reconciliation.md`). Needs a decision.
-- **F11, keyset-supporting indexes on the four evidence tables** (§6.2). `(account_id,
+- **F11, keyset-supporting indexes on the four evidence tables** (§6.2), CLOSED. `(account_id,
   manual_analysis_run_id, id)` on `ad_breakdown_performance`, `reconciliation_ledger`,
   `variable_segment_performance`, `variable_evidence`. Additive DDL. Approved by the owner on
-  2026-09-05 (final reconciliation, item 3): re-applied from `d09cb6d` as PR #211 and applied
-  through the post-merge hook on the workspace convergence; verified with `explain analyze` on
-  production after the apply (see §6.3).
+  2026-09-05 (final reconciliation, item 3), re-applied from `d09cb6d` as PR #211, merged by the
+  owner at 09:16Z, applied by the post-merge hook at 09:18Z (43 s, no lock timeout, no cancelled
+  read) and verified on production with `explain analyze` and the warm that followed (§6.3): the
+  first page of a run went from 10.8 s to 264 ms on `ad_breakdown_performance`.
 - **Task 24, boot-time and payload smokes.** Shipped: `check:seed-evidence` (PR #207, corrected in
   #209 and #210) is the first; the boot-time smoke stays queued.
 - **Open decisions O1 to O7** from the earlier register, unchanged.

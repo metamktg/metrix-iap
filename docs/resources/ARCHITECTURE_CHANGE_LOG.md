@@ -1129,8 +1129,12 @@ another run's the last page walks to the end of the table (54 to 58 s maxima, `p
 plus a range on `id` in `id` order is one index range per page.
 
 **What proves it.** `schema-apply.test.ts` still splits the real `schema.sql` cleanly (8 tests);
-`apply-supabase-schema.ts --dry-run` lists the four statements. The plan change is expected from
-the index definition and is to be confirmed with `explain analyze` on production after the apply.
+`apply-supabase-schema.ts --dry-run` lists the four statements. Confirmed on production after the
+apply (2026-09-05 09:18Z, assessment §6.3): `explain (analyze, buffers)` on the first-page query
+shows an Index Scan using the new index with both keys in the Index Cond and no filter, 264 ms on
+`ad_breakdown_performance` (10,778 ms and 92,260 rows removed by filter before) and 1.6 ms on
+`reconciliation_ledger` (9,408 ms, 155,300 removed); the apply took 43 s for 246 statements, the
+two large builds 11.6 s and 11.1 s, with no lock timeout, no cancelled read and no error.
 
 **How far it reaches.** DDL only, additive, idempotent (`if not exists`). Applied by the post-merge
 hook through the one-statement-per-transaction runner: a plain `create index` holds a SHARE lock
