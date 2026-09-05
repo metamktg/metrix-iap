@@ -12,6 +12,12 @@ inferred).
 
 ## 0. Read first
 
+**Reviewed and approved by the owner on 2026-09-05** with two corrections, both applied in place:
+§7.7 states the retention distinction explicitly (evidence rows forever, the two-generation window is
+a rebuild-cache limit on derived rollups only) and §5.1 frames the base-run control around the manual
+trigger (the user runs Strategy, sees and can change what it is based on, and the result is what
+reads as current). Slice 1 proceeds on this text.
+
 - **The execution rule.** This spec is written with every backend-driven surface designed in before any
   page is redrawn (§4 to §7). Implementation is then one vertical slice per feature, UI and backend
   together (§10). Neither a UI-only pass nor a backend-first pass: the first would lock layouts around
@@ -195,6 +201,14 @@ stores `source_analysis_run_ids` on the generation run; the engine reads rows of
 untagged rows. The Strategy page does not expose it: `useGenerationRun.start()` sends
 `analysis_all_time: true`. The Account Overview's `LoopCommandChain` does expose a selector. So:
 
+- **Strategy is manually executed, never automatic** (owner correction, 2026-09-05). Nothing runs
+  between stages on its own: a strategy run starts only when the user presses Generate on the Strategy
+  page. That manual run is built on whichever Analysis run is selected in the base-run picker, which
+  defaults to the latest successful Analysis run; the user sees what the run will be based on and can
+  change it before pressing the button; the strategy run that results is the one the interface reflects
+  as the account's current strategy. This is not a background default switching underneath anyone:
+  changing the default of the picker changes what the NEXT manual run is built on, and changes nothing
+  until the user runs it. Slice 3's PR description states it in exactly these terms.
 - `BaseRunPicker` wraps the existing `RunScopePicker` (`components/analysis/RunSelector.tsx`, all time
   or up to three runs, persisted per account per browser through `usePersistedRunScope`) and sits in the
   Strategy execution card above the button. Default: the latest successful Analysis run, not all time.
@@ -308,9 +322,25 @@ seed carries summaries and evidence states; per-account endpoints page the rows 
 Reader: a failed run's row says the last successful run's data is still shown; the hub's ETA names the
 stage. Backend: rollup rows keyed by run with the account's current successful run pointer
 (`ad_accounts.current_analysis_run_id`), readers scope to it, a failed run deletes only its own rows,
-the previous run's rows are deleted only after the new run succeeds and only when retention says so
-(every run's evidence rows are retained, answer 2; the rollup tables keep the latest successful run
-plus the one before it); `manual_analysis_runs.stage_timings` jsonb written by `updateProgress`.
+and the previous run's rollup rows are dropped only after the new run succeeds;
+`manual_analysis_runs.stage_timings` jsonb written by `updateProgress`.
+
+**Retention, stated so it cannot be misread (owner correction, 2026-09-05).** Two different kinds of
+row, two different rules, and the second is not an exception to the first:
+
+- **Evidence rows are retained forever, every run, no exception.** `ad_breakdown_performance`,
+  `reconciliation_ledger`, `variable_segment_performance` and `variable_evidence` keep one set of rows
+  per run for as long as the run exists (reconciliation item 2, answer 2). Nothing in this section,
+  in slice 2, or in any later slice deletes a run's evidence rows; a failed run deletes only the rows
+  it wrote itself, and a successful run never touches another run's.
+- **Derived rollup tables keep two generations, and that is a rebuild-cache limit, not a
+  data-retention limit.** `ad_performance`, `demographic_performance`, `placement_performance`,
+  `platform_performance`, `device_performance` and the run-keyed `concept_rollup` /
+  `v3_variable_performance` rows are computed from the staged files and the retained evidence; they
+  can always be rebuilt from them by a re-run over the same window. Keeping the latest successful run
+  plus the one before it bounds the rollup tables' size and gives the failed-run reader something to
+  show; it never removes evidence, and a reader who needs an older run's rollups re-runs, never
+  restores.
 
 ## 8. The screenshot-audit items, placed
 
@@ -345,8 +375,8 @@ convergence and, where runtime code changed, the publish and a production check.
 |---|---|---|---|---|
 | 0 | F11 | none | four indexes through the hook | `explain analyze` shows the index range; first-page calls under a second |
 | 1 | The shell and the status hub on Analysis | `StageLayout`, `StatusHub` (inputs, in flight, completed, failed from existing data), notice policy, the Analysis page moved onto them | `stage_timings` on runs, `updateProgress` writes it, ETA from it | Analysis renders through the shell; a run in flight shows stage, percent, elapsed; the crawl and gates green |
-| 2 | Safe re-runs | the failed row's "still shown" line | run-keyed rollups, current-run pointer, readers scoped, failure deletes only its rows | a deliberately failed re-run on the fixture leaves the previous data readable |
-| 3 | Strategy, Creative and MST onto the shell, with the base-run control | `BaseRunPicker` on Strategy and Creative, the hub on all three, the staged-creatives nudge once | superseding rule in the evidence pack, `GenerateBriefsInput.strategy_run_id`, `source_generation_run_id`, `listGenerationRuns` | a strategy built from two runs shows its effective window; briefs name their strategy run |
+| 2 | Safe re-runs | the failed row's "still shown" line | run-keyed rollups, current-run pointer, readers scoped, failure deletes only its rows; evidence rows never deleted (§7.7 retention) | a deliberately failed re-run on the fixture leaves the previous data readable and every run's evidence rows in place |
+| 3 | Strategy, Creative and MST onto the shell, with the base-run control | `BaseRunPicker` on Strategy and Creative, the hub on all three, the staged-creatives nudge once | superseding rule in the evidence pack, `GenerateBriefsInput.strategy_run_id`, `source_generation_run_id`, `listGenerationRuns` | a strategy built from two runs shows its effective window; briefs name their strategy run; the PR description carries §5.1's manual-trigger framing |
 | 4 | Intake and reconciliation | detected class per file, override on ambiguity, the Reconciliation panel's composition, per-breakdown badges | column classification, the per-ad waterfall, the shave rule, the scored choice, ad-id anchoring of pivot rows, the docs | Pure Path's ledger names the master for 1,494 ads and the day-level control for 257; the demographic classes no longer read 107% |
 | 5 | Listen, Reports, Exports onto the shell; flyout dismissal; screenshot items 4, 5, 6, 8, 9; the Strategy Map spec | as listed | none | gates green; the three sidebar tests added |
 | 6 | Bookster fallbacks and the V3/C4E rename; screenshot item 2 | labels | schema rename with a data migration in the hook, seed assembly, import.ts | no account reads the Bookster string; Pure Path's placement table reads "Placement performance" |
