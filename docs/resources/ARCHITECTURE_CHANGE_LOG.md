@@ -1293,3 +1293,22 @@ Production carries pre-migration breakdown rows without a run id on three early 
 (Gabri, skov, SKOV Pet); they are kept beside the current run's rows until a re-run rewrites the
 account under one id. Not run here: a deliberately failed re-run against production, which would
 mean failing a real account's run on purpose; the fake-store proof above stands in for it.
+
+**Live (2026-09-05).** PR #216 merged at 13:38Z on a green run. The workspace convergence's post-merge
+hook applied the schema at 13:39:38Z: "Applying Supabase schema: 256 statement(s), fingerprint
+3f45559821b4 (changed, previously d3176d08b13c)", "applied: 256 statement(s) in 19 s", no lock,
+retry, wait or error line; the restarted API server listened at 13:39:50Z and warmed its seed in
+67.4 s. Read on production right after the apply (read-only SQL, project lqryrmaipryeqtjbxjdh):
+`ad_accounts.current_analysis_run_id` present and, on every one of the eleven accounts with a
+successful run, equal to its newest successful run; `manual_analysis_run_id` on both signal tables;
+all eight run-keyed unique indexes present and none of the run-less ones; `metrix_schema_state`
+carrying the new fingerprint with 256 statements. The three views return exactly the current run's
+rows: for Fresh Import 2,387 of the 3,962 stored `ad_performance` rows, for SKOVPET.COM 253 of 491,
+for skov 99 of 537, the older generations of those three accounts excluded as designed, and every
+other account unchanged (its stored rows are all its current run's or the importer's). The publish
+of the converged workspace (deployment 329ef7e0) served the new build by 13:48Z: `index-CiuGRJek.js`,
+the `RunSelector` chunk carrying `rollups_retained` and the "Rollups dropped" state, the
+`AnalysisCommandCenter` chunk the retained-window line; `/api/healthz` 200 and `/api/metrix/auth/me`
+401 through the router. The first prune on production happens on the next successful re-run of an
+account with three or more successes (skov, ECAS, Bookster, SKOVPET.COM, Fresh Import); until then
+every stored generation stays where it is.
