@@ -25,7 +25,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("../supabase", () => ({ getSupabase: vi.fn() }));
 
 import { getSupabase } from "../supabase";
-import { selectAllRows, PAGE_SIZE } from "../paginatedSelect";
+import { selectAllRows, appendRows, PAGE_SIZE } from "../paginatedSelect";
 
 /**
  * A Supabase mock that honours .range(from, to) exactly as PostgREST does,
@@ -240,5 +240,28 @@ describe("selectAllRows — filters must survive pagination", () => {
     };
     vi.mocked(getSupabase).mockReturnValue(client);
     await expect(selectAllRows("ad_performance")).rejects.toThrow(/ad_performance.*statement timeout/);
+  });
+});
+
+describe("appendRows — a whole run's rows are appended without a spread", () => {
+  it("appends more rows than a spread call can carry", () => {
+    // The Pure Path ledger is 162,141 rows. `target.push(...rows)` at that
+    // size throws RangeError (V8's argument ceiling sits near 125k), which
+    // is exactly what emptied the account's ledger in the seed on 2026-09-05.
+    const rows = Array.from({ length: 170_000 }, (_, i) => ({ id: i }));
+    expect(() => { const t: Array<{ id: number }> = []; t.push(...rows); }).toThrow(RangeError);
+    const target: Array<{ id: number }> = [{ id: -1 }];
+    expect(appendRows(target, rows)).toBe(target);
+    expect(target).toHaveLength(170_001);
+    expect(target[1]).toEqual({ id: 0 });
+    expect(target[170_000]).toEqual({ id: 169_999 });
+  });
+
+  it("returns every row of a keyset read larger than the spread ceiling", async () => {
+    const { client } = makeKeysetSupabase(Array.from({ length: 131_000 }, (_, i) => ({ id: i, spend: 1 })));
+    vi.mocked(getSupabase).mockReturnValue(client);
+    const rows = await selectAllRows("reconciliation_ledger", undefined, "id, spend", { keyset: "id" });
+    expect(rows).toHaveLength(131_000);
+    expect(rows[130_999]!["id"]).toBe(130_999);
   });
 });

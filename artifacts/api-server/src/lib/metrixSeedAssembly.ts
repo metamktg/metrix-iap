@@ -32,7 +32,7 @@ import { syncAllCreativeLinksForAccount } from "./analysisEngine";
 import { resolveAccountObjectives } from "./cohortConfig";
 import { logger } from "./logger";
 import { createCoalescedCache } from "./coalescedCache";
-import { selectAllRows } from "./paginatedSelect";
+import { selectAllRows, appendRows } from "./paginatedSelect";
 import { checkSeedBudget } from "./seedBudget";
 
 type Row = Record<string, any>;
@@ -1537,7 +1537,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
           columns,
           { keyset: "id" },
         );
-        out.push(...rows);
+        appendRows(out, rows);
       } catch (err) {
         // Graceful before the tables exist; anything else is a real gap the
         // reader will see as an empty evidence layer, so it is logged.
