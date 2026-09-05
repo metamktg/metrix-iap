@@ -168,7 +168,7 @@
     ]
   },
   "/app/listen/alerts": {
-    "warnBoxes": 48,
+    "warnBoxes": 20,
     "warnIcons": 4,
     "longProse": 0,
     "noData": []
@@ -254,7 +254,7 @@
     "noData": []
   },
   "/app/settings/general": {
-    "warnBoxes": 2,
+    "warnBoxes": 0,
     "warnIcons": 0,
     "longProse": 0,
     "noData": []
@@ -310,7 +310,7 @@
   "/app/strategy/hypotheses": {
     "warnBoxes": 4,
     "warnIcons": 18,
-    "longProse": 0,
+    "longProse": 8,
     "noData": []
   },
   "/app/strategy/map": {

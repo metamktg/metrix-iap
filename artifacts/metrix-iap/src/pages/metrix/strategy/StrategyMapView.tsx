@@ -375,7 +375,7 @@ function NextActionsPanel({
           })}
           {queued.size > 0 && (
             <div className="col-span-2 flex justify-end">
-              <CrossLink to="/app/strategy/hypotheses" label="Manage queue →" />
+              <CrossLink to="/app/strategy/hypotheses" label="Manage queue" />
             </div>
           )}
         </div>
@@ -783,7 +783,7 @@ export function StrategyMapView() {
                           </div>
                         </div>
                         {selectedHyps.length > 0 && (
-                          <CrossLink to="/app/strategy/hypotheses" label="Queue →" />
+                          <CrossLink to="/app/strategy/hypotheses" label="Queue" />
                         )}
                       </div>
                     </div>

@@ -611,8 +611,9 @@ export function MstCommandCenter() {
             hub={hub}
             hubLabel="MST status"
             recommendations={recommendationsForStage(deriveRecommendations(acct), 5)}
-            // The pages read the matrix, so they have nothing to show until it exists.
-            explore={mstReady ? children : []}
+            // The pages strip is the stage's map, rendered whatever the data
+            // holds, like every other centre; the pages gate themselves.
+            explore={children}
             exploreLabel="MST pages"
           >
               {/* The gate asks for the INPUT this stage reads, the same

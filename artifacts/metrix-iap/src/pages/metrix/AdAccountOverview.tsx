@@ -366,7 +366,7 @@ export function AdAccountOverview() {
                           {share != null ? `${share < 1 ? "<1" : Math.round(share)}%` : "–"}
                         </td>
                         <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/75")}>
-                          {cpa != null ? fmtUSD(cpa) : "n/a"}
+                          {cpa != null ? fmtUSD(cpa) : "–"}
                         </td>
                       </tr>
                     );

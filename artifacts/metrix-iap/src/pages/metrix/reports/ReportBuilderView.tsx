@@ -10,7 +10,7 @@ import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, serializeReportModel, parseReportModel, type ReportBlock, type ReportModel } from "@/lib/reportExport";
-import { ModuleHeader, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink, fmtUSD, fmtNum, fmtPct, InfoTooltip } from "../shared";
+import { ModuleHeader, ModuleScopeGate, SectionCard, ModuleTabs, PendingState, CrossLink, fmtUSD, fmtNum, fmtPct, InfoTooltip } from "../shared";
 import { TYPE } from "../typography";
 import { useDateRange, formatIsoRange, isoMin, isoMax, type IsoRange } from "@/contexts/DateRangeContext";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -610,9 +610,10 @@ export function ReportBuilderView() {
                         White-label {rb.white_label_supported ? "supported" : "unavailable"}
                       </div>
                     </div>
-                    <div className="mt-3">
-                      <CaveatNote text={rb.logo_policy} />
-                    </div>
+                    <p className={cn(TYPE.caption, "text-muted-foreground/85 mt-3 leading-snug")}>
+                      <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">Logo policy</span>{" "}
+                      {rb.logo_policy}
+                    </p>
                   </SectionCard>
 
                   <SectionCard title="Export" desc="Composed report · client's preferred format">

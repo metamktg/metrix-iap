@@ -1775,3 +1775,101 @@ breakpoint (sm, lg, 1024 px, 420 px), so a 1440 px page renders as it did; the d
 that six rails share one class instead of four copies and two omissions, and that a page header's
 title block now asks for 16 rem before its right slot may sit beside it (at 1440 px every right
 slot still fits).
+
+**Live.** PR #221 merged into main as `8f6a226e` (2026-09-05 18:59Z) on a green run, two commits
+(the round, then `check:scroll-fade` allowlisted as manual-only for the workflow-coverage test that
+CI's first run failed on). The workspace converged as `90f96612` (the post-merge hook: "Supabase
+schema unchanged (fingerprint 3d7901136139); nothing applied", exit 0; the API Server on 8080, seed
+cache warmed in 59,474 ms; API Server, Metrix IAP and Marketing all RUNNING); deployment `329ef7e0`
+published to app.metrix.ad with status success at 19:08Z, serving `index-CqAs-Uh3.js` and
+`index-Dd_BE-sf.css`. Verified by fetching the served build: `mx-scroll-x` in the entry chunk,
+`BudgetView-BgxWysm7.js`, `EngagementFunnelView-DGwd9MPz.js` and `Overview-rM0u_vMa.js`;
+`grid-cols-dashboard-3-md` in `StrategyOverview-CsgAEkqw.js`; `basis-64` in the entry chunk;
+`max-lg:flex-none` and `max-lg:w-full!` in `StrategyMapView-Bbt9ykNN.js`; `min-[420px]:grid-cols-2`
+in `CreativeBriefBuilderView-BhnkCoY6.js`; and in the served CSS `animation-timeline: scroll(self
+x)`, both `--mx-fade` properties, the `grid-cols-dashboard-3-md` token and the `.nc-table` floor.
+
+## 34. Audit round 7, one vocabulary and one first layer: the four verbs everywhere the loop recommends, engine codes through the humaniser, the queue's label, one handle per action (2026-09-05, UI)
+
+**What changed.** The register's §D and §E (`METRIX_UI_AUDIT_ROUND4_2026-09.md`) are the
+vocabulary and first-layer findings of the 204-shot crawl: the product spoke in more words than it
+has, and some of them were the engine's.
+
+- **Four verbs, whatever the engine kind.** `KIND_LABEL` in `components/deck/recommendationKind.ts`
+  carried eight labels (Retire · Scale · Budget · Investigate · Optimize · Validate · Test · Data);
+  the rule since the loop-vocabulary work is four (Retire · Scale · Optimize · Validate). A budget
+  move is an optimisation; an investigation, a test and a data check are each a validation. The
+  eight engine kinds map onto the four, the styles collapse to four, and the engine kind stays on
+  the chip's `title` through `engineKindNote` (null when the verb is the kind). `ActionQueueView`
+  groups by the four and recognises a TEST card by its engine kind, not its verb. The scaling
+  playbook's buckets follow (`BUCKET_LABEL`: explore → Validate, avoid → Retire), and Findings'
+  `tierBadge` reads the seed's performance tier ("1 - Scale Winners", "4 - Eliminate") as a verb,
+  no longer echoing the seed string in uppercase, with the run's own wording on the `title`.
+- **Engine codes reach a reader through the one humaniser.** `flagHeadline` in
+  `lib/dataQualityFlags.ts` printed the code with its underscores spaced ("placement engagement no
+  conversion"); it and the failure-pattern diagnosis on Findings read through `humanizeDiagnosis`,
+  the flag's platform through `platformLabel`, and Listen's Scopes tile spaces an unknown scope key
+  instead of printing it raw. The Action Queue's data-anomaly cards were composed in the
+  recommendation derivation, not the flag headline, so they still read "Data anomaly ·
+  placement_engagement_no_conversion" on the first re-shoot; the derivation reads through the same
+  humaniser now.
+- **The hypothesis queue renders the label every other surface renders.** `HypothesisQueueView`
+  cut the sentence to one line under the code chips as its own title (`deriveLabel(h.label, 72)`);
+  it renders `HypothesisLabel` like the Strategy Map and Avatars. Inside a button card the label
+  takes `inButton`, which clamps the sentence statically with the whole sentence on the `title`
+  (DenseText's More control would be a button in a button).
+- **"Success criteria" with nothing under it.** A queued hypothesis's derived recommendation had
+  the rationale `Success criteria: <sentence>`; `deriveLabel` cuts at the colon, so every test tile
+  read exactly "Success criteria". The criteria sentence is the rationale; the drawer carries the
+  labelled field.
+- **One affordance each.** No `CrossLink` label carries a text arrow beside the icon the component
+  draws ("Full → →" read as two arrows); thirteen labels across Analysis Overview, Budget, Strategy
+  Overview, Strategy Map, the Analysis centre and the creative dialog. The task tray's collapsed
+  strip stacked three controls for one action (a clipboard button with a count badge, an unlabelled
+  clickable div with no keyboard path, a chevron button); it is one labelled button, the priority
+  cue carried as its colour, and the count lives on the topbar's Tray button alone, which already
+  rendered it. The MST centre renders its pages strip whatever the data holds, like every other
+  centre (`explore={children}`; it hid the strip until a matrix existed). Updates says its three
+  feeds are not live in one card, a line each, instead of three stacked empty frames.
+- **The source is the source, again.** `ConnectionNudgeBanner` takes the account and renders
+  nothing for `source_status: "manual_reports"`: an account created for manual reports is not
+  missing a connection, it has a different one. Imported and legacy accounts keep the nudge.
+- **Polish from §E.** Analysis Overview's "Data window" caveat is a labelled row with its sentence
+  beside the re-run link, not an orphan label and a floating button; the heatmap's caption is a
+  sentence in caption case and a CPA under a dollar keeps its cents ("$0" read as free). Account
+  Overview's null CPA is the en dash, not "n/a". Creative Scan's "Assets scanned" is a dash while no
+  scan has run, never 0. General settings drops the leftover "Run analysis · Moved to the Analysis
+  command center" card, and the logo policy on General and the Report Builder is a labelled
+  caption, not an amber caveat (a branding rule is a fact about the account). Data provenance
+  renders the bundle stamp as a date ("Aug 15, 2026"). Listen's two single-number tiles share the
+  dashboard grid token. Alerts' data-quality findings show three and fold the rest behind one
+  "Show more" (eleven amber boxes in a column read as eleven alarms; every finding stays on the page
+  and in the count).
+
+Not in this change: the raw table names as source chips (by design since Q6, a humanised label
+with the table behind it is a later polish), the "Render MST as active" notice (imported
+`integrity_note` text; the package, not the interface), and the Reports hub merge, which is a
+navigation decision for the sweep's slice 5.
+
+**What proves it.** `round7-vocabulary.test.tsx`: every `KIND_LABEL` value is one of the four verbs
+with a style, the note names the engine kind only when the verb is not the kind, the buckets and
+`tierBadge` speak the same verbs, `flagHeadline` and `flagEvidence` humanise, no derived test
+recommendation's rationale starts with "Success criteria:", `HypothesisLabel` inside a button
+renders no control and keeps the sentence on its title, no `.tsx` under pages or components has a
+`CrossLink` label ending in an arrow, the tray's strip has one labelled handle, the MST centre
+always passes its pages, Updates is one card, and the nudge is absent for a manual-reports account
+and present for an imported one. `TaskTray.test.tsx`'s strip tests assert one handle, no badge, and
+the topbar's count (one open item, done excluded, the whole count with the cap left to the
+topbar's rendering); `mst-sprints-canvas` and `ad-performance-canvas` expect "Retire";
+`data-provenance` expects the date; `creative-scan-canvas` expects two dashes. Full app suite, the
+thirteen static gates, the six browser gates against the dev server, the em-dash guard.
+
+**How far it reaches.** UI only; no data path, schema or endpoint. The engine's kinds and the
+seed's tier strings are untouched and still readable on the chips' titles; only the words a reader
+sees first change. `check:friction` on this tree: 0 defects, one ratchet raised on
+`/app/strategy/hypotheses` (first-layer prose over 220 chars, 0 → 8): the queue renders the same
+clamped hypothesis statement the Strategy Map and Avatars render, four cards at two widths, where
+it used to cut the sentence to 72 characters as its own title; the map's own baseline carries four
+of the same blocks, so the raise is the finding's fix, not a regression, and the baseline is
+regenerated with `--write-baseline`, which also records the counts the fold and the captions
+lowered.

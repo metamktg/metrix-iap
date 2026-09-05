@@ -19,7 +19,7 @@ import {
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import {
   HypothesisStatusBadge, VariableStackChips, pillarHasDetails,
-  HypothesisCodeChipsRow, PillarDetailsFold,
+  HypothesisCodeChipsRow, HypothesisLabel, PillarDetailsFold,
 } from "./strategyShared";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Layers, FlaskConical, AlertTriangle, ArrowRight, Beaker, Crosshair, Target, TrendingUp, ChevronDown } from "lucide-react";
@@ -78,10 +78,11 @@ function HypothesisCardList({
           >
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
-                {/* Density rule: chips first; the sentence drops to a
-                    one-line caption (full prose in the tap drawer). */}
-                <HypothesisCodeChipsRow label={h.label} />
-                <p className="text-body text-foreground/80 leading-snug line-clamp-1 mt-1">{deriveLabel(h.label, 72)}</p>
+                {/* The same label the Strategy Map and Avatars render (chips,
+                    then the sentence, clamped): the queue used to cut the
+                    sentence to one line as its own title (audit round 7).
+                    Isolates is one of the facts below, so it is not repeated. */}
+                <HypothesisLabel label={h.label} inButton />
                 {h.source && (
                   <div className="flex items-center gap-1.5 mt-1.5 text-caption text-muted-foreground/75">
                     <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/75" />

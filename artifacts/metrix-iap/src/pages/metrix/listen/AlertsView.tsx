@@ -3,6 +3,7 @@
 // ad account. Read-only, source-backed — no fabricated alerting.
 
 import { useState } from "react";
+import { useShowMore, ShowMoreButton } from "../shared";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
@@ -23,6 +24,23 @@ import { flagHeadline, flagBody } from "@/lib/dataQualityFlags";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 
 const SECTION = "Listen · 02";
+
+/** The run's data-quality findings, three on the first layer and the rest
+ *  behind one fold: eleven amber boxes in a column read as eleven alarms
+ *  (audit round 7). Every finding stays on the page and in the count. */
+function DataQualityFindings({ flags }: { flags: DataQualityFlag[] }) {
+  const fold = useShowMore(flags, 3);
+  return (
+    <div className="space-y-2">
+      {fold.visible.map((f, i) => (
+        <CaveatNote key={`${f.kind}-${i}`} text={`${flagHeadline(f)} · ${flagBody(f)}`} source="iap.data_quality" />
+      ))}
+      {flags.length > 3 && (
+        <ShowMoreButton total={flags.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="findings" />
+      )}
+    </div>
+  );
+}
 
 export function AlertsView() {
   const seed = useMetrixSeed();
@@ -62,7 +80,7 @@ export function AlertsView() {
               accountName={acct.name}
               subtitle="High-impact signals · data caveats · data-quality findings"
             />
-            <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />
+            <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} account={acct} />
             <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-3 gap-3">
               <MetricTile
@@ -124,15 +142,7 @@ export function AlertsView() {
                   {qualityFlags.length > 0 && (
                     <div>
                       <h3 className={cn(HEADING.h5, "mb-2")}>Data-quality findings</h3>
-                      <div className="space-y-2">
-                        {qualityFlags.map((f, i) => (
-                          <CaveatNote
-                            key={`${f.kind}-${i}`}
-                            text={`${flagHeadline(f)} · ${flagBody(f)}`}
-                            source="iap.data_quality"
-                          />
-                        ))}
-                      </div>
+                      <DataQualityFindings flags={qualityFlags} />
                       <p className={cn(TYPE.caption, "text-muted-foreground/75 mt-2 leading-snug")}>
                         Raised by the last analysis run. Full evidence per finding is on{" "}
                         <CrossLink to="/app/analysis/performance" label="Ad Performance" />.

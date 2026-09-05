@@ -10,27 +10,44 @@
 // things a reader must not miss (money being lost, money being made, a
 // signal that needs checking). Everything else sits on the neutral scale.
 
+// Four verbs, whatever the engine kind: Retire · Scale · Optimize ·
+// Validate. The eight engine kinds map onto them (a budget move is an
+// optimisation; an investigation, a test and a data check are all
+// validation), and the engine kind itself stays on the chip's title attr
+// for the reader who wants it (audit round 7; the rail showed "Budget",
+// "Investigate", "Test" and "Data" as if the vocabulary had eight words).
 export const KIND_LABEL: Record<string, string> = {
   avoid: "Retire",
   scale: "Scale",
-  budget: "Budget",
-  investigate: "Investigate",
+  budget: "Optimize",
+  investigate: "Validate",
   optimize: "Optimize",
   validate: "Validate",
-  test: "Test",
-  data: "Data",
+  test: "Validate",
+  data: "Validate",
 };
 
+const STYLE_RETIRE = "border-status-danger/25 bg-status-danger/10 text-status-danger";
+const STYLE_SCALE = "border-status-success/25 bg-status-success/10 text-status-success";
+const STYLE_OPTIMIZE = "border-status-warning/25 bg-status-warning/10 text-status-warning";
+const STYLE_VALIDATE = "border-border/40 bg-muted text-muted-foreground/75";
+
 export const KIND_STYLE: Record<string, string> = {
-  avoid: "border-status-danger/25 bg-status-danger/10 text-status-danger",
-  scale: "border-status-success/25 bg-status-success/10 text-status-success",
-  budget: "border-primary/25 bg-primary/10 text-interactive",
-  investigate: "border-status-warning/25 bg-status-warning/10 text-status-warning",
-  optimize: "border-status-warning/25 bg-status-warning/10 text-status-warning",
-  validate: "border-border/40 bg-muted text-muted-foreground/75",
-  test: "border-primary/25 bg-primary/10 text-interactive",
-  data: "border-status-warning/25 bg-status-warning/10 text-status-warning",
+  avoid: STYLE_RETIRE,
+  scale: STYLE_SCALE,
+  budget: STYLE_OPTIMIZE,
+  investigate: STYLE_VALIDATE,
+  optimize: STYLE_OPTIMIZE,
+  validate: STYLE_VALIDATE,
+  test: STYLE_VALIDATE,
+  data: STYLE_VALIDATE,
 };
+
+/** The engine kind behind a verb, for a title attr; null when the kind is the verb itself or unknown. */
+export function engineKindNote(kind: string): string | null {
+  if (!KIND_LABEL[kind] || KIND_LABEL[kind].toLowerCase() === kind) return null;
+  return `Engine kind: ${kind}`;
+}
 
 export const KIND_STYLE_FALLBACK = "border-border/40 bg-muted text-muted-foreground/75";
 

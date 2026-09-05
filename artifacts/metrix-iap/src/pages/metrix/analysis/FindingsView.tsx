@@ -11,7 +11,8 @@
 import { useResultScope } from "@/hooks/useResultScope";
 import { ResultScopeBar, LandedScopeNote } from "@/components/analysis/ResultScopeBar";
 import { useMemo } from "react";
-import { normalizeMetricsInProse } from "@/lib/normalize";
+import { normalizeMetricsInProse, humanizeDiagnosis } from "@/lib/normalize";
+import { tierBadge } from "@/lib/performanceTier";
 import { fmtDayRange } from "@/lib/normalize";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -95,20 +96,6 @@ interface Intelligence {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
-
-function tierBadge(tier: string | undefined): { label: string; cls: string } {
-  if (!tier) return { label: "–", cls: "bg-muted/40 text-muted-foreground/75 border-border/30" };
-  const t = tier.toLowerCase();
-  if (t.includes("1") || t.includes("scale") || t.includes("winner"))
-    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-status-success/10 text-status-success border-status-success/25" };
-  if (t.includes("2") || t.includes("watch") || t.includes("test"))
-    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-primary/10 text-interactive border-primary/25" };
-  if (t.includes("3") || t.includes("optim") || t.includes("limit"))
-    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-status-warning/10 text-status-warning border-status-warning/25" };
-  if (t.includes("4") || t.includes("elim") || t.includes("kill") || t.includes("fail"))
-    return { label: tier.replace(/^\d+\s*[-–]\s*/,""), cls: "bg-status-danger/10 text-status-danger border-status-danger/25" };
-  return { label: tier, cls: "bg-muted/40 text-muted-foreground/75 border-border/30" };
-}
 
 // Performance lift convention: positive = outperforming baseline (good, green ↑),
 // negative = underperforming baseline (bad, red ↓). Matches the seeded intelligence
@@ -244,9 +231,10 @@ function ConceptCard({ score }: { score: ConceptScore }) {
         </span>
         <span
           className={cn(
-            "inline-flex text-label font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+            "inline-flex text-label font-semibold border px-1.5 py-0.5 rounded leading-none",
             tb.cls
           )}
+          {...(tb.raw && tb.raw !== tb.label ? { title: `Tier as the run named it: ${tb.raw}` } : {})}
         >
           {tb.label}
         </span>
@@ -337,7 +325,7 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
             <AlertTriangle className="w-3.5 h-3.5 text-status-warning/60 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <p className="text-body font-medium text-foreground/80 truncate">{p.campaign}</p>
-              <p className="text-caption text-muted-foreground/75 leading-snug mt-0.5">{p.diagnosis}</p>
+              <p className="text-caption text-muted-foreground/75 leading-snug mt-0.5" title={p.diagnosis}>{humanizeDiagnosis(p.diagnosis)}</p>
             </div>
             <span className="shrink-0 text-caption tabular-nums text-status-warning/70">
               {fmtUSD(p.wasted_spend ?? p.spend, 0)}

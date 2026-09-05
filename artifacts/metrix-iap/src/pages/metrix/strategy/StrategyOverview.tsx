@@ -479,7 +479,7 @@ export function StrategyOverview() {
               <SectionCard
                 title="Pillar coverage"
                 desc="Source cell count per pillar · click to anchor to the card below"
-                right={<><SectionInfoIcon tip="Shows how many source cells back each message pillar, indicating which directions have the strongest evidence." /><CrossLink to="/app/strategy/map" label="Map →" /></>}
+                right={<><SectionInfoIcon tip="Shows how many source cells back each message pillar, indicating which directions have the strongest evidence." /><CrossLink to="/app/strategy/map" label="Map" /></>}
               >
                 <PillarCoverageStrip pillars={pillars} hypothesesFor={hypothesesFor} />
               </SectionCard>
@@ -491,7 +491,7 @@ export function StrategyOverview() {
                     <SectionCard
                       title="Hypothesis status"
                       desc="By validation stage"
-                      right={<><SectionInfoIcon tip="Breakdown of active hypotheses by validation stage so you can see what needs testing before it moves to brief." /><CrossLink to="/app/strategy/hypotheses" label="Queue →" /></>}
+                      right={<><SectionInfoIcon tip="Breakdown of active hypotheses by validation stage so you can see what needs testing before it moves to brief." /><CrossLink to="/app/strategy/hypotheses" label="Queue" /></>}
                     >
                       <SharePieChart
                         data={hypStatusData}
@@ -505,7 +505,7 @@ export function StrategyOverview() {
                     <SectionCard
                       title="Variable family map"
                       desc="Which variable families each pillar uses. Row = family, column = pillar"
-                      right={<><SectionInfoIcon tip="Grid showing which creative variable families are used by each message pillar, revealing gaps and overlaps in the strategy." /><CrossLink to="/app/strategy/map" label="Map →" /></>}
+                      right={<><SectionInfoIcon tip="Grid showing which creative variable families are used by each message pillar, revealing gaps and overlaps in the strategy." /><CrossLink to="/app/strategy/map" label="Map" /></>}
                     >
                       <VariableFamilyHeatmap pillars={pillars} />
                     </SectionCard>

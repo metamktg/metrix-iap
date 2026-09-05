@@ -35,6 +35,16 @@ import { FileSearch, AlertTriangle, CheckCircle2, FileText, Minus } from "lucide
 
 const SECTION = "Settings · 10";
 
+/** "Aug 15, 2026, 14:03 UTC" from an ISO stamp; a bare date stays a date; anything else stays as it came. */
+function fmtProvenanceStamp(iso: string | null): string | null {
+  if (!iso) return iso;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const date = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  if (!/T\d{2}:\d{2}/.test(iso)) return date;
+  return `${date}, ${d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" })} UTC`;
+}
+
 /** A label/value pair. The label is chrome; the value is the evidence. */
 function Fact({ label, value, mutedWhenAbsent = true }: { label: string; value: string | null; mutedWhenAbsent?: boolean }) {
   return (
@@ -88,7 +98,7 @@ function AssemblyStatement({
       )}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 mt-3 pt-3 border-t border-border/30">
         <Fact label="Schema version" value={schemaVersion} />
-        <Fact label="Bundle generated" value={generatedAt} />
+        <Fact label="Bundle generated" value={fmtProvenanceStamp(generatedAt)} />
         <Fact
           label="Loop stages naming a source file"
           value={coverage.total === 0 ? null : `${coverage.named} of ${coverage.total}`}

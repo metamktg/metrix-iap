@@ -108,9 +108,9 @@ describe("MST sprints canvas composition (Bookster)", () => {
   it("tags cells with the scaling-playbook tier at concept level", () => {
     renderFor("bookster");
     // Column C2 is BOOK0's scale_now concept — its cells carry "Scale";
-    // C3 is in avoid_combinations — its cells carry "Avoid".
+    // C3 is in avoid_combinations, so its cells carry "Retire" (the four verbs).
     expect(within(screen.getByTestId("matrix-cell-C2A")).getByText("Scale")).toBeTruthy();
-    expect(within(screen.getByTestId("matrix-cell-C3A")).getByText("Avoid")).toBeTruthy();
+    expect(within(screen.getByTestId("matrix-cell-C3A")).getByText("Retire")).toBeTruthy();
   });
 
   it("renders the top-performing-concepts table ranked cheapest-first", () => {
@@ -142,12 +142,12 @@ describe("MST sprints canvas composition (Bookster)", () => {
     // tier tag and cell id intact. Dimming is a visual filter, never a
     // real one: all 16 cells remain queryable regardless of tier.
     expect(within(optimizeCell).getByText("Optimize")).toBeTruthy();
-    expect(within(avoidCell).getByText("Avoid")).toBeTruthy();
+    expect(within(avoidCell).getByText("Retire")).toBeTruthy();
     expect(within(scaleCell).getByText("Scale")).toBeTruthy();
     expect(screen.getAllByTestId(/^matrix-cell-C\d[A-D]$/)).toHaveLength(16);
 
     // Switching tiers changes which column is undimmed.
-    fireEvent.click(screen.getByRole("button", { name: "Avoid" }));
+    fireEvent.click(screen.getByRole("button", { name: "Retire" }));
     expect(screen.getByTestId("matrix-cell-C3A").className).not.toMatch(/opacity-30/);
     expect(screen.getByTestId("matrix-cell-C2A").className).toMatch(/opacity-30/);
 

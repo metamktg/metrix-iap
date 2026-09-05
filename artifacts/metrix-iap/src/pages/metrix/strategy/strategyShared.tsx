@@ -302,7 +302,7 @@ function HypothesisCodeChips({ codes, maxVisible = 4 }: { codes: string[]; maxVi
  * Not for use inside <button> cards — DenseText renders a control; the
  * chips-only `HypothesisCodeChipsRow` is the button-safe variant.
  */
-export function HypothesisLabel({ label, isolated }: { label: string; isolated?: string | null }) {
+export function HypothesisLabel({ label, isolated, inButton = false }: { label: string; isolated?: string | null; /** Inside a button card: the sentence clamps statically (DenseText's More control would be a button in a button). */ inButton?: boolean }) {
   const codes = extractVariableCodes(label);
   const isolates = isolated ? resolveInlineVariableCodes(isolated) : null;
   // Codes and prose used to be EXCLUSIVE: a sentence mentioning variable
@@ -314,11 +314,15 @@ export function HypothesisLabel({ label, isolated }: { label: string; isolated?:
   return (
     <div className="space-y-1 min-w-0">
       {codes.length > 0 && <HypothesisCodeChips codes={codes} />}
-      <DenseText
-        text={label}
-        className={cn(TYPE.body, "text-foreground/90 leading-snug")}
-        clampClass="line-clamp-3"
-      />
+      {inButton ? (
+        <p className={cn(TYPE.body, "text-foreground/90 leading-snug line-clamp-3")} title={label}>{label}</p>
+      ) : (
+        <DenseText
+          text={label}
+          className={cn(TYPE.body, "text-foreground/90 leading-snug")}
+          clampClass="line-clamp-3"
+        />
+      )}
       {isolates && (
         <p className="text-caption text-muted-foreground/85 leading-snug">
           <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">

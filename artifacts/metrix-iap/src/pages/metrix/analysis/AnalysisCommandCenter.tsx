@@ -431,7 +431,7 @@ function AnalysisStage({ account: acct }: { account: AdAccount }) {
                   : "No analysis data yet"}
               </span>
             </span>
-            <span className="text-label font-semibold text-interactive shrink-0">Open →</span>
+            <span className="text-label font-semibold text-interactive shrink-0">Open</span>
           </button>
         </SectionCard>
       )}

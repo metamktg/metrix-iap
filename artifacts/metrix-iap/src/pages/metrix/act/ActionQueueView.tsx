@@ -58,7 +58,7 @@ function actionVerb(card: Pick<RecommendationCard, "id" | "recommended_action">)
 
 /** The queue's groups, in the derivation's order (by the money each moves). A card's index in the flat list keeps its stagger slot. */
 function groupByVerb(cards: RecommendationCard[]): { label: string; cls: string; cards: { card: RecommendationCard; index: number }[] }[] {
-  const order = [KIND_LABEL.avoid, KIND_LABEL.scale, KIND_LABEL.budget, KIND_LABEL.investigate, KIND_LABEL.optimize, KIND_LABEL.validate, KIND_LABEL.test, KIND_LABEL.data];
+  const order = [KIND_LABEL.avoid, KIND_LABEL.scale, KIND_LABEL.optimize, KIND_LABEL.validate];
   const groups = new Map<string, { label: string; cls: string; cards: { card: RecommendationCard; index: number }[] }>();
   cards.forEach((card, index) => {
     const verb = actionVerb(card);
@@ -163,6 +163,8 @@ function QueueCard({
   const [expanded, setExpanded] = useState(false);
   const decision = getDecision(adAccountId, card.id);
   const verb = actionVerb(card);
+  // A TEST card is a test by its engine kind, not by its verb: every Validate card shares the verb now.
+  const isTest = recommendationKind({ id: card.id }) === "test";
   const impactLabel = fmtImpact(card);
 
   const approve = useCallback(() => {
@@ -246,12 +248,12 @@ function QueueCard({
             believe that isolating Row B …"); its variable codes lead as
             chips, the scannable index the Hypothesis Queue uses, and the
             sentence follows clamped. Chips only here: this is a button. */}
-        {verb.label === KIND_LABEL.test && (
+        {isTest && (
           <div className="mb-1.5">
             <HypothesisCodeChipsRow label={card.title} />
           </div>
         )}
-        <p className={cn("text-title font-bold text-foreground leading-snug mb-1.5", verb.label === KIND_LABEL.test && "line-clamp-3")}>
+        <p className={cn("text-title font-bold text-foreground leading-snug mb-1.5", isTest && "line-clamp-3")}>
           {card.title}
         </p>
 

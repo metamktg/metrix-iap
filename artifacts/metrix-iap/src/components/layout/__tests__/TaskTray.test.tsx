@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, within, cleanup } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { computeTrayCount, TaskTray } from "../TaskTray";
+import { computeTrayCount, TaskTray, useTaskTrayCount } from "../TaskTray";
 import {
   addToTray,
   removeFromTray,
@@ -443,43 +443,54 @@ describe("TaskTray: minimised strip (closed state)", () => {
     mockUseTaskTray.mockReturnValue(closedTrayCtx());
   });
 
-  it("renders the expand button when closed", () => {
+  // The count the topbar's Tray button renders (it caps at "9+"). The strip
+  // used to carry its own badge with the same count, a second Tray control
+  // beside the topbar's, and two more handles under it (audit round 7): one
+  // labelled button now, and the count lives on the topbar alone.
+  function CountProbe() {
+    return <span data-testid="tray-count">{useTaskTrayCount()}</span>;
+  }
+  function renderTrayWithCount() {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return render(
+      <QueryClientProvider client={qc}>
+        <TaskTray />
+        <CountProbe />
+      </QueryClientProvider>
+    );
+  }
+
+  it("renders exactly one expand handle when closed, a labelled button", () => {
     renderTray();
-    const btns = screen.getAllByRole("button", { name: /expand task tray/i });
-    expect(btns.length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: /expand task tray/i })).toHaveLength(1);
   });
 
-  it("shows no badge when there are no pending items", () => {
-    renderTray();
-    const badges = document.querySelectorAll(".tabular-nums");
-    expect(badges.length).toBe(0);
-  });
-
-  it("shows a badge when there are open tray items", () => {
+  it("shows no badge on the strip, whatever is pending", () => {
     addToTray("acct1", makeItem({ id: "c1", title: "Pending item" }));
     renderTray();
-    const badge = document.querySelector(".tabular-nums");
-    expect(badge).toBeTruthy();
-    expect(badge!.textContent).toBe("1");
+    expect(document.querySelectorAll(".tabular-nums").length).toBe(0);
   });
 
-  it("badge count does not include done items", () => {
+  it("the topbar count reads one for one open tray item", () => {
+    addToTray("acct1", makeItem({ id: "c1", title: "Pending item" }));
+    renderTrayWithCount();
+    expect(screen.getByTestId("tray-count").textContent).toBe("1");
+  });
+
+  it("the topbar count does not include done items", () => {
     addToTray("a", makeItem({ id: "c1", title: "Active" }));
     addToTray("a", makeItem({ id: "c2", title: "Completed" }));
     setTrayItemStatus("a", "c2", "done");
-    renderTray();
-    const badge = document.querySelector(".tabular-nums");
-    expect(badge!.textContent).toBe("1");
+    renderTrayWithCount();
+    expect(screen.getByTestId("tray-count").textContent).toBe("1");
   });
 
-  it("badge caps display at 9", () => {
+  it("the topbar count is the whole count; the cap at 9+ is the topbar's rendering", () => {
     for (let i = 0; i < 10; i++) {
       addToTray("a", makeItem({ id: `c${i}`, title: `Item ${i}` }));
     }
-    renderTray();
-    const badge = document.querySelector(".tabular-nums");
-    // Math.min(10, 9) = 9
-    expect(badge!.textContent).toBe("9");
+    renderTrayWithCount();
+    expect(screen.getByTestId("tray-count").textContent).toBe("10");
   });
 });
 

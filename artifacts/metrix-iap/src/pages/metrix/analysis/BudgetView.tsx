@@ -432,7 +432,7 @@ export function BudgetView() {
                       }
                     </button>
                     <div className="shrink-0">
-                      <CrossLink to="/app/analysis/placements" label="Full breakdown →" />
+                      <CrossLink to="/app/analysis/placements" label="Full breakdown" />
                     </div>
                   </div>
                   {showPlacements && (

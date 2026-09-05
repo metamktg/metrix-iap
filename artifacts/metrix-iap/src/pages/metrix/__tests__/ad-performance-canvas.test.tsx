@@ -170,7 +170,7 @@ describe("concept tier table (rollup × scaling playbook)", () => {
     // BOOK0 C2 → scale_now; BOOK0 C1 → optimize; BOOK0 C3 → avoid.
     expect(within(rowFor("BOOK0 · C2")).getByText("Scale")).toBeTruthy();
     expect(within(rowFor("BOOK0 · C1")).getByText("Optimize")).toBeTruthy();
-    expect(within(rowFor("BOOK0 · C3")).getByText("Avoid")).toBeTruthy();
+    expect(within(rowFor("BOOK0 · C3")).getByText("Retire")).toBeTruthy();
 
     // BOOK2 C2 is NOT the playbook's "BOOK2 Concept C2B" — must stay
     // unclassified, never borrow the near-miss token.
