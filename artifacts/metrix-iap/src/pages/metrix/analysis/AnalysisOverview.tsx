@@ -1078,7 +1078,9 @@ export function AnalysisOverview() {
                           data={resultTypePie}
                           unit="usd"
                           height={148}
-                          showLegend={resultTypePie.length <= 3}
+                          // Always: five unlabelled segments beside "spend
+                          // share" named nothing (design pass, round 8).
+                          showLegend
                         />
                         <div className={cn(TYPE.label, "text-muted-foreground/75 mt-1")} data-testid="donut-source">
                           spend share · {donutSource}

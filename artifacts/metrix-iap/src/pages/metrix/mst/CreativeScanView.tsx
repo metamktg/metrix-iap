@@ -63,6 +63,10 @@ export function CreativeScanView() {
         const attentionCells = library.filter(needsAttention);
         const mappedCells = library.length - attentionCells.length;
         const highConfidenceCells = library.filter((c) => c.mapping_confidence === "high").length;
+        // A mapping count is measured only once a scan has graded a cell:
+        // before that the sibling Creative › Creative Scan reads a dash and
+        // this page read 0 (design pass, round 8).
+        const scanRan = library.some((c) => c.mapping_confidence != null || c.qa_mapping_status != null);
         const visibleLibrary = libraryFilter === "attention" ? attentionCells : library;
 
         const VAR_FAMILIES: { label: string; get: (c: (typeof library)[number]) => string | null | undefined }[] = [
@@ -111,13 +115,13 @@ export function CreativeScanView() {
                 <>
                   <div className="grid grid-cols-dashboard-4 gap-3">
                     <MetricTile label="Concepts" value={String(library.length)} />
-                    <MetricTile label="Mapped to performance" value={String(mappedCells)} />
+                    <MetricTile label="Mapped to performance" value={scanRan ? String(mappedCells) : "–"} sub={scanRan ? undefined : "Scan not yet run"} />
                     <MetricTile
                       label="Needs attention"
                       value={String(attentionCells.length)}
                       sub={attentionCells.length > 0 ? "Unmapped or flagged QA" : undefined}
                     />
-                    <MetricTile label="High mapping confidence" value={String(highConfidenceCells)} />
+                    <MetricTile label="High mapping confidence" value={scanRan ? String(highConfidenceCells) : "–"} sub={scanRan ? undefined : "Scan not yet run"} />
                   </div>
 
                   <div className="flex items-center justify-between gap-3 flex-wrap">

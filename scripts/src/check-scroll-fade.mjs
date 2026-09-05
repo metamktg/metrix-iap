@@ -21,7 +21,9 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const BASE = process.env.SCROLL_FADE_BASE ?? "http://localhost:5178";
 const ACCOUNT = process.env.SCROLL_FADE_ACCOUNT ?? "bookster";
 const ROUTES = (process.env.SCROLL_FADE_ROUTES ?? "/app/account,/app/analysis/funnel,/app/strategy/hypotheses").split(",");
-const EXECUTABLE = process.env.PLAYWRIGHT_CHROMIUM ?? process.env.REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE ?? undefined;
+// The same default its siblings carry (check-friction, check-controls): without it a shell
+// with neither variable set asked Playwright for a browser it never downloaded here.
+const EXECUTABLE = process.env.PLAYWRIGHT_CHROMIUM ?? process.env.REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE ?? "/opt/pw-browsers/chromium";
 const FADE = "14px";
 
 const SEED = fs.readFileSync(path.join(REPO, "artifacts/metrix-iap/src/test-fixtures/metrix_seed_bundle.json"), "utf8");
@@ -87,7 +89,7 @@ async function main() {
     console.error(`check:scroll-fade: could not reach ${BASE} (start the dev server: PORT=5178 BASE_PATH=/ pnpm --filter @workspace/metrix-iap run dev). Nothing checked.`);
     return 2;
   }
-  const browser = await chromium.launch(EXECUTABLE ? { executablePath: EXECUTABLE } : {});
+  const browser = await chromium.launch({ executablePath: EXECUTABLE });
   const failures = [];
   let checked = 0;
   let overflowing = 0;

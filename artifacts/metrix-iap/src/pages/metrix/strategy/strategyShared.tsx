@@ -14,7 +14,7 @@ import {
 } from "@/lib/normalize";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
-import { Funnel, Wrench, LayoutGrid, TrendingUp, Users, ArrowUpRight, Ban, FlaskConical, Search, Sparkles, ChevronDown, Dna } from "lucide-react";
+import { Funnel, Wrench, LayoutGrid, TrendingUp, Users, ArrowUpRight, Ban, FlaskConical, Sparkles, ChevronDown, Dna } from "lucide-react";
 import type { MessagePillar, ICPProfile, VariableCombination, ScalingPlaybook } from "@/lib/data/seedTypes";
 import type { DnaVariable } from "@/lib/creative-dna";
 import { VARIABLE_FAMILIES } from "@/lib/variable-registry";
@@ -479,7 +479,9 @@ const RECO_STYLE: Record<string, string> = {
 
 export function VariableCombinationsGrid({ combinations }: { combinations: VariableCombination[] }) {
   return (
-    <div className="grid grid-cols-dashboard-3 gap-3">
+    // One column on a phone: two 150 px cards clipped their badges and lost
+    // their titles at 390 px (design pass, round 8).
+    <div className="grid grid-cols-dashboard-3-md gap-3">
       {combinations.map((c, i) => (
         <div key={`${c.combination}-${i}`} className="rounded-xl border border-border/40 bg-foreground/[0.02] p-4 flex flex-col gap-2.5">
           <div className="flex items-start justify-between gap-2">
@@ -550,22 +552,27 @@ const PLAYBOOK_LANES: Array<{
   Icon: React.ComponentType<{ className?: string }>;
   accent: string;
 }> = [
-  { key: "scale_now", label: "Scale now", Icon: ArrowUpRight, accent: "text-status-success border-status-success/25 bg-status-success/[0.06]" },
+  // The loop's four verbs (round 7): the explore list is folded into the
+  // Validate lane, avoid is Retire (design pass, round 8).
+  { key: "scale_now", label: "Scale", Icon: ArrowUpRight, accent: "text-status-success border-status-success/25 bg-status-success/[0.06]" },
   { key: "optimize", label: "Optimize", Icon: Sparkles, accent: "text-status-warning border-status-warning/25 bg-status-warning/[0.06]" },
   { key: "validate", label: "Validate", Icon: FlaskConical, accent: "text-accent border-accent/25 bg-accent/[0.06]" },
-  { key: "explore", label: "Explore", Icon: Search, accent: "text-interactive border-primary/25 bg-primary/[0.06]" },
-  { key: "avoid_combinations", label: "Avoid", Icon: Ban, accent: "text-status-danger border-status-danger/25 bg-status-danger/[0.06]" },
+  { key: "avoid_combinations", label: "Retire", Icon: Ban, accent: "text-status-danger border-status-danger/25 bg-status-danger/[0.06]" },
 ];
+
+const laneItems = (pb: ScalingPlaybook, key: keyof ScalingPlaybook): string[] => {
+  const own = Array.isArray(pb[key]) ? (pb[key] as string[]) : [];
+  const explore = key === "validate" && Array.isArray(pb.explore) ? (pb.explore as string[]) : [];
+  return [...own, ...explore];
+};
 
 export function playbookHasContent(pb: ScalingPlaybook | null | undefined): boolean {
   if (!pb) return false;
-  return PLAYBOOK_LANES.some(({ key }) => Array.isArray(pb[key]) && (pb[key] as string[]).length > 0);
+  return PLAYBOOK_LANES.some(({ key }) => laneItems(pb, key).length > 0);
 }
 
 export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }) {
-  const lanes = PLAYBOOK_LANES.filter(
-    ({ key }) => Array.isArray(playbook[key]) && (playbook[key] as string[]).length > 0,
-  );
+  const lanes = PLAYBOOK_LANES.filter(({ key }) => laneItems(playbook, key).length > 0);
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-dashboard-playbook gap-3">
@@ -576,7 +583,7 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
               <span className="text-label font-semibold uppercase tracking-widest">{label}</span>
             </div>
             <ul className="space-y-1.5">
-              {(playbook[key] as string[]).map((item, i) => (
+              {laneItems(playbook, key).map((item, i) => (
                 <li key={i}>
                   <NormalizedRefItem text={item} eyebrow={label} />
                 </li>

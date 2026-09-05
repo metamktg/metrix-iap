@@ -124,7 +124,7 @@ describe("Strategy Map · the centre column keeps its height in the stacked colu
   it("sizes to its content below lg (flex-1 + overflow-y-auto collapsed it to 0 px)", () => {
     const source = read("pages/metrix/strategy/StrategyMapView.tsx");
     expect(source).toContain('<div className="max-lg:flex-none lg:flex-1 min-w-0 max-lg:overflow-visible lg:overflow-y-auto">');
-    expect(source).toContain('className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-y-auto lg:overflow-hidden border-t border-border/30"');
+    expect(source).toContain('className="max-lg:flex-none lg:flex-1 flex flex-col lg:flex-row min-h-0 max-lg:overflow-visible lg:overflow-hidden border-t border-border/30"');
   });
 });
 

@@ -130,7 +130,7 @@ export function MstDirectionView() {
               <MetricTile label="Measured concepts" value={String(rollup.length)} />
               <MetricTile label="Classified" value={String(classified.length)} />
               <MetricTile label="Scale now" value={String(countsByBucket.get("scale_now") ?? 0)} />
-              <MetricTile label="Needs review" value={String((countsByBucket.get("validate") ?? 0) + (countsByBucket.get("avoid") ?? 0))} sub="Validate + avoid" />
+              <MetricTile label="Needs review" value={String((countsByBucket.get("validate") ?? 0) + (countsByBucket.get("avoid") ?? 0))} sub="Validate + retire" />
             </div>
 
             {activeBuckets.length > 0 && (

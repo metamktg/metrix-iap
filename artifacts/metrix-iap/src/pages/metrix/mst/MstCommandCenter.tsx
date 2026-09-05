@@ -261,7 +261,9 @@ function AvatarTile({
         </div>
       )}
 
-      {maxSpend > 0 && (
+      {/* Only an avatar with a performance row has a share: two avatars with
+          no stat row read "Spend share 0% of top" (design pass, round 8). */}
+      {hasPerf && maxSpend > 0 && (
         <div className="mt-2.5">
           <div className="flex items-center justify-between text-label text-muted-foreground/75 mb-1">
             <span>Spend share</span>

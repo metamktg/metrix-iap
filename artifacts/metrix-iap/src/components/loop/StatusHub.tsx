@@ -88,9 +88,11 @@ export function StatusHub({
       <Row kind="inputs" testId="status-hub-inputs">
         <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {inputs.map((input, i) => (
-            <li key={`${input.label}-${i}`} className={cn(TYPE.caption, "flex items-center gap-1.5 min-w-0")}>
+            <li key={`${input.label}-${i}`} className={cn(TYPE.caption, "flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0")}>
               {i === 0 && <FileText className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" aria-hidden />}
-              <span className="text-foreground/85">{input.label}</span>
+              {/* The label is one fragment: at 390 px "Nothing staged" broke
+                  into "Nothing / staged" beside its detail (round 8). */}
+              <span className="text-foreground/85 whitespace-nowrap">{input.label}</span>
               {/* A linked input carries its detail AS the link (the page it
                   points at), never twice. */}
               {input.to ? (

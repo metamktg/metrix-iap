@@ -37,7 +37,10 @@ export function CreativeScanView() {
     <ModuleScopeGate section={SECTION} title="Creative Scan" account={account}>
       {() => {
         const acct = account!;
-        const libraryCount = getMST(seed, adAccountId)?.local_book2_library?.length ?? 0;
+        // Assets are staged files: the concept library's cells counted as
+        // nine "library assets" on an account with no asset staged (design
+        // pass, round 8).
+        const libraryCount = (getMST(seed, adAccountId)?.local_book2_library ?? []).filter((c) => !!c.asset_filename).length;
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
@@ -52,7 +55,7 @@ export function CreativeScanView() {
                   automated pass exists and has run. */}
               <div className="grid grid-cols-dashboard-4 gap-3" data-testid="scan-stats">
                 <MetricTile label="Assets scanned" value="–" sub="Scan not yet run" />
-                <MetricTile label="Library assets" value={fmtNum(libraryCount)} sub="Awaiting first scan" />
+                <MetricTile label="Library assets" value={fmtNum(libraryCount)} sub={libraryCount > 0 ? "Awaiting first scan" : "No asset staged"} />
                 <MetricTile label="Blocking" value="–" sub="No results yet" />
                 <MetricTile label="Requires" value="Scan engine" sub="Automated pass planned · not yet built" />
               </div>
@@ -64,19 +67,20 @@ export function CreativeScanView() {
                 desc="What the automated pass checks per asset"
                 right={<SectionInfoIcon tip="Each staged asset will be checked against these QA dimensions (naming convention, format ratio, safe zones, variable-stack alignment, claim clearance) once the automated scan pass ships. Results render here only from a real scan run." />}
               >
-                <div className="overflow-x-auto">
-                  <div className="grid gap-1 min-w-[660px]" style={{ gridTemplateColumns: "minmax(200px,1.6fr) repeat(5, minmax(82px, 1fr))" }} data-testid="scan-check-grid">
-                    <span />
-                    {SCAN_CHECKS.map((c) => (
-                      <span key={c} className={cn(TYPE.label, "text-muted-foreground/75 text-center leading-tight pb-1.5")}>{c}</span>
-                    ))}
+                {/* The checks as chips inside the empty state: a table header
+                    over no rows is a header over nothing (design pass, round 8). */}
+                <div className="rounded-lg border border-border/30 bg-foreground/[0.015] px-4 py-5 space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <ScanSearch className="w-4 h-4 text-muted-foreground/75 shrink-0" />
+                    <p className={cn(TYPE.body, "text-muted-foreground/75")}>
+                      No scan results yet · staged assets appear here, one row per asset, once the first scan runs.
+                    </p>
                   </div>
-                </div>
-                <div className="flex items-center gap-2.5 rounded-lg border border-border/30 bg-foreground/[0.015] px-4 py-5 mt-1">
-                  <ScanSearch className="w-4 h-4 text-muted-foreground/75 shrink-0" />
-                  <p className={cn(TYPE.body, "text-muted-foreground/75")}>
-                    No scan results yet · staged assets appear here, one row per asset, once the first scan runs.
-                  </p>
+                  <ul className="flex flex-wrap gap-1.5" aria-label="Checks per asset" data-testid="scan-check-grid">
+                    {SCAN_CHECKS.map((c) => (
+                      <li key={c} className={cn(TYPE.label, "rounded-full border border-border/40 bg-foreground/[0.03] px-2 py-0.5 text-muted-foreground/80")}>{c}</li>
+                    ))}
+                  </ul>
                 </div>
               </SectionCard>
 

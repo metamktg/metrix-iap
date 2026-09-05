@@ -7,6 +7,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import { buildExportEnvelope } from "@/lib/jsonExport";
+import { analysisExportRows, analysisExportEmpty, analysisExportSummary } from "@/lib/analysisExport";
 import { ModuleHeader, ModuleScopeGate, PendingState } from "../shared";
 import { DataLimitedCaveat, JsonExportCard } from "./exportsShared";
 import { BarChart3 } from "lucide-react";
@@ -23,8 +24,9 @@ export function ExportsAnalysisView() {
       {() => {
         const acct = account!;
         const analysis = getAnalysisData(seed, adAccountId);
+        const rows = analysisExportRows(acct, analysis);
 
-        if (!analysis || analysis.performance_by_cell.length === 0) {
+        if (!analysis || analysisExportEmpty(rows)) {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Analysis" accountName={acct.name} />
@@ -34,8 +36,8 @@ export function ExportsAnalysisView() {
         }
 
         const payload = buildExportEnvelope(acct, {
-          performance_by_cell: analysis.performance_by_cell,
-          v3_variable_performance: analysis.v3_variable_performance,
+          performance_by_cell: rows.performance_by_cell,
+          v3_variable_performance: rows.v3_variable_performance,
         });
 
         return (
@@ -54,10 +56,7 @@ export function ExportsAnalysisView() {
                 desc="Everything the Analysis pages currently show for this account."
                 filename={`${acct.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-analysis-export.json`}
                 data={payload}
-                fieldSummary={[
-                  `${analysis.performance_by_cell.length} cell performance rows`,
-                  `${analysis.v3_variable_performance.length} variable performance rows`,
-                ]}
+                fieldSummary={analysisExportSummary(rows)}
               />
             </div>
           </div>

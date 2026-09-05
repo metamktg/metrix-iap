@@ -193,19 +193,27 @@ export function groupSegmentsByAge<T extends ClusterableSegment>(entries: T[]): 
 }
 
 // ─── Positioning quadrants ──────────────────────────────────────────────
-// Reuses this app's established scaling vocabulary (scalingBuckets.ts:
-// Scale / Optimize / Explore / Avoid) instead of inventing a parallel
-// SCALE/OPTIMIZE/EXPAND/RETIRE set — Explore and Avoid are the closest
-// real terms this app already uses for "cheap but low-volume" and
-// "expensive and low-volume" respectively.
+// The keys are the scaling playbook's buckets (scalingBuckets.ts); the
+// labels are the loop's four verbs, Retire · Scale · Optimize · Validate
+// (audit round 7): a cheap, low-volume group is one to validate, an
+// expensive, low-volume one is one to retire. "Explore" and "Avoid" sat
+// on this map until the design pass of round 8.
 
 export type PositioningQuadrant = "scale" | "optimize" | "explore" | "avoid";
 
 export const QUADRANT_LABEL: Record<PositioningQuadrant, string> = {
   scale: "Scale",
   optimize: "Optimize",
-  explore: "Explore",
-  avoid: "Avoid",
+  explore: "Validate",
+  avoid: "Retire",
+};
+
+/** What each quadrant means, for the map's legend. */
+export const QUADRANT_HINT: Record<PositioningQuadrant, string> = {
+  scale: "low cost, high results",
+  optimize: "high cost, high results",
+  explore: "low cost, low results",
+  avoid: "high cost, low results",
 };
 
 /** Low cost + high conversions = Scale; high cost + high conversions =

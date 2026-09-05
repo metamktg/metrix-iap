@@ -57,6 +57,34 @@ export interface FunnelChartProps {
   colorIndex?: number;
   /** Default basis. "previous" is legible; "top" shows the true collapse. */
   defaultBasis?: FunnelBasis;
+  /** Controlled basis: the owner renders ONE FunnelBasisSwitch above several charts. */
+  basis?: FunnelBasis;
+  onBasisChange?: (basis: FunnelBasis) => void;
+  /** False when the owner renders the switch itself (a switch per band read as three controls for one choice). */
+  showBasisSwitch?: boolean;
+}
+
+/** The bar-length basis control, on its own so a waterfall of several
+ *  charts can render it once. Default-exported charts render it inline. */
+export function FunnelBasisSwitch({ basis, onChange }: { basis: FunnelBasis; onChange: (b: FunnelBasis) => void }) {
+  return (
+    <div role="group" aria-label="Bar length basis" className="inline-flex shrink-0 items-center gap-0.5 rounded-xl bg-input/30 p-1">
+      {([["previous", "vs previous stage"], ["top", "vs top of funnel"]] as const).map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onChange(id)}
+          aria-pressed={basis === id}
+          className={`h-10 px-2.5 rounded-lg text-caption whitespace-nowrap active:scale-[0.96]
+                      transition-[background-color,color,scale] duration-150 ease-[var(--mx-ease)]
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                      ${basis === id ? "bg-primary/20 text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 const fmtInt = (n: number) => n.toLocaleString();
@@ -69,8 +97,16 @@ export function FunnelChart({
   emptyLabel = "No funnel data yet",
   colorIndex = 0,
   defaultBasis = "previous",
+  basis: controlledBasis,
+  onBasisChange,
+  showBasisSwitch = true,
 }: FunnelChartProps) {
-  const [basis, setBasis] = useState<FunnelBasis>(defaultBasis);
+  const [ownBasis, setOwnBasis] = useState<FunnelBasis>(defaultBasis);
+  const basis = controlledBasis ?? ownBasis;
+  const setBasis = (b: FunnelBasis) => {
+    setOwnBasis(b);
+    onBasisChange?.(b);
+  };
   const rows = useMemo(() => {
     const measured = stages.filter((s) => s.value != null);
     // The top of the funnel is the first stage that was actually measured —
@@ -101,24 +137,11 @@ export function FunnelChart({
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-end mb-2 mx-scroll-x">
-        <div role="group" aria-label="Bar length basis" className="inline-flex shrink-0 items-center gap-0.5 rounded-xl bg-input/30 p-1">
-          {([["previous", "vs previous stage"], ["top", "vs top of funnel"]] as const).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setBasis(id)}
-              aria-pressed={basis === id}
-              className={`h-10 px-2.5 rounded-lg text-caption whitespace-nowrap active:scale-[0.96]
-                          transition-[background-color,color,scale] duration-150 ease-[var(--mx-ease)]
-                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-                          ${basis === id ? "bg-primary/20 text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              {label}
-            </button>
-          ))}
+      {showBasisSwitch && (
+        <div className="flex items-center justify-end mb-2 mx-scroll-x">
+          <FunnelBasisSwitch basis={basis} onChange={setBasis} />
         </div>
-      </div>
+      )}
 
       <ol
         className="flex flex-col gap-1.5"

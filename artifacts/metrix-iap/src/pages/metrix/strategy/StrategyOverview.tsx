@@ -191,7 +191,7 @@ function VariableFamilyHeatmap({ pillars }: { pillars: MessagePillar[] }) {
             <div
               key={f.key}
               className="grid gap-1 mb-1 items-center"
-              style={{ gridTemplateColumns: `80px repeat(${pillars.length}, 1fr)` }}
+              style={{ gridTemplateColumns: `minmax(112px,150px) repeat(${pillars.length}, minmax(0,1fr))` }}
             >
               {/* Family label */}
               <div className="flex items-center gap-1.5 pr-2">
@@ -470,7 +470,7 @@ export function StrategyOverview() {
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Message pillars"    value={fmtNum(pillars.length)} variant="primary" />
               <MetricTile label="Active hypotheses"  value={fmtNum(hypotheses.length)} />
-              <MetricTile label="Ready for brief"    value={fmtNum(ready)} />
+              <MetricTile label="Hypotheses ready for brief" value={fmtNum(ready)} />
               <MetricTile label="Draft briefs"       value={fmtNum(briefs?.draft_briefs.length ?? 0)} />
             </div>
 
@@ -486,7 +486,7 @@ export function StrategyOverview() {
 
               {/* ── Hypothesis donut + Variable heatmap ───────────── */}
               {(hypStatusData.length > 0 || pillars.length > 0) && (
-                <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-3">
+                <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-3">
                   {hypStatusData.length > 0 && (
                     <SectionCard
                       title="Hypothesis status"
@@ -497,7 +497,7 @@ export function StrategyOverview() {
                         data={hypStatusData}
                         unit="count"
                         height={180}
-                        showLegend={hypStatusData.length <= 3}
+                        showLegend
                       />
                     </SectionCard>
                   )}

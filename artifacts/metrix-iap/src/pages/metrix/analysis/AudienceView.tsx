@@ -35,7 +35,8 @@ import {
 } from "recharts";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
+import { breakdownSpendShare, spendShareLabel } from "@/lib/account-totals";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
@@ -67,7 +68,7 @@ import { FilterDisclosure } from "@/components/widgets/FilterDisclosure";
 import { CoverageStrip, EvidenceChip, EvidenceExplainer } from "@/components/evidence/EvidenceChip";
 import { metricLabel } from "@/lib/creative-evidence";
 import {
-  buildAudienceClusters, groupSegmentsByAge, classifyQuadrant, QUADRANT_LABEL,
+  buildAudienceClusters, groupSegmentsByAge, classifyQuadrant, QUADRANT_LABEL, QUADRANT_HINT,
   type AudienceGroup, type PositioningQuadrant,
 } from "@/lib/audience-clusters";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
@@ -379,33 +380,24 @@ function PositioningMapCard({
           </div>
         )
       ) : (
+        <div>
+        {/* The quadrants as a legend, not as words in the plot: the corner
+            words sat where the marks land (a group with few results sits on
+            the bottom edge, so "AVOID" read "AVO C4 ID"), and the "median"
+            labels on the reference lines split the same way ("m C1 an").
+            The marks carry the quadrant colour; the legend names it and
+            says what it means; the dotted lines are named below (design
+            pass, round 8). */}
+        <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2" aria-label="Quadrants" data-testid="positioning-legend">
+          {(["scale", "optimize", "explore", "avoid"] as const).map((q) => (
+            <li key={q} className="flex items-center gap-1.5 min-w-0">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: QUADRANT_COLOR[q] }} aria-hidden />
+              <span className={cn(TYPE.label, "text-foreground/85")}>{QUADRANT_LABEL[q]}</span>
+              <span className={cn(TYPE.label, "text-muted-foreground/75 normal-case tracking-normal")}>· {QUADRANT_HINT[q]}</span>
+            </li>
+          ))}
+        </ul>
         <div className="relative w-full rounded-xl border border-border/20 bg-foreground/[0.01] overflow-hidden" style={{ height: 380 }}>
-          <div
-            className="absolute inset-0 pointer-events-none"
-            aria-hidden="true"
-            style={{ left: 60, right: 20, top: 10, bottom: 45 }}
-          >
-            {([
-              { top: true,  right: false, q: "scale" as const },
-              { top: true,  right: true,  q: "optimize" as const },
-              { top: false, right: false, q: "explore" as const },
-              { top: false, right: true,  q: "avoid" as const },
-            ]).map(({ top, right, q }) => (
-              <div
-                key={q}
-                className={cn(
-                  "absolute",
-                  top ? "top-1" : "bottom-6",
-                  right ? "right-2 text-right" : "left-2"
-                )}
-              >
-                <span className={cn(TYPE.label, "font-semibold")} style={{ color: `${QUADRANT_COLOR[q]}80` }}>
-                  {QUADRANT_LABEL[q].toUpperCase()}
-                </span>
-              </div>
-            ))}
-          </div>
-
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart margin={{ top: 10, right: 20, bottom: 45, left: 60 }}>
               <CartesianGrid {...AXIS.grid} />
@@ -443,24 +435,16 @@ function PositioningMapCard({
                   fontSize: CHART_TYPE.label,
                 }}
               />
-              {medianCpa > 0 && (
-                <ReferenceLine
-                  x={medianCpa}
-                  {...AXIS.reference}
-                  label={{ value: "median", position: "insideTopRight", fill: AXIS.tick.fill, fontSize: CHART_TYPE.tick }}
-                />
-              )}
-              {medianResults > 0 && (
-                <ReferenceLine
-                  y={medianResults}
-                  {...AXIS.reference}
-                  label={{ value: "median", position: "insideTopLeft", fill: AXIS.tick.fill, fontSize: CHART_TYPE.tick }}
-                />
-              )}
+              {medianCpa > 0 && <ReferenceLine x={medianCpa} {...AXIS.reference} />}
+              {medianResults > 0 && <ReferenceLine y={medianResults} {...AXIS.reference} />}
               <Tooltip content={<MapTooltip />} cursor={false} />
               <Scatter data={plotData} shape={BubbleShape as any} />
             </ScatterChart>
           </ResponsiveContainer>
+        </div>
+        <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mt-1.5")} data-testid="positioning-medians">
+          Dotted lines · the medians across plotted {groupNoun}s{medianCpa > 0 ? ` · ${fmtUSD(medianCpa)} ${costLabel.toLowerCase()}` : ""}{medianResults > 0 ? ` · ${fmtNum(medianResults)} ${resultPlural.toLowerCase()}` : ""}
+        </p>
         </div>
       )}
     </SectionCard>
@@ -799,6 +783,11 @@ export function AudienceView() {
   // always the account default); a stored choice is always honoured, so an
   // empty page is then an honest empty with the switch still on screen.
   const allDemoRows = analysis?.demographic_registration_signal;
+  // The demographic export is a SHARE of the account's spend (Bookster's is
+  // 9%: one registration campaign beside four objectives), and the tiles
+  // below read that share only. The Avatars page said so; this one did not
+  // (design pass, round 8).
+  const demoShare = spendShareLabel(breakdownSpendShare(analysis, getCampaignSummary(seed, adAccountId), "demographic"));
   const demoLanding = useMemo(
     () => resultScope.landRows(allDemoRows ?? [], (r) => r["Result type"]),
     [resultScope.landRows, allDemoRows],
@@ -1137,6 +1126,9 @@ export function AudienceView() {
                             : undefined
                         }
                       />
+                      <p className={cn(TYPE.microLabel, "text-muted-foreground/75 col-span-full")} data-testid="audience-source">
+                        Read from the demographic export{demoShare ? ` · ${demoShare}` : ""}
+                      </p>
                     </div>
                   )}
 

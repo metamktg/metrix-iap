@@ -193,7 +193,7 @@ export function HypothesisQueueView() {
             )}
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="In queue" value={String(hyps.length)} variant="primary" />
-              <MetricTile label="Ready for briefs" value={String(ready.length)} />
+              <MetricTile label="Hypotheses ready for brief" value={String(ready.length)} />
               <MetricTile label="Validation required" value={String(validating.length)} />
               <MetricTile label="Message pillars" value={String(pillars.length)} />
             </div>

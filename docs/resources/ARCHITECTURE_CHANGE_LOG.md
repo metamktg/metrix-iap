@@ -1873,3 +1873,91 @@ it used to cut the sentence to 72 characters as its own title; the map's own bas
 of the same blocks, so the raise is the finding's fix, not a regression, and the baseline is
 regenerated with `--write-baseline`, which also records the counts the fold and the captions
 lowered.
+
+**Live.** PR #222 merged into main as `0ca2cb15` (2026-09-05 19:44Z) on a green run, one commit. The
+workspace converged as `3e861868` (the post-merge hook: "Supabase schema unchanged (fingerprint
+3d7901136139); nothing applied", exit 0; the API Server on 8080, seed cache warmed in 63,381 ms; API
+Server, Metrix IAP and Marketing all RUNNING); deployment `329ef7e0` published to app.metrix.ad with
+status success at 20:04Z, serving `index-CO2mjgm-.js`. Verified by fetching the served build two
+import levels deep (131 chunks): the four-verb map (`budget:"Optimize"`, `investigate:"Validate"`,
+`avoid:"Retire"`) and "Engine kind: " in `RecommendationDrawer-B5VhWn0k.js`, `explore:"Validate"` in
+`scalingBuckets-vc_-JwBV.js`, "Tier as the run named it" in `FindingsView-BQZqchiW.js`, "Data anomaly
+· " in `recommendations-CnyB6Y5A.js`, "No updates published yet" in `OverviewUpdatesView-o31DGlK-.js`,
+"Logo policy" in `GeneralView-BOeFlyYA.js` and `ReportBuilderView-Ch2XEU4J.js`, and "Expand task
+tray" twice in the entry chunk (one button's title and label, where the strip used to carry two
+handles and a badge).
+
+
+## 35. The design conformance pass: a check that opens every control, the KPI metric picker bounded to the viewport, and the design standard as a gate (2026-09-05, UI and validation)
+
+**What changed.** The owner flagged significant UI regressions and asked that the design
+interface itself (optical hierarchy, progressive disclosure, user-friendliness, data
+visualisations, modules, filtering and dropdown configuration) become part of validation. The bar
+until then was static and browser-at-rest: nothing in it had ever clicked a control open.
+
+- **`check:controls` (`scripts/src/check-controls.mjs`).** A read-only browser check over every
+  route (`navTree.ts`, `App.tsx`, the legacy targets), two fixture accounts, 1440 and 390 px. For
+  every dropdown, popover, menu and dialog trigger it clicks and asserts: the surface OPENS (the
+  trigger reports expanded and a floating element gains size, whether a Radix popper, a
+  hand-portalled menu, a dialog or anything fixed that was not there before the click), it is
+  VISIBLE (inside the viewport, or scrollable within it), it is POPULATED, it carries the ROLE the
+  trigger promised, and it CLOSES on Escape. Native selects carry options and a name. Exit 0 / 1 /
+  2 like the other browser checks; allowlisted as manual-only for the workflow-coverage test.
+- **What its first run found.** The KPI tile's metric picker (`KpiMetricDropdown` in
+  `components/metrics/KpiTile.tsx`, every KPI tile on Analysis Overview, Ad Performance, Budget,
+  Avatars, the creative dialogs and the drill-downs since the unified tile of 2026-09-03) rendered
+  as a fixed menu as tall as the catalog, 633 px on Analysis Overview: it ran past the bottom of a
+  900 px window, past the fold on a phone with its lower rows unreachable, and a scroll listener
+  on the window in capture closed it on any scroll, its own included; it promised a listbox
+  (`aria-haspopup="listbox"`) and rendered a div with no role; it had no Escape. Every unit test
+  and every static gate passed. Now: `role="listbox"` named by the trigger through
+  `aria-controls`, `role="option"` rows with `aria-selected`, a height bounded to the room the
+  viewport has (below the trigger when there is enough, above it when there is more room there,
+  `MENU_MIN_BELOW` 200 px) with an internal scroll, a dismiss that ignores the menu's own scroll,
+  and Escape closing with focus returned to the trigger.
+- **What its full sweep found.** Over 404 controls across 204 visits, one more of the same
+  class: the tile metric pickers built on the shared Popover (`MetricPickerTile` and `RankSortBar`
+  in `pages/metrix/analysis/rankSort.tsx`, `MetricPickerButton` in
+  `components/creative/MetricPicker.tsx`) carry a catalog list as tall as 490 px with no height
+  bound and no collision padding, so on the Audience page at 390 px the "Spend" picker flipped
+  above its tile and ran 34 px past the top of the screen. Each is bounded now to Radix's
+  available height (`--radix-popover-content-available-height`) with an internal scroll and 8 px
+  of collision padding, and the shared primitives themselves (`PopoverContent` and
+  `HoverCardContent` in `artifacts/command-deck`) default `collisionPadding` to 8, so every
+  popover in the product keeps off the viewport edges whether or not its caller thought of it.
+- **What the crawl review found** (two reviewers over the 204 shots, reconciled in the register's
+  §G.2). Five defects and eighteen regressions fixed in this entry: both funnels name the rows
+  they read on the first layer (a demographic export is a share of the account; the no-cell
+  account's funnel read 3,074 purchases under an Account Overview reading 26 with nothing between
+  them, Bookster's 31,542 impressions under a tile reading 2.57M) and an untyped export is named
+  from the campaign summary when exactly one event owns its totals (`summaryEventForRows`:
+  Bookster's 78 registrations, read as such on Audience and as "no result event" on the funnel);
+  the funnel has one basis switch (`FunnelBasisSwitch`, controlled `basis` on `FunnelChart`) and
+  no module repeating the KPI row; the Strategy Map's hypotheses pane flows in the page below lg;
+  the formula cards are one column on a phone; the Overview and Strategy donuts always carry their
+  legend; the positioning map's quadrants are a legend over the plot with the four verbs and the
+  medians a line under it (the corner words and the "median" labels sat where the marks land);
+  the analysis export reads the run's grain and the current run (`lib/analysisExport.ts`; three
+  surfaces told a completed run to run first); Findings names the missing intelligence package;
+  the tier filter, the playbook lanes and Direction speak the four verbs (`bucketVerbKey`); a
+  `SectionCard` title wraps below lg and a dumbbell row's plot takes a row of its own below sm
+  (both dots sat on one point at 390 px); the MST tiles read a dash before their producer has run;
+  Creative Scan counts staged files; the date-range disclosure carries its value; the status hub's
+  labels are one fragment each. Thirty-one confirmed findings are filed for round 9 (task #53).
+- **The pass itself** (`docs/resources/METRIX_DESIGN_CONFORMANCE_PASS_2026-09.md`): `check:controls`,
+  the crawl of the touched routes READ against the standard (the checklist in its §2: hierarchy,
+  disclosure, controls and filters with their persistence, charts and modules, layout), and an
+  interaction sweep of every control the PR adds or touches (open, choose, close, reload). Its
+  findings go to the audit register; every UI pull request records the pass in its body.
+
+**What proves it.** `round8-design-pass.test.tsx`: the summary attribution (one event, never two,
+never unknown, never over a typed row), the controlled basis and the single switch, the map's
+legend and vocabulary, the export's grain and scope, the verb key, the playbook lanes, the dash
+tiles, the primitives' phone rules; `ad-performance-canvas.test.tsx` names Bookster's
+registrations from the summary and filters by Retire. `KpiTile.test.tsx`: the menu is a labelled listbox of options, the active one
+selected, named by the trigger; Escape closes it and returns focus; its own scroll keeps it open
+and a page scroll closes it; the height bound is present. The two persistence tests and the
+Budget-view test select options, not buttons. `check:controls` on this tree: clean, 406 controls opened, populated and closed, 6 selects labelled and populated, across 204 visits (two more than the first sweep: the funnel's one basis switch replaced three). The full suite: 230 files, 2,756 tests; `check:friction` clean with its baseline re-written to lock two routes' gains; the interaction sweep of the touched controls at both widths, 30 checks, clean.
+
+**How far it reaches.** UI and validation only; no data path, schema or endpoint. The tile's
+selection, persistence and catalog are untouched; the menu's placement and roles change.

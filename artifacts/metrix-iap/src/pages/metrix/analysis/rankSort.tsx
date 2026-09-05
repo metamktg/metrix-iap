@@ -191,7 +191,7 @@ export function RankSortBar<Row>({
           <ChevronDown className={cn("w-3 h-3 text-muted-foreground/75 transition-transform", open && "rotate-180")} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-56 p-0 border-border/60 bg-popover/95 backdrop-blur-sm overflow-hidden">
+      <PopoverContent align="start" collisionPadding={8} className="w-56 p-0 border-border/60 bg-popover/95 backdrop-blur-sm overflow-x-hidden overflow-y-auto max-h-[var(--radix-popover-content-available-height)]">
         <MetricOptionList
           ids={metrics.map((m) => m.id)}
           labelFor={(id) => metrics.find((m) => m.id === id)?.label ?? id}
@@ -262,7 +262,7 @@ export function MetricPickerTile({
             )} />
           </button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-56 p-0 border-border/60 bg-popover/95 backdrop-blur-sm overflow-hidden">
+        <PopoverContent align="start" collisionPadding={8} className="w-56 p-0 border-border/60 bg-popover/95 backdrop-blur-sm overflow-x-hidden overflow-y-auto max-h-[var(--radix-popover-content-available-height)]">
           <MetricOptionList
             ids={options.map((o) => o.id)}
             labelFor={(id) => options.find((o) => o.id === id)?.label ?? id}
