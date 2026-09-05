@@ -149,14 +149,21 @@ export function SectionInfoIcon({ tip }: { tip: string }) {
 
 // ─── Info tooltip ──────────────────────────────────────────────────────
 
-export function InfoTooltip({ content }: { content: string }) {
+/**
+ * `label` names the control for assistive tech. The default, "More info",
+ * is right for a lone control beside a heading; a row of them (the pages
+ * strip carries one per page) needs a distinct name each, or a screen
+ * reader hears the same two words seven times with nothing to tell them
+ * apart.
+ */
+export function InfoTooltip({ content, label = "More info" }: { content: React.ReactNode; label?: string }) {
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             type="button"
-            aria-label="More info"
+            aria-label={label}
             // 24×24 hit area around a 14px glyph (WCAG 2.2 AA target size);
             // the negative margin keeps the glyph's layout footprint.
             className="inline-flex items-center justify-center shrink-0 h-6 w-6 -m-[5px] text-muted-foreground/75 hover:text-muted-foreground/80 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
@@ -1567,34 +1574,67 @@ export interface HubNavItem {
   lineage?: string;
 }
 
-export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; label?: string }) {
-  const [, navigate] = useLocation();
+/**
+ * What a page is for and what it reads, behind one info tooltip beside the
+ * page's name (owner, 2026-09-05): the description sentence and the lineage
+ * caption used to sit on the card face, which put a sentence on the first
+ * layer of every command centre and, on a phone, three lines under each
+ * page name before the next page. The tooltip carries both; the face keeps
+ * the icon, the name and the arrow. The trigger is a sibling of the
+ * navigation button, never inside it (a control inside a control is
+ * invalid HTML and one of them silently stops working).
+ */
+function HubNavInfo({ item }: { item: HubNavItem }) {
   return (
-    <div>
-      <div className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-2.5 px-0.5")}>{label}</div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {items.map((c) => (
-          <button
-            key={c.to}
-            type="button"
-            onClick={() => navigate(c.to)}
-            className="pressable-lg group relative flex items-start gap-3 text-left rounded-xl border border-border/40 bg-foreground/[0.02] p-4 pr-8 transition-[color,background-color,border-color,box-shadow,opacity,transform] hover:border-primary/35 hover:bg-primary/[0.05] hover:-translate-y-px"
-          >
-            <span className="shrink-0 w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center transition-colors group-hover:bg-primary/20 group-hover:border-primary/35">
-              <c.Icon className="w-4 h-4 text-interactive" />
+    <InfoTooltip
+      label={`About ${item.label}`}
+      content={
+        <>
+          <span className="block">{item.desc}</span>
+          {item.lineage && (
+            <span className={cn(TYPE.microLabel, "block mt-1.5 font-mono text-muted-foreground/75")} data-testid="hub-nav-lineage">
+              {item.lineage}
             </span>
-            <div className="min-w-0 flex-1">
-              <div className="text-title font-bold text-foreground">{c.label}</div>
-              <p className="text-caption text-muted-foreground/80 leading-relaxed mt-0.5">{c.desc}</p>
-              {c.lineage && (
-                <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mt-1 truncate")} data-testid="hub-nav-lineage">{c.lineage}</p>
-              )}
-            </div>
-            <ArrowRight className="absolute right-3.5 top-4 w-3.5 h-3.5 text-muted-foreground/75 transition-[color,background-color,border-color,box-shadow,opacity,transform] group-hover:text-interactive group-hover:translate-x-0.5" aria-hidden />
-          </button>
+          )}
+        </>
+      }
+    />
+  );
+}
+
+/**
+ * A stage's pages as a row of chips at the top of its command centre
+ * (owner, 2026-09-05): a reader landing on a centre reaches the subpage
+ * they came for before the run card, and each chip's tooltip says what
+ * that page is for and what it reads. This replaced the card grid the
+ * centres used to carry at the bottom, below the run card, where a reader
+ * met it last; every centre renders this one now.
+ */
+export function HubNavStrip({ items, label = "Pages" }: { items: HubNavItem[]; label?: string }) {
+  const [, navigate] = useLocation();
+  if (items.length === 0) return null;
+  return (
+    <nav aria-label={label} data-testid="hub-nav-strip" className="flex flex-col gap-2">
+      {/* The label on its own line whatever the chip count: with four chips
+          it fitted beside them and with seven it wrapped under, so two
+          centres a click apart read as two different controls. */}
+      <span className={cn(TYPE.microLabel, "text-muted-foreground/75 px-0.5")}>{label}</span>
+      <ul className="flex flex-wrap items-center gap-2">
+        {items.map((c) => (
+          <li key={c.to} className="inline-flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => navigate(c.to)}
+              className="pressable inline-flex items-center gap-1.5 h-9 pl-2.5 pr-3 rounded-lg border border-border/50 bg-foreground/[0.02] text-caption font-semibold text-foreground/85 hover:text-foreground hover:border-primary/35 hover:bg-primary/[0.05] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+            >
+              <c.Icon className="w-3.5 h-3.5 text-interactive shrink-0" aria-hidden />
+              <span className="whitespace-nowrap">{c.label}</span>
+            </button>
+            <HubNavInfo item={c} />
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </nav>
   );
 }
 

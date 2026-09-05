@@ -19,7 +19,7 @@ import { getAdAccount, getMST, getAnalysisData, getStrategyData, getAds } from "
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
   ModuleHeader, ModuleScopeGate, PrerequisiteGate,
-  StageLoopHub, buildLoopStages, HubNavGrid, FlowCrumb, useFromParam, withFrom,
+  StageLoopHub, buildLoopStages, HubNavStrip, FlowCrumb, useFromParam, withFrom,
   MetricTile, SectionCard, SectionInfoIcon, resultTerm, fmtUSD, fmtPct, fmtNum,
   useFocusParam, CaveatNote,
 } from "../shared";
@@ -554,6 +554,9 @@ export function MstCommandCenter() {
   // link out of this hub so the chain unwinds one hop at a time.
   const fp = useFromParam();
   const children = CHILDREN.map((c) => ({ ...c, to: withFrom(c.to, fp) }));
+  // The gate's own condition, shared with the pages strip: the pages read
+  // the matrix, so they have nothing to show until it exists.
+  const mstReady = status.mst.unlocked || (matrix?.columns.length ?? 0) > 0;
 
   return (
     <ModuleScopeGate section={SECTION} title="MST" account={account}>
@@ -584,6 +587,11 @@ export function MstCommandCenter() {
             <StageLoopHub stages={buildLoopStages(status)} current="mst" />
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
+              {/* The stage's pages first (owner, 2026-09-05): a reader landing
+                  here reaches the page they came for before the run card. Each
+                  chip's tooltip says what the page is for and what it reads. */}
+              {mstReady && <HubNavStrip items={children} label="MST pages" />}
+
               {/* Direction for this stage, from the account's own rows —
                   each tile carries the number behind it and a link to the
                   surface that proves it. Absent when this stage has none. */}
@@ -597,7 +605,7 @@ export function MstCommandCenter() {
                   16 matrix cells"). The server's `unlocked` (live briefs
                   exist) stays a second ticket through. */}
               <PrerequisiteGate
-                met={status.mst.unlocked || (matrix?.columns.length ?? 0) > 0}
+                met={mstReady}
                 loading={status.isLoading}
                 title="Generate briefs first"
                 message="MST reads matrix cells briefed for this account. This account doesn't have any generated briefs yet."
@@ -653,8 +661,6 @@ export function MstCommandCenter() {
                         </SectionCard>
                       </>
                     )}
-
-                    <HubNavGrid items={children} label="Explore MST" />
                   </>
                 )}
               </PrerequisiteGate>

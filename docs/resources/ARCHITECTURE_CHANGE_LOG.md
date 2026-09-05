@@ -1195,3 +1195,28 @@ assertions, two of them scoped to their card because the hub now carries the sam
 in slice 3 with the base-run control, Listen, Reports and Exports in slice 5. The schema change is
 one nullable column, applied by the post-merge hook. The ETA rule is client-side and reads
 `listAnalysisRuns`, which the page already polls at 3 s while a run is in flight.
+
+**Live (2026-09-05).** PR #214 merged at 11:30Z on a green run. The workspace convergence's
+post-merge hook applied the schema at 11:32Z: "Applying Supabase schema: 247 statement(s),
+fingerprint d3176d08b13c (changed, previously 82fdfd86695c)", "applied: 247 statement(s) in 21 s",
+no lock, retry, timeout or wait line; `information_schema.columns` reads `stage_timings jsonb` and
+`metrix_schema_state` carries the new fingerprint with 247 statements. The restarted workspace API
+server warmed its seed in 124.6 s with no "could not be read" line and no RangeError. The publish of the converged workspace (deployment 329ef7e0) started at 11:40Z and the public site served the new build at 11:45:43Z (`index-CMYzIOFm.js`, the `AnalysisCommandCenter` chunk carrying the hub's "Analysis status" region; the previous chunk carried none of it), `/api/healthz` 200 and `/api/metrix/auth/me` 401 through the router.
+Every run recorded before this build carries `stage_timings: null`, so the hub's slow-stage note has
+no evidence until at least one run finishes on it; the ETA reads the prior runs' durations already.
+
+**Addendum, the same afternoon (owner review of the live page).** The stage's subpages move to the
+top of the page as `HubNavStrip` (a new shell slot, `pages`, under the spine): a reader landing on a
+command centre reaches the page they came for before the run card. Each page's description sentence
+and lineage caption, which sat on the card face of every command centre, are behind an info tooltip
+beside the page's name; the tooltip's trigger is a sibling of the navigation button, never inside it,
+and it is named for its page ("About Ad Performance"), since a row of seven controls all called "More
+info" tells a screen reader nothing (`InfoTooltip` takes a `label`). The same afternoon the strip went
+onto the five centres not yet on the shell as well (Strategy, Creative, MST, Listen, Reports: first in
+the content column, under the spine; on MST and Reports it shows on the gate's own condition, since
+their pages read what the gate waits for), and `HubNavGrid`, the card grid every centre used to carry
+at the foot of the page below the run card, is retired: nothing renders it. `InfoTooltip` accepts a
+node so the tooltip can carry the two lines. Tests: `stage-layout.test.tsx` (the strip's slot, the two
+page buttons, nothing of the sentence or lineage on the face, one info control per page named for it
+and outside its button, the click navigates); `shared-exports.test.tsx` pins the export set without
+the grid.

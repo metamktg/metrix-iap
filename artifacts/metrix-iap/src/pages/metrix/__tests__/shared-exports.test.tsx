@@ -117,7 +117,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "PrerequisiteGate",
   "StageLoopHub",
   "buildLoopStages",
-  "HubNavGrid",
+  "HubNavStrip",
   "withFrom",
 ];
 

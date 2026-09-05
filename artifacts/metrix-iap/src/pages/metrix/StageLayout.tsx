@@ -1,8 +1,11 @@
 // ─── StageLayout · the Execution Layer shell ───────────────────────────
 // Sweep spec §3. Every Execution Layer page composes this: the page
 // supplies content, the shell supplies order, width and the slots, top to
-// bottom: header · spine · notice · status hub · execution card ·
-// direction rail · content · explore. Fixed rules: one column, max-w-5xl,
+// bottom: header · spine · pages · notice · status hub · execution card ·
+// direction rail · content. The pages strip (owner, 2026-09-05) puts the
+// stage's subpages at the top, where a reader landing on the centre looks
+// for them, with each page's purpose and lineage behind an info tooltip;
+// the explore grid at the foot of the page is gone. Fixed rules: one column, max-w-5xl,
 // the execution card always above the direction rail (a reader looks for
 // the button before the advice), the status hub always between the spine
 // and the execution card so the run's state is read before the run is
@@ -14,7 +17,7 @@
 
 import { useEffect } from "react";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { ModuleHeader, StageLoopHub, buildLoopStages, HubNavGrid, type HubNavItem, type StageStatusLike } from "./shared";
+import { ModuleHeader, StageLoopHub, buildLoopStages, HubNavStrip, type HubNavItem, type StageStatusLike } from "./shared";
 import { StatusHub } from "@/components/loop/StatusHub";
 import { RecommendationSlider } from "@/components/deck/RecommendationSlider";
 import type { DerivedRecommendation } from "@/lib/data/recommendations";
@@ -46,9 +49,10 @@ export interface StageLayoutProps {
   recommendations?: DerivedRecommendation[];
   /** The stage's own modules. */
   children?: React.ReactNode;
+  /** The stage's subpages, rendered as the pages strip under the spine. */
   explore?: HubNavItem[];
   exploreLabel?: string;
-  /** Anything that belongs after the explore grid (a hidden page's cross-link). */
+  /** Anything that belongs after the content (a hidden page's cross-link). */
   footer?: React.ReactNode;
 }
 
@@ -74,7 +78,7 @@ export function StageLayout({
   recommendations = [],
   children,
   explore = [],
-  exploreLabel = "Explore",
+  exploreLabel = "Pages",
   footer,
 }: StageLayoutProps) {
   const shown = firstNotice(notice);
@@ -93,6 +97,11 @@ export function StageLayout({
           content, sets it): a reader walking the loop must never see the
           content column jump between widths. */}
       <div className={cn("px-6 py-5 space-y-4 max-w-5xl")} data-testid="stage-layout-column">
+        {explore.length > 0 && (
+          <div data-slot="pages">
+            <HubNavStrip items={explore} label={exploreLabel} />
+          </div>
+        )}
         {shown && <div data-slot="notice">{shown}</div>}
         {hub && (
           <div data-slot="hub">
@@ -106,11 +115,6 @@ export function StageLayout({
           </div>
         )}
         {children && <div data-slot="content" className="space-y-4">{children}</div>}
-        {explore.length > 0 && (
-          <div data-slot="explore">
-            <HubNavGrid items={explore} label={exploreLabel} />
-          </div>
-        )}
         {footer && <div data-slot="footer">{footer}</div>}
       </div>
     </div>

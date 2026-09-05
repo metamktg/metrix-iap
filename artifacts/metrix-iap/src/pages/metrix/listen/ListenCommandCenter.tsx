@@ -13,7 +13,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { getAdAccounts, getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
-import { ModuleHeader, MetricTile, PendingState, HubNavGrid, SectionCard, StageLoopHub, buildLoopStages } from "../shared";
+import { ModuleHeader, MetricTile, PendingState, HubNavStrip, SectionCard, StageLoopHub, buildLoopStages } from "../shared";
 import { SignalDeck } from "@/components/signals/SignalDeck";
 import { useLocation } from "wouter";
 import { Radio, CheckCircle2, Circle, AlertTriangle, Bell, Activity, Lightbulb } from "lucide-react";
@@ -55,6 +55,11 @@ export function ListenCommandCenter() {
         title="Listen"
         subtitle="What's going on across every account. Alerts, signal, and what to do next."
       />
+      {/* The stage's pages first (owner, 2026-09-05): a reader landing here
+          reaches the page they came for before the summaries. */}
+      <div className="px-6 pt-5">
+        <HubNavStrip items={LISTEN_CHILDREN} label="Listen pages" />
+      </div>
       <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
         <MetricTile label="Accounts connected" value={`${configuredCount} / ${accounts.length}`} />
         <MetricTile label="High-impact signals" value={String(totalHigh)} />
@@ -99,8 +104,6 @@ export function ListenCommandCenter() {
             ))}
           </div>
         </SectionCard>
-
-        <HubNavGrid items={LISTEN_CHILDREN} label="Explore Listen" />
       </div>
     </div>
   );
@@ -127,6 +130,9 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
         subtitle="What's going on in this account. Alerts, signal, and what to do next."
       />
       <StageLoopHub stages={buildLoopStages(status)} current="listen" />
+      <div className="px-6 pt-5">
+        <HubNavStrip items={LISTEN_CHILDREN} label="Listen pages" />
+      </div>
       <div className="px-6 pt-5 grid grid-cols-2 gap-3">
         <MetricTile label="High-impact signals" value={String(highImpact)} />
         <MetricTile label="Total signals" value={String(signals.length)} />
@@ -154,8 +160,6 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
             />
           </div>
         )}
-
-        <HubNavGrid items={LISTEN_CHILDREN} label="Explore Listen" />
       </div>
     </div>
   );
