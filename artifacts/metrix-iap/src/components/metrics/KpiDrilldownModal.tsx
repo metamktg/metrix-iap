@@ -290,11 +290,13 @@ export interface KpiDrilldownModalProps {
   scopeNarrowed?: boolean;
   /** Which data window / analysis run the numbers come from (header indicator). */
   windowLabel?: string;
+  /** What `scopedCellRows` are: creative cells (default) or the per-ad rows stood in for a run without a cell library. */
+  cellGrain?: "cell" | "ad";
 }
 
 export function KpiDrilldownModal({
   open, onClose, scope, metricId, catalog,
-  accounts = [], analysis = null, scopedCellRows, scopeNarrowed = false, windowLabel,
+  accounts = [], analysis = null, scopedCellRows, scopeNarrowed = false, windowLabel, cellGrain = "cell",
 }: KpiDrilldownModalProps) {
   // Metric is switchable inside the modal; re-sync to the opening tile.
   const [activeMetricId, setActiveMetricId] = useState<string | null>(metricId);
@@ -307,7 +309,10 @@ export function KpiDrilldownModal({
   // source rows are account-wide — offering them here would show
   // full-flight numbers under a restricted-window label, so they are
   // withheld until the user returns to the all-data view.
-  const allDimensions = useMemo(() => listBreakdownDimensions(analysis), [analysis]);
+  const allDimensions = useMemo(
+    () => listBreakdownDimensions(analysis, cellGrain === "ad" ? { cellRows: scopedCellRows ?? [], grain: "ad" } : {}),
+    [analysis, cellGrain, scopedCellRows],
+  );
   const dimensions = useMemo(
     () => (scopeNarrowed ? allDimensions.filter((d) => d.id === "cell" || d.id === "concept") : allDimensions),
     [allDimensions, scopeNarrowed],

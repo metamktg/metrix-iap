@@ -293,6 +293,14 @@ export interface LibraryCatalogScope {
    * on the rows — never for every vertical as if every client sold goods.
    */
   events?: readonly string[];
+  /**
+   * What one row is: a creative cell (the importer's library) or an AD (the
+   * seed's per-ad totals, stood in when the run wrote no cell library). The
+   * count tile says which; nothing else changes.
+   */
+  grain?: "cell" | "ad";
+  /** Fields the rows carry as 0 because the source never measured them; their tiles read a dash with the reason. */
+  unmeasured?: readonly ("reach" | "clicks_all")[];
 }
 
 /**
@@ -312,21 +320,29 @@ function accountCarriesEvent(
 }
 
 export function buildLibraryMetricCatalog(rows: CellPerformanceRow[], scopeInfo: LibraryCatalogScope = {}): MetricDef[] {
+  const adGrain = scopeInfo.grain === "ad";
+  // No rows is no data, not a measured zero: an account whose run wrote no
+  // cell library read "0 cells · $0 · 0 purchases" here for a run that had
+  // $1.4M behind it. The count, spend and results tiles carry null and a
+  // dash until a row exists.
+  const hasRows = rows.length > 0;
   const uniqueCells = new Set(rows.map((r) => r.cell_id)).size;
   const spend = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
   const results = rows.reduce((s, r) => s + r.Results, 0);
   const communication = scopeInfo.scale === "communication";
-  const cpa = !communication && results > 0 ? spend / results : null;
+  const cpa = !communication && results > 0 && spend > 0 ? spend / results : null;
   const resultsLabel = scopeInfo.label ? `${scopeInfo.label}` : "Results (selected)";
+  const unmeasured = new Set(scopeInfo.unmeasured ?? []);
+  const unmeasuredSub = "not carried by this account's per-ad totals";
 
   const singleEvent = new Set(rows.map((r) => r["Result type"])).size <= 1;
   const deliverySum = (pick: (r: CellPerformanceRow) => number): number | null =>
     singleEvent && rows.length > 0 ? rows.reduce((s, r) => s + pick(r), 0) : null;
 
   const impressions = deliverySum((r) => r.Impressions);
-  const reach = deliverySum((r) => r.Reach);
+  const reach = unmeasured.has("reach") ? null : deliverySum((r) => r.Reach);
   const linkClicks = deliverySum((r) => r["Link clicks"]);
-  const clicksAll = deliverySum((r) => r["Clicks (all)"]);
+  const clicksAll = unmeasured.has("clicks_all") ? null : deliverySum((r) => r["Clicks (all)"]);
   const ctr = impressions != null && impressions > 0 && linkClicks != null ? (linkClicks / impressions) * 100 : null;
   const multiEventSub = singleEvent ? undefined : "select one event to see delivery totals";
   // Communication scale (awareness scope): the event's own rate, CPM and
@@ -421,15 +437,15 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[], scopeInfo:
     : [];
 
   return [
-    def("lib_cells",           "Creative cells",      uniqueCells,   fmtNum(uniqueCells)),
-    def("lib_spend",           "Spend (selected)",    spend,         fmtUSD(spend, 0)),
-    def("lib_results",         resultsLabel,          results,       fmtNum(results), communication ? "awareness event · communication scale" : undefined),
+    def("lib_cells",           adGrain ? "Ads with performance" : "Creative cells", hasRows ? uniqueCells : null, hasRows ? fmtNum(uniqueCells) : "–", adGrain ? "no creative cell library in this run · one row per ad" : undefined),
+    def("lib_spend",           "Spend (selected)",    hasRows ? spend : null,   hasRows ? fmtUSD(spend, 0) : "–"),
+    def("lib_results",         resultsLabel,          hasRows ? results : null, hasRows ? fmtNum(results) : "–", communication ? "awareness event · communication scale" : undefined),
     ...(communication ? [] : [def("lib_cpa", "Avg CPA", cpa, cpa != null ? fmtUSD(cpa) : "–", "spend ÷ results across the scope")]),
     ...communicationTiles,
     def("lib_impressions",     "Impressions",         impressions,   fmtNum(impressions),                  multiEventSub),
-    def("lib_reach",           "Reach",               reach,         fmtNum(reach),                        multiEventSub),
+    def("lib_reach",           "Reach",               reach,         reach != null ? fmtNum(reach) : "–", unmeasured.has("reach") ? unmeasuredSub : multiEventSub),
     def("lib_link_clicks",     "Link clicks",         linkClicks,    fmtNum(linkClicks),                   multiEventSub),
-    def("lib_clicks_all",      "Clicks (all)",        clicksAll,     fmtNum(clicksAll),                    multiEventSub),
+    def("lib_clicks_all",      "Clicks (all)",        clicksAll,     clicksAll != null ? fmtNum(clicksAll) : "–", unmeasured.has("clicks_all") ? unmeasuredSub : multiEventSub),
     def("lib_link_ctr",        "Link CTR",            ctr,           ctr != null ? fmtPct(ctr) : "–",     multiEventSub ?? "link clicks ÷ impressions"),
     // ── Lower-funnel tiles ───────────────────────────────────────────
     def("lib_cvr",             "CVR",                 cvr,           cvr != null ? fmtPct(cvr) : "–",     "results ÷ link clicks"),

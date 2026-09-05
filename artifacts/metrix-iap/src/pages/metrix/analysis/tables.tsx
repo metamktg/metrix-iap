@@ -267,24 +267,43 @@ export function MagnitudeCell({
 // Used when row count exceeds VIRTUAL_THRESHOLD. Uses the padding-row
 // approach so standard table column layout is preserved (no absolute
 // positioning). The scroll container ref comes from TableShell's div.
+//
+// The virtualizer is created by the TABLE component (the one that owns the
+// scroll div), never by a child rendered inside that div. React attaches a
+// host ref in the commit phase AFTER the descendants' layout effects have
+// run, so a virtualizer created in a child of the scroll container asks
+// `getScrollElement()` in its layout effect and gets null, subscribes to
+// nothing, and its first (and only) render has no range: the Variables tab
+// showed a header and no rows for every account past 50 variables until a
+// sort click re-ran the effect (Pure Path, 2026-09-05; the browser check
+// is scripts/src/visual/check-virtual-tables.mjs, jsdom has no layout).
+// From the table component the effect runs after the div's ref is set.
 const VIRTUAL_THRESHOLD = 50;
 const ESTIMATED_ROW_PX = 48;
+// The shell's max height: the first synchronous render already carries a
+// page of rows instead of an empty body that grows over two more renders.
+const SHELL_MAX_PX = 520;
 
-function VirtualTableBody<Row>({
-  rows,
-  scrollRef,
-  renderRow,
-}: {
-  rows: Row[];
-  scrollRef: React.RefObject<HTMLDivElement | null>;
-  renderRow: (row: Row, index: number) => React.ReactNode;
-}) {
-  const virtualizer = useVirtualizer({
-    count: rows.length,
+function useTableVirtualizer(count: number, scrollRef: React.RefObject<HTMLDivElement | null>, enabled: boolean) {
+  return useVirtualizer({
+    count,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => ESTIMATED_ROW_PX,
     overscan: 8,
+    enabled,
+    initialRect: { width: 0, height: SHELL_MAX_PX },
   });
+}
+
+function VirtualTableBody<Row>({
+  rows,
+  virtualizer,
+  renderRow,
+}: {
+  rows: Row[];
+  virtualizer: ReturnType<typeof useTableVirtualizer>;
+  renderRow: (row: Row, index: number) => React.ReactNode;
+}) {
   const items = virtualizer.getVirtualItems();
   const totalSize = virtualizer.getTotalSize();
   const paddingTop = items.length > 0 ? (items[0]?.start ?? 0) : 0;
@@ -293,7 +312,7 @@ function VirtualTableBody<Row>({
     : 0;
 
   return (
-    <tbody>
+    <tbody data-testid="virtual-table-body">
       {paddingTop > 0 && <tr aria-hidden="true"><td colSpan={999} style={{ height: paddingTop, padding: 0 }} /></tr>}
       {items.map((item) => renderRow(rows[item.index]!, item.index))}
       {paddingBottom > 0 && <tr aria-hidden="true"><td colSpan={999} style={{ height: paddingBottom, padding: 0 }} /></tr>}
@@ -354,6 +373,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
   const { sorted, sort, toggle, reset } = useColumnSort(rows, CELL_COLUMNS);
   const scrollRef = useRef<HTMLDivElement>(null);
   const useVirtual = sorted.length > VIRTUAL_THRESHOLD;
+  const virtualizer = useTableVirtualizer(sorted.length, scrollRef, useVirtual);
 
   // Scales are built from the WHOLE row set, not the visible page. With
   // virtualisation on, scaling to what happens to be on screen would make a
@@ -418,7 +438,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
       <TableShellInner scrollRef={scrollRef}>
         {thead}
         {useVirtual
-          ? <VirtualTableBody rows={sorted} scrollRef={scrollRef} renderRow={renderRow} />
+          ? <VirtualTableBody rows={sorted} virtualizer={virtualizer} renderRow={renderRow} />
           : <tbody>{sorted.map((r) => renderRow(r, 0))}</tbody>
         }
       </TableShellInner>
@@ -493,6 +513,7 @@ export function VariableTable({
   const { sorted, sort, toggle, reset } = useColumnSort(rows, VARIABLE_COLUMNS);
   const scrollRef = useRef<HTMLDivElement>(null);
   const useVirtual = sorted.length > VIRTUAL_THRESHOLD;
+  const virtualizer = useTableVirtualizer(sorted.length, scrollRef, useVirtual);
 
   const spendScale = useMemo(() => barScale(rows.map((r) => r["Amount spent (USD)"])), [rows]);
   const resultScale = useMemo(() => barScale(rows.map((r) => r.Results)), [rows]);
@@ -615,7 +636,7 @@ export function VariableTable({
       <TableShellInner scrollRef={scrollRef}>
         {thead}
         {useVirtual
-          ? <VirtualTableBody rows={sorted} scrollRef={scrollRef} renderRow={renderRow} />
+          ? <VirtualTableBody rows={sorted} virtualizer={virtualizer} renderRow={renderRow} />
           : <tbody>{sorted.map((r, i) => renderRow(r, i))}</tbody>
         }
       </TableShellInner>

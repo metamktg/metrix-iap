@@ -15,6 +15,7 @@
 //     only link_clicks (the one shared field) is offered there.
 
 import { blendableEvents, classifyResultEvent } from "@/lib/resultEvents";
+import { NO_CONCEPT_CODE } from "@/lib/ad-grain-rows";
 import { fmtUSD, fmtNum, fmtPct, eventLabel, platformLabel, deviceLabel } from "@/pages/metrix/shared";
 import { scopeToRun } from "@/lib/run-supersede";
 import type {
@@ -124,6 +125,18 @@ export function metricValueFromTotals(metricId: string, t: BreakdownTotals): num
     default:
       return null;
   }
+}
+
+/**
+ * Whether a tile metric can be read off a segment's totals at all. The IAP
+ * Library's first tile is `lib_cells`, a count no segment can carry, and the
+ * Breakdown tab opened on it: every row null, "No segment data for this
+ * selection", for an import with five backed dimensions. The explorer offers
+ * only metrics this returns true for.
+ */
+const PROBE_TOTALS: BreakdownTotals = { spend: 100, impressions: 10_000, reach: 5_000, clicksAll: 200, linkClicks: 100, results: 10 };
+export function isBreakdownMetric(metricId: string): boolean {
+  return metricValueFromTotals(metricId, PROBE_TOTALS) != null;
 }
 
 export function formatBreakdownValue(metricId: string, v: number | null): string {
@@ -308,14 +321,33 @@ function familyLabel(family: string): string {
   return `${humanised} variables`;
 }
 
+export interface BreakdownDimensionOptions {
+  /**
+   * The rows the "cell" and "concept" dimensions group, when they are not
+   * `a.performance_by_cell`: the ad-grain rows a run without a cell library
+   * stands in (lib/ad-grain-rows). With `grain: "ad"` the cell dimension is
+   * labelled "Ad" and the concept dimension exists only when at least one ad
+   * carries a concept code, so a menu never offers one bucket named "No
+   * concept code" as if it were a breakdown.
+   */
+  cellRows?: readonly CellPerformanceRow[];
+  grain?: "cell" | "ad";
+}
+
 /** Dimensions actually backed by rows in this account's analysis data. */
-export function listBreakdownDimensions(a: AnalysisData | null | undefined): BreakdownDimension[] {
+export function listBreakdownDimensions(a: AnalysisData | null | undefined, opts: BreakdownDimensionOptions = {}): BreakdownDimension[] {
   if (!a) return [];
   const dims: BreakdownDimension[] = [];
   // Partial analysis bundles (older fixtures/imports) may omit arrays.
-  if ((a.performance_by_cell ?? []).length > 0) {
-    dims.push({ id: "concept", label: "Concept", basis: "delivery" });
-    dims.push({ id: "cell", label: "Creative cell", basis: "delivery" });
+  const cellRows = opts.cellRows ?? a.performance_by_cell ?? [];
+  if (cellRows.length > 0) {
+    if (opts.grain === "ad") {
+      if (cellRows.some((r) => r.concept_variable)) dims.push({ id: "concept", label: "Concept code", basis: "delivery" });
+      dims.push({ id: "cell", label: "Ad", basis: "delivery" });
+    } else {
+      dims.push({ id: "concept", label: "Concept", basis: "delivery" });
+      dims.push({ id: "cell", label: "Creative cell", basis: "delivery" });
+    }
   }
   const families = [
     ...new Set(
@@ -430,7 +462,9 @@ export function buildAccountBreakdown(
   );
 
   if (dimensionId === "cell") {
-    return groupRows(cellRows, (r) => r.cell_id, (r) => `${r.cell_id} · ${r.book2_concept_name}`, cellRowTotals, metricId);
+    // An ad-grain row's "concept" is the ad's own name or "No concept code":
+    // repeating it after the id would label a bar "Ad 1 · Ad 1".
+    return groupRows(cellRows, (r) => r.cell_id, (r) => (r.book2_concept_name && r.book2_concept_name !== r.cell_id && r.book2_concept_name !== NO_CONCEPT_CODE ? `${r.cell_id} · ${r.book2_concept_name}` : r.cell_id), cellRowTotals, metricId);
   }
   if (dimensionId === "concept") {
     return groupRows(cellRows, (r) => r.book2_concept_name, (r) => r.book2_concept_name, cellRowTotals, metricId);

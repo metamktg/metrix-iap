@@ -16,6 +16,11 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@workspac
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { humanizeEnum } from "@/lib/normalize";
 import type { CreativeCardData } from "./CreativeCard";
+
+/** The key a card's media shares with this dialog's: an ad tile is one ad, never the "AD" code every ad tile shares. */
+export function creativeLayoutKey(data: Pick<CreativeCardData, "conceptCode" | "adNames">): string {
+  return data.adNames && data.adNames.length > 0 ? `ad:${data.adNames.join("|")}` : data.conceptCode;
+}
 import { FunnelStepsChart, buildFunnelSteps, describeFunnelChain, funnelStepLabel } from "./FunnelStepsChart";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -765,7 +770,7 @@ export function CreativeExpandDialog({
   // second (spec §14). When ad-grain rows exist they replace the cell-only
   // paths below; the account-level fallbacks stay for accounts whose latest
   // run predates the layer.
-  const evidence = useCreativeEvidence(data.conceptCode);
+  const evidence = useCreativeEvidence(data.conceptCode, data.adNames);
   // The cell-grain demographic rows live on the account's analysis; a call
   // site that passes none (the Creative Library did) must not turn a cell
   // with rows into "No demographic data" — the derivation one line down
@@ -808,7 +813,7 @@ export function CreativeExpandDialog({
               disappearing and a modal fading in elsewhere. See the comment on
               the card side for why the tile stays mounted. */}
           <div className="relative overflow-hidden bg-surface-preview sm:border-r border-b sm:border-b-0 border-border/30">
-            <motion.div layoutId={`creative-media-${data.conceptCode}`} className="absolute inset-0">
+            <motion.div layoutId={`creative-media-${creativeLayoutKey(data)}`} className="absolute inset-0">
               <ExpandVisual data={data} className="absolute inset-0" />
             </motion.div>
 
