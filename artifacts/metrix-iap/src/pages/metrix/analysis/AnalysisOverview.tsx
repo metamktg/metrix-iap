@@ -1078,7 +1078,7 @@ export function AnalysisOverview() {
                           height={148}
                           showLegend={resultTypePie.length <= 3}
                         />
-                        <div className={cn(TYPE.label, "text-muted-foreground/70 mt-1")} data-testid="donut-source">
+                        <div className={cn(TYPE.label, "text-muted-foreground/75 mt-1")} data-testid="donut-source">
                           spend share · {donutSource}
                         </div>
                         <div className="mt-1.5 flex justify-end">
