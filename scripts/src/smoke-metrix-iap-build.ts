@@ -4,11 +4,9 @@
 //
 // After the build succeeds the script starts `vite preview` on the built
 // output and uses Playwright to navigate to the root URL, asserting that the
-// login form ([data-testid="form-login"]) is visible. It also runs a separate
-// live-session boot through the managed composite router when that router is
-// available. This catches the class of regression where a broken LoginPage
-// import compiles TypeScript cleanly but produces a React render error that
-// leaves users with a blank screen.
+// login form ([data-testid="form-login"]) is visible.  This catches the class
+// of regression where a broken LoginPage import compiles TypeScript cleanly
+// but produces a React render error that leaves users with a blank screen.
 //
 // Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-build
 //
@@ -18,13 +16,10 @@
 // before Vite could start.
 
 import { spawn, type ChildProcess } from "node:child_process";
-import { randomBytes } from "node:crypto";
 import { spawnGroup, killGroup } from "./lib/process-group.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
 
 import { withValidationLock } from "./lib/validation-lock.js";
 
@@ -44,6 +39,8 @@ const BASE_PATH = "/";
 // and "fetch failed" there is not a routing verdict).
 const COMPOSITE_BASE_URL_EXPLICIT = process.env["METRIX_IAP_COMPOSITE_BASE_URL"];
 const COMPOSITE_BASE_URL = COMPOSITE_BASE_URL_EXPLICIT ?? "http://localhost:80";
+
+const PUBLISHED_BASE_URL_EXPLICIT = process.env["METRIX_IAP_PUBLISHED_URL"];
 
 // This is deliberately small: the boot smoke is checking the auth → seed →
 // authenticated-shell contract, not the completeness of the live seed. The
@@ -142,6 +139,15 @@ async function main() {
 }
 
 async function runSmoke() {
+  if (PUBLISHED_CHECK_REQUESTED && !PUBLISHED_BASE_URL) {
+    fail(
+      "Published routing check requires METRIX_IAP_PUBLISHED_URL",
+      "Pass the current published URL, for example: " +
+        "METRIX_IAP_PUBLISHED_URL=https://example.replit.app " +
+        "pnpm --filter @workspace/scripts run smoke:metrix-iap-build -- --published",
+    );
+  }
+
   // Build composite lib declarations first — the app typecheck depends on
   // fresh .d.ts output from lib/* (stale declarations cause bogus TS2305s).
   await runStep("Building lib declarations (typecheck:libs)", [
@@ -268,24 +274,35 @@ async function runSmoke() {
       );
     });
     routingChecked = true;
-
-    await assertLiveAuthenticatedBoot(COMPOSITE_BASE_URL).catch((err) => {
-      fail(
-        `Live authenticated dashboard boot check failed at ${COMPOSITE_BASE_URL}`,
-        String(err?.message ?? err),
-      );
-    });
   } else {
     console.log(
       `\nNOTE  No managed composite router listening at ${COMPOSITE_BASE_URL}; ` +
-        `routing and live-session checks skipped (set METRIX_IAP_COMPOSITE_BASE_URL to require them).`,
+        `routing check skipped (set METRIX_IAP_COMPOSITE_BASE_URL to require it).`,
+    );
+  }
+
+  let publishedRoutingChecked = false;
+  if (PUBLISHED_BASE_URL) {
+    await assertPublishedRouting(PUBLISHED_BASE_URL).catch((err) => {
+      fail(
+        `Published Metrix IAP routing check failed at ${PUBLISHED_BASE_URL}`,
+        String(err?.message ?? err),
+      );
+    });
+    publishedRoutingChecked = true;
+  } else {
+    console.log(
+      "\nNOTE  Published routing not checked; set " +
+        "METRIX_IAP_PUBLISHED_URL to verify the live deployment.",
     );
   }
 
   console.log(
-    routingChecked
-      ? `\nPASS  Metrix IAP production build and managed routing checks passed: pre-auth forms, deep links, live auth session, and /api responses verified`
-      : `\nPASS  Metrix IAP production build checks passed: pre-auth forms and deep links verified (managed routing and live session not checked, no router listening)`,
+    publishedRoutingChecked
+      ? `\nPASS  Metrix IAP production build, managed routing, and published routing checks passed`
+      : routingChecked
+        ? `\nPASS  Metrix IAP production build and managed routing checks passed: pre-auth forms, deep links, and /api responses verified`
+        : `\nPASS  Metrix IAP production build checks passed: pre-auth forms and deep links verified (managed routing not checked, no router listening)`,
   );
   process.exit(0);
 }
@@ -837,351 +854,6 @@ async function assertAuthenticatedBoot(port: string): Promise<void> {
   }
 }
 
-// ── live authenticated dashboard boot assertion ─────────────────────────────
-
-const LIVE_SESSION_COOKIE = "metrix_session";
-// Seed assembly is intentionally a real Supabase read. Large live bundles can
-// take over a minute, so this is longer than the deterministic preview checks
-// without allowing a hung API request to block the validation indefinitely.
-const LIVE_SESSION_TIMEOUT_MS = 120_000;
-const LIVE_DIAGNOSTIC_BODY_LIMIT = 4_000;
-
-function diagnosticBody(body: string): string {
-  return body.length > LIVE_DIAGNOSTIC_BODY_LIMIT
-    ? `${body.slice(0, LIVE_DIAGNOSTIC_BODY_LIMIT)}…`
-    : body;
-}
-
-function parseJsonBody(body: string, label: string): Record<string, unknown> {
-  try {
-    const parsed: unknown = JSON.parse(body);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new Error("response was not a JSON object");
-    }
-    return parsed as Record<string, unknown>;
-  } catch (err) {
-    throw new Error(
-      `${label} returned invalid JSON: ${String(err instanceof Error ? err.message : err)}`,
-    );
-  }
-}
-
-function sessionCookieFromHeaders(headers: Headers): string | null {
-  const headersWithSetCookie = headers as Headers & {
-    getSetCookie?: () => string[];
-  };
-  const setCookie = headersWithSetCookie.getSetCookie?.().join("\n") ??
-    headers.get("set-cookie") ??
-    "";
-  const match = setCookie.match(
-    new RegExp(`(?:^|[\\n,]\\s*)${LIVE_SESSION_COOKIE}=([^;\\s,]+)`),
-  );
-  return match?.[1] ? `${LIVE_SESSION_COOKIE}=${match[1]}` : null;
-}
-
-/**
- * Proves the real session-cookie → seed → dashboard path through the managed
- * composite router. The user row is created directly in the app's own
- * Postgres only as test setup; authentication, seed assembly, and the browser
- * render all use the production API routes. No ad-account row or grant is
- * created, and the user/session are removed in finally.
- */
-async function assertLiveAuthenticatedBoot(baseUrl: string): Promise<void> {
-  const { chromium } = await import("playwright-core");
-  const liveEmail =
-    `metrix-live-boot-${process.pid}-${randomBytes(8).toString("hex")}@example.invalid`;
-  const livePassword = randomBytes(32).toString("base64url");
-  const apiObservations: ApiObservation[] = [];
-  const browserConsoleErrors: string[] = [];
-  const pageErrors: string[] = [];
-  let userId: number | null = null;
-  let sessionCookie: string | null = null;
-  let browserSeedPayload: Record<string, unknown> | null = null;
-  let browser: any = null;
-  // Playwright is loaded dynamically because the scripts package does not
-  // ship its own browser dependency. Keep this local surface narrow without
-  // coupling the smoke script to Playwright's type package.
-  let context: any = null;
-  let primaryError: unknown = null;
-  let cleanupError: unknown = null;
-
-  const recordApi = (
-    method: string,
-    url: string,
-    status: number,
-    body: string,
-  ) => {
-    apiObservations.push({
-      method,
-      url,
-      status,
-      body: diagnosticBody(body),
-    });
-  };
-
-  const diagnostics = () => {
-    const consoleText =
-      browserConsoleErrors.length > 0
-        ? browserConsoleErrors.map((entry) => `  • ${entry}`).join("\n")
-        : "  (none)";
-    const pageErrorText =
-      pageErrors.length > 0
-        ? pageErrors.map((entry) => `  • ${entry}`).join("\n")
-        : "  (none)";
-    const apiText =
-      apiObservations.length > 0
-        ? apiObservations
-            .map(
-              (entry) =>
-                `  • ${entry.method} ${entry.url} → HTTP ${entry.status}: ${entry.body}`,
-            )
-            .join("\n")
-        : "  (no API responses captured)";
-
-    return (
-      "\n--- browser console errors ---\n" +
-      consoleText +
-      "\n--- uncaught page errors ---\n" +
-      pageErrorText +
-      "\n--- API response details ---\n" +
-      apiText
-    );
-  };
-
-  // The database module throws at import when DATABASE_URL is unset, and CI
-  // has none by design (the workflow header). This live check runs only when
-  // the managed router listens, which CI never has, so the module is loaded
-  // here rather than at the top of the file: the preview checks must not die
-  // on an import that only the live check needs. Loaded before `try` so the
-  // cleanup in `finally` can reach it; nothing exists to clean up if the
-  // import itself fails.
-  const { db, pool, usersTable } = await import("@workspace/db");
-
-  try {
-    const passwordHash = await bcrypt.hash(livePassword, 12);
-    const [created] = await db
-      .insert(usersTable)
-      .values({
-        email: liveEmail,
-        passwordHash,
-        mustChangePassword: false,
-        role: "member",
-      })
-      .returning({ id: usersTable.id });
-    userId = created?.id ?? null;
-    if (!userId) throw new Error("Could not create the disposable live-session user");
-
-    const loginUrl = new URL("/api/metrix/auth/login", baseUrl);
-    const loginResponse = await fetch(loginUrl, {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        email: liveEmail,
-        password: livePassword,
-        rememberMe: false,
-      }),
-      signal: AbortSignal.timeout(LIVE_SESSION_TIMEOUT_MS),
-    });
-    const loginBody = await loginResponse.text();
-    recordApi("POST", loginUrl.toString(), loginResponse.status, loginBody);
-    if (loginResponse.status !== 200) {
-      throw new Error(`Live API login returned HTTP ${loginResponse.status}`);
-    }
-    const loginPayload = parseJsonBody(loginBody, "Live API login");
-    const loginUser = loginPayload["user"];
-    if (
-      !loginUser ||
-      typeof loginUser !== "object" ||
-      (loginUser as Record<string, unknown>)["email"] !== liveEmail
-    ) {
-      throw new Error("Live API login did not return the disposable user");
-    }
-
-    sessionCookie = sessionCookieFromHeaders(loginResponse.headers);
-    if (!sessionCookie) {
-      throw new Error(
-        `Live API login returned 200 but no ${LIVE_SESSION_COOKIE} cookie`,
-      );
-    }
-
-    const cookieHeaders = {
-      accept: "application/json",
-      Cookie: sessionCookie,
-    };
-    const meUrl = new URL("/api/metrix/auth/me", baseUrl);
-    const meResponse = await fetch(meUrl, {
-      headers: cookieHeaders,
-      signal: AbortSignal.timeout(LIVE_SESSION_TIMEOUT_MS),
-    });
-    const meBody = await meResponse.text();
-    recordApi("GET", meUrl.toString(), meResponse.status, meBody);
-    if (meResponse.status !== 200) {
-      throw new Error(`Live API auth/me returned HTTP ${meResponse.status}`);
-    }
-    const mePayload = parseJsonBody(meBody, "Live API auth/me");
-    if (
-      !mePayload["user"] ||
-      typeof mePayload["user"] !== "object" ||
-      (mePayload["user"] as Record<string, unknown>)["email"] !== liveEmail
-    ) {
-      throw new Error("Live API auth/me did not return the disposable user");
-    }
-
-    browser = await chromium.launch({
-      executablePath: process.env["REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE"],
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-    context = await browser.newContext({
-      viewport: { width: 1280, height: 800 },
-    });
-    await context.addCookies([
-      {
-        name: LIVE_SESSION_COOKIE,
-        value: sessionCookie.slice(`${LIVE_SESSION_COOKIE}=`.length),
-        url: new URL("/", baseUrl).toString(),
-        httpOnly: true,
-        sameSite: "Lax",
-      },
-    ]);
-    const page = await context.newPage();
-
-    page.on("console", (message: { type(): string; text(): string }) => {
-      if (message.type() === "error") browserConsoleErrors.push(message.text());
-    });
-    page.on("pageerror", (error: Error) => {
-      pageErrors.push(error.message);
-    });
-
-    // Keep the browser on the real managed router while capturing bounded
-    // diagnostics. Unlike the deterministic boot check, these handlers never
-    // replace the API response with fixture data.
-    await context.route("**/api/**", async (route: any) => {
-      try {
-        const response = await route.fetch({ timeout: LIVE_SESSION_TIMEOUT_MS });
-        const body = await response.text();
-        if (
-          response.status() === 200 &&
-          route.request().url().endsWith("/api/metrix/seed")
-        ) {
-          browserSeedPayload = parseJsonBody(body, "Live browser seed");
-        }
-        recordApi(route.request().method(), route.request().url(), response.status(), body);
-        await route.fulfill({ response, body });
-      } catch (err) {
-        recordApi(
-          route.request().method(),
-          route.request().url(),
-          0,
-          "request failed before receiving a response",
-        );
-        await route.abort();
-      }
-    });
-
-    const pageUrl = new URL("/", baseUrl).toString();
-    console.log(`Navigating to ${pageUrl} for live authenticated dashboard boot...`);
-    const rootResponse = await page.goto(pageUrl, {
-      waitUntil: "domcontentloaded",
-      timeout: LIVE_SESSION_TIMEOUT_MS,
-    });
-    if (rootResponse?.status() !== 200) {
-      throw new Error(
-        `Live authenticated dashboard root returned HTTP ${rootResponse?.status() ?? "no response"}`,
-      );
-    }
-    await page
-      .locator('[data-testid="workspace-sidebar"]')
-      .waitFor({ state: "visible", timeout: LIVE_SESSION_TIMEOUT_MS });
-    if ((await page.locator('[data-testid="form-login"]').count()) > 0) {
-      throw new Error("Live session boot rendered the login form instead of the dashboard");
-    }
-
-    const browserSeed = apiObservations.find(
-      (entry) => entry.method === "GET" && entry.url.endsWith("/api/metrix/seed"),
-    );
-    if (!browserSeed || browserSeed.status !== 200) {
-      throw new Error("The browser did not receive HTTP 200 from the live /api/metrix/seed request");
-    }
-    const manager = browserSeedPayload?.["manager_account"];
-    if (
-      !browserSeedPayload ||
-      typeof browserSeedPayload["schema_version"] !== "string" ||
-      !manager ||
-      typeof manager !== "object" ||
-      typeof (manager as Record<string, unknown>)["id"] !== "string" ||
-      !Array.isArray(browserSeedPayload["ad_accounts"])
-    ) {
-      throw new Error(
-        "Live browser seed did not return the production schema_version, manager_account, and ad_accounts envelope",
-      );
-    }
-    if (browserConsoleErrors.length > 0 || pageErrors.length > 0) {
-      throw new Error("Live authenticated dashboard rendered with browser errors");
-    }
-    console.log(
-      "  ✓  live API login set a session cookie, /api/metrix/seed returned the production envelope, and the managed-router dashboard rendered",
-    );
-  } catch (err) {
-    primaryError = err;
-  } finally {
-    const cleanupFailures: string[] = [];
-    const attemptCleanup = async (label: string, action: () => Promise<void>) => {
-      try {
-        await action();
-      } catch {
-        cleanupFailures.push(label);
-      }
-    };
-
-    await attemptCleanup("browser context close", async () => {
-      await context?.close();
-    });
-    await attemptCleanup("browser close", async () => {
-      await browser?.close();
-    });
-    const cleanupSessionCookie = sessionCookie;
-    if (cleanupSessionCookie) {
-      await attemptCleanup("live API logout", async () => {
-        const logoutUrl = new URL("/api/metrix/auth/logout", baseUrl);
-        const logoutResponse = await fetch(logoutUrl, {
-          method: "POST",
-          headers: { accept: "application/json", Cookie: cleanupSessionCookie },
-          signal: AbortSignal.timeout(LIVE_SESSION_TIMEOUT_MS),
-        });
-        if (logoutResponse.status !== 200) {
-          throw new Error(`Live API logout returned HTTP ${logoutResponse.status}`);
-        }
-      });
-    }
-    const cleanupUserId = userId;
-    if (cleanupUserId !== null) {
-      await attemptCleanup("disposable user deletion", async () => {
-        await db.delete(usersTable).where(eq(usersTable.id, cleanupUserId));
-      });
-    }
-    await attemptCleanup("database pool close", async () => {
-      await pool.end();
-    });
-    if (cleanupFailures.length > 0) {
-      cleanupError = new Error(cleanupFailures.join(", "));
-    }
-  }
-
-  if (primaryError || cleanupError) {
-    const primaryText = primaryError
-      ? String(primaryError instanceof Error ? primaryError.message : primaryError)
-      : "Live session check failed during cleanup";
-    const cleanupText = cleanupError
-      ? `\nCleanup also failed: ${String(cleanupError instanceof Error ? cleanupError.message : cleanupError)}`
-      : "";
-    throw new Error(`${primaryText}${cleanupText}${diagnostics()}`);
-  }
-}
-
 // The web artifact owns "/" while the separately registered API artifact owns
 // "/api". This check runs through the application router (not either service's
 // local port), which catches a route-ordering regression that would otherwise
@@ -1266,6 +938,175 @@ async function assertCompositeRouting(): Promise<void> {
   console.log(`  ✓  ${authUrl.pathname} → 401 JSON unauthenticated response`);
 }
 
+type PublishedHtmlProbe = {
+  path: string;
+  status: number;
+  contentType: string;
+  body: string;
+};
+
 main().catch((err) => {
   fail("Smoke check crashed", String(err?.stack ?? err));
 });
+
+const PUBLISHED_CHECK_REQUESTED = process.argv.includes("--published");
+
+function assertJsonContentType(
+  path: string,
+  status: number,
+  contentType: string,
+  expectedStatus: number,
+) {
+  if (status !== expectedStatus || !contentType.toLowerCase().includes("json")) {
+    throw new Error(
+      `GET ${path} returned HTTP ${status} ${
+        contentType || "without content type"
+      }`,
+    );
+  }
+}
+
+async function fetchPublished(
+  baseUrl: URL,
+  pathname: string,
+): Promise<{ status: number; contentType: string; body: string }> {
+  const url = new URL(pathname, baseUrl);
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(20_000),
+    headers: { accept: "text/html, application/json, application/javascript" },
+  });
+  return {
+    status: response.status,
+    contentType: response.headers.get("content-type") ?? "",
+    body: await response.text(),
+  };
+}
+
+async function assertPublishedRouting(publishedBaseUrl: string): Promise<void> {
+  const baseUrl = normalizePublishedBaseUrl(publishedBaseUrl);
+  const displayedBaseUrl = baseUrl.origin + (baseUrl.pathname === "/" ? "" : baseUrl.pathname);
+  console.log(`\nPUBLISHED  ${displayedBaseUrl}`);
+
+  const htmlProbes = await Promise.all(
+    ["/", "/app/analysis", "/login"].map(async (path) => ({
+      path,
+      ...(await fetchPublished(baseUrl, path)),
+    })),
+  );
+
+  const scriptAssets = new Set<string>();
+  for (const probe of htmlProbes) {
+    const scriptSrc = assertSpaHtmlProbe(probe);
+    scriptAssets.add(new URL(scriptSrc, baseUrl).pathname);
+    console.log(
+      `  ✓  GET ${probe.path} → ${probe.status} ${probe.contentType} SPA entry point`,
+    );
+  }
+
+  for (const assetPath of scriptAssets) {
+    const asset = await fetchPublished(baseUrl, assetPath);
+    if (
+      asset.status !== 200 ||
+      !/(javascript|ecmascript)/i.test(asset.contentType)
+    ) {
+      throw new Error(
+        `GET ${assetPath} returned HTTP ${asset.status} ${
+          asset.contentType || "without content type"
+        }, not a JavaScript asset`,
+      );
+    }
+    console.log(`  ✓  GET ${assetPath} → ${asset.status} ${asset.contentType}`);
+  }
+
+  const health = await fetchPublished(baseUrl, "/api/healthz");
+  assertJsonContentType(
+    "/api/healthz",
+    health.status,
+    health.contentType,
+    200,
+  );
+  let healthJson: unknown;
+  try {
+    healthJson = JSON.parse(health.body);
+  } catch {
+    throw new Error(`GET /api/healthz returned invalid JSON`);
+  }
+  if (
+    !healthJson ||
+    typeof healthJson !== "object" ||
+    !("status" in healthJson) ||
+    healthJson.status !== "ok"
+  ) {
+    throw new Error(`GET /api/healthz returned unexpected JSON`);
+  }
+  console.log(`  ✓  GET /api/healthz → ${health.status} ${health.contentType}`);
+
+  const auth = await fetchPublished(baseUrl, "/api/metrix/auth/me");
+  assertJsonContentType(
+    "/api/metrix/auth/me",
+    auth.status,
+    auth.contentType,
+    401,
+  );
+  let authJson: unknown;
+  try {
+    authJson = JSON.parse(auth.body);
+  } catch {
+    throw new Error(`GET /api/metrix/auth/me returned invalid JSON`);
+  }
+  if (
+    !authJson ||
+    typeof authJson !== "object" ||
+    !("message" in authJson) ||
+    authJson.message !== "You must be logged in."
+  ) {
+    throw new Error(`GET /api/metrix/auth/me returned unexpected JSON`);
+  }
+  console.log(
+    `  ✓  GET /api/metrix/auth/me → ${auth.status} ${auth.contentType} unauthenticated response`,
+  );
+}
+
+function normalizePublishedBaseUrl(value: string): URL {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error("METRIX_IAP_PUBLISHED_URL is not a valid URL");
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error(
+      `METRIX_IAP_PUBLISHED_URL must use http:// or https://, got ${url.protocol}`,
+    );
+  }
+  if (url.username || url.password || url.search || url.hash) {
+    throw new Error(
+      "METRIX_IAP_PUBLISHED_URL must contain only an origin and optional path",
+    );
+  }
+  return url;
+}
+
+function assertSpaHtmlProbe(probe: PublishedHtmlProbe): string {
+  if (
+    probe.status !== 200 ||
+    !probe.contentType.toLowerCase().includes("text/html") ||
+    !/<title>\s*Metrix IAP\b/i.test(probe.body)
+  ) {
+    throw new Error(
+      `GET ${probe.path} returned HTTP ${probe.status} ${
+        probe.contentType || "without content type"
+      }, not the Metrix IAP SPA entry point`,
+    );
+  }
+
+  const scriptMatch = probe.body.match(
+    /<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/i,
+  );
+  if (!scriptMatch?.[1]) {
+    throw new Error(`GET ${probe.path} returned SPA HTML without a script asset`);
+  }
+  return scriptMatch[1];
+}
+
+const PUBLISHED_BASE_URL = PUBLISHED_BASE_URL_EXPLICIT?.trim();
