@@ -131,7 +131,9 @@ async function main(): Promise<number> {
     return 2;
   }
   const seed = JSON.parse(text) as Row;
-  console.log(`seed  ${res.status}  ${ms} ms  ${text.length.toLocaleString("en-US")} bytes`);
+  // Name what was checked: the operator points this at production or at a
+  // workspace server, and a verdict that does not say which is not a verdict.
+  console.log(`seed  ${BASE}  ${res.status}  ${ms} ms  ${text.length.toLocaleString("en-US")} bytes`);
 
   const accounts = readEvidence(seed);
   if (accounts.length === 0 || !shapeRecognised(accounts)) {
