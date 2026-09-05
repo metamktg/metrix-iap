@@ -163,20 +163,34 @@ function buildRankMetrics(resultPlural: string, scale: EvaluationScale | null = 
  * segment's own rate) so the header KPI tiles can swap between them without
  * showing a statistically wrong blended number.
  */
+/** Why a strict total is null: the rows that carry no value for the field. */
+function missingRowsReason(rows: readonly DemographicRow[], field: "Results" | "Amount spent (USD)" | "Impressions", noun: string): string | undefined {
+  const missing = rows.filter((r) => r[field] == null).length;
+  if (rows.length === 0) return "no demographic rows in this selection";
+  if (missing === 0) return undefined;
+  return `not summed. ${missing} of ${rows.length} rows carry no ${noun}`;
+}
+
 function buildResolvedAudienceMetrics(
   totals: SegmentRawTotals,
   derived: SegmentDerivedMetrics,
   resultPlural: string,
   scale: EvaluationScale | null = "cost_per_result",
+  /** The reasons a null total is null (a strict sum over rows that do not all carry the field). */
+  missing: { results?: string; spend?: string; impressions?: string } = {},
 ): ResolvedMetricOption[] {
   const rate = resultRatePct({ totals });
+  // A strict sum that is null used to render as 0 here: the Audience page
+  // read "Results 0" beside a prime segment carrying 1,270 results, because
+  // one of nineteen rows had no result column. Null is a dash with the
+  // reason; only a measured zero is a zero.
   const all: ResolvedMetricOption[] = [
-    { id: "results",      label: resultPlural,       formatted: fmtNum(totals.results ?? 0) },
-    { id: "spend",        label: "Spend",             formatted: fmtUSD(totals.spend ?? 0, 0) },
+    { id: "results",      label: resultPlural,       formatted: totals.results != null ? fmtNum(totals.results) : "–", sub: totals.results == null ? missing.results : undefined },
+    { id: "spend",        label: "Spend",             formatted: totals.spend != null ? fmtUSD(totals.spend, 0) : "–", sub: totals.spend == null ? missing.spend : undefined },
     { id: "cpa",          label: "CPA",               formatted: derived.cpa != null ? fmtUSD(derived.cpa) : "–" },
     { id: "resultRate",   label: "Result rate",       formatted: rate != null ? fmtPct(rate) : "–" },
     { id: "ctr",          label: "Link CTR",          formatted: derived.ctr != null ? fmtPct(derived.ctr) : "–" },
-    { id: "impressions",  label: "Impressions",       formatted: fmtNum(totals.impressions ?? 0) },
+    { id: "impressions",  label: "Impressions",       formatted: totals.impressions != null ? fmtNum(totals.impressions) : "–", sub: totals.impressions == null ? missing.impressions : undefined },
     { id: "cvr",          label: "CVR",               formatted: derived.cvr != null ? fmtPct(derived.cvr) : "–" },
     { id: "cpm",          label: "CPM",               formatted: derived.cpm != null ? fmtUSD(derived.cpm) : "–" },
     { id: "atcRate",      label: "Add to cart rate",  formatted: derived.addToCartRate != null ? fmtPct(derived.addToCartRate) : "–" },
@@ -914,8 +928,12 @@ export function AudienceView() {
   const accountTotals = useMemo(() => computeSegmentTotals(scopedRows), [scopedRows]);
   const accountDerived = useMemo(() => deriveSegmentMetrics(accountTotals), [accountTotals]);
   const accountWideMetrics = useMemo(
-    () => buildResolvedAudienceMetrics(accountTotals, accountDerived, term.Plural, scale),
-    [accountTotals, accountDerived, term.Plural]
+    () => buildResolvedAudienceMetrics(accountTotals, accountDerived, term.Plural, scale, {
+      results: missingRowsReason(scopedRows, "Results", "results"),
+      spend: missingRowsReason(scopedRows, "Amount spent (USD)", "spend"),
+      impressions: missingRowsReason(scopedRows, "Impressions", "impressions"),
+    }),
+    [accountTotals, accountDerived, term.Plural, scale, scopedRows]
   );
   const tileIds = accountWideMetrics.map((m) => m.id);
   const { activeId: tile1Id, select: selectTile1 } = useRankMetric(`${RANK_KEY}.tile1`, tileIds, "spend");

@@ -1510,6 +1510,18 @@ wherever the catalog is built. The `RunScopePicker`'s history is unaffected. Not
 the Audience segment drill-down's account-grain rows (task #47, the engine writes demographic
 rows at ACCOUNT grain), and the Ad Performance page, which reads its own summary endpoint.
 
+**Live (2026-09-05).** PR #218 merged at 16:10Z on a green run (0109fb85). The workspace
+convergence (merge c335dfbf, clean) ran the post-merge hook, which printed "Supabase schema
+unchanged (fingerprint 3d7901136139); nothing applied" and exited 0, no lock, retry, wait or error
+line; the restarted API server listened on 8080 at 16:12:07Z and warmed its seed in 125.4 s; the
+boot log's creative-link auto-heal named only the importer's littledata account (10 unlinked
+mappings, a pre-existing condition), no longer Pure Path, which is the in-flight upload filter
+doing its job; all three workflows running. The publish of the converged workspace (deployment
+329ef7e0) reported success and served the new build by 16:25Z: `index-B0S9DpM1.js`, the
+`IapLibraryView` chunk's imports carrying "Ads with performance", "not carried by this account's
+per-ad totals" and "No concept code", the `tables` chunk carrying `virtual-table-body` and the
+virtualizer's `initialRect`; `/api/healthz` 200 and `/api/metrix/auth/me` 401 through the router.
+
 ## 31. The Audience segment drill-down attributes through the reconciliation layer when the demographic rows are account-grain (2026-09-05, UI)
 
 **What changed.** The engine writes `demographic_signal` at ACCOUNT grain by construction (it

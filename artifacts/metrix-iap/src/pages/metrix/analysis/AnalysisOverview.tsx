@@ -30,7 +30,7 @@ import {
   getListAnalysisRunsQueryKey,
 } from "@workspace/api-client-react";
 import { RunScopePicker } from "@/components/analysis/RunSelector";
-import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
+import { scopeToSelection, useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import { TrendSection } from "@/components/analysis/TrendSection";
@@ -976,7 +976,9 @@ export function AnalysisOverview() {
             label: "IAP Library",
             Icon: Library,
             desc: "Cell and variable performance across the account.",
-            stat: `${cellRows.length} cell rows · ${a.v3_variable_performance.length} variable rows`,
+            // Variable rows are one per run (the picker's history); the count is
+            // the selection's, never every generation at once.
+            stat: `${cellRows.length} cell rows · ${scopeToSelection(a.v3_variable_performance, runSelection, a.latest_analysis_run_id ?? null).length} variable rows`,
           },
           {
             to: "/app/analysis/audience",

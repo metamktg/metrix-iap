@@ -211,6 +211,8 @@ export interface ResolvedMetricOption {
   id: string;
   label: string;
   formatted: string;
+  /** Why the value is a dash, when it is one: the tile shows it under the value. */
+  sub?: string;
 }
 
 /**
@@ -273,7 +275,7 @@ export function MetricPickerTile({
       <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em] mt-1">
         {active.formatted}
       </div>
-      {sub && <div className={cn(TYPE.caption, "text-muted-foreground/75 mt-2 leading-snug line-clamp-2")}>{sub}</div>}
+      {(active.sub ?? sub) && <div className={cn(TYPE.caption, "text-muted-foreground/75 mt-2 leading-snug line-clamp-2")}>{active.sub ?? sub}</div>}
     </div>
   );
 }

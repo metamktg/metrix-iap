@@ -197,3 +197,13 @@ describe("IAP Library · a run with ads and no creative cells", () => {
     expect(screen.getByText(/Purchases results were not populated by age\/gender/)).toBeTruthy();
   });
 });
+
+describe("IAP Library · the cells tab on a run with ads and no cell library", () => {
+  it("says there is no cell library and where the ads are, instead of asking for another metric selection", () => {
+    renderLibrary();
+    expect(screen.getByTestId("note-no-cell-library").textContent).toMatch(/No creative cell library in this run/);
+    expect(screen.getByTestId("note-no-cell-library").textContent).toMatch(/3 ads are listed below/);
+    expect(screen.queryByText("No cells in selection")).toBeNull();
+    expect(screen.getByTestId("section-ad-level-tiles")).toBeTruthy();
+  });
+});
