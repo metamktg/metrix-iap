@@ -34,6 +34,15 @@ import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { selectAllRows } from "./paginatedSelect";
 import { logger } from "./logger";
 import { startRunHeartbeat, lastSignOfLife, reclaimedRunMessage } from "./runHeartbeat";
+import {
+  EVIDENCE_TABLES,
+  deleteRunOutputsWith,
+  getCurrentAnalysisRunId,
+  planRollupGenerations,
+  pruneRollupGenerations,
+  scopeToCurrentRun,
+  supabaseRunGenerationClient,
+} from "./runGenerations";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow, type IapCsvParseResult } from "./iapCsvParser";
 import type { IapCsvClass } from "./iapCsvSpec";
 import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel, optionalMetricSlugsForGroups, IAP_CSV_CLASS_SPECS, type ObjectiveColumnGroup } from "./iapCsvSpec";
@@ -213,6 +222,13 @@ export type ManualAnalysisRun = {
    * and on live-Meta pulls, which have no stages.
    */
   stage_timings: StageTiming[] | null;
+  /**
+   * Whether this run's derived rollup rows are still in the tables. An
+   * account keeps the rollups of its two newest successful runs (sweep
+   * spec §7.7); an older run's are dropped once a newer run succeeds,
+   * its evidence rows are kept. False on running and failed runs.
+   */
+  rollups_retained: boolean;
 };
 
 export type StageTiming = { stage: string; pct: number; at: string };
@@ -268,7 +284,7 @@ const parseJsonArray = (raw: unknown): string[] | null => {
   }
 };
 
-const runShape = (r: Row): ManualAnalysisRun => {
+const runShape = (r: Row, rollupsRetained = false): ManualAnalysisRun => {
   const csvWarnings = parseJsonArray(r["csv_warnings"]);
   return {
     id: String(r["id"]),
@@ -291,6 +307,7 @@ const runShape = (r: Row): ManualAnalysisRun => {
     progress_pct: typeof r["progress_pct"] === "number" ? Number(r["progress_pct"]) : 0,
     progress_stage: r["progress_stage"] ? String(r["progress_stage"]) : "",
     stage_timings: stageTimingsFromRow(r["stage_timings"]),
+    rollups_retained: rollupsRetained,
   };
 };
 
@@ -370,6 +387,8 @@ async function synthesizeRunFromReportPulls(accountId: string): Promise<ManualAn
     progress_pct: 0,
     progress_stage: "",
     stage_timings: null,
+    // A live pull's rows are what the account shows; nothing generational about them.
+    rollups_retained: true,
   };
 }
 
@@ -408,7 +427,7 @@ async function flipStaleRunToError(row: Record<string, any>): Promise<Record<str
     .eq("status", "running")
     .select("*");
   if (updErr) throw new Error(updErr.message);
-  await deleteRunOutputs(String(row["id"]));
+  await deleteRunOutputs(String(row["account_id"]), String(row["id"]));
   return updated?.[0] ?? { ...row, status: "error" };
 }
 
@@ -425,7 +444,12 @@ export async function listAnalysisRuns(accountId: string): Promise<ManualAnalysi
   const rows = await Promise.all(
     (data ?? []).map((row) => (isStaleRunningRow(row) ? flipStaleRunToError(row) : row)),
   );
-  return rows.map(runShape);
+  // Newest first already: the two newest successes are the generations
+  // whose rollup rows are still in the tables (runGenerations.ts).
+  const retained = new Set(
+    planRollupGenerations(rows.filter((r) => r["status"] === "success").map((r) => String(r["id"]))).keep,
+  );
+  return rows.map((row) => runShape(row, retained.has(String(row["id"]))));
 }
 
 /** Latest run for an account, with a dead 'running' row honestly flipped to error.
@@ -446,7 +470,8 @@ export async function getLatestAnalysisRun(accountId: string): Promise<ManualAna
     return synthesizeRunFromReportPulls(accountId);
   }
   const finalRow = isStaleRunningRow(row) ? await flipStaleRunToError(row) : row;
-  return runShape(finalRow);
+  // The latest run, when it succeeded, is the newest success: its rollups are retained.
+  return runShape(finalRow, finalRow["status"] === "success");
 }
 
 // ─── Post-run completeness verification ────────────────────────────────
@@ -739,30 +764,15 @@ export async function restageImportsForRun(accountId: string, runId: string): Pr
   return (data ?? []).length;
 }
 
-/** Deletes every output table's rows this specific run wrote (partial-output cleanup on failure/staleness). */
-async function deleteRunOutputs(runId: string): Promise<void> {
-  const supabase = getSupabase();
-  // All 6 rollup tables now carry manual_analysis_run_id and retain history
-  // across runs (see the analysis-run-scoping migration) — a failed run's
-  // partial rows are no longer swept up by a full account wipe on the next
-  // run, so they must be explicitly deleted by run id here.
-  for (const table of [
-    "ad_performance",
-    "concept_performance",
-    "variable_performance",
-    "demographic_performance",
-    "placement_performance",
-    "platform_performance",
-    "device_performance",
-    // Reconciliation layer (run-scoped; creative_assets are upserts, not run rows).
-    "ad_breakdown_performance",
-    "reconciliation_ledger",
-    "variable_evidence",
-    "variable_segment_performance",
-  ]) {
-    const { error } = await supabase.from(table).delete().eq("manual_analysis_run_id", runId);
-    if (error) throw new Error(error.message);
-  }
+/**
+ * Deletes every output row this specific run wrote: the partial-output
+ * cleanup on failure and on a stale reclaim. Every output table carries
+ * the run id (the two signal tables since sweep slice 2), so the cleanup
+ * names the run and nothing else: the previous run's rows, which the
+ * account still points at, are not touched (runGenerations.ts).
+ */
+async function deleteRunOutputs(accountId: string, runId: string): Promise<void> {
+  await deleteRunOutputsWith(supabaseRunGenerationClient(), accountId, runId);
 }
 
 function withinRange(date: string, dateRange: DateRangePreset, maxDate: string): boolean {
@@ -2819,31 +2829,16 @@ export async function startManualAnalysis(
         accumulate(placementWindowBuckets.get(key)!, row);
       }
 
-      // Full refresh of this manual account's output rows within the
-      // selected window — safe because manual accounts are never written
-      // to by the offline importer.
-      //
-      // Idempotent-rebuild contract (see replit.md "Architecture decisions"):
-      // each date-scoped rollup table is cleared for [dateStart, dateEnd]
-      // immediately BEFORE its own insert (not all tables up front), so a
-      // failure part-way through leaves not-yet-reached tables' previous
-      // rows intact, and every insert batch is validated (see
-      // buildAdPerformanceRows) before the first destructive delete runs.
-      // Replaced-row counts are collected and surfaced as a run warning so a
-      // re-run that supersedes earlier rows says so instead of silently
-      // overwriting.
-      await updateProgress(runId, 62, "Clearing previous data window");
-      const replacedByTable = new Map<string, number>();
-      const clearWindow = async (table: string): Promise<void> => {
-        const del = await supabase
-          .from(table)
-          .delete({ count: "exact" })
-          .eq("account_id", accountId)
-          .gte("date_start", dateStart)
-          .lte("date_end", dateEnd);
-        if (del.error) throw new Error(del.error.message);
-        if ((del.count ?? 0) > 0) replacedByTable.set(table, del.count!);
-      };
+      // Safe re-runs (sweep spec §7.7, slice 2, runGenerations.ts): nothing
+      // is deleted before this run writes. Every output row goes in under
+      // this run's id beside the previous run's rows, the account keeps
+      // pointing at the previous run until this one has succeeded, and the
+      // pointer swaps at "Finalizing". A failure part-way through deletes
+      // only this run's rows (deleteRunOutputs) and the previous run stays
+      // readable. Until 2026-09-05 each date-scoped rollup table was cleared
+      // for [dateStart, dateEnd] before its own insert, so a re-run that
+      // failed after that point left the account with no rows for the
+      // window until the next success (hazard H1).
 
       // One statement per batch, and a batch that loses its connection is
       // recovered rather than failing the run (chunkedInsert.ts: on
@@ -2851,10 +2846,7 @@ export async function startManualAnalysis(
       // thirteen minutes of a correct run were thrown away). The evidence
       // tables carry wide rows, so they go in smaller batches.
       const CHUNK = 500;
-      const WIDE_TABLES = new Set(["ad_breakdown_performance", "reconciliation_ledger", "variable_segment_performance", "variable_evidence"]);
-      // The signal tables carry no run id; every row is unique per account
-      // instead, which is what their recovery relies on.
-      const UNSCOPED_TABLES = new Set(["demographic_signal", "placement_signal"]);
+      const WIDE_TABLES = new Set<string>(EVIDENCE_TABLES);
       const chunkedInsertClient: ChunkedInsertClient = {
         insert: async (table, batch) => {
           const ins = await supabase.from(table).insert(batch as Record<string, any>[]);
@@ -2880,7 +2872,6 @@ export async function startManualAnalysis(
         const result = await insertChunkedWithRecovery(chunkedInsertClient, table, rows, {
           runId,
           chunk: WIDE_TABLES.has(table) ? 250 : 500,
-          runScoped: !UNSCOPED_TABLES.has(table),
           log: (message, meta) => logger.warn({ accountId, runId, ...meta }, message),
         });
         if (result.retried > 0 || result.recovered > 0) {
@@ -2889,10 +2880,9 @@ export async function startManualAnalysis(
       };
 
       await updateProgress(runId, 68, "Writing ad performance rows");
-      // Build (and validate) the batch BEFORE deleting anything, so a
-      // consistency failure aborts with the previous run's rows untouched.
+      // Build (and validate) the batch before the first write, so a
+      // consistency failure aborts with nothing of this run written.
       const adRows = buildAdPerformanceRows(accountId, runId, adBuckets, adCreativeMetadata);
-      await clearWindow("ad_performance");
       await insertChunked("ad_performance", adRows);
 
       await updateProgress(runId, 78, "Writing concept performance");
@@ -3332,7 +3322,6 @@ export async function startManualAnalysis(
         adds_to_cart_value: b.addsToCartValue,
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
-      await clearWindow("demographic_performance");
       await insertChunked("demographic_performance", demographicRows);
 
       const trackingBasis = (b: { addsToCart: number | null; checkoutsInitiated: number | null; purchases: number | null; spend: number | null; impressions: number | null }) =>
@@ -3360,7 +3349,6 @@ export async function startManualAnalysis(
         tracking_basis: trackingBasis(b),
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
-      await clearWindow("placement_performance");
       await insertChunked("placement_performance", placementRowsOut);
 
       const platformRowsOut = Array.from(platformBuckets.values()).map((b) => ({
@@ -3382,7 +3370,6 @@ export async function startManualAnalysis(
         tracking_basis: trackingBasis(b),
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
-      await clearWindow("platform_performance");
       await insertChunked("platform_performance", platformRowsOut);
 
       const deviceRowsOut = Array.from(deviceBuckets.values()).map((b) => ({
@@ -3440,31 +3427,18 @@ export async function startManualAnalysis(
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
 
-      await clearWindow("device_performance");
       await insertChunked("device_performance", [...deviceRowsOut, ...convDeviceRowsOut]);
 
-      // Surface superseded rows honestly: a re-run over an already-analyzed
-      // window replaces those rows by design (idempotent rebuild), and the
-      // user is told how many, rather than the replacement happening
-      // silently.
-      if (replacedByTable.size > 0) {
-        const totalReplaced = [...replacedByTable.values()].reduce((s, n) => s + n, 0);
-        const detail = [...replacedByTable.entries()].map(([t, n]) => `${t}: ${n}`).join(", ");
-        allCsvWarnings.push(
-          `[Re-run] Replaced ${totalReplaced} previously ingested row(s) from an earlier analysis run in the ` +
-            `${dateStart} – ${dateEnd} window (${detail}). The newly staged files fully supersede the earlier data for this window.`,
-        );
-      }
-
       // ── Signal tables (what the Analysis UI + strategy evidence read) ──
-      // Full per-account refresh: the source guard above ensures this
-      // account's signal rows are owned exclusively by manual analysis, and
-      // a full replace keeps row_index unique-constraint collisions with a
-      // previous run impossible (demographic_signal/placement_signal are
-      // ACCOUNT-grain window buckets, not date-scoped like the *_performance
-      // tables above). Payload shapes mirror the offline importer
-      // (DemographicRow / PlacementRow in seedTypes.ts) so every existing
-      // render path and the strategy evidence pack work unchanged.
+      // Written under this run's id like every other output (sweep slice
+      // 2): the account-grain window buckets of this run sit beside the
+      // previous run's until the pointer swaps, and their unique keys carry
+      // the run so row_index never collides across runs. Until 2026-09-05
+      // these two tables were deleted per account and re-inserted here, so
+      // a run that failed after this point left the account without them.
+      // Payload shapes mirror the offline importer (DemographicRow /
+      // PlacementRow in seedTypes.ts) so every existing render path and the
+      // strategy evidence pack work unchanged.
       await updateProgress(runId, 92, "Writing audience/placement signal");
       const pctOr = (numerator: number | null, denominator: number | null): number | null =>
         numerator !== null && denominator !== null && denominator > 0
@@ -3473,20 +3447,12 @@ export async function startManualAnalysis(
       const cpaOr = (spend: number | null, results: number | null): number | null =>
         spend !== null && results !== null && results > 0 ? spend / results : null;
 
-      const delDemoSignal = await supabase.from("demographic_signal").delete().eq("account_id", accountId);
-      if (delDemoSignal.error) throw new Error(delDemoSignal.error.message);
-      const delPlacementSignal = await supabase
-        .from("placement_signal")
-        .delete()
-        .eq("account_id", accountId)
-        .eq("signal_scope", "v3");
-      if (delPlacementSignal.error) throw new Error(delPlacementSignal.error.message);
-
       const MANUAL_DEMO_AD_NAME = "All ads (manual demographic upload)";
       const demoSignalRows = Array.from(demoWindowBuckets.values())
         .sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0))
         .map((b, i) => ({
           account_id: accountId,
+          manual_analysis_run_id: runId,
           cell_id: "ACCOUNT",
           ad_name: MANUAL_DEMO_AD_NAME,
           age: b.age,
@@ -3518,6 +3484,7 @@ export async function startManualAnalysis(
         .sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0))
         .map((b, i) => ({
           account_id: accountId,
+          manual_analysis_run_id: runId,
           signal_scope: "v3",
           placement: b.placement,
           platform: b.platform,
@@ -3558,10 +3525,33 @@ export async function startManualAnalysis(
       const totalRows = adRows.length + demographicRows.length + placementRowsOut.length + platformRowsOut.length + deviceRowsOut.length + convDeviceRowsOut.length;
 
       await updateProgress(runId, 97, "Finalizing");
+      // Every row of this run is in place: the account points at it from
+      // here on, and readers see this run instead of the previous one
+      // (sweep spec §7.7). The previous run's rollup rows stay as the
+      // generation before this one; older generations go below, after the
+      // run is recorded as successful.
+      const generations = planRollupGenerations([runId, ...(await supabaseRunGenerationClient().successfulRunIds(accountId))]);
+      const previousRunId = generations.keep[1] ?? null;
+      if (previousRunId) {
+        const { data: prevRows } = await supabase
+          .from("manual_analysis_runs")
+          .select("date_start, date_end")
+          .eq("id", previousRunId)
+          .limit(1);
+        const prev = prevRows?.[0];
+        const prevWindow = prev?.["date_start"] && prev?.["date_end"] ? ` (${prev["date_start"]} to ${prev["date_end"]})` : "";
+        const dropped = generations.prune.length;
+        allCsvWarnings.push(
+          `[Re-run] This run is now the account's current analysis. The previous run${prevWindow} is kept as the one before it` +
+            (dropped > 0 ? `, and the rollup rows of ${dropped} older run${dropped === 1 ? "" : "s"} are dropped` : "") +
+            `. Evidence rows are kept for every run.`,
+        );
+      }
       await supabase
         .from("ad_accounts")
         .update({
           status: "configured",
+          current_analysis_run_id: runId,
           // The objective is derived per run, so it is written by the run
           // rather than configured. `cohort` is the legacy scalar column,
           // kept in step with the set's first member for pre-migration
@@ -3603,13 +3593,28 @@ export async function startManualAnalysis(
         // successful run over this.
         logger.error({ err, accountId, runId }, "Failed to destage consumed manual imports");
       }
+      try {
+        // Two rollup generations stay (this run and the previous one); the
+        // rollup rows of older successful runs go, their evidence rows do
+        // not. Non-fatal: the run has succeeded and its data is committed,
+        // and the next success recomputes the same plan, so a failure here
+        // only leaves a generation in place a little longer.
+        const pruned = await pruneRollupGenerations(supabaseRunGenerationClient(), accountId, {
+          log: (message, meta) => logger.info(meta, message),
+        });
+        if (pruned.pruned.length > 0) {
+          logger.info({ accountId, runId, ...pruned }, "Older rollup generations dropped after a successful run");
+        }
+      } catch (err) {
+        logger.error({ err, accountId, runId }, "Failed to drop older rollup generations");
+      }
       invalidateMetrixSeedCache();
       logger.info({ accountId, runId, rows: totalRows, dateStart, dateEnd }, "Manual analysis run succeeded");
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.error({ err, accountId, runId }, "Manual analysis run failed");
       try {
-        await deleteRunOutputs(runId);
+        await deleteRunOutputs(accountId, runId);
       } catch (cleanupErr) {
         logger.error({ err: cleanupErr, runId }, "Failed to clean up partial analysis output");
       }
@@ -3752,11 +3757,14 @@ export async function getAnalysisSummaryByPreset(
   preset: ViewPreset,
 ): Promise<AnalysisSummaryResult> {
   const supabase = getSupabase();
+  // The account's current run: two rollup generations coexist (sweep spec
+  // §7.7), and only the current one plus untagged history is the account.
+  const currentRun = await getCurrentAnalysisRunId(accountId);
 
   // ── Fetch ad_performance rows ─────────────────────────────────────
   const adRows = await selectAllRows(
     "ad_performance",
-    (q) => q.eq("account_id", accountId),
+    (q) => scopeToCurrentRun(q.eq("account_id", accountId), currentRun),
     "date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all, ad_name",
   );
 
@@ -3971,7 +3979,9 @@ export async function getAnalysisSummaryByPreset(
 // ─── Date-range summary engine ────────────────────────────────────────────────
 // Single shared implementation driving every date-scoped summary endpoint.
 // Takes explicit start/end dates (YYYY-MM-DD) — callers supply them.
-// Never reads manual_analysis_runs; those are just upload-event metadata.
+// Reads the account's current run pointer and nothing else about runs:
+// two rollup generations coexist (sweep spec §7.7) and only the current
+// one plus untagged history is the account.
 
 async function _computeAnalysisSummaryForDateRange(
   accountId: string,
@@ -3979,13 +3989,14 @@ async function _computeAnalysisSummaryForDateRange(
   end: string,
 ): Promise<AnalysisSummaryResult> {
   const supabase = getSupabase();
+  const currentRun = await getCurrentAnalysisRunId(accountId);
 
   const available_window: AnalysisSummaryWindow = { start, end };
 
   // ── ad_performance ────────────────────────────────────────────────
   const adRows = await selectAllRows(
     "ad_performance",
-    (q) => q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end),
+    (q) => scopeToCurrentRun(q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end), currentRun),
     "date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all, ad_name",
   );
 
@@ -4057,7 +4068,7 @@ async function _computeAnalysisSummaryForDateRange(
   // ── Demographic rows ──────────────────────────────────────────────
   const demoRows = await selectAllRows(
     "demographic_performance",
-    (q) => q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end),
+    (q) => scopeToCurrentRun(q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end), currentRun),
     "date_start, age, gender, result_type, spend, impressions, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value",
   );
 
@@ -4099,7 +4110,7 @@ async function _computeAnalysisSummaryForDateRange(
   // ── Placement rows ────────────────────────────────────────────────
   const placRows = await selectAllRows(
     "placement_performance",
-    (q) => q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end),
+    (q) => scopeToCurrentRun(q.eq("account_id", accountId).gte("date_start", start).lte("date_start", end), currentRun),
     "date_start, placement, result_type, spend, impressions, link_clicks, results, tracking_basis",
   );
 
@@ -4137,7 +4148,7 @@ async function _computeAnalysisSummaryForDateRange(
   let prior_window: AnalysisSummaryWindow | null = null;
   const priorRows = await selectAllRows(
     "ad_performance",
-    (q) => q.eq("account_id", accountId).gte("date_start", pw.start).lte("date_start", pw.end),
+    (q) => scopeToCurrentRun(q.eq("account_id", accountId).gte("date_start", pw.start).lte("date_start", pw.end), currentRun),
     "date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all",
   );
   if (priorRows && priorRows.length > 0) {
@@ -4266,10 +4277,11 @@ export async function getAccountDailySeries(
   }
   if (start > end) throw new AnalysisError("start must not be after end.", 400);
 
+  const currentRun = await getCurrentAnalysisRunId(accountId);
   const rows = await selectAllRows(
     "ad_performance",
     (q) =>
-      q.eq("account_id", accountId)
+      scopeToCurrentRun(q.eq("account_id", accountId), currentRun)
         .gte("date_start", start)
         .lte("date_start", end)
         .order("date_start")
@@ -4373,9 +4385,10 @@ export async function getAccountAnalysisDataWindows(
   // so truncation here hides real data from the user before they can ask
   // for it. Ordered by (date_start, id) because offset pagination is only
   // stable under a deterministic sort.
+  const currentRun = await getCurrentAnalysisRunId(accountId);
   const data = await selectAllRows(
     "ad_performance",
-    (q) => q.eq("account_id", accountId).order("date_start").order("id"),
+    (q) => scopeToCurrentRun(q.eq("account_id", accountId), currentRun).order("date_start").order("id"),
     "date_start, spend",
   );
   if (!data || data.length === 0) return { windows: [], total_span_days: 0 };

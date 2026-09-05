@@ -1220,3 +1220,76 @@ node so the tooltip can carry the two lines. Tests: `stage-layout.test.tsx` (the
 page buttons, nothing of the sentence or lineage on the face, one info control per page named for it
 and outside its button, the click navigates); `shared-exports.test.tsx` pins the export set without
 the grid.
+
+## 28. Safe re-runs: rollups keyed by run, the account's current run, two generations kept, evidence forever (2026-09-05, sweep slice 2, schema and backend, flagged)
+
+**What changed.** `artifacts/api-server/src/lib/runGenerations.ts` and the schema, spec §7.7 and §10 row 2.
+
+- **Nothing is deleted before a run writes.** Every output row goes in under the run's own
+  `manual_analysis_run_id`, beside the previous run's rows. The engine's window delete on the five
+  date-scoped rollup tables (`clearWindow`, "Clearing previous data window", stage 62) and the
+  per-account delete of `demographic_signal` / `placement_signal` at 92% are gone; the two signal
+  tables carry the run id now, like every other output table.
+- **The account points at its current run.** `ad_accounts.current_analysis_run_id` (schema, additive,
+  backfilled from the newest successful run) moves to the new run in the same "Finalizing" UPDATE
+  that marks the account configured, once its rows are all in place. Until then the previous run is
+  what readers see, and a run in flight is invisible.
+- **Readers scope to it.** The seed (`rowsOfCurrentRun`: `ad_performance`, the three breakdown
+  tables it ships, the two signal tables; `latest_analysis_run_id` is the pointer), the summary and
+  daily-series endpoints (`scopeToCurrentRun`), the strategy evidence pack's "all" scope
+  (`resolveRunScope`: "all" is the current run, the union-with-supersede over several runs is slice
+  3's rule), and the three `ad_performance` views (a `left join ad_accounts` on the pointer). The
+  rule is the current run's rows plus every untagged row; untagged rows are pre-migration history
+  or the importer's and are always kept, the same rule the client's `scopeToRun` follows.
+- **A failed run deletes only its own rows.** `deleteRunOutputs(accountId, runId)` walks all
+  thirteen output tables by run id; the stale reclaim uses the same path. The pointer is untouched.
+- **Two kinds of row, two rules.** Evidence rows (`ad_breakdown_performance`,
+  `reconciliation_ledger`, `variable_evidence`, `variable_segment_performance`) are kept for every
+  run, forever: nothing prunes them. Derived rollup rows (`ad_performance`, the four breakdown
+  tables, `concept_performance`, `variable_performance`, the two signal tables) keep two
+  generations, the current run and the one before it, as a rebuild-cache limit:
+  `pruneRollupGenerations` runs after a success is recorded, non-fatal, and the next success
+  recomputes the same plan.
+- **The unique keys carry the run.** `ad_performance`'s two identity indexes, the four breakdown
+  tables' constraints and the two signal tables' constraints are widened to include the run id,
+  edited IN PLACE in `schema.sql`: those blocks re-run on every apply, and the run-less keys would
+  refuse the second generation the next time the fingerprint changed. Nulls are distinct (the
+  default), so the importer's untagged rows keep their delete-and-insert idempotency and a run's
+  rows are protected by the key.
+- **The contract and the client.** `AnalysisRun.rollups_retained` (OpenAPI, codegen) says whether a
+  run's rollups are still there (the two newest successes); the run picker disables a run whose
+  rollups were dropped, with the title saying its evidence rows are kept. The status hub's failed
+  row names the retained run's window. The run's `[Re-run]` note says what stayed and what went,
+  filed as a notice (`warningSeverity.ts`); the earlier "Replaced N rows" line stays attention on
+  the runs that carry it.
+
+**Why.** Hazard H1 (assessment 2026-09-04 §8): a re-run that failed after the window delete left the
+account with no rows for the window until the next success, and between the two the account read as
+unconfigured. The owner's reconciliation asked for it (item 2, answer 2: every run's evidence rows
+retained), and the spec's §7.7 states the retention distinction the owner corrected on review:
+evidence forever, two rollup generations as a cache limit.
+
+**What proves it.** `runGenerations.test.ts` (the plan, the reader rule, the filter string, the
+lists: no evidence table in the generation window, every table in the failed-run cleanup; the
+deliberately failed re-run over a fake store: pointer untouched, the previous run whole, the failed
+run's rows gone, evidence kept past the window). `analysisEngineSignals.test.ts` drives the REAL
+engine over its in-memory Supabase: a re-run keeps the previous run beside the new one under its own
+id, the pointer swaps, the reader sees one generation, the note names the previous run's window, a
+third success drops the first run's rollups and not its evidence; and a re-run that dies writing the
+last rollup table (an injected database error on `placement_signal`) leaves the pointer on the first
+run, every one of its rows in place in all thirteen tables, and nothing of its own behind.
+`schema-apply.test.ts` splits the new blocks (256 statements); `apply:ad-performance-views
+--dry-run` passes the forbidden-word scan with the joined views. The live re-run integration test
+(`manualAnalysisRerunIdempotency.test.ts`, the validation environment) asserts the two-generation
+shape and the pointer.
+
+**How far it reaches.** Schema: one column and index on `ad_accounts` with a backfill, one column on
+each signal table, seven widened unique keys, three views redefined; applied by the post-merge hook
+one statement per transaction. The old production code keeps working against the new schema (its
+delete-then-insert is legal under the wider keys), so the apply-then-publish order is safe. Readers
+of every rollup table changed; a reader that summed all rows for an account now sees one run. The
+strategy evidence's "all time" is the current run until slice 3 brings the union with supersede.
+Production carries pre-migration breakdown rows without a run id on three early test accounts
+(Gabri, skov, SKOV Pet); they are kept beside the current run's rows until a re-run rewrites the
+account under one id. Not run here: a deliberately failed re-run against production, which would
+mean failing a real account's run on purpose; the fake-store proof above stands in for it.

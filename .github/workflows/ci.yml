@@ -180,6 +180,7 @@ jobs:
           src/lib/__tests__/iapCsvParser.test.ts
           src/lib/__tests__/iapCsvWarningSignal.test.ts
           src/lib/__tests__/metaGraph.test.ts
+          src/lib/__tests__/runGenerations.test.ts
           src/lib/__tests__/metrixSeedAssembly.test.ts
           src/lib/__tests__/objectiveCoverage.test.ts
           src/lib/__tests__/objectiveInference.test.ts

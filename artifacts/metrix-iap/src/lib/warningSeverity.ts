@@ -37,6 +37,11 @@ const NOTICE_PATTERNS: RegExp[] = [
   // asking to remove one and stays attention; so does a [Truth] line that
   // records a disagreement between control sources.
   /^\s*\[Whole-period\]/,
+  // A re-run that became the account's current analysis says what stayed
+  // and what went (sweep slice 2); it asks nothing of the reader. The
+  // earlier "[Re-run] Replaced N rows" line of the window-delete contract
+  // stays attention on the runs that still carry it.
+  /^\s*\[Re-run\] This run is now the account's current analysis/,
   /^\s*\[Overlap\](?![\s\S]*remove one of them)/,
   /^\s*\[Truth\] [\d,]+ row\(s\) of .* appear in more than one staged file/,
   /no action needed/,

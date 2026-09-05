@@ -94,7 +94,7 @@ describe("buildAnalysisHub · completed and failed", () => {
         run({ id: "bad", status: "error", error_message: "index row size 3432 exceeds btree version 4 maximum 2704", finished_at: iso(T0 + 10_000) }),
       ],
     });
-    expect(hub.failed).toMatchObject({ runId: "bad", message: "index row size 3432 exceeds btree version 4 maximum 2704", retained: "The last successful run's data is still shown" });
+    expect(hub.failed).toMatchObject({ runId: "bad", message: "index row size 3432 exceeds btree version 4 maximum 2704", retained: "The last successful run's data (2026-08-04 → 2026-09-02) is still shown" });
     expect(hub.lastCompleted?.runId).toBe("ok");
   });
   it("says there is no completed run to show when the failure is the only run", () => {

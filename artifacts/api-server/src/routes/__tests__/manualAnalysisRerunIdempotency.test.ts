@@ -14,9 +14,12 @@
 //   "ad_performance_account_id_ad_name_campaign_name_result_type_key"
 // leaving the account's rollups partially destroyed. With parse-time Day
 // normalization (normalizeDayValues) + the pre-write guards in
-// buildAdPerformanceRows + per-table delete-adjacent-to-insert, the same
-// re-run must now succeed, fully supersede the first run's rows, and say
-// how many rows it replaced.
+// buildAdPerformanceRows, the same re-run must now succeed. Since sweep
+// slice 2 (2026-09-05) nothing is deleted before a run writes: the second
+// run's rows go in under its own id beside the first run's, the account's
+// current-run pointer swaps to it, and the first run's rows stay as the
+// generation before it. The reader's view (the pointer's rows) is the same
+// logical set as the first run's, under the second run's id.
 //
 // Boots the real Express app in-process against the live dev Supabase
 // (same harness as manualAnalysisReuploadIsolation.test.ts).
@@ -281,24 +284,27 @@ describe("manual analysis re-run idempotency", () => {
     expect(run2.error_message).toBeNull();
     expect(run2.status).toBe("success");
 
-    // Idempotent supersede: identical logical rows, no duplicates, no
-    // leftovers from run 1.
-    const rows2 = await fetchAdPerformance(testAccountId);
+    // The account points at run 2, and what a reader sees (the pointer's
+    // rows) is the same logical set as run 1's, under run 2's id.
+    const { data: acct } = await getSupabase().from("ad_accounts").select("current_analysis_run_id").eq("id", testAccountId).limit(1);
+    expect(acct?.[0]?.["current_analysis_run_id"]).toBe(run2.id);
+    const all2 = (await fetchAdPerformance(testAccountId)) as (AdPerfRow & { manual_analysis_run_id: string })[];
+    const rows2 = all2.filter((r) => r.manual_analysis_run_id === run2.id);
     expect(rows2.length).toBe(rows1.length);
     expect(
       rows2.map((r) => [r.ad_name, r.campaign_name, r.result_type, r.date_start, r.date_end, String(r.spend)]),
     ).toEqual(
       rows1.map((r) => [r.ad_name, r.campaign_name, r.result_type, r.date_start, r.date_end, String(r.spend)]),
     );
-    expect(new Set((rows2 as (AdPerfRow & { manual_analysis_run_id: string })[]).map((r) => r.manual_analysis_run_id))).toEqual(
-      new Set([run2.id]),
-    );
+    // Run 1's rows are the generation before: still there, untouched.
+    expect(all2.filter((r) => r.manual_analysis_run_id === run1.id).length).toBe(rows1.length);
+    expect(new Set(all2.map((r) => r.manual_analysis_run_id))).toEqual(new Set([run1.id, run2.id]));
 
     // Honesty surface: the run tells the user its dates were normalized and
-    // that it replaced the earlier rows rather than silently overwriting.
+    // that it is now the current analysis with the previous run kept.
     const warnings = run2.csv_warnings ?? [];
     expect(warnings.some((w) => w.includes("normalized to YYYY-MM-DD"))).toBe(true);
-    expect(warnings.some((w) => w.includes("[Re-run] Replaced"))).toBe(true);
+    expect(warnings.some((w) => w.includes("[Re-run] This run is now the account's current analysis"))).toBe(true);
   }, 120_000);
 
   it("rejects staging the byte-identical file twice into the same slot (409), while different bytes stay legal", async () => {
