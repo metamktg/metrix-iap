@@ -1655,3 +1655,18 @@ export's sentence and asserts the objective is absent.
 are the ones that were wrong: an ecommerce export's funnel is byte-identical, cell-grain accounts
 keep their tiles, and every fallback is a dash or a sentence, never a zero. `check:cohort-reach`'s
 allowed reach shrank from six paths to four.
+
+**Live.** PR #220 merged into main as `d93aa365` (2026-09-05 17:40Z) on a green run, four commits
+(the round, the thirty bare dashes of the creative-only cards given their reason, the donut caption
+lifted to the AA floor for `check:token-colors`, the funnel's new tip and absence sentence in the
+two baselines that pin them); `check:friction` on the final head: 204 visits, 0 defects, no ratchet
+raised beyond the two no-data phrases added with their reason. The workspace converged as
+`ec246d6f` (the post-merge hook: "Supabase schema unchanged (fingerprint 3d7901136139); nothing
+applied", exit 0; the API Server on 8080, seed cache warmed in 69,899 ms; API Server, Metrix IAP
+and Marketing all RUNNING); deployment `329ef7e0` published to app.metrix.ad with status success at
+17:56Z, serving `index-BybfPVlV.js`. Verified by fetching the served chunks: "Account totals · this
+result scope" in `AnalysisDnaView-nmsYmCZv.js`, "spend share ·" in `AnalysisOverview-DttxOjmu.js`,
+"No result event below link clicks" in `EngagementFunnelView-Bfgd2jja.js`, "Supabase seed" in
+`GeneralView-BzZ-mW07.js`, "No creative cell library" in `BudgetView-DRbl15z_.js` and
+`IapLibraryView-Rk6kOzkt.js`, "of spend" in `AudienceView-t3E0c_J-.js` and
+`PlacementsView-Dny8imJO.js`, "Manual reports" in the entry chunk.

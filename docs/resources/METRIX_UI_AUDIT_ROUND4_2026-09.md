@@ -96,7 +96,8 @@ tiles; Alerts' thirteen amber boxes with raw source labels.
 
 - **Round 5, data honesty** (B): DNA totals, funnel stages from result events, the Overview donut,
   the cell-row counts, the Library coverage sub, the "$0" creative-only cards, the Settings
-  connection and objectives, the demographic coverage share, the Budget cause.
+  connection and objectives, the demographic coverage share, the Budget cause. Shipped: PR #220,
+  merged `d93aa365`, live on app.metrix.ad 2026-09-05 17:56Z (change-log 32, Live).
 - **Round 6, 390 px layout** (C): the KPI 2×2 grid, the pillar grid, the Strategy Map panes, the
   H1 wrap, bars and segmented controls, the Creative builder, the clipped tables and tab bars.
 - **Round 7, vocabulary and first layer** (D, E): the four verbs, the raw codes, the hypothesis
