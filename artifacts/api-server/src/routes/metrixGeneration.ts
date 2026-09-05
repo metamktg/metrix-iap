@@ -10,6 +10,7 @@ import { userHasAccountAccess } from "./metrix";
 import {
   GenerationError,
   getLatestGenerationRun,
+  listGenerationRuns,
   startBriefsGeneration,
   startStrategyGeneration,
   type GenerationKind,
@@ -83,10 +84,18 @@ router.post("/metrix/accounts/:accountId/generate/strategy", requireAuth, async 
 
 router.post("/metrix/accounts/:accountId/generate/briefs", requireAuth, async (req, res) => {
   const accountId = String(req.params["accountId"]);
+  // The strategy run to brief (sweep spec §5.2): exactly one, no combining;
+  // absent means the account's current strategy set.
+  const rawStrategyRun = req.body?.["strategy_run_id"];
+  if (rawStrategyRun != null && (typeof rawStrategyRun !== "string" || rawStrategyRun.length === 0)) {
+    res.status(400).json({ message: "strategy_run_id must be a non-empty string when given." });
+    return;
+  }
+  const strategyRunId: string | null = typeof rawStrategyRun === "string" ? rawStrategyRun : null;
   try {
     if (!(await guardAccess(req, res, accountId))) return;
-    const runId = await startBriefsGeneration(accountId, req.authUser!.email);
-    req.log.info({ accountId, runId }, "Briefs generation started");
+    const runId = await startBriefsGeneration(accountId, req.authUser!.email, strategyRunId);
+    req.log.info({ accountId, runId, strategyRunId }, "Briefs generation started");
     res.status(202).json({ run_id: runId });
   } catch (err) {
     req.log.error({ err, accountId }, "Failed to start briefs generation");
@@ -173,6 +182,25 @@ router.patch(
     }
   },
 );
+
+router.get("/metrix/accounts/:accountId/generation-runs/:kind", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const kind = String(req.params["kind"]);
+  if (kind !== "strategy" && kind !== "briefs" && kind !== "deconstruct") {
+    res.status(400).json({ message: "kind must be 'strategy', 'briefs', or 'deconstruct'." });
+    return;
+  }
+  try {
+    if (!(await guardAccess(req, res, accountId))) return;
+    const runs = await listGenerationRuns(accountId, kind as GenerationKind);
+    res.json({ runs });
+  } catch (err) {
+    req.log.error({ err, accountId }, "Failed to list generation runs");
+    res.status(502).json({
+      message: err instanceof Error ? err.message : "Could not list the generation runs.",
+    });
+  }
+});
 
 router.get("/metrix/accounts/:accountId/generation-runs/:kind/latest", requireAuth, async (req, res) => {
   const accountId = String(req.params["accountId"]);

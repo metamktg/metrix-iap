@@ -6,9 +6,7 @@
 // every module consistent.
 
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
 import { buildLoopStages, type StageStatusLike } from "../shared";
-import { GenerationProgressBar } from "@/components/generation/GenerationControls";
 
 function status(overrides: Partial<StageStatusLike["analysis"]>): StageStatusLike {
   return {
@@ -40,23 +38,5 @@ describe("buildLoopStages analysis-validated gating", () => {
   it("treats a missing validated field as ready (backwards-compatible payloads)", () => {
     const stages = buildLoopStages(status({ validated: undefined }));
     expect(stages.find((s) => s.id === "strategy")!.status).not.toBe("locked");
-  });
-});
-
-describe("GenerationProgressBar", () => {
-  it("renders the stage label and percentage while running", () => {
-    render(
-      <GenerationProgressBar isRunning={true} progressPercent={42} stageLabel="Generating strategy…" />,
-    );
-    expect(screen.getByTestId("generation-progress-bar")).toBeTruthy();
-    expect(screen.getByText("Generating strategy…")).toBeTruthy();
-    expect(screen.getByText("42%")).toBeTruthy();
-  });
-
-  it("renders nothing when not running", () => {
-    const { container } = render(
-      <GenerationProgressBar isRunning={false} progressPercent={0} stageLabel="x" />,
-    );
-    expect(container.querySelector("[data-testid='generation-progress-bar']")).toBeNull();
   });
 });

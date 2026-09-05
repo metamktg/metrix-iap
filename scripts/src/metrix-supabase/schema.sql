@@ -2031,3 +2031,18 @@ begin
     add constraint placement_signal_account_run_scope_row_key
     unique (account_id, manual_analysis_run_id, signal_scope, row_index);
 end $$;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Sweep slice 3 (2026-09-05): what a generation was built from, on the run.
+--
+-- A strategy run records the analysis run(s) it read (source_analysis_run_ids,
+-- now always the resolved ids, the account's current run when "all time" was
+-- chosen) and the effective window those runs cover after the later run
+-- superseded the earlier one's overlapping dates. A briefs run records the
+-- strategy run whose pillars it read. All three are additive and nullable:
+-- runs from before this carry null and read as "not recorded".
+-- ─────────────────────────────────────────────────────────────────────
+alter table generation_runs
+  add column if not exists source_generation_run_id uuid references generation_runs(id) on delete set null;
+alter table generation_runs add column if not exists source_window_start date;
+alter table generation_runs add column if not exists source_window_end date;

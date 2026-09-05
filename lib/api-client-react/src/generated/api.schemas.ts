@@ -1048,6 +1048,14 @@ export interface GenerateStrategyInput {
   analysis_all_time?: boolean;
 }
 
+export interface GenerateBriefsInput {
+  /**
+     * The successful strategy run whose pillars to brief, exactly one. Omit to brief the account's current strategy set (the latest successful generated set, else the imported set).
+     * @minLength 1
+     */
+  strategy_run_id?: string;
+}
+
 export interface StartGenerationResult {
   run_id: string;
 }
@@ -1085,10 +1093,18 @@ export interface GenerationRun {
   model?: string | null;
   started_at: string;
   finished_at?: string | null;
-  /** Analysis run ids this generation was grounded in. Null for legacy runs predating run-scoping, or when source_analysis_all_time is true. */
+  /** Analysis run ids this generation was grounded in, resolved. Since sweep slice 3 they are recorded under "all time" too (the account's current run); earlier all-time runs and legacy runs predating run-scoping carry null. */
   source_analysis_run_ids?: string[] | null;
-  /** True when this generation was grounded in every analysis run for the account rather than a specific selection. */
+  /** True when the selection was "all time" (resolved to the account's current analysis run) rather than a specific set of runs. */
   source_analysis_all_time: boolean;
+  /** Briefs runs only. The strategy run whose pillars were briefed; null when the imported set was briefed or the run predates the field. */
+  source_generation_run_id?: string | null;
+  /** Strategy runs. Earliest day the run's analysis runs cover together (ISO date); null when not recorded. */
+  source_window_start?: string | null;
+  /** Strategy runs. Latest day the run's analysis runs cover together (ISO date); null when not recorded. */
+  source_window_end?: string | null;
+  /** Rows the run still holds (pillars for strategy, briefs for briefs). Present on the list endpoint; null on the latest-run endpoint. */
+  output_count?: number | null;
   /** Items committed so far in a multi-item run (deconstruct). 0 for runs without a per-item meter. */
   progress_done: number;
   /** Total items targeted by the run; null for runs without a per-item meter. */
@@ -1295,6 +1311,10 @@ export interface StageStatusResult {
 
 export interface LatestGenerationRunResult {
   run: GenerationRun | null;
+}
+
+export interface ListGenerationRunsResult {
+  runs: GenerationRun[];
 }
 
 /**

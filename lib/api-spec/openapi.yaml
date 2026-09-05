@@ -1317,10 +1317,16 @@ paths:
     post:
       operationId: generateAccountBriefs
       tags: [metrix]
-      summary: Generate draft creative briefs from the account's stored strategy pillars
-      description: Starts an in-app Metrix engine run that generates draft briefs from the account's stored strategy pillars (generated set preferred, else imported). Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Requires access to the account.
+      summary: Generate draft creative briefs from one strategy run's pillars
+      description: Starts an in-app Metrix engine run that generates draft briefs from the account's strategy pillars. With strategy_run_id the pillars of exactly that successful strategy run are read (no combining); without it, the current generated set, else the imported set. The run records the strategy run it read as source_generation_run_id. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Requires access to the account.
       security:
         - cookieAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateBriefsInput"
       responses:
         "202":
           description: Generation run started
@@ -1354,6 +1360,60 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "422":
           description: Prerequisites missing (no strategy pillars)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/generation-runs/{kind}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: kind
+        in: path
+        required: true
+        description: Generation kind.
+        schema:
+          type: string
+          enum: [strategy, briefs, deconstruct]
+    get:
+      operationId: listGenerationRuns
+      tags: [metrix]
+      summary: Generation runs for an account and kind, newest first
+      description: Returns the account's fifty newest generation runs of one kind, newest first, each with the rows it still holds (output_count, pillars for strategy and briefs for briefs) and what it was built from (source_analysis_run_ids, source_window_start/end, source_generation_run_id). A run stuck in 'running' past the staleness cutoff is honestly flipped to 'error' first. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: The runs, newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListGenerationRunsResult"
+        "400":
+          description: Invalid kind
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Data service unavailable
           content:
             application/json:
               schema:
@@ -5011,6 +5071,13 @@ components:
           type: boolean
           default: false
           description: When true, ground this strategy in every analysis run for this account (ignores analysis_run_ids). Exactly one of analysis_run_ids (non-empty) or analysis_all_time=true is required.
+    GenerateBriefsInput:
+      type: object
+      properties:
+        strategy_run_id:
+          type: string
+          minLength: 1
+          description: The successful strategy run whose pillars to brief, exactly one. Omit to brief the account's current strategy set (the latest successful generated set, else the imported set).
     StartGenerationResult:
       type: object
       properties:
@@ -5058,10 +5125,26 @@ components:
           items:
             type: string
           nullable: true
-          description: Analysis run ids this generation was grounded in. Null for legacy runs predating run-scoping, or when source_analysis_all_time is true.
+          description: Analysis run ids this generation was grounded in, resolved. Since sweep slice 3 they are recorded under "all time" too (the account's current run); earlier all-time runs and legacy runs predating run-scoping carry null.
         source_analysis_all_time:
           type: boolean
-          description: True when this generation was grounded in every analysis run for the account rather than a specific selection.
+          description: True when the selection was "all time" (resolved to the account's current analysis run) rather than a specific set of runs.
+        source_generation_run_id:
+          type: string
+          nullable: true
+          description: Briefs runs only. The strategy run whose pillars were briefed; null when the imported set was briefed or the run predates the field.
+        source_window_start:
+          type: string
+          nullable: true
+          description: Strategy runs. Earliest day the run's analysis runs cover together (ISO date); null when not recorded.
+        source_window_end:
+          type: string
+          nullable: true
+          description: Strategy runs. Latest day the run's analysis runs cover together (ISO date); null when not recorded.
+        output_count:
+          type: integer
+          nullable: true
+          description: Rows the run still holds (pillars for strategy, briefs for briefs). Present on the list endpoint; null on the latest-run endpoint.
         progress_done:
           type: integer
           description: Items committed so far in a multi-item run (deconstruct). 0 for runs without a per-item meter.
@@ -5335,6 +5418,15 @@ components:
           nullable: true
       required:
         - run
+    ListGenerationRunsResult:
+      type: object
+      properties:
+        runs:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenerationRun"
+      required:
+        - runs
     AuthUser:
       type: object
       properties:

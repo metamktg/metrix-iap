@@ -117,6 +117,7 @@ interface StageLayoutProps {
   stage: "listen" | "analysis" | "strategy" | "creative" | "mst" | "reports" | "exports";
   account: AdAccount | null;            // null on the agency-wide Listen and Reports
   status: ReturnType<typeof useStageStatus>;
+  crumb?: React.ReactNode;              // between the header and the spine: the loop-origin crumb, MST's scope bar (slice 3)
   notice?: React.ReactNode;             // at most one; the shell renders the first and warns in dev on a second
   hub: StatusHubModel;                  // §4
   execution?: React.ReactNode;          // the run card; absent on MST, Listen, Exports
@@ -224,6 +225,14 @@ untagged rows. The Strategy page does not expose it: `useGenerationRun.start()` 
   built from.
 - The Account Overview's chain keeps its selector; both read and write the same persisted selection.
 
+**Status (2026-09-05, slice 3, change-log 29).** Shipped as written: `BaseRunPicker` in the Strategy
+card over the persisted key `strategy-base-run` the chain shares, default the newest successful run
+with rollups (`usePersistedRunScope`'s `defaultTo`), the union with supersede in
+`lib/evidenceSupersede.ts` (dated rows per newer window, undated per-run aggregates only on
+whole-window containment, partial overlaps kept and named in the pack's `analysis_runs` block),
+the resolved run ids and the effective window (`source_window_start/end`) on the run record, and
+Strategy › History reading the new list endpoint.
+
 ### 5.2 Creative (briefs)
 
 Briefs are generated from "the current generated set if one exists, else the imported set"
@@ -237,9 +246,20 @@ successful Strategy runs (date, model, pillar count), which needs a generation-r
 The existing currency rule stays: a briefs run counts as current only when it started after the latest
 successful strategy run; the hub says when the current briefs predate the current strategy.
 
+**Status (2026-09-05, slice 3, change-log 29).** Shipped: `GenerateBriefsInput { strategy_run_id }`,
+`generation_runs.source_generation_run_id`, `GET /metrix/accounts/:id/generation-runs/:kind`
+(`listGenerationRuns`, fifty newest with `output_count`), `StrategyRunPicker` (single-select, latest
+by default, remembered per account) and the predate line in the Creative hub. One correction to the
+paragraph above: the seed does not carry `generation_runs` to the client (it reads them server-side to
+resolve the current set), which is why the list endpoint was needed for the picker and for History.
+
 ### 5.3 MST
 
 No run to base. The hub names the brief set in use and links to the Creative page.
+
+**Status (2026-09-05, slice 3).** Shipped: `buildMstHub` (the brief set with its generation date and a
+Creative link, the matrix's avatars and cells); the hub's History row is omitted on a stage without
+runs (`history` optional on the model).
 
 ## 6. Navigation and the flyout
 

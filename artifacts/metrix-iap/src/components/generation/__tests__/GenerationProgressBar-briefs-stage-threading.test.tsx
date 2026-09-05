@@ -26,11 +26,19 @@
 // label and the fallback string both reach the DOM).
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, act } from "@testing-library/react";
+import { render, screen, cleanup, act, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+// ── Slice 3 (2026-09-05) ─────────────────────────────────────────────────
+// The command centre moved onto the Execution Layer shell: a run in flight
+// renders ONCE, in the status hub's Running row (sweep spec §4), and the
+// execution card carries no second progress bar. The same threading is
+// asserted there: the server's stage string reaches the row, the server's
+// percent is the progressbar's value, and the fallback string appears only
+// when the server has reported nothing.
 
 // ── Seed fixture ──────────────────────────────────────────────────────────
 
@@ -185,7 +193,7 @@ describe("CreativeCommandCenter · GenerationProgressBar shows server stage labe
     mockGenRunData = runningRun({ progress_pct: 60, progress_stage: "Persisting briefs…" });
     await act(async () => { renderCreative(); });
 
-    expect(screen.getByTestId("generation-progress-bar")).toBeTruthy();
+    expect(screen.getByTestId("status-hub-in-flight")).toBeTruthy();
     expect(screen.getByText("Persisting briefs…")).toBeTruthy();
   });
 
@@ -201,7 +209,7 @@ describe("CreativeCommandCenter · GenerationProgressBar shows server stage labe
     await act(async () => { renderCreative(); });
 
     expect(screen.getByText("Scoring brief hypotheses…")).toBeTruthy();
-    expect(screen.getByText("72%")).toBeTruthy();
+    expect(within(screen.getByTestId("status-hub-in-flight")).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("72");
   });
 
   it("shows a different stage string mid-run without the fallback", async () => {
@@ -225,7 +233,7 @@ describe("CreativeCommandCenter · GenerationProgressBar shows fallback when pro
     mockGenRunData = runningRun({ progress_pct: 0, progress_stage: null });
     await act(async () => { renderCreative(); });
 
-    expect(screen.getByTestId("generation-progress-bar")).toBeTruthy();
+    expect(screen.getByTestId("status-hub-in-flight")).toBeTruthy();
     expect(screen.getByText(FALLBACK)).toBeTruthy();
   });
 
@@ -238,7 +246,7 @@ describe("CreativeCommandCenter · GenerationProgressBar shows fallback when pro
     mockGenRunData = null;           // no run at all → isRunning=false
     await act(async () => { renderCreative(); });
 
-    expect(screen.queryByTestId("generation-progress-bar")).toBeNull();
+    expect(screen.queryByTestId("status-hub-in-flight")).toBeNull();
   });
 
   it("transitions: server label appears on pct=60, reverts to fallback when pct drops to 0", async () => {
@@ -270,7 +278,14 @@ describe("CreativeCommandCenter · GenerationProgressBar shows fallback when pro
       );
     });
 
-    expect(screen.getByText(FALLBACK)).toBeTruthy();
+    // The hub's label crossfades (AnimatePresence mode="wait": the outgoing
+    // stage clears before the incoming one arrives), so the progressbar's
+    // accessible name, which switches at once, is the synchronous witness,
+    // and the visible text is awaited.
+    const bar = within(screen.getByTestId("status-hub-in-flight")).getByRole("progressbar");
+    expect(bar.getAttribute("aria-label")).toBe(FALLBACK);
+    expect(bar.getAttribute("aria-valuenow")).toBeNull();
+    expect(await screen.findByText(FALLBACK)).toBeTruthy();
     expect(screen.queryByText("Persisting briefs…")).toBeNull();
   });
 });

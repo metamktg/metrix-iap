@@ -1312,3 +1312,94 @@ the `RunSelector` chunk carrying `rollups_retained` and the "Rollups dropped" st
 401 through the router. The first prune on production happens on the next successful re-run of an
 account with three or more successes (skov, ECAS, Bookster, SKOVPET.COM, Fresh Import); until then
 every stored generation stays where it is.
+
+## 29. Strategy, Creative and MST on the shell; the base of the next run as a control; briefs name their strategy run; the union with supersede (2026-09-05, sweep slice 3, additive schema and backend, flagged)
+
+**What changed.** The three generation-side command centres compose `StageLayout` (change-log 27)
+with a status hub each, and the base of the next run is a visible, changeable control on the
+page rather than a default the code chose.
+
+- **The pages.** `StrategyCommandCenter`, `CreativeCommandCenter` and `MstCommandCenter` render
+  through the shell: header · crumb (new `crumb` slot between the header and the spine, for the
+  loop-origin crumb and MST's result-scope bar) · spine · pages · one notice (Creative's nudge slot,
+  the staged-creatives step first, the creative-source suggestion behind it) · status hub ·
+  execution card · direction rail · content. The execution cards carry no progress bar and no
+  error box any more: the run's progress and its failure render once, in the hub (§4). The three
+  hub builders live beside the Analysis one in `lib/loop/statusHub.ts` (`buildStrategyHub`,
+  `buildCreativeHub`, `buildMstHub`, spec §4.2): Strategy's Staged row says "Based on · <the
+  selection>", its Completed row the pillars, hypotheses, the window the run's analysis runs cover
+  and the model, its Failed row "The current strategy is unchanged"; Creative's Staged row names
+  the strategy run to brief, the staged creatives with their deconstruction state and, when the
+  current briefs started before the current strategy, says so (the currency rule of slice GAP-01,
+  unchanged); MST's hub names the brief set in use with a Creative link and the matrix's readiness
+  and has no run rows (`history` became optional on the model). A generation ETA is the median of
+  the account's prior successful runs of the kind, else the measured platform median of 210 s
+  (§4.3); the in-flight row shows the engine's stage and percent only when reported, and the
+  pre-flight from the click until the run row exists.
+- **The base of the next run (§5.1).** `components/loop/BaseRunPicker.tsx`: `BaseRunPicker` wraps
+  the compact `RunScopePicker` over the account's successful analysis runs in the Strategy card,
+  with the effective window and, for several runs, the supersede rule in one fragment; the
+  selection is persisted per account per browser under one key (`strategy-base-run`) that the
+  Account Overview's command chain now reads and writes too (it used to reset to All time on every
+  open). `usePersistedRunScope` gained a per-page default (`defaultTo: "latest-success"`): with
+  nothing stored it shows the newest successful run whose rollups are retained, computed from the
+  run list on every render and written to storage only when the reader chooses. `StrategyRunPicker`
+  on Creative is a single-select over the successful strategy runs (date, pillar count, model),
+  exactly one, the latest by default, remembered per account. Pressing Generate sends exactly the
+  selection shown; nothing runs on its own.
+- **The run record (§5.2, schema, additive).** `generation_runs.source_generation_run_id` (the
+  strategy run a briefs run read), `source_window_start` and `source_window_end` (the span a
+  strategy run's analysis runs cover together). `source_analysis_run_ids` is now always the
+  RESOLVED set, the account's current run under "all time" included, so History can say what a
+  strategy was built from. `GenerateBriefsInput { strategy_run_id }` on the briefs route; the
+  engine reads that run's pillars and its ICP set (`pillarsForBriefs`, `buildStrategyEvidence`'s
+  `strategyRunId`), 404 when the run is another account's or not a strategy run, 422 when it did
+  not succeed or holds no pillars any more; absent, the current generated set, else the imported
+  set, as before. New `GET /metrix/accounts/:id/generation-runs/:kind` (`listGenerationRuns`): the
+  fifty newest runs with `output_count` (the pillars or briefs each still holds, one extra select
+  per list), after reclaiming a dead 'running' row through the latest-run read. Strategy › History
+  reads it and lost its "only the latest run is tracked" caveat; `GenerationRunRow` renders a run
+  with what it was built from on the two centres and the history.
+- **Several analysis runs in one pack (§5.1).** `lib/evidenceSupersede.ts` (pure): the evidence is
+  the union of the selected runs' rows; a DATED row of an older run goes when a newer selected
+  run's window contains its dates; an UNDATED per-run aggregate (concept, variable, the signal
+  tables) goes only when a newer run's window contains the older run's whole window, and partial
+  overlaps keep both because an aggregate cannot be split at a date; untagged rows are never
+  superseded; runs without a window neither supersede nor are superseded. `buildStrategyEvidence`
+  applies it to every run-scoped table when more than one run is selected and writes an
+  `analysis_runs` block into the pack (the runs, their windows, which lost its whole window, the
+  effective window, and the note that a partial overlap is described by both runs), so the model
+  is told rather than left to double count.
+
+**Why.** Spec §10 row 3. The owner's correction on review (§5.1): a strategy is manually executed,
+never automatic, built on whichever analysis run the reader names, defaulting to the latest
+successful one, visible and changeable before the press; the Strategy page sent "all time"
+silently and the chain reset to it on every open. The reconciliation's answer 5: several runs
+combine as a union where the later run wins the overlap, and briefs read exactly one strategy run.
+
+**What proves it.** `evidenceSupersede.test.ts` (dated rows per newer window, the row that reaches
+outside every newer window, older runs never supersede, undated aggregates only on whole-window
+containment, the untagged and the windowless untouched). `statusHub.test.ts` (the three builders:
+the base line in its three forms, the completed summary, the ETA from prior runs and the platform
+fallback, the pre-flight, the failure with what is retained, the predate line, the imported base,
+MST without run rows). `stage-layout-slice3.test.tsx` renders the three centres: slot order, the
+hub region, the base defaulting to the latest SUCCESSFUL analysis run and the request carrying
+exactly `analysis_run_ids: [that run]`, All time chosen in the picker written to the shared key and
+sent as `analysis_all_time`, the history rows naming their source, Creative defaulting to the latest
+strategy run and sending `strategy_run_id`, another run chosen (the list closing on the choice,
+the choice remembered) and sent, the imported strategy briefed with no picker and no id, the
+predate line, one notice slot, MST's hub with no history row. `run-scope-default.test.tsx` (the
+default until a choice, the stored choice winning, the stale run falling back, All time elsewhere).
+The two progress-threading suites now assert the server's stage and percent on the hub's Running
+row and the fallback stage when nothing is reported. `schema-apply.test.ts` splits the new
+statements (259).
+
+**How far it reaches.** Three columns on `generation_runs`, nullable, applied by the post-merge hook.
+The briefs route accepts an optional body; the old client (no body) keeps working. The latest-run
+endpoint's shape gained four nullable fields. The chain's strategy selector default changed from
+All time to the latest successful run, which is the owner's rule, and "all time" itself has read
+the account's current run since slice 2. Not run here: a strategy generated from two runs against
+production, which spends a model call; the pack's shape and the supersede rule are unit-proven and
+the wiring typechecks. Not in this slice: the Audience segment-attribution gap the owner raised the
+same afternoon, planned as the next PR (task register: the engine writes demographic rows at
+ACCOUNT grain by construction).
