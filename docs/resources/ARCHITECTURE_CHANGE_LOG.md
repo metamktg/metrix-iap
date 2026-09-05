@@ -1509,3 +1509,37 @@ generation before). The tile catalog's count/spend/results tiles read a dash on 
 wherever the catalog is built. The `RunScopePicker`'s history is unaffected. Not in this change:
 the Audience segment drill-down's account-grain rows (task #47, the engine writes demographic
 rows at ACCOUNT grain), and the Ad Performance page, which reads its own summary endpoint.
+
+## 31. The Audience segment drill-down attributes through the reconciliation layer when the demographic rows are account-grain (2026-09-05, UI)
+
+**What changed.** The engine writes `demographic_signal` at ACCOUNT grain by construction (it
+buckets the demographic export by age × gender × result type; an engine-analysed account has no
+cell library to attribute to), so `computeSegmentAttribution` found no cell-grain rows and the
+drill-down said "This import's demographic export is account-level only … concept and variable
+attribution can't be honestly computed" for a run that had written 20,618 per-ad demographic rows
+(`ad_breakdown_performance`) and 12,605 per-variable segment rows (`variable_segment_performance`).
+Those rows are the honest attribution one grain down: `lib/segment-analytics.ts` gains an
+evidence-layer basis (`SegmentAttribution.basis`: `cell_grain` or `evidence_layer`, plus a
+`basisNote`). When no cell-grain row carries the segment, the per-ad demographic rows of the
+segment (under the result types the segment's own rows carry; under a cell scope, the ads the
+registry files under those cells) become the "cells": one entry per ad, named from the ads
+registry (the Meta ad id as the small identifier), its copy from `ads[].creative`, its totals
+strict-summed (reach only at the exact grain), ranked by results; the per-variable segment rows of
+the segment become the ranked variables (direct plus contextual totals per slug, `result_volume`
+as results), and each ad is chipped with the tokens whose contributing ids include it. Without
+evidence rows the old reason stands, reworded to say the run wrote no per-ad rows either; a cell
+scope with no registry to resolve it stays unavailable. `SegmentDrilldownModal` passes the
+account's ads, heads the block "Top ads for this segment" (compare column: "Top ads"), reads the
+chip tooltip in ads rather than concepts, and replaces the cell-join sentence with the basis note.
+
+**What proves it.** `segment-attribution-evidence.test.ts` (ads ranked and named with copy, the
+result-type restriction, variables and chips, the cell scope through the registry, no registry,
+no evidence rows, cell-grain rows still winning, the drill-down carrying the basis, an unregistered
+ad named from its row). `segment-modal-evidence-basis.test.tsx` renders the modal on an
+account-grain export with an evidence layer: no unavailable note, the ads block, the variable row,
+the basis note. The existing coverage, marginals and downstream tests are unchanged.
+
+**How far it reaches.** UI only. Accounts with cell-grain demographic rows are unchanged. The
+segment's own totals, signal and coverage are still computed from its demographic rows; only the
+attribution block below them changes. Not in this change: concept attribution for an
+engine-analysed account, which needs the ad-id anchored concept mapping (task #40).
