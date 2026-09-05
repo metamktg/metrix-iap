@@ -1330,3 +1330,25 @@ main img {
       transparent, hsl(var(--foreground) / 0.08) 48px,
       hsl(var(--foreground) / 0.08) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
 }
+
+/* ── Inline toast arrival (Watermelon inline-toast, mechanic only) ─────
+   A settled row of the status hub (sweep spec §3.4, §4) arrives with a
+   4 px rise and a fade over 160 ms: a CSS transition from @starting-style,
+   no keyframes, so a row that re-mounts mid-transition retargets from where
+   it is. None under reduced motion. */
+.mx-inline-toast {
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 160ms var(--mx-ease), translate 160ms var(--mx-ease);
+}
+@starting-style {
+  .mx-inline-toast {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mx-inline-toast {
+    transition: none;
+  }
+}

@@ -7,7 +7,7 @@
 // separate from the run trigger.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, act, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, act, fireEvent, within } from "@testing-library/react";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
@@ -261,7 +261,10 @@ describe("AnalysisCommandCenter · Manual import card", () => {
     expect(screen.getByText("placement-export.csv")).toBeTruthy();
     // A processed (already-consumed) import is not part of the current staging area.
     expect(screen.queryByText("old-file.csv")).toBeNull();
-    expect(screen.getAllByText("Staged").length).toBe(2);
+    // Scoped to the Manual import card: the status hub above it carries a
+    // "Staged" row label of its own (sweep spec §4.4).
+    const card = screen.getByText("Manual import").closest("section")!;
+    expect(within(card).getAllByText("Staged").length).toBe(2);
   });
 
   it("shows each staged file's real created_at timestamp next to its kind label", async () => {
@@ -290,13 +293,16 @@ describe("AnalysisCommandCenter · Run history card", () => {
       { id: "run-old", status: "success", started_at: new Date(now - 60 * 86_400_000).toISOString(), date_start: "2026-06-10", date_end: "2026-06-17" },
     ];
     await act(async () => { renderCC(); });
+    // Scoped to the Run history card: the status hub's Completed row names
+    // the latest run's window too, and the window pill filters only the card.
+    const card = () => screen.getByText("Run history").closest("section")!;
     // Default "all" shows both real runs.
-    expect(screen.getByText("2026-08-10 → 2026-08-17")).toBeTruthy();
-    expect(screen.getByText("2026-06-10 → 2026-06-17")).toBeTruthy();
+    expect(within(card()).getByText("2026-08-10 → 2026-08-17")).toBeTruthy();
+    expect(within(card()).getByText("2026-06-10 → 2026-06-17")).toBeTruthy();
 
     const sevenDayPill = screen.getByRole("button", { name: "7d" });
     await act(async () => { fireEvent.click(sevenDayPill); });
-    expect(screen.getByText("2026-08-10 → 2026-08-17")).toBeTruthy();
-    expect(screen.queryByText("2026-06-10 → 2026-06-17")).toBeNull();
+    expect(within(card()).getByText("2026-08-10 → 2026-08-17")).toBeTruthy();
+    expect(within(card()).queryByText("2026-06-10 → 2026-06-17")).toBeNull();
   });
 });

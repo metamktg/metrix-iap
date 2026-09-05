@@ -957,6 +957,12 @@ alter table if exists manual_analysis_runs add column if not exists csv_warnings
 -- progress_stage: human-readable label for the active stage ("Parsing demographics export", etc.).
 alter table if exists manual_analysis_runs add column if not exists progress_pct integer not null default 0;
 alter table if exists manual_analysis_runs add column if not exists progress_stage text not null default '';
+-- stage_timings: one {stage, pct, at} per stage boundary the run reached, in
+-- order, rewritten whole with every progress update (sweep spec §7.7). The
+-- status hub's ETA rule reads a stage's usual duration on this account from
+-- the finished runs' entries and names the stage that is running past it.
+-- Null on rows written before 2026-09-05 and on rows no stage ever wrote.
+alter table if exists manual_analysis_runs add column if not exists stage_timings jsonb;
 
 -- Objective coverage recorded per run (JSON-encoded string arrays, nullable):
 -- objectives_assessed = configured objectives whose column groups were present;

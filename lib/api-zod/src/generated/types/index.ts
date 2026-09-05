@@ -202,6 +202,7 @@ export * from './stageStatusResultBriefsStatus';
 export * from './stageStatusResultMst';
 export * from './stageStatusResultStrategy';
 export * from './stageStatusResultStrategyStatus';
+export * from './stageTiming';
 export * from './startAnalysisInput';
 export * from './startAnalysisInputDateRange';
 export * from './startDeconstructBackfillResult';
