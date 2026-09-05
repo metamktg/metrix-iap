@@ -1201,6 +1201,6 @@ post-merge hook applied the schema at 11:32Z: "Applying Supabase schema: 247 sta
 fingerprint d3176d08b13c (changed, previously 82fdfd86695c)", "applied: 247 statement(s) in 21 s",
 no lock, retry, timeout or wait line; `information_schema.columns` reads `stage_timings jsonb` and
 `metrix_schema_state` carries the new fingerprint with 247 statements. The restarted workspace API
-server warmed its seed in 124.6 s with no "could not be read" line and no RangeError. The publish of the converged workspace (deployment 329ef7e0) started at 11:40Z.
+server warmed its seed in 124.6 s with no "could not be read" line and no RangeError. The publish of the converged workspace (deployment 329ef7e0) started at 11:40Z and the public site served the new build at 11:45:43Z (`index-CMYzIOFm.js`, the `AnalysisCommandCenter` chunk carrying the hub's "Analysis status" region; the previous chunk carried none of it), `/api/healthz` 200 and `/api/metrix/auth/me` 401 through the router.
 Every run recorded before this build carries `stage_timings: null`, so the hub's slow-stage note has
 no evidence until at least one run finishes on it; the ETA reads the prior runs' durations already.
