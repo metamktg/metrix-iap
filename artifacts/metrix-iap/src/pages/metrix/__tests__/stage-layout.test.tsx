@@ -5,7 +5,7 @@
 // spine and the run card and its rail after the run card.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
@@ -104,6 +104,39 @@ describe("StageLayout · slots", () => {
     expect(screen.getByRole("region", { name: "Analysis status" })).toBeTruthy();
   });
 
+  it("renders the stage's pages as a strip under the spine, each page's purpose and lineage behind an info tooltip", () => {
+    const Icon = () => <svg aria-hidden />;
+    const { container } = render(
+      <StageLayout
+        stage="analysis"
+        section="Analysis · 03"
+        title="Analysis"
+        status={status}
+        hub={{ inputs: [{ label: "Nothing staged" }], inFlight: null, lastCompleted: null, failed: null, history: { to: "/x", count: 0 } }}
+        explore={[
+          { to: "/app/analysis/performance", label: "Ad Performance", desc: "Campaign totals and the full breakdown.", Icon, lineage: "analysis.concept_rollup[]" },
+          { to: "/app/analysis/library", label: "IAP Library", desc: "Cell and variable performance.", Icon },
+        ]}
+        exploreLabel="Analysis pages"
+      />,
+    );
+    expect(slotOrder(container)).toEqual(["pages", "hub"]);
+    const strip = screen.getByRole("navigation", { name: "Analysis pages" });
+    expect(within(strip).getByRole("button", { name: "Ad Performance" })).toBeTruthy();
+    expect(within(strip).getByRole("button", { name: "IAP Library" })).toBeTruthy();
+    // The sentence and the lineage are not on the face.
+    expect(within(strip).queryByText("Campaign totals and the full breakdown.")).toBeNull();
+    expect(within(strip).queryByText("analysis.concept_rollup[]")).toBeNull();
+    // One info control per page, named for its page (a row of identical
+    // "More info" names tells a screen reader nothing), a sibling of the
+    // page's button, never inside it.
+    const infos = within(strip).getAllByRole("button", { name: /^About / });
+    expect(infos.map((b) => b.getAttribute("aria-label"))).toEqual(["About Ad Performance", "About IAP Library"]);
+    expect(infos[0]!.closest("button:not([aria-label^='About '])")).toBeNull();
+    fireEvent.click(within(strip).getByRole("button", { name: "Ad Performance" }));
+    expect(navigateSpy).toHaveBeenCalledWith("/app/analysis/performance");
+  });
+
   it("renders at most one notice: the first offered", () => {
     const { container } = render(
       <StageLayout stage="creative" section="Creative · 05" title="Creative" status={status} notice={[null, <p key="a">first notice</p>, <p key="b">second notice</p>]} />,
@@ -119,7 +152,8 @@ describe("AnalysisCommandCenter on the shell", () => {
     mockRuns = [{ id: "ok", status: "success", date_range: "30d", date_start: "2026-08-04", date_end: "2026-09-02", rows_ingested: 21130, started_at: "2026-09-04T10:16:13Z", finished_at: "2026-09-04T11:52:48Z", csv_warnings: null, progress_pct: 100, progress_stage: "" }];
     const { container } = renderCC();
     const order = slotOrder(container);
-    expect(order.indexOf("hub")).toBeGreaterThan(-1);
+    expect(order.indexOf("pages")).toBe(0);
+    expect(order.indexOf("hub")).toBeGreaterThan(order.indexOf("pages"));
     expect(order.indexOf("hub")).toBeLessThan(order.indexOf("execution"));
     if (order.includes("direction")) expect(order.indexOf("execution")).toBeLessThan(order.indexOf("direction"));
     expect(order.indexOf("execution")).toBeLessThan(order.indexOf("content"));

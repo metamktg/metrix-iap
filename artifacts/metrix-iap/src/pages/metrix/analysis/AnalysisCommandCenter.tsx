@@ -311,7 +311,7 @@ function AnalysisStage({ account: acct }: { account: AdAccount }) {
       }
       recommendations={recommendationsForStage(deriveRecommendations(acct), 2)}
       explore={explore}
-      exploreLabel="Explore Analysis"
+      exploreLabel="Analysis pages"
       footer={
         // Findings is an Analysis page kept off the menu (navTree
         // `hidden: true`) until its producer runs for real accounts;

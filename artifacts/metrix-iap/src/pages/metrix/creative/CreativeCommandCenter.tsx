@@ -14,7 +14,7 @@ import { getAdAccount, getBriefBuilder, getStrategyData } from "@/lib/data/metri
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PrerequisiteGate, PendingState,
-  MetricTile, CaveatNote, StageLoopHub, buildLoopStages, FlowCrumb, useFromParam, withFrom, HubNavGrid,
+  MetricTile, CaveatNote, StageLoopHub, buildLoopStages, FlowCrumb, useFromParam, withFrom, HubNavStrip,
   SectionCard, CrossLink,
 } from "../shared";
 import { CreativeSourceNudge } from "@/components/creative/CreativeSourceNudge";
@@ -124,6 +124,11 @@ export function CreativeCommandCenter() {
                 three widths, and the same "Execution card" pattern render
                 2-across on one stage and 4-across on the next. */}
             <div className="px-6 py-5 space-y-4 max-w-5xl">
+              {/* The stage's pages first (owner, 2026-09-05): a reader landing
+                  here reaches the page they came for before the run card. Each
+                  chip's tooltip says what the page is for and what it reads. */}
+              <HubNavStrip items={children} label="Creative pages" />
+
               {/* Direction for this stage, from the account's own rows —
                   each tile carries the number behind it and a link to the
                   surface that proves it. Absent when this stage has none. */}
@@ -264,10 +269,6 @@ export function CreativeCommandCenter() {
                   ))}
                 </div>
               )}
-
-              <div className="pt-2">
-                <HubNavGrid items={children} label="Explore Creative" />
-              </div>
             </div>
           </div>
         );
