@@ -11,7 +11,7 @@ import { getAdAccounts, getAnalysisData, getReportBuilder } from "@/lib/data/met
 import { useStageStatus } from "@/hooks/useStageStatus";
 import { useListWorkspaceReports } from "@workspace/api-client-react";
 import {
-  ModuleHeader, PrerequisiteGate, PendingState, HubNavGrid, SectionCard,
+  ModuleHeader, PrerequisiteGate, PendingState, HubNavStrip, SectionCard,
   StageLoopHub, buildLoopStages, MetricTile, fmtNum,
 } from "../shared";
 import { FileBarChart, Settings2, History, FileText, Sparkles } from "lucide-react";
@@ -57,6 +57,11 @@ export function ReportsCommandCenter() {
       <StageLoopHub stages={buildLoopStages(status)} current="reports" />
 
       <div className="px-6 py-5 space-y-4 max-w-4xl">
+        {/* The pages first (owner, 2026-09-05): a reader landing here reaches
+            the page they came for before the build card. Hidden with the gate:
+            the pages read analysis, so they have nothing to show without it. */}
+        {hasAnyAnalysis && <HubNavStrip items={CHILDREN} label="Reports pages" />}
+
         <PrerequisiteGate
           met={hasAnyAnalysis}
           title="No analysis data yet"
@@ -111,8 +116,6 @@ export function ReportsCommandCenter() {
                   )}
                 </SectionCard>
               </div>
-
-              <HubNavGrid items={CHILDREN} label="Explore Reports" />
             </>
           )}
         </PrerequisiteGate>

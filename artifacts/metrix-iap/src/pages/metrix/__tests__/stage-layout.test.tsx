@@ -127,10 +127,12 @@ describe("StageLayout · slots", () => {
     // The sentence and the lineage are not on the face.
     expect(within(strip).queryByText("Campaign totals and the full breakdown.")).toBeNull();
     expect(within(strip).queryByText("analysis.concept_rollup[]")).toBeNull();
-    // One info control per page, a sibling of the page's button, never inside it.
-    const infos = within(strip).getAllByRole("button", { name: "More info" });
-    expect(infos).toHaveLength(2);
-    expect(infos[0]!.closest("button:not([aria-label='More info'])")).toBeNull();
+    // One info control per page, named for its page (a row of identical
+    // "More info" names tells a screen reader nothing), a sibling of the
+    // page's button, never inside it.
+    const infos = within(strip).getAllByRole("button", { name: /^About / });
+    expect(infos.map((b) => b.getAttribute("aria-label"))).toEqual(["About Ad Performance", "About IAP Library"]);
+    expect(infos[0]!.closest("button:not([aria-label^='About '])")).toBeNull();
     fireEvent.click(within(strip).getByRole("button", { name: "Ad Performance" }));
     expect(navigateSpy).toHaveBeenCalledWith("/app/analysis/performance");
   });

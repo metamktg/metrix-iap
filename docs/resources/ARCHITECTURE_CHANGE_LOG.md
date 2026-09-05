@@ -1209,8 +1209,14 @@ no evidence until at least one run finishes on it; the ETA reads the prior runs'
 top of the page as `HubNavStrip` (a new shell slot, `pages`, under the spine): a reader landing on a
 command centre reaches the page they came for before the run card. Each page's description sentence
 and lineage caption, which sat on the card face of every command centre, are behind an info tooltip
-beside the page's name, on the strip and on `HubNavGrid` alike (the grid stays on the pages not yet on
-the shell); the tooltip's trigger is a sibling of the navigation button, never inside it. The explore
-grid at the foot of a shell page is gone. `InfoTooltip` accepts a node so the tooltip can carry the
-two lines. Tests: `stage-layout.test.tsx` (the strip's slot, the two page buttons, nothing of the
-sentence or lineage on the face, one info control per page outside its button, the click navigates).
+beside the page's name; the tooltip's trigger is a sibling of the navigation button, never inside it,
+and it is named for its page ("About Ad Performance"), since a row of seven controls all called "More
+info" tells a screen reader nothing (`InfoTooltip` takes a `label`). The same afternoon the strip went
+onto the five centres not yet on the shell as well (Strategy, Creative, MST, Listen, Reports: first in
+the content column, under the spine; on MST and Reports it shows on the gate's own condition, since
+their pages read what the gate waits for), and `HubNavGrid`, the card grid every centre used to carry
+at the foot of the page below the run card, is retired: nothing renders it. `InfoTooltip` accepts a
+node so the tooltip can carry the two lines. Tests: `stage-layout.test.tsx` (the strip's slot, the two
+page buttons, nothing of the sentence or lineage on the face, one info control per page named for it
+and outside its button, the click navigates); `shared-exports.test.tsx` pins the export set without
+the grid.

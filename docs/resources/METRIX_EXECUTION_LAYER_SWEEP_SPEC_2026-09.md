@@ -48,7 +48,7 @@ Everything below stays as it is, and the gates that prove it stay green on every
    Creative page.
 2. **The design system.** Tokens, the `TYPE` ramp and the `.text-*` role classes, the disclosure rulebook
    in `shared.tsx` (`deriveLabel`, `DetailReveal`, `DenseText`), `KpiTile` and `KpiTileRow`,
-   `SectionCard`, `ModuleHeader`, `HubNavGrid`, `StageLoopHub`, `RecommendationSlider` and its drawer,
+   `SectionCard`, `ModuleHeader`, `HubNavStrip`, `StageLoopHub`, `RecommendationSlider` and its drawer,
    the Sonner toasts. Reused, never reinvented.
 3. **Accessibility.** Focus moved to the arriving page and named by its `h1`, focus trapping in dialogs
    and drawers, reduced motion zeroing every entrance, keyboard operation of the rail, the sidebar
@@ -105,9 +105,10 @@ it; the page supplies content, the shell supplies order, width and the slots.
 Fixed rules: one column, `max-w-5xl`, `px-6 py-5 space-y-4`; the execution card always sits above the
 direction rail (a reader looks for the button before the advice); the status hub always sits between
 the spine and the execution card so the run's state is read before the run is started again; the pages
-strip sits under the spine and there is no explore grid at the foot of a shell page. `HubNavGrid`, still
-rendered by the pages not yet on the shell, carries the same disclosure: the face is the icon, the name
-and the arrow, the sentence and the lineage sit behind the info tooltip.
+strip sits under the spine and there is no explore grid at the foot of any command centre. The five
+centres not yet on the shell render the same `HubNavStrip` first in their content column, so a page
+moving onto the shell keeps its strip where it was; the strip's face is the icon and the name, the
+sentence and the lineage sit behind an info tooltip named for the page.
 
 ### 3.2 Props
 
