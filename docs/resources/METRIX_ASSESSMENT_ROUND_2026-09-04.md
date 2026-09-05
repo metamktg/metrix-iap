@@ -242,8 +242,10 @@ The run's own warnings say what happened to every file: the two demographic pivo
   aggregation `out.push(...rows)` spread 162,141 rows into one call, which V8 refuses above about
   125,000 arguments (Node 22, measured). Fix: `appendRows` (a loop) is the only way whole-table
   rows are appended; regression tests at 170k (the spread throws, the loop does not) and a 131k-row
-  keyset read. Verified after the next publish by the same payload read. Production's warm on this
-  build took 549 s (the workspace's 191 s): the payload, task 22, held.
+  keyset read. **Verified live at 02:19Z** after the 02:14Z publish of PR #207: production's seed
+  (200, 30.2 s, 198.96 MB) carries 162,141 ledger rows, 75,969 breakdowns and 26,675 segments for
+  Pure Path, the other reconciled account its 2,346 / 1,500 / 2,818, no "could not be read" line in
+  the deployment log, warm 444 s (549 s on the previous build; the payload, task 22, held).
 - **The check's own first run was vacuous (fixed before it reached production).** `check:seed-evidence`
   read the evidence layer off the account's top level; the layer lives under `iap.analysis`, so it
   printed "no run" for every account and exited 0 against a 198 MB workspace seed that carried the
