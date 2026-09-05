@@ -118,6 +118,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "StageLoopHub",
   "buildLoopStages",
   "HubNavGrid",
+  "HubNavStrip",
   "withFrom",
 ];
 

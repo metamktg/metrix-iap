@@ -1204,3 +1204,13 @@ no lock, retry, timeout or wait line; `information_schema.columns` reads `stage_
 server warmed its seed in 124.6 s with no "could not be read" line and no RangeError. The publish of the converged workspace (deployment 329ef7e0) started at 11:40Z and the public site served the new build at 11:45:43Z (`index-CMYzIOFm.js`, the `AnalysisCommandCenter` chunk carrying the hub's "Analysis status" region; the previous chunk carried none of it), `/api/healthz` 200 and `/api/metrix/auth/me` 401 through the router.
 Every run recorded before this build carries `stage_timings: null`, so the hub's slow-stage note has
 no evidence until at least one run finishes on it; the ETA reads the prior runs' durations already.
+
+**Addendum, the same afternoon (owner review of the live page).** The stage's subpages move to the
+top of the page as `HubNavStrip` (a new shell slot, `pages`, under the spine): a reader landing on a
+command centre reaches the page they came for before the run card. Each page's description sentence
+and lineage caption, which sat on the card face of every command centre, are behind an info tooltip
+beside the page's name, on the strip and on `HubNavGrid` alike (the grid stays on the pages not yet on
+the shell); the tooltip's trigger is a sibling of the navigation button, never inside it. The explore
+grid at the foot of a shell page is gone. `InfoTooltip` accepts a node so the tooltip can carry the
+two lines. Tests: `stage-layout.test.tsx` (the strip's slot, the two page buttons, nothing of the
+sentence or lineage on the face, one info control per page outside its button, the click navigates).

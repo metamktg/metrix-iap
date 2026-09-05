@@ -95,16 +95,19 @@ it; the page supplies content, the shell supplies order, width and the slots.
 |---|---|---|
 | Header | `ModuleHeader` with the stage eyebrow, title, account name, one-line purpose, the page's right-hand controls | exists |
 | Spine | `StageLoopHub` with the six numbered stages | exists |
+| Pages | `HubNavStrip`, the stage's subpages as chips, each page's purpose and lineage behind an info tooltip (owner, 2026-09-05: a reader landing on the centre reaches the page they came for before the run card) | new |
 | Notice | at most one contextual notice, inline-toast style, dismissible where it is a nudge | new policy, §3.4 |
 | Status hub | the stage's runs: inputs, in flight, last completed, failed (§4) | new |
 | Execution card | the run trigger and its parameters, one `SectionCard` per stage | exists, moved into the slot |
 | Direction | `RecommendationSlider` for the stage, absent when the stage has none | exists |
 | Content | the stage's own modules (briefs list, MST matrix, Listen signals) | exists |
-| Explore | `HubNavGrid` of the stage's pages | exists |
 
 Fixed rules: one column, `max-w-5xl`, `px-6 py-5 space-y-4`; the execution card always sits above the
 direction rail (a reader looks for the button before the advice); the status hub always sits between
-the spine and the execution card so the run's state is read before the run is started again.
+the spine and the execution card so the run's state is read before the run is started again; the pages
+strip sits under the spine and there is no explore grid at the foot of a shell page. `HubNavGrid`, still
+rendered by the pages not yet on the shell, carries the same disclosure: the face is the icon, the name
+and the arrow, the sentence and the lineage sit behind the info tooltip.
 
 ### 3.2 Props
 
