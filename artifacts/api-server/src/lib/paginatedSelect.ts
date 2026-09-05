@@ -50,7 +50,9 @@ export async function selectAllRows(
   table: string,
   build?: (q: any) => any,
   columns = "*",
+  opts: SelectAllOptions = {},
 ): Promise<Row[]> {
+  if (opts.keyset) return selectAllByKeyset(table, opts.keyset, build, columns);
   const supabase = getSupabase();
   let offset = 0;
   const allRows: Row[] = [];
@@ -66,6 +68,52 @@ export async function selectAllRows(
     allRows.push(...rows);
     if (rows.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
+  }
+  return allRows;
+}
+
+export interface SelectAllOptions {
+  /**
+   * Page by a monotonic unique column instead of by offset: each page asks
+   * for the rows AFTER the last one it received (`gt` on the column, ordered
+   * by it, limited to PAGE_SIZE). The caller's `build` supplies the filter
+   * and must not add an order of its own.
+   *
+   * Why it exists: an offset page over a large filtered set makes the
+   * database produce and discard every row before the offset, so page N
+   * costs N times page one and a 162,000-row read is 162 pages of a
+   * repeated full scan and sort. On 2026-09-04 the seed's read of the
+   * reconciliation ledger (292k rows across runs) did exactly that on every
+   * rebuild: PostgREST killed the later pages on its statement timeout, the
+   * read fell back to an empty evidence layer, and the next rebuild started
+   * the storm again. Keyset pages walk the primary key from where the last
+   * page stopped; the rows a run wrote are contiguous in id, so every page
+   * is one short index range.
+   */
+  keyset?: string;
+}
+
+async function selectAllByKeyset(table: string, keyset: string, build?: (q: any) => any, columns = "*"): Promise<Row[]> {
+  const supabase = getSupabase();
+  const allRows: Row[] = [];
+  let after: unknown = null;
+  for (;;) {
+    let query: any = supabase.from(table).select(columns);
+    if (build) query = build(query);
+    if (after !== null) query = query.gt(keyset, after);
+    query = query.order(keyset, { ascending: true }).limit(PAGE_SIZE);
+    const { data, error } = await query;
+    if (error) {
+      throw new Error(`Supabase query failed for "${table}": ${error.message}`);
+    }
+    const rows: Row[] = data ?? [];
+    allRows.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
+    const last = rows[rows.length - 1]?.[keyset];
+    if (last === undefined || last === null) {
+      throw new Error(`Keyset pagination on "${table}" needs "${keyset}" in the selected columns`);
+    }
+    after = last;
   }
   return allRows;
 }

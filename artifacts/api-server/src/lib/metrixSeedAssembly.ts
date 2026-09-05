@@ -1518,11 +1518,34 @@ export async function assembleMetrixSeed(): Promise<Row> {
     const acct = String(r["account_id"] ?? "");
     if (acct && !latestRunIdByAccount.has(acct)) latestRunIdByAccount.set(acct, String(r["id"]));
   }
-  const latestRunIds = [...latestRunIdByAccount.values()];
-  const runScoped = (table: string, columns: string): Promise<Row[]> =>
-    latestRunIds.length === 0
-      ? Promise.resolve([] as Row[])
-      : selectAll(table, (q) => q.in("manual_analysis_run_id", latestRunIds).order("id"), columns).catch(() => [] as Row[]);
+  // One query per (account, run), keyset-paged on the primary key. The
+  // previous shape, `manual_analysis_run_id in (every latest run)` with
+  // offset pages, could not use the (account_id, manual_analysis_run_id)
+  // index and re-scanned and re-sorted the whole table for every page:
+  // on 2026-09-04, with 292k ledger rows across runs, PostgREST killed the
+  // later pages on its statement timeout on every rebuild, the evidence
+  // layer fell back to empty, and the app read "no evidence" for a run that
+  // had succeeded. Sequential per account so a rebuild never fans out into
+  // more than the four table reads at once.
+  const runScoped = async (table: string, columns: string): Promise<Row[]> => {
+    const out: Row[] = [];
+    for (const [accountId, runId] of latestRunIdByAccount) {
+      try {
+        const rows = await selectAllRows(
+          table,
+          (q) => q.eq("account_id", accountId).eq("manual_analysis_run_id", runId),
+          columns,
+          { keyset: "id" },
+        );
+        out.push(...rows);
+      } catch (err) {
+        // Graceful before the tables exist; anything else is a real gap the
+        // reader will see as an empty evidence layer, so it is logged.
+        logger.warn({ err, table, accountId, runId }, "Seed assembly: evidence rows could not be read for this run");
+      }
+    }
+    return out;
+  };
   const [adBreakdownsAll, reconciliationLedgerAll, variableSegmentsAll, variableEvidenceAll, creativeAssetsAll, adInstancesAll] = await Promise.all([
     runScoped(
       "ad_breakdown_performance",
