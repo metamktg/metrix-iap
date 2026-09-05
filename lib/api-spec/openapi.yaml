@@ -4510,6 +4510,20 @@ components:
           description: Pass true to proceed anyway after a prior call was rejected with a 409 conversion_export_confirmation_required error. Omit or leave false on the first attempt.
       required:
         - date_range
+    StageTiming:
+      type: object
+      description: A pipeline stage boundary a run reached.
+      properties:
+        stage:
+          type: string
+          description: The engine's own stage label, as progress_stage carried it.
+        pct:
+          type: integer
+          description: The progress percentage reported at this boundary.
+        at:
+          type: string
+          description: When the run reached this stage (ISO 8601).
+      required: [stage, pct, at]
     AnalysisRun:
       type: object
       properties:
@@ -4559,6 +4573,17 @@ components:
             type: string
           nullable: true
           description: Ad names from staged creative assets that could not be matched to any ads row.
+        stage_timings:
+          type: array
+          nullable: true
+          description: >-
+            One entry per pipeline stage boundary the run reached, in order,
+            written with every progress update. Null on runs recorded before
+            the column existed and on live-Meta pulls. The status hub's ETA
+            rule reads the usual duration of each stage on this account from
+            finished runs' entries.
+          items:
+            $ref: "#/components/schemas/StageTiming"
         csv_warnings:
           type: array
           items:

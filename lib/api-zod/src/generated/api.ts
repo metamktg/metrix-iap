@@ -427,6 +427,11 @@ export const ListAnalysisRunsResponse = zod.object({
   "creatives_linked": zod.number().nullish().describe('Number of staged creative assets successfully linked to ad rows (computed live from current DB state).'),
   "creatives_total": zod.number().nullish().describe('Total number of staged creative asset ad-name mappings attempted.'),
   "creatives_unlinked_names": zod.array(zod.string()).nullish().describe('Ad names from staged creative assets that could not be matched to any ads row.'),
+  "stage_timings": zod.array(zod.object({
+  "stage": zod.string().describe('The engine\'s own stage label, as progress_stage carried it.'),
+  "pct": zod.number().describe('The progress percentage reported at this boundary.'),
+  "at": zod.string().describe('When the run reached this stage (ISO 8601).')
+}).describe('A pipeline stage boundary a run reached.')).nullish().describe('One entry per pipeline stage boundary the run reached, in order, written with every progress update. Null on runs recorded before the column existed and on live-Meta pulls. The status hub\'s ETA rule reads the usual duration of each stage on this account from finished runs\' entries.'),
   "csv_warnings": zod.array(zod.string()).nullish().describe('Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues.'),
   "objectives_assessed": zod.array(zod.string()).nullish().describe('Objectives DERIVED from this run\'s ad result types whose required CSV column groups were present and were therefore assessed. Null on legacy runs recorded before objective-aware analysis.'),
   "objective_flags": zod.array(zod.string()).nullish().describe('Non-blocking objective coverage notices — derived objectives skipped this run because their columns were absent (never fabricated), and detected column groups whose objective was not derived from the data. Null when coverage matched exactly.'),
@@ -573,6 +578,11 @@ export const GetLatestAnalysisRunResponse = zod.object({
   "creatives_linked": zod.number().nullish().describe('Number of staged creative assets successfully linked to ad rows (computed live from current DB state).'),
   "creatives_total": zod.number().nullish().describe('Total number of staged creative asset ad-name mappings attempted.'),
   "creatives_unlinked_names": zod.array(zod.string()).nullish().describe('Ad names from staged creative assets that could not be matched to any ads row.'),
+  "stage_timings": zod.array(zod.object({
+  "stage": zod.string().describe('The engine\'s own stage label, as progress_stage carried it.'),
+  "pct": zod.number().describe('The progress percentage reported at this boundary.'),
+  "at": zod.string().describe('When the run reached this stage (ISO 8601).')
+}).describe('A pipeline stage boundary a run reached.')).nullish().describe('One entry per pipeline stage boundary the run reached, in order, written with every progress update. Null on runs recorded before the column existed and on live-Meta pulls. The status hub\'s ETA rule reads the usual duration of each stage on this account from finished runs\' entries.'),
   "csv_warnings": zod.array(zod.string()).nullish().describe('Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues.'),
   "objectives_assessed": zod.array(zod.string()).nullish().describe('Objectives DERIVED from this run\'s ad result types whose required CSV column groups were present and were therefore assessed. Null on legacy runs recorded before objective-aware analysis.'),
   "objective_flags": zod.array(zod.string()).nullish().describe('Non-blocking objective coverage notices — derived objectives skipped this run because their columns were absent (never fabricated), and detected column groups whose objective was not derived from the data. Null when coverage matched exactly.'),

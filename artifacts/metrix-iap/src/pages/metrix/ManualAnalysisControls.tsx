@@ -974,6 +974,8 @@ export function AnalysisControls({
   onDone,
   onDateRangeChange,
   detailsOpen,
+  progressInHub = false,
+  onStartingChange,
 }: {
   accountId: string;
   /** Called once when the run status transitions to "success". */
@@ -986,6 +988,15 @@ export function AnalysisControls({
    *  DetailReveal, defaulting open/closed to this value — the Analysis
    *  Command Center's Summary/Detailed toggle. */
   detailsOpen?: boolean;
+  /** The page's status hub renders the run's progress (sweep spec §4), so
+   *  this card keeps only the trigger and its parameters: no second bar.
+   *  The pre-flight state (the click until the run row exists) reaches the
+   *  hub through `onStartingChange`. */
+  progressInHub?: boolean;
+  /** Fires with true at the click and false once the server's run row is
+   *  visible (or the request failed), so a surface outside this card can
+   *  show the pre-flight the way the bar here used to. */
+  onStartingChange?: (starting: boolean) => void;
 }) {
   const [dateRange, setDateRangeState] = useState<AnalysisDateRange>("30d");
   const setDateRange = (r: AnalysisDateRange) => {
@@ -1009,6 +1020,11 @@ export function AnalysisControls({
   // now renders from the click, says what the server is doing, and is
   // scrolled into view.
   const [starting, setStarting] = useState(false);
+  const onStartingChangeRef = useRef(onStartingChange);
+  onStartingChangeRef.current = onStartingChange;
+  useEffect(() => {
+    onStartingChangeRef.current?.(starting);
+  }, [starting]);
   const progressRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
   // The latest run's reconciliation ledger (seed, scoped to the account) —
@@ -1534,7 +1550,7 @@ export function AnalysisControls({
       {/* Real per-stage progress bar — polls every 1 s while running. From
           the click until the run row exists it shows the server's pre-flight
           (validating the staged files) rather than nothing. */}
-      {(starting || isRunning || run?.status === "success") && (
+      {!progressInHub && (starting || isRunning || run?.status === "success") && (
         <div className="space-y-1.5" ref={progressRef} data-testid="analysis-run-progress">
           {/* Was a static bar with a static label. Between polls — 2.5s, and a
               stage can hold for twenty seconds — neither moved, which is
