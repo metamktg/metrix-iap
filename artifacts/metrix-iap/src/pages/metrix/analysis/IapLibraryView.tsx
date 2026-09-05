@@ -137,6 +137,15 @@ function runLabelFor(runs: readonly AnalysisRun[] | undefined): (runId: string) 
   };
 }
 
+/** The cells tab's first layer for a run with ads and no cell library: what is below, and why there is no grid. */
+function NoCellLibraryNote({ adCount }: { adCount: number }) {
+  return (
+    <div className="rounded-lg border border-border/30 bg-foreground/[0.02] px-3.5 py-3 text-caption text-muted-foreground/75 leading-relaxed" data-testid="note-no-cell-library">
+      No creative cell library in this run. Its {adCount.toLocaleString("en-US")} ad{adCount === 1 ? "" : "s"} are listed below, one tile each, and the tiles, breakdown and top sets read the same per-ad totals.
+    </div>
+  );
+}
+
 export function IapLibraryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
@@ -425,6 +434,13 @@ export function IapLibraryView() {
           const copyCells = uniqueCellRows(cells).filter(
             (row) => !!libraryCellById(mst, row.cell_id)?.primary_message
           );
+
+          // A run the engine analysed has no cell library; its ads render as
+          // ad-level tiles below the grid. "No cells in selection · adjust the
+          // metric selection" above 629 ad tiles told the reader to fix a
+          // selection that was not the cause.
+          const adLevelAdCount = (account?.ads ?? []).filter((ad) => ad.ad_name && !ad.ad_name.startsWith("__cell_override_") && !ad.cell).length;
+          const hasAdLevelAds = (a.performance_by_cell ?? []).length === 0 && adLevelAdCount > 0;
 
           // The event the top sets rank on is DERIVED per account and stated
           // by the server (G6) — the tab says which, never "checkout".
@@ -807,6 +823,7 @@ export function IapLibraryView() {
                         : "cpa";
 
                       if (totalBeforeFilter === 0) {
+                        if (hasAdLevelAds) return <NoCellLibraryNote adCount={adLevelAdCount} />;
                         return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />;
                       }
 
@@ -884,6 +901,7 @@ export function IapLibraryView() {
                       const rangeEnd = Math.min(safePage * pageSize, totalCells);
 
                       if (totalBeforeFilter === 0 && creativeOnlyCellIds.length === 0) {
+                        if (hasAdLevelAds) return <NoCellLibraryNote adCount={adLevelAdCount} />;
                         return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />;
                       }
 

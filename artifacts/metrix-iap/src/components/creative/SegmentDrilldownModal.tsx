@@ -17,7 +17,7 @@ import { cn } from "@workspace/command-deck/lib/utils";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useDemographicCoverage } from "@/hooks/useDemographicCoverage";
-import { getMST } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getMST } from "@/lib/data/metrixSeedAdapter";
 import {
   computeSegmentDrilldown,
   scopeDemographicRows,
@@ -173,7 +173,7 @@ function perfSummary(totals: SegmentRawTotals, derived: SegmentDerivedMetrics): 
   return parts;
 }
 
-function VariableChip({ v }: { v: SegmentVariableAttribution }) {
+function VariableChip({ v, unit = "concept" }: { v: SegmentVariableAttribution; unit?: "concept" | "ad" }) {
   const prefix = getVariablePrefix(v.code);
   return (
     <Tooltip>
@@ -188,7 +188,7 @@ function VariableChip({ v }: { v: SegmentVariableAttribution }) {
       <TooltipContent side="top" className="max-w-[240px]">
         <p className=" text-label text-muted-foreground">{v.code}</p>
         <p className="text-label mt-0.5">{perfSummary(v.totals, v.derived).join(" · ") || "No measurable performance in this segment"}</p>
-        <p className={cn(TYPE.caption, "text-muted-foreground mt-0.5")}>In {v.cellIds.length} concept{v.cellIds.length === 1 ? "" : "s"} this segment saw</p>
+        <p className={cn(TYPE.caption, "text-muted-foreground mt-0.5")}>In {v.cellIds.length} {unit}{v.cellIds.length === 1 ? "" : "s"} this segment saw</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -393,6 +393,7 @@ function WinnerDiffBadge({
 
 function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; side: "a" | "b" }) {
   const topVariables = data.attribution.variables.slice(0, 8);
+  const byAds = data.attribution.basis === "evidence_layer";
   return (
     <div className="space-y-3 min-w-0" data-testid={`compare-column-${side}`}>
       {!data.attribution.available ? (
@@ -403,7 +404,7 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
       ) : (
         <>
           <div className="space-y-1">
-            <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Top concepts</p>
+            <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{byAds ? "Top ads" : "Top concepts"}</p>
             <div className="rounded-lg border border-border/40 overflow-hidden">
               {data.attribution.cells.slice(0, 5).map((c) => (
                 <div
@@ -442,7 +443,7 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="text-micro text-muted-foreground/75 w-3.5 shrink-0">{i + 1}</span>
-                      <VariableChip v={v} />
+                      <VariableChip v={v} unit={byAds ? "ad" : "concept"} />
                     </div>
                     <div className="shrink-0 text-right text-micro text-muted-foreground/75 tabular-nums">
                       {v.derived.cpa != null ? `${fmtUSD(v.derived.cpa)} CPA` : v.totals.spend != null ? fmtUSD(v.totals.spend, 0) : "–"}
@@ -663,6 +664,9 @@ export function SegmentDrilldownModal({
   const scopedCoverage = useDemographicCoverage();
   const coverage = demoCoverage !== undefined ? demoCoverage : scopedCoverage;
   const mst = getMST(seed, adAccountId);
+  // The ads registry names the evidence layer's ads and scopes them to
+  // creative cells when the demographic rows are account-grain.
+  const ads = getAdAccount(seed, adAccountId)?.ads ?? null;
   const [, navigate] = useLocation();
 
   const [compareSegment, setCompareSegment] = useState<SegmentId | null>(null);
@@ -674,12 +678,12 @@ export function SegmentDrilldownModal({
   }, [primaryKey, open]);
 
   const data = useMemo(
-    () => (segment ? computeSegmentDrilldown(analysis, mst, segment, cellIds, coverage) : null),
-    [analysis, mst, segment, cellIds, coverage]
+    () => (segment ? computeSegmentDrilldown(analysis, mst, segment, cellIds, coverage, ads) : null),
+    [analysis, mst, segment, cellIds, coverage, ads]
   );
   const compareData = useMemo(
-    () => (compareSegment ? computeSegmentDrilldown(analysis, mst, compareSegment, cellIds, coverage) : null),
-    [analysis, mst, compareSegment, cellIds, coverage]
+    () => (compareSegment ? computeSegmentDrilldown(analysis, mst, compareSegment, cellIds, coverage, ads) : null),
+    [analysis, mst, compareSegment, cellIds, coverage, ads]
   );
   const catalog = useMemo(
     () => (data ? buildSegmentMetricCatalog(data.totals, data.derived) : []),
@@ -701,6 +705,7 @@ export function SegmentDrilldownModal({
   const label = segmentLabel(segment);
   const hasRows = data.totals.rowCount > 0;
   const topVariables = data.attribution.variables.slice(0, 12);
+  const byAds = data.attribution.basis === "evidence_layer";
   const comparing = compareSegment != null && compareData != null;
   const compareLabel = compareSegment ? segmentLabel(compareSegment) : null;
 
@@ -884,7 +889,7 @@ export function SegmentDrilldownModal({
               {/* Driving concepts — visual card tiles */}
               <div className="space-y-2">
                 <p className="text-label uppercase tracking-widest text-muted-foreground/75">
-                  Top concepts for this segment
+                  {byAds ? "Top ads for this segment" : "Top concepts for this segment"}
                 </p>
                 {!data.attribution.available ? (
                   <div className="flex items-start gap-2 text-caption text-muted-foreground/75 leading-relaxed rounded-lg border border-border/30 bg-foreground/[0.02] p-3" data-testid="note-attribution-unavailable">
@@ -946,7 +951,7 @@ export function SegmentDrilldownModal({
                               <div className="flex flex-wrap items-center gap-1">
                                 {c.variableCodes.slice(0, 3).map((code) => {
                                   const v = data.attribution.variables.find((x) => x.code === code);
-                                  return v ? <VariableChip key={code} v={v} /> : null;
+                                  return v ? <VariableChip key={code} v={v} unit={byAds ? "ad" : "concept"} /> : null;
                                 })}
                                 {c.variableCodes.length > 3 && (
                                   <span className="text-caption text-muted-foreground/75">+{c.variableCodes.length - 3}</span>
@@ -1013,7 +1018,7 @@ export function SegmentDrilldownModal({
                       <div key={v.code} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0" data-testid={`row-segment-variable-${v.code}`}>
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-micro text-muted-foreground/75 w-4 shrink-0">{i + 1}</span>
-                          <VariableChip v={v} />
+                          <VariableChip v={v} unit={byAds ? "ad" : "concept"} />
                         </div>
                         <div className="shrink-0 text-right text-micro text-muted-foreground/75 tabular-nums">
                           {perfSummary(v.totals, v.derived).join(" · ") || "–"}
@@ -1032,11 +1037,12 @@ export function SegmentDrilldownModal({
                   are not on the screen. Two notices contradicting each other
                   reads as a bug in the data, not a limit of the export. */}
               {data.attribution.available && (
-                <div className="flex items-start gap-2 text-label text-muted-foreground/75 leading-relaxed">
+                <div className="flex items-start gap-2 text-label text-muted-foreground/75 leading-relaxed" data-testid="note-attribution-basis">
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   <span>
-                    Concepts and variables join this segment's demographic rows to their creative cells and variable
-                    stacks. Hover a variable for its underlying code and per-segment performance.
+                    {byAds
+                      ? `${data.attribution.basisNote ?? ""} Hover a variable for its underlying code and per-segment performance.`
+                      : "Concepts and variables join this segment's demographic rows to their creative cells and variable stacks. Hover a variable for its underlying code and per-segment performance."}
                   </span>
                 </div>
               )}
