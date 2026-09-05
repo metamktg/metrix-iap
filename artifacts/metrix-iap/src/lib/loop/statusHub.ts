@@ -181,7 +181,14 @@ export function buildAnalysisHub(args: {
           runId: latest.id,
           finishedAt: latest.finished_at ?? latest.started_at,
           message: latest.error_message ?? "The run ended with an error",
-          retained: latestSuccess ? "The last successful run's data is still shown" : "No completed run to show yet",
+          // What the reader is still looking at (sweep spec §7.7): a failed
+          // run deletes only its own rows and the account keeps pointing at
+          // its last successful run, so that run's window is named here.
+          retained: latestSuccess
+            ? `The last successful run's data${
+                latestSuccess.date_start && latestSuccess.date_end ? ` (${latestSuccess.date_start} → ${latestSuccess.date_end})` : ""
+              } is still shown`
+            : "No completed run to show yet",
         }
       : null;
 

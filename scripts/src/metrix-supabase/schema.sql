@@ -1072,6 +1072,29 @@ begin
     unique (account_id, variable_family, variable_id, result_type, manual_analysis_run_id);
 end $$;
 
+-- ─────────────────────────────────────────────────────────────────────
+-- Safe re-runs (sweep spec §7.7, slice 2, 2026-09-05): the account's
+-- current successful analysis run. A run writes every output row under its
+-- own id and this pointer moves to it only once its rows are all in place,
+-- so readers (the seed, the summary endpoints, the strategy evidence, the
+-- ad_performance views below) scope to one run and a run in flight or one
+-- that failed is never read as the account's data. Set by the engine on
+-- success; backfilled here from the newest successful run so every account
+-- that has one carries it before the readers start asking. on delete set
+-- null: deleting a run must never delete the account.
+-- ─────────────────────────────────────────────────────────────────────
+alter table ad_accounts
+  add column if not exists current_analysis_run_id uuid references manual_analysis_runs(id) on delete set null;
+create index if not exists ad_accounts_current_run_idx on ad_accounts (current_analysis_run_id);
+update ad_accounts a
+  set current_analysis_run_id = (
+    select r.id from manual_analysis_runs r
+    where r.account_id = a.id and r.status = 'success'
+    order by r.started_at desc
+    limit 1
+  )
+  where a.current_analysis_run_id is null;
+
 -- Multi-run / all-time provenance for strategy generation (replaces the
 -- never-actually-created source_analysis_run_id reference in
 -- generationEngine.ts — that column was never added to this schema, so
@@ -1197,11 +1220,17 @@ create index if not exists ad_performance_asset_mapping_idx
 
 alter table ad_performance
   drop constraint if exists ad_performance_account_id_ad_name_campaign_name_result_type_key;
-create unique index if not exists ad_performance_meta_identity_key
-  on ad_performance (account_id, meta_ad_id, campaign_name, result_type, date_start, date_end)
+-- The identity keys carry the run (sweep spec §7.7, slice 2): two
+-- generations of the same ad-day coexist, one per run, and a re-run no
+-- longer clears the window before it writes. The run-less keys these
+-- replace are dropped by name; they would refuse the second generation.
+drop index if exists ad_performance_meta_identity_key;
+drop index if exists ad_performance_name_identity_fallback_key;
+create unique index if not exists ad_performance_meta_identity_run_key
+  on ad_performance (account_id, manual_analysis_run_id, meta_ad_id, campaign_name, result_type, date_start, date_end)
   where meta_ad_id is not null;
-create unique index if not exists ad_performance_name_identity_fallback_key
-  on ad_performance (account_id, ad_name, campaign_name, result_type, date_start, date_end)
+create unique index if not exists ad_performance_name_identity_run_fallback_key
+  on ad_performance (account_id, manual_analysis_run_id, ad_name, campaign_name, result_type, date_start, date_end)
   where meta_ad_id is null;
 
 -- ─────────────────────────────────────────────────────────────────────
@@ -1792,29 +1821,37 @@ create index if not exists ad_performance_account_result_type_idx
 create or replace view ad_performance_event_totals
 with (security_invoker = on) as
   select
-    account_id,
-    result_type,
+    p.account_id,
+    p.result_type,
     sum(coalesce(spend, 0))       as spend,
     sum(coalesce(reach, 0))       as reach,
     sum(coalesce(impressions, 0)) as impressions,
     sum(coalesce(results, 0))     as results,
     sum(coalesce(clicks_all, 0))  as clicks_all,
     sum(coalesce(link_clicks, 0)) as link_clicks
-  from ad_performance
-  group by account_id, result_type;
+  from ad_performance p
+  left join ad_accounts a on a.id = p.account_id
+  where p.manual_analysis_run_id is null or p.manual_analysis_run_id = a.current_analysis_run_id
+  group by p.account_id, p.result_type;
 
+-- Every view reads the account's CURRENT run (ad_accounts.current_analysis_run_id)
+-- plus untagged rows: two generations of rollup rows coexist since sweep
+-- slice 2, and summing both would count a re-measured day twice.
+--
 -- The window and the book list in one row per account. Both are read
 -- together and neither is worth its own round trip.
 create or replace view ad_performance_account_summary
 with (security_invoker = on) as
   select
-    account_id,
-    min(date_start) as window_start,
-    max(date_end)   as window_end,
-    array_remove(array_agg(distinct book order by book), null) as books,
-    count(*)        as row_count
-  from ad_performance
-  group by account_id;
+    p.account_id,
+    min(p.date_start) as window_start,
+    max(p.date_end)   as window_end,
+    array_remove(array_agg(distinct p.book order by p.book), null) as books,
+    count(*)          as row_count
+  from ad_performance p
+  left join ad_accounts a on a.id = p.account_id
+  where p.manual_analysis_run_id is null or p.manual_analysis_run_id = a.current_analysis_run_id
+  group by p.account_id;
 
 -- Per-ad totals. result_type is min() rather than grouped: the seed reads a
 -- single representative type per ad name (`s.result_type ??= ...` — first
@@ -1823,16 +1860,18 @@ with (security_invoker = on) as
 create or replace view ad_performance_ad_totals
 with (security_invoker = on) as
   select
-    account_id,
-    ad_name,
-    min(result_type)              as result_type,
+    p.account_id,
+    p.ad_name,
+    min(p.result_type)            as result_type,
     sum(coalesce(spend, 0))       as spend,
     sum(coalesce(results, 0))     as results,
     sum(coalesce(impressions, 0)) as impressions,
     sum(coalesce(link_clicks, 0)) as link_clicks
-  from ad_performance
-  where ad_name is not null and ad_name <> ''
-  group by account_id, ad_name;
+  from ad_performance p
+  left join ad_accounts a on a.id = p.account_id
+  where p.ad_name is not null and p.ad_name <> ''
+    and (p.manual_analysis_run_id is null or p.manual_analysis_run_id = a.current_analysis_run_id)
+  group by p.account_id, p.ad_name;
 
 -- Second layer, matching the base-table treatment above: strip the default
 -- PostgREST grants so anon and authenticated get a hard permission denial
@@ -1900,8 +1939,8 @@ begin
     execute format('alter table demographic_performance drop constraint %I', cname);
   end loop;
   alter table demographic_performance
-    add constraint demographic_performance_account_gender_age_type_window_key
-    unique (account_id, gender, age, result_type, date_start, date_end);
+    add constraint demographic_performance_account_gender_age_type_run_window_key
+    unique (account_id, manual_analysis_run_id, gender, age, result_type, date_start, date_end);
 end $$;
 
 do $$
@@ -1914,8 +1953,8 @@ begin
     execute format('alter table placement_performance drop constraint %I', cname);
   end loop;
   alter table placement_performance
-    add constraint placement_performance_account_placement_type_window_key
-    unique (account_id, placement, result_type, date_start, date_end);
+    add constraint placement_performance_account_placement_type_run_window_key
+    unique (account_id, manual_analysis_run_id, placement, result_type, date_start, date_end);
 end $$;
 
 do $$
@@ -1928,8 +1967,8 @@ begin
     execute format('alter table platform_performance drop constraint %I', cname);
   end loop;
   alter table platform_performance
-    add constraint platform_performance_account_platform_type_window_key
-    unique (account_id, platform, result_type, date_start, date_end);
+    add constraint platform_performance_account_platform_type_run_window_key
+    unique (account_id, manual_analysis_run_id, platform, result_type, date_start, date_end);
 end $$;
 
 do $$
@@ -1942,10 +1981,53 @@ begin
     execute format('alter table device_performance drop constraint %I', cname);
   end loop;
   alter table device_performance
-    add constraint device_performance_account_device_kind_type_window_key
-    unique (account_id, device, device_kind, result_type, date_start, date_end);
+    add constraint device_performance_account_device_kind_type_run_window_key
+    unique (account_id, manual_analysis_run_id, device, device_kind, result_type, date_start, date_end);
 end $$;
 
 create index if not exists concept_performance_type_idx on concept_performance (account_id, result_type);
 create index if not exists demographic_performance_type_idx on demographic_performance (account_id, result_type);
 create index if not exists placement_performance_type_idx on placement_performance (account_id, result_type);
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Safe re-runs, the signal tables (sweep spec §7.7, slice 2, 2026-09-05).
+-- demographic_signal and placement_signal were the last output tables
+-- written without a run id: the engine deleted the account's rows and
+-- re-inserted them at 92%, so a run that failed after that point left the
+-- account without them and the failed-run cleanup could not tell its rows
+-- from the previous run's. They carry the run now, keyed like the rollups,
+-- and are kept for two generations with them. The importer's rows keep a
+-- null run id and are never pruned.
+-- ─────────────────────────────────────────────────────────────────────
+alter table demographic_signal
+  add column if not exists manual_analysis_run_id uuid references manual_analysis_runs(id) on delete cascade;
+alter table placement_signal
+  add column if not exists manual_analysis_run_id uuid references manual_analysis_runs(id) on delete cascade;
+
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname from pg_constraint
+    where conrelid = 'demographic_signal'::regclass and contype = 'u'
+  loop
+    execute format('alter table demographic_signal drop constraint %I', cname);
+  end loop;
+  alter table demographic_signal
+    add constraint demographic_signal_account_run_row_key
+    unique (account_id, manual_analysis_run_id, row_index);
+end $$;
+
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname from pg_constraint
+    where conrelid = 'placement_signal'::regclass and contype = 'u'
+  loop
+    execute format('alter table placement_signal drop constraint %I', cname);
+  end loop;
+  alter table placement_signal
+    add constraint placement_signal_account_run_scope_row_key
+    unique (account_id, manual_analysis_run_id, signal_scope, row_index);
+end $$;

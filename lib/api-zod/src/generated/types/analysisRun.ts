@@ -32,6 +32,8 @@ export interface AnalysisRun {
   creatives_unlinked_names?: string[] | null;
   /** One entry per pipeline stage boundary the run reached, in order, written with every progress update. Null on runs recorded before the column existed and on live-Meta pulls. The status hub's ETA rule reads the usual duration of each stage on this account from finished runs' entries. */
   stage_timings?: StageTiming[] | null;
+  /** Whether this run's derived rollup rows (ad, breakdown and signal aggregates) are still in the tables. An account keeps the rollups of its two newest successful runs, the current run and the one before it, as a rebuild cache; an older run's rollups are dropped once a newer run succeeds, while its evidence rows are kept for every run. False on running and failed runs. A reader that wants an older run's rollups re-runs the analysis. */
+  rollups_retained?: boolean;
   /** Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues. */
   csv_warnings?: string[] | null;
   /** Objectives DERIVED from this run's ad result types whose required CSV column groups were present and were therefore assessed. Null on legacy runs recorded before objective-aware analysis. */

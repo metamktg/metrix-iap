@@ -13,6 +13,7 @@
 // Nothing is fabricated; gap tables (data_quality, variable_registry) are
 // passed through so the client can surface them.
 
+import { rowsOfCurrentRun } from "./runGenerations";
 import { classifyResultEvent, INTENT_CLASS_ORDER, type IntentClass } from "./resultEvents";
 import {
   creativeInputFromMetadata,
@@ -398,7 +399,18 @@ export function selectTopPerformersEvent(events: readonly SeedResultEvent[], row
 export function buildAccountObject(account: Row, t: AccountTables): Row {
   const accountId = String(account["id"]);
   const modules = modulesFor(t.accountModules, accountId);
-  const adPerformance = forAccount(t.adPerformance, accountId);
+  // Fetched newest-first, so [0] is the most recent SUCCESSFUL run.
+  const latestRun = forAccount(t.successfulRuns, accountId)[0] ?? null;
+  // The account's current run (sweep spec §7.7): the pointer the engine
+  // swaps once a run's rows are all in place, the newest successful run
+  // where the pointer is not set. Two rollup generations coexist in the
+  // tables, so every rollup read below keeps this run's rows plus untagged
+  // history and nothing else: a run in flight or one that failed is never
+  // read as the account's data.
+  const currentRunId =
+    (account["current_analysis_run_id"] as string | null | undefined) ??
+    ((latestRun?.["id"] as string | undefined) ?? null);
+  const adPerformance = rowsOfCurrentRun(forAccount(t.adPerformance, accountId), currentRunId);
   const creativeDeconstructions = forAccount(t.creativeDeconstructions, accountId).map(
     deconstructionSeedShape,
   );
@@ -422,10 +434,10 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   }
 
   // ── Full assembly from this account's rows ──────────────────────────
+  // Every retained generation, on purpose: the client scopes these two to
+  // one run itself (scopeToRun) and the run picker reads the history.
   const conceptPerformance = forAccount(t.conceptPerformance, accountId);
-  // Fetched newest-first, so [0] is the most recent SUCCESSFUL run.
-  const latestRun = forAccount(t.successfulRuns, accountId)[0] ?? null;
-  const latestAnalysisRunId = (latestRun?.["id"] as string | undefined) ?? null;
+  const latestAnalysisRunId = currentRunId;
   const adBreakdowns = forAccount(t.adBreakdowns, accountId);
   const reconciliationLedger = forAccount(t.reconciliationLedger, accountId);
   const variableSegments = forAccount(t.variableSegments, accountId);
@@ -447,11 +459,11 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   const libraryCells = forAccount(t.libraryCells, accountId);
   const libraryCellPerformance = forAccount(t.libraryCellPerformance, accountId);
   const variablePerformance = forAccount(t.variablePerformance, accountId);
-  const demographicSignal = forAccount(t.demographicSignal, accountId);
-  const placementSignal = forAccount(t.placementSignal, accountId);
-  const devicePerformance = forAccount(t.devicePerformance, accountId);
-  const platformPerformance = forAccount(t.platformPerformance, accountId);
-  const placementPerformance = forAccount(t.placementPerformance, accountId);
+  const demographicSignal = rowsOfCurrentRun(forAccount(t.demographicSignal, accountId), currentRunId);
+  const placementSignal = rowsOfCurrentRun(forAccount(t.placementSignal, accountId), currentRunId);
+  const devicePerformance = rowsOfCurrentRun(forAccount(t.devicePerformance, accountId), currentRunId);
+  const platformPerformance = rowsOfCurrentRun(forAccount(t.platformPerformance, accountId), currentRunId);
+  const placementPerformance = rowsOfCurrentRun(forAccount(t.placementPerformance, accountId), currentRunId);
   const messagePillars = forAccount(t.messagePillars, accountId);
   const testingHypotheses = forAccount(t.testingHypotheses, accountId);
   const icpProfiles = forAccount(t.icpProfiles, accountId);
@@ -667,11 +679,13 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     top_checkout_variables: topCheckoutVariables,
     top_performers_event: topPerformersEvent,
     // The run a consumer should scope to when it is showing "this account"
-    // rather than "this run". concept_rollup and v3_variable_performance both
-    // retain one row per run by design, so an unscoped aggregate over them
-    // sums every re-measurement of the same period — after N runs a $1,000
-    // concept reads as $N,000. Null when no run has succeeded yet, in which
-    // case there is nothing to scope and every row is untagged history.
+    // rather than "this run": the account's current run (sweep spec §7.7,
+    // ad_accounts.current_analysis_run_id). concept_rollup and
+    // v3_variable_performance both retain one row per run by design, so an
+    // unscoped aggregate over them sums every re-measurement of the same
+    // period — after N runs a $1,000 concept reads as $N,000. Null when no
+    // run has succeeded yet, in which case there is nothing to scope and
+    // every row is untagged history.
     latest_analysis_run_id: latestAnalysisRunId,
     // Reconciliation-first evidence layer, latest run only (spec §16).
     ad_breakdowns: adBreakdowns.map((r) => ({
@@ -1513,7 +1527,13 @@ export async function assembleMetrixSeed(): Promise<Row> {
   // the latest run's only. A second round trip, deliberately: the run ids
   // are not known until the batch above returns. Graceful: [] before the
   // tables exist.
+  // The account's current run first (the pointer the engine swaps on
+  // success), the newest successful run where no pointer is set.
   const latestRunIdByAccount = new Map<string, string>();
+  for (const a of adAccounts) {
+    const pointer = a["current_analysis_run_id"];
+    if (pointer) latestRunIdByAccount.set(String(a["id"]), String(pointer));
+  }
   for (const r of successfulRunsAll) {
     const acct = String(r["account_id"] ?? "");
     if (acct && !latestRunIdByAccount.has(acct)) latestRunIdByAccount.set(acct, String(r["id"]));

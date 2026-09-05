@@ -17,6 +17,7 @@
 
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { z } from "zod";
+import { currentRunFilter, getCurrentAnalysisRunId } from "./runGenerations";
 import { getSupabase } from "./supabase";
 import { fetchSuccessfulRuns, splitBySource } from "./generatedCurrency";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
@@ -170,19 +171,29 @@ async function rowsFor(table: string, accountId: string, build?: (q: any) => any
 }
 
 /**
- * Scoped variant for the run-taggable rollup tables (concept_performance,
- * variable_performance, device/platform/placement_performance). runIds ===
- * "all" (or empty) returns every row for the account, matching pre-run-
- * scoping behavior exactly. A specific set filters to rows tagged with one
- * of the selected runs OR untagged (manual_analysis_run_id is null) —
- * pre-migration history has no run tag and must never silently disappear
- * from a specific-run selection, only "all time" ever meant everything.
+ * The run scope an evidence pack reads under. "all" (or an empty list)
+ * resolves to the account's CURRENT run: two rollup generations coexist
+ * in the run-keyed tables since sweep slice 2 (§7.7), and reading every
+ * row for the account would count a re-measured period once per
+ * generation. A specific set reads the rows tagged with one of the
+ * selected runs. Untagged rows (manual_analysis_run_id is null) come
+ * along in both cases: pre-migration history and the importer's rows have
+ * no run tag and must never silently disappear. The union-with-supersede
+ * over several runs is slice 3's rule.
  */
-async function rowsForRuns(table: string, accountId: string, runIds: string[] | "all"): Promise<Row[]> {
-  return rowsFor(table, accountId, (q) => {
-    if (runIds === "all" || runIds.length === 0) return q;
-    return q.or(`manual_analysis_run_id.in.(${runIds.join(",")}),manual_analysis_run_id.is.null`);
-  });
+type RunScope = { kind: "current"; runId: string | null } | { kind: "runs"; runIds: string[] };
+
+async function resolveRunScope(accountId: string, runIds: string[] | "all"): Promise<RunScope> {
+  if (runIds === "all" || runIds.length === 0) return { kind: "current", runId: await getCurrentAnalysisRunId(accountId) };
+  return { kind: "runs", runIds };
+}
+
+async function rowsForRuns(table: string, accountId: string, scope: RunScope): Promise<Row[]> {
+  return rowsFor(table, accountId, (q) =>
+    scope.kind === "current"
+      ? q.or(currentRunFilter(scope.runId))
+      : q.or(`manual_analysis_run_id.in.(${scope.runIds.join(",")}),manual_analysis_run_id.is.null`),
+  );
 }
 
 const num = (v: unknown): number => {
@@ -263,19 +274,22 @@ async function buildStrategyEvidence(
   accountName: string,
   runIds: string[] | "all" = "all",
 ): Promise<StrategyEvidence> {
+  const scope = await resolveRunScope(accountId, runIds);
   const [cellRows, varRows, demoRows, placementRows, deviceRows, platformRows, placementPerfRows, conceptRows, icpRows, moduleRows, adPerfRows] =
     await Promise.all([
       rowsFor("library_cell_performance", accountId), // baseline client-library data, not run-scoped
-      rowsForRuns("variable_performance", accountId, runIds),
-      rowsFor("demographic_signal", accountId), // baseline client-library data, not run-scoped
-      rowsFor("placement_signal", accountId), // baseline client-library data, not run-scoped
-      rowsForRuns("device_performance", accountId, runIds),
-      rowsForRuns("platform_performance", accountId, runIds),
-      rowsForRuns("placement_performance", accountId, runIds),
-      rowsForRuns("concept_performance", accountId, runIds),
+      rowsForRuns("variable_performance", accountId, scope),
+      // The signal tables carry the run since sweep slice 2; the importer's
+      // rows stay untagged and come along under either scope.
+      rowsForRuns("demographic_signal", accountId, scope),
+      rowsForRuns("placement_signal", accountId, scope),
+      rowsForRuns("device_performance", accountId, scope),
+      rowsForRuns("platform_performance", accountId, scope),
+      rowsForRuns("placement_performance", accountId, scope),
+      rowsForRuns("concept_performance", accountId, scope),
       rowsFor("icp_profiles", accountId), // narrowed to the current generated set below
       rowsFor("account_modules", accountId, (q) => q.eq("module", "iap_metadata")),
-      rowsForRuns("ad_performance", accountId, runIds),
+      rowsForRuns("ad_performance", accountId, scope),
     ]);
 
   const cells = cellRows
