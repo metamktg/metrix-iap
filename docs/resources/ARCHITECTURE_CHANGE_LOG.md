@@ -1108,32 +1108,3 @@ the only way whole-table rows are appended, in both page loops and the seed's ag
 `paginatedSelect.test.ts` proves the spread throws at 170k and the loop does not, and reads a
 131k-row keyset table whole. The pages never carried the risk (1,000 rows each); the aggregation did.
 
-
-
-## 26. Keyset-supporting indexes on the four evidence tables (2026-09-05, schema, additive, HELD for approval)
-
-**What changed.** `schema.sql` gains one index per evidence table on
-`(account_id, manual_analysis_run_id, id)`: `ad_breakdown_performance_account_run_id_idx`,
-`reconciliation_ledger_account_run_id_idx`, `variable_segment_performance_account_run_id_idx`,
-`variable_evidence_account_run_id_idx`. Nothing else: no column, no constraint, no code.
-
-**Why.** The seed reads a run's rows by keyset on `id` (entry 25, addendum), and the keyset pages
-are cheap (232 ms mean on the ledger over 206 calls on the 2026-09-05 01:29Z production warm). The
-FIRST page of every (account, run) is not: none of the existing composite indexes end in `id`, so
-`explain analyze` on the live table shows the planner serving `where account_id = $1 and
-manual_analysis_run_id = $2 order by id limit 1000` by walking the PRIMARY KEY in id order and
-filtering. It skips every lower id in the table before the run's rows (92,260 rows removed by
-filter, 9.2 s on `ad_breakdown_performance` for Pure Path), and for a run whose ids sit below
-another run's the last page walks to the end of the table (54 to 58 s maxima, `pg_stat_statements`,
-20 first-page calls per table at 4.6 to 5.2 s mean). With the index, equality on the two run keys
-plus a range on `id` in `id` order is one index range per page.
-
-**What proves it.** `schema-apply.test.ts` still splits the real `schema.sql` cleanly (8 tests);
-`apply-supabase-schema.ts --dry-run` lists the four statements. The plan change is expected from
-the index definition and is to be confirmed with `explain analyze` on production after the apply.
-
-**How far it reaches.** DDL only, additive, idempotent (`if not exists`). Applied by the post-merge
-hook through the one-statement-per-transaction runner: a plain `create index` holds a SHARE lock
-(blocks writes, not reads) for the build, seconds on these tables, and the applier waits for a
-running analysis first. Held: the owner holds schema changes for approval, and this entry lands
-with the PR that carries the DDL, not before.

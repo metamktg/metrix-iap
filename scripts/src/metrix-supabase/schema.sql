@@ -1327,18 +1327,6 @@ create table if not exists ad_breakdown_performance (
 create index if not exists ad_breakdown_performance_account_run_idx
   on ad_breakdown_performance (account_id, manual_analysis_run_id, breakdown);
 
--- The seed reads a run's rows by keyset on `id` (paginatedSelect.ts,
--- 2026-09-05). Without an index that leads with the two run keys AND ends in
--- id, the planner serves `where account_id = $1 and manual_analysis_run_id =
--- $2 order by id limit 1000` by walking the PRIMARY KEY and filtering: the
--- first page of a run skips every lower id in the table (92k rows, 9 s on
--- ad_breakdown_performance), and the last page of a run whose ids sit below
--- another run's walks to the end of the table (up to 58 s, measured on the
--- 2026-09-05 01:29Z production warm). This index makes every page one index
--- range: equality on the run keys, a range on id, in id order.
-create index if not exists ad_breakdown_performance_account_run_id_idx
-  on ad_breakdown_performance (account_id, manual_analysis_run_id, id);
-
 -- The unique key held unbounded text: ad_identity (an ad name, or an
 -- unjoinable row's own key) and segment_key (which carried a copy
 -- signature's whole text until 2026-09-04). A btree index row is capped at
@@ -1388,9 +1376,6 @@ create table if not exists reconciliation_ledger (
 );
 create index if not exists reconciliation_ledger_account_run_idx
   on reconciliation_ledger (account_id, manual_analysis_run_id, report_class, scope);
--- Keyset pages on id, see ad_breakdown_performance_account_run_id_idx.
-create index if not exists reconciliation_ledger_account_run_id_idx
-  on reconciliation_ledger (account_id, manual_analysis_run_id, id);
 
 -- Asset instances: THIS asset on THIS ad. `content_hash` is the cross-ad
 -- content identity; `provenance` separates configured context (the Ad
@@ -1447,9 +1432,6 @@ create table if not exists variable_evidence (
 );
 create index if not exists variable_evidence_account_run_idx
   on variable_evidence (account_id, manual_analysis_run_id, variable_family, variable_id);
--- Keyset pages on id, see ad_breakdown_performance_account_run_id_idx.
-create index if not exists variable_evidence_account_run_id_idx
-  on variable_evidence (account_id, manual_analysis_run_id, id);
 
 -- Per variable × breakdown × segment × result type, per run — what the IAP
 -- Library answers from. Aggregated over UNIQUE (ad, segment) observations so
@@ -1484,9 +1466,6 @@ create table if not exists variable_segment_performance (
 );
 create index if not exists variable_segment_performance_account_run_idx
   on variable_segment_performance (account_id, manual_analysis_run_id, variable_family, variable_id);
--- Keyset pages on id, see ad_breakdown_performance_account_run_id_idx.
-create index if not exists variable_segment_performance_account_run_id_idx
-  on variable_segment_performance (account_id, manual_analysis_run_id, id);
 
 -- Per-run summary (truth source, per-metric account coverage per breakdown,
 -- ads per evidence state) so History can show it without reading the ledger.
