@@ -316,7 +316,7 @@
   "/app/strategy/map": {
     "warnBoxes": 0,
     "warnIcons": 0,
-    "longProse": 3,
+    "longProse": 4,
     "noData": []
   },
   "/app/strategy/overview": {

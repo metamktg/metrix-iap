@@ -484,7 +484,7 @@ export function SectionTabBar({ section }: { section: string }) {
   const [location] = useLocation();
   const tabs = sectionTabs(section);
   return (
-    <div className="flex items-center gap-0.5 px-4 border-b border-border/40 overflow-x-auto shrink-0 bg-foreground/[0.008]">
+    <div className="flex items-center gap-0.5 px-4 border-b border-border/40 mx-scroll-x shrink-0 bg-foreground/[0.008]">
       {tabs.map((tab) => {
         const active = location === tab.to;
         return (
@@ -563,7 +563,13 @@ export function ModuleHeader({
             own inner flex-wrap only works once it has a full line to wrap
             within. */}
         <div className="flex items-start gap-3 flex-wrap">
-          <div className="flex-1 min-w-0 mx-section-header">
+          {/* basis-64: flex-wrap only moves the right slot down when the
+              title block ASKS for room, and flex-1 alone asks for none (a
+              zero basis), so beside a provenance chip the H1 was squeezed to
+              100 px and broke inside the account name ("Bookst / er ·",
+              audit round 6, 390 px). With a 16 rem floor the chip wraps
+              under the title at phone width; at desktop nothing changes. */}
+          <div className="flex-1 min-w-0 basis-64 mx-section-header">
             <div className="flex items-center gap-1.5">
               {/* Nocturne breadcrumb eyebrow: view context · module. This is a
                   single-workspace agency deployment, so the view is static. */}
@@ -573,7 +579,7 @@ export function ModuleHeader({
               </span>
               {subtitle && <InfoTooltip content={subtitle} />}
             </div>
-            <h1 className="mx-section-header__title">
+            <h1 className="mx-section-header__title break-words">
               {/* The nowrap span keeps "Name ·" together so the separator
                   never orphans onto its own line at phone width — while the
                   DOM text stays plain-spaced for assertions and copy-paste
@@ -581,7 +587,7 @@ export function ModuleHeader({
                   invisible character). */}
               {accountName ? (
                 <>
-                  <span className="whitespace-nowrap">{accountName} ·</span> {title}
+                  <span className="max-lg:whitespace-normal lg:whitespace-nowrap">{accountName} ·</span> {title}
                 </>
               ) : (
                 title
@@ -631,7 +637,7 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
 export function NoDataInRangeState({ what, detail }: { what: string; detail?: string }) {
   const { range, setPreset } = useDateRange();
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
         <CalendarX2 className="w-4 h-4 text-muted-foreground/75" />
       </div>
@@ -1226,7 +1232,7 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
 
 export function PendingState({ title, message, icon: Icon = Clock, action }: { title: string; message?: string; icon?: React.ComponentType<{ className?: string }>; action?: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-foreground/[0.03] flex items-center justify-center">
         <Icon className="w-4 h-4 text-muted-foreground/75" />
       </div>
@@ -1880,7 +1886,7 @@ export function SegmentedToggle<T extends string>({
             aria-label={label}
             title={label}
             className={cn(
-              "pressable relative inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium transition-colors",
+              "pressable relative inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium whitespace-nowrap transition-colors",
               isActive ? "text-interactive" : "text-muted-foreground/75 hover:text-foreground/80"
             )}
           >
@@ -1897,7 +1903,10 @@ export function SegmentedToggle<T extends string>({
               />
             )}
             {Icon && <Icon className="relative w-3.5 h-3.5 shrink-0" />}
-            <span className={cn("relative", responsiveLabels && "hidden sm:inline")}>{label}</span>
+            {/* Only collapse to icon-only when there IS an icon. Without one the
+                button rendered nothing at phone width: a control with no name
+                (Budget's metric switch, the Reconciliation panel's metric switch). */}
+            <span className={cn("relative", responsiveLabels && Icon && "hidden sm:inline")}>{label}</span>
           </button>
         );
       })}

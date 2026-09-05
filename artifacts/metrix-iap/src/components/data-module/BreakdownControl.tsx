@@ -51,9 +51,7 @@ export function BreakdownControl<Row extends Record<string, unknown>>({
       <div
         role="group"
         aria-label={label}
-        className="flex items-center gap-0.5 rounded-xl bg-input/30 p-1 max-w-full
-                   overflow-x-auto overscroll-x-contain [scrollbar-width:none]
-                   [&::-webkit-scrollbar]:hidden"
+        className="flex items-center gap-0.5 rounded-xl bg-input/30 p-1 max-w-full mx-scroll-x"
       >
         {options.map((o) => {
           const disabled = o.reason !== null;

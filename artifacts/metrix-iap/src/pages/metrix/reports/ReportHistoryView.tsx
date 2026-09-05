@@ -430,7 +430,11 @@ function ReportCardList({
             selectable && "cursor-pointer hover:border-border/70",
           )}
         >
-          <div className="flex items-start gap-3">
+          {/* flex-wrap with a 12 rem floor on the text block: the download
+              and delete buttons never shrink, so at 390 px the title block was
+              squeezed to a word a line ("Client-" / "facing ·" / "white_label",
+              audit round 6). Now the buttons drop under the text instead. */}
+          <div className="flex items-start gap-3 flex-wrap">
             {selectMode && (
               <div className="flex items-center h-9 shrink-0">
                 {r.reportId != null ? (
@@ -448,7 +452,7 @@ function ReportCardList({
             <div className="w-9 h-9 rounded-lg border border-border/40 bg-foreground/[0.03] flex items-center justify-center shrink-0">
               <FileText className="w-4 h-4 text-muted-foreground/75" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 basis-48">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-title font-bold text-foreground leading-tight">{r.title}</h3>
                 <span

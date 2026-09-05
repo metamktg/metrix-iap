@@ -55,9 +55,7 @@ export function ViewSwitcher({
       // Scrolls rather than overflowing: six views is 508px, wider than a
       // phone. A segmented control that scrolls is the standard move; one
       // that pushes the page sideways is a bug.
-      className="flex items-center gap-0.5 rounded-xl bg-input/30 p-1 max-w-full
-                 overflow-x-auto overscroll-x-contain [scrollbar-width:none]
-                 [&::-webkit-scrollbar]:hidden"
+      className="flex items-center gap-0.5 rounded-xl bg-input/30 p-1 max-w-full mx-scroll-x"
     >
       {views.map((v) => {
         const reason = whyNot(shape, v);

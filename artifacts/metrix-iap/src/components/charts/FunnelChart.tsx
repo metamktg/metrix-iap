@@ -101,15 +101,15 @@ export function FunnelChart({
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-end mb-2">
-        <div role="group" aria-label="Bar length basis" className="inline-flex items-center gap-0.5 rounded-xl bg-input/30 p-1">
+      <div className="flex items-center justify-end mb-2 mx-scroll-x">
+        <div role="group" aria-label="Bar length basis" className="inline-flex shrink-0 items-center gap-0.5 rounded-xl bg-input/30 p-1">
           {([["previous", "vs previous stage"], ["top", "vs top of funnel"]] as const).map(([id, label]) => (
             <button
               key={id}
               type="button"
               onClick={() => setBasis(id)}
               aria-pressed={basis === id}
-              className={`h-10 px-2.5 rounded-lg text-caption active:scale-[0.96]
+              className={`h-10 px-2.5 rounded-lg text-caption whitespace-nowrap active:scale-[0.96]
                           transition-[background-color,color,scale] duration-150 ease-[var(--mx-ease)]
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
                           ${basis === id ? "bg-primary/20 text-foreground" : "text-muted-foreground hover:text-foreground"}`}
@@ -130,7 +130,10 @@ export function FunnelChart({
       >
         {rows.out.map((r) => (
           <li key={r.key} className="flex items-center gap-3">
-            <span className="text-caption text-muted-foreground w-32 shrink-0 truncate" title={r.label}>
+            {/* 256 px of fixed label columns left a 38 px track at 390 px
+                (audit round 6): the columns narrow below sm and the share
+                reading yields to the value. */}
+            <span className="text-caption text-muted-foreground w-20 sm:w-32 shrink-0 truncate" title={r.label}>
               {r.label}
             </span>
 
@@ -159,13 +162,13 @@ export function FunnelChart({
                 <span className="text-caption font-medium text-foreground tabular-nums">
                   {r.isGap ? "–" : format(r.value!)}
                 </span>
-                <span className="text-label text-foreground/70 tabular-nums">
+                <span className="hidden sm:inline text-label text-foreground/70 tabular-nums">
                   {r.share != null ? `${pct(r.share * 100)} of top` : ""}
                 </span>
               </div>
             </div>
 
-            <span className="w-32 shrink-0 text-right">
+            <span className="w-16 sm:w-32 shrink-0 text-right">
               {r.isGap ? (
                 <DetailReveal
                   label="not measured"
