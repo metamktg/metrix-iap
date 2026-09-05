@@ -143,9 +143,9 @@ function FieldPanel({ label, children }: { label: string; children: React.ReactN
 
 function SpecCell({ label, value, caption }: { label: string; value: string; caption?: string | null }) {
   return (
-    <div>
+    <div className="min-w-0">
       <div className={cn(TYPE.microLabel, "text-muted-foreground/75")}>{label}</div>
-      <div className={cn(TYPE.body, "font-medium text-foreground/90 mt-0.5")}>{value}</div>
+      <div className={cn(TYPE.body, "font-medium text-foreground/90 mt-0.5 break-words")}>{value}</div>
       {caption && <div className={cn(TYPE.label, "text-muted-foreground/75 mt-0.5")}>{caption}</div>}
     </div>
   );
@@ -384,8 +384,11 @@ export function CreativeBriefBuilderView() {
 
                   {hook && (
                     <FieldPanel label="Hook">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className={cn(TYPE.body, "text-foreground/85 leading-relaxed")}>{hook}</p>
+                      {/* The hook had no min-width, so its flex minimum was its
+                          longest word and it wrapped one word per line beside a
+                          CTA chip that never wrapped (audit round 6, 390 px). */}
+                      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+                        <p className={cn(TYPE.body, "min-w-0 flex-1 basis-48 text-foreground/85 leading-relaxed")}>{hook}</p>
                         {cta && (
                           <span className={cn(TYPE.label, "shrink-0 inline-flex border border-primary/35 bg-primary/10 text-interactive rounded-full px-2 py-0.5 font-medium")}>
                             {cta}
@@ -430,7 +433,7 @@ export function CreativeBriefBuilderView() {
                     </FieldPanel>
                   )}
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-4 gap-3">
                     <SpecCell label="Format" value={fbString(specs, "format") ?? detail.asset_type} caption={fbString(specs, "dimensions")} />
                     {priority && <SpecCell label="Priority" value={priority} />}
                     {detail.mode && <SpecCell label="Mode" value={detail.mode} />}
@@ -583,7 +586,7 @@ export function CreativeBriefBuilderView() {
                       ))}
                     </div>
                     {analysis && pillar.source_cells.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2 mt-3">
+                      <div className="grid grid-cols-dashboard-2 gap-2 mt-3">
                         {pillar.source_cells.map((c) => (
                           <CreativeCard
                             key={c}

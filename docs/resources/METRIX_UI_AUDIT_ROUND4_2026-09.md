@@ -51,19 +51,19 @@ or a code read before it is filed). Rounds name the PR that carries the fix.
 
 ## C. Confirmed, layout at 390 px (round 6 PR)
 
-| Route | Finding | Verdict |
-|---|---|---|
-| /app/analysis/overview | KPI values clip mid-number ("$8,0", "2,57", "5,84") in a 2×2 grid beside the donut; Top placements loses its name column | confirmed in the shot |
-| /app/strategy/overview | message pillar cards two per row, titles clamp to letters ("15 M", "Rc S."); "Hypothesis sta…" and "Variabl…" side by side | confirmed in the shot |
-| /app/strategy/map | three panes do not stack; the hypotheses rail clips; the detail pane is not rendered | confirmed by both reports; to re-shoot after the fix |
-| 39 account-scoped pages | H1 clips the account name mid-token ("Fresh Import 1786839868") | confirmed by both reports (Account Overview wraps) |
-| /app/analysis/placements, /app/analysis/funnel, /app/analysis/budget | bars collapse to stubs; values clip inside bars; the metric segmented control renders as an empty pill | confirmed by both reports |
-| /app/creative/builder | CTA chip does not wrap, the hook renders one word per line; key/value grid overflows | confirmed by both reports |
-| /app/account | loop chain, results table header and loop tabs clip with no scroll affordance | confirmed by both reports |
-| /app/strategy/hypotheses, /app/strategy/avatars, /app/mst/sprints, /app/reports/builder, /app/reports/history, /app/creative/scan | tables and tab bars clip at the container edge with no scroller | confirmed by both reports |
-| /app/settings/billing | paragraph edge to edge | confirmed |
-| /app/exports/reports (no-cell) | the page never leaves the boot splash at 390 | unverified: re-shoot with `SHOOT_ONLY` |
-| /app/settings/provenance | the lower ~2,450 px of the 390 capture is blank canvas | unverified: capture cap or paint; re-shoot |
+| Route | Finding | Verdict | Round 6 |
+|---|---|---|---|
+| /app/analysis/overview | KPI values clip mid-number ("$8,0", "2,57", "5,84") in a 2×2 grid beside the donut; Top placements loses its name column | confirmed in the shot | fixed, round 6 (change-log 33): the donut sits under the 2×2 grid below lg; re-shot at 390, every value whole, the placement names present |
+| /app/strategy/overview | message pillar cards two per row, titles clamp to letters ("15 M", "Rc S."); "Hypothesis sta…" and "Variabl…" side by side | confirmed in the shot | fixed, round 6: `grid-cols-dashboard-3-md` (one column on a phone), the donut over the heatmap below lg; re-shot, every pillar title whole |
+| /app/strategy/map | three panes do not stack; the hypotheses rail clips; the detail pane is not rendered | confirmed by both reports; to re-shoot after the fix | fixed, round 6: the panes stack below lg; the first cut left the centre pane at 0 px (a zero flex basis with a zero automatic minimum, measured by a probe on every account), now `flex-none`; re-shot on Bookster and the no-cell account, rail · statement · source cells · hypotheses in order |
+| 39 account-scoped pages | H1 clips the account name mid-token ("Fresh Import 1786839868") | confirmed by both reports (Account Overview wraps) | fixed, round 6: the H1 may break below lg ("Fresh Import / 1786839868960 · / Analysis Overview"); beside a right-hand chip it then broke inside words ("Bookst / er ·"), so the title block asks for 16 rem and the chip wraps under it; re-shot on Creative Scan, Sprints, Creative DNA and Data provenance |
+| /app/analysis/placements, /app/analysis/funnel, /app/analysis/budget | bars collapse to stubs; values clip inside bars; the metric segmented control renders as an empty pill | confirmed by both reports | fixed, round 6: fractional label columns below sm, the funnel's share yields to the value, `SegmentedToggle` keeps its label when the option has no icon; re-shot, every bar with a track and a value, the Budget switch reading Spend · Results · CPA · Clicks |
+| /app/creative/builder | CTA chip does not wrap, the hook renders one word per line; key/value grid overflows | confirmed by both reports | fixed, round 6: the hook row wraps, the spec grid is one column under 420 px; re-shot, the hook a paragraph, every spec cell whole |
+| /app/account | loop chain, results table header and loop tabs clip with no scroll affordance | confirmed by both reports | fixed, round 6: `.mx-scroll-x` with the scroll-driven edge fade, the table floor; re-shot, the chain and the table scroll with the fade at the overflowing edge (`check:scroll-fade`: the stepper overflows 251 px, fades 0 / 14 px at rest) |
+| /app/strategy/hypotheses, /app/strategy/avatars, /app/mst/sprints, /app/reports/builder, /app/reports/history, /app/creative/scan | tables and tab bars clip at the container edge with no scroller | confirmed by both reports | fixed, round 6: the shared scroller on every rail and the `min-width: max-content` floor on a table inside one; re-shot on all six, the tables scroll instead of squeezing; Report History's card also squeezed its text beside two buttons that never shrink, now the buttons wrap under it |
+| /app/settings/billing | paragraph edge to edge | confirmed | fixed, round 6: `PendingState` and `NoDataInRangeState` carry `px-6`; re-shot |
+| /app/exports/reports (no-cell) | the page never leaves the boot splash at 390 | unverified: re-shoot with `SHOOT_ONLY` | re-shot alone at 390 on the no-cell account: renders ("No report configuration yet"), 0 errors; the round-4 capture was the crawl's timing, not the page |
+| /app/settings/provenance | the lower ~2,450 px of the 390 capture is blank canvas | unverified: capture cap or paint; re-shoot | re-shot alone at 390: content to the foot (a 9,774 px page, the crawl's cap is the capture); the H1 read one letter a line beside the provenance chip until the header fix, now one line |
 
 ## D. Confirmed, vocabulary and first layer (round 7 PR)
 
@@ -96,9 +96,11 @@ tiles; Alerts' thirteen amber boxes with raw source labels.
 
 - **Round 5, data honesty** (B): DNA totals, funnel stages from result events, the Overview donut,
   the cell-row counts, the Library coverage sub, the "$0" creative-only cards, the Settings
-  connection and objectives, the demographic coverage share, the Budget cause.
+  connection and objectives, the demographic coverage share, the Budget cause. Shipped: PR #220,
+  merged `d93aa365`, live on app.metrix.ad 2026-09-05 17:56Z (change-log 32, Live).
 - **Round 6, 390 px layout** (C): the KPI 2×2 grid, the pillar grid, the Strategy Map panes, the
   H1 wrap, bars and segmented controls, the Creative builder, the clipped tables and tab bars.
+  Every row carries its re-shoot verdict (change-log 33); shipped as the round 6 PR.
 - **Round 7, vocabulary and first layer** (D, E): the four verbs, the raw codes, the hypothesis
   titles, the MST strip, the double arrows, the glyph overload, the Reports hub merge.
 

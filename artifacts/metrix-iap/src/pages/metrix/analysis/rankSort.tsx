@@ -177,12 +177,12 @@ export function RankSortBar<Row>({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors",
+            "inline-flex shrink-0 max-w-full items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors",
             className
           )}
         >
           <span className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Sort by</span>
-          <span className={cn(TYPE.body, "font-semibold text-foreground/90")}>{active.label}</span>
+          <span className={cn(TYPE.body, "font-semibold text-foreground/90 truncate")}>{active.label}</span>
           {active.direction === "asc" ? (
             <ArrowUp className="w-3 h-3 text-interactive" />
           ) : (

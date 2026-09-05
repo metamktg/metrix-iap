@@ -152,7 +152,7 @@ export function RankedBars({
                   // Label column is content-sized to a cap, so short labels do
                   // not strand the bars far to the right on a wide screen and
                   // long ones still wrap rather than truncating to nothing.
-                  "grid-cols-[minmax(7rem,14rem)_1fr_auto]",
+                  "grid-cols-[minmax(5rem,1fr)_1.4fr_auto] sm:grid-cols-[minmax(7rem,14rem)_1fr_auto]",
                   onRowClick && "pressable transition-colors hover:bg-foreground/[0.04]",
                 )}
               >

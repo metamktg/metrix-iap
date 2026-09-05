@@ -555,10 +555,14 @@ export function StrategyMapView() {
             <FlowCrumb {...fp} />
               <div className="flex-1 flex flex-col min-h-0">
                 {/* ── Three-column map ──────────────────────────────────── */}
-                <div className="flex-1 flex min-h-0 overflow-hidden border-t border-border/30">
+                {/* Below lg the three panes stack (rail, canvas, hypotheses):
+                    482 px of fixed pane width in a 390 px row clipped the rail and
+                    pushed the detail pane out of the clip entirely (audit round 6).
+                    The inline widths the splitters own apply from lg up. */}
+                <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-y-auto lg:overflow-hidden border-t border-border/30">
 
                   {/* Left column — Pillars list (resizable) */}
-                  <div style={{ width: leftCol.width }} className="shrink-0 overflow-y-auto bg-foreground/[0.005]">
+                  <div style={{ width: leftCol.width }} className="max-lg:w-full! max-lg:max-h-[38vh] shrink-0 overflow-y-auto bg-foreground/[0.005]">
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
                       <div className="flex items-center gap-1 mb-0.5">
                         <p className={cn(TYPE.microLabel, "text-muted-foreground/75")}>Pillars</p>
@@ -579,10 +583,16 @@ export function StrategyMapView() {
                     ))}
                   </div>
 
-                  <ResizeHandle handleProps={leftCol.handleProps} />
+                  <div className="hidden lg:contents"><ResizeHandle handleProps={leftCol.handleProps} /></div>
 
-                  {/* Centre column — Source cells + variable legend */}
-                  <div className="flex-1 overflow-y-auto">
+                  {/* Centre column: source cells + variable legend. Below lg it
+                      sizes to its content and the stacked row scrolls: flex-1
+                      is a zero flex basis, and overflow-y-auto makes a flex
+                      item's automatic minimum size zero, so in the column the
+                      pane rendered at 0 px tall on every account (the 390 px
+                      probe of audit round 6) while the rail and the hypotheses
+                      pane kept their heights. */}
+                  <div className="max-lg:flex-none lg:flex-1 min-w-0 max-lg:overflow-visible lg:overflow-y-auto">
                     {/* Sticky header for selected pillar */}
                     <div className="px-4 py-2.5 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10 space-y-1.5">
                       {/* Eyebrow + pillar name */}
@@ -732,7 +742,7 @@ export function StrategyMapView() {
                     </div>
                   </div>
 
-                  <ResizeHandle handleProps={rightCol.handleProps} collapsed={rightCol.collapsed} />
+                  <div className="hidden lg:contents"><ResizeHandle handleProps={rightCol.handleProps} collapsed={rightCol.collapsed} /></div>
 
                   {/* Reopen tab. A collapsed panel whose only affordance is a
                       1.5px splitter is a panel the user has lost — the rail
@@ -742,7 +752,7 @@ export function StrategyMapView() {
                       type="button"
                       onClick={() => rightCol.setCollapsed(false)}
                       title={`Show hypotheses (${selectedHyps.length} active)`}
-                      className="pressable shrink-0 w-7 flex flex-col items-center justify-center gap-2 border-l border-border/20 bg-foreground/[0.01] hover:bg-primary/[0.06] transition-colors group/reopen"
+                      className="pressable shrink-0 w-7 max-lg:hidden flex flex-col items-center justify-center gap-2 border-l border-border/20 bg-foreground/[0.01] hover:bg-primary/[0.06] transition-colors group/reopen"
                     >
                       <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground/75 group-hover/reopen:text-interactive" />
                       <span
@@ -760,7 +770,7 @@ export function StrategyMapView() {
                   )}
 
                   {/* Right column — Hypotheses (resizable) */}
-                  <div style={{ width: rightCol.collapsed ? 0 : rightCol.width }} className={cn("shrink-0 overflow-y-auto", rightCol.collapsed && "invisible")} aria-hidden={rightCol.collapsed}>
+                  <div style={{ width: rightCol.collapsed ? 0 : rightCol.width }} className={cn("max-lg:w-full! shrink-0 overflow-y-auto", rightCol.collapsed && "max-lg:hidden lg:invisible")} aria-hidden={rightCol.collapsed}>
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">

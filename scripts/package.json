@@ -71,6 +71,7 @@
     "check:unexplained-dashes": "node ./src/check-unexplained-dashes.mjs",
     "check:friction": "node ./src/check-friction.mjs",
     "shoot:routes": "node ./src/visual/shoot-routes.mjs",
+    "check:scroll-fade": "node ./src/check-scroll-fade.mjs",
     "check:virtual-tables": "node ./src/visual/check-virtual-tables.mjs"
   },
   "devDependencies": {

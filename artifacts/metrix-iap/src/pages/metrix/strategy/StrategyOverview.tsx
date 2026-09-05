@@ -486,7 +486,7 @@ export function StrategyOverview() {
 
               {/* ── Hypothesis donut + Variable heatmap ───────────── */}
               {(hypStatusData.length > 0 || pillars.length > 0) && (
-                <div className="grid grid-cols-[200px_1fr] gap-3">
+                <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-3">
                   {hypStatusData.length > 0 && (
                     <SectionCard
                       title="Hypothesis status"
@@ -515,7 +515,7 @@ export function StrategyOverview() {
 
               {/* ── Pillar cards (enhanced) ────────────────────────── */}
               <SectionCard title="Message pillars" desc="Validated message directions · click source cells to explore" right={<SectionInfoIcon tip="Validated messaging directions derived from high-performing cells, each anchored to the source creative evidence." />}>
-                <div className="grid grid-cols-dashboard-3 gap-3">
+                <div className="grid grid-cols-dashboard-3-md gap-3">
                   {pillars.map((p, i) => {
                     const t = splitTitle(p.label);
                     const tier = pillarTier(p.source_cells);
@@ -657,7 +657,7 @@ export function StrategyOverview() {
 
               {/* ── Strategy modules ──────────────────────────────────── */}
               <SectionCard title="Go deeper" desc="Same strategy, different lenses, map, audience, and validation queue" right={<SectionInfoIcon tip="Deeper views of the same strategy from different angles. Map, avatars, and hypothesis queue." />}>
-                <div className="grid grid-cols-dashboard-3 gap-3">
+                <div className="grid grid-cols-dashboard-3-md gap-3">
                   {subpages.map((s) => (
                     <a
                       key={s.to}

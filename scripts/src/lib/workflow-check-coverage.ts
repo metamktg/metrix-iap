@@ -56,6 +56,14 @@ export const MANUAL_ONLY_CHECK_SCRIPTS: Record<string, string> = {
     "table past 50 rows, the virtualizer created in a child of its scroll " +
     "container) passed every unit test. Needs a RUNNING dev server on 5178, the " +
     "same constraint as check:friction; exits 2 when it cannot reach one.",
+  "check:scroll-fade":
+    "reads .mx-scroll-x's two scroll-driven fade widths off the computed style in " +
+    "a REAL browser at 390 and 1440 px: an overflowing rail must fade on the right " +
+    "at rest and on the left at its end, a rail that fits must not fade, and at " +
+    "desktop there is no mask. jsdom has no layout and no scroll timelines, which " +
+    "is why the static mask it replaced (a fade on every rail that fit) passed " +
+    "every unit test. Needs a RUNNING dev server on 5178, the same constraint as " +
+    "check:friction; exits 2 when it cannot reach one.",
   "check:friction":
     "walks every route navTree.ts and App.tsx declare, for two fixture accounts " +
     "at 1440 and 390 px, and reports what a reader meets on the FIRST layer: " +

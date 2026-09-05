@@ -1055,9 +1055,11 @@ export function AnalysisOverview() {
                     <SkeletonTileRow count={4} />
                   </div>
                 ) : (
-                  <div className="px-6 pt-5 flex gap-3 items-start">
-                    {/* Left: 4 tiles in a 2×2 grid */}
-                    <div className="flex-1 grid grid-cols-dashboard-4 gap-3">
+                  <div className="px-6 pt-5 flex flex-col lg:flex-row gap-3 items-stretch lg:items-start">
+                    {/* Left: 4 tiles in a 2×2 grid. Below lg the donut sits under
+                        them: beside a 196 px donut at 390 px each tile had 29 px of
+                        content and the values clipped mid-number ("$8,0"). */}
+                    <div className="flex-1 min-w-0 grid grid-cols-dashboard-4 gap-3">
                         <KpiTileRow
                           viewKey={runScoped ? "analysis-overview:run-scoped" : "analysis-overview"}
                           catalog={tileCatalog}
@@ -1066,7 +1068,7 @@ export function AnalysisOverview() {
                     </div>
                     {/* Right: result type donut — inline with tiles */}
                     {resultTypePie.length > 0 && (
-                      <div className="w-[196px] shrink-0 flex flex-col gap-1.5">
+                      <div className="w-full lg:w-[196px] shrink-0 flex flex-col gap-1.5">
                         {/* Title above the tile, like every module. */}
                         <div className={cn(TYPE.microLabel, "text-muted-foreground/75 px-0.5")}>
                           By result type
@@ -1195,7 +1197,7 @@ export function AnalysisOverview() {
 
                   {/* ── Variable table + Placement bars ───────────── */}
                   {(scopedVariableRows.length > 0 || allPlacements.length > 0) && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-dashboard-2-lg gap-3">
                       {scopedVariableRows.length > 0 && (
                         <SectionCard
                           title="Variable performance"

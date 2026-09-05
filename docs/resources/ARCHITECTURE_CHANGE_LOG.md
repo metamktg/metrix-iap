@@ -1655,3 +1655,123 @@ export's sentence and asserts the objective is absent.
 are the ones that were wrong: an ecommerce export's funnel is byte-identical, cell-grain accounts
 keep their tiles, and every fallback is a dash or a sentence, never a zero. `check:cohort-reach`'s
 allowed reach shrank from six paths to four.
+
+**Live.** PR #220 merged into main as `d93aa365` (2026-09-05 17:40Z) on a green run, four commits
+(the round, the thirty bare dashes of the creative-only cards given their reason, the donut caption
+lifted to the AA floor for `check:token-colors`, the funnel's new tip and absence sentence in the
+two baselines that pin them); `check:friction` on the final head: 204 visits, 0 defects, no ratchet
+raised beyond the two no-data phrases added with their reason. The workspace converged as
+`ec246d6f` (the post-merge hook: "Supabase schema unchanged (fingerprint 3d7901136139); nothing
+applied", exit 0; the API Server on 8080, seed cache warmed in 69,899 ms; API Server, Metrix IAP
+and Marketing all RUNNING); deployment `329ef7e0` published to app.metrix.ad with status success at
+17:56Z, serving `index-BybfPVlV.js`. Verified by fetching the served chunks: "Account totals · this
+result scope" in `AnalysisDnaView-nmsYmCZv.js`, "spend share ·" in `AnalysisOverview-DttxOjmu.js`,
+"No result event below link clicks" in `EngagementFunnelView-Bfgd2jja.js`, "Supabase seed" in
+`GeneralView-BzZ-mW07.js`, "No creative cell library" in `BudgetView-DRbl15z_.js` and
+`IapLibraryView-Rk6kOzkt.js`, "of spend" in `AudienceView-t3E0c_J-.js` and
+`PlacementsView-Dny8imJO.js`, "Manual reports" in the entry chunk.
+
+## 33. Audit round 6, layout at 390 px: one shared scroller, a table floor inside it, the stacking rules for the three surfaces that never stacked, and the two primitives that lost their words (2026-09-05, UI)
+
+**What changed.** The 204-shot crawl of round 4 (register §C in
+`METRIX_UI_AUDIT_ROUND4_2026-09.md`) found eleven classes of layout failure at 390 px, every one a
+desktop layout that had never been given a phone rule. The fixes are rules on primitives, not
+per-page patches, so each class closes everywhere it occurs.
+
+- **One scroller, `.mx-scroll-x` (`index.css`).** Wide content scrolls inside its own container
+  and the page never scrolls sideways; that was the rule, and four rails (`TabRail`,
+  `ViewSwitcher`, `BreakdownControl`, `SectionTabBar`) each hand-copied the hidden-scrollbar
+  pattern to follow it, while the loop chain (`LoopCommandChain`'s stepper) and the funnel's basis
+  switch scrolled with a visible bar or clipped. None of them said it scrolled, so at 390 px a
+  clipped tab bar and a scrolling one looked the same. The class carries `overflow-x: auto`,
+  `overscroll-behavior-x: contain` and a hidden scrollbar, and below 1024 px an edge fade as the
+  affordance the hidden scrollbar removed. The fade is SCROLL-DRIVEN, not static: the mask's two
+  fade widths are registered `@property` lengths animated on the element's own horizontal scroll
+  timeline (`animation-timeline: scroll(self x)`, inside `@supports`), so a rail that does not
+  overflow has an inactive timeline and no fade at all, a rail at rest fades on the right only and
+  one scrolled to its end on the left only. The first cut was a static 12 px fade at both edges,
+  which dimmed the first tab and the rail's own border on every rail that fit; the probe caught it
+  before the shoot did. Browsers without scroll timelines get the scroller with no fade, which is
+  what they had; at desktop nothing changes. Six consumers now share it.
+- **A table inside a scroller keeps its content width.** `.nc-table` is `width: 100%`, and a
+  100% table inside an overflow container never overflows: it squeezes, its headers wrap and
+  clip, and the scroller never engages (the results table on Account Overview, the hypothesis,
+  avatar, sprint, report and scan tables). `.mx-scroll-x > .nc-table, .overflow-x-auto > .nc-table
+  { min-width: max-content }` gives the content width as the floor; nothing changes where the
+  table fits.
+- **Three surfaces that never stacked.** Analysis Overview's KPI 2×2 grid shared its row with a
+  196 px donut, so each tile had 29 px of content and the values clipped mid-number ("$8,0",
+  "2,57"); below lg the donut sits under the tiles (`flex-col lg:flex-row`, the donut `w-full
+  lg:w-[196px]`), and the variable table beside the placement bars becomes
+  `grid-cols-dashboard-2-lg`. Strategy Overview's pillar cards sat two per row on a phone
+  (`grid-cols-dashboard-3` holds two columns at its base) and clamped their titles to letters
+  ("15 M", "Rc S."); a new token `grid-cols-dashboard-3-md` (1 → 2 at 640 → 3 at 768) carries the
+  pillar and Go-deeper grids, and the hypothesis donut beside the heatmap becomes one column below
+  lg. Strategy Map's three panes (rail · canvas · hypotheses) carried 482 px of fixed width in a
+  390 px row, the rail clipped and the detail pane fell outside the clip entirely; below lg the row
+  is a column (`flex-col lg:flex-row`), the rail is full width and at most 38vh, the two splitters
+  and the reopen tab are desktop-only (`hidden lg:contents`, `max-lg:hidden`), a collapsed
+  hypotheses pane is hidden rather than zero-width, and the inline widths the splitters own apply
+  from lg up (`max-lg:w-full!`).
+- **The H1 may break at phone width.** `ModuleHeader` glued "Account name ·" in a nowrap span so
+  the separator never orphaned; at 390 px that clipped the account name mid-token on 39
+  account-scoped pages ("Fresh Import 1786839868"). The h1 is `break-words` and the span is nowrap
+  from lg up only.
+- **Bars and their controls.** `FunnelChart`'s 256 px of fixed label columns left a 38 px track:
+  the columns are `w-20 sm:w-32` / `w-16 sm:w-32` and the "of top" share yields to the value below
+  sm. `RankedBars` and the Placements rows use a fractional label column below sm
+  (`minmax(5rem,1fr)_1.4fr_auto`, `minmax(88px,1fr)_1.2fr_auto`) instead of a 7 to 14 rem floor.
+  `RankSortBar`'s trigger truncates its label instead of pushing the row.
+- **Two primitives that lost their words.** `SegmentedToggle` with `responsiveLabels` hid every
+  label below sm, icon or not, so Budget's metric switch and the Reconciliation panel's metric
+  switch rendered as empty pills, a control with no name; the label collapses only when the option
+  carries an icon. `PendingState` and `NoDataInRangeState` carry `px-6`, so Billing's paragraph no
+  longer runs edge to edge.
+- **The Creative builder.** The hook paragraph had no min-width beside a CTA chip that never
+  wrapped, so its flex minimum was its longest word and it rendered one word per line; the row
+  wraps (`flex-wrap`, the paragraph `min-w-0 flex-1 basis-48`). The spec key/value grid is one
+  column under 420 px, `SpecCell` breaks long values, and the pillar's source-cell grid is
+  `grid-cols-dashboard-2`.
+- **Three more the re-shoot found, all one class: a slot that never asks for room.** (1) The
+  Strategy Map's centre column rendered at 0 px tall in the stacked column on every account
+  (`flex-1` is a zero flex basis, and `overflow-y-auto` makes a flex item's automatic minimum
+  size zero), so the rail was followed by the hypotheses pane and the pillar's statement and
+  source cells were nowhere; below lg it is `flex-none overflow-visible` and the row scrolls. (2)
+  `ModuleHeader`'s row is `flex-wrap`, but its title block was `flex-1` alone, a zero basis, so
+  beside a provenance chip the H1 was squeezed to 100 px and broke inside the account name
+  ("Bookst / er ·" on Creative Scan, "D / a / t / a" one letter a line on Data provenance); the
+  block carries `basis-64`, so at phone width the chip wraps under the title and "Bookster ·
+  Sprints" is one line. (3) Report History's card row held two buttons that never shrink beside a
+  zero-basis text block ("Client-" / "facing ·" / "white_label"); the row wraps and the text block
+  carries `basis-48`, so the buttons drop under the text.
+
+**What proves it.** `round6-layout-primitives.test.tsx` holds the primitive rules (the toggle keeps
+its label without an icon and collapses with one while the accessible name survives; PendingState
+carries the padding; `.mx-scroll-x` is a hidden-scrollbar scroller with no static mask, the fade is
+scroll-driven below 1024 px behind `@supports`, both widths start at 0, and the four rails use the
+class, none carries the hand-copied pattern; the table floor; the 3-md token; the H1 rule). The
+fade's behaviour is a browser fact, so it has a READ-ONLY browser check, `check:scroll-fade`
+(`scripts/src/check-scroll-fade.mjs`, needs the dev server on 5178): three routes at 390 px, every
+`.mx-scroll-x` read off the computed style, an overflowing container must fade 0 / 14 px at rest
+and 14 / 0 px at its end, a fitting one must not fade, and one route at 1440 px must carry no mask;
+on this tree, 9 readings, 4 overflowing (the loop stepper by 251 px, the recommendation state rail
+by 66 px, two tab rails by 549 and 398 px), clean. jsdom has no layout, so the 390 px verdicts
+themselves are the route shots (`shoot:routes`, `SHOOT_WIDTHS=390`) recorded in the register beside
+the originals: sixteen Bookster routes and five on the no-cell account on the first cut, then the
+Strategy Map on both accounts after the centre-column fix and Creative Scan, Sprints, Report
+History, Creative DNA and Data provenance after the header and card fixes, every one read; 0 console
+or page errors, 0 horizontal overflow on all 27. The map's three panes were also measured, not
+only looked at: a probe of the stacked row's children at 390 px read the centre pane at 390×0 with
+a 470 px scroll height on every account before the fix. `check:friction` raised one ratchet on
+`/app/strategy/map` (first-layer prose over 220 chars, 3 → 4): the hypotheses pane is now reachable
+at 390 px, so the ecas hypothesis statement the baseline already tolerated at 1440 px counts
+twice (the gate sums over widths); rebaselined with `--write-baseline`, that one number being the
+only change in the file. Full app suite on the tree
+(228 files, 2,704 tests), the thirteen static gates, the five browser gates against the dev server
+(`check:friction` clean, no ratchet raised), the em-dash guard at 0.
+
+**How far it reaches.** UI only; no data path, schema or endpoint. Every rule is scoped below a
+breakpoint (sm, lg, 1024 px, 420 px), so a 1440 px page renders as it did; the desktop changes are
+that six rails share one class instead of four copies and two omissions, and that a page header's
+title block now asks for 16 rem before its right slot may sit beside it (at 1440 px every right
+slot still fits).

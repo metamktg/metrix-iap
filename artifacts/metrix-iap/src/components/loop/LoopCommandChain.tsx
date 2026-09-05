@@ -1988,7 +1988,7 @@ export function LoopCommandChain({
             connector lines are the point — so at phone width the strip
             scrolls within itself (the app-wide rule: wide content scrolls
             in its own container, the page never scrolls sideways). */}
-        <div className="flex items-center overflow-x-auto" data-testid="loop-stepper">
+        <div className="flex items-center mx-scroll-x" data-testid="loop-stepper">
           <StageTile
             stage="data"
             stageNumber={null}

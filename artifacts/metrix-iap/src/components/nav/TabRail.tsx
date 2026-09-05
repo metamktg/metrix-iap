@@ -94,8 +94,7 @@ export function TabRail<T extends string>({
       aria-label={label}
       onKeyDown={move}
       className={`flex items-center gap-0 border-b border-border/40 max-w-full
-                  overflow-x-auto overscroll-x-contain [scrollbar-width:none]
-                  [&::-webkit-scrollbar]:hidden ${className}`}
+                  mx-scroll-x ${className}`}
     >
       {tabs.map((t) => {
         const on = t.id === active;
