@@ -67,21 +67,30 @@ or a code read before it is filed). Rounds name the PR that carries the fix.
 
 ## D. Confirmed, vocabulary and first layer (round 7 PR)
 
-| Finding | Verdict | Action |
-|---|---|---|
-| Recommendation kinds render "Investigate", "Budget", "Test", "Data" (`KIND_LABEL`), and tiers "Avoid", "Explore", "ELIMINATE", "SCALE WINNERS" | confirmed: `KIND_LABEL` carries eight labels; the rule is four verbs | map budget → Optimize, investigate / test / data → Validate, keep the engine kind in the title attr; tier labels through the same map |
-| Raw engine codes on the first layer (`onb_initiate_checkout`, `validation_required`, `traffic_quality`, `placement_engagement_no_conversion`, `cpm_device_divergence`, `audience_network`) on Findings, Action Queue, Listen, Alerts, Report Builder | confirmed by both reports | route through `humanizeDiagnosis` / `eventLabel` / platform labels |
-| Hypothesis Queue cards use the sentence as the title | confirmed: `HypothesisQueueView` renders `deriveLabel(h.label, 72)` under the chips; Strategy Map and Avatars use `HypothesisLabel` | one component |
-| "Success criteria" label with nothing under it on recommendation tiles | to verify in `RecommendationSlider` | |
-| Double arrows "Full → →" on module buttons | confirmed by both reports (text arrow plus icon) | drop the text arrow |
-| MST centre has no pages strip | confirmed: `explore={mstReady ? children : []}` hides the strip until a matrix exists; every other centre renders it always | always pass the pages |
-| Listen "Connect Meta in Settings" strip on a manual account | to verify against `isManualAccount` | |
-| Warning-glyph overload (Hypotheses, Alerts, Findings, Signals worth acting on) | confirmed by both reports; the friction ratchet holds the counts, so a fix lowers the baseline | caveats behind `DetailReveal`, one glyph per module |
-| Raw table names as source chips on every page | by design (Q6 provenance labels, 2026-09-04): the chip names the source and opens the tooltip; a humanised label with the table behind it is a later polish | round 7 if time allows |
-| "Render MST as active for Bookster." notice | imported `integrity_note` text; by data | replace the note in the package or render it as provenance, not a warning |
-| Two "›" chevrons at the bottom right of every 1440 page; a floating clipboard with a badge under the topbar | confirmed: the task tray's collapsed rail renders two "Expand task tray" handles (a clickable div and a button, `TaskTray.tsx` 741 to 754) under its badge button; the badge button is the rail's own toggle beside the topbar's "Tray" | round 7: one handle, labelled; the rail's badge deferred to the topbar count |
+| Finding | Verdict | Action | Round 7 |
+|---|---|---|---|
+| Recommendation kinds render "Investigate", "Budget", "Test", "Data" (`KIND_LABEL`), and tiers "Avoid", "Explore", "ELIMINATE", "SCALE WINNERS" | confirmed: `KIND_LABEL` carries eight labels; the rule is four verbs | map budget → Optimize, investigate / test / data → Validate, keep the engine kind in the title attr; tier labels through the same map | fixed, round 7 (change-log 34): `KIND_LABEL` maps the eight kinds onto the four verbs with the kind on the chip's title (`engineKindNote`), `BUCKET_LABEL` and Findings' `tierBadge` speak the same four |
+| Raw engine codes on the first layer (`onb_initiate_checkout`, `validation_required`, `traffic_quality`, `placement_engagement_no_conversion`, `cpm_device_divergence`, `audience_network`) on Findings, Action Queue, Listen, Alerts, Report Builder | confirmed by both reports | route through `humanizeDiagnosis` / `eventLabel` / platform labels | fixed, round 7: `flagHeadline` and the failure-pattern diagnosis through `humanizeDiagnosis`, the flag's platform through `platformLabel`, Listen's Scopes tile spaces an unknown key; the recommendation kinds above were the remaining raw words on the Action Queue |
+| Hypothesis Queue cards use the sentence as the title | confirmed: `HypothesisQueueView` renders `deriveLabel(h.label, 72)` under the chips; Strategy Map and Avatars use `HypothesisLabel` | one component | fixed, round 7: the queue renders `HypothesisLabel` with `inButton` (a static clamp, the whole sentence on the title, no control inside the button card) |
+| "Success criteria" label with nothing under it on recommendation tiles | to verify in `RecommendationSlider` | | confirmed and fixed, round 7: the derived test recommendation's rationale was `Success criteria: <sentence>` and `deriveLabel` cuts at the colon; the sentence is the rationale, the drawer keeps the labelled field |
+| Double arrows "Full → →" on module buttons | confirmed by both reports (text arrow plus icon) | drop the text arrow | fixed, round 7: thirteen labels; `round7-vocabulary.test.tsx` fails any `CrossLink` label under pages or components that ends in an arrow |
+| MST centre has no pages strip | confirmed: `explore={mstReady ? children : []}` hides the strip until a matrix exists; every other centre renders it always | always pass the pages | fixed, round 7: `explore={children}` |
+| Listen "Connect Meta in Settings" strip on a manual account | to verify against `isManualAccount` | | confirmed and fixed, round 7: `ConnectionNudgeBanner` takes the account and renders nothing for `source_status: "manual_reports"`; imported and legacy accounts keep the nudge |
+| Warning-glyph overload (Hypotheses, Alerts, Findings, Signals worth acting on) | confirmed by both reports; the friction ratchet holds the counts, so a fix lowers the baseline | caveats behind `DetailReveal`, one glyph per module | partly, round 7: Alerts' data-quality findings show three and fold the rest, the two logo-policy caveats are captions; the per-card risk glyphs on Hypotheses and Findings stay (each names a different risk) and the friction baseline records the new counts |
+| Raw table names as source chips on every page | by design (Q6 provenance labels, 2026-09-04): the chip names the source and opens the tooltip; a humanised label with the table behind it is a later polish | round 7 if time allows | not in round 7 (recorded in change-log 34 as held) |
+| "Render MST as active for Bookster." notice | imported `integrity_note` text; by data | replace the note in the package or render it as provenance, not a warning | not in round 7 (recorded in change-log 34 as held) |
+| Two "›" chevrons at the bottom right of every 1440 page; a floating clipboard with a badge under the topbar | confirmed: the task tray's collapsed rail renders two "Expand task tray" handles (a clickable div and a button, `TaskTray.tsx` 741 to 754) under its badge button; the badge button is the rail's own toggle beside the topbar's "Tray" | round 7: one handle, labelled; the rail's badge deferred to the topbar count | fixed, round 7: the strip is one labelled button (the priority cue as its colour), the count lives on the topbar's Tray button, `TaskTray.test.tsx` asserts one handle and the topbar's count |
 
 ## E. Polish (P3, folded into the nearest round)
+
+Round 7 (change-log 34) closed: the Data window row and the re-run link on Analysis Overview, the
+heatmap caption and the sub-dollar CPA, "n/a" on Account Overview, the tray's duplicate
+affordances, the three empty frames on Updates, the Creative Scan "0" tile, the leftover "Run
+analysis" card and the amber logo-policy rule on Settings and the Report Builder, the ISO stamp on
+Provenance, Listen's tile grid, Alerts' fold. Open: NBA tile numerals with no label, the Exports
+grid's two card anatomies, Provenance's zip filenames (data), Alerts' raw source labels (the
+source-chip decision above).
+
 
 Orphan "Data window ⓘ" label and the floating "Re-run analysis" button on Analysis Overview; the
 uppercase sentence under the heatmap; "$0 / $1" heatmap cell; "n/a" instead of "–" on Account
@@ -100,9 +109,11 @@ tiles; Alerts' thirteen amber boxes with raw source labels.
   merged `d93aa365`, live on app.metrix.ad 2026-09-05 17:56Z (change-log 32, Live).
 - **Round 6, 390 px layout** (C): the KPI 2×2 grid, the pillar grid, the Strategy Map panes, the
   H1 wrap, bars and segmented controls, the Creative builder, the clipped tables and tab bars.
-  Every row carries its re-shoot verdict (change-log 33); shipped as the round 6 PR.
+  Every row carries its re-shoot verdict (change-log 33). Shipped: PR #221, merged `8f6a226e`,
+  live on app.metrix.ad 2026-09-05 19:08Z (change-log 33, Live).
 - **Round 7, vocabulary and first layer** (D, E): the four verbs, the raw codes, the hypothesis
-  titles, the MST strip, the double arrows, the glyph overload, the Reports hub merge.
+  titles, the MST strip, the double arrows, the glyph overload, the Reports hub merge. Every row
+  carries its verdict (change-log 34); the Reports hub merge is held for the sweep's slice 5.
 
 Each round ships as one PR through the full bar (typecheck, the full app suite, the static gates,
 the five browser gates against the dev server, the em-dash guard), is merged on green, converged

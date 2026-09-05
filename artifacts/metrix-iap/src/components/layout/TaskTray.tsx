@@ -710,48 +710,23 @@ export function TaskTray() {
       )}
       {!open ? (
         // ── Minimized strip ────────────────────────────────────────────
-        (<div className="flex-1 flex flex-col items-center py-3 gap-2 min-w-0">
+        // One handle. The strip used to stack three controls for the one
+        // action: a clipboard button with a count badge (the topbar's Tray
+        // button already carries that count), an unlabelled clickable div,
+        // and this chevron button, so every page drew two chevrons and a
+        // floating clipboard (audit round 7). The priority cue the badge
+        // carried survives as the handle's colour.
+        (<div className="flex-1 flex flex-col items-center py-3 min-w-0">
           <button
             onClick={toggle}
             title="Expand task tray"
             aria-label="Expand task tray"
-            className="pressable-lg flex flex-col items-center gap-2 w-full px-1 text-muted-foreground/75 hover:text-primary transition-colors group"
+            className={cn(
+              "pressable w-8 h-8 rounded-lg flex items-center justify-center border border-border/40 bg-foreground/[0.05] hover:bg-foreground/[0.08] hover:text-primary transition-colors",
+              hasPriorityItems ? "text-status-success" : "text-muted-foreground/75",
+            )}
           >
-            <div className="relative">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-foreground/[0.05] border border-border/40 group-hover:bg-foreground/[0.08] border-t-[0px] border-r-[0px] border-b-[0px] border-l-[0px]">
-                <ClipboardList
-                  className={cn(
-                    "w-4 h-4 transition-transform group-hover:scale-110",
-                    hasPriorityItems ? "text-status-success" : "text-muted-foreground/75"
-                  )}
-                />
-              </div>
-              {totalItems > 0 && (
-                <span className={cn(
-                  "absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full flex items-center justify-center text-micro-num font-bold leading-none px-1 tabular-nums border",
-                  hasPriorityItems
-                    ? "bg-status-success text-foreground border-status-success/50"
-                    : "bg-primary text-primary-foreground border-primary/50"
-                )}>
-                  {Math.min(totalItems, 9)}
-                </span>
-              )}
-            </div>
-          </button>
-          <div
-            className="flex-1 flex items-end justify-center pb-1 cursor-pointer"
-            onClick={toggle}
-            title="Expand task tray"
-          >
-            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/75" />
-          </div>
-          <button
-            onClick={toggle}
-            title="Expand"
-            aria-label="Expand task tray"
-            className="pressable w-7 h-7 rounded flex items-center justify-center text-muted-foreground/75 hover:text-primary hover:bg-foreground/[0.05] transition-colors"
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>)
       ) : (

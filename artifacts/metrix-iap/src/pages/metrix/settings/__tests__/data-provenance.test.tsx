@@ -63,7 +63,11 @@ describe("assembly statement", () => {
   it("shows the schema version and generated date the seed carries", () => {
     const { container } = renderView();
     expect(container.textContent).toContain(fixture.schema_version);
-    expect(container.textContent).toContain(fixture.generated_at);
+    // The stamp is rendered as a date ("Aug 15, 2026"), never the raw ISO
+    // string (audit round 7); a bare date stays a date, no time appended.
+    expect(fixture.generated_at).toBe("2026-08-15");
+    expect(container.textContent).toContain("Aug 15, 2026");
+    expect(container.textContent).not.toContain("2026-08-15");
   });
 
   it("says outright when the seed carries no assembly statement", () => {

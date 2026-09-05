@@ -537,14 +537,14 @@ function DemoHeatmapGrid({
         scale="verdict"
         lowerIsBetter
         goal={goalCpa ?? null}
-        format={(n) => fmtUSD(n, 0)}
+        format={(n) => fmtUSD(n, n > 0 && n < 1 ? 2 : 0)}
         measureLabel="CPA"
         rowHeaderLabel="Age"
         onSelect={(cell) => setSelectedSegment(cell.meta as SegmentId)}
         emptyLabel="No demographic rows in this window"
       />
-      <p className={cn(TYPE.label, "text-muted-foreground/75 italic mt-2")}>
-        Click any cell to explore segment attribution
+      <p className={cn(TYPE.caption, "text-muted-foreground/75 mt-2")}>
+        Click a cell for its segment attribution
       </p>
 
       {/* Segment drilldown modal — opened when a cell is clicked */}
@@ -1084,7 +1084,7 @@ export function AnalysisOverview() {
                           spend share · {donutSource}
                         </div>
                         <div className="mt-1.5 flex justify-end">
-                          <CrossLink to="/app/analysis/library" label="Library →" />
+                          <CrossLink to="/app/analysis/library" label="Library" />
                         </div>
                         </div>
                       </div>
@@ -1120,25 +1120,29 @@ export function AnalysisOverview() {
                   windowLabel={drillWindowLabel}
                 />
 
-                {/* ── Secondary refresh action ──────────────────────── */}
-                <div className="px-6 pt-2 flex justify-end">
-                  <CrossLink to="/app/analysis" label="↻ Re-run analysis" />
+                {/* ── Data window and the re-run action, one row ──────
+                    The caveat used to be a bare "Data window" label with a
+                    tooltip and nothing else, and the re-run link floated on
+                    its own line under the tiles (audit round 7). */}
+                <div className="px-6 pt-2 flex items-center justify-between gap-3 flex-wrap">
+                  {summary.data_caveat ? (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-label text-muted-foreground/75 shrink-0">Data window</span>
+                      <span className="text-caption text-muted-foreground/85 truncate" title={summary.data_caveat}>{deriveLabel(summary.data_caveat, 56)}</span>
+                      <InfoTooltip content={summary.data_caveat} label="About the data window" />
+                    </div>
+                  ) : <span />}
+                  <CrossLink to="/app/analysis" label="Re-run analysis" />
                 </div>
 
                 <div className="px-6 py-5 space-y-4 max-w-5xl">
-                  {summary.data_caveat && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-label text-muted-foreground/75">Data window</span>
-                      <InfoTooltip content={summary.data_caveat} />
-                    </div>
-                  )}
 
                   {/* ── Spend trendline (spend + results, dual-axis) ─ */}
                   {trendData.length >= 2 && (
                     <SectionCard
                       title="Spend by month"
                       desc="Day-prorated spend (blue) · results (green, right axis)"
-                      right={<><SectionInfoIcon tip="Month-by-month spend trend with daily proration, plotted against result volume to surface delivery patterns." /><CrossLink to="/app/analysis/budget" label="Budget →" /></>}
+                      right={<><SectionInfoIcon tip="Month-by-month spend trend with daily proration, plotted against result volume to surface delivery patterns." /><CrossLink to="/app/analysis/budget" label="Budget" /></>}
                     >
                       <SpendTrendChart data={trendData} />
                     </SectionCard>
@@ -1184,7 +1188,7 @@ export function AnalysisOverview() {
                             active={cellSort}
                             onChange={(k) => setCellSort(k)}
                           />
-                          <CrossLink to="/app/analysis/library" label="All →" />
+                          <CrossLink to="/app/analysis/library" label="All" />
                         </div>
                       }
                     >
@@ -1202,7 +1206,7 @@ export function AnalysisOverview() {
                         <SectionCard
                           title="Variable performance"
                           desc={`Hook · Tone · Framework · Concept, top 8 · click column to sort${runScoped ? " · scoped to the selected run(s)" : ""}`}
-                          right={<><SectionInfoIcon tip="Shows how each creative variable family (hook, tone, framework, concept) performs on spend and CPA across the top results." /><CrossLink to="/app/analysis/library" label="Full →" /></>}
+                          right={<><SectionInfoIcon tip="Shows how each creative variable family (hook, tone, framework, concept) performs on spend and CPA across the top results." /><CrossLink to="/app/analysis/library" label="Full" /></>}
                         >
                           <CompactVariableTable rows={scopedVariableRows} />
                         </SectionCard>
@@ -1211,7 +1215,7 @@ export function AnalysisOverview() {
                         <SectionCard
                           title="Top placements"
                           desc={`V3 + C4E combined · spend bar, CPA badge, CTR badge · top 6${runScoped ? " · account-wide (placement rows carry no run linkage)" : ""}`}
-                          right={<><SectionInfoIcon tip="Surfaces the highest-spend placements with their CPA and CTR so you know where delivery is concentrated." /><CrossLink to="/app/analysis/placements" label="Full →" /></>}
+                          right={<><SectionInfoIcon tip="Surfaces the highest-spend placements with their CPA and CTR so you know where delivery is concentrated." /><CrossLink to="/app/analysis/placements" label="Full" /></>}
                         >
                           <PlacementTable
                             placements={allPlacements}
@@ -1250,7 +1254,7 @@ export function AnalysisOverview() {
                               />
                             </div>
                           )}
-                          <CrossLink to="/app/analysis/audience" label="Full →" />
+                          <CrossLink to="/app/analysis/audience" label="Full" />
                         </div>
                       }
                     >

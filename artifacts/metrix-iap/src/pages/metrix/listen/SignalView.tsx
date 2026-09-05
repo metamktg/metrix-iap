@@ -68,12 +68,12 @@ export function SignalView() {
             {focus && !signals.some((s) => s.id === focus) && (
               <StaleFocusNotice label="signal" />
             )}
-            <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />
+            <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} account={acct} />
             <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Active" value={String(signals.length)} sub="signals" />
               <MetricTile label="High impact" value={String(highCount)} sub={highCount > 0 ? "needs review" : "none flagged"} />
-              <MetricTile label="Scopes" value={String(present.length)} sub={present.map((p) => SCOPE_LABEL[p] ?? p).join(" · ") || "–"} />
+              <MetricTile label="Scopes" value={String(present.length)} sub={present.map((p) => SCOPE_LABEL[p] ?? p.replace(/_/g, " ")).join(" · ") || "–"} />
               <MetricTile label="High confidence" value={String(signals.filter((s) => s.confidence.toLowerCase().includes("high")).length)} />
             </div>
 

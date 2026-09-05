@@ -338,7 +338,11 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
     out.push({
       id: `derived:test:${h.id ?? i}`,
       title: typeof h.label === "string" ? h.label : `Hypothesis ${h.id ?? i + 1}`,
-      rationale: [criteria && `Success criteria: ${criteria}`, typeof h.isolated_variable === "string" ? `Isolates: ${h.isolated_variable}` : null]
+      // The criteria sentence stands as the rationale. Behind a "Success
+      // criteria:" prefix, deriveLabel cut at the colon and every test card's
+      // face read exactly "Success criteria" with nothing under it (audit
+      // round 7); the drawer has a labelled field for it.
+      rationale: [criteria, typeof h.isolated_variable === "string" ? `Isolates: ${h.isolated_variable}` : null]
         .filter(Boolean)
         .join(" · ") || "A queued hypothesis with no stated criteria.",
       recommendedAction:
@@ -369,8 +373,10 @@ export function deriveRecommendations(account: AdAccount | null | undefined): De
     const spend = typeof q.spend === "number" ? q.spend : null;
     out.push({
       id: `derived:data:${i}`,
-      title: campaign ? `Check the signal on ${campaign}` : `Data anomaly · ${String(q.type ?? q.kind)}`,
-      rationale: `The import flagged ${String(q.type ?? "an anomaly")} at critical priority.`,
+      // The flag's code reads through the one humaniser, never raw
+      // ("Data anomaly · placement_engagement_no_conversion", audit round 7).
+      title: campaign ? `Check the signal on ${campaign}` : `Data anomaly · ${humanizeDiagnosis(String(q.type ?? q.kind))}`,
+      rationale: `The import flagged ${q.type ? humanizeDiagnosis(String(q.type)).toLowerCase() : "an anomaly"} at critical priority.`,
       recommendedAction: "Confirm the conversion signal for this campaign before reading its creative performance.",
       impact: "high",
       confidence: "recorded",

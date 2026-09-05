@@ -133,7 +133,7 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
       <div className="px-6 pt-5">
         <HubNavStrip items={LISTEN_CHILDREN} label="Listen pages" />
       </div>
-      <div className="px-6 pt-5 grid grid-cols-2 gap-3">
+      <div className="px-6 pt-5 grid grid-cols-dashboard-2 gap-3">
         <MetricTile label="High-impact signals" value={String(highImpact)} />
         <MetricTile label="Total signals" value={String(signals.length)} />
       </div>

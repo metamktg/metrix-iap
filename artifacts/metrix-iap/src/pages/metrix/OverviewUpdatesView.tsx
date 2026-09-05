@@ -45,16 +45,22 @@ export function OverviewUpdatesView() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Product updates">
-          <PendingState title="No updates yet" message="Platform changelog entries will appear here once published." icon={Sparkles} />
-        </SectionCard>
-
-        <SectionCard title="Meta platform updates">
-          <PendingState title="Nothing curated yet" message="Curated Meta Ads platform news will appear here once published." icon={Newspaper} />
-        </SectionCard>
-
-        <SectionCard title="Knowledge base">
-          <PendingState title="Coming soon" message="A searchable knowledge base is planned but not yet built." icon={BookOpen} />
+        {/* Three feeds, none live yet: one card says so, one line each,
+            instead of three stacked empty frames (audit round 7). */}
+        <SectionCard title="Feeds" desc="Product changelog · Meta platform news · knowledge base">
+          <ul className="divide-y divide-border/30">
+            {[
+              { Icon: Sparkles, label: "Product updates", state: "No updates published yet" },
+              { Icon: Newspaper, label: "Meta platform updates", state: "Nothing curated yet" },
+              { Icon: BookOpen, label: "Knowledge base", state: "Planned, not yet built" },
+            ].map((f) => (
+              <li key={f.label} className="flex items-center gap-3 py-2.5">
+                <f.Icon className="w-4 h-4 text-muted-foreground/75 shrink-0" aria-hidden />
+                <span className="text-body text-foreground/85 flex-1 min-w-0">{f.label}</span>
+                <span className="text-caption text-muted-foreground/75">{f.state}</span>
+              </li>
+            ))}
+          </ul>
         </SectionCard>
       </div>
     </div>

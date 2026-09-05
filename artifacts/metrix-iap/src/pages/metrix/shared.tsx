@@ -2557,9 +2557,14 @@ export function buildLoopStages(s: StageStatusLike): LoopStageInfo[] {
  * Slim informational banner shown when there is no live Meta connection.
  * Renders null when `hasMetaConnection` is true so it disappears cleanly.
  */
-export function ConnectionNudgeBanner({ hasMetaConnection }: { hasMetaConnection: boolean }) {
+export function ConnectionNudgeBanner({ hasMetaConnection, account }: { hasMetaConnection: boolean; account?: Pick<AdAccount, "source_status"> | null }) {
   const [, navigate] = useLocation();
   if (hasMetaConnection) return null;
+  // An account created for manual reports is not missing a connection; it
+  // has a different one (the source is the source, 2026-09-04). The nudge
+  // stays for imported and legacy accounts, where a live connection is the
+  // natural next step.
+  if (account?.source_status === "manual_reports") return null;
   return (
     <div className="mx-6 mt-4 flex items-center gap-2.5 rounded-lg border border-border/40 bg-foreground/[0.03] px-4 py-2.5 text-caption text-muted-foreground/80">
       <Plug className="w-3.5 h-3.5 shrink-0 text-muted-foreground/75" />

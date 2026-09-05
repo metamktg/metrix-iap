@@ -11,12 +11,14 @@ import type { ScalingPlaybook } from "./seedTypes";
 
 export type ScalingBucket = "scale_now" | "optimize" | "validate" | "explore" | "avoid";
 
+// The four verbs (Retire · Scale · Optimize · Validate): an exploration
+// is a validation, and avoiding a concept is retiring it (audit round 7).
 export const BUCKET_LABEL: Record<ScalingBucket, string> = {
   scale_now: "Scale",
   optimize: "Optimize",
   validate: "Validate",
-  explore: "Explore",
-  avoid: "Avoid",
+  explore: "Validate",
+  avoid: "Retire",
 };
 
 function entryMatches(entry: string, book: string, concept: string): boolean {

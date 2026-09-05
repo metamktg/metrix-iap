@@ -10,18 +10,21 @@
 // findings (including cross_export_mismatch) never reached the page users
 // check for what needs attention.
 
-import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
+import { fmtUSD, fmtNum, platformLabel } from "@/pages/metrix/shared";
+import { humanizeDiagnosis } from "@/lib/normalize";
 import type { DataQualityFlag } from "@/lib/data/seedTypes";
 
 export function flagHeadline(f: DataQualityFlag): string {
   const type = typeof f["type"] === "string" ? (f["type"] as string) : null;
-  if (type) return type.replace(/_/g, " ");
+  // Engine codes read through the one humaniser every other surface uses,
+  // never as "placement engagement no conversion" (audit round 7).
+  if (type) return humanizeDiagnosis(type);
   // Some quality_flag entries (e.g. the live-pilot underspend/zero-conversion
   // set) carry a `flag` id instead of `type` — a real, specific label beats
   // the generic kind-only fallback below.
   const flagId = typeof f["flag"] === "string" ? (f["flag"] as string) : null;
-  if (flagId) return flagId.replace(/_/g, " ");
-  return f.kind === "attribution_window" ? "Attribution window" : f.kind.replace(/_/g, " ");
+  if (flagId) return humanizeDiagnosis(flagId);
+  return f.kind === "attribution_window" ? "Attribution window" : humanizeDiagnosis(f.kind);
 }
 
 
@@ -68,7 +71,7 @@ export function flagEvidence(f: DataQualityFlag): { k: string; v: string }[] {
   const campaign = typeof f["campaign"] === "string" ? (f["campaign"] as string) : null;
   if (campaign) rows.push({ k: "Campaign", v: campaign });
   const platform = typeof f["platform"] === "string" ? (f["platform"] as string) : null;
-  if (platform) rows.push({ k: "Platform", v: platform });
+  if (platform) rows.push({ k: "Platform", v: platformLabel(platform) });
   const placement = typeof f["placement"] === "string" ? (f["placement"] as string) : null;
   if (placement) rows.push({ k: "Placement", v: placement });
   const impressions = typeof f["impressions"] === "number" ? (f["impressions"] as number) : null;

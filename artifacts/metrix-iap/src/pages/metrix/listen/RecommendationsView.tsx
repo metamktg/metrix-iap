@@ -78,7 +78,7 @@ export function RecommendationsView() {
               accountName={acct.name}
               subtitle="Optimization loop · approval adds a manual task"
             />
-            <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />
+            <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} account={acct} />
             <>
             {/* Tiles only when there is something to count. A row reading
                 0 / 0 / — / 0 states that this account was measured and has

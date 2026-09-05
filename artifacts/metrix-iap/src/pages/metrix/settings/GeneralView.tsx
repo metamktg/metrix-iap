@@ -8,7 +8,8 @@ import { useState } from "react";
 import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder, getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, SectionCard, CaveatNote, PendingState, CrossLink, DetailReveal, InfoTooltip, deriveLabel } from "../shared";
+import { ModuleHeader, SectionCard, PendingState, CrossLink, DetailReveal, InfoTooltip, deriveLabel } from "../shared";
+import { TYPE } from "../typography";
 import { describeAccountSource } from "@/lib/data/accountSource";
 import type { MetrixSeed } from "@/lib/data/seedTypes";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
@@ -395,16 +396,6 @@ export function GeneralView() {
 
         <AccountNameSection accountId={account.id} currentName={String(account.name ?? account.id)} />
 
-        {configured && (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-foreground/[0.02] p-4">
-            <div className="min-w-0">
-              <div className="text-body font-medium text-foreground">Run analysis</div>
-              <div className="text-label text-muted-foreground/85">Moved to the Analysis command center.</div>
-            </div>
-            <CrossLink to="/app/analysis" label="Go to Analysis" />
-          </div>
-        )}
-
         {rb && (
           <SectionCard title="White-label & branding" desc="How reports are branded when delivered to this account's client.">
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-foreground/[0.02]">
@@ -414,9 +405,11 @@ export function GeneralView() {
                 <div className="text-label text-muted-foreground/85">White-label {rb.white_label_supported ? "supported" : "unavailable"} · formats: {rb.export_formats.join(", ")}</div>
               </div>
             </div>
-            <div className="mt-2.5">
-              <CaveatNote text={rb.logo_policy} />
-            </div>
+            {/* A branding rule is a fact about the account, not a warning. */}
+            <p className={cn(TYPE.caption, "text-muted-foreground/85 mt-2.5 leading-snug")}>
+              <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/75">Logo policy</span>{" "}
+              {rb.logo_policy}
+            </p>
           </SectionCard>
         )}
 

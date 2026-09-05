@@ -560,7 +560,7 @@ function DemographicsTab({
                         : "border-status-danger/25 text-status-danger/80 hover:bg-status-danger/10"
                     )}
                   >
-                    Drill down →
+                    Drill down
                   </button>
                 )}
               </div>

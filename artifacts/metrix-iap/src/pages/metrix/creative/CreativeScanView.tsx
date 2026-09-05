@@ -51,7 +51,7 @@ export function CreativeScanView() {
               {/* Canvas scan-stats strip — honest zero state until the
                   automated pass exists and has run. */}
               <div className="grid grid-cols-dashboard-4 gap-3" data-testid="scan-stats">
-                <MetricTile label="Assets scanned" value="0" sub="Scan not yet run" />
+                <MetricTile label="Assets scanned" value="–" sub="Scan not yet run" />
                 <MetricTile label="Library assets" value={fmtNum(libraryCount)} sub="Awaiting first scan" />
                 <MetricTile label="Blocking" value="–" sub="No results yet" />
                 <MetricTile label="Requires" value="Scan engine" sub="Automated pass planned · not yet built" />

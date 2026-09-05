@@ -45,7 +45,7 @@ import { UNMEASURED_RATIONALE, type DerivedRecommendation } from "@/lib/data/rec
 import { useDecisions, getDecision, setDecision } from "@/lib/data/decisionStore";
 import { addToTray } from "@/lib/data/trayStore";
 import { RecommendationDrawer } from "./RecommendationDrawer";
-import { KIND_LABEL, KIND_STYLE, KIND_STYLE_FALLBACK, recommendationKind } from "./recommendationKind";
+import { KIND_LABEL, KIND_STYLE, KIND_STYLE_FALLBACK, engineKindNote, recommendationKind } from "./recommendationKind";
 
 /** Tile width and gap, in px. One step is one tile plus its gap, so a page
  *  or a snap always lands on a tile edge. */
@@ -88,6 +88,7 @@ function Tile({
             "border px-1.5 py-0.5 rounded-full font-semibold normal-case tracking-normal leading-none",
             KIND_STYLE[kind] ?? KIND_STYLE_FALLBACK,
           )}
+          {...(engineKindNote(kind) ? { title: engineKindNote(kind)! } : {})}
         >
           {kindLabel}
         </span>
