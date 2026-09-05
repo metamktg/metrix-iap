@@ -282,11 +282,11 @@ Each item ships as its own commit on the working branch, typechecked and unit-te
 - **F10, the reconciliation control ranks class over coverage** (§6.1). `buildTruth` in `reconciliation.ts` picks a whole-period per-Ad-ID Ad Summary over two daily ones that cover 257 more ads, so the ledger's residuals are measured against a control 12.7% below the daily total. Proposed: rank per-Ad-ID candidates by the overlap rule per ad (daily first) and reconcile against their union; a spec change (`docs/specs/iap-multi-report-reconciliation.md`). Needs a decision.
 - **F11, keyset-supporting indexes on the four evidence tables** (§6.2). `(account_id,
   manual_analysis_run_id, id)` on `ad_breakdown_performance`, `reconciliation_ledger`,
-  `variable_segment_performance`, `variable_evidence`. Additive DDL, drafted and NOT applied. It
-  is commit `d09cb6d` (schema.sql, change-log entry 26, the replit.md seed note), reachable as
-  `refs/pull/208/head`; PR #208 was closed unmerged because a held PR on the working branch
-  would have blocked every later merge from it. On approval: `git cherry-pick d09cb6d` onto a
-  fresh PR. Needs approval.
-- **Task 24, boot-time and payload smokes.** A scripts-only addition; queued after §7 unless the owner objects.
+  `variable_segment_performance`, `variable_evidence`. Additive DDL. Approved by the owner on
+  2026-09-05 (final reconciliation, item 3): re-applied from `d09cb6d` as PR #211 and applied
+  through the post-merge hook on the workspace convergence; verified with `explain analyze` on
+  production after the apply (see §6.3).
+- **Task 24, boot-time and payload smokes.** Shipped: `check:seed-evidence` (PR #207, corrected in
+  #209 and #210) is the first; the boot-time smoke stays queued.
 - **Open decisions O1 to O7** from the earlier register, unchanged.
 - **The LinkedIn video**, deferred.

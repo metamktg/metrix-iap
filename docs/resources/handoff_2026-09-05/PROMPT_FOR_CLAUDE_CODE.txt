@@ -1,0 +1,13 @@
+This package contains the full, reconciled scope for the next phase of Metrix IAP engineering, answering all your pre-execution questions from the assessment round (F10, F11, H1, Task 22/23) and the UI/UX overhaul pass (O2, O5), plus new findings surfaced since.
+
+**Read in this order:**
+
+1. `FINAL_RECONCILIATION_for_claude_code.md` — your questions, answered, item by item. This supersedes any earlier verbal answers where noted (in particular: the spend-reconciliation logic in item 6 is materially more precise than a simple daily-vs-whole-period rule, and the execution order at the top of this file reverses what was previously discussed — UI sweep first, backend/data fixes wired into the new interface second, not the reverse).
+2. `SPEC_ad_id_anchored_creative_mapping.md` — the ad_id/concept_id anchoring architecture referenced throughout item 6 and item 9 of the reconciliation.
+3. `SPEC_strategy_map_disclosure_optimization.md` and `SPEC_creative_analysis_module_upgrades.md` — prior specs feeding into the Execution Layer sweep (item 11) and the Creative Overview tile work.
+4. `REFERENCE_screenshot_audit_batch_sep5.md` — the 10-item screenshot audit, including the full detail behind the Execution Layer findings (Item 10 there) that item 11 of the reconciliation builds on, and the V3/C4E root-cause trace that item 9 references.
+5. `watermelon-ui-claude-code-reference-sheet.md` — the interaction/motion design reference for the Execution Layer sweep (item 11). Follow its own reference rule exactly: reproduce interaction model and state transitions, not visual branding, translated into the existing Metrix design system.
+
+**Screenshots:** `screenshots/` (the 9 filename-annotated findings from the first audit batch) and `screenshots_execution_layer/` (the 5 Command Center page captures behind item 11 and Item 10 of the reference doc).
+
+**Before you execute:** confirm you've reconciled the corrected execution order (UI sweep first) and the revised spend-reconciliation waterfall in item 6 — both differ from what was discussed earlier in this thread, and both are load-bearing for how you sequence and build the rest. Flag anything in this package that still reads ambiguous rather than proceeding on an assumption, consistent with the 95%-confidence standard already in place on this project.

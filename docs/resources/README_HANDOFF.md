@@ -6,6 +6,14 @@ complete record and the zip is no longer needed.
 
 ## Read in this order
 
+0. **2026-09-05, the current phase.** `METRIX_EXECUTION_LAYER_SWEEP_SPEC_2026-09.md` is the
+   specification for the Execution Layer sweep and the vertical slices that follow it (status hub,
+   base-run selector, reconciliation waterfall, filename-independent intake, ROAS restore, ad-id
+   anchoring, the pattern miner). It was written against the owner's reconciled package in
+   `handoff_2026-09-05/` (read `PROMPT_FOR_CLAUDE_CODE.txt` there for that package's own order) and
+   against live code; §0 lists where the package's description of the code was already stale.
+   `METRIX_ASSESSMENT_ROUND_2026-09-04.md` is the live record of the two days before it.
+
 1. `CARRY_FORWARD_REGISTER.md` — **start here.** The E6 register, reconciled line by line
    against live code on 2026-08-26. Every item carries a verdict (`[shipped]` / `[open]` /
    `[open — upgraded]` / `[decision]`) established by opening the file, not by re-reading the
