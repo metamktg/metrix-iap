@@ -94,7 +94,9 @@
     "warnBoxes": 4,
     "warnIcons": 0,
     "longProse": 2,
-    "noData": []
+    "noData": [
+      "No creatives staged"
+    ]
   },
   "/app/creative/builder": {
     "warnBoxes": 0,
@@ -298,7 +300,7 @@
     "noData": []
   },
   "/app/strategy/history": {
-    "warnBoxes": 4,
+    "warnBoxes": 0,
     "warnIcons": 0,
     "longProse": 0,
     "noData": []
