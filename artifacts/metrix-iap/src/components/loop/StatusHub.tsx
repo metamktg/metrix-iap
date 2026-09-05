@@ -96,7 +96,7 @@ export function StatusHub({
               {input.to ? (
                 <CrossLink to={input.to} label={input.detail ?? "Open"} />
               ) : (
-                input.detail && <span className="text-muted-foreground/75 truncate">· {input.detail}</span>
+                input.detail && <span className="text-muted-foreground/75 min-w-0">· {input.detail}</span>
               )}
             </li>
           ))}
