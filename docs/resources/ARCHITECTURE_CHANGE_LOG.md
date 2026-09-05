@@ -1195,3 +1195,12 @@ assertions, two of them scoped to their card because the hub now carries the sam
 in slice 3 with the base-run control, Listen, Reports and Exports in slice 5. The schema change is
 one nullable column, applied by the post-merge hook. The ETA rule is client-side and reads
 `listAnalysisRuns`, which the page already polls at 3 s while a run is in flight.
+
+**Live (2026-09-05).** PR #214 merged at 11:30Z on a green run. The workspace convergence's
+post-merge hook applied the schema at 11:32Z: "Applying Supabase schema: 247 statement(s),
+fingerprint d3176d08b13c (changed, previously 82fdfd86695c)", "applied: 247 statement(s) in 21 s",
+no lock, retry, timeout or wait line; `information_schema.columns` reads `stage_timings jsonb` and
+`metrix_schema_state` carries the new fingerprint with 247 statements. The restarted workspace API
+server warmed its seed in 124.6 s with no "could not be read" line and no RangeError. The publish of the converged workspace (deployment 329ef7e0) started at 11:40Z.
+Every run recorded before this build carries `stage_timings: null`, so the hub's slow-stage note has
+no evidence until at least one run finishes on it; the ETA reads the prior runs' durations already.
