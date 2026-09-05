@@ -55,7 +55,7 @@ describe("KpiTile", () => {
     // Portalled to document.body so .mx-kpi-tile's overflow:hidden cannot
     // clip it — so it is not a descendant of the render container.
     const dropdown = screen.getByTestId("kpi-metric-dropdown");
-    fireEvent.click(within(dropdown).getByRole("button", { name: /purchases/i }));
+    fireEvent.click(within(dropdown).getByRole("option", { name: /purchases/i }));
     expect(onSelect).toHaveBeenCalledWith("result:Website purchases");
   });
 
@@ -123,7 +123,7 @@ describe("KpiTileRow · per-view persistence", () => {
     // Portalled to document.body so .mx-kpi-tile's overflow:hidden cannot
     // clip it — so it is not a descendant of the render container.
     const dropdown = screen.getByTestId("kpi-metric-dropdown");
-    fireEvent.click(within(dropdown).getByRole("button", { name: /cpm/i }));
+    fireEvent.click(within(dropdown).getByRole("option", { name: /cpm/i }));
     expect(first.container.textContent).toContain("CPM");
     first.unmount();
 
@@ -333,6 +333,51 @@ describe("KpiTile · metric picker escapes the tile's overflow", () => {
     expect(screen.queryByTestId("kpi-metric-dropdown")).not.toBeNull();
     unmount();
     // A portal that outlives its owner is a leak the user sees as a stuck menu.
+    expect(screen.queryByTestId("kpi-metric-dropdown")).toBeNull();
+  });
+});
+
+describe("KpiTile · the metric picker is a listbox the reader can reach and leave", () => {
+  // The trigger promises aria-haspopup="listbox"; the menu is that listbox,
+  // its rows are options, the active one selected, and the trigger names the
+  // menu. Escape closes it and hands focus back. The menu's own scroll (the
+  // reader reaching its lower rows) never closes it; a scroll elsewhere does,
+  // because a fixed menu cannot follow the page. Its height is bounded by
+  // the viewport (the browser check `check:controls` reads the geometry;
+  // jsdom has none, so here the bound is asserted as present).
+  function open() {
+    const { container } = render(<KpiTile metricId="spend" catalog={catalog} onSelect={() => {}} />);
+    const trigger = within(container).getByRole("button", { name: /total spend/i });
+    fireEvent.click(trigger);
+    return { trigger, menu: screen.getByTestId("kpi-metric-dropdown") };
+  }
+
+  it("is a labelled listbox of options, the active one selected, named by the trigger", () => {
+    const { trigger, menu } = open();
+    expect(menu.getAttribute("role")).toBe("listbox");
+    expect(menu.getAttribute("aria-label")).toBeTruthy();
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(trigger.getAttribute("aria-controls")).toBe(menu.id);
+    const options = within(menu).getAllByRole("option");
+    expect(options.length).toBeGreaterThan(5);
+    expect(within(menu).getByRole("option", { name: /total spend/i }).getAttribute("aria-selected")).toBe("true");
+    expect(within(menu).getByRole("option", { name: /impressions/i }).getAttribute("aria-selected")).toBe("false");
+    expect(menu.style.maxHeight).toMatch(/px$/);
+  });
+
+  it("closes on Escape and returns focus to the trigger", () => {
+    const { trigger } = open();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByTestId("kpi-metric-dropdown")).toBeNull();
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("stays open while the reader scrolls the menu itself, and closes when the page scrolls", () => {
+    const { menu } = open();
+    fireEvent.scroll(menu);
+    expect(screen.queryByTestId("kpi-metric-dropdown")).toBeTruthy();
+    fireEvent.scroll(document.body);
     expect(screen.queryByTestId("kpi-metric-dropdown")).toBeNull();
   });
 });

@@ -29,6 +29,7 @@ import {
   deriveLabel,
   useShowMore,
   ShowMoreButton,
+  CrossLink,
 } from "../shared";
 import { TYPE } from "../typography";
 import { AlertTriangle, TrendingDown, TrendingUp, Minus } from "lucide-react";
@@ -346,10 +347,16 @@ function FindingsEmptyState() {
       <div className="w-12 h-12 rounded-xl border border-border/40 bg-foreground/[0.02] flex items-center justify-center">
         <span className="text-display opacity-30">🔍</span>
       </div>
-      <p className="text-title font-bold text-foreground/70">No intelligence data yet</p>
-      <p className="text-body text-muted-foreground/75 max-w-xs leading-relaxed">
-        Run the full IAP loop to generate concept scores, tier rankings, and the AI verdict.
+      {/* The cause, not a stage to run: these scores, tiers and the verdict
+          are the imported intelligence package's, which the analysis run
+          does not produce, so "run the loop" sent a reader whose run had
+          completed back to a stage that would change nothing (design
+          pass, round 8). */}
+      <p className="text-title font-bold text-foreground/70">No intelligence package for this account</p>
+      <p className="text-body text-muted-foreground/75 max-w-sm leading-relaxed">
+        Concept scores, tier rankings and the verdict come from an imported intelligence package. The analysis run does not produce one yet; its results are on Ad Performance.
       </p>
+      <CrossLink to="/app/analysis/performance" label="Ad Performance" />
     </div>
   );
 }

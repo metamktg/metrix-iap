@@ -36,7 +36,7 @@ import { breakdownSpendShare, spendShareLabel } from "@/lib/account-totals";
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
   SectionCard, MetricTile, CrossLink, fmtNum, fmtPct, fmtUSD,
-  SkeletonTileRow, CaveatNote, SectionInfoIcon,
+  SkeletonTileRow, CaveatNote, SectionInfoIcon, DetailReveal,
 } from "../shared";
 import {
   scopeDemographicRows, listSegments, rowsForSegment,
@@ -50,12 +50,13 @@ import {
 import { cn } from "@workspace/command-deck/lib/utils";
 import { sumStrict } from "@/lib/strict-sum";
 import { classifyResultEvent, type ResultEventKey } from "@/lib/resultEvents";
-import { FunnelChart } from "@/components/charts/FunnelChart";
+import { summaryEventForRows, FUNNEL_BASIS_NOTE, type FunnelStageBasis } from "@/lib/funnel-source";
+import { FunnelChart, FunnelBasisSwitch, type FunnelBasis } from "@/components/charts/FunnelChart";
 import {
   TrendingUp, Layers, Table2, Activity, ArrowDown, ArrowUp,
   ChevronsUpDown, ArrowRight,
 } from "lucide-react";
-import type { AdAccount, DemographicRow, PlacementRow, DeviceDeliveryRow } from "@/lib/data/seedTypes";
+import type { AdAccount, CampaignSummary, DemographicRow, PlacementRow, DeviceDeliveryRow } from "@/lib/data/seedTypes";
 import { TYPE } from "../typography";
 
 const SECTION = "Analysis · 03";
@@ -102,9 +103,11 @@ export interface FunnelStage {
   /** "awareness" | "engagement" | "intent" | "conversion" */
   zone: "awareness" | "engagement" | "intent" | "conversion";
   /** Where a lower-funnel count was read: the export's own cart / checkout /
-   *  purchase column, or the rows' Result type. Delivery stages carry none. */
-  basis?: "column" | "result_type";
+   *  purchase column, the rows' Result type, or the campaign summary's one
+   *  result type when the rows name none. Delivery stages carry none. */
+  basis?: FunnelStageBasis;
 }
+
 
 /** Zone display names. The zones group the funnel into labelled bands;
  *  they are not a colour dimension — see FunnelWaterfall for why. */
@@ -176,7 +179,7 @@ const intermediateRank = (key: ResultEventKey): number => {
 /** Exported so callers outside this view (e.g. AdPerformanceView's compact
  *  "Buyer-intent funnel" card) can reuse the exact same stage math instead
  *  of re-deriving it. */
-export function buildFunnelStages(rows: DemographicRow[]): FunnelStage[] {
+export function buildFunnelStages(rows: DemographicRow[], summary?: CampaignSummary | null): FunnelStage[] {
   // A MEASURED ZERO IS NOT A GAP, and this used to erase the difference.
   //
   // The old shape was `acc.purchases += r.purchases ?? 0` followed by
@@ -224,6 +227,18 @@ export function buildFunnelStages(rows: DemographicRow[]): FunnelStage[] {
     byEvent.set(c.key, cur);
   }
   const fromRows = [...byEvent.values()];
+
+  // Rows that name no event but whose totals are one summary event's.
+  const summaryEvent = fromRows.length === 0 && legacy.length === 0 ? summaryEventForRows(rows, summary) : null;
+  if (summaryEvent) {
+    const c = classifyResultEvent(summaryEvent);
+    if (c.intent === "conversion") {
+      fromRows.push({
+        id: c.key, label: c.label, v: sumStrict(rows, (r) => r.Results), zone: c.stage === "terminal" ? "conversion" : "intent",
+        basis: "summary", key: c.key, rank: intermediateRank(c.key),
+      });
+    }
+  }
 
   // With nothing below link clicks, the three classic slots stay as gaps so
   // the funnel still shows where the data ends (and the note says why).
@@ -465,7 +480,10 @@ const BREAKDOWN_METRICS: RankMetric<BreakdownRow>[] = [
 // arguing about it. ZONE_COLOR stays exported: other surfaces use its text
 // and border steps for zone chips, where a tint IS carrying a category.
 
-function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
+function FunnelWaterfall({ stages, source }: { stages: FunnelStage[]; source?: string | null }) {
+  // ONE basis for the whole waterfall: a switch per band rendered the same
+  // control three times for one choice (design pass, round 8).
+  const [basis, setBasis] = useState<FunnelBasis>("previous");
   // Zone bands, in stage order, skipping any zone with no stages.
   const bands = useMemo(() => {
     const out: { zone: FunnelStage["zone"]; label: string; stages: FunnelStage[] }[] = [];
@@ -481,6 +499,16 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
 
   return (
     <div className="space-y-4">
+      {/* The rows this funnel reads, on the first layer: a demographic
+          export is a SHARE of the account (Bookster's is 9% of its spend,
+          31,542 impressions beside the account's 2.57M on the tile above),
+          and the share used to live only in the header's tooltip. */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <span className={cn(TYPE.microLabel, "text-muted-foreground/75")} data-testid="funnel-source">
+          {source ?? "Read from the demographic export"}
+        </span>
+        <FunnelBasisSwitch basis={basis} onChange={setBasis} />
+      </div>
       {bands.map((band) => (
         <div key={band.zone}>
           <div className={cn(TYPE.label, "mb-1.5", ZONE_COLOR[band.zone].text)}>{band.label}</div>
@@ -489,11 +517,12 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
               key: st.id,
               label: st.label,
               value: st.value,
-              ...(st.basis ? { note: st.basis === "result_type" ? "Read from the rows' Result type" : "Read from the export's own column" } : {}),
+              ...(st.basis ? { note: FUNNEL_BASIS_NOTE[st.basis] } : {}),
             }))}
             unitLabel=""
             emptyLabel={`No ${band.label.toLowerCase()} data in this window`}
-            defaultBasis="previous"
+            basis={basis}
+            showBasisSwitch={false}
           />
         </div>
       ))}
@@ -780,9 +809,16 @@ export function accountHasVideoCreative(account: Pick<AdAccount, "ads" | "creati
  */
 function VideoMetricsNote({ show }: { show: boolean }) {
   if (!show) return null;
+  // A disclosure line, not a CaveatNote: beside the lower-funnel note this
+  // made two amber notices on one page (at most one, sweep spec §3.4).
   return (
-    <div data-testid="video-metrics-note">
-      <CaveatNote text="ThruPlay rate and video-play-percentage data require a Meta Video Creative report CSV. A separate export from the standard demographic/placement performance report, not currently detected in staged uploads. To see video metrics: in Meta Ads Manager, go to Columns → Customize, add ThruPlays and Video play %, export as CSV, and stage it alongside your performance exports." />
+    <div data-testid="video-metrics-note" className="px-1">
+      <DetailReveal
+        label="Video metrics · not in this export"
+        eyebrow="ThruPlays and video play %"
+        labelClassName={cn(TYPE.caption, "text-muted-foreground/85")}
+        sections={[{ text: "ThruPlay rate and video-play-percentage data require a Meta Video Creative report CSV. A separate export from the standard demographic/placement performance report, not currently detected in staged uploads. To see video metrics: in Meta Ads Manager, go to Columns → Customize, add ThruPlays and Video play %, export as CSV, and stage it alongside your performance exports." }]}
+      />
     </div>
   );
 }
@@ -837,7 +873,8 @@ export function EngagementFunnelView() {
   const dim: BreakdownDim = hasDemo ? dimRaw : dimRaw === "audience" ? fallbackDim : dimRaw;
   const viewMode: ViewMode = hasDemo ? viewModeRaw : "breakdown";
 
-  const funnelStages = useMemo(() => buildFunnelStages(demoRows), [demoRows]);
+  const funnelStages = useMemo(() => buildFunnelStages(demoRows, summary), [demoRows, summary]);
+  const funnelSource = `Read from the demographic export${demoShare ? ` · ${demoShare}` : ""}`;
 
   const breakdownRows = useMemo<BreakdownRow[]>(() => {
     if (dim === "audience")  return buildAudienceRows(demoRows);
@@ -1012,57 +1049,22 @@ export function EngagementFunnelView() {
                     desc={`Impressions through the account's own result events · count and share of the previous stage · demographic export${demoShare ? ` · ${demoShare}` : ""}`}
                     right={<SectionInfoIcon tip="Absolute volume and stage-over-stage retention from impressions through the intent and conversion events the account's ads were optimised towards, drawn from the demographic export. Terminal events are alternatives, each measured against the last stage before them." />}
                   >
-                    <FunnelWaterfall stages={funnelStages} />
+                    <FunnelWaterfall stages={funnelStages} source={funnelSource} />
                   </SectionCard>
 
-                  {/* CTR comparison */}
-                  <SectionCard
-                    title="CTR comparison"
-                    desc="All-clicks CTR vs link-click CTR. The gap between them shows how much engagement doesn't drive intent."
-                    right={<SectionInfoIcon tip="A wide gap between CTR All and CTR Link means clicks are staying on-platform (reactions, shares, profile visits) rather than driving off-platform intent." />}
-                  >
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4">
-                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">CTR All</div>
-                        <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.ctrAll, 2)}</div>
-                        <div className="text-label text-muted-foreground/75 mt-1">All clicks ÷ impressions</div>
-                      </div>
-                      <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4">
-                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">CTR Link</div>
-                        <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.ctrLink, 2)}</div>
-                        <div className="text-label text-muted-foreground/75 mt-1">Link clicks ÷ impressions</div>
-                      </div>
-                      <div className="rounded-lg border border-border/30 bg-foreground/[0.02] p-4">
-                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/75 mb-1">Reach CTR</div>
-                        {/* The line below is the FORMULA, not a reason. When
-                            the rate is absent the reader needs the missing
-                            input named — reachCtr is null exactly when reach
-                            is zero or absent (line ~685), which is a real
-                            fact about this account's data, not a rounding. */}
-                        <div
-                          className={cn(
-                            "text-display font-bold text-foreground",
-                            summaryTiles.reachCtr == null && "border-b border-dotted border-muted-foreground/40 cursor-help",
-                          )}
-                          {...(summaryTiles.reachCtr == null
-                            ? { title: "Reach CTR: this account's rows carry no unique reach, so link clicks have nothing to divide by. Reach is a Meta breakdown that manual CSV exports often omit." }
-                            : {})}
-                        >
-                          {fmtRate(summaryTiles.reachCtr, 2)}
-                        </div>
-                        <div className="text-label text-muted-foreground/75 mt-1">Link clicks ÷ unique reach</div>
-                      </div>
+                  {/* The three CTRs are the KPI row's; this keeps only what
+                      the row cannot say, the ratio between two of them. A
+                      "CTR comparison" module repeated the tiles above it
+                      (design pass, round 8). */}
+                  {summaryTiles.ctrAll != null && summaryTiles.ctrLink != null && summaryTiles.ctrAll > 0 && (
+                    <div className="p-3 rounded-lg border border-border/25 bg-foreground/[0.01] text-caption text-muted-foreground/75" data-testid="intent-conversion">
+                      <span className="font-medium text-foreground/80">Intent conversion · </span>
+                      {fmtRate(pct(summaryTiles.ctrLink, summaryTiles.ctrAll), 0)} of all clicks become link clicks.
+                      {summaryTiles.ctrLink / summaryTiles.ctrAll < 0.4 && (
+                        <span className="text-status-warning/70 ml-1">Low ratio · check for high engagement creative that doesn't drive off-platform intent.</span>
+                      )}
                     </div>
-                    {summaryTiles.ctrAll != null && summaryTiles.ctrLink != null && summaryTiles.ctrAll > 0 && (
-                      <div className="mt-3 p-3 rounded-lg border border-border/25 bg-foreground/[0.01] text-caption text-muted-foreground/75">
-                        <span className="font-medium text-foreground/80">Intent conversion: </span>
-                        {fmtRate(pct(summaryTiles.ctrLink, summaryTiles.ctrAll), 0)} of all clicks become link clicks.
-                        {summaryTiles.ctrLink != null && summaryTiles.ctrAll != null && summaryTiles.ctrAll > 0 && summaryTiles.ctrLink / summaryTiles.ctrAll < 0.4 && (
-                          <span className="text-status-warning/70 ml-1">Low ratio · check for high engagement creative that doesn't drive off-platform intent.</span>
-                        )}
-                      </div>
-                    )}
-                  </SectionCard>
+                  )}
 
                   <VideoMetricsNote show={hasVideo} />
                 </>

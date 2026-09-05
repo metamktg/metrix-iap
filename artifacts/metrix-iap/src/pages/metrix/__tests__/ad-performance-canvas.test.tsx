@@ -194,7 +194,8 @@ describe("concept tier table (rollup × scaling playbook)", () => {
   it("filters by tier via the chip row, with real counts", () => {
     renderFor("bookster");
     const table = screen.getByTestId("concept-tier-table");
-    fireEvent.click(screen.getByRole("button", { name: /^Avoid/ }));
+    // The chip speaks the loop's verb (Retire), the playbook's list is "avoid".
+    fireEvent.click(screen.getByRole("button", { name: /^Retire/ }));
     const rows = within(table).getAllByRole("row").slice(1);
     // Only BOOK0 C3 matches the "avoid" bucket in Bookster's playbook.
     expect(rows).toHaveLength(1);
@@ -302,6 +303,13 @@ describe("buyer-intent funnel (cohort-aware)", () => {
       return rest;
     });
     const prevRows = rows.slice();
+    // Since round 8 an untyped export whose totals are exactly one summary
+    // event's is named from the summary (Bookster's rows ARE its
+    // registration campaign), so the absence case also takes that event
+    // out of the summary for the duration of the test.
+    const totals = bookster.iap.campaign_summary.bottom_line_totals as Record<string, unknown>;
+    const prevRegistrations = totals["Website registrations completed"];
+    delete totals["Website registrations completed"];
     bookster.objectives = ["app"];
     rows.splice(0, rows.length, ...stripped);
     try {
@@ -318,7 +326,24 @@ describe("buyer-intent funnel (cohort-aware)", () => {
     } finally {
       bookster.objectives = prevObjectives;
       rows.splice(0, rows.length, ...prevRows);
+      totals["Website registrations completed"] = prevRegistrations;
     }
+  });
+
+  it("names an untyped export's event from the campaign summary, and says which rows it read", () => {
+    // Bookster's 62 demographic rows carry no Result type; their $701.29
+    // and 31,542 impressions are the summary's "Website registrations
+    // completed" and nothing else's, so the conversion band is the 78
+    // registrations, read from the summary (round 8). The Audience page had
+    // read the same rows as registrations while this card said "no result
+    // event below link clicks".
+    renderFor("bookster");
+    const funnel = screen.getByTestId("buyer-intent-funnel");
+    expect(within(funnel).getByText("Registrations")).toBeTruthy();
+    expect(within(funnel).getByText("78")).toBeTruthy();
+    expect(screen.queryByText(/No result event below link clicks/i)).toBeNull();
+    // The rows this funnel reads, on the first layer, with the export's share.
+    expect(screen.getByTestId("funnel-source").textContent).toMatch(/^Read from the demographic export/);
   });
 });
 

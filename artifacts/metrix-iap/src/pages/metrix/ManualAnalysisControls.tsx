@@ -1395,9 +1395,12 @@ export function AnalysisControls({
         <DetailReveal
           key={String(detailsOpen)}
           label={
-            <span className="inline-flex items-center gap-1.5">
+            // The chosen range beside the label: a disclosure label with no
+            // value under it read as an orphan label (design pass, round 8).
+            <span className="inline-flex items-center gap-1.5 flex-wrap">
               <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
-              Date range to analyze
+              <span>Date range to analyze</span>
+              <span className="text-muted-foreground/75 font-normal" data-testid="date-range-current">· {DATE_RANGES.find((r) => r.id === dateRange)?.label ?? dateRange}</span>
             </span>
           }
           labelClassName="text-caption font-medium text-foreground"

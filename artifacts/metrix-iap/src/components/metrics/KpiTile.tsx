@@ -9,7 +9,7 @@
 // Styling is composed strictly from Command Deck / app tokens already in
 // use (mx-kpi-tile, TYPE, text-bignum, border-primary, …) — no new styles.
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, ChevronDown, Info } from "lucide-react";
@@ -29,25 +29,45 @@ interface KpiMetricDropdownProps {
   onClose: () => void;
   /** The trigger button, used to place the portalled menu under its tile. */
   anchorRef: React.RefObject<HTMLButtonElement | null>;
+  /** The menu's id, so the trigger can name it through aria-controls. */
+  id: string;
 }
 
-function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: KpiMetricDropdownProps) {
+/** Room the menu leaves to the viewport edge, in px. */
+const MENU_EDGE_GAP = 8;
+/** The menu needs at least this much room below the trigger before it flips above it. */
+const MENU_MIN_BELOW = 200;
+
+function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef, id }: KpiMetricDropdownProps) {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
 
   // Anchor to the trigger in VIEWPORT coordinates. The dropdown is rendered
   // through a portal (see below), so it has no positioned ancestor to lay
-  // itself out against — position: fixed plus the trigger's own rect is the
-  // only thing that keeps it under its tile.
+  // itself out against: position: fixed plus the trigger's own rect is the
+  // only thing that keeps it under its tile. The menu is as tall as the
+  // catalog (18 rows on Analysis Overview, 633 px), so it is bounded by the
+  // room the viewport has: below the trigger when there is enough, above it
+  // when there is more room there, and it scrolls inside that bound. Before
+  // this it ran past the viewport bottom on a 900 px window and past the
+  // fold on a phone with no way to reach the lower rows (owner, 2026-09-05:
+  // "filtering regressions from dropdown … configuration").
   useLayoutEffect(() => {
     const el = anchorRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
     const width = 224; // w-56
+    const natural = ref.current?.scrollHeight ?? 0;
+    const below = window.innerHeight - r.bottom - 4 - MENU_EDGE_GAP;
+    const above = r.top - 4 - MENU_EDGE_GAP;
+    const flip = below < Math.min(natural, MENU_MIN_BELOW) && above > below;
+    const room = Math.max(120, flip ? above : below);
+    const maxHeight = Math.min(natural || room, room);
+    const top = flip ? Math.max(MENU_EDGE_GAP, r.top - 4 - maxHeight) : r.bottom + 4;
     // Keep it on screen when a tile sits near the right edge.
-    const left = Math.min(r.left, Math.max(8, window.innerWidth - width - 8));
-    setPos({ top: r.bottom + 4, left });
+    const left = Math.min(r.left, Math.max(MENU_EDGE_GAP, window.innerWidth - width - MENU_EDGE_GAP));
+    setPos({ top, left, maxHeight });
   }, [anchorRef]);
 
   useEffect(() => {
@@ -58,17 +78,32 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
       onClose();
     };
     // A fixed-position menu cannot follow the page, so close rather than
-    // drift away from the tile it belongs to.
-    const dismiss = () => onClose();
+    // drift away from the tile it belongs to. The menu's OWN scroll is the
+    // reader reaching its lower rows, never a reason to close it.
+    const dismiss = (e: Event) => {
+      if (e.target instanceof Node && ref.current?.contains(e.target)) return;
+      onClose();
+    };
+    const resize = () => onClose();
+    // Escape closes the menu and hands focus back to the trigger, as every
+    // other floating layer in the app does.
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      onClose();
+      anchorRef.current?.focus();
+    };
     // micro-delay so the click that opened the dropdown doesn't immediately close it
     const tid = setTimeout(() => document.addEventListener("mousedown", handler), 50);
     window.addEventListener("scroll", dismiss, true);
-    window.addEventListener("resize", dismiss);
+    window.addEventListener("resize", resize);
+    document.addEventListener("keydown", key);
     return () => {
       clearTimeout(tid);
       document.removeEventListener("mousedown", handler);
       window.removeEventListener("scroll", dismiss, true);
-      window.removeEventListener("resize", dismiss);
+      window.removeEventListener("resize", resize);
+      document.removeEventListener("keydown", key);
     };
   }, [onClose, anchorRef]);
 
@@ -79,6 +114,8 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
     <button
       key={m.id}
       type="button"
+      role="option"
+      aria-selected={m.id === activeId}
       onClick={() => onSelect(m.id)}
       className={cn(
         "pressable-lg w-full text-left px-3 py-1.5 flex items-center justify-between gap-3 transition-colors",
@@ -109,26 +146,33 @@ function KpiMetricDropdown({ catalog, activeId, onSelect, onClose, anchorRef }: 
     // convention everywhere else here.
     <motion.div
       ref={ref}
+      id={id}
+      role="listbox"
+      aria-label="Metric for this tile"
       data-testid="kpi-metric-dropdown"
       initial={reduced ? false : { opacity: 0, scale: 0.98, y: -4 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={motionOr(reduced, { duration: DUR_FAST, ease: EASE })}
-      style={{ position: "fixed", top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? "visible" : "hidden", transformOrigin: "top left" }}
-      className="z-50 w-56 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm elevation-floating py-1 overflow-hidden"
+      style={{ position: "fixed", top: pos?.top ?? -9999, left: pos?.left ?? -9999, maxHeight: pos?.maxHeight, visibility: pos ? "visible" : "hidden", transformOrigin: "top left" }}
+      className="z-50 w-56 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm elevation-floating py-1 overflow-y-auto overscroll-contain"
     >
-      <div className="px-2.5 py-1 text-micro uppercase text-muted-foreground/75">
-        Delivery & efficiency
+      {/* A listbox holds options and groups only, so each section is a
+          labelled group and its heading names it (ARIA listbox pattern). */}
+      <div role="group" aria-labelledby={`${id}-delivery`}>
+        <div id={`${id}-delivery`} className="px-2.5 py-1 text-micro uppercase text-muted-foreground/75">
+          Delivery & efficiency
+        </div>
+        {staticMetrics.map((m) => <Row key={m.id} m={m} />)}
       </div>
-      {staticMetrics.map((m) => <Row key={m.id} m={m} />)}
 
       {eventMetrics.length > 0 && (
-        <>
+        <div role="group" aria-labelledby={`${id}-events`}>
           <div className="mx-2 my-1 border-t border-border/20" />
-          <div className="px-2.5 py-1 text-micro uppercase text-muted-foreground/75">
+          <div id={`${id}-events`} className="px-2.5 py-1 text-micro uppercase text-muted-foreground/75">
             Results by event
           </div>
           {eventMetrics.map((m) => <Row key={m.id} m={m} />)}
-        </>
+        </div>
       )}
     </motion.div>
   );
@@ -209,6 +253,7 @@ export function KpiTile({
 }: KpiTileProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
   const m = metricById(catalog, metricId);
   if (!m) return null;
 
@@ -244,6 +289,7 @@ export function KpiTile({
           type="button"
           aria-haspopup="listbox"
           aria-expanded={pickerOpen}
+          aria-controls={pickerOpen ? menuId : undefined}
           onClick={(e) => { e.stopPropagation(); setPickerOpen((v) => !v); }}
           className="pressable-lg flex items-center gap-1 group/lbl text-left min-w-0"
         >
@@ -325,6 +371,7 @@ export function KpiTile({
 
       {pickerOpen && (
         <KpiMetricDropdown
+          id={menuId}
           anchorRef={triggerRef}
           catalog={catalog}
           activeId={metricId}

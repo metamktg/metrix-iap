@@ -89,6 +89,11 @@ session picking up phase work:
   ordered vertical slices and the validation each one must pass. Read its §0 and §1 (the
   non-regression list) before touching a stage page. Its sources are the owner's reconciled package
   in `handoff_2026-09-05/`.
+- `METRIX_DESIGN_CONFORMANCE_PASS_2026-09.md`: the design gate every UI pull request passes
+  (owner flag, 2026-09-05): `check:controls` over every route, the crawl read against the
+  standard (hierarchy, disclosure, controls and their persistence, charts, layout), and an
+  interaction sweep of every control the PR touches. Read §0 for what its first run caught and §2
+  for the checklist.
 - `METRIX_UI_REFACE_REGISTER_2026-08.md` — the UI reface register. What the design pass has
   closed, what is open, the Watermelon component mapping, and the phased plan. Every claim in it
   is produced by a re-runnable command (`check:ui-inventory`, `check:field-coverage`, and the

@@ -36,6 +36,7 @@ import {
   CheckCircle2, XCircle, Loader2, FileJson, FileText, FileUp,
 } from "lucide-react";
 import { deriveRecommendations, recommendationsForStage } from "@/lib/data/recommendations";
+import { analysisExportRows, analysisExportEmpty, analysisExportSummary } from "@/lib/analysisExport";
 
 const SECTION = "Analysis · 03";
 
@@ -368,7 +369,6 @@ function AnalysisStage({ account: acct }: { account: AdAccount }) {
         desc={preset === "all"
           ? "Most recent analysis runs for this account, most recent first."
           : `Analysis runs from the last ${PRESET_DAYS[preset]} days, most recent first.`}
-        right={<CrossLink to={HISTORY_TO} label="Full history" />}
       >
         {recentRuns.length === 0 ? (
           <p className="text-caption text-muted-foreground/75">
@@ -426,9 +426,13 @@ function AnalysisStage({ account: acct }: { account: AdAccount }) {
             <span className="flex-1 min-w-0">
               <span className="block text-body text-foreground/85 truncate">Analysis export</span>
               <span className="block text-label text-muted-foreground/75">
-                {analysis
-                  ? `${fmtNum(analysis.performance_by_cell.length)} cell rows · ${fmtNum(analysis.v3_variable_performance.length)} variable rows`
-                  : "No analysis data yet"}
+                {(() => {
+                  // The current run's rows, on the run's grain: this counted
+                  // every run's variable rows (606 for a run of 126) and no
+                  // ads (design pass, round 8).
+                  const rows = analysisExportRows(acct, analysis);
+                  return analysis && !analysisExportEmpty(rows) ? analysisExportSummary(rows).join(" · ") : "No analysis data yet";
+                })()}
               </span>
             </span>
             <span className="text-label font-semibold text-interactive shrink-0">Open</span>

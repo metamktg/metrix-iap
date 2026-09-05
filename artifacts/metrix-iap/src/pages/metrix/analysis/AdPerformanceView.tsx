@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { KpiTileRow, type KpiTileTrend } from "@/components/metrics/KpiTile";
 import { buildMetricCatalog, metricSourceFromCampaignSummary } from "@/lib/data/metricsCatalog";
-import { bucketEntryForConcept, BUCKET_LABEL, type ScalingBucket } from "@/lib/data/scalingBuckets";
+import { bucketEntryForConcept, bucketVerbKey, BUCKET_LABEL, type ScalingBucket } from "@/lib/data/scalingBuckets";
 import { normalizeConfidence } from "@/lib/normalize";
 import { RankSortBar, sortByRankMetric, useRankMetric, type RankMetric } from "./rankSort";
 import { CombinationChips, familyLabel } from "../strategy/strategyShared";
@@ -300,17 +300,16 @@ const BUCKET_TAG_CLS: Record<string, string> = {
   avoid: "border-status-danger/30 bg-status-danger/10 text-status-danger",
 };
 
-// Real tier vocabulary only — the strategy map classifies into these five
-// buckets (plus "no match yet"). Canvas's mock used a sixth "Retire" label
-// that doesn't exist anywhere in this app's scaling-playbook system, so it
-// isn't reproduced here.
+// The filter speaks the loop's four verbs (round 7): the playbook's
+// validate and explore lists are both "Validate", avoid is "Retire". The
+// chips read Explore · Avoid · Unclassified until the design pass of
+// round 8; `bucketVerbKey` folds a row's bucket onto the verb it wears.
 const TIER_FILTERS: { id: string; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "scale_now", label: "Scale" },
+  { id: "scale", label: "Scale" },
   { id: "optimize", label: "Optimize" },
   { id: "validate", label: "Validate" },
-  { id: "explore", label: "Explore" },
-  { id: "avoid", label: "Avoid" },
+  { id: "retire", label: "Retire" },
   { id: "unclassified", label: "Unclassified" },
 ];
 
@@ -484,13 +483,13 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: tierRows.length };
     for (const r of tierRows) {
-      const k = r.bucket ?? "unclassified";
+      const k = bucketVerbKey(r.bucket);
       c[k] = (c[k] ?? 0) + 1;
     }
     return c;
   }, [tierRows]);
   const activeMetric = TIER_RANK_METRICS.find((m) => m.id === activeId) ?? TIER_RANK_METRICS[0]!;
-  const filteredRows = filter === "all" ? tierRows : tierRows.filter((r) => (r.bucket ?? "unclassified") === filter);
+  const filteredRows = filter === "all" ? tierRows : tierRows.filter((r) => bucketVerbKey(r.bucket) === filter);
   const sortedRows = sortByRankMetric(filteredRows, activeMetric);
   const fold = useShowMore(sortedRows, 4);
 
@@ -703,7 +702,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detail
 // lacked (describeLowerFunnel), never a business model: the objective is
 // not a way to describe an account to a reader (CLAUDE.md).
 
-function BuyerIntentFunnelCard({ stages }: { stages: FunnelStage[] }) {
+function BuyerIntentFunnelCard({ stages, source }: { stages: FunnelStage[]; source?: string | null }) {
   const lowerNote = describeLowerFunnel(stages);
   const visibleStages = stages.filter((s) => s.value != null);
 
@@ -716,6 +715,13 @@ function BuyerIntentFunnelCard({ stages }: { stages: FunnelStage[] }) {
       desc="Impressions through the account's own result events · stage-over-stage retention"
       right={<SectionInfoIcon tip="Every stage with measured data renders, impressions through the intent and conversion events the ads were optimised towards, whatever the account's objectives. Each stage's % is measured against the previous real stage (a terminal event against the last stage before the conversion band); absent stages are explained, never faked as zero bars." />}
     >
+      {/* The rows this funnel reads, on the first layer: a demographic
+          export is a SHARE of the account, and its 31,542 impressions sat
+          under a KPI tile reading 2,572,802 with nothing between them
+          (design pass, round 8). */}
+      <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-2")} data-testid="funnel-source">
+        {source ?? "Read from the demographic export"}
+      </p>
       <div className="space-y-1.5" data-testid="buyer-intent-funnel">
         {visibleStages.map((stage) => {
           const c = ZONE_COLOR[stage.zone];
@@ -921,7 +927,8 @@ export function AdPerformanceView() {
         const adsWithPerformance = adGrainPerformanceRows(acct.ads).rows.length;
         const demoShare = spendShareLabel(breakdownSpendShare(a, summary, "demographic"));
 
-        const funnelStages = buildFunnelStages(a.demographic_registration_signal);
+        const funnelStages = buildFunnelStages(a.demographic_registration_signal, summary);
+        const funnelSource = `Read from the demographic export${demoShare ? ` · ${demoShare}` : ""}`;
 
         const mst = getMST(seed, adAccountId);
         const lib = mst?.local_book2_library ?? [];
@@ -1085,7 +1092,7 @@ export function AdPerformanceView() {
               <SignalCards flags={acct.iap?.data_quality ?? []} scopeId={acct.id} detailOn={detailOn} />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <BuyerIntentFunnelCard stages={funnelStages} />
+                <BuyerIntentFunnelCard stages={funnelStages} source={funnelSource} />
                 <CostPerResultCard adAccountId={adAccountId} accountConfigured={acct.status === "configured"} />
               </div>
 
@@ -1180,14 +1187,16 @@ export function AdPerformanceView() {
                     <div
                       key={s.to}
                       title={s.desc}
-                      className="flex items-center gap-2 rounded-lg border border-border/30 bg-foreground/[0.015] pl-3 pr-1.5 py-1.5"
+                      className="flex items-center gap-2 max-w-full rounded-lg border border-border/30 bg-foreground/[0.015] pl-3 pr-1.5 py-1.5"
                     >
                       <s.Icon className="w-3.5 h-3.5 text-muted-foreground/75 shrink-0" />
-                      <div className="flex flex-col min-w-0">
-                        <span className={cn(TYPE.caption, "font-semibold text-foreground/90")}>{s.label}</span>
+                      {/* The text column yields before the link does: at 390 px a
+                          long stat pushed "Open" past the card's edge (round 8). */}
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className={cn(TYPE.caption, "font-semibold text-foreground/90 truncate")}>{s.label}</span>
                         <span className={cn(TYPE.microLabel, "text-muted-foreground/75 truncate")}>{s.stat}</span>
                       </div>
-                      <CrossLink to={s.to} label="Open" />
+                      <span className="shrink-0"><CrossLink to={s.to} label="Open" /></span>
                     </div>
                   ))}
                 </div>

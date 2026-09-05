@@ -175,11 +175,17 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
       {/* The surface (bg, blur, ring, elevation, radius) is the HoverCardContent
           default now; this only sets the width and drops the padding so the
           accent stripe can run edge to edge. */}
+      {/* Bounded to the room the viewport has (Radix's available-height
+          variable) with an internal scroll, and kept 8 px off the edges: at
+          390 px the card's 490 px of chart and table flipped above its tile
+          and ran 34 px past the top of the screen with no way to reach it
+          (check:controls, 2026-09-05). */}
       <HoverCardContent
-        className="w-[320px] p-0 overflow-hidden"
+        className="w-[320px] p-0 overflow-x-hidden overflow-y-auto max-h-[var(--radix-hover-card-content-available-height)]"
         side="bottom"
         align="start"
         sideOffset={6}
+        collisionPadding={8}
       >
         {/* Accent top stripe — the series colour, so a cost popover is keyed
             to its bars before the reader gets to them. */}

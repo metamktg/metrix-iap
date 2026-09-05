@@ -21,6 +21,17 @@ export const BUCKET_LABEL: Record<ScalingBucket, string> = {
   avoid: "Retire",
 };
 
+/** The verb a bucket wears, as a filter key: explore folds onto validate,
+ *  avoid is retire, and no bucket is "unclassified" (design pass, round 8). */
+export type BucketVerbKey = "scale" | "optimize" | "validate" | "retire" | "unclassified";
+export function bucketVerbKey(bucket: ScalingBucket | null | undefined): BucketVerbKey {
+  if (!bucket) return "unclassified";
+  if (bucket === "scale_now") return "scale";
+  if (bucket === "avoid") return "retire";
+  if (bucket === "explore") return "validate";
+  return bucket;
+}
+
 function entryMatches(entry: string, book: string, concept: string): boolean {
   const e = entry.toUpperCase();
   if (!e.includes(book.toUpperCase())) return false;

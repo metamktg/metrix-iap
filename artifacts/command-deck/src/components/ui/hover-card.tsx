@@ -10,7 +10,7 @@ const HoverCardTrigger = HoverCardPrimitive.Trigger
 const HoverCardContent = React.forwardRef<
   React.ElementRef<typeof HoverCardPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>
->(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+>(({ className, align = "center", sideOffset = 4, collisionPadding = 8, ...props }, ref) => (
   // Portaled, like popover.tsx and tooltip.tsx. Un-portaled, the content
   // rendered inside the trigger's subtree — under the KPI tile's
   // `overflow: hidden` and the motion wrapper's transform — so the card
@@ -22,6 +22,7 @@ const HoverCardContent = React.forwardRef<
     ref={ref}
     align={align}
     sideOffset={sideOffset}
+    collisionPadding={collisionPadding}
     className={cn(
       // The same surface popover.tsx and tooltip.tsx wear: the popover
       // ground at 95% over a blur, a soft border and the elevation scale's

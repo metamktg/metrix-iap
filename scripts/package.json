@@ -72,6 +72,7 @@
     "check:friction": "node ./src/check-friction.mjs",
     "shoot:routes": "node ./src/visual/shoot-routes.mjs",
     "check:scroll-fade": "node ./src/check-scroll-fade.mjs",
+    "check:controls": "node ./src/check-controls.mjs",
     "check:virtual-tables": "node ./src/visual/check-virtual-tables.mjs"
   },
   "devDependencies": {

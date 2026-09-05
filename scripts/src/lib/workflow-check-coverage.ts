@@ -64,6 +64,16 @@ export const MANUAL_ONLY_CHECK_SCRIPTS: Record<string, string> = {
     "is why the static mask it replaced (a fade on every rail that fit) passed " +
     "every unit test. Needs a RUNNING dev server on 5178, the same constraint as " +
     "check:friction; exits 2 when it cannot reach one.",
+  "check:controls":
+    "opens every dropdown, popover, menu and dialog trigger on every route, for " +
+    "two fixture accounts at 1440 and 390 px, in a REAL browser, and asserts the " +
+    "surface opens, sits inside the viewport or scrolls, is populated, carries the " +
+    "role its trigger promised and closes on Escape; native selects must carry " +
+    "options and a name. Exists because the KPI tile's metric picker ran past the " +
+    "viewport with no scroll and closed itself on its own scroll while every unit " +
+    "test and every static gate passed (owner, 2026-09-05). Needs a RUNNING dev " +
+    "server on 5178, the same constraint as check:friction; exits 2 when it cannot " +
+    "reach one.",
   "check:friction":
     "walks every route navTree.ts and App.tsx declare, for two fixture accounts " +
     "at 1440 and 390 px, and reports what a reader meets on the FIRST layer: " +

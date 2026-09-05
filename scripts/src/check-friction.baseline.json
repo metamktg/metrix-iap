@@ -42,14 +42,10 @@
     "noData": []
   },
   "/app/analysis/funnel": {
-    "warnBoxes": 4,
+    "warnBoxes": 2,
     "warnIcons": 0,
     "longProse": 0,
-    "noData": [
-      "No conversion data in this window",
-      "No intent data in this window",
-      "No result event below link clicks in this demographic export"
-    ]
+    "noData": []
   },
   "/app/analysis/history": {
     "warnBoxes": 0,
@@ -76,8 +72,7 @@
     "warnIcons": 12,
     "longProse": 6,
     "noData": [
-      "No act now signals this run.",
-      "No result event below link clicks in this demographic export"
+      "No act now signals this run."
     ]
   },
   "/app/analysis/placements": {

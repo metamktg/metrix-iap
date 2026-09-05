@@ -2240,10 +2240,13 @@ export function SectionCard({
     <>
       {/* H2: the first real content heading under the page's H1
           (ModuleHeader) — see typography.ts's H1–H6 hierarchy doc. */}
-      {/* One line, always: the head row is a strip, and a title that wraps
-          pushes the module's controls under itself. `text-wrap: balance`
-          on the h2 role would otherwise reflow it. */}
-      <h2 className={cn(HEADING.h2, "truncate whitespace-nowrap [text-wrap:nowrap]")} title={title}>{title}</h2>
+      {/* One line from lg up: the head row is a strip, and a title that
+          wraps pushes the module's controls under itself. `text-wrap:
+          balance` on the h2 role would otherwise reflow it. Below lg the
+          title wraps instead: a right-hand slot never squeezes the title
+          at phone width (round 6), and "Share of spend vs. share of re…"
+          beside two glyphs was the truncation that rule exists to stop. */}
+      <h2 className={cn(HEADING.h2, "max-lg:break-words lg:truncate lg:whitespace-nowrap lg:[text-wrap:nowrap]")} title={title}>{title}</h2>
       {collapsible && (
         <ChevronDown
           className={cn(

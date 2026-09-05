@@ -131,9 +131,13 @@ export function DumbbellRows({
           const lo = Math.min(r.a, r.b);
           const hi = Math.max(r.a, r.b);
           return (
+            // Below sm the plot takes its own row under the label: three
+            // columns in a 342 px row left the rail no width, so both dots
+            // sat on one point and the gap the figures name was not drawn
+            // (design pass, round 8).
             <div
               key={r.id}
-              className="grid grid-cols-[minmax(110px,190px)_1fr_auto] items-center gap-3"
+              className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(110px,190px)_1fr_auto] items-center gap-x-3 gap-y-1"
               role="img"
               aria-label={
                 measured
@@ -149,7 +153,7 @@ export function DumbbellRows({
 
               {/* The plot. A rail for the shared axis, one segment whose
                   length is the gap, and the two dots that bound it. */}
-              <div className="relative h-4">
+              <div className="relative h-4 max-sm:col-span-2 max-sm:order-last">
                 <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-foreground/[0.07]" />
                 {measured && (
                   <div

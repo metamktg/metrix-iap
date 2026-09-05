@@ -142,7 +142,7 @@ describe("tile metric selection persists per view", () => {
     // Portalled to document.body so .mx-kpi-tile's overflow:hidden cannot
     // clip it — so it is not a descendant of the render container.
     const dropdown = screen.getByTestId("kpi-metric-dropdown");
-    fireEvent.click(within(dropdown).getByRole("button", { name: /cpm/i }));
+    fireEvent.click(within(dropdown).getByRole("option", { name: /cpm/i }));
     expect(within(first.container).getAllByTestId("kpi-tile")[1].textContent).toContain("CPM");
     first.unmount();
     cleanup();

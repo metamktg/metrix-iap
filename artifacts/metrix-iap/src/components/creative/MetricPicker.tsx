@@ -32,7 +32,7 @@ export function MetricPickerButton({
           Customize metrics
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 max-h-[420px] overflow-y-auto">
+      <PopoverContent align="end" collisionPadding={8} className="w-80 max-h-[min(420px,var(--radix-popover-content-available-height))] overflow-y-auto">
         <div className="flex items-center justify-between mb-2">
           <span className={cn(TYPE.label, "text-muted-foreground/75")}>
             Metric tiles

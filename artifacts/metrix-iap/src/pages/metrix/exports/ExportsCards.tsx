@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAnalysisData, getStrategyData, getBriefBuilder, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildExportEnvelope } from "@/lib/jsonExport";
+import { analysisExportRows, analysisExportEmpty, analysisExportSummary } from "@/lib/analysisExport";
 import type { AdAccount } from "@/lib/data/seedTypes";
 import { SectionCard, CrossLink } from "../shared";
 import { FORMAT_LABEL } from "../reports/reportFormatLabels";
@@ -40,12 +41,13 @@ function NotYet({ icon: Icon, title, message, to, linkLabel }: { icon: typeof Ba
 export function AnalysisExportCard({ account }: { account: AdAccount }) {
   const seed = useMetrixSeed();
   const analysis = getAnalysisData(seed, account.id);
-  if (!analysis || analysis.performance_by_cell.length === 0) {
-    return <NotYet icon={BarChart3} title="Analysis" message="Run analysis first. There are no cell or variable rows to export yet." to="/app/analysis" linkLabel="Go to Analysis to run it" />;
+  const rows = analysisExportRows(account, analysis);
+  if (!analysis || analysisExportEmpty(rows)) {
+    return <NotYet icon={BarChart3} title="Analysis" message="Run analysis first. There are no ad, cell or variable rows to export yet." to="/app/analysis" linkLabel="Go to Analysis to run it" />;
   }
   const payload = buildExportEnvelope(account, {
-    performance_by_cell: analysis.performance_by_cell,
-    v3_variable_performance: analysis.v3_variable_performance,
+    performance_by_cell: rows.performance_by_cell,
+    v3_variable_performance: rows.v3_variable_performance,
   });
   return (
     <JsonExportCard
@@ -53,10 +55,7 @@ export function AnalysisExportCard({ account }: { account: AdAccount }) {
       desc="Everything the Analysis pages currently show for this account."
       filename={`${slug(account.name)}-analysis-export.json`}
       data={payload}
-      fieldSummary={[
-        `${analysis.performance_by_cell.length} cell performance rows`,
-        `${analysis.v3_variable_performance.length} variable performance rows`,
-      ]}
+      fieldSummary={analysisExportSummary(rows)}
     />
   );
 }

@@ -101,6 +101,177 @@ the amber "Use Metrix branding on first load" rule on Settings; raw ISO timestam
 on Provenance; the Exports grid mixing two card anatomies; Listen's two half-width single-number
 tiles; Alerts' thirteen amber boxes with raw source labels.
 
+## G. Design conformance pass (round 8 PR)
+
+The owner's flag of 2026-09-05 ("significant UI interface regressions … incorporate the UI/UX
+design interface into our validation process") opened this section. Its findings come from two
+sources: `check:controls` (new, `scripts/src/check-controls.mjs`), the first check in the bar to
+OPEN a control, and a read of the round 7 crawl (204 shots, both accounts, both widths) against
+the standard's checklist (`docs/resources/METRIX_DESIGN_CONFORMANCE_PASS_2026-09.md` §2). The
+pass itself, and what it must catch, is that document; this section is the register of what it
+caught.
+
+### G.1 Controls (`check:controls`, 404 controls across 204 visits)
+
+- **KPI tile metric picker unbounded, unreachable, unlabelled** (`KpiMetricDropdown`, every KPI
+  tile on Analysis Overview, Ad Performance, Budget, Avatars, the creative dialogs and the
+  drill-downs). The hand-portalled fixed menu was as tall as its catalog (633 px on Analysis
+  Overview): past the bottom of a 900 px window, past the fold at 390 px with no way to reach
+  the lower rows (the window scroll listener closed it on its own scroll), promised
+  `aria-haspopup="listbox"` and rendered a div with no role, and had no Escape. `confirmed`,
+  `fixed` (round 8): bounded to the viewport's room (below the trigger, or above it when there
+  is more room there), internal scroll, `role="listbox"` of `role="option"` rows in labelled
+  groups, named by the trigger through `aria-controls`, Escape closes and returns focus.
+- **Tile metric pickers on the shared Popover off the viewport at 390 px** (`MetricPickerTile`
+  and `RankSortBar` in `analysis/rankSort.tsx`, `MetricPickerButton` in
+  `creative/MetricPicker.tsx`): a 490 px catalog with no height bound and no collision padding
+  flipped above the Audience page's "Spend" tile and ran 34 px past the top of the screen.
+  `confirmed`, `fixed` (round 8): bounded to `--radix-popover-content-available-height` with an
+  internal scroll; `PopoverContent` and `HoverCardContent` in `artifacts/command-deck` default
+  `collisionPadding` to 8 so every popover in the product keeps off the edges.
+- Every other control (402 of 404, and the six native selects) opened, was populated, kept
+  inside the viewport, carried its promised role and closed on Escape at both widths on both
+  accounts.
+
+### G.2 The crawl, read against the standard
+
+Two reviewers read every shot of the round 7 crawl (Bookster: 51 routes × 2 widths; the no-cell
+manual account: 51 × 2), each against §2 of the standard and against §A to §E of this register,
+so a stub artifact or a row already filed was not filed twice. Their two reports, reconciled
+against the code, give the rows below. `fixed` rows carry round 8's PR; `round 9` rows are
+task #53's, filed here so nothing is dropped; `data` means the reviewer read an imported string,
+not app copy; `by design` names the decision.
+
+**Defects (a figure or a surface a reader cannot use)**
+
+- **Engagement Funnel and the Ad Performance funnel card read 3,074 purchases and 1,244
+  leads on the no-cell account where Account Overview reads 26 purchases and 4,323 leads**, and
+  no caption named the rows. Reconciled: the funnel reads the demographic export's own rows
+  (3 rows "Website purchases", $17,965, 3,074 results; 15 rows "Leads (form)", $8,935, 1,244),
+  Account Overview the ad summary's ($987 and 26 under "Website purchases", $17,417 and 2,847
+  under an unclassified result type). The two exports disagree on what they call the same ads;
+  neither figure is fabricated, and nothing on the page said which export it read. `fixed`: both
+  funnels carry their source on the first layer ("Read from the demographic export · 64% of
+  spend"), the share the reconciliation summary reports; the disagreement between the two
+  exports is the reconciliation waterfall's (task #34).
+- **Ad Performance's funnel read 31,542 impressions under a KPI tile reading 2,572,802**
+  (Bookster; the same on the Funnel page beside Budget), with no share between them. Same
+  cause, same fix: the export is 9% of the account's spend, and the line above the bars says so.
+- **Engagement Funnel's intent and conversion bands read "No … data in this window" on
+  Bookster while Audience read 78 registrations off the same rows.** Bookster's 62 rows carry
+  no Result type; their $701.29 and 31,542 impressions are exactly the summary's "Website
+  registrations completed" and nothing else's. `fixed`: `summaryEventForRows` names an untyped
+  export's event from the campaign summary when exactly one event owns its totals (never when
+  the rows carry a type, never "unknown", never when two events could); the stage says it was
+  "Read from the campaign summary's result type".
+- **Strategy Map at 390 px cut the hypotheses pane off under the "Next actions" strip** (the
+  P1 card's sentence, its More and its ISOLATES line unreachable; the page 1,264 px tall, so
+  not the capture). Round 6 gave the centre column `overflow-visible` below lg and left the
+  right pane scrolling inside itself. `fixed`: the pane flows in the page below lg.
+- **Creative DNA's formula cards at 390 px rendered two per row at 150 px**, badges clipped to
+  "VALIDATE" and "Med", the third card's title gone. `fixed`: `grid-cols-dashboard-3-md`, one
+  column on a phone (the round 6 token the pillar grid already uses).
+
+**Regressions, fixed in round 8**
+
+- Ad Performance's module chip row at 390 px clipped the Audience row's "Open" link at the
+  card edge (both accounts): the text column now yields before the link does.
+- Analysis Overview's "By result type" donut: five segments and no legend (`showLegend` only
+  under four). The legend renders always; Strategy Overview's hypothesis donut the same.
+- Audience's positioning map: "median" split by the C1 mark, "EXPLORE" and "AVOID" under C6
+  and C4 (the corner words sat where a low-results group lands). The quadrants are a legend
+  above the plot with what each means; the medians are a line under it with their values; the
+  in-plot words are gone. The quadrant labels speak the four verbs (Validate, Retire).
+- Audience's KPI row read the demographic export with no share of the account (Bookster's
+  "All conversions" scope over a 9% export): a source line under the tiles.
+- Engagement Funnel rendered the "vs previous stage / vs top of funnel" switch once per band
+  (three controls for one choice) and a "CTR comparison" module repeating the KPI row's three
+  rates: one switch above the bands, the ratio line the module alone carried kept.
+- Two amber notices on the Funnel page (the lower-funnel note and the video caveat): the video
+  caveat is a disclosure line.
+- Strategy Overview at 1440 px: "Hypothesis sta…" in a 200 px column, family-map labels cut to
+  "FRAME…" and "CONC…": the donut column is 260 px, the label column `minmax(112px,150px)`.
+- Audience at 390 px: "Share of spend vs. share of re…": a `SectionCard` title wraps below lg
+  and stays one line from lg up (the round 6 rule, applied to the module title). The dumbbell
+  rows drew one dot per row at 390 px (three grid columns left the rail no width, so both dots
+  sat on one point): below sm the plot takes a row of its own under the label.
+- MST centre's avatars read "Spend share 0% of top" for two avatars with no stat row: a share
+  needs a performance row.
+- MST › Creative Scan read "MAPPED TO PERFORMANCE 0 · HIGH MAPPING CONFIDENCE 0" before any
+  scan, where Creative › Creative Scan reads a dash: a dash until a cell carries a grade.
+- Creative › Creative Scan read "LIBRARY ASSETS 9" for nine concept cells with no asset, and
+  rendered a five-column table header over its empty state: assets are staged files, the checks
+  are chips inside the empty state.
+- The Analysis centre's export row counted every run's variable rows (606 for a run of 126) and
+  no ads; the Exports page card and Exports › Analysis read "Run analysis first" on an account
+  whose run completed (the engine writes no cell library). One read, `lib/analysisExport.ts`:
+  cells when the importer wrote them, else one row per ad with performance, and the current
+  run's variable rows; empty only with no row at all.
+- Findings read "No intelligence data yet · Run the full IAP loop" on an account whose run
+  completed: it names the missing intelligence package (the analysis run does not produce one)
+  and links to Ad Performance.
+- Two "Full history" links on the Analysis centre (the hub's and the run card's): the hub's stays.
+- "Date range to analyze" read as a label with nothing under it: the chosen range sits beside it.
+- "READY FOR BRIEF 0" beside "DRAFT BRIEFS 16" on three Strategy pages: "Hypotheses ready for
+  brief" (the count is of hypotheses, and it was honest).
+- The four verbs, where round 7 left them: Ad Performance's tier chips (Explore · Avoid),
+  Strategy Overview's playbook lanes (SCALE NOW · EXPLORE · AVOID), Direction's "Validate +
+  avoid", the positioning map. The explore list folds into Validate, avoid is Retire, one
+  key (`bucketVerbKey`).
+- The status hub's input labels broke inside themselves at 390 px ("Nothing / staged"): a
+  label is one fragment; the detail wraps under it.
+
+**Filed for round 9 (task #53), confirmed**
+
+- First-layer prose over 220 characters: the Creative hub's brief cards (~300 characters, no
+  clamp), the Strategy Map's ISOLATES line (~500), Avatars' recommendation at 1440 (~560; the
+  390 px clamp holds), Direction's budget reallocation at 1440, Provenance's source-file values.
+- IAP Library: an amber "Map creative" chip on every one of 629 tiles; the count tile ("53 of
+  399") against the grid ("629") and the tab ("Creative cells 0" over 629 items); tiles with no
+  stats block beside tiles with one; stat labels and ad names clipped; three tile anatomies and
+  an orphan ⓘ (Bookster: tab 8, tile 4, "4 of 4", 15 without performance).
+- Creative builder: titles squeezed beside the GENERATED · HIGH badge; identifiers breaking
+  mid-word; raw GEN_BRIEF and GEN_ICP ids and CN_/FW_ chip codes where names exist (also
+  Communications, the Strategy Map and the Overview's pillar chips); "Generated 8/23/2026".
+- Report Builder: `onb_initiate_checkout`, `audience_network`, `PAIN_PROOF`; a paragraph
+  printed twice; hypothesis rows clipped mid-word; a sentence in the micro-label role; C2B three
+  times with nothing saying why. Reports "FORMATS pdf · google_doc · html"; Report History
+  `white_label`; Settings General "formats: pdf, google_doc, html"; Act queue `audience_network`
+  and "Cpm"; Provenance's stage keys and unformatted totals; the Action agent's table names.
+- Every section header carries two ⓘ that look the same (purpose and provenance).
+- Empty states whose action is prose only: Analysis and Strategy History, Sprints, Exports ›
+  Reports, the Report Builder's dead end, the Members header over no rows, Creative Scan's two
+  notices.
+- Layout: Avatars at 1440 scrolls ~2,150 px past its last module; Avatars and Settings General
+  at 390 squeeze text beside a right-hand slot; Analysis Overview's "Daily / trend" title and
+  the two adjacent ⓘ; the Library's view switcher and buttons at 390; the creative builder's
+  list before its detail at 390; the NBA rail's fourth tile cut with no fade at 1440.
+- Vocabulary and counts: Cross-Map named three ways; "concepts" 4 / 6 / 9 / 15 across four
+  pages; Alerts "ACTIVE ALERTS 1" over no alert; Listen's "→ Review Analysis →"; Exports' two
+  card anatomies; Placements' "V3 + C4E" (task #38); Budget's zero-result Checkouts dropped
+  while zero-result Trials stays; DNA's gene-loci axis caption; Strategy Overview's empty
+  pillar-coverage bars and one-segment donut; the MST centre's scope bar above the spine;
+  Avatars' "TOTAL SPEND $26,906.86" against Audience's "$26,907"; the accent border on one tile
+  per KPI row with no stated meaning.
+
+**Not defects**
+
+- "N/A - diagnostic, not creative test", "SCALE WINNERS", "ELIMINATE", "VALIDATE AT SCALE",
+  "AVOID / REBUILD", the Golden formula's em dash, the ISOLATES paragraphs' wording: `data`,
+  imported strategy and intelligence text, rendered as it arrived.
+- Creative DNA opens on "Unclassified result type" (no-cell) or "Checkouts initiated"
+  (Bookster) while its siblings open on "All conversions": `by design`, each surface lands on
+  the scope its own rows carry (`defaultScopeId`), and DNA's variable rows carry those events.
+- "Run analysis" dimmed on the Analysis centre, empty run lists, the GENERATED badge beside an
+  empty hub, "Objectives · Ecommerce + Lead Generation" on the run card: `stub artifact` (the
+  crawl's stubs answer `{}` for imports and runs); the objectives line is the run card's lens
+  label and is task #37's.
+- Provenance at 390 blank below ~6,000 px: the crawl's paint cap (§C).
+- Pages that passed at both widths on both accounts: Exports › Brief and › Strategy, Listen
+  › Recommendations, Report History, Settings › Billing and › Security; Bookster also Action
+  agent, Analysis and Strategy History, Exports › Analysis and › Reports, Listen › Signal,
+  Sprints, Updates.
+
 ## F. Rounds
 
 - **Round 5, data honesty** (B): DNA totals, funnel stages from result events, the Overview donut,
@@ -114,6 +285,7 @@ tiles; Alerts' thirteen amber boxes with raw source labels.
 - **Round 7, vocabulary and first layer** (D, E): the four verbs, the raw codes, the hypothesis
   titles, the MST strip, the double arrows, the glyph overload, the Reports hub merge. Every row
   carries its verdict (change-log 34); the Reports hub merge is held for the sweep's slice 5.
+  Shipped: PR #222, merged `0ca2cb15`, live on app.metrix.ad 2026-09-05 20:04Z (change-log 34, Live).
 
 Each round ships as one PR through the full bar (typecheck, the full app suite, the static gates,
 the five browser gates against the dev server, the em-dash guard), is merged on green, converged
