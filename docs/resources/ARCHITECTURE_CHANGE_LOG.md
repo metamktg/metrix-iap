@@ -1142,3 +1142,56 @@ hook through the one-statement-per-transaction runner: a plain `create index` ho
 running analysis first. Approved: drafted as commit d09cb6d on 2026-09-05 and held (PR #208, closed unmerged so the
 working branch stayed mergeable); approved by the owner in the final reconciliation of the same
 day (item 3 of `FINAL_RECONCILIATION_for_claude_code.md`) and re-applied as this entry's PR.
+
+## 27. The Execution Layer shell and the status hub, first on Analysis; stage timings on runs (2026-09-05, sweep slice 1, additive schema)
+
+**What changed.** Three new modules and one additive column.
+
+- `artifacts/metrix-iap/src/pages/metrix/StageLayout.tsx` is the shell every Execution Layer page
+  composes (sweep spec §3): header, spine, notice, status hub, execution card, direction rail,
+  content, explore, in that order, one column, `max-w-5xl`. The execution card always sits above
+  the rail; the hub always between the spine and the card. The gates stay outside it. At most one
+  notice renders; a second is dropped and reported in development.
+- `components/loop/StatusHub.tsx` renders `StatusHubModel` (`lib/loop/statusHub.ts`, §4): the
+  loop's vocabulary as row labels (Staged · Running · Completed · Failed · History), fragments only,
+  the run's warnings and its whole error behind `DetailReveal`. The in-flight row is `RunProgress`
+  (the engine's stage as the label, the percent only when reported), the elapsed time, and an ETA
+  only from evidence. A settled row arrives with `.mx-inline-toast` (a 160 ms fade and 4 px rise
+  from `@starting-style`, no keyframes, none under reduced motion).
+- `lib/loop/analysisEta.ts` (§4.3): the ETA is the median duration of this account's prior
+  successful runs comparable with the one in flight, comparability being the date-range preset
+  today (the spec's row-count band waits for staged files to carry row counts, §7.2); it reads
+  "usually about N min", never a countdown. With `stage_timings` on finished runs it names the
+  current stage once it has run past twice its usual duration here and past a 30 s floor.
+- `manual_analysis_runs.stage_timings jsonb` (schema, additive): `updateProgress` writes one
+  `{stage, pct, at}` per stage boundary, the whole list rewritten with every progress update in the
+  same UPDATE that carries the percentage, and `finishRun` forgets the in-process list. `AnalysisRun`
+  carries it (`StageTiming` in `openapi.yaml`, codegen regenerated). Rows from before the column
+  read null; live-Meta pulls have no stages.
+- The Analysis command centre renders through the shell. The card keeps the trigger and its
+  parameters (`AnalysisControls progressInHub`, its pre-flight reaching the hub through
+  `onStartingChange`); the rail moved below the run card; `CreativeNextStepNudge` no longer renders
+  on Analysis, its fact is one line in the hub's inputs row with the Creative link (§3.4).
+
+**Why.** Each stage page composed the same parts by hand in a different order with its own run
+card, history card and banner rules (spec §0); a run's state was readable only inside the run card,
+below the fold; the "usually finish within a few minutes" line on the card was a guess. The owner's
+reconciliation asked for a status hub on each page so users know where their runs, imports and ETAs
+stand (item 5, folded into each command centre), and for one contextual notice per page rather than
+a stack of banners (item 11).
+
+**What proves it.** `lib/loop/__tests__/analysisEta.test.ts` (median, comparability, stage
+durations, the slow-stage rule and its floor), `statusHub.test.ts` (the four rows from run and
+import records: inputs by class, the pre-flight, percent null when unreported, the failed row only
+while it is the latest thing that happened and what remains shown), `components/loop/__tests__/
+StatusHub.test.tsx` (the region, the labelled bar with `aria-valuenow` only when measured, the
+warnings and the error behind the reveal), `pages/metrix/__tests__/stage-layout.test.tsx` (slot
+order, one notice, the Analysis page's hub between spine and card and its rail after the card, no
+second progress bar), `api-server/src/lib/__tests__/analysisEngineStageTimings.test.ts` (the cell's
+three shapes, malformed entries dropped, append in order). The pinned Analysis tests keep their
+assertions, two of them scoped to their card because the hub now carries the same words above it.
+
+**How far it reaches.** Analysis only, on this slice; Strategy, Creative and MST move onto the shell
+in slice 3 with the base-run control, Listen, Reports and Exports in slice 5. The schema change is
+one nullable column, applied by the post-merge hook. The ETA rule is client-side and reads
+`listAnalysisRuns`, which the page already polls at 3 s while a run is in flight.

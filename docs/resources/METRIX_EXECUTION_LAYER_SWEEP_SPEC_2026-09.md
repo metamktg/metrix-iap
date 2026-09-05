@@ -169,7 +169,7 @@ interface StatusHubModel {
 
 | Stage | inputs | inFlight source | lastCompleted source | failed.retained |
 |---|---|---|---|---|
-| Analysis | staged imports by detected class (§7.2), the window, the objectives line | `listAnalysisRuns` (polled at 3 s while running, exists) with `progress_pct` and `progress_stage` | the latest `success` run: dates, `rows_ingested`, warning count, reconciliation state | "The last successful run's data is still shown" (§7.7) |
+| Analysis | staged imports by detected class (§7.2), the window (the run's objectives stay on the run card as its parameter line: the business model is an analysis lens, `check:cohort-reach`) | `listAnalysisRuns` (polled at 3 s while running, exists) with `progress_pct` and `progress_stage` | the latest `success` run: dates, `rows_ingested`, warning count, reconciliation state | "The last successful run's data is still shown" (§7.7) |
 | Strategy | the base Analysis run(s) from the selector (§5) | `getLatestGenerationRun(strategy)` (exists) with `progress_stage` | the latest success: pillars, hypotheses, model, `source_analysis_run_ids` | "The current strategy is unchanged" |
 | Creative | the base Strategy run from the selector (§5), staged creatives and their deconstruction state | `getLatestGenerationRun(briefs)` | the latest success: brief count by format, `source_generation_run_id` (new, §5.2) | "The current briefs are unchanged" |
 | MST | the brief set in use (latest successful briefs run) and matrix readiness | none | none | none |

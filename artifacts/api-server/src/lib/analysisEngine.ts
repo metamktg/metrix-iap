@@ -205,7 +205,50 @@ export type ManualAnalysisRun = {
   progress_pct: number;
   /** Human-readable label for the current pipeline stage. Empty string when idle or complete. */
   progress_stage: string;
+  /**
+   * One entry per stage boundary the run reached, in order, written with
+   * every progress update (sweep spec §7.7): the status hub's ETA rule
+   * names a stage that is taking longer than it usually does on this
+   * account from these. Null on rows written before the column existed
+   * and on live-Meta pulls, which have no stages.
+   */
+  stage_timings: StageTiming[] | null;
 };
+
+export type StageTiming = { stage: string; pct: number; at: string };
+
+/**
+ * The stage timings a jsonb cell carries: PostgREST hands the column back
+ * as a parsed array, an older client or a fixture may carry it as text,
+ * and a row written before the column existed carries null. Anything that
+ * is not an array of {stage, pct, at} reads as no timings, never as a
+ * throw: progress display is non-critical.
+ */
+export function stageTimingsFromRow(raw: unknown): StageTiming[] | null {
+  let value: unknown = raw;
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  if (!Array.isArray(value)) return null;
+  const out: StageTiming[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") continue;
+    const e = entry as Record<string, unknown>;
+    if (typeof e["stage"] !== "string" || typeof e["at"] !== "string") continue;
+    const pct = typeof e["pct"] === "number" ? e["pct"] : Number(e["pct"]);
+    out.push({ stage: e["stage"], pct: Number.isFinite(pct) ? pct : 0, at: e["at"] });
+  }
+  return out;
+}
+
+/** The timings after one more stage boundary: append, in order, never rewrite. */
+export function nextStageTimings(prev: readonly StageTiming[] | undefined, stage: string, pct: number, at: string): StageTiming[] {
+  return [...(prev ?? []), { stage, pct, at }];
+}
 
 export type CreativeLinkageSummary = {
   linked: number;
@@ -247,6 +290,7 @@ const runShape = (r: Row): ManualAnalysisRun => {
     objective_flags: parseJsonArray(r["objective_flags"]),
     progress_pct: typeof r["progress_pct"] === "number" ? Number(r["progress_pct"]) : 0,
     progress_stage: r["progress_stage"] ? String(r["progress_stage"]) : "",
+    stage_timings: stageTimingsFromRow(r["stage_timings"]),
   };
 };
 
@@ -325,6 +369,7 @@ async function synthesizeRunFromReportPulls(accountId: string): Promise<ManualAn
     objective_flags: null,
     progress_pct: 0,
     progress_stage: "",
+    stage_timings: null,
   };
 }
 
@@ -617,6 +662,7 @@ async function finishRun(
       finished_at: new Date().toISOString(),
     })
     .eq("id", runId);
+  stageTimingsInFlight.delete(runId);
   if (error) throw new Error(error.message);
 }
 
@@ -624,6 +670,15 @@ async function finishRun(
  * Fire-and-forget per-stage progress update.
  * Non-fatal: a progress write failure must never abort the analysis pipeline.
  */
+/**
+ * Stage boundaries reached so far, per run in flight in this process. The
+ * whole list is written with every progress update (one jsonb cell, one
+ * statement, the same UPDATE that carries the percentage), so the row
+ * always holds the run's timings up to its last sign of life and a reader
+ * never has to reassemble them. Forgotten when the run finishes.
+ */
+const stageTimingsInFlight = new Map<string, StageTiming[]>();
+
 async function updateProgress(runId: string, pct: number, stage: string): Promise<void> {
   // A stage boundary is a sign of life. The heartbeat interval cannot fire
   // while a synchronous stage holds the event loop, so the progress write
@@ -633,11 +688,14 @@ async function updateProgress(runId: string, pct: number, stage: string): Promis
   // the ceiling exists for. Guarded on 'running' so a reclaimed run's late
   // progress write updates nothing.
   touchRunHeartbeat("manual_analysis_runs", runId);
+  const at = new Date().toISOString();
+  const timings = nextStageTimings(stageTimingsInFlight.get(runId), stage, pct, at);
+  stageTimingsInFlight.set(runId, timings);
   try {
     const supabase = getSupabase();
     await supabase
       .from("manual_analysis_runs")
-      .update({ progress_pct: pct, progress_stage: stage, heartbeat_at: new Date().toISOString() })
+      .update({ progress_pct: pct, progress_stage: stage, heartbeat_at: at, stage_timings: timings })
       .eq("id", runId)
       .eq("status", "running");
   } catch {

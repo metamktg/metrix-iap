@@ -8,6 +8,7 @@
 import type { AnalysisRunDateRange } from './analysisRunDateRange';
 import type { AnalysisRunStatus } from './analysisRunStatus';
 import type { ReconciliationRow } from './reconciliationRow';
+import type { StageTiming } from './stageTiming';
 
 export interface AnalysisRun {
   id: string;
@@ -29,6 +30,8 @@ export interface AnalysisRun {
   creatives_total?: number | null;
   /** Ad names from staged creative assets that could not be matched to any ads row. */
   creatives_unlinked_names?: string[] | null;
+  /** One entry per pipeline stage boundary the run reached, in order, written with every progress update. Null on runs recorded before the column existed and on live-Meta pulls. The status hub's ETA rule reads the usual duration of each stage on this account from finished runs' entries. */
+  stage_timings?: StageTiming[] | null;
   /** Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues. */
   csv_warnings?: string[] | null;
   /** Objectives DERIVED from this run's ad result types whose required CSV column groups were present and were therefore assessed. Null on legacy runs recorded before objective-aware analysis. */
