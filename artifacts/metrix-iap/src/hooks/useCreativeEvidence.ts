@@ -36,15 +36,20 @@ export interface CreativeEvidence {
   layerPresent: boolean;
 }
 
-export function useCreativeEvidence(cellId: string | null | undefined): CreativeEvidence {
+export function useCreativeEvidence(
+  cellId: string | null | undefined,
+  /** The ad names an AD-level card stands for; the identity's second path when no cell matches (the library's mapped names otherwise). */
+  adNames?: readonly string[] | null,
+): CreativeEvidence {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
   const mst = getMST(seed, adAccountId);
+  const adNamesKey = adNames && adNames.length > 0 ? adNames.join("\u0001") : "";
   return useMemo(() => {
     const mapped = cellId ? mst?.local_book2_library?.find((c) => c.cell_id === cellId)?.mapped_ad_names ?? null : null;
-    const identity = adIdentityForCreative(account?.ads, cellId, mapped);
+    const identity = adIdentityForCreative(account?.ads, cellId, mapped && mapped.length > 0 ? mapped : adNamesKey ? adNamesKey.split("\u0001") : null);
     const ledger = analysis?.reconciliation?.ledger ?? [];
     const placementAccount = ledger.find((r) => r.scope === "account" && r.report_class === "placement" && r.metric === "amount_spent");
     return {
@@ -60,5 +65,5 @@ export function useCreativeEvidence(cellId: string | null | undefined): Creative
       variableSegments: analysis?.variable_segment_performance,
       layerPresent: Array.isArray(analysis?.ad_breakdowns) && (analysis?.ad_breakdowns?.length ?? 0) > 0,
     };
-  }, [account, analysis, mst, cellId]);
+  }, [account, analysis, mst, cellId, adNamesKey]);
 }

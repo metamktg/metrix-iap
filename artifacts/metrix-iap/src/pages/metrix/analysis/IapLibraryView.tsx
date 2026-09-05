@@ -42,12 +42,14 @@ import {
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
   StaleFocusNotice, PILL_ACTIVE, PILL_INACTIVE,
   SectionInfoIcon, InfoTooltip } from "../shared";
-import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
+import { scopeToSelection, useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
+import { adGrainPerformanceRows, type UnmeasuredField } from "@/lib/ad-grain-rows";
 import { RunScopePicker } from "@/components/analysis/RunSelector";
 import { BreakdownExplorer } from "@/components/analysis/BreakdownExplorer";
 import { listBreakdownDimensions } from "@/lib/data/kpiBreakdown";
 import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
-import { CreativeCard } from "@/components/creative/CreativeCard";
+import { CreativeCard, type CreativeCardData } from "@/components/creative/CreativeCard";
+import { CreativeExpandDialog } from "@/components/creative/CreativeExpandDialog";
 import { ConceptFamilyView } from "@/components/creative/ConceptFamilyView";
 import { cardFromCell, libraryCellById } from "@/lib/creative-assembly";
 import { demographicEmptyReasonFor, placementsEmptyReasonFor } from "@/lib/creative-empty-reasons";
@@ -65,7 +67,7 @@ import type { CreativeCardStats } from "@/components/creative/CreativeCard";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import type { SegmentId } from "@/lib/segment-analytics";
-import type { CellPerformanceRow, DemographicRow, PlacementRow, SeedIntentSummary } from "@/lib/data/seedTypes";
+import type { AdRecord, CellPerformanceRow, DemographicRow, PlacementRow, SeedIntentSummary } from "@/lib/data/seedTypes";
 import { CreativeLibraryDialog, ManualImportDialog } from "@/pages/metrix/ConnectAccountDialogs";
 import { CellCreativeUploadDialog } from "@/components/creative/CellCreativeUploadDialog";
 import { DeconstructionReviewQueue } from "@/components/creative/DeconstructionReviewQueue";
@@ -150,6 +152,9 @@ export function IapLibraryView() {
   const [tab, setTab] = useTabParam<Tab>("cells", TAB_IDS);
   const focus = useFocusParam();
   const [detail, setDetail] = useState<CellPerformanceRow | null>(null);
+  // An ad opened from the Ad copy tab's ad-grain cards: the same dialog the
+  // ad-level tiles open, joined through the ad's own name.
+  const [adDetail, setAdDetail] = useState<AdRecord | null>(null);
 
   // ── Concept highlight (fired by ConceptChip hover in other views) ────
   const [highlightedCell, setHighlightedCell] = useState<string | null>(null);
@@ -238,6 +243,28 @@ export function IapLibraryView() {
     [a, scopeRowsFn, filterByRun]
   );
 
+  // ── Ad-grain stand-in (lib/ad-grain-rows) ────────────────────────────
+  // A run the engine analysed writes no creative cell library, so the tiles,
+  // the top set's cell half and the breakdown read `performance_by_cell` as
+  // empty: 0 cells, $0, 0 purchases for a run with 586 ads and $1.4M behind
+  // it (Pure Path, 2026-09-05). The per-ad totals the seed ships on
+  // ads[].performance are the same quantities one grain down; when there
+  // are no cells they stand in, one row per ad, under the same result
+  // scope. They are the CURRENT run's totals, so they stand in under All
+  // time (which reads the current run) or a selection that includes it,
+  // never for an older run they cannot describe. The cards grid is
+  // untouched: it already renders every ad as a tile.
+  const currentRunId = a?.latest_analysis_run_id ?? null;
+  const adGrain = useMemo((): { rows: CellPerformanceRow[]; unmeasured: UnmeasuredField[] } => {
+    const noCells = (a?.performance_by_cell ?? []).length === 0;
+    const selectionCoversCurrent = runSelection.allTime || (currentRunId != null && runSelection.selectedRunIds.includes(currentRunId));
+    if (!a || !noCells || !selectionCoversCurrent) return { rows: [], unmeasured: [] };
+    const built = adGrainPerformanceRows(account?.ads);
+    return { rows: scopeRowsFn(built.rows, (r) => r["Result type"]), unmeasured: built.unmeasured };
+  }, [a, account, runSelection, currentRunId, scopeRowsFn]);
+  const tileGrain: "cell" | "ad" = adGrain.rows.length > 0 ? "ad" : "cell";
+  const tileRows = tileGrain === "ad" ? adGrain.rows : libCells;
+
   // ── Per-variable cost under the active scope (drawer chips, L-5) ─────
   // Run-scoped first: v3_variable_performance keeps one row per analysis
   // run, so summing it unscoped counts the same spend once per run.
@@ -248,7 +275,7 @@ export function IapLibraryView() {
     // already lands around (G-5/G-6). The event each figure belongs to is
     // named in the chip's title, so a landed number never passes for the
     // scope the reader selected.
-    const rows = scopeToRun(a?.v3_variable_performance ?? [], a?.latest_analysis_run_id ?? null);
+    const rows = scopeToSelection(a?.v3_variable_performance ?? [], runSelection, currentRunId);
     const acc = new Map<string, { spend: number; results: number; types: Set<string> }>();
     for (const r of resultScope.landRows(rows, (x) => x["Result type"]).rows) {
       const prev = acc.get(r.variable_id) ?? { spend: 0, results: 0, types: new Set<string>() };
@@ -268,7 +295,7 @@ export function IapLibraryView() {
       });
     }
     return out;
-  }, [a, resultScope]);
+  }, [a, resultScope, runSelection, currentRunId]);
 
   // ── Concept family groups (for "Group by concept" toggle) ────────────
   // Computed at component top-level so no hook rules are violated.
@@ -287,7 +314,10 @@ export function IapLibraryView() {
     for (const r of a?.performance_by_cell ?? []) if (r["Result type"]) set.add(r["Result type"]);
     return [...set];
   }, [account, a]);
-  const tileCatalog = useMemo(() => buildLibraryMetricCatalog(libCells, { scale: activeScope?.scale ?? null, label: activeScope?.label, events: accountEvents }), [libCells, activeScope, accountEvents]);
+  const tileCatalog = useMemo(
+    () => buildLibraryMetricCatalog(tileRows, { scale: activeScope?.scale ?? null, label: activeScope?.label, events: accountEvents, grain: tileGrain, unmeasured: adGrain.unmeasured }),
+    [tileRows, activeScope, accountEvents, tileGrain, adGrain.unmeasured],
+  );
   const tileCatalogIds = useMemo(() => tileCatalog.map((m) => m.id), [tileCatalog]);
   const {
     selected: savedTileIds, toggle: toggleTile, move: moveTile, reset: resetTiles,
@@ -375,10 +405,18 @@ export function IapLibraryView() {
           // Variable rows land where THEIR data is before a choice is made
           // (legacy imports stamped every variable row with one event); once
           // the reader chooses, an empty tab is an honest empty.
-          const variableLanding = resultScope.landRows(a.v3_variable_performance, (r) => r["Result type"]);
+          // Run-tagged rows under the page's selection first (All time is
+          // the current run): the Variables tab counted every generation
+          // (764 for a run of 382) beside DNA cards scoped to one, and the
+          // top-variable set doubled the same way.
+          const variableLanding = resultScope.landRows(scopeToSelection(a.v3_variable_performance, runSelection, currentRunId), (r) => r["Result type"]);
           const variables    = variableLanding.rows;
           const topCells     = filterByRun(filterRows(a.top_checkout_cells));
-          const topVariables = variableLanding.landed ? scopeRowsFn(a.top_checkout_variables, (r) => r["Result type"]) : filterRows(a.top_checkout_variables);
+          const topVariables = scopeToSelection(
+            variableLanding.landed ? scopeRowsFn(a.top_checkout_variables, (r) => r["Result type"]) : filterRows(a.top_checkout_variables),
+            runSelection,
+            currentRunId,
+          );
 
           // Ad copy tab: real cells that carry a mapped MST library primary
           // message. Real text only — cells without a library mapping (or
@@ -392,18 +430,72 @@ export function IapLibraryView() {
           // by the server (G6) — the tab says which, never "checkout".
           const topEvent = a.top_performers_event ?? null;
           const topEventLabel = topEvent ? eventLabel(topEvent.result_type) : null;
+          // The top set's cell half, one grain down: the ads that produced
+          // the ranked event, most results first, when the run has no cells.
+          const topAds: CellPerformanceRow[] = topCells.length === 0 && tileGrain === "ad" && topEvent
+            ? adGrain.rows.filter((r) => r["Result type"] === topEvent.result_type && r.Results > 0).sort((x, y) => y.Results - x.Results || x.cell_id.localeCompare(y.cell_id))
+            : [];
           const copyComponents = getCreativeComponents(seed, adAccountId);
           const hasCopyComponents = Boolean(copyComponents && copyComponents.coverage.ads_with_copy > 0);
           const rollupScoped = scopeRollupRows(scopeToRun(a.concept_rollup ?? [], a.latest_analysis_run_id ?? null), activeScope);
+          // Ad copy one grain down: the primary text each ad ran with, as the
+          // export carried it, when no cell has a library message. Read
+          // against the ad's own totals under the same scope as the tiles.
+          const adCopyByName = new Map<string, AdRecord>();
+          for (const ad of account?.ads ?? []) {
+            if (ad.creative?.primary_text && !adCopyByName.has(ad.ad_name)) adCopyByName.set(ad.ad_name, ad);
+          }
+          const adCopyRows: CellPerformanceRow[] = copyCells.length === 0 && tileGrain === "ad"
+            ? adGrain.rows.filter((r) => adCopyByName.has(r.cell_id))
+            : [];
+          const adCardData = (ad: AdRecord): CreativeCardData => {
+            const p = ad.performance ?? null;
+            return {
+              conceptCode: ad.concept ?? ad.cell ?? "AD",
+              title: ad.ad_name,
+              adNames: [ad.ad_name],
+              assetUrl: ad.creative_asset_url ?? null,
+              assetFilename: ad.asset_filename ?? null,
+              tags: [],
+              metaAdId: ad.meta_ad_id ?? null,
+              adAccountId: cardCtx.metaAdAccountId,
+              primaryText: ad.creative?.primary_text ?? null,
+              secondaryText: ad.creative?.headline ?? null,
+              cta: ad.creative?.cta_type ?? null,
+              copySource: ad.creative ? ad.creative.source : null,
+              description: ad.creative?.description ?? null,
+              linkDestination: ad.creative?.link_destination ?? null,
+              mediaName: ad.creative?.image_name ?? ad.creative?.video_name ?? null,
+              stats: p
+                ? {
+                    spend: p.spend,
+                    results: p.results,
+                    cpa: p.results > 0 && p.spend > 0 ? p.spend / p.results : null,
+                    ctrPct: p.impressions > 0 ? (p.link_clicks / p.impressions) * 100 : null,
+                    resultLabel: p.result_type ? eventLabel(p.result_type) : undefined,
+                  }
+                : undefined,
+            };
+          };
+          // The age × gender caveat is a finding about THIS import, not a
+          // fixture of the page: it shows only when demographic rows exist
+          // and none of them carries the ranked event's results. Pure Path's
+          // demographic rows carry 47,983 purchases and read the caveat anyway.
+          const demoRows = a.demographic_registration_signal ?? [];
+          const demoCarriesTopResults = topEvent != null && demoRows.some(
+            (r) => (r["Result type"] == null || r["Result type"] === topEvent.result_type) && (r.Results ?? 0) > 0,
+          );
+          const showDemographicCaveat = Boolean(topEventLabel) && demoRows.length > 0 && !demoCarriesTopResults
+            && (a.top_checkout_cells.length > 0 || a.top_checkout_variables.length > 0);
 
           const TABS: { id: Tab; label: string; count: number }[] = [
             { id: "cells",     label: "Creative cells",   count: cells.length },
-            { id: "copy",      label: "Ad copy",          count: copyCells.length },
-            { id: "top",       label: topEventLabel ? `Top performers · ${topEventLabel}` : "Top performers", count: topCells.length + topVariables.length },
+            { id: "copy",      label: "Ad copy",          count: copyCells.length || adCopyRows.length },
+            { id: "top",       label: topEventLabel ? `Top performers · ${topEventLabel}` : "Top performers", count: topCells.length + topAds.length + topVariables.length },
             { id: "variables", label: "Variable performance", count: variables.length },
             // Breakdown: dimension × metric × chart cross-tab (Nocturne
             // "Metrix v1" design). Count = dimensions actually backed by rows.
-            { id: "breakdown", label: "Breakdown",        count: listBreakdownDimensions(a).length },
+            { id: "breakdown", label: "Breakdown",        count: listBreakdownDimensions(a, tileGrain === "ad" ? { cellRows: tileRows, grain: "ad" } : {}).length },
             {
               id: "review",
               label: "Review queue",
@@ -650,7 +742,7 @@ export function IapLibraryView() {
               </div>
 
               <div className="px-6 py-5 space-y-4">
-                {(a.top_checkout_cells.length > 0 || a.top_checkout_variables.length > 0) && topEventLabel && (
+                {showDemographicCaveat && topEventLabel && (
                   <CaveatNote text={`${topEventLabel} results were not populated by age/gender. Demographic ${topEventLabel.toLowerCase()} claims remain directional based on spend and click quality, not result counts.`} />
                 )}
 
@@ -966,28 +1058,10 @@ export function IapLibraryView() {
                           </p>
                           <div className="grid grid-cols-dashboard-5-xl gap-3">
                             {adLevelAds.map((ad) => {
-                              const p = ad.performance ?? null;
                               return (
                                 <CreativeCard
                                   key={ad.ad_name}
-                                  data={{
-                                    conceptCode: ad.concept ?? ad.cell ?? "AD",
-                                    title: ad.ad_name,
-                                    assetUrl: ad.creative_asset_url ?? null,
-                                    assetFilename: ad.asset_filename ?? null,
-                                    tags: [],
-                                    metaAdId: ad.meta_ad_id ?? null,
-                                    adAccountId: cardCtx.metaAdAccountId,
-                                    stats: p
-                                      ? {
-                                          spend: p.spend,
-                                          results: p.results,
-                                          cpa: p.results > 0 ? p.spend / p.results : null,
-                                          ctrPct: p.impressions > 0 ? (p.link_clicks / p.impressions) * 100 : null,
-                                          resultLabel: p.result_type ? eventLabel(p.result_type) : undefined,
-                                        }
-                                      : undefined,
-                                  }}
+                                  data={adCardData(ad)}
                                   unmapped={!ad.creative_asset_url}
                                   demographic={[]}
                                   placements={[]}
@@ -1010,13 +1084,14 @@ export function IapLibraryView() {
                     Mid 50% / Bottom 25% tier within this same set — never
                     a fabricated grade. */}
                 {tab === "copy" && (<>
-                  {copyCells.length === 0 ? (
+                  {copyCells.length === 0 && adCopyRows.length === 0 ? (
                     <PendingState
                       title="No ad copy in selection"
-                      message="No creative cell in the current metric selection has mapped primary text yet."
+                      message={tileGrain === "ad" ? "No ad in the current metric selection carried primary text in its performance export." : "No creative cell in the current metric selection has mapped primary text yet."}
                       action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
                     />
                   ) : (() => {
+                    const copyGrainAd = copyCells.length === 0;
                     const conceptAngleByCellId = new Map<string, { conceptName: string; angleLabel: string }>();
                     for (const g of conceptGroups) {
                       for (const ag of g.angles) {
@@ -1028,7 +1103,9 @@ export function IapLibraryView() {
                       }
                     }
 
-                    const copyStats = copyCells.map((row) => ({ row, stats: aggStatsForCell(row.cell_id, cells) }));
+                    const copyStats = copyGrainAd
+                      ? adCopyRows.map((row) => ({ row, stats: aggStatsForCell(row.cell_id, adCopyRows) }))
+                      : copyCells.map((row) => ({ row, stats: aggStatsForCell(row.cell_id, cells) }));
                     // The tier is a percentile of the cell's rank metric
                     // WITHIN this set, on the scope's scale: cost per result
                     // (ascending) for a cost-per-result scope, link CTR
@@ -1079,11 +1156,12 @@ export function IapLibraryView() {
                         <div className="mx-module-head flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
                           <p className="text-label uppercase tracking-widest text-muted-foreground/75">Text assets</p>
                           <h3 className="text-title font-bold text-foreground">Meta ad copy, read against the same result</h3>
-                          <InfoTooltip content="Primary text for every cell in scope, so a copy pattern can be judged next to what it actually cost." />
+                          <InfoTooltip content={copyGrainAd ? "Primary text for every ad in scope as its performance export carried it, so a copy pattern can be judged next to what it actually cost. No creative cell in this run carries a library message." : "Primary text for every cell in scope, so a copy pattern can be judged next to what it actually cost."} />
                         </div>
                         <div className="grid grid-cols-dashboard-4-xl gap-3">
                           {copyStats.map(({ row, stats }) => {
-                            const lib = libraryCellById(mst, row.cell_id);
+                            const lib = copyGrainAd ? null : libraryCellById(mst, row.cell_id);
+                            const ad = copyGrainAd ? adCopyByName.get(row.cell_id) ?? null : null;
                             const tier = tierFor(row, stats);
                             const ctx = conceptAngleByCellId.get(row.cell_id);
                             const conceptLabel = ctx?.conceptName ?? lib?.book2_concept_name ?? row.book2_concept_name;
@@ -1091,7 +1169,7 @@ export function IapLibraryView() {
                               <button
                                 key={row.cell_id}
                                 type="button"
-                                onClick={() => setDetail(row)}
+                                onClick={() => (ad ? setAdDetail(ad) : setDetail(row))}
                                 data-testid={`ad-copy-card-${row.cell_id}`}
                                 className="rounded-xl border border-border/40 bg-foreground/[0.02] hover:border-primary/30 hover:bg-foreground/[0.04] active:bg-foreground/[0.06] transition-colors p-3.5 text-left flex flex-col gap-2.5 focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
                               >
@@ -1102,7 +1180,7 @@ export function IapLibraryView() {
                                   </span>
                                 </div>
                                 <p className="text-body italic text-foreground/90 leading-relaxed">
-                                  &ldquo;{lib?.primary_message}&rdquo;
+                                  &ldquo;{lib?.primary_message ?? ad?.creative?.primary_text}&rdquo;
                                 </p>
                                 <div className="mt-auto pt-2 border-t border-border/20 flex items-baseline justify-between gap-2 text-label text-muted-foreground/75">
                                   <span className="truncate">
@@ -1139,8 +1217,25 @@ export function IapLibraryView() {
                 {tab === "top" && (
                   <div className="space-y-5">
                     <div>
-                      <h3 className={cn(HEADING.h5, "mb-2")}>{topEventLabel ? `Top cells · ${topEventLabel}` : "Top cells"}</h3>
-                      {topCells.length ? (
+                      <h3 className={cn(HEADING.h5, "mb-2")}>{topAds.length ? (topEventLabel ? `Top ads · ${topEventLabel}` : "Top ads") : (topEventLabel ? `Top cells · ${topEventLabel}` : "Top cells")}</h3>
+                      {topAds.length ? (
+                        <div className="grid grid-cols-dashboard-5-xl gap-3" data-testid="top-ads-grid">
+                          {topAds.slice(0, 10).map((row) => {
+                            const ad = (account?.ads ?? []).find((x) => x.ad_name === row.cell_id);
+                            if (!ad) return null;
+                            return (
+                              <CreativeCard
+                                key={row.cell_id}
+                                data={adCardData(ad)}
+                                unmapped={!ad.creative_asset_url}
+                                demographic={[]}
+                                placements={[]}
+                                onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                              />
+                            );
+                          })}
+                        </div>
+                      ) : topCells.length ? (
                         <div className="grid grid-cols-dashboard-5-xl gap-3">
                           {uniqueCellRows(topCells).map((row) => (
                             <CreativeCard
@@ -1237,7 +1332,8 @@ export function IapLibraryView() {
                           </h3>
                         </div>
                         <div className="grid grid-cols-dashboard-4-xl gap-3">
-                          {rollupDnaFamilies(shownVariables, a?.latest_analysis_run_id ?? null, activeScope?.scale).map((f) => (
+                          {/* Rows are already under the page's run selection (scopeToSelection above); a second scope to the latest run would empty an older run the reader chose. */}
+                          {rollupDnaFamilies(shownVariables, null, activeScope?.scale).map((f) => (
                             <div
                               key={f.family}
                               role={f.top ? "button" : undefined}
@@ -1297,7 +1393,8 @@ export function IapLibraryView() {
                   <BreakdownExplorer
                     analysis={a}
                     catalog={tileCatalog}
-                    scopedCellRows={libCells}
+                    scopedCellRows={tileRows}
+                    cellGrain={tileGrain}
                     scopeNarrowed={!runSelection.allTime}
                     windowLabel={runSelection.allTime ? undefined : "active run selection"}
                   />
@@ -1308,6 +1405,16 @@ export function IapLibraryView() {
                   <DeconstructionReviewQueue accountId={adAccountId} />
                 )}
               </div>
+
+              {adDetail && (
+                <CreativeExpandDialog
+                  open
+                  onOpenChange={(v) => { if (!v) setAdDetail(null); }}
+                  data={adCardData(adDetail)}
+                  unmapped={!adDetail.creative_asset_url}
+                  onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                />
+              )}
 
               {/* ── Cell detail drawer ── */}
               {detail && (
@@ -1525,7 +1632,8 @@ export function IapLibraryView() {
                 metricId={drilldownMetricId}
                 catalog={tileCatalog}
                 analysis={a}
-                scopedCellRows={cells}
+                scopedCellRows={tileGrain === "ad" ? tileRows : cells}
+                cellGrain={tileGrain}
                 scopeNarrowed={!runSelection.allTime}
                 windowLabel={runSelection.allTime ? "full flight window" : "selected analysis run(s)"}
               />

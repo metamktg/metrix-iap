@@ -49,6 +49,13 @@ export const MANUAL_ONLY_CHECK_SCRIPTS: Record<string, string> = {
     "empty fallback; only reading the payload showed it either time. Exits 2 " +
     "(not 0) when no credential or no server, so nothing checked never reads as " +
     "a pass.",
+  "check:virtual-tables":
+    "opens the IAP Library on the fixture's 606-variable account and fails unless " +
+    "the virtualized Variables table renders rows in a REAL browser. jsdom has no " +
+    "layout, which is why the failure it guards (a header and no rows for every " +
+    "table past 50 rows, the virtualizer created in a child of its scroll " +
+    "container) passed every unit test. Needs a RUNNING dev server on 5178, the " +
+    "same constraint as check:friction; exits 2 when it cannot reach one.",
   "check:friction":
     "walks every route navTree.ts and App.tsx declare, for two fixture accounts " +
     "at 1440 and 390 px, and reports what a reader meets on the FIRST layer: " +

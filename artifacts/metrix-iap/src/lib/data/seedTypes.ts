@@ -893,6 +893,9 @@ export interface AdRecord {
     impressions: number;
     link_clicks: number;
     result_type: string | null;
+    /** Not shipped yet (2026-09-05); when absent the ad-grain rows say so rather than reading 0. */
+    reach?: number | null;
+    clicks_all?: number | null;
   } | null;
   /**
    * The ad's creative components, resolved across sources by precedence

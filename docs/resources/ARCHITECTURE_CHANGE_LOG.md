@@ -1403,3 +1403,109 @@ production, which spends a model call; the pack's shape and the supersede rule a
 the wiring typechecks. Not in this slice: the Audience segment-attribution gap the owner raised the
 same afternoon, planned as the next PR (task register: the engine writes demographic rows at
 ACCOUNT grain by construction).
+
+**Live (2026-09-05).** PR #217 merged at 15:04Z on a green run (f384f924). The workspace
+convergence's post-merge hook (merge ae1ab397) applied the schema at 15:05Z: "Applying Supabase
+schema: 259 statement(s), fingerprint 3d7901136139 (changed, previously 3f45559821b4)", "applied:
+259 statement(s) in 18 s", no lock, retry, wait or error line; the restarted API server listened on
+8080 at 15:06:03Z and warmed its seed in 66.9 s; all three workflows running. Read on production
+right after the apply (read-only SQL): the three columns present on `generation_runs`, every
+existing row null on all three, `metrix_schema_state` carrying the new fingerprint with 259
+statements. The publish of the converged workspace (deployment 329ef7e0) reported success and
+served the new build by 15:20Z: `index-BYLPxqvI.js`, the `StrategyCommandCenter` chunk importing
+`BaseRunPicker`, `GenerationRunRow`, `statusHub` and `StageLayout`, those chunks carrying "Base this
+run on", "Based on ·", "Strategy run" and "usually about"; the `CreativeCommandCenter` chunk sending
+`strategy_run_id`; `/api/healthz` 200 and `/api/metrix/auth/me` 401 through the router. Nothing on
+production has yet been generated from the new base control; the first press records its
+`source_analysis_run_ids` and window on the run's row.
+
+## 30. The IAP Library reads what the run wrote: ad-grain rows where there is no cell library, run-tagged rows under the page's selection, the virtualizer owned by the table, evidence through an ad's own name (2026-09-05, UI, one seed filter flagged)
+
+**What changed.** Seven surfaces on the IAP Library and the creative dialog showed nothing for
+Pure Path's current run (`8148628c`, 21,034 ad rows, 382 variables, 20,618 per-ad demographic
+rows, 586 ads and $1.38M under "Website purchases"), and each had its own cause:
+
+1. **The tiles read 0 cells · $0 · 0 purchases.** They summed `performance_by_cell`, which only
+   the importer writes; the engine writes no cell library. `lib/ad-grain-rows.ts`
+   (`adGrainPerformanceRows`) turns the seed's `ads[].performance` into one cell-shaped row per
+   ad, and the view stands those rows in for the tiles, the Breakdown tab, the tile drill-down
+   and the Top performers' cell half when the run has no cells and the selection covers the
+   current run (the per-ad totals are the current run's; an older run they cannot describe gets
+   no stand-in). The count tile reads "Ads with performance" with the reason in its sub-line
+   (`LibraryCatalogScope.grain`); what the per-ad totals do not carry (reach, clicks (all)) is
+   named (`unmeasured`) and those tiles read a dash with "not carried by this account's per-ad
+   totals", never the 0 the rows hold. No rows at all is a dash on the count, spend and results
+   tiles, not a measured zero (`buildLibraryMetricCatalog`). Cost per result needs spend as well
+   as results, everywhere it is derived here.
+2. **The Variables tab counted 764, the DNA card 382.** The tab read every generation of
+   `v3_variable_performance`; the card scoped to the current run. `scopeToSelection(rows,
+   selection, currentRunId)` in `lib/run-scope.ts` is the one rule: All time reads the current
+   run, a narrowed selection keeps the chosen runs, untagged rows always stay. The tab, the
+   family filter note, the table, the top-variable set and the drawer chips' per-variable cost all
+   read through it; the DNA rollup gets pre-scoped rows (a second scope to the latest run would
+   empty an older run the reader chose).
+3. **The table under the card was empty.** `VirtualTableBody` created its `useVirtualizer` as a
+   CHILD of the scroll container: React attaches a host ref after the descendants' layout effects
+   have run, so `getScrollElement()` returned null in the virtualizer's own effect, it subscribed
+   to nothing, and the only render had no range. Every table past 50 rows showed a header and no
+   rows until a sort click re-ran the effect. The virtualizer is created by `VariableTable` and
+   `CellTable` (`useTableVirtualizer`, `enabled` past the threshold, `initialRect` at the shell's
+   520 px so the first render carries a page) and handed to the body. jsdom has no layout, so
+   `scripts/src/visual/check-virtual-tables.mjs` (`check:virtual-tables`, read-only, needs the dev
+   server) opens the fixture's 606-variable account and fails unless rows render.
+4. **The DNA card's best read was $0.00 CPA.** A token with results and no spend divided 0 by its
+   results. `rollupDnaFamilies` gives no cost per result without spend; the family's best read is
+   the lowest cost among tokens that spent, else the most results without a cost.
+5. **The Breakdown tab said "No segment data" for five backed dimensions.** It opened on the
+   catalog's first metric, `lib_cells`, a count no segment can carry. `isBreakdownMetric` in
+   `kpiBreakdown.ts` probes `metricValueFromTotals` and the explorer offers only metrics it can
+   compute; with ad-grain rows the cell dimension is "Ad" and "Concept code" exists only when an
+   ad carries one (`listBreakdownDimensions(a, { cellRows, grain })`).
+6. **The Ad copy tab was empty.** It rendered cells whose MST library row has a primary message,
+   and nothing else. With no such cell, it renders the ads whose export carried primary text
+   (`ads[].creative`), tiered on the same percentile rule against the ad's own totals, each card
+   opening the creative dialog for that ad.
+7. **The creative dialog said "No mapped ads" and "No demographic data" for an ad with 20
+   demographic rows.** Ad-level tiles carry `conceptCode` "AD" (every ad without a cell code
+   shares it) and the dialog resolved identity by that code. `CreativeCardData.adNames` names the
+   ad the card stands for; `useCreativeEvidence(cellId, adNames)` takes it as the identity's
+   second path (`adIdentityForCreative`'s mapped-names branch), so the per-ad demographic and
+   placement rows, the ledger funnel and the evidence tab resolve through the ad's Meta ad ids.
+   The media `layoutId` is keyed the same way (`creativeLayoutKey`), so 970 ad tiles no longer
+   share one shared-layout key.
+8. **The caveat "Purchases results were not populated by age/gender" showed above rows carrying
+   47,983 purchases.** It fired whenever a top set existed. It now shows only when demographic
+   rows exist and none carries the ranked event's results.
+
+**Flagged, backend.** One filter in `metrixSeedAssembly.ts`: the creative-asset `manual_imports`
+read for the auto-heal excludes `status = 'uploading'`. An in-flight chunked session that never
+completed ("(car detail) hook 1 - Copy.mp4", 26.9 MB) carried an ad name, so every seed build ran
+the creative-link auto-heal for an account whose only creative import had no bytes. The schema is
+untouched; `ads[].performance` does NOT gain reach or clicks (all) in this change (the fixture
+drift check would fail until refreshed on the workspace); the client type declares them optional
+and the ad-grain rows read them when a later seed ships them.
+
+**What proves it.** `ad-grain-rows.test.ts` (rows, unmeasured fields, no cost without spend,
+overrides and duplicates skipped). `run-scope.test.ts` (`scopeToSelection` under All time, a
+narrowed run, two runs, no current run). `libraryMetricCatalog.test.ts` (dash on empty, the ad
+label and sub, unmeasured tiles, cost needs spend). `kpiBreakdown.test.ts` (`isBreakdownMetric`,
+the ad-grain dimensions and bar labels). `creative-dna-scale.test.ts` (zero-spend tokens).
+`tables-virtualizer.test.tsx` (the virtualizer is created by the table, asks for the shell's
+scroll div and gets it, enabled only past the threshold, renders what it returns).
+`useCreativeEvidence.test.tsx` (identity through the ad's name, then its ids). `library-ad-grain
+.test.tsx` renders the fixture's no-cell account with a synthetic registry: the tiles named as
+ads and never $0, the Variables tab counting the current run only with the card agreeing, no
+$0.00 best read, the top sets counted once with the ads that produced the event, the Ad copy tab
+from the ads' own text opening a dialog whose Evidence tab has mapped ads, the Breakdown tab
+opening on a computable metric with "Ad" as a dimension, the caveat silent when the demographic
+rows carry results and shown when they do not. `check:virtual-tables`: 19 rows rendered at 1440
+and 390 px on the 606-variable account, scroller 520 px (before the fix: 0 rows, scroller 41 px,
+the header alone, reproduced with the same script).
+
+**How far it reaches.** UI only apart from the seed's import filter. Accounts WITH a cell library
+are unchanged: the ad-grain stand-in exists only when `performance_by_cell` is empty. The
+Variables tab under a narrowed selection now shows that selection's rows (it showed every
+generation before). The tile catalog's count/spend/results tiles read a dash on empty rows
+wherever the catalog is built. The `RunScopePicker`'s history is unaffected. Not in this change:
+the Audience segment drill-down's account-grain rows (task #47, the engine writes demographic
+rows at ACCOUNT grain), and the Ad Performance page, which reads its own summary endpoint.

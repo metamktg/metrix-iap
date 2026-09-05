@@ -1493,9 +1493,13 @@ export async function assembleMetrixSeed(): Promise<Row> {
     // Metadata columns ONLY — never the bytea content (see selectAll's note:
     // select("*") here pulled the entire creative library's file bytes into
     // every seed build and hung production once the library grew real).
+    // In-flight chunked sessions (status 'uploading') are not creatives yet:
+    // one that never completed ("(car detail) hook 1", 26.9 MB, Pure Path)
+    // carried an ad name, so every seed build ran the auto-heal for an
+    // account whose only creative import had no bytes to link.
     selectAll(
       "manual_imports",
-      (q) => q.eq("kind", "creative_asset").not("ad_names", "is", null).order("id"),
+      (q) => q.eq("kind", "creative_asset").neq("status", "uploading").not("ad_names", "is", null).order("id"),
       "id, account_id, kind, filename, ad_names, status",
     ).catch(() => [] as Row[]),
     // Creative deconstruction classifications (review queue + badges).

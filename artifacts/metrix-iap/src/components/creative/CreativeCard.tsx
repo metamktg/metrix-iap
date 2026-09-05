@@ -20,7 +20,7 @@ import { cn } from "@workspace/command-deck/lib/utils";
 import { ImageOff, Maximize2, Upload, AlertTriangle } from "lucide-react";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 import { motion } from "framer-motion";
-import { CreativeExpandDialog } from "./CreativeExpandDialog";
+import { CreativeExpandDialog, creativeLayoutKey } from "./CreativeExpandDialog";
 import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { TYPE } from "@/pages/metrix/typography";
 
@@ -69,7 +69,16 @@ export interface CreativeCardData {
   metaAdId?: string | null;
   /** Numeric Meta ad account id (meta_ad_account_id) — NOT the internal account id. */
   adAccountId?: string | null;
+  /**
+   * The ad names this card stands for when it is an AD, not a cell (the
+   * Library's ad-level tiles carry conceptCode "AD"). Evidence joins through
+   * them: the ads registry rows of these names, then their Meta ad ids.
+   * Without it a dialog opened from an ad tile looked up cell "AD", found
+   * no ads, and said "No mapped ads" for an ad with 20 demographic rows.
+   */
+  adNames?: string[];
 }
+
 
 // ─── Formatting ───────────────────────────────────────────────────────
 
@@ -325,7 +334,7 @@ export function CreativeCard({
            * on the layout participant and the hover transform overwrites the
            * layout transform mid-flight.
            */}
-          <motion.div layoutId={`creative-media-${data.conceptCode}`} className="absolute inset-0">
+          <motion.div layoutId={`creative-media-${creativeLayoutKey(data)}`} className="absolute inset-0">
             {/* Asset or placeholder (pointer-events-none so clicks bubble to root) */}
             <div className="absolute inset-0 transition-transform duration-200 will-change-transform group-hover:scale-[1.04] pointer-events-none">
               <CreativeVisual data={data} />

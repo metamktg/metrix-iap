@@ -8,6 +8,7 @@ import {
   buildManagerBreakdown, buildAccountBreakdown, computeOverlapWindow,
   listBreakdownDimensions, dimensionMetricRestriction, EMPTY_TOTALS,
   lowerIsBetter,
+  isBreakdownMetric,
 } from "../kpiBreakdown";
 import type { AdAccount, AnalysisData, CellPerformanceRow } from "../seedTypes";
 
@@ -227,5 +228,46 @@ describe("sortBreakdownRows", () => {
     expect(desc.map((r) => r.key)).toEqual(["Concept Two", "Concept One", "x"]);
     const asc = sortBreakdownRows(withNa, "asc");
     expect(asc.map((r) => r.key)).toEqual(["Concept One", "Concept Two", "x"]);
+  });
+});
+
+// ─── The explorer's metric menu and the ad-grain dimensions ─────────────
+
+describe("isBreakdownMetric", () => {
+  it("a count of cells cannot be read off a segment; the library's other tiles can", () => {
+    expect(isBreakdownMetric("lib_cells")).toBe(false);
+    expect(isBreakdownMetric("lib_spend")).toBe(true);
+    expect(isBreakdownMetric("lib_results")).toBe(true);
+    expect(isBreakdownMetric("lib_cpa")).toBe(true);
+    expect(isBreakdownMetric("lib_link_ctr")).toBe(false);
+    expect(isBreakdownMetric("spend")).toBe(true);
+    expect(isBreakdownMetric("cpa_blended")).toBe(true);
+    expect(isBreakdownMetric("result:purchase")).toBe(true);
+    expect(isBreakdownMetric("not_a_metric")).toBe(false);
+  });
+});
+
+describe("listBreakdownDimensions · ad grain", () => {
+  const adRows = [
+    { ...analysis.performance_by_cell[0]!, cell_id: "Ad one", book2_concept_name: "No concept code", concept_variable: undefined },
+    { ...analysis.performance_by_cell[0]!, cell_id: "Ad two", book2_concept_name: "No concept code", concept_variable: undefined },
+  ];
+  it("labels the cell dimension Ad and offers no concept dimension when no ad carries a code", () => {
+    const dims = listBreakdownDimensions({ ...analysis, performance_by_cell: [] }, { cellRows: adRows, grain: "ad" });
+    expect(dims.find((d) => d.id === "cell")!.label).toBe("Ad");
+    expect(dims.some((d) => d.id === "concept")).toBe(false);
+  });
+  it("offers Concept code once one ad carries a code", () => {
+    const dims = listBreakdownDimensions({ ...analysis, performance_by_cell: [] }, { cellRows: [{ ...adRows[0]!, concept_variable: "C2" }], grain: "ad" });
+    expect(dims.find((d) => d.id === "concept")!.label).toBe("Concept code");
+  });
+  it("without ad rows a run with no cells has neither dimension, as before", () => {
+    const ids = listBreakdownDimensions({ ...analysis, performance_by_cell: [] }).map((d) => d.id);
+    expect(ids).not.toContain("cell");
+    expect(ids).not.toContain("concept");
+  });
+  it("an ad row's bar is labelled by the ad alone, never 'Ad one · No concept code'", () => {
+    const rows = buildAccountBreakdown({ ...analysis, performance_by_cell: [] }, "cell", "spend", adRows);
+    expect(rows.map((r) => r.label).sort()).toEqual(["Ad one", "Ad two"]);
   });
 });

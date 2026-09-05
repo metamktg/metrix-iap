@@ -174,6 +174,32 @@ export function usePersistedRunScope(
   return [selection, setSelection];
 }
 
+/**
+ * Run-tagged rows (variable_performance, concept_rollup, the top sets) under
+ * a page's run selection. "All time" reads the account's CURRENT run (slice
+ * 2: an older generation is history, not a second copy of the same spend),
+ * so it is `scopeToRun(rows, currentRunId)`; a narrowed selection keeps the
+ * rows of the chosen runs. Rows with no run tag are pre-migration history
+ * and are always kept, as everywhere else.
+ *
+ * Why this exists: the IAP Library's Variables tab counted every generation
+ * (764 for an account whose run has 382 variables) while the DNA cards next
+ * to it scoped to the current run, and the top-variable set doubled the
+ * same way. One rule for all of them, here.
+ */
+export function scopeToSelection<T extends { manual_analysis_run_id?: string | null }>(
+  rows: T[],
+  selection: RunSelectorValue,
+  currentRunId: string | null | undefined,
+): T[] {
+  if (selection.allTime) {
+    if (!currentRunId) return rows;
+    return rows.filter((r) => r.manual_analysis_run_id == null || r.manual_analysis_run_id === currentRunId);
+  }
+  const chosen = new Set(selection.selectedRunIds);
+  return rows.filter((r) => r.manual_analysis_run_id == null || chosen.has(r.manual_analysis_run_id));
+}
+
 /** Per concept code, the set of analysis run ids (plus "null" for
  *  untagged/legacy rows) whose rollup contributed to that concept. */
 export function getConceptRunIds(a: AnalysisData | null | undefined): Map<string, Set<string | null>> {

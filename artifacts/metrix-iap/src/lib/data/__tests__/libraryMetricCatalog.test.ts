@@ -336,3 +336,41 @@ describe("buildLibraryMetricCatalog · partial coverage is never summed", () => 
     expect(atc.sub).toBe("select one event to see funnel metrics");
   });
 });
+
+// ─── Grain and honesty of the count / spend / results tiles ─────────────
+describe("buildLibraryMetricCatalog · grain and empty rows", () => {
+  it("no rows is a dash, not a measured zero", () => {
+    const catalog = buildLibraryMetricCatalog([]);
+    const byId = Object.fromEntries(catalog.map((m) => [m.id, m]));
+    expect(byId.lib_cells!.value).toBeNull();
+    expect(byId.lib_cells!.formatted).toBe("–");
+    expect(byId.lib_spend!.formatted).toBe("–");
+    expect(byId.lib_results!.formatted).toBe("–");
+    expect(byId.lib_cpa!.formatted).toBe("–");
+  });
+
+  it("ad grain names the count tile after ads and says why", () => {
+    const catalog = buildLibraryMetricCatalog([makeRow({ cell_id: "Ad one" }), makeRow({ cell_id: "Ad two" })], { grain: "ad" });
+    const cells = catalog.find((m) => m.id === "lib_cells")!;
+    expect(cells.label).toBe("Ads with performance");
+    expect(cells.value).toBe(2);
+    expect(cells.sub).toMatch(/no creative cell library/);
+    expect(catalog.find((m) => m.id === "lib_spend")!.formatted).not.toBe("–");
+  });
+
+  it("an unmeasured field reads a dash with the reason, never the zero the rows hold", () => {
+    const catalog = buildLibraryMetricCatalog([makeRow({ Reach: 0, "Clicks (all)": 0 })], { grain: "ad", unmeasured: ["reach", "clicks_all"] });
+    const reach = catalog.find((m) => m.id === "lib_reach")!;
+    const clicks = catalog.find((m) => m.id === "lib_clicks_all")!;
+    expect(reach.value).toBeNull();
+    expect(reach.formatted).toBe("–");
+    expect(reach.sub).toMatch(/per-ad totals/);
+    expect(clicks.value).toBeNull();
+    expect(catalog.find((m) => m.id === "lib_frequency")).toBeUndefined();
+  });
+
+  it("cost per result needs spend as well as results", () => {
+    const catalog = buildLibraryMetricCatalog([makeRow({ "Amount spent (USD)": 0, Results: 4 })]);
+    expect(catalog.find((m) => m.id === "lib_cpa")!.value).toBeNull();
+  });
+});

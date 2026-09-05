@@ -88,3 +88,32 @@ describe("rollupDnaFamilies · communication scale", () => {
     expect(fam!.top!.basis).toBe("most_spend");
   });
 });
+
+// ─── No spend, no cost verdict ───────────────────────────────────────────
+// A token whose rows carried results but no spend read "$0.00 CPA · best
+// read" on Pure Path's DNA card: the ratio was 0 ÷ results. Cost per result
+// needs spend behind it, so the family's best read goes to a token that
+// actually cost something, or to the most results when none did.
+describe("rollupDnaFamilies · zero-spend tokens", () => {
+  it("a token with results and no spend has no cost per result and is never the lowest-cost best read", () => {
+    const rows = [
+      row({ variable_id: "HK_FREE", variable_family: "hook", "Amount spent (USD)": 0, Results: 40, "Result type": "Website purchases" }),
+      row({ variable_id: "HK_PAID", variable_family: "hook", "Amount spent (USD)": 500, Results: 20, "Result type": "Website purchases" }),
+    ];
+    const [fam] = rollupDnaFamilies(rows, null, "cost_per_result");
+    expect(fam!.top?.variableId).toBe("HK_PAID");
+    expect(fam!.top?.cpa).toBe(25);
+    expect(fam!.top?.basis).toBe("lowest_cost_per_result");
+  });
+
+  it("when no token in the family spent anything, the best read is by results and carries no cost", () => {
+    const rows = [
+      row({ variable_id: "HK_A", variable_family: "hook", "Amount spent (USD)": 0, Results: 4, "Result type": "Website purchases" }),
+      row({ variable_id: "HK_B", variable_family: "hook", "Amount spent (USD)": 0, Results: 9, "Result type": "Website purchases" }),
+    ];
+    const [fam] = rollupDnaFamilies(rows, null, "cost_per_result");
+    expect(fam!.top?.variableId).toBe("HK_B");
+    expect(fam!.top?.cpa).toBeNull();
+    expect(fam!.top?.basis).not.toBe("lowest_cost_per_result");
+  });
+});

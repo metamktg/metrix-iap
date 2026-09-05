@@ -29,7 +29,7 @@ import { RankedBars } from "@/components/charts/RankedBars";
 import { MARK, SERIES } from "@/components/charts/chartTokens";
 import { chartTooltipRenderer } from "@/components/charts/chartChrome";
 import {
-  buildAccountBreakdown, listBreakdownDimensions, dimensionMetricRestriction,
+  buildAccountBreakdown, listBreakdownDimensions, dimensionMetricRestriction, isBreakdownMetric,
   sortBreakdownRows, lowerIsBetter,
   type BreakdownRow,
 } from "@/lib/data/kpiBreakdown";
@@ -296,12 +296,21 @@ export interface BreakdownExplorerProps {
   /** True when a narrowed run selection is active — non-cell dimensions withheld (modal rule). */
   scopeNarrowed?: boolean;
   windowLabel?: string;
+  /** What `scopedCellRows` are: creative cells (default) or the per-ad rows stood in for a run without a cell library. */
+  cellGrain?: "cell" | "ad";
 }
 
 export function BreakdownExplorer({
-  analysis, catalog, scopedCellRows, scopeNarrowed = false, windowLabel,
+  analysis, catalog, scopedCellRows, scopeNarrowed = false, windowLabel, cellGrain = "cell",
 }: BreakdownExplorerProps) {
-  const allDimensions = useMemo(() => listBreakdownDimensions(analysis), [analysis]);
+  const allDimensions = useMemo(
+    () => listBreakdownDimensions(analysis, cellGrain === "ad" ? { cellRows: scopedCellRows ?? [], grain: "ad" } : {}),
+    [analysis, cellGrain, scopedCellRows],
+  );
+  // Only metrics a segment's totals can carry: the Library's first tile is a
+  // COUNT of cells, which no segment has, and the explorer used to open on
+  // it with every row null.
+  const metricOptions = useMemo(() => catalog.filter((m) => isBreakdownMetric(m.id)), [catalog]);
   const dimensions = useMemo(
     () => (scopeNarrowed ? allDimensions.filter((d) => d.id === "cell" || d.id === "concept") : allDimensions),
     [allDimensions, scopeNarrowed],
@@ -315,12 +324,12 @@ export function BreakdownExplorer({
     }
   }, [dimensions, dimensionId]);
 
-  const [metricId, setMetricId] = useState<string>(catalog[0]?.id ?? "spend");
+  const [metricId, setMetricId] = useState<string>(metricOptions[0]?.id ?? "spend");
   useEffect(() => {
-    if (catalog.length > 0 && !catalog.some((m) => m.id === metricId)) {
-      setMetricId(catalog[0].id);
+    if (metricOptions.length > 0 && !metricOptions.some((m) => m.id === metricId)) {
+      setMetricId(metricOptions[0].id);
     }
-  }, [catalog, metricId]);
+  }, [metricOptions, metricId]);
 
   const [form, setForm] = useState<ChartForm>("bar");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -372,7 +381,7 @@ export function BreakdownExplorer({
           label="Metric"
           value={metricId}
           onChange={setMetricId}
-          options={catalog.map((m) => ({ id: m.id, label: m.label }))}
+          options={metricOptions.map((m) => ({ id: m.id, label: m.label }))}
         />
         <ChartFormToggle form={form} onChange={setForm} />
         <button

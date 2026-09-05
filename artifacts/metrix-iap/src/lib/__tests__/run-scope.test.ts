@@ -6,7 +6,7 @@
 // specific-run and multi-run branches directly).
 
 import { describe, it, expect } from "vitest";
-import { getConceptRunIds, cellInRunScope } from "../run-scope";
+import { getConceptRunIds, cellInRunScope, scopeToSelection } from "../run-scope";
 import type { AnalysisData } from "../data/seedTypes";
 import { ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
 
@@ -137,5 +137,37 @@ describe("cellInRunScope · explicit concept hint", () => {
   it("falls back to the cell_id when no hint is supplied", () => {
     expect(cellInRunScope(runIds, selectRun1, "C2B", null)).toBe(true);
     expect(cellInRunScope(runIds, selectRun1, "C4E", null)).toBe(false);
+  });
+});
+
+// ─── scopeToSelection: run-tagged rows under a page's run selection ──────
+// The Variables tab counted every generation (764 for a run of 382) beside
+// DNA cards scoped to one; the rule is now one function for every consumer.
+
+describe("scopeToSelection", () => {
+  const rows = [
+    { variable_id: "HK_A", manual_analysis_run_id: "run-new" },
+    { variable_id: "HK_A", manual_analysis_run_id: "run-old" },
+    { variable_id: "HK_B", manual_analysis_run_id: "run-old" },
+    { variable_id: "HK_LEGACY", manual_analysis_run_id: null },
+  ];
+
+  it("All time reads the current run, keeping untagged history", () => {
+    const out = scopeToSelection(rows, { allTime: true, selectedRunIds: [] }, "run-new");
+    expect(out.map((r) => r.variable_id)).toEqual(["HK_A", "HK_LEGACY"]);
+  });
+
+  it("All time with no current run keeps everything (nothing to scope to)", () => {
+    expect(scopeToSelection(rows, { allTime: true, selectedRunIds: [] }, null)).toHaveLength(4);
+  });
+
+  it("a narrowed selection keeps the chosen runs' rows and the untagged ones", () => {
+    const out = scopeToSelection(rows, { allTime: false, selectedRunIds: ["run-old"] }, "run-new");
+    expect(out.map((r) => r.variable_id)).toEqual(["HK_A", "HK_B", "HK_LEGACY"]);
+  });
+
+  it("two runs chosen keep both generations (the table's Run column tells them apart)", () => {
+    const out = scopeToSelection(rows, { allTime: false, selectedRunIds: ["run-old", "run-new"] }, "run-new");
+    expect(out).toHaveLength(4);
   });
 });

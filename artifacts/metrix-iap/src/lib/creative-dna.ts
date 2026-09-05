@@ -318,7 +318,10 @@ export function rollupDnaFamilies(
     const entries: DnaFamilyTopVariable[] = Array.from(variables.entries()).map(([variableId, v]) => {
       spend += v.spend;
       results += v.results;
-      return { variableId, spend: v.spend, results: v.results, cpa: costScale ? ratio(v.spend, v.results) : null, basis: "most_spend" as const };
+      // Results with no spend behind them are not a $0.00 cost per result:
+      // a token whose only rows lost their spend to overlap resolution read
+      // "$0.00 CPA · best read" on Pure Path. No spend, no cost verdict.
+      return { variableId, spend: v.spend, results: v.results, cpa: costScale && v.spend > 0 ? ratio(v.spend, v.results) : null, basis: "most_spend" as const };
     });
     const withResults = entries.filter((e) => e.results > 0);
     let top: DnaFamilyTopVariable | null = null;
