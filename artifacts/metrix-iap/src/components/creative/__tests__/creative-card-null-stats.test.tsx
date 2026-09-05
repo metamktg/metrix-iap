@@ -27,7 +27,7 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CreativeCard } from "../CreativeCard";
 
-function renderCard(stats: { spend: number | null; results: number | null }) {
+function renderCard(stats: { spend: number | null; results: number | null; unmeasuredReason?: string }) {
   sessionStorage.setItem("metrix_active_account_v1", JSON.stringify({ type: "ad_account", adAccountId: "bookster" }));
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
   return render(
@@ -53,6 +53,16 @@ describe("CreativeCard · null stats", () => {
     const { container } = renderCard({ spend: null, results: null });
     expect(screen.getAllByText("–").length).toBeGreaterThanOrEqual(2);
     expect(container.textContent).not.toContain("$0");
+  });
+
+  it("a dash carries its reason as the dotted-underline title, the way KpiStat does (check:unexplained-dashes)", () => {
+    const reason = "no performance row for this creative in the selection";
+    const { container } = renderCard({ spend: null, results: null, unmeasuredReason: reason });
+    const dashes = Array.from(container.querySelectorAll("[data-unavailable-reason]"));
+    expect(dashes.length).toBe(2);
+    expect(dashes[0]!.getAttribute("title")).toBe(`Spend: ${reason}`);
+    expect(dashes[1]!.getAttribute("title")).toBe(`Purchases: ${reason}`);
+    expect(dashes[0]!.className).toContain("border-dotted");
   });
 
   it("still renders a measured zero as $0 and 0", () => {

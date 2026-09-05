@@ -1556,6 +1556,16 @@ segment's own totals, signal and coverage are still computed from its demographi
 attribution block below them changes. Not in this change: concept attribution for an
 engine-analysed account, which needs the ad-id anchored concept mapping (task #40).
 
+**Live.** PR #219 merged into main as `dd18a234` (2026-09-05 16:55Z) with the two audit-round-4
+commits; the workspace converged as merge `8f315ba7` (the post-merge hook: "Supabase schema
+unchanged (fingerprint 3d7901136139); nothing applied", exit 0; the API Server listening on 8080
+at 16:57:12Z, seed cache warmed in 73,673 ms; API Server, Metrix IAP and Marketing all RUNNING);
+deployment `329ef7e0` published to app.metrix.ad with status success at 17:04Z, serving
+`index-Xj8Gx8Gf.js`. Verified by fetching the served chunks: "Top ads for this segment" and
+`note-attribution-basis` in `SegmentDrilldownModal-DaZTgeUi.js`, "not summed." in
+`AudienceView-DpxdACEZ.js`, "No creative cell library in this run" in
+`IapLibraryView-BDuhmjnK.js`.
+
 ## 32. Audit round 5, data honesty: account totals from the campaign summary, the funnel staged from the account's own result events, the source named on the settings surfaces (2026-09-05, UI, one gate allowlist tightened)
 
 **What changed.** The 204-shot route crawl of round 4 (`METRIX_UI_AUDIT_ROUND4_2026-09.md` §B)
@@ -1601,7 +1611,9 @@ is cell × result event). On it:
   ads with performance; the variable rows are the current run's on Ad Performance too.
 - The Library's count tile on the ad grain says how many of the account's ads with performance the
   scope holds ("of 629 ads with performance · 576 under other result types"); a creative cell with
-  no performance row reads a dash, never $0 · 0.
+  no performance row reads a dash, never $0 · 0, and the dash carries its reason as the
+  dotted-underline title (`CreativeCardStats.unmeasuredReason`, the KpiStat affordance, since the
+  card is a button): `check:unexplained-dashes` flagged the thirty bare dashes of the first cut.
 - Budget names the missing cell library ("Spend by concept needs cell codes on the ads. This run has
   none; its N ads with spend are on the IAP Library") instead of "No cell rows match the current
   metric selection".

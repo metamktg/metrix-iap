@@ -555,7 +555,12 @@ export function IapLibraryView() {
             // A cell with no performance row has NO spend and NO results,
             // which is a dash, never $0 and 0 (fifteen "no performance data
             // yet" cards read SPEND $0 · 0 results, audit round 5).
-            if (!collapsed) return { spend: null, results: null, cpa: null, ctrPct: null, resultLabel: activeScope?.label ?? "" };
+            if (!collapsed) {
+              return {
+                spend: null, results: null, cpa: null, ctrPct: null, resultLabel: activeScope?.label ?? "",
+                unmeasuredReason: "no performance row for this creative in the selection. Its assets are uploaded; a run with its ads writes the totals.",
+              };
+            }
             return {
               spend:       collapsed["Amount spent (USD)"],
               results:     collapsed.Results,
