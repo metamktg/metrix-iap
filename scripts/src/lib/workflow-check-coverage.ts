@@ -35,6 +35,20 @@ export const MANUAL_ONLY_CHECK_SCRIPTS: Record<string, string> = {
     "secrets store either. Run it by hand in the Replit shell after a real run — " +
     "docs/specs/iap-multi-report-reconciliation.md §17a names it as the third " +
     "leg of the triple validation. Exits 2 (not 0) when no credential resolves.",
+  "check:seed-evidence":
+    "reads /api/metrix/seed as the demo account and fails when an account whose " +
+    "latest run wrote a reconciliation summary carries 0 ledger rows or 0 ad-grain " +
+    "breakdown rows: the evidence layer was read and lost on the way. Needs a " +
+    "RUNNING API server and the demo credentials, the same constraint as " +
+    "check:seed-fixture-drift, and is pointed at production (API_BASE_URL) after " +
+    "a publish, where CI has no server. Exists because the request logs cannot " +
+    "see this class of loss: on 2026-09-05 production read every ledger page for " +
+    "the Pure Path run with 0 errors and shipped the account with an empty ledger " +
+    "(the aggregation threw after the last page, the seed's catch returned " +
+    "nothing), and the day before the storm's timed-out pages fell to the same " +
+    "empty fallback; only reading the payload showed it either time. Exits 2 " +
+    "(not 0) when no credential or no server, so nothing checked never reads as " +
+    "a pass.",
   "check:friction":
     "walks every route navTree.ts and App.tsx declare, for two fixture accounts " +
     "at 1440 and 390 px, and reports what a reader meets on the FIRST layer: " +

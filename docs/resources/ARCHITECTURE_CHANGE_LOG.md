@@ -1097,3 +1097,14 @@ close task 22 (the seed still ships the evidence layer, ~270 pages per rebuild);
 page cheap and honest. The Pure Path re-run on the fixed build was NOT started: the successful
 run had destaged its seven files (`processed`), the POST answered 422, and restaging them to
 re-run while the read storm was on would have risked the account's only good rows (H1).
+
+**Correction (2026-09-05, the first live warm on this code).** The pages were read in full (163
+ledger pages for Pure Path at both production and the workspace, 0 errors) and the account still
+shipped with an EMPTY ledger: `runScoped` appended a run's rows with `out.push(...rows)`, and V8
+throws `RangeError: Maximum call stack size exceeded` once a spread carries about 125,000
+arguments (Node 22, measured; 162,141 ledger rows). The `catch` logged it and returned nothing,
+which is the honest half. Fixed the same hour: `appendRows` in `paginatedSelect.ts` (a loop) is
+the only way whole-table rows are appended, in both page loops and the seed's aggregation;
+`paginatedSelect.test.ts` proves the spread throws at 170k and the loop does not, and reads a
+131k-row keyset table whole. The pages never carried the risk (1,000 rows each); the aggregation did.
+

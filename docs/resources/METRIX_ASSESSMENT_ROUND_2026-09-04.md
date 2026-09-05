@@ -195,6 +195,59 @@ The run's own warnings say what happened to every file: the two demographic pivo
 
 **One finding the run surfaces (F10, HIGH, held).** The reconciliation control is the whole-period Ad Summary workbook: "selected control reports $1,248,138.43, the daily Ad Summary (per Ad ID) reports $1,430,311.34 (14.6% apart)", and every breakdown's residuals are computed against it, which is why the demographic and placement classes read "107.43% of the Ad Summary" in the ledger notes although they are 93.7% of the daily rows. `buildTruth` ranks a per-Ad-ID Ad Summary above a daily summary by class, before coverage, so a whole-period workbook covering 1,494 ads outranks two daily files covering 1,751. The spec's own overlap rule (a daily file beats a whole-period file per ad) argues the control should be the per-ad union, daily first. This is a reconciliation-spec decision, not a UI change: it is recorded here and in §8, and the ledger's signed residuals stay honest in the meantime because the disagreement is recorded, never averaged.
 
+### 6.2 The paging fix published and verified live (2026-09-05, 01:29Z)
+
+- **01:15Z** PR #206 merged (6c33e24); the Replit workspace converged (schema fingerprint
+  unchanged, nothing applied; HEAD f5e6601); app.metrix.ad published at 01:28Z; no run in flight.
+- **Caught on the way:** the workspace's own API Server had restarted at 01:16:26Z from a bundle
+  built before the merge landed, so it was still issuing the old offset pages against the shared
+  Supabase (the `content-range: 1000-1999/*` shape in the edge logs). Its workflow was restarted so
+  the dev script rebuilds from the merged source. The workspace dev server and production share
+  one database: a stale bundle there is load on production.
+- **The warm on the new build, both processes, 01:29:10Z to 01:34:56Z, from the edge logs and
+  `pg_stat_statements` (cumulative since the reset at 04:24Z the day before; the new shapes exist
+  only from 01:29Z):**
+
+| Table | Requests | Keyset pages | Errors | Page mean (db) | First page per (account, run), mean / max (db) |
+|---|---|---|---|---|---|
+| `reconciliation_ledger` | 222 | 199 | 0 | 232 ms (206 calls) | 5.2 s / 54 s (20 calls) |
+| `ad_breakdown_performance` | 115 | 89 | 0 | 580 ms (92 calls) | 4.6 s / 58 s (20 calls) |
+| `variable_segment_performance` | 76 | 53 | 0 | 684 ms (56 calls) | 1.2 s / 15 s (27 calls) |
+| `variable_evidence` | 35 | 2 | 0 | 9 ms | 38 ms / 0.4 s |
+
+  Against the old shape over the same statistics window: 5,700 ledger calls at 692 ms mean
+  (3,946 s of database time) and 3,007 breakdown calls at 1,804 ms (5,424 s), with maxima over
+  89 s and the statement timeouts that produced the 504s. New shape: 0 responses over 400 at the
+  edge, 0 statement timeouts, 0 cancels; PostgREST logged 34 "Thread killed by timeout manager"
+  lines in the window with no request failing behind them (they continue at the same rate between
+  warms).
+- **What the numbers say (F11, MEDIUM, schema, held).** The keyset pages are cheap (a quarter of a
+  second on the ledger). The FIRST page of every (account, run) is not: `explain analyze` on the
+  live table shows the planner serving `where account_id = $1 and manual_analysis_run_id = $2
+  order by id limit 1000` by walking the PRIMARY KEY in id order and filtering, so it skips every
+  lower id in the table before the run's rows (92,260 rows removed by filter, 9.2 s on
+  `ad_breakdown_performance` for Pure Path), and for a run whose ids sit below another run's the
+  last page walks to the end of the table (the 54 to 58 s maxima). None of the existing composite
+  indexes end in `id`, so no index serves "equality on the two run keys, range on id, in id
+  order". One additive index per table, `(account_id, manual_analysis_run_id, id)`, turns every
+  page into one index range; the statements are drafted in `schema.sql` on the working branch as
+  a separate, flagged PR and are NOT applied: the owner holds schema changes for approval. Cost
+  of applying: a plain `create index` holds a SHARE lock (blocks writes, not reads) for the build,
+  seconds on these tables, and the applier already waits for a running analysis first.
+- **Caught by reading the payload, not the logs (F12, HIGH, fixed the same hour).** Production's
+  seed (200, 23.7 s, 116.7 MB) carried Pure Path's 75,969 breakdowns and 26,675 segments and an
+  EMPTY ledger; the workspace's seed read the same. Both API logs carry one warning: "evidence rows
+  could not be read for this run", table `reconciliation_ledger`, `RangeError: Maximum call stack
+  size exceeded`. Every page had been read (163 ledger pages at each process, 0 errors); the
+  aggregation `out.push(...rows)` spread 162,141 rows into one call, which V8 refuses above about
+  125,000 arguments (Node 22, measured). Fix: `appendRows` (a loop) is the only way whole-table
+  rows are appended; regression tests at 170k (the spread throws, the loop does not) and a 131k-row
+  keyset read. Verified after the next publish by the same payload read. Production's warm on this
+  build took 549 s (the workspace's 191 s): the payload, task 22, held.
+- **Held with it:** the Pure Path re-run (the seven files need restaging from Analysis › History
+  before Run analysis), task 22 (the seed still ships the whole evidence layer; this makes each
+  page cheap, not the payload small), and H1.
+
 ---
 
 ## 7. Execution queue (autonomous, UI only, no schema, in this order)
@@ -220,6 +273,10 @@ Each item ships as its own commit on the working branch, typechecked and unit-te
 - **Task 23, run performance.** 30 minutes for 22k ad rows through PostgREST. Profile and cut; a backend change. Needs approval.
 - **H1, failed re-run empties the window.** Write under the run id, swap on success. Backend change. Needs approval.
 - **F10, the reconciliation control ranks class over coverage** (§6.1). `buildTruth` in `reconciliation.ts` picks a whole-period per-Ad-ID Ad Summary over two daily ones that cover 257 more ads, so the ledger's residuals are measured against a control 12.7% below the daily total. Proposed: rank per-Ad-ID candidates by the overlap rule per ad (daily first) and reconcile against their union; a spec change (`docs/specs/iap-multi-report-reconciliation.md`). Needs a decision.
+- **F11, keyset-supporting indexes on the four evidence tables** (§6.2). `(account_id,
+  manual_analysis_run_id, id)` on `ad_breakdown_performance`, `reconciliation_ledger`,
+  `variable_segment_performance`, `variable_evidence`. Additive DDL, drafted as its own PR, not
+  applied. Needs approval.
 - **Task 24, boot-time and payload smokes.** A scripts-only addition; queued after §7 unless the owner objects.
 - **Open decisions O1 to O7** from the earlier register, unchanged.
 - **The LinkedIn video**, deferred.
