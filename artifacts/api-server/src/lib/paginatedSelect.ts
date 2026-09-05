@@ -27,6 +27,23 @@ import { getSupabase } from "./supabase";
 
 export type Row = Record<string, unknown>;
 
+/**
+ * Append `rows` to `target` one element at a time.
+ *
+ * `target.push(...rows)` passes every row as a call argument, and V8 throws
+ * `RangeError: Maximum call stack size exceeded` once the spread reaches
+ * roughly 125,000 elements (Node 22, measured). A page is 1,000 rows, so the
+ * page loops were never at risk; the seed's per-(account, run) aggregation
+ * was, and on 2026-09-05 it threw on the Pure Path ledger (162,141 rows)
+ * in production and in the workspace alike, and the account shipped with no
+ * ledger at all while every page had been read. Use this wherever a whole
+ * table's rows are appended, never the spread.
+ */
+export function appendRows<T>(target: T[], rows: readonly T[]): T[] {
+  for (const row of rows) target.push(row);
+  return target;
+}
+
 /** PostgREST's default ceiling; also our page size. */
 export const PAGE_SIZE = 1000;
 
@@ -65,7 +82,7 @@ export async function selectAllRows(
       throw new Error(`Supabase query failed for "${table}": ${error.message}`);
     }
     const rows: Row[] = data ?? [];
-    allRows.push(...rows);
+    appendRows(allRows, rows);
     if (rows.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
   }
@@ -107,7 +124,7 @@ async function selectAllByKeyset(table: string, keyset: string, build?: (q: any)
       throw new Error(`Supabase query failed for "${table}": ${error.message}`);
     }
     const rows: Row[] = data ?? [];
-    allRows.push(...rows);
+    appendRows(allRows, rows);
     if (rows.length < PAGE_SIZE) break;
     const last = rows[rows.length - 1]?.[keyset];
     if (last === undefined || last === null) {

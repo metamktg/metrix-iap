@@ -234,6 +234,16 @@ The run's own warnings say what happened to every file: the two demographic pivo
   a separate, flagged PR and are NOT applied: the owner holds schema changes for approval. Cost
   of applying: a plain `create index` holds a SHARE lock (blocks writes, not reads) for the build,
   seconds on these tables, and the applier already waits for a running analysis first.
+- **Caught by reading the payload, not the logs (F12, HIGH, fixed the same hour).** Production's
+  seed (200, 23.7 s, 116.7 MB) carried Pure Path's 75,969 breakdowns and 26,675 segments and an
+  EMPTY ledger; the workspace's seed read the same. Both API logs carry one warning: "evidence rows
+  could not be read for this run", table `reconciliation_ledger`, `RangeError: Maximum call stack
+  size exceeded`. Every page had been read (163 ledger pages at each process, 0 errors); the
+  aggregation `out.push(...rows)` spread 162,141 rows into one call, which V8 refuses above about
+  125,000 arguments (Node 22, measured). Fix: `appendRows` (a loop) is the only way whole-table
+  rows are appended; regression tests at 170k (the spread throws, the loop does not) and a 131k-row
+  keyset read. Verified after the next publish by the same payload read. Production's warm on this
+  build took 549 s (the workspace's 191 s): the payload, task 22, held.
 - **Held with it:** the Pure Path re-run (the seven files need restaging from Analysis › History
   before Run analysis), task 22 (the seed still ships the whole evidence layer; this makes each
   page cheap, not the payload small), and H1.
