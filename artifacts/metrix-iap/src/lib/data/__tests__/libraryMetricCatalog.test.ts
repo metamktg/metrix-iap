@@ -374,3 +374,29 @@ describe("buildLibraryMetricCatalog · grain and empty rows", () => {
     expect(catalog.find((m) => m.id === "lib_cpa")!.value).toBeNull();
   });
 });
+
+// ─── Ad grain · the count tile says how many ads the scope holds ─────────
+// The tile read "53" beside a grid of 629 ads and nothing said the other
+// 576 sat under other result types (audit round 5).
+
+describe("buildLibraryMetricCatalog · lib_cells on the ad grain", () => {
+  const rows = [makeRow({ cell_id: "ad A" }), makeRow({ cell_id: "ad B" })];
+
+  it("names the ads under other result types when the account has more", () => {
+    const tile = buildLibraryMetricCatalog(rows, { scale: "cost_per_result", grain: "ad", adTotal: 629 }).find((m) => m.id === "lib_cells")!;
+    expect(tile.label).toBe("Ads with performance");
+    expect(tile.formatted).toBe("2");
+    expect(tile.sub).toBe("of 629 ads with performance · 627 under other result types");
+  });
+
+  it("keeps the plain grain note when the scope holds every ad", () => {
+    const tile = buildLibraryMetricCatalog(rows, { scale: "cost_per_result", grain: "ad", adTotal: 2 }).find((m) => m.id === "lib_cells")!;
+    expect(tile.sub).toBe("no creative cell library in this run · one row per ad");
+  });
+
+  it("with no row in scope the count is a dash and the sub still says where the ads are", () => {
+    const tile = buildLibraryMetricCatalog([], { scale: "cost_per_result", grain: "ad", adTotal: 40 }).find((m) => m.id === "lib_cells")!;
+    expect(tile.formatted).toBe("–");
+    expect(tile.sub).toBe("of 40 ads with performance · 40 under other result types");
+  });
+});

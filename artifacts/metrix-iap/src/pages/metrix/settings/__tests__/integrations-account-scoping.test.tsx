@@ -124,11 +124,16 @@ describe("ad_account scoped", () => {
     expect(container.textContent).toContain("Meta Ads");
   });
 
-  it("shows the correct connection status chip for a configured account", () => {
-    // "bookster" has status "configured" → chip must read "Connected".
+  it("badges a configured account by its source kind, never as connected to anything it is not", () => {
+    // "bookster" has status "configured" and an imported source: the chip
+    // reads "Imported" (audit round 5: it read "Connected", and the status
+    // row printed the raw source_status).
     select("ad_account", "bookster");
     const { container } = renderView();
-    expect(container.textContent).toContain("Connected");
+    expect(container.textContent).toContain("Imported");
+    expect(container.textContent).toContain("Imported package · analysis data on file");
+    expect(container.textContent).not.toContain("imported_from_iap_loop_package");
+    expect(container.textContent).not.toMatch(/\bConnected\b/);
   });
 
   it("shows the 'Not connected' chip for an unconfigured account", () => {
@@ -305,5 +310,27 @@ describe("manager (agency) view", () => {
     expect(container.querySelector('[data-testid="button-connect-meta-live"]')).toBeNull();
     expect(container.querySelector('[data-testid="button-disconnect-meta"]')).toBeNull();
     expect(container.querySelector('[data-testid="button-run-reports"]')).toBeNull();
+  });
+});
+
+// ── manager view · the source is the source ──────────────────────────────────
+// The agency list printed the raw source_status ("manual_reports",
+// "imported_from_iap_loop_package") beside a CONNECTED badge on accounts
+// that were never connected to anything (audit round 5, 2026-09-05).
+
+describe("manager view · account sources", () => {
+  it("names each account's source and badges it by kind, never with the raw status or a false Connected", () => {
+    select("manager", null);
+    const { container } = renderView();
+    expect(container.textContent).toContain("Manual reports · analysis data on file");
+    expect(container.textContent).toContain("Imported package · analysis data on file");
+    expect(container.textContent).not.toContain("manual_reports");
+    expect(container.textContent).not.toContain("imported_from_iap_loop_package");
+    // The chips: a manual account is "Manual", an imported one "Imported".
+    const chips = Array.from(container.querySelectorAll("span")).map((el) => el.textContent?.trim());
+    expect(chips).toContain("Manual");
+    expect(chips).toContain("Imported");
+    // Only a live Meta connection reads as connected; the fixture has none.
+    expect(chips).not.toContain("Connected");
   });
 });

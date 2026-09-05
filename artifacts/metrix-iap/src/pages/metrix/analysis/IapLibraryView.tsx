@@ -264,12 +264,14 @@ export function IapLibraryView() {
   // never for an older run they cannot describe. The cards grid is
   // untouched: it already renders every ad as a tile.
   const currentRunId = a?.latest_analysis_run_id ?? null;
-  const adGrain = useMemo((): { rows: CellPerformanceRow[]; unmeasured: UnmeasuredField[] } => {
+  const adGrain = useMemo((): { rows: CellPerformanceRow[]; unmeasured: UnmeasuredField[]; total: number } => {
     const noCells = (a?.performance_by_cell ?? []).length === 0;
     const selectionCoversCurrent = runSelection.allTime || (currentRunId != null && runSelection.selectedRunIds.includes(currentRunId));
-    if (!a || !noCells || !selectionCoversCurrent) return { rows: [], unmeasured: [] };
+    if (!a || !noCells || !selectionCoversCurrent) return { rows: [], unmeasured: [], total: 0 };
     const built = adGrainPerformanceRows(account?.ads);
-    return { rows: scopeRowsFn(built.rows, (r) => r["Result type"]), unmeasured: built.unmeasured };
+    // `total` is every ad with performance whatever its result type, so the
+    // count tile can say how many of them the scope holds.
+    return { rows: scopeRowsFn(built.rows, (r) => r["Result type"]), unmeasured: built.unmeasured, total: built.rows.length };
   }, [a, account, runSelection, currentRunId, scopeRowsFn]);
   const tileGrain: "cell" | "ad" = adGrain.rows.length > 0 ? "ad" : "cell";
   const tileRows = tileGrain === "ad" ? adGrain.rows : libCells;
@@ -324,8 +326,8 @@ export function IapLibraryView() {
     return [...set];
   }, [account, a]);
   const tileCatalog = useMemo(
-    () => buildLibraryMetricCatalog(tileRows, { scale: activeScope?.scale ?? null, label: activeScope?.label, events: accountEvents, grain: tileGrain, unmeasured: adGrain.unmeasured }),
-    [tileRows, activeScope, accountEvents, tileGrain, adGrain.unmeasured],
+    () => buildLibraryMetricCatalog(tileRows, { scale: activeScope?.scale ?? null, label: activeScope?.label, events: accountEvents, grain: tileGrain, unmeasured: adGrain.unmeasured, adTotal: tileGrain === "ad" ? adGrain.total : undefined }),
+    [tileRows, activeScope, accountEvents, tileGrain, adGrain.unmeasured, adGrain.total],
   );
   const tileCatalogIds = useMemo(() => tileCatalog.map((m) => m.id), [tileCatalog]);
   const {
@@ -550,7 +552,10 @@ export function IapLibraryView() {
 
           function aggStatsForCell(cellId: string, source: CellPerformanceRow[]): CreativeCardStats {
             const collapsed = collapseCellRows(source.filter((r) => r.cell_id === cellId), activeScope)[0];
-            if (!collapsed) return { spend: 0, results: 0, cpa: null, ctrPct: null, resultLabel: activeScope?.label ?? "" };
+            // A cell with no performance row has NO spend and NO results,
+            // which is a dash, never $0 and 0 (fifteen "no performance data
+            // yet" cards read SPEND $0 · 0 results, audit round 5).
+            if (!collapsed) return { spend: null, results: null, cpa: null, ctrPct: null, resultLabel: activeScope?.label ?? "" };
             return {
               spend:       collapsed["Amount spent (USD)"],
               results:     collapsed.Results,

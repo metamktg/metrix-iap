@@ -25,7 +25,8 @@ import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { buildMetricCatalog } from "@/lib/data/metricsCatalog";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { segmentMetricReason } from "@/lib/data/segmentMetricsCatalog";
-import { getAdAccount, getMST, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getMST, getAnalysisData, getCampaignSummary, getStrategyData } from "@/lib/data/metrixSeedAdapter";
+import { breakdownSpendShare, spendShareLabel } from "@/lib/account-totals";
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
@@ -906,6 +907,9 @@ export function AvatarsView() {
   const matrix = mst?.historical_matrix_4x4 ?? null;
   const analysis = getAnalysisData(seed, adAccountId);
   const strategyData = getStrategyData(seed, adAccountId);
+  // The demographic export covers a share of the account's spend; the
+  // audience row is a figure about that share and says so.
+  const demoShare = spendShareLabel(breakdownSpendShare(analysis, getCampaignSummary(seed, adAccountId), "demographic"));
   const icpProfiles = strategyData?.icp_profiles ?? [];
   const term = resultTerm(account);
 
@@ -1212,7 +1216,7 @@ export function AvatarsView() {
 
             {scopedDemoRows.length > 0 && (
               <div className="px-6 pt-3">
-                <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-2")}>Audience performance · this result scope</p>
+                <p className={cn(TYPE.microLabel, "text-muted-foreground/75 mb-2")}>Audience performance · this result scope{demoShare ? ` · demographic rows · ${demoShare}` : ""}</p>
                 <div className="grid grid-cols-dashboard-4 gap-3" data-testid="audience-tile-row">
                   <KpiTileRow
                     viewKey="avatars-audience"

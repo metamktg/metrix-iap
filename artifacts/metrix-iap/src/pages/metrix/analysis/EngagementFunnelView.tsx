@@ -31,7 +31,8 @@ import {
 } from "recharts";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
+import { breakdownSpendShare, spendShareLabel } from "@/lib/account-totals";
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
   SectionCard, MetricTile, CrossLink, fmtNum, fmtPct, fmtUSD,
@@ -48,6 +49,7 @@ import {
 } from "./rankSort";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { sumStrict } from "@/lib/strict-sum";
+import { classifyResultEvent, type ResultEventKey } from "@/lib/resultEvents";
 import { FunnelChart } from "@/components/charts/FunnelChart";
 import {
   TrendingUp, Layers, Table2, Activity, ArrowDown, ArrowUp,
@@ -99,6 +101,9 @@ export interface FunnelStage {
   pctOfPrev: number | null;
   /** "awareness" | "engagement" | "intent" | "conversion" */
   zone: "awareness" | "engagement" | "intent" | "conversion";
+  /** Where a lower-funnel count was read: the export's own cart / checkout /
+   *  purchase column, or the rows' Result type. Delivery stages carry none. */
+  basis?: "column" | "result_type";
 }
 
 /** Zone display names. The zones group the funnel into labelled bands;
@@ -133,6 +138,41 @@ export const ZONE_COLOR: Record<FunnelStage["zone"], { bar: string; text: string
   conversion: { bar: "bg-chart-4/70", text: "text-chart-4", bg: "bg-chart-4/[0.06]", border: "border-chart-4/25" },
 };
 
+// The lower funnel used to be three hardcoded ecommerce columns
+// (adds_to_cart, checkouts_initiated, purchases): a lead-gen account with
+// 4,323 leads and an app account with 486 installs showed EMPTY intent and
+// conversion bands, because nothing read the events their ads were
+// optimised towards (audit round 5, 2026-09-05; the known systemic defect
+// CLAUDE.md names). The demographic rows carry a Result type per row since
+// the 2026-09-03 split, so the lower funnel is staged from the account's own
+// result events: an intermediate conversion event (cart, checkout, payment
+// info, wishlist) is an intent stage, a terminal one (purchase, lead,
+// install, registration…) a conversion stage. The export's own columns keep
+// winning for the event they name, so an ecommerce export reads exactly as
+// before; a row that carries neither is the honest gap it always was.
+
+interface LegacyColumn {
+  id: string;
+  label: string;
+  key: ResultEventKey;
+  zone: FunnelStage["zone"];
+  pick: (r: DemographicRow) => number | null | undefined;
+}
+
+const LEGACY_COLUMNS: readonly LegacyColumn[] = [
+  { id: "atc", label: "Add to cart", key: "add_to_cart", zone: "intent", pick: (r) => r.adds_to_cart },
+  { id: "checkout", label: "Checkout", key: "initiate_checkout", zone: "intent", pick: (r) => r.checkouts_initiated },
+  { id: "purchases", label: "Purchase", key: "purchase", zone: "conversion", pick: (r) => r.purchases },
+];
+
+/** The order intermediate events sit in a purchase path; anything else follows alphabetically. */
+const INTERMEDIATE_ORDER: readonly ResultEventKey[] = ["add_to_wishlist", "add_to_cart", "initiate_checkout", "add_payment_info"];
+
+const intermediateRank = (key: ResultEventKey): number => {
+  const i = INTERMEDIATE_ORDER.indexOf(key);
+  return i === -1 ? INTERMEDIATE_ORDER.length : i;
+};
+
 /** Exported so callers outside this view (e.g. AdPerformanceView's compact
  *  "Buyer-intent funnel" card) can reuse the exact same stage math instead
  *  of re-deriving it. */
@@ -146,49 +186,99 @@ export function buildFunnelStages(rows: DemographicRow[]): FunnelStage[] {
   // entirely, so on an account with real traffic and no purchases the
   // Purchase row VANISHED from the funnel.
   //
-  // That is the most misleading thing this view could do. A reader sees a
-  // funnel that stops at Add to cart and concludes the data ends there —
-  // when what actually happened is that nobody bought. "Zero purchases" is
-  // not the absence of a finding, it IS the finding, and it is the one a
-  // buyer-intent funnel exists to surface.
-  //
   // sumStrict is the platform's single aggregation-null policy (BUG-11): a
   // sum is null unless EVERY contributing row carried the value, and it is
   // null rather than 0 precisely because zero is meaningful in every metric
-  // that feeds this. Applied here it separates the two cases for the first
-  // time: no rows carry `purchases` -> null, the column exists and totals
-  // zero -> 0.
+  // that feeds this. Applied here it separates the two cases: no rows carry
+  // `purchases` -> null, the column exists and totals zero -> 0.
   const totals = {
     impressions: sumStrict(rows, (r) => r.Impressions),
     clicksAll: sumStrict(rows, (r) => r["Clicks (all)"]),
     linkClicks: sumStrict(rows, (r) => r["Link clicks"]),
-    atc: sumStrict(rows, (r) => r.adds_to_cart),
-    checkout: sumStrict(rows, (r) => r.checkouts_initiated),
-    purchases: sumStrict(rows, (r) => r.purchases),
   };
 
-  const stages: { id: string; label: string; v: number | null; zone: FunnelStage["zone"] }[] = [
+  type Lower = { id: string; label: string; v: number | null; zone: FunnelStage["zone"]; basis: FunnelStage["basis"]; key: ResultEventKey; rank: number };
+
+  // The export's own columns, for the events they name. When the export
+  // carries ANY of the three, all three slots stay (a column it lacks is a
+  // gap in a purchase path it evidently tracks), exactly as before; the
+  // rows' events fill in around them.
+  const carried = LEGACY_COLUMNS.filter((c) => rows.some((r) => c.pick(r) != null));
+  const legacy: Lower[] = carried.length === 0
+    ? []
+    : LEGACY_COLUMNS.map((c) => ({ id: c.id, label: c.label, v: sumStrict(rows, c.pick), zone: c.zone, basis: "column", key: c.key, rank: intermediateRank(c.key) }));
+  const coveredByColumn = new Set(carried.map((c) => c.key));
+
+  // The rows' result events, conversion class only: intermediate → intent,
+  // terminal → conversion. Results is a required column, so the per-event
+  // total is a plain sum over the rows of that event.
+  const byEvent = new Map<ResultEventKey, Lower>();
+  for (const r of rows) {
+    const raw = r["Result type"];
+    if (!raw) continue;
+    const c = classifyResultEvent(raw);
+    if (c.intent !== "conversion" || coveredByColumn.has(c.key)) continue;
+    const zone: FunnelStage["zone"] = c.stage === "terminal" ? "conversion" : "intent";
+    const cur = byEvent.get(c.key) ?? { id: c.key, label: c.label, v: 0, zone, basis: "result_type" as const, key: c.key, rank: intermediateRank(c.key) };
+    cur.v = (cur.v ?? 0) + (r.Results ?? 0);
+    byEvent.set(c.key, cur);
+  }
+  const fromRows = [...byEvent.values()];
+
+  // With nothing below link clicks, the three classic slots stay as gaps so
+  // the funnel still shows where the data ends (and the note says why).
+  const lower: Lower[] = legacy.length === 0 && fromRows.length === 0
+    ? LEGACY_COLUMNS.map((c) => ({ id: c.id, label: c.label, v: null, zone: c.zone, basis: "column", key: c.key, rank: intermediateRank(c.key) }))
+    : [...legacy, ...fromRows.filter((e) => !legacy.some((l) => l.key === e.key))];
+
+  const intent = lower.filter((l) => l.zone === "intent").sort((a, b) => a.rank - b.rank || a.label.localeCompare(b.label));
+  const conversion = lower.filter((l) => l.zone === "conversion").sort((a, b) => (b.v ?? -1) - (a.v ?? -1) || a.label.localeCompare(b.label));
+
+  const stages: { id: string; label: string; v: number | null; zone: FunnelStage["zone"]; basis?: FunnelStage["basis"] }[] = [
     { id: "impressions", label: "Impressions",  v: totals.impressions, zone: "awareness"  },
     { id: "clicks_all",  label: "Clicks (all)", v: totals.clicksAll,   zone: "engagement" },
     { id: "link_clicks", label: "Link clicks",  v: totals.linkClicks,  zone: "engagement" },
-    { id: "atc",         label: "Add to cart",  v: totals.atc,         zone: "intent"     },
-    { id: "checkout",    label: "Checkout",     v: totals.checkout,    zone: "intent"     },
-    { id: "purchases",   label: "Purchase",     v: totals.purchases,   zone: "conversion" },
+    ...intent,
+    ...conversion,
   ];
 
+  // A step share needs BOTH ends measured. Terminal events are alternatives,
+  // not a sequence (a lead is not a step after a purchase), so every
+  // conversion stage is measured against the last stage BEFORE the
+  // conversion band, never against its neighbour.
+  let lastBeforeConversion: number | null = null;
   return stages.map((s, i) => {
     const prev = i === 0 ? null : stages[i - 1]!.v;
+    const base = s.zone === "conversion" ? lastBeforeConversion : prev;
+    if (s.zone !== "conversion") lastBeforeConversion = s.v;
     return {
       id: s.id,
       label: s.label,
       value: s.v,
-      // A step share needs BOTH ends measured. Previously `pct` was handed
-      // coerced zeros, so a null previous stage produced a percentage
-      // derived from a number nobody measured.
-      pctOfPrev: s.v != null && prev != null && prev > 0 ? pct(s.v, prev) : null,
+      pctOfPrev: s.v != null && base != null && base > 0 ? pct(s.v, base) : null,
       zone: s.zone,
+      ...(s.basis ? { basis: s.basis } : {}),
     };
   });
+}
+
+/**
+ * The sentence that explains an empty or half-empty lower funnel, shared by
+ * the full funnel and Ad Performance's compact card. Null when both bands
+ * carry data. Names what the export lacked, never a business model.
+ */
+export function describeLowerFunnel(stages: readonly FunnelStage[]): string | null {
+  const measured = (zone: FunnelStage["zone"]) => stages.filter((s) => s.zone === zone && s.value != null);
+  const intent = measured("intent");
+  const conversion = measured("conversion");
+  if (intent.length === 0 && conversion.length === 0) {
+    return "No result event below link clicks in this demographic export: no cart, checkout or purchase column, and no Result type row naming a conversion. A stage with no measurement is a gap, never a zero.";
+  }
+  if (intent.length === 0) {
+    const names = conversion.map((s) => s.label.toLowerCase()).join(" and ");
+    return `No intermediate event between link clicks and ${names}: the export names no cart or checkout step for these ads.`;
+  }
+  return null;
 }
 
 // ─── breakdown types ──────────────────────────────────────────────────
@@ -376,10 +466,6 @@ const BREAKDOWN_METRICS: RankMetric<BreakdownRow>[] = [
 // and border steps for zone chips, where a tint IS carrying a category.
 
 function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
-  const hasLowerFunnel = stages.some(
-    (s) => (s.zone === "intent" || s.zone === "conversion") && s.value != null && s.value > 0,
-  );
-
   // Zone bands, in stage order, skipping any zone with no stages.
   const bands = useMemo(() => {
     const out: { zone: FunnelStage["zone"]; label: string; stages: FunnelStage[] }[] = [];
@@ -391,22 +477,29 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
     return out;
   }, [stages]);
 
+  const lowerNote = describeLowerFunnel(stages);
+
   return (
     <div className="space-y-4">
       {bands.map((band) => (
         <div key={band.zone}>
           <div className={cn(TYPE.label, "mb-1.5", ZONE_COLOR[band.zone].text)}>{band.label}</div>
           <FunnelChart
-            stages={band.stages.map((st) => ({ key: st.id, label: st.label, value: st.value }))}
+            stages={band.stages.map((st) => ({
+              key: st.id,
+              label: st.label,
+              value: st.value,
+              ...(st.basis ? { note: st.basis === "result_type" ? "Read from the rows' Result type" : "Read from the export's own column" } : {}),
+            }))}
             unitLabel=""
             emptyLabel={`No ${band.label.toLowerCase()} data in this window`}
             defaultBasis="previous"
           />
         </div>
       ))}
-      {!hasLowerFunnel && (
+      {lowerNote && (
         <div className="mt-2">
-          <CaveatNote text="Add-to-cart, checkout, and purchase data comes from the demographic export when the account is configured for ecommerce conversion tracking. Stages with no measurement are shown as gaps rather than zeros." />
+          <CaveatNote text={lowerNote} />
         </div>
       )}
     </div>
@@ -715,7 +808,11 @@ export function EngagementFunnelView() {
   const acctId     = useScopedAdAccountId();
   const account    = getAdAccount(seed, acctId);
   const analysis   = getAnalysisData(seed, acctId ?? null);
+  const summary    = getCampaignSummary(seed, acctId ?? null);
   const isRefetch  = useMetrixIsRefetching();
+  // The demographic export covers a SHARE of the account's spend; every
+  // figure on this page is a figure about that share, and the card says so.
+  const demoShare  = spendShareLabel(breakdownSpendShare(analysis, summary, "demographic"));
 
   const [viewModeRaw, setViewMode] = useState<ViewMode>("funnel");
   const [dimRaw, setDim]           = useState<BreakdownDim>("audience");
@@ -912,8 +1009,8 @@ export function EngagementFunnelView() {
                 <>
                   <SectionCard
                     title="Conversion funnel"
-                    desc="Stage-by-stage audience journey from impression to purchase. Each row shows the count and % retained from the previous stage."
-                    right={<SectionInfoIcon tip="Absolute volume and stage-over-stage retention rate from impression through to purchase, drawn from the demographic export." />}
+                    desc={`Impressions through the account's own result events · count and share of the previous stage · demographic export${demoShare ? ` · ${demoShare}` : ""}`}
+                    right={<SectionInfoIcon tip="Absolute volume and stage-over-stage retention from impressions through the intent and conversion events the account's ads were optimised towards, drawn from the demographic export. Terminal events are alternatives, each measured against the last stage before them." />}
                   >
                     <FunnelWaterfall stages={funnelStages} />
                   </SectionCard>

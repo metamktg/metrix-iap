@@ -8,10 +8,13 @@
 // entity, and it is NOT a way to describe an account to a reader.
 //
 // So its reach is bounded: cohort may be read inside the analysis interface
-// views, inside the cohort module itself, inside the settings surface where an
-// operator CONFIGURES objectives, and inside export payloads (data, not
-// interface). Anywhere else — the shell, the switcher, headers, tiles, tray,
-// strategy, creative, briefs, reports — is a violation.
+// views, inside the cohort module itself, and inside export payloads (data,
+// not interface). Anywhere else (the shell, the switcher, headers, tiles,
+// tray, strategy, creative, briefs, reports, SETTINGS) is a violation.
+// Settings → General carried a read-only "Objectives" module until audit
+// round 5 (2026-09-05); it described the account by its derived objective,
+// which the owner decision says the objective is not for, so it went and
+// the allowlist entries for it went with it.
 //
 // WHY A GATE AND NOT A CODE REVIEW
 // It had already drifted. The account switcher printed "Ecommerce",
@@ -41,8 +44,6 @@ const ALLOWED: { prefix: string; why: string }[] = [
   { prefix: "lib/data/cohortMeta.ts", why: "the cohort module itself" },
   { prefix: "lib/mst-analysis.ts", why: "MST analysis reads terminal direction — analysis logic" },
   { prefix: "pages/metrix/analysis/", why: "the analysis interface views — the permitted reach" },
-  { prefix: "pages/metrix/settings/cohortOptions.ts", why: "objective labels for read-only display" },
-  { prefix: "pages/metrix/settings/GeneralView.tsx", why: "reports back the DERIVED objectives, read-only" },
   { prefix: "lib/jsonExport.ts", why: "export payload — data, not interface" },
 ];
 

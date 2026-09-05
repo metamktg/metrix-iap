@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
+import { adGrainPerformanceRows } from "@/lib/ad-grain-rows";
 import { useResultScope } from "@/hooks/useResultScope";
 import { ResultScopeBar } from "@/components/analysis/ResultScopeBar";
 import {
@@ -289,6 +290,10 @@ export function BudgetView() {
               return Array.from(conceptSpend.entries()).sort((x, y) => y[1] - x[1]);
             })();
         const maxConcept = Math.max(...conceptRows.map(([, v]) => v), 1);
+        // A run without a cell library has no concept to attribute spend to,
+        // which is a different sentence from "no row matches the selection"
+        // (the note said the latter on an account with 629 ads, audit round 5).
+        const adsWithPerformance = hasCellRows ? 0 : adGrainPerformanceRows(acct.ads).rows.length;
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -381,7 +386,15 @@ export function BudgetView() {
                 right={<SectionInfoIcon tip="Shows how ad spend is distributed across creative concepts so you can see which ideas are consuming the most budget." />}
                 >
                 {conceptRows.length === 0 ? (
-                  <PendingState title="No concept spend" message="No cell rows match the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />
+                  adsWithPerformance > 0 ? (
+                    <PendingState
+                      title="No creative cell library"
+                      message={`Spend by concept needs cell codes on the ads. This run has none; its ${adsWithPerformance.toLocaleString("en-US")} ads with spend are on the IAP Library, one tile each.`}
+                      action={<CrossLink to="/app/analysis/library" label="Open IAP Library" />}
+                    />
+                  ) : (
+                    <PendingState title="No concept spend" message="No cell rows match the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />
+                  )
                 ) : (
                   <ConceptRowsList rows={conceptRows} maxConcept={maxConcept} />
                 )}
