@@ -109,6 +109,85 @@ describe("selectAllRows — the truncation the ceiling causes", () => {
   });
 });
 
+/**
+ * A Supabase mock for keyset pages: honours `gt(key, after)`, `order(key)`
+ * and `limit(n)` the way PostgREST does over a sorted table, and records the
+ * `after` value each page asked for.
+ */
+function makeKeysetSupabase(rows: Array<Record<string, unknown>>) {
+  const afters: unknown[] = [];
+  const filters: Array<Record<string, unknown>> = [];
+  const client: any = {
+    from(_table: string) {
+      const applied: Record<string, unknown> = {};
+      let after: number | null = null;
+      let key = "id";
+      const chain: any = {
+        select: () => chain,
+        eq: (c: string, v: unknown) => { applied[`eq:${c}`] = v; return chain; },
+        gt: (c: string, v: unknown) => { key = c; after = Number(v); return chain; },
+        order: (c: string) => { key = c; return chain; },
+        limit: (n: number) => {
+          afters.push(after);
+          filters.push({ ...applied });
+          const sorted = [...rows].sort((a, b) => Number(a[key]) - Number(b[key]));
+          const page = sorted.filter((r) => after === null || Number(r[key]) > after).slice(0, n);
+          return Promise.resolve({ data: page, error: null });
+        },
+        // Offset paging must never be reached on the keyset path.
+        range: () => { throw new Error("range() called on a keyset read"); },
+      };
+      return chain;
+    },
+  };
+  return { client, afters, filters };
+}
+
+describe("selectAllRows — keyset pages walk the key from where the last page stopped", () => {
+  // Ids a run wrote: contiguous, but starting well above zero, the way a
+  // bigint identity column looks after earlier runs.
+  const runRows = (n: number, from: number) => Array.from({ length: n }, (_, i) => ({ id: from + i, spend: 1 }));
+
+  it("returns every row and asks each page for the rows after the previous last id", async () => {
+    const { client, afters } = makeKeysetSupabase(runRows(2_437, 500_000));
+    vi.mocked(getSupabase).mockReturnValue(client);
+    const rows = await selectAllRows("reconciliation_ledger", undefined, "id, spend", { keyset: "id" });
+    expect(rows).toHaveLength(2_437);
+    expect(rows[0]!["id"]).toBe(500_000);
+    expect(rows[2_436]!["id"]).toBe(502_436);
+    // Page one has no cursor; every later page starts after the last id seen.
+    expect(afters).toEqual([null, 500_999, 501_999]);
+  });
+
+  it("keeps the caller's filter on every page", async () => {
+    const { client, filters } = makeKeysetSupabase(runRows(1_500, 10));
+    vi.mocked(getSupabase).mockReturnValue(client);
+    await selectAllRows(
+      "reconciliation_ledger",
+      (q) => q.eq("account_id", "acct_a").eq("manual_analysis_run_id", "run_1"),
+      "id, spend",
+      { keyset: "id" },
+    );
+    expect(filters).toHaveLength(2);
+    for (const f of filters) {
+      expect(f).toEqual({ "eq:account_id": "acct_a", "eq:manual_analysis_run_id": "run_1" });
+    }
+  });
+
+  it("stops after one page when the table fits", async () => {
+    const { client, afters } = makeKeysetSupabase(runRows(12, 1));
+    vi.mocked(getSupabase).mockReturnValue(client);
+    expect(await selectAllRows("variable_evidence", undefined, "id, spend", { keyset: "id" })).toHaveLength(12);
+    expect(afters).toEqual([null]);
+  });
+
+  it("refuses to page when the key is not among the selected columns", async () => {
+    const { client } = makeKeysetSupabase(Array.from({ length: PAGE_SIZE }, () => ({ spend: 1 })));
+    vi.mocked(getSupabase).mockReturnValue(client);
+    await expect(selectAllRows("reconciliation_ledger", undefined, "spend", { keyset: "id" })).rejects.toThrow(/needs "id"/);
+  });
+});
+
 describe("selectAllRows — filters must survive pagination", () => {
   it("re-applies the account and window filters on every page", async () => {
     const { client, filters } = makeSupabase(makeRows(2_100));
@@ -130,6 +209,25 @@ describe("selectAllRows — filters must survive pagination", () => {
         "lte:date_start": "2026-08-31",
       });
     }
+  });
+
+  it("surfaces a query error instead of returning a short read as success (keyset too)", async () => {
+    const client: any = {
+      from: () => {
+        const chain: any = {
+          select: () => chain,
+          eq: () => chain,
+          gt: () => chain,
+          order: () => chain,
+          limit: () => Promise.resolve({ data: null, error: { message: "statement timeout" } }),
+        };
+        return chain;
+      },
+    };
+    vi.mocked(getSupabase).mockReturnValue(client);
+    await expect(selectAllRows("reconciliation_ledger", undefined, "*", { keyset: "id" })).rejects.toThrow(
+      /reconciliation_ledger.*statement timeout/,
+    );
   });
 
   it("surfaces a query error instead of returning a short read as success", async () => {
